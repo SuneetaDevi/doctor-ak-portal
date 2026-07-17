@@ -12,6 +12,7 @@ use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Roles;
+use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Specializations;
 use DoctorAKPortal\Includes\Template_Loader;
 use DoctorAKPortal\Includes\Theme_Preference;
@@ -28,9 +29,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Administrator role). The sidebar mirrors the full clinic-management menu
  * (Dashboard/Appointments/Encounters, Patients/Doctors/Receptionist,
  * Clinic/Services/Doctor Sessions) so the shape is in place end to end, but
- * only the Doctors and Patients sections are backed by real data today —
- * every other section renders an honest "coming soon" placeholder instead
- * of fabricated numbers or forms.
+ * only the Doctors, Patients, and Appointments sections are backed by real
+ * data today — every other section renders an honest "coming soon"
+ * placeholder instead of fabricated numbers or forms.
  */
 class Admin_Dashboard {
 
@@ -183,6 +184,72 @@ class Admin_Dashboard {
 				)
 			);
 		}
+
+		if ( 'services' === self::requested_section() ) {
+			wp_enqueue_style(
+				'doctor-ak-portal-registration',
+				DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-registration.css',
+				array( 'doctor-ak-portal-auth' ),
+				Assets::version( 'assets/css/doctor-ak-registration.css' )
+			);
+
+			wp_enqueue_style(
+				'doctor-ak-portal-clinics',
+				DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-clinics.css',
+				array( 'doctor-ak-portal-registration' ),
+				Assets::version( 'assets/css/doctor-ak-clinics.css' )
+			);
+
+			wp_enqueue_script(
+				'doctor-ak-portal-admin-services',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-services.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-admin-services.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-admin-services',
+				'dakAdminServices',
+				array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+				)
+			);
+		}
+
+		if ( 'appointments' === self::requested_section() ) {
+			wp_enqueue_style(
+				'doctor-ak-portal-registration',
+				DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-registration.css',
+				array( 'doctor-ak-portal-auth' ),
+				Assets::version( 'assets/css/doctor-ak-registration.css' )
+			);
+
+			wp_enqueue_style(
+				'doctor-ak-portal-clinics',
+				DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-clinics.css',
+				array( 'doctor-ak-portal-registration' ),
+				Assets::version( 'assets/css/doctor-ak-clinics.css' )
+			);
+
+			wp_enqueue_script(
+				'doctor-ak-portal-admin-appointments',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-appointments.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-admin-appointments.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-admin-appointments',
+				'dakAdminAppointments',
+				array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+				)
+			);
+		}
 	}
 
 	/**
@@ -281,6 +348,10 @@ class Admin_Dashboard {
 			$modal_html = $this->user_modal_html( $section );
 		} elseif ( 'doctor-sessions' === $section ) {
 			$modal_html = $this->doctor_sessions_modal_html();
+		} elseif ( 'services' === $section ) {
+			$modal_html = $this->service_modal_html();
+		} elseif ( 'appointments' === $section ) {
+			$modal_html = $this->appointment_modal_html();
 		}
 
 		return array(
@@ -320,10 +391,24 @@ class Admin_Dashboard {
 			return $this->template_loader->get_template( 'dashboard/partials/admin-overview.php', $this->overview_data() );
 		}
 
+		if ( 'appointments' === $section ) {
+			return $this->template_loader->get_template(
+				'dashboard/partials/admin-appointments.php',
+				array( 'appointments' => Appointments::all_for_admin() )
+			);
+		}
+
 		if ( 'doctor-sessions' === $section ) {
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-doctor-sessions.php',
 				array( 'clinics' => Clinics::all_flat_for_admin() )
+			);
+		}
+
+		if ( 'services' === $section ) {
+			return $this->template_loader->get_template(
+				'dashboard/partials/admin-services.php',
+				array( 'services' => Services::all_flat_for_admin() )
 			);
 		}
 
@@ -358,6 +443,78 @@ class Admin_Dashboard {
 				'doctor_options'  => $this->doctor_options(),
 			)
 		);
+	}
+
+	/**
+	 * Renders the "Add/Edit Service" modal (shared single instance,
+	 * populated client-side from the clicked row's data).
+	 *
+	 * @return string
+	 */
+	private function service_modal_html() {
+		return $this->template_loader->get_template(
+			'modal/admin-service-modal.php',
+			array(
+				'doctor_options' => $this->doctor_options(),
+				'categories'     => Specializations::get_all(),
+			)
+		);
+	}
+
+	/**
+	 * Renders the "Add/Edit Appointment" modal (shared single instance,
+	 * populated client-side from the clicked row's data).
+	 *
+	 * @return string
+	 */
+	private function appointment_modal_html() {
+		return $this->template_loader->get_template(
+			'modal/admin-appointment-modal.php',
+			array(
+				'doctor_options'  => $this->doctor_options(),
+				'patient_options' => Appointments::patient_options(),
+				'status_options'  => Appointments::status_options(),
+				'services'        => $this->services_by_doctor_and_type(),
+			)
+		);
+	}
+
+	/**
+	 * Every doctor's services, shaped for the Appointments modal's JS to
+	 * filter client-side as [doctor_id][type] => [{id, name, charge}, ...].
+	 * Same shape Booking_Page builds for the patient-facing booking page.
+	 *
+	 * @return array
+	 */
+	private function services_by_doctor_and_type() {
+		$map = array();
+
+		foreach ( array_keys( $this->doctor_options() ) as $doctor_id ) {
+			foreach ( array( 'clinic', 'video' ) as $type ) {
+				$services = Services::get_for_doctor( $doctor_id, $type );
+
+				if ( empty( $services ) ) {
+					continue;
+				}
+
+				if ( ! isset( $map[ $doctor_id ] ) ) {
+					$map[ $doctor_id ] = array();
+				}
+
+				$map[ $doctor_id ][ $type ] = array_map(
+					function ( $service ) {
+						return array(
+							'id'     => $service['id'],
+							'name'   => $service['name'],
+							'charge' => $service['charge'],
+						);
+					},
+					$services
+				);
+			}
+		}
+
+		return $map;
 	}
 
 	/**

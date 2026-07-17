@@ -457,37 +457,6 @@
 }
 
 
-/* Modal */
-.dak-modal-overlay {
-	position: fixed !important;
-	inset: 0 !important;
-	z-index: 100 !important;
-	display: flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	background: rgba( 15, 23, 32, 0.45 ) !important;
-	padding: 1rem !important;
-}
-
-.dak-modal {
-	max-width: 420px !important;
-	width: 100% !important;
-	max-height: 90vh !important;
-	overflow-y: auto !important;
-	background: var( --dak-bg-card ) !important;
-	border-radius: var( --dak-radius-lg ) !important;
-	box-shadow: var( --dak-shadow ) !important;
-	padding: 1.5rem !important;
-	box-sizing: border-box !important;
-}
-
-.dak-modal-actions {
-	display: flex !important;
-	justify-content: flex-end !important;
-	gap: 0.75rem !important;
-	margin-top: 1rem !important;
-}
-
 @media ( max-width: 600px ) {
 	.dak-role-cards {
 		flex-direction: column !important;

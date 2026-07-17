@@ -228,8 +228,8 @@
 }
 
 .dak-dashboard-nav li.is-active a {
-	background: var( --dak-primary ) !important;
-	color: #ffffff !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
 }
 
 .dak-dashboard-nav li.is-disabled span {

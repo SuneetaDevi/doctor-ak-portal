@@ -28,11 +28,73 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Booking_Handler {
 
 	/**
-	 * Nonce action shared with Booking_Modal.
+	 * Nonce action shared with Booking_Page.
 	 *
 	 * @var string
 	 */
 	const NONCE_ACTION = 'doctor_ak_booking';
+
+	/**
+	 * AJAX handler: returns every configured time slot for a doctor/type/
+	 * date, each tagged 'available', 'booked', or 'past', so the booking
+	 * page's slot-card calendar can show the whole day color-coded rather
+	 * than just a list of openings. Public (guests book too).
+	 *
+	 * @return void
+	 */
+	public function handle_get_available_slots() {
+		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$doctor_id = isset( $_POST['doctor_id'] ) ? absint( $_POST['doctor_id'] ) : 0;
+		$type      = ( isset( $_POST['type'] ) && 'video' === $_POST['type'] ) ? 'video' : 'clinic';
+		$date      = isset( $_POST['date'] ) ? sanitize_text_field( wp_unslash( $_POST['date'] ) ) : '';
+
+		if ( $doctor_id <= 0 || ! self::is_valid_date( $date ) ) {
+			wp_send_json_error( array( 'message' => __( 'Please choose a doctor and date.', 'doctor-ak-portal' ) ) );
+		}
+
+		wp_send_json_success( array( 'slots' => Appointments::slot_statuses_for_date( $doctor_id, $type, $date ) ) );
+	}
+
+	/**
+	 * AJAX handler: returns per-day slot counts for a whole month, so the
+	 * booking page's calendar can show a "many slots"/"few left"/"full or
+	 * past" dot under each date. Public (guests book too).
+	 *
+	 * @return void
+	 */
+	public function handle_get_month_availability() {
+		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$doctor_id = isset( $_POST['doctor_id'] ) ? absint( $_POST['doctor_id'] ) : 0;
+		$type      = ( isset( $_POST['type'] ) && 'video' === $_POST['type'] ) ? 'video' : 'clinic';
+		$year      = isset( $_POST['year'] ) ? absint( $_POST['year'] ) : 0;
+		$month     = isset( $_POST['month'] ) ? absint( $_POST['month'] ) : 0;
+
+		if ( $doctor_id <= 0 || $year < 2000 || $month < 1 || $month > 12 ) {
+			wp_send_json_error( array( 'message' => __( 'Please choose a doctor.', 'doctor-ak-portal' ) ) );
+		}
+
+		wp_send_json_success( array( 'days' => Appointments::month_availability_summary( $doctor_id, $type, $year, $month ) ) );
+	}
+
+	/**
+	 * Validates a date string in Y-m-d format.
+	 *
+	 * @param string $date Date string.
+	 * @return bool
+	 */
+	private static function is_valid_date( $date ) {
+		if ( ! preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $date, $matches ) ) {
+			return false;
+		}
+
+		return checkdate( (int) $matches[2], (int) $matches[3], (int) $matches[1] );
+	}
 
 	/**
 	 * AJAX handler: validates and saves a new appointment request.
@@ -44,11 +106,12 @@ class Booking_Handler {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		$doctor_id = isset( $_POST['doctor_id'] ) ? absint( $_POST['doctor_id'] ) : 0;
-		$type      = ( isset( $_POST['type'] ) && 'video' === $_POST['type'] ) ? 'video' : 'clinic';
-		$date      = isset( $_POST['date'] ) ? sanitize_text_field( wp_unslash( $_POST['date'] ) ) : '';
-		$time      = isset( $_POST['time'] ) ? sanitize_text_field( wp_unslash( $_POST['time'] ) ) : '';
-		$notes     = isset( $_POST['notes'] ) ? sanitize_textarea_field( wp_unslash( $_POST['notes'] ) ) : '';
+		$doctor_id  = isset( $_POST['doctor_id'] ) ? absint( $_POST['doctor_id'] ) : 0;
+		$type       = ( isset( $_POST['type'] ) && 'video' === $_POST['type'] ) ? 'video' : 'clinic';
+		$date       = isset( $_POST['date'] ) ? sanitize_text_field( wp_unslash( $_POST['date'] ) ) : '';
+		$time       = isset( $_POST['time'] ) ? sanitize_text_field( wp_unslash( $_POST['time'] ) ) : '';
+		$notes      = isset( $_POST['notes'] ) ? sanitize_textarea_field( wp_unslash( $_POST['notes'] ) ) : '';
+		$service_id = isset( $_POST['service_id'] ) ? absint( $_POST['service_id'] ) : 0;
 
 		$errors = array();
 
@@ -115,6 +178,7 @@ class Booking_Handler {
 				'date'        => $date,
 				'time'        => $time,
 				'notes'       => $notes,
+				'service_id'  => $service_id,
 			)
 		);
 

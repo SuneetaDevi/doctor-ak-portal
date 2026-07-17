@@ -41,6 +41,20 @@ class Db_Installer {
 	const DB_VERSION = '1.0.0';
 
 	/**
+	 * Option name tracking the installed services-table schema version.
+	 *
+	 * @var string
+	 */
+	const SERVICES_DB_VERSION_OPTION = 'dak_services_db_version';
+
+	/**
+	 * Current services table schema version.
+	 *
+	 * @var string
+	 */
+	const SERVICES_DB_VERSION = '1.0.0';
+
+	/**
 	 * Option name guarding the one-time legacy-data migration so it never
 	 * runs more than once.
 	 *
@@ -60,6 +74,9 @@ class Db_Installer {
 		self::create_table();
 		update_option( self::DB_VERSION_OPTION, self::DB_VERSION );
 
+		self::create_services_table();
+		update_option( self::SERVICES_DB_VERSION_OPTION, self::SERVICES_DB_VERSION );
+
 		if ( ! get_option( self::MIGRATION_OPTION ) ) {
 			self::migrate_legacy_data();
 			update_option( self::MIGRATION_OPTION, 'yes' );
@@ -77,7 +94,9 @@ class Db_Installer {
 	 * @return void
 	 */
 	public static function maybe_upgrade() {
-		if ( self::DB_VERSION === get_option( self::DB_VERSION_OPTION ) ) {
+		if ( self::DB_VERSION === get_option( self::DB_VERSION_OPTION )
+			&& self::SERVICES_DB_VERSION === get_option( self::SERVICES_DB_VERSION_OPTION )
+		) {
 			return;
 		}
 
@@ -106,6 +125,37 @@ class Db_Installer {
 			phone VARCHAR(30) NOT NULL DEFAULT '',
 			contact_email VARCHAR(191) NOT NULL DEFAULT '',
 			sessions LONGTEXT NOT NULL,
+			created_at DATETIME NOT NULL,
+			updated_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY doctor_id (doctor_id)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Runs dbDelta() against the services table schema.
+	 *
+	 * @return void
+	 */
+	private static function create_services_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$table_name      = Services::table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table_name} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			doctor_id BIGINT UNSIGNED NOT NULL,
+			type VARCHAR(20) NOT NULL DEFAULT 'clinic',
+			name VARCHAR(191) NOT NULL,
+			category VARCHAR(191) NOT NULL DEFAULT '',
+			charge DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			duration_minutes INT UNSIGNED NOT NULL DEFAULT 0,
+			active TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),

@@ -74,6 +74,13 @@ class Shortcodes {
 	private $admin_dashboard;
 
 	/**
+	 * Booking page controller.
+	 *
+	 * @var Booking_Page
+	 */
+	private $booking_page;
+
+	/**
 	 * Sets up collaborators.
 	 *
 	 * @param Doctor_Dashboard    $doctor_dashboard    Doctor dashboard controller.
@@ -82,8 +89,9 @@ class Shortcodes {
 	 * @param Doctors_Directory   $doctors_directory   Doctors directory controller.
 	 * @param Doctor_Profile_View $doctor_profile_view Public doctor profile view controller.
 	 * @param Admin_Dashboard     $admin_dashboard     Administrator dashboard controller.
+	 * @param Booking_Page        $booking_page        Booking page controller.
 	 */
-	public function __construct( Doctor_Dashboard $doctor_dashboard, Patient_Dashboard $patient_dashboard, Profile_Handler $profile_handler, Doctors_Directory $doctors_directory, Doctor_Profile_View $doctor_profile_view, Admin_Dashboard $admin_dashboard ) {
+	public function __construct( Doctor_Dashboard $doctor_dashboard, Patient_Dashboard $patient_dashboard, Profile_Handler $profile_handler, Doctors_Directory $doctors_directory, Doctor_Profile_View $doctor_profile_view, Admin_Dashboard $admin_dashboard, Booking_Page $booking_page ) {
 		$this->template_loader     = new Template_Loader();
 		$this->doctor_dashboard    = $doctor_dashboard;
 		$this->patient_dashboard   = $patient_dashboard;
@@ -91,6 +99,7 @@ class Shortcodes {
 		$this->doctors_directory   = $doctors_directory;
 		$this->doctor_profile_view = $doctor_profile_view;
 		$this->admin_dashboard     = $admin_dashboard;
+		$this->booking_page        = $booking_page;
 	}
 
 	/**
@@ -108,6 +117,7 @@ class Shortcodes {
 		add_shortcode( 'doctors_directory', array( $this, 'render_doctors_directory' ) );
 		add_shortcode( 'doctor_profile_view', array( $this, 'render_doctor_profile_view' ) );
 		add_shortcode( 'admin_dashboard', array( $this, 'render_admin_dashboard' ) );
+		add_shortcode( 'book_appointment', array( $this, 'render_book_appointment' ) );
 	}
 
 	/**
@@ -189,5 +199,14 @@ class Shortcodes {
 	 */
 	public function render_admin_dashboard() {
 		return $this->admin_dashboard->render();
+	}
+
+	/**
+	 * Renders the [book_appointment] shortcode.
+	 *
+	 * @return string
+	 */
+	public function render_book_appointment() {
+		return $this->booking_page->render();
 	}
 }

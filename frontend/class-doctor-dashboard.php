@@ -11,6 +11,7 @@ use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Roles;
+use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Specializations;
 use DoctorAKPortal\Includes\Template_Loader;
 use DoctorAKPortal\Includes\Theme_Preference;
@@ -146,7 +147,7 @@ class Doctor_Dashboard {
 
 		$tab = sanitize_key( wp_unslash( $_GET['tab'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 
-		return in_array( $tab, array( 'profile', 'clinics', 'settings' ), true ) ? $tab : 'dashboard';
+		return in_array( $tab, array( 'profile', 'clinics', 'services', 'settings' ), true ) ? $tab : 'dashboard';
 	}
 
 	/**
@@ -207,6 +208,23 @@ class Doctor_Dashboard {
 			array(
 				'clinics'      => Clinics::get_for_doctor( $user->ID ),
 				'session_days' => Clinics::session_days(),
+			)
+		);
+	}
+
+	/**
+	 * Renders the Services tab: a doctor's bookable services (e.g. "OPD
+	 * Consultation"), each with its own category, charge, and duration.
+	 *
+	 * @param \WP_User $user Currently logged-in doctor.
+	 * @return string
+	 */
+	private function render_services_tab( \WP_User $user ) {
+		return $this->template_loader->get_template(
+			'dashboard/partials/doctor-services-tab.php',
+			array(
+				'services'   => Services::get_for_doctor( $user->ID ),
+				'categories' => Specializations::get_all(),
 			)
 		);
 	}
@@ -280,10 +298,12 @@ class Doctor_Dashboard {
 			'active_tab'            => $active_tab,
 			'profile_form_html'     => 'profile' === $active_tab ? $this->render_profile_form( $user ) : '',
 			'clinics_tab_html'      => 'clinics' === $active_tab ? $this->render_clinics_tab( $user ) : '',
+			'services_tab_html'     => 'services' === $active_tab ? $this->render_services_tab( $user ) : '',
 			'settings_tab_html'     => 'settings' === $active_tab ? $this->render_settings_tab() : '',
 			'dashboard_url'         => $dashboard_url,
 			'profile_url'           => $dashboard_url ? add_query_arg( 'tab', 'profile', $dashboard_url ) : '',
 			'clinics_url'           => $dashboard_url ? add_query_arg( 'tab', 'clinics', $dashboard_url ) : '',
+			'services_url'          => $dashboard_url ? add_query_arg( 'tab', 'services', $dashboard_url ) : '',
 			'settings_url'          => $dashboard_url ? add_query_arg( 'tab', 'settings', $dashboard_url ) : '',
 			'logout_url'            => wp_logout_url( Page_Finder::url_for_shortcode( 'doctor_login' ) ),
 			'total_patients'        => isset( $user_counts['avail_roles'][ Roles::PATIENT_ROLE ] ) ? (int) $user_counts['avail_roles'][ Roles::PATIENT_ROLE ] : 0,

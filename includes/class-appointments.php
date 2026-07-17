@@ -42,6 +42,9 @@ class Appointments {
 	const PAYMENT_STATUS_PENDING = 'pending';
 	const PAYMENT_STATUS_PAID    = 'paid';
 
+	const PAYMENT_MODE_MANUAL = 'manual';
+	const PAYMENT_MODE_ONLINE = 'online';
+
 	/**
 	 * Registers the (intentionally non-public) post type used for storage.
 	 *
@@ -124,8 +127,29 @@ class Appointments {
 		$notes         = isset( $data['notes'] ) ? sanitize_textarea_field( $data['notes'] ) : '';
 		$patient_label = $patient_id > 0 ? self::patient_display_name( $patient_id ) : $guest_name;
 
+		$service_id      = isset( $data['service_id'] ) ? (int) $data['service_id'] : 0;
+		$service_name    = '';
+		$charge          = 0.0;
+		$payment_mode    = self::PAYMENT_MODE_MANUAL;
+
+		if ( $service_id > 0 ) {
+			$service = Services::find( $service_id );
+
+			if ( ! $service || (int) $service['doctor_id'] !== $doctor_id || $service['type'] !== $type || empty( $service['active'] ) ) {
+				return new \WP_Error( 'doctor_ak_invalid_service', __( 'Please choose a valid service.', 'doctor-ak-portal' ) );
+			}
+
+			$service_name = $service['name'];
+			$charge       = (float) $service['charge'];
+		} else {
+			$service_id = 0;
+		}
+
+		$data['charge'] = $charge;
+
 		$requires_payment = apply_filters( 'doctor_ak_appointment_requires_payment', false, $data );
 		$status           = $requires_payment ? self::STATUS_PENDING_PAYMENT : self::STATUS_PENDING;
+		$payment_mode      = $requires_payment ? self::PAYMENT_MODE_ONLINE : self::PAYMENT_MODE_MANUAL;
 
 		/**
 		 * Filters a new appointment's payment status at creation time.
@@ -165,6 +189,10 @@ class Appointments {
 		update_post_meta( $post_id, 'doctor_ak_appointment_status', $status );
 		update_post_meta( $post_id, 'doctor_ak_appointment_payment_status', $payment_status );
 		update_post_meta( $post_id, 'doctor_ak_appointment_notes', $notes );
+		update_post_meta( $post_id, 'doctor_ak_appointment_service_id', $service_id );
+		update_post_meta( $post_id, 'doctor_ak_appointment_service_name', $service_name );
+		update_post_meta( $post_id, 'doctor_ak_appointment_charge', $charge );
+		update_post_meta( $post_id, 'doctor_ak_appointment_payment_mode', $payment_mode );
 
 		/**
 		 * Fires after a new appointment is saved.
@@ -178,6 +206,241 @@ class Appointments {
 		do_action( 'doctor_ak_appointment_created', $post_id, $data );
 
 		return $post_id;
+	}
+
+	/**
+	 * Updates every field of an existing appointment — used by the admin
+	 * dashboard's Appointments "Edit" action, which (unlike patient booking)
+	 * can re-target the doctor/patient/service and directly set status and
+	 * payment status.
+	 *
+	 * @param int   $appointment_id Appointment post ID.
+	 * @param array $data           Same shape as create(), plus optional 'status', 'payment_status', 'payment_mode'.
+	 * @return true|\WP_Error
+	 */
+	public static function update( $appointment_id, array $data ) {
+		$post = get_post( $appointment_id );
+
+		if ( ! $post || self::POST_TYPE !== $post->post_type ) {
+			return new \WP_Error( 'doctor_ak_invalid_appointment', __( 'That appointment no longer exists.', 'doctor-ak-portal' ) );
+		}
+
+		$doctor_id = isset( $data['doctor_id'] ) ? (int) $data['doctor_id'] : 0;
+		$doctor    = $doctor_id > 0 ? get_userdata( $doctor_id ) : false;
+
+		if ( ! $doctor || ! in_array( Roles::DOCTOR_ROLE, (array) $doctor->roles, true ) ) {
+			return new \WP_Error( 'doctor_ak_invalid_doctor', __( 'Please choose a valid doctor.', 'doctor-ak-portal' ) );
+		}
+
+		$type = isset( $data['type'] ) && self::TYPE_VIDEO === $data['type'] ? self::TYPE_VIDEO : self::TYPE_CLINIC;
+
+		if ( self::TYPE_VIDEO === $type && ! Clinics::doctor_has_active_video_clinic( $doctor_id ) ) {
+			return new \WP_Error( 'doctor_ak_video_not_offered', __( 'This doctor does not offer online video consultations.', 'doctor-ak-portal' ) );
+		}
+
+		$date = isset( $data['date'] ) ? sanitize_text_field( $data['date'] ) : '';
+		$time = isset( $data['time'] ) ? sanitize_text_field( $data['time'] ) : '';
+
+		if ( ! self::is_valid_date( $date ) ) {
+			return new \WP_Error( 'doctor_ak_invalid_date', __( 'Please choose a valid appointment date.', 'doctor-ak-portal' ) );
+		}
+
+		if ( ! self::is_valid_time( $time ) ) {
+			return new \WP_Error( 'doctor_ak_invalid_time', __( 'Please choose a valid appointment time.', 'doctor-ak-portal' ) );
+		}
+
+		$patient_id  = isset( $data['patient_id'] ) ? (int) $data['patient_id'] : 0;
+		$guest_name  = '';
+		$guest_email = '';
+		$guest_phone = '';
+
+		if ( $patient_id <= 0 ) {
+			$guest_name  = isset( $data['guest_name'] ) ? sanitize_text_field( $data['guest_name'] ) : '';
+			$guest_email = isset( $data['guest_email'] ) ? sanitize_email( $data['guest_email'] ) : '';
+			$guest_phone = isset( $data['guest_phone'] ) ? sanitize_text_field( $data['guest_phone'] ) : '';
+
+			if ( '' === $guest_name || '' === $guest_email || ! is_email( $guest_email ) ) {
+				return new \WP_Error( 'doctor_ak_invalid_guest_details', __( "Please provide the patient's name and a valid email address.", 'doctor-ak-portal' ) );
+			}
+		}
+
+		$notes         = isset( $data['notes'] ) ? sanitize_textarea_field( $data['notes'] ) : '';
+		$patient_label = $patient_id > 0 ? self::patient_display_name( $patient_id ) : $guest_name;
+
+		$service_id   = isset( $data['service_id'] ) ? (int) $data['service_id'] : 0;
+		$service_name = '';
+		$charge       = 0.0;
+
+		if ( $service_id > 0 ) {
+			$service = Services::find( $service_id );
+
+			if ( ! $service || (int) $service['doctor_id'] !== $doctor_id || $service['type'] !== $type ) {
+				return new \WP_Error( 'doctor_ak_invalid_service', __( 'Please choose a valid service.', 'doctor-ak-portal' ) );
+			}
+
+			$service_name = $service['name'];
+			$charge       = (float) $service['charge'];
+		} else {
+			$service_id = 0;
+		}
+
+		$status_options = self::status_options();
+		$status         = isset( $data['status'] ) && array_key_exists( $data['status'], $status_options ) ? $data['status'] : self::STATUS_PENDING;
+		$payment_status = isset( $data['payment_status'] ) && self::PAYMENT_STATUS_PAID === $data['payment_status'] ? self::PAYMENT_STATUS_PAID : self::PAYMENT_STATUS_PENDING;
+		$payment_mode   = isset( $data['payment_mode'] ) && self::PAYMENT_MODE_ONLINE === $data['payment_mode'] ? self::PAYMENT_MODE_ONLINE : self::PAYMENT_MODE_MANUAL;
+
+		wp_update_post(
+			array(
+				'ID'          => $appointment_id,
+				/* translators: 1: patient/guest name, 2: doctor's display name, 3: date, 4: time. */
+				'post_title'  => sprintf( __( '%1$s with Dr. %2$s — %3$s %4$s', 'doctor-ak-portal' ), $patient_label, $doctor->display_name, $date, $time ),
+				'post_author' => $patient_id,
+			)
+		);
+
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_doctor_id', $doctor_id );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_patient_id', $patient_id );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_guest_name', $guest_name );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_guest_email', $guest_email );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_guest_phone', $guest_phone );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_type', $type );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_date', $date );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_time', $time );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_status', $status );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_payment_status', $payment_status );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_notes', $notes );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_service_id', $service_id );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_service_name', $service_name );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_charge', $charge );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_payment_mode', $payment_mode );
+
+		return true;
+	}
+
+	/**
+	 * Permanently deletes an appointment — used by the admin dashboard's
+	 * Appointments "Delete" action.
+	 *
+	 * @param int $appointment_id Appointment post ID.
+	 * @return bool
+	 */
+	public static function delete( $appointment_id ) {
+		$post = get_post( $appointment_id );
+
+		if ( ! $post || self::POST_TYPE !== $post->post_type ) {
+			return false;
+		}
+
+		return (bool) wp_delete_post( $appointment_id, true );
+	}
+
+	/**
+	 * Per-day slot counts for a whole calendar month — powers the booking
+	 * page's calendar dots (green "many slots" / amber "few left" / grey
+	 * "full or past"). Fetches the doctor's clinics and appointments once
+	 * up front rather than per day.
+	 *
+	 * @param int    $doctor_id Doctor's user ID.
+	 * @param string $type      'clinic' or 'video'.
+	 * @param int    $year      Four-digit year.
+	 * @param int    $month     1-12.
+	 * @return array 'YYYY-MM-DD' => array( 'total' => int, 'available' => int ).
+	 */
+	public static function month_availability_summary( $doctor_id, $type, $year, $month ) {
+		$clinics = Clinics::get_for_doctor( $doctor_id );
+
+		$booked = array();
+
+		foreach ( self::for_doctor( $doctor_id ) as $appointment ) {
+			if ( self::PAYMENT_STATUS_PAID === $appointment['payment_status'] && self::STATUS_CANCELLED !== $appointment['status'] ) {
+				$booked[ $appointment['date'] ][ $appointment['time'] ] = true;
+			}
+		}
+
+		$days_in_month = (int) gmdate( 't', mktime( 0, 0, 0, $month, 1, $year ) );
+		$today         = current_time( 'Y-m-d' );
+		$now           = current_time( 'H:i' );
+		$summary       = array();
+
+		for ( $day = 1; $day <= $days_in_month; $day++ ) {
+			$date = sprintf( '%04d-%02d-%02d', $year, $month, $day );
+			$grid = Clinics::slot_grid_from_clinics( $clinics, $type, $date );
+
+			$available = 0;
+
+			foreach ( $grid as $slot ) {
+				if ( isset( $booked[ $date ][ $slot ] ) ) {
+					continue;
+				}
+
+				if ( $date === $today && $slot <= $now ) {
+					continue;
+				}
+
+				$available++;
+			}
+
+			$summary[ $date ] = array(
+				'total'     => count( $grid ),
+				'available' => $available,
+			);
+		}
+
+		return $summary;
+	}
+
+	/**
+	 * Every configured time slot for a doctor on a given date, each tagged
+	 * with its booking status — for the booking page's slot-card calendar,
+	 * which shows the whole day's grid (not just openings) color-coded by
+	 * status. Built from the doctor's full session grid
+	 * (Clinics::slot_grid_for_date()), with slots already locked by a paid,
+	 * non-cancelled booking marked 'booked', slots earlier than the current
+	 * time on today marked 'past', and everything else 'available'.
+	 *
+	 * @param int    $doctor_id Doctor's user ID.
+	 * @param string $type      'clinic' or 'video'.
+	 * @param string $date      'YYYY-MM-DD'.
+	 * @return array List of `array( 'time' => 'HH:MM', 'status' => 'available'|'booked'|'past' )`, sorted ascending.
+	 */
+	public static function slot_statuses_for_date( $doctor_id, $type, $date ) {
+		$grid = Clinics::slot_grid_for_date( $doctor_id, $type, $date );
+
+		if ( empty( $grid ) ) {
+			return array();
+		}
+
+		$booked = array();
+
+		foreach ( self::for_doctor( $doctor_id ) as $appointment ) {
+			if ( $appointment['date'] === $date
+				&& self::PAYMENT_STATUS_PAID === $appointment['payment_status']
+				&& self::STATUS_CANCELLED !== $appointment['status']
+			) {
+				$booked[ $appointment['time'] ] = true;
+			}
+		}
+
+		$today = current_time( 'Y-m-d' );
+		$now   = current_time( 'H:i' );
+
+		return array_map(
+			function ( $slot ) use ( $booked, $date, $today, $now ) {
+				if ( isset( $booked[ $slot ] ) ) {
+					$status = 'booked';
+				} elseif ( $date === $today && $slot <= $now ) {
+					$status = 'past';
+				} else {
+					$status = 'available';
+				}
+
+				return array(
+					'time'   => $slot,
+					'status' => $status,
+				);
+			},
+			$grid
+		);
 	}
 
 	/**
@@ -198,6 +461,285 @@ class Appointments {
 	 */
 	public static function for_patient( $patient_id ) {
 		return self::query( 'doctor_ak_appointment_patient_id', $patient_id );
+	}
+
+	/**
+	 * Everything the patient dashboard needs about a patient's upcoming
+	 * appointments in one call: the nearest one, unpaid totals, and the
+	 * full list grouped into Today/Tomorrow/This Week/Later — each row
+	 * enriched with the doctor's name/avatar/specialization and a
+	 * human countdown label.
+	 *
+	 * @param int $patient_id Patient's user ID.
+	 * @return array {
+	 *     @type array|null $next_appointment     Nearest upcoming row, or null.
+	 *     @type int        $unpaid_count         Unpaid upcoming appointment count.
+	 *     @type float      $unpaid_total         Sum of unpaid upcoming charges.
+	 *     @type array      $groups               'today'|'tomorrow'|'this_week'|'later' => array of rows.
+	 *     @type int        $total_upcoming_count Total upcoming (non-cancelled) appointments.
+	 * }
+	 */
+	public static function patient_dashboard_data( $patient_id ) {
+		$today = current_time( 'Y-m-d' );
+		$now   = current_time( 'H:i' );
+
+		$upcoming = array_values(
+			array_filter(
+				self::for_patient( $patient_id ),
+				function ( $appointment ) use ( $today, $now ) {
+					if ( self::STATUS_CANCELLED === $appointment['status'] ) {
+						return false;
+					}
+
+					if ( $appointment['date'] > $today ) {
+						return true;
+					}
+
+					return $appointment['date'] === $today && $appointment['time'] >= $now;
+				}
+			)
+		);
+
+		usort(
+			$upcoming,
+			function ( $a, $b ) {
+				return strcmp( $a['date'] . $a['time'], $b['date'] . $b['time'] );
+			}
+		);
+
+		$groups = array(
+			'today'     => array(),
+			'tomorrow'  => array(),
+			'this_week' => array(),
+			'later'     => array(),
+		);
+
+		$tomorrow    = gmdate( 'Y-m-d', strtotime( $today . ' +1 day' ) );
+		$week_cutoff = gmdate( 'Y-m-d', strtotime( $today . ' +7 days' ) );
+
+		$unpaid_count = 0;
+		$unpaid_total = 0.0;
+
+		foreach ( $upcoming as $appointment ) {
+			$row = self::patient_dashboard_row( $appointment, $today, $now );
+
+			if ( $appointment['date'] === $today ) {
+				$groups['today'][] = $row;
+			} elseif ( $appointment['date'] === $tomorrow ) {
+				$groups['tomorrow'][] = $row;
+			} elseif ( $appointment['date'] <= $week_cutoff ) {
+				$groups['this_week'][] = $row;
+			} else {
+				$groups['later'][] = $row;
+			}
+
+			if ( self::PAYMENT_STATUS_PAID !== $appointment['payment_status'] ) {
+				++$unpaid_count;
+				$unpaid_total += (float) $appointment['charge'];
+			}
+		}
+
+		return array(
+			'next_appointment'     => ! empty( $upcoming ) ? self::patient_dashboard_row( $upcoming[0], $today, $now ) : null,
+			'unpaid_count'         => $unpaid_count,
+			'unpaid_total'         => $unpaid_total,
+			'groups'               => $groups,
+			'total_upcoming_count' => count( $upcoming ),
+		);
+	}
+
+	/**
+	 * Builds a single patient-dashboard row view-model from an appointment
+	 * array — resolves the doctor's name/avatar/specialization and adds a
+	 * human countdown label alongside the existing status/type labels.
+	 *
+	 * @param array  $appointment Appointment array from get().
+	 * @param string $today       'YYYY-MM-DD', today per current_time().
+	 * @param string $now         'HH:MM', now per current_time().
+	 * @return array
+	 */
+	private static function patient_dashboard_row( array $appointment, $today, $now ) {
+		$doctor      = $appointment['doctor_id'] > 0 ? get_userdata( $appointment['doctor_id'] ) : false;
+		$doctor_name = '';
+
+		if ( $doctor ) {
+			$doctor_name = trim( $doctor->first_name . ' ' . $doctor->last_name );
+			$doctor_name = '' !== $doctor_name ? $doctor_name : $doctor->display_name;
+		}
+
+		$specialization_label = '';
+
+		if ( $doctor ) {
+			$all_specializations  = Specializations::get_all();
+			$specialization_slugs = (array) get_user_meta( $doctor->ID, 'doctor_ak_specializations', true );
+
+			foreach ( $specialization_slugs as $slug ) {
+				if ( isset( $all_specializations[ $slug ] ) ) {
+					$specialization_label = $all_specializations[ $slug ];
+					break;
+				}
+			}
+		}
+
+		$avatar_url = '';
+
+		if ( $doctor ) {
+			$picture_id = (int) get_user_meta( $doctor->ID, 'doctor_ak_profile_picture_id', true );
+
+			if ( $picture_id > 0 ) {
+				$url = wp_get_attachment_image_url( $picture_id, 'thumbnail' );
+
+				if ( $url ) {
+					$avatar_url = $url;
+				}
+			}
+		}
+
+		return array(
+			'id'                    => $appointment['id'],
+			'doctor_name'           => '' !== $doctor_name ? $doctor_name : __( 'Unknown Doctor', 'doctor-ak-portal' ),
+			'doctor_avatar_url'     => $avatar_url,
+			'doctor_specialization' => $specialization_label,
+			'type'                  => $appointment['type'],
+			'type_label'            => self::type_label( $appointment['type'] ),
+			'date'                  => $appointment['date'],
+			'time'                  => $appointment['time'],
+			'status'                => $appointment['status'],
+			'status_label'          => self::status_label( $appointment['status'] ),
+			'status_badge_class'    => self::status_badge_class( $appointment['status'] ),
+			'payment_status'        => $appointment['payment_status'],
+			'is_paid'               => self::PAYMENT_STATUS_PAID === $appointment['payment_status'],
+			'payment_mode'          => $appointment['payment_mode'],
+			'service_name'          => $appointment['service_name'],
+			'charge'                => $appointment['charge'],
+			'countdown_label'       => self::countdown_label( $appointment['date'], $appointment['time'], $today, $now ),
+		);
+	}
+
+	/**
+	 * A human "In 2 hours" / "Tomorrow" / "In 3 days" label for an
+	 * upcoming appointment's date/time relative to now.
+	 *
+	 * @param string $date  'YYYY-MM-DD'.
+	 * @param string $time  'HH:MM'.
+	 * @param string $today 'YYYY-MM-DD', today per current_time().
+	 * @param string $now   'HH:MM', now per current_time().
+	 * @return string
+	 */
+	private static function countdown_label( $date, $time, $today, $now ) {
+		if ( $date === $today ) {
+			$diff_minutes = self::time_to_minutes( $time ) - self::time_to_minutes( $now );
+
+			if ( $diff_minutes <= 60 ) {
+				return __( 'Soon', 'doctor-ak-portal' );
+			}
+
+			$hours = (int) round( $diff_minutes / 60 );
+
+			/* translators: %d: number of hours. */
+			return sprintf( _n( 'In %d hour', 'In %d hours', $hours, 'doctor-ak-portal' ), $hours );
+		}
+
+		$tomorrow = gmdate( 'Y-m-d', strtotime( $today . ' +1 day' ) );
+
+		if ( $date === $tomorrow ) {
+			return __( 'Tomorrow', 'doctor-ak-portal' );
+		}
+
+		$days = (int) round( ( strtotime( $date ) - strtotime( $today ) ) / DAY_IN_SECONDS );
+
+		/* translators: %d: number of days. */
+		return sprintf( _n( 'In %d day', 'In %d days', $days, 'doctor-ak-portal' ), $days );
+	}
+
+	/**
+	 * Converts an 'HH:MM' time string to minutes since midnight.
+	 *
+	 * @param string $time 'HH:MM'.
+	 * @return int
+	 */
+	private static function time_to_minutes( $time ) {
+		$parts = array_map( 'intval', explode( ':', $time ) );
+
+		return ( isset( $parts[0] ) ? $parts[0] * 60 : 0 ) + ( isset( $parts[1] ) ? $parts[1] : 0 );
+	}
+
+	/**
+	 * Real recent-activity feed for the patient dashboard's "Recent
+	 * Activity" card, derived from the patient's own appointment records
+	 * (each post's real last-modified time, which changes exactly when its
+	 * status/payment_status changes — e.g. mark_paid() or cancel()) rather
+	 * than any fabricated notification content.
+	 *
+	 * @param int $patient_id Patient's user ID.
+	 * @param int $limit      Max entries to return. Default 5.
+	 * @return array List of `array( 'label' => string, 'date' => string )`, most recent first.
+	 */
+	public static function recent_activity_for_patient( $patient_id, $limit = 5 ) {
+		$entries = array();
+
+		foreach ( self::for_patient( $patient_id ) as $appointment ) {
+			$post      = get_post( $appointment['id'] );
+			$timestamp = $post ? strtotime( $post->post_modified ) : 0;
+
+			$doctor      = $appointment['doctor_id'] > 0 ? get_userdata( $appointment['doctor_id'] ) : false;
+			$doctor_name = '';
+
+			if ( $doctor ) {
+				$doctor_name = trim( $doctor->first_name . ' ' . $doctor->last_name );
+				$doctor_name = '' !== $doctor_name ? $doctor_name : $doctor->display_name;
+			}
+
+			$doctor_name = '' !== $doctor_name ? $doctor_name : __( 'the doctor', 'doctor-ak-portal' );
+
+			if ( self::STATUS_CANCELLED === $appointment['status'] ) {
+				/* translators: %s: doctor's name. */
+				$label = sprintf( __( 'Appointment with Dr. %s was cancelled', 'doctor-ak-portal' ), $doctor_name );
+			} elseif ( self::PAYMENT_STATUS_PAID === $appointment['payment_status'] ) {
+				/* translators: %s: doctor's name. */
+				$label = sprintf( __( 'Payment confirmed for your visit with Dr. %s', 'doctor-ak-portal' ), $doctor_name );
+			} else {
+				/* translators: %s: doctor's name. */
+				$label = sprintf( __( 'Appointment booked with Dr. %s', 'doctor-ak-portal' ), $doctor_name );
+			}
+
+			$entries[] = array(
+				'label'     => $label,
+				'timestamp' => $timestamp,
+				'date'      => $timestamp ? date_i18n( get_option( 'date_format' ), $timestamp ) : '',
+			);
+		}
+
+		usort(
+			$entries,
+			function ( $a, $b ) {
+				return $b['timestamp'] - $a['timestamp'];
+			}
+		);
+
+		return array_slice( $entries, 0, $limit );
+	}
+
+	/**
+	 * Cancels an appointment on the patient's own behalf — used by the
+	 * patient dashboard's "Cancel" action. Ownership-checked: only the
+	 * patient who booked it can cancel it this way (admin cancellation
+	 * would go through Appointments::update() instead).
+	 *
+	 * @param int $appointment_id Appointment post ID.
+	 * @param int $patient_id     Patient's user ID, must match the appointment's owner.
+	 * @return bool
+	 */
+	public static function cancel( $appointment_id, $patient_id ) {
+		$appointment = self::get( $appointment_id );
+
+		if ( empty( $appointment ) || (int) $appointment['patient_id'] !== (int) $patient_id ) {
+			return false;
+		}
+
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_CANCELLED );
+
+		return true;
 	}
 
 	/**
@@ -248,6 +790,29 @@ class Appointments {
 	}
 
 	/**
+	 * Registered patients, for the admin Appointments modal's patient picker.
+	 *
+	 * @return array User ID => display name.
+	 */
+	public static function patient_options() {
+		$query = new \WP_User_Query(
+			array(
+				'role'    => Roles::PATIENT_ROLE,
+				'orderby' => 'display_name',
+				'fields'  => array( 'ID', 'display_name' ),
+			)
+		);
+
+		$options = array();
+
+		foreach ( $query->get_results() as $patient ) {
+			$options[ $patient->ID ] = $patient->display_name;
+		}
+
+		return $options;
+	}
+
+	/**
 	 * Total number of appointments ever booked, for the admin dashboard's
 	 * "Total Appointments" stat card.
 	 *
@@ -257,6 +822,146 @@ class Appointments {
 		$counts = wp_count_posts( self::POST_TYPE );
 
 		return isset( $counts->publish ) ? (int) $counts->publish : 0;
+	}
+
+	/**
+	 * Every appointment across every doctor and patient, most recent first,
+	 * as flat view-model rows ready for the admin "Appointments" table.
+	 *
+	 * @return array
+	 */
+	public static function all_for_admin() {
+		$query = new \WP_Query(
+			array(
+				'post_type'      => self::POST_TYPE,
+				'post_status'    => 'publish',
+				'posts_per_page' => 200,
+				'no_found_rows'  => true,
+			)
+		);
+
+		$appointments = array_map( array( __CLASS__, 'get' ), wp_list_pluck( $query->posts, 'ID' ) );
+
+		usort(
+			$appointments,
+			function ( $a, $b ) {
+				return strcmp( $b['date'] . $b['time'], $a['date'] . $a['time'] );
+			}
+		);
+
+		return array_map( array( __CLASS__, 'admin_row_data' ), $appointments );
+	}
+
+	/**
+	 * Builds a single admin table row from an appointment array — resolves
+	 * the doctor's name and adds human-readable labels for type/status.
+	 *
+	 * @param array $appointment Appointment array from get().
+	 * @return array
+	 */
+	private static function admin_row_data( array $appointment ) {
+		$doctor      = $appointment['doctor_id'] > 0 ? get_userdata( $appointment['doctor_id'] ) : false;
+		$doctor_name = '';
+
+		if ( $doctor ) {
+			$doctor_name = trim( $doctor->first_name . ' ' . $doctor->last_name );
+			$doctor_name = '' !== $doctor_name ? $doctor_name : $doctor->display_name;
+		}
+
+		$patient_name = self::patient_display_name_for( $appointment );
+
+		return array(
+			'id'                => $appointment['id'],
+			'patient_id'        => $appointment['patient_id'],
+			'patient_name'      => $patient_name,
+			'patient_initials'  => self::initials( $patient_name ),
+			'guest_name'        => $appointment['guest_name'],
+			'guest_email'       => $appointment['guest_email'],
+			'guest_phone'       => $appointment['guest_phone'],
+			'doctor_id'         => $appointment['doctor_id'],
+			'doctor_name'       => '' !== $doctor_name ? $doctor_name : __( 'Unknown Doctor', 'doctor-ak-portal' ),
+			'doctor_email'      => $doctor ? $doctor->user_email : '',
+			'type'              => $appointment['type'],
+			'type_label'        => self::type_label( $appointment['type'] ),
+			'date'              => $appointment['date'],
+			'time'              => $appointment['time'],
+			'status'            => $appointment['status'],
+			'status_label'      => self::status_label( $appointment['status'] ),
+			'status_badge_class' => self::status_badge_class( $appointment['status'] ),
+			'payment_status'    => $appointment['payment_status'],
+			'is_paid'           => self::PAYMENT_STATUS_PAID === $appointment['payment_status'],
+			'payment_mode'      => $appointment['payment_mode'],
+			'service_id'        => $appointment['service_id'],
+			'service_name'      => $appointment['service_name'],
+			'charge'            => $appointment['charge'],
+			'notes'             => $appointment['notes'],
+		);
+	}
+
+	/**
+	 * Every recognised appointment status, slug => label, for the admin
+	 * Edit modal's status <select> and for validating update() input.
+	 *
+	 * @return array
+	 */
+	public static function status_options() {
+		return array(
+			self::STATUS_PENDING         => __( 'Pending', 'doctor-ak-portal' ),
+			self::STATUS_PENDING_PAYMENT => __( 'Pending Payment', 'doctor-ak-portal' ),
+			self::STATUS_CONFIRMED       => __( 'Booked', 'doctor-ak-portal' ),
+			self::STATUS_CANCELLED       => __( 'Cancelled', 'doctor-ak-portal' ),
+			self::STATUS_COMPLETED       => __( 'Completed', 'doctor-ak-portal' ),
+		);
+	}
+
+	/**
+	 * Human-readable label for an appointment status.
+	 *
+	 * @param string $status One of the STATUS_* constants.
+	 * @return string
+	 */
+	private static function status_label( $status ) {
+		$options = self::status_options();
+
+		return isset( $options[ $status ] ) ? $options[ $status ] : $status;
+	}
+
+	/**
+	 * The `dak-status-badge` modifier class for an appointment status.
+	 *
+	 * @param string $status One of the STATUS_* constants.
+	 * @return string
+	 */
+	private static function status_badge_class( $status ) {
+		if ( self::STATUS_CANCELLED === $status ) {
+			return 'is-disabled';
+		}
+
+		if ( self::STATUS_CONFIRMED === $status || self::STATUS_COMPLETED === $status ) {
+			return 'is-active';
+		}
+
+		return 'is-pending';
+	}
+
+	/**
+	 * One or two uppercase initials from a display name, for the admin
+	 * table's avatar circle.
+	 *
+	 * @param string $name Display name.
+	 * @return string
+	 */
+	private static function initials( $name ) {
+		$words    = preg_split( '/\s+/', trim( (string) $name ) );
+		$initials = '';
+
+		foreach ( array_slice( $words, 0, 2 ) as $word ) {
+			if ( '' !== $word ) {
+				$initials .= mb_strtoupper( mb_substr( $word, 0, 1 ) );
+			}
+		}
+
+		return '' !== $initials ? $initials : '?';
 	}
 
 	/**
@@ -449,6 +1154,10 @@ class Appointments {
 			'status'         => get_post_meta( $post->ID, 'doctor_ak_appointment_status', true ),
 			'payment_status' => get_post_meta( $post->ID, 'doctor_ak_appointment_payment_status', true ),
 			'notes'          => get_post_meta( $post->ID, 'doctor_ak_appointment_notes', true ),
+			'service_id'     => (int) get_post_meta( $post->ID, 'doctor_ak_appointment_service_id', true ),
+			'service_name'   => get_post_meta( $post->ID, 'doctor_ak_appointment_service_name', true ),
+			'charge'         => (float) get_post_meta( $post->ID, 'doctor_ak_appointment_charge', true ),
+			'payment_mode'   => get_post_meta( $post->ID, 'doctor_ak_appointment_payment_mode', true ),
 		);
 	}
 

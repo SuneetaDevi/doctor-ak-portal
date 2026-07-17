@@ -23,8 +23,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Class Doctors_Directory
  *
  * A public, unauthenticated grid of every registered doctor, each card
- * linking to their (minimal, v1) public profile and to the global booking
- * modal (Booking_Modal) with that doctor pre-selected.
+ * linking to their (minimal, v1) public profile and to the booking page
+ * (Booking_Page) with that doctor pre-selected.
  */
 class Doctors_Directory {
 

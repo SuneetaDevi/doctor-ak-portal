@@ -337,6 +337,86 @@ class Clinics {
 	}
 
 	/**
+	 * Computes every bookable time slot for a doctor on a given calendar
+	 * date, from that weekday's session(s) of the given type — independent
+	 * of which slots are already booked (see Appointments::available_slots()
+	 * for that). Slot spacing follows each clinic's own configured
+	 * slot_duration_minutes for that day; slots from multiple clinics of the
+	 * same type on the same day are merged and de-duplicated.
+	 *
+	 * @param int    $doctor_id Doctor's user ID.
+	 * @param string $type      'clinic' or 'video' (booking-form type, not TYPE_PHYSICAL/TYPE_VIDEO).
+	 * @param string $date      'YYYY-MM-DD'.
+	 * @return array List of 'HH:MM' strings, sorted ascending.
+	 */
+	public static function slot_grid_for_date( $doctor_id, $type, $date ) {
+		return self::slot_grid_from_clinics( self::get_for_doctor( $doctor_id ), $type, $date );
+	}
+
+	/**
+	 * Same as slot_grid_for_date(), but takes an already-fetched clinics
+	 * list instead of querying — for callers computing many dates at once
+	 * (e.g. Appointments::month_availability_summary()) who fetch a
+	 * doctor's clinics a single time up front instead of once per date.
+	 *
+	 * @param array  $clinics Decoded clinic rows, see get_for_doctor().
+	 * @param string $type    'clinic' or 'video'.
+	 * @param string $date    'YYYY-MM-DD'.
+	 * @return array List of 'HH:MM' strings, sorted ascending.
+	 */
+	public static function slot_grid_from_clinics( array $clinics, $type, $date ) {
+		if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
+			return array();
+		}
+
+		$clinic_type = self::TYPE_VIDEO === $type ? self::TYPE_VIDEO : self::TYPE_PHYSICAL;
+		$weekday     = strtolower( gmdate( 'l', strtotime( $date ) ) );
+		$slots       = array();
+
+		foreach ( $clinics as $clinic ) {
+			if ( $clinic['type'] !== $clinic_type ) {
+				continue;
+			}
+
+			$day = isset( $clinic['sessions'][ $weekday ] ) ? $clinic['sessions'][ $weekday ] : null;
+
+			if ( ! $day || empty( $day['enabled'] ) ) {
+				continue;
+			}
+
+			$slot_duration = (int) $day['slot_duration_minutes'];
+
+			if ( $slot_duration <= 0 ) {
+				continue;
+			}
+
+			$start_minutes = self::time_to_minutes( $day['start'] );
+			$end_minutes   = self::time_to_minutes( $day['end'] );
+
+			for ( $minutes = $start_minutes; $minutes + $slot_duration <= $end_minutes; $minutes += $slot_duration ) {
+				$slots[] = sprintf( '%02d:%02d', intdiv( $minutes, 60 ), $minutes % 60 );
+			}
+		}
+
+		$slots = array_values( array_unique( $slots ) );
+		sort( $slots );
+
+		return $slots;
+	}
+
+	/**
+	 * Converts an 'HH:MM' time string to minutes since midnight.
+	 *
+	 * @param string $time 'HH:MM'.
+	 * @return int
+	 */
+	private static function time_to_minutes( $time ) {
+		$parts = array_map( 'intval', explode( ':', $time ) );
+
+		return ( isset( $parts[0] ) ? $parts[0] * 60 : 0 ) + ( isset( $parts[1] ) ? $parts[1] : 0 );
+	}
+
+	/**
 	 * Whether a doctor has at least one active (has an enabled day) video
 	 * clinic entry — replaces the old `doctor_ak_video_consultation` boolean.
 	 *

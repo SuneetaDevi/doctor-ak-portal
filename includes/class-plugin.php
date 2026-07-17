@@ -10,17 +10,21 @@ namespace DoctorAKPortal\Includes;
 use DoctorAKPortal\Admin\Swich_Settings;
 use DoctorAKPortal\Frontend\Admin_Dashboard;
 use DoctorAKPortal\Frontend\Admin_User_Handler;
+use DoctorAKPortal\Frontend\Appointment_Handler;
 use DoctorAKPortal\Frontend\Booking_Handler;
-use DoctorAKPortal\Frontend\Booking_Modal;
+use DoctorAKPortal\Frontend\Booking_Page;
+use DoctorAKPortal\Frontend\Booking_Trigger;
 use DoctorAKPortal\Frontend\Clinic_Handler;
 use DoctorAKPortal\Frontend\Doctor_Dashboard;
 use DoctorAKPortal\Frontend\Doctor_Profile_View;
 use DoctorAKPortal\Frontend\Doctors_Directory;
 use DoctorAKPortal\Frontend\Forgot_Password_Handler;
 use DoctorAKPortal\Frontend\Login_Handler;
+use DoctorAKPortal\Frontend\Patient_Appointment_Handler;
 use DoctorAKPortal\Frontend\Patient_Dashboard;
 use DoctorAKPortal\Frontend\Profile_Handler;
 use DoctorAKPortal\Frontend\Registration_Handler;
+use DoctorAKPortal\Frontend\Service_Handler;
 use DoctorAKPortal\Frontend\Shortcodes;
 use DoctorAKPortal\Frontend\Site_Header;
 use DoctorAKPortal\Frontend\Theme_Handler;
@@ -149,13 +153,19 @@ class Plugin {
 		$this->loader->add_action( 'wp_enqueue_scripts', $doctors_directory, 'enqueue_assets' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $doctor_profile_view, 'enqueue_assets' );
 
-		$booking_modal = new Booking_Modal( new Template_Loader() );
-		$this->loader->add_action( 'wp_enqueue_scripts', $booking_modal, 'enqueue_assets' );
-		$this->loader->add_action( 'wp_footer', $booking_modal, 'render' );
+		$booking_page = new Booking_Page( new Template_Loader() );
+		$this->loader->add_action( 'wp_enqueue_scripts', $booking_page, 'enqueue_assets' );
+
+		$booking_trigger = new Booking_Trigger();
+		$this->loader->add_action( 'wp_enqueue_scripts', $booking_trigger, 'enqueue_assets' );
 
 		$booking_handler = new Booking_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_book_appointment', $booking_handler, 'handle_book_appointment' );
 		$this->loader->add_action( 'wp_ajax_nopriv_doctor_ak_book_appointment', $booking_handler, 'handle_book_appointment' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_available_slots', $booking_handler, 'handle_get_available_slots' );
+		$this->loader->add_action( 'wp_ajax_nopriv_doctor_ak_available_slots', $booking_handler, 'handle_get_available_slots' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_month_availability', $booking_handler, 'handle_get_month_availability' );
+		$this->loader->add_action( 'wp_ajax_nopriv_doctor_ak_month_availability', $booking_handler, 'handle_get_month_availability' );
 
 		$appointments = new Appointments();
 		$this->loader->add_action( 'init', $appointments, 'register_post_type' );
@@ -179,7 +189,23 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_delete_user', $admin_user_handler, 'handle_delete_user' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_toggle_status', $admin_user_handler, 'handle_toggle_status' );
 
-		$shortcodes = new Shortcodes( $doctor_dashboard, $patient_dashboard, $profile_handler, $doctors_directory, $doctor_profile_view, $admin_dashboard );
+		$service_handler = new Service_Handler();
+		$this->loader->add_action( 'wp_enqueue_scripts', $service_handler, 'enqueue_assets' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_service_save', $service_handler, 'handle_save_service' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_service_delete', $service_handler, 'handle_delete_service' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_save', $service_handler, 'handle_admin_save_service' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_delete', $service_handler, 'handle_admin_delete_service' );
+
+		$appointment_handler = new Appointment_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointment_save', $appointment_handler, 'handle_admin_save_appointment' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointment_delete', $appointment_handler, 'handle_admin_delete_appointment' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointment_print', $appointment_handler, 'handle_print' );
+
+		$patient_appointment_handler = new Patient_Appointment_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_cancel_appointment', $patient_appointment_handler, 'handle_cancel_appointment' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_pay_now', $patient_appointment_handler, 'handle_pay_now' );
+
+		$shortcodes = new Shortcodes( $doctor_dashboard, $patient_dashboard, $profile_handler, $doctors_directory, $doctor_profile_view, $admin_dashboard, $booking_page );
 		$this->loader->add_action( 'init', $shortcodes, 'register' );
 
 		$specialization_requests = new Specialization_Request();

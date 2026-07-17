@@ -268,7 +268,6 @@
 .dak-field-hint {
 	font-size: 0.82rem !important;
 	color: var( --dak-muted ) !important;
-	background: var( --dak-primary-tint ) !important;
 	border-radius: var( --dak-radius-sm ) !important;
 	padding: 0.6rem 0.8rem !important;
 }

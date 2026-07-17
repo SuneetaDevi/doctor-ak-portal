@@ -1,0 +1,621 @@
+/**
+ * Doctor AK Portal — Booking page ([book_appointment] shortcode).
+ *
+ * Loaded together with doctor-ak-auth.css (design tokens, .dak-field*,
+ * .dak-button*, .dak-alert*). Two-column layout: main flow (doctor/service
+ * cards, calendar, slot cards, confirm form) + a sticky "Your Booking"
+ * summary sidebar.
+ */
+
+.dak-booking-page {
+	max-width: 1100px !important;
+	margin: 0 auto !important;
+	padding: 2.5rem 1.5rem 4rem !important;
+}
+
+.dak-booking-page-header {
+	margin-bottom: 1rem !important;
+}
+
+.dak-booking-page-header h1 {
+	margin: 0.35rem 0 0.5rem !important;
+}
+
+.dak-booking-page-header p {
+	color: var( --dak-muted ) !important;
+	margin: 0 !important;
+}
+
+/* Step indicator */
+
+.dak-booking-steps {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 1.5rem !important;
+	list-style: none !important;
+	margin: 0 0 1.5rem !important;
+	padding: 0 !important;
+}
+
+.dak-booking-step {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.5rem !important;
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-booking-step-badge {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 1.5rem !important;
+	height: 1.5rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.78rem !important;
+}
+
+.dak-booking-step.is-complete .dak-booking-step-badge {
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+}
+
+.dak-booking-step.is-complete .dak-booking-step-badge::before {
+	content: '\2713' !important;
+}
+
+.dak-booking-step.is-active {
+	color: var( --dak-text ) !important;
+}
+
+.dak-booking-step.is-active .dak-booking-step-badge {
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+}
+
+/* Layout */
+
+.dak-booking-layout {
+	display: grid !important;
+	grid-template-columns: 1fr 320px !important;
+	gap: 1.5rem !important;
+	align-items: start !important;
+}
+
+.dak-booking-main {
+	min-width: 0 !important;
+}
+
+.dak-booking-card {
+	background: var( --dak-bg-card ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	padding: 1.5rem !important;
+	margin-bottom: 1.25rem !important;
+}
+
+.dak-booking-card-title {
+	margin: 0 0 1rem !important;
+	font-size: 0.78rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.04em !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-booking-field-label {
+	font-size: 0.82rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	margin: 1.25rem 0 0.6rem !important;
+}
+
+/* Doctor cards */
+
+.dak-booking-doctor-cards {
+	display: grid !important;
+	grid-template-columns: repeat( auto-fill, minmax( 220px, 1fr ) ) !important;
+	gap: 0.75rem !important;
+}
+
+.dak-booking-doctor-card {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.65rem !important;
+	text-align: left !important;
+	padding: 0.85rem !important;
+	border-radius: var( --dak-radius-md ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	cursor: pointer !important;
+}
+
+.dak-booking-doctor-card:hover {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-booking-doctor-card.is-selected {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary-tint ) !important;
+}
+
+.dak-booking-doctor-avatar {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 2.5rem !important;
+	height: 2.5rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+	font-weight: 700 !important;
+	font-size: 0.9rem !important;
+	overflow: hidden !important;
+}
+
+.dak-booking-doctor-avatar img {
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+}
+
+.dak-booking-doctor-info {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.15rem !important;
+	min-width: 0 !important;
+}
+
+.dak-booking-doctor-info strong {
+	font-size: 0.9rem !important;
+	color: var( --dak-text ) !important;
+	white-space: nowrap !important;
+	overflow: hidden !important;
+	text-overflow: ellipsis !important;
+}
+
+.dak-booking-doctor-specialization {
+	font-size: 0.78rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+/* Appointment type segmented control */
+
+.dak-booking-segmented {
+	display: inline-flex !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 999px !important;
+	overflow: hidden !important;
+	width: 100% !important;
+}
+
+.dak-booking-segment {
+	flex: 1 1 0 !important;
+	padding: 0.6rem 1rem !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-weight: 600 !important;
+	font-size: 0.88rem !important;
+	cursor: pointer !important;
+	border: none !important;
+}
+
+.dak-booking-segment + .dak-booking-segment {
+	border-left: 1px solid var( --dak-border ) !important;
+}
+
+.dak-booking-segment.is-active {
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+}
+
+.dak-booking-segment:disabled {
+	color: var( --dak-muted ) !important;
+	cursor: not-allowed !important;
+	opacity: 0.6 !important;
+}
+
+/* Service cards */
+
+.dak-booking-service-cards {
+	display: grid !important;
+	grid-template-columns: repeat( auto-fill, minmax( 150px, 1fr ) ) !important;
+	gap: 0.75rem !important;
+}
+
+.dak-booking-service-card {
+	text-align: left !important;
+	padding: 0.85rem !important;
+	border-radius: var( --dak-radius-md ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	cursor: pointer !important;
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.3rem !important;
+}
+
+.dak-booking-service-card:hover {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-booking-service-card.is-selected {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary-tint ) !important;
+	width:fit-content;
+}
+
+.dak-booking-service-card strong {
+	font-size: 0.88rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-booking-service-card span {
+	font-size: 0.78rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+/* Calendar */
+
+.dak-booking-calendar-toolbar {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	flex-wrap: wrap !important;
+	gap: 0.5rem !important;
+	margin-bottom: 0.75rem !important;
+}
+
+.dak-booking-calendar-toolbar .dak-booking-card-title {
+	margin: 0 !important;
+}
+
+.dak-booking-quick-dates {
+	display: flex !important;
+	gap: 0.4rem !important;
+}
+
+.dak-booking-quick-date {
+	padding: 0.3rem 0.75rem !important;
+	border-radius: 999px !important;
+	border: 1px solid var( --dak-border ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.78rem !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+}
+
+.dak-booking-quick-date:hover {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-booking-calendar-header {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	margin-bottom: 1rem !important;
+}
+
+.dak-booking-calendar-title {
+	font-weight: 700 !important;
+	font-size: 0.95rem !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-booking-calendar-weekdays,
+.dak-booking-calendar-grid {
+	display: grid !important;
+	grid-template-columns: repeat( 7, 1fr ) !important;
+	gap: 0.3rem !important;
+}
+
+.dak-booking-calendar-weekdays {
+	margin-bottom: 0.5rem !important;
+}
+
+.dak-booking-calendar-weekdays span {
+	text-align: center !important;
+	font-size: 0.7rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-muted ) !important;
+	text-transform: uppercase !important;
+}
+
+.dak-booking-calendar-day {
+	aspect-ratio: 1 / 1 !important;
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 0.15rem !important;
+	border: 1px solid transparent !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.85rem !important;
+	cursor: pointer !important;
+}
+
+.dak-booking-calendar-day:hover:not(:disabled) {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-booking-calendar-day:disabled {
+	background: transparent !important;
+	color: var( --dak-muted ) !important;
+	opacity: 0.4 !important;
+	cursor: not-allowed !important;
+}
+
+.dak-booking-calendar-day.dak-booking-calendar-day-empty {
+	visibility: hidden !important;
+	cursor: default !important;
+}
+
+.dak-booking-calendar-day.is-selected {
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+	font-weight: 700 !important;
+}
+
+.dak-booking-calendar-day .dak-booking-dot {
+	margin-top: 0 !important;
+}
+
+.dak-booking-dot {
+	display: inline-block !important;
+	width: 5px !important;
+	height: 5px !important;
+	border-radius: 999px !important;
+}
+
+.dak-booking-dot.is-many { background: #2fae5a !important; }
+.dak-booking-dot.is-few { background: #e0a72c !important; }
+.dak-booking-dot.is-full { background: var( --dak-border ) !important; }
+
+.dak-booking-calendar-legend,
+.dak-booking-legend {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 1rem !important;
+	margin-top: 1rem !important;
+	font-size: 0.78rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-booking-legend {
+	margin-bottom: 1.25rem !important;
+	margin-top: 0 !important;
+}
+
+.dak-booking-legend-item {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+}
+
+.dak-booking-legend-swatch {
+	display: inline-block !important;
+	width: 0.8rem !important;
+	height: 0.8rem !important;
+	border-radius: 4px !important;
+	border: 1px solid var( --dak-border ) !important;
+}
+
+.dak-booking-legend-swatch.is-available { background: #e3f6e8 !important; border-color: #a7e0b6 !important; }
+.dak-booking-legend-swatch.is-booked { background: #fbeaea !important; border-color: #f0b8b8 !important; }
+.dak-booking-legend-swatch.is-past { background: var( --dak-bg-subtle ) !important; }
+.dak-booking-legend-swatch.is-selected { background: var( --dak-primary ) !important; border-color: var( --dak-primary ) !important; }
+
+/* Time slots, grouped morning/afternoon/evening */
+
+.dak-booking-slots-toolbar {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	flex-wrap: wrap !important;
+	gap: 0.5rem !important;
+	margin-bottom: 1rem !important;
+}
+
+.dak-booking-slots-toolbar .dak-booking-card-title {
+	margin: 0 !important;
+}
+
+.dak-booking-slot-group {
+	margin-bottom: 1rem !important;
+}
+
+.dak-booking-slot-group-label {
+	font-size: 0.75rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.04em !important;
+	color: var( --dak-muted ) !important;
+	margin-bottom: 0.5rem !important;
+}
+
+.dak-booking-slots-grid {
+	display: grid !important;
+	grid-template-columns: repeat( auto-fill, minmax( 90px, 1fr ) ) !important;
+	gap: 0.5rem !important;
+}
+
+.dak-booking-slot-card {
+	display: block !important;
+	width: 100% !important;
+	padding: 0.55rem 0.5rem !important;
+	border-radius: var( --dak-radius-md ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	background: var( --dak-bg-card ) !important;
+	font-size: 0.82rem !important;
+	font-weight: 600 !important;
+	text-align: center !important;
+	cursor: pointer !important;
+}
+
+.dak-booking-slot-card.is-available {
+	background: #e3f6e8 !important;
+	border-color: #a7e0b6 !important;
+	color: #157a3c !important;
+}
+
+.dak-booking-slot-card.is-available:hover {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-booking-slot-card.is-booked {
+	background: #fbeaea !important;
+	border-color: #f0b8b8 !important;
+	color: #b42323 !important;
+	cursor: not-allowed !important;
+}
+
+.dak-booking-slot-card.is-past {
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+	cursor: not-allowed !important;
+	text-decoration: line-through !important;
+}
+
+.dak-booking-slot-card.is-selected {
+	background: var( --dak-primary ) !important;
+	border-color: var( --dak-primary ) !important;
+	color: #fff !important;
+	text-decoration: none !important;
+}
+
+/* Sidebar summary */
+
+.dak-booking-sidebar {
+	position: sticky !important;
+	top: 1.5rem !important;
+}
+
+.dak-booking-summary-card {
+	background: var( --dak-bg-card ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	padding: 1.5rem !important;
+}
+
+.dak-booking-summary-card h3 {
+	margin: 0 0 1rem !important;
+	font-size: 0.78rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.04em !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-booking-summary-list {
+	list-style: none !important;
+	margin: 0 0 1rem !important;
+	padding: 0 !important;
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.65rem !important;
+}
+
+.dak-booking-summary-list li {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 0.5rem !important;
+	font-size: 0.85rem !important;
+}
+
+.dak-booking-summary-list li.dak-hidden {
+	display: none !important;
+}
+
+.dak-booking-summary-icon {
+	flex: 0 0 auto !important;
+}
+
+.dak-booking-summary-empty {
+	font-size: 0.82rem !important;
+	padding: 0 !important;
+	text-align: left !important;
+}
+
+.dak-booking-summary-total {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	border-top: 1px solid var( --dak-border ) !important;
+	padding-top: 0.85rem !important;
+	margin: 0.5rem 0 1rem !important;
+	font-weight: 700 !important;
+}
+
+.dak-booking-summary-note {
+	font-size: 0.75rem !important;
+	color: var( --dak-muted ) !important;
+	text-align: center !important;
+	margin: 0.75rem 0 0 !important;
+}
+
+/* Small icon buttons (calendar prev/next) — scoped locally since this page
+   doesn't load the full dashboard stylesheet. */
+.dak-booking-page .dak-icon-button {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 2rem !important;
+	height: 2rem !important;
+	flex: 0 0 auto !important;
+	border-radius: 999px !important;
+	border: 1px solid var( --dak-border ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 1.2rem !important;
+	line-height: 1 !important;
+	cursor: pointer !important;
+}
+
+.dak-booking-page .dak-icon-button svg {
+	width: 1rem !important;
+	height: 1rem !important;
+}
+
+.dak-booking-page .dak-icon-button:hover {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-booking-page .dak-icon-button:disabled {
+	opacity: 0.4 !important;
+	cursor: not-allowed !important;
+}
+
+.dak-booking-page .dak-empty-state {
+	text-align: center !important;
+	color: var( --dak-muted ) !important;
+	padding: 1.5rem 0 !important;
+}
+
+@media ( max-width: 860px ) {
+	.dak-booking-layout {
+		grid-template-columns: 1fr !important;
+	}
+
+	.dak-booking-sidebar {
+		position: static !important;
+	}
+}
+
+@media ( max-width: 480px ) {
+	.dak-booking-page {
+		padding: 2rem 1rem 3rem !important;
+	}
+
+	.dak-booking-doctor-cards {
+		grid-template-columns: 1fr !important;
+	}
+}

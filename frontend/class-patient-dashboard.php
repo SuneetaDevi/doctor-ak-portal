@@ -7,6 +7,7 @@
 
 namespace DoctorAKPortal\Frontend;
 
+use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Roles;
@@ -33,6 +34,13 @@ class Patient_Dashboard {
 	 * @var string
 	 */
 	const SHORTCODE_TAG = 'patient_dashboard';
+
+	/**
+	 * Nonce action for the dashboard's Pay Now / Cancel AJAX actions.
+	 *
+	 * @var string
+	 */
+	const NONCE_ACTION = 'doctor_ak_patient_dashboard';
 
 	/**
 	 * Template loader.
@@ -74,12 +82,38 @@ class Patient_Dashboard {
 			Assets::version( 'assets/css/doctor-ak-dashboard.css' )
 		);
 
+		wp_enqueue_style(
+			'doctor-ak-portal-patient-dashboard',
+			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-patient-dashboard.css',
+			array( 'doctor-ak-portal-dashboard' ),
+			Assets::version( 'assets/css/doctor-ak-patient-dashboard.css' )
+		);
+
 		wp_enqueue_script(
 			'doctor-ak-portal-dashboard',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-dashboard.js',
 			array(),
 			Assets::version( 'assets/js/doctor-ak-dashboard.js' ),
 			true
+		);
+
+		wp_enqueue_script(
+			'doctor-ak-portal-patient-dashboard',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-patient-dashboard.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-patient-dashboard.js' ),
+			true
+		);
+
+		wp_localize_script(
+			'doctor-ak-portal-patient-dashboard',
+			'dakPatientDashboard',
+			array(
+				'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
+				'nonce'          => wp_create_nonce( self::NONCE_ACTION ),
+				'confirmCancel'  => __( 'Cancel this appointment? This cannot be undone.', 'doctor-ak-portal' ),
+				'genericError'   => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
+			)
 		);
 	}
 
@@ -141,23 +175,68 @@ class Patient_Dashboard {
 		$profile_picture_id = (int) get_user_meta( $user->ID, 'doctor_ak_profile_picture_id', true );
 
 		$completion_checks = array(
-			'' !== trim( (string) $user->first_name ),
-			'' !== trim( (string) $user->last_name ),
-			is_email( $user->user_email ),
-			'' !== $phone_number,
-			$profile_picture_id > 0,
+			array(
+				'is_complete' => '' !== trim( (string) $user->first_name ) && '' !== trim( (string) $user->last_name ),
+				'label'       => __( 'Add your full name', 'doctor-ak-portal' ),
+			),
+			array(
+				'is_complete' => is_email( $user->user_email ),
+				'label'       => __( 'Add a valid email address', 'doctor-ak-portal' ),
+			),
+			array(
+				'is_complete' => '' !== $phone_number,
+				'label'       => __( 'Add your phone number', 'doctor-ak-portal' ),
+			),
+			array(
+				'is_complete' => $profile_picture_id > 0,
+				'label'       => __( 'Upload a profile photo', 'doctor-ak-portal' ),
+			),
 		);
 
-		$profile_completion = (int) round( ( count( array_filter( $completion_checks ) ) / count( $completion_checks ) ) * 100 );
-		$active_tab         = self::requested_tab();
-		$dashboard_url      = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+		$missing_profile_items = array();
+		$complete_count        = 0;
+
+		foreach ( $completion_checks as $check ) {
+			if ( $check['is_complete'] ) {
+				++$complete_count;
+			} else {
+				$missing_profile_items[] = $check['label'];
+			}
+		}
+
+		$profile_completion = (int) round( ( $complete_count / count( $completion_checks ) ) * 100 );
+		$active_tab          = self::requested_tab();
+		$dashboard_url        = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+		$booking_page_url     = Page_Finder::url_for_shortcode( 'book_appointment' );
+		$dashboard_data       = Appointments::patient_dashboard_data( $user->ID );
+
+		$appointment_groups_html = array();
+
+		foreach ( $dashboard_data['groups'] as $group_key => $rows ) {
+			$appointment_groups_html[ $group_key ] = array_map(
+				function ( $row ) {
+					return $this->template_loader->get_template( 'dashboard/partials/patient-appointment-row.php', array( 'appointment' => $row ) );
+				},
+				$rows
+			);
+		}
 
 		return array(
-			'user'               => $user,
-			'profile_completion' => $profile_completion,
-			'phone_number'       => $phone_number,
-			'profile_url'        => Page_Finder::url_for_shortcode( 'doctor_profile' ),
-			'directory_url'      => Page_Finder::url_for_shortcode( 'doctors_directory' ),
+			'user'                  => $user,
+			'avatar_url'            => self::avatar_url( $user->ID ),
+			'profile_completion'    => $profile_completion,
+			'missing_profile_items' => $missing_profile_items,
+			'phone_number'          => $phone_number,
+			'next_appointment'      => $dashboard_data['next_appointment'],
+			'unpaid_count'          => $dashboard_data['unpaid_count'],
+			'unpaid_total'          => $dashboard_data['unpaid_total'],
+			'appointment_groups'    => $appointment_groups_html,
+			'total_upcoming_count'  => $dashboard_data['total_upcoming_count'],
+			'recent_activity'       => Appointments::recent_activity_for_patient( $user->ID ),
+			'booking_url'           => $booking_page_url,
+			'video_booking_url'     => $booking_page_url ? add_query_arg( 'type', 'video', $booking_page_url ) : '',
+			'profile_url'           => Page_Finder::url_for_shortcode( 'doctor_profile' ),
+			'directory_url'         => Page_Finder::url_for_shortcode( 'doctors_directory' ),
 			'logout_url'         => wp_logout_url( Page_Finder::url_for_shortcode( 'doctor_login' ) ),
 			'theme'              => Theme_Preference::get( $user->ID ),
 			'active_tab'         => $active_tab,
@@ -165,6 +244,26 @@ class Patient_Dashboard {
 			'settings_url'       => $dashboard_url ? add_query_arg( 'tab', 'settings', $dashboard_url ) : '',
 			'settings_tab_html'  => 'settings' === $active_tab ? $this->template_loader->get_template( 'dashboard/partials/dashboard-settings-tab.php' ) : '',
 		);
+	}
+
+	/**
+	 * Resolves the patient's uploaded profile picture, or '' if none set.
+	 *
+	 * @param int $user_id Patient's user ID.
+	 * @return string
+	 */
+	private static function avatar_url( $user_id ) {
+		$picture_id = (int) get_user_meta( $user_id, 'doctor_ak_profile_picture_id', true );
+
+		if ( $picture_id > 0 ) {
+			$url = wp_get_attachment_image_url( $picture_id, 'thumbnail' );
+
+			if ( $url ) {
+				return $url;
+			}
+		}
+
+		return '';
 	}
 
 	/**

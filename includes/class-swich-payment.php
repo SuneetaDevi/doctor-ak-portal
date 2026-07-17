@@ -54,7 +54,9 @@ class Swich_Payment {
 			return $requires_payment;
 		}
 
-		return isset( $data['type'] ) && Appointments::TYPE_VIDEO === $data['type'];
+		$charge = isset( $data['charge'] ) ? (float) $data['charge'] : 0.0;
+
+		return isset( $data['type'] ) && Appointments::TYPE_VIDEO === $data['type'] && $charge > 0;
 	}
 
 	/**
@@ -100,8 +102,8 @@ class Swich_Payment {
 
 		update_post_meta( $appointment_id, self::META_TRANSACTION_ID, $customer_transaction_id );
 
-		$item     = 'VideoConsultation';
-		$amount   = number_format( (float) $config['fee'], 2, '.', '' );
+		$item     = '' !== $appointment['service_name'] ? $appointment['service_name'] : 'VideoConsultation';
+		$amount   = number_format( (float) $appointment['charge'], 2, '.', '' );
 		$checksum = hash_hmac( 'sha256', 'Swich:' . $customer_transaction_id . ':' . $item . ':' . $amount, $config['pwa_secret_key'] );
 
 		$params = array(
