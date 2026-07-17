@@ -1,0 +1,197 @@
+/**
+ * Doctor AK Portal — Doctor dashboard "Clinics" tab.
+ *
+ * Loaded together with doctor-ak-auth.css/doctor-ak-registration.css, which
+ * provide the shared design tokens, form field styles (.dak-field*), the
+ * availability grid (.dak-availability-row/-start/-end/-sep) and button
+ * primitives (.dak-button*) this stylesheet builds on.
+ */
+
+.dak-clinics-list {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 1rem !important;
+	margin-bottom: 1rem !important;
+}
+
+.dak-clinic-card {
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	padding: 1.25rem !important;
+}
+
+.dak-clinic-card-summary {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 0.85rem !important;
+}
+
+.dak-clinic-card-icon {
+	flex-shrink: 0 !important;
+	width: 36px !important;
+	height: 36px !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-clinic-card-icon svg {
+	width: 18px !important;
+	height: 18px !important;
+}
+
+.dak-clinic-card-info {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+}
+
+.dak-clinic-card-name {
+	display: block !important;
+	font-size: 0.98rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-clinic-card-meta {
+	display: block !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.85rem !important;
+	margin: 0.15rem 0 0.5rem !important;
+}
+
+.dak-clinic-card-days:empty {
+	display: none !important;
+}
+
+.dak-clinic-card-actions {
+	display: flex !important;
+	gap: 0.4rem !important;
+	flex-shrink: 0 !important;
+}
+
+/*
+ * Self-contained icon-button styling (border, size, svg sizing, hover) so
+ * these buttons don't depend on doctor-ak-admin-dashboard.css (which isn't
+ * loaded on the doctor dashboard) or collide with the unrelated, borderless
+ * .dak-icon-button used by the dashboard topbar (doctor-ak-dashboard.css).
+ */
+.dak-clinic-card-actions .dak-icon-button {
+	width: 32px !important;
+	height: 32px !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-muted ) !important;
+	padding: 0 !important;
+	cursor: pointer !important;
+}
+
+.dak-clinic-card-actions .dak-icon-button svg {
+	width: 16px !important;
+	height: 16px !important;
+}
+
+.dak-clinic-card-actions .dak-icon-button:hover {
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-clinic-card-actions .dak-icon-button-danger:hover {
+	background: #fbeaea !important;
+	color: var( --dak-danger ) !important;
+	border-color: var( --dak-danger ) !important;
+}
+
+.dak-clinic-card-form {
+	margin-top: 1rem !important;
+	padding-top: 1rem !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+.dak-clinic-sessions-grid {
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	overflow: hidden !important;
+}
+
+.dak-clinic-sessions-grid .dak-availability-row {
+	display: grid !important;
+	grid-template-columns: 108px 78px 10px 78px 74px !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+	flex-wrap: nowrap !important;
+	padding: 0.3rem 0.6rem !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+.dak-clinic-sessions-grid .dak-availability-row:last-child {
+	border-bottom: 0 !important;
+}
+
+.dak-clinic-sessions-grid .dak-availability-row-header {
+	padding: 0.4rem 0.6rem !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-availability-col-label {
+	font-size: 0.72rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.03em !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-clinic-sessions-grid .dak-checkbox {
+	font-size: 0.85rem !important;
+}
+
+.dak-clinic-sessions-grid .dak-availability-start,
+.dak-clinic-sessions-grid .dak-availability-end {
+	padding: 0.3rem 0.4rem !important;
+	font-size: 0.8rem !important;
+}
+
+.dak-clinic-sessions-grid .dak-availability-sep {
+	text-align: center !important;
+}
+
+.dak-clinic-slot-duration {
+	width: 100% !important;
+	padding: 0.3rem 0.4rem !important;
+	font-size: 0.8rem !important;
+}
+
+.dak-clinic-card-form-actions {
+	display: flex !important;
+	gap: 0.6rem !important;
+	margin-top: 1rem !important;
+}
+
+.dak-clinic-card-form-actions .dak-button {
+	width: auto !important;
+}
+
+#dak-clinic-add {
+	width: auto !important;
+}
+
+@media ( max-width: 480px ) {
+	.dak-clinic-sessions-grid {
+		overflow-x: auto !important;
+	}
+
+	.dak-clinic-sessions-grid .dak-availability-row {
+		grid-template-columns: 96px 66px 8px 66px 60px !important;
+		gap: 0.3rem !important;
+		padding: 0.3rem 0.4rem !important;
+	}
+
+	.dak-clinic-sessions-grid .dak-checkbox span {
+		font-size: 0.78rem !important;
+	}
+}

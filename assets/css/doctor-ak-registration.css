@@ -1,0 +1,503 @@
+/**
+ * Doctor AK Portal — Registration form visual styles.
+ *
+ * Loaded together with doctor-ak-auth.css, which provides shared design
+ * tokens (--dak-primary, --dak-border, etc.) and primitives (.dak-field,
+ * .dak-alert, .dak-button). This file covers everything specific to the
+ * registration page: the role cards, icon section headers, specialization
+ * multi-select, day-pill availability picker, video-consultation card,
+ * and photo upload control.
+ *
+ * The Edit Profile page (Phase 6) also loads this file as a dependency for
+ * its multi-select and toggle-switch/per-day-availability styles below, so
+ * those are kept here even though the registration form itself has moved
+ * to the day-pill + shared-time model.
+ */
+
+.dak-registration-card {
+}
+
+/* Toggle switch (used by Edit Profile's video consultation field) */
+.dak-toggle-field {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.75rem !important;
+}
+
+.dak-toggle-label {
+	font-size: 0.9rem !important;
+}
+
+.dak-switch {
+	position: relative !important;
+	display: inline-block !important;
+	width: 44px !important;
+	height: 24px !important;
+}
+
+.dak-switch input {
+	position: absolute !important;
+	opacity: 0 !important;
+	width: 100% !important;
+	height: 100% !important;
+	margin: 0 !important;
+	cursor: pointer !important;
+}
+
+.dak-switch-track {
+	position: absolute !important;
+	inset: 0 !important;
+	border-radius: 999px !important;
+	background: var( --dak-border ) !important;
+	pointer-events: none !important;
+	transition: background-color 0.15s ease !important;
+}
+
+.dak-switch-thumb {
+	position: absolute !important;
+	top: 2px !important;
+	left: 2px !important;
+	width: 20px !important;
+	height: 20px !important;
+	border-radius: 50% !important;
+	background: #ffffff !important;
+	box-shadow: 0 1px 3px rgba( 0, 0, 0, 0.2 ) !important;
+	transition: transform 0.15s ease !important;
+}
+
+.dak-switch input:checked ~ .dak-switch-track {
+	background: var( --dak-primary ) !important;
+}
+
+.dak-switch input:checked ~ .dak-switch-track .dak-switch-thumb {
+	transform: translateX( 20px ) !important;
+}
+
+/* Per-day availability grid (used by Edit Profile's Availability tab) */
+.dak-availability-row {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.75rem !important;
+	flex-wrap: wrap !important;
+	padding: 0.5rem 0 !important;
+}
+
+.dak-availability-sep {
+	color: var( --dak-muted ) !important;
+}
+
+/* Role selector cards */
+.dak-role-cards {
+	display: flex !important;
+	gap: 1rem !important;
+	margin-bottom: 1.75rem !important;
+	flex-wrap: wrap !important;
+}
+
+.dak-role-card {
+	position: relative !important;
+	flex: 1 1 240px !important;
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 0.75rem !important;
+	padding: 1rem 1.1rem !important;
+	border: 1.5px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	cursor: pointer !important;
+	transition: border-color 0.15s ease, background-color 0.15s ease !important;
+}
+
+.dak-role-card input {
+	position: absolute !important;
+	opacity: 0 !important;
+	pointer-events: none !important;
+}
+
+.dak-role-card-icon {
+	width: 34px !important;
+	height: 34px !important;
+	flex-shrink: 0 !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	border-radius: 50% !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-role-card-icon svg {
+	width: 18px !important;
+	height: 18px !important;
+}
+
+.dak-role-card-text {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.15rem !important;
+}
+
+.dak-role-card-text strong {
+	font-size: 0.95rem !important;
+}
+
+.dak-role-card-text small {
+	color: var( --dak-muted ) !important;
+	font-size: 0.8rem !important;
+}
+
+.dak-role-card-radio {
+	position: absolute !important;
+	top: 1rem !important;
+	right: 1rem !important;
+	width: 18px !important;
+	height: 18px !important;
+	border-radius: 50% !important;
+	border: 1.5px solid var( --dak-border ) !important;
+}
+
+.dak-role-card.is-selected {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary-tint ) !important;
+}
+
+.dak-role-card.is-selected .dak-role-card-icon {
+	background: var( --dak-primary ) !important;
+	color: #ffffff !important;
+}
+
+.dak-role-card.is-selected .dak-role-card-radio {
+	border-color: var( --dak-primary ) !important;
+	border-width: 5px !important;
+}
+
+/* Section headers */
+.dak-section {
+	margin-bottom: 1.75rem !important;
+}
+
+.dak-section-header {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.6rem !important;
+	margin-bottom: 1.25rem !important;
+	padding-bottom: 0.9rem !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+.dak-section-icon {
+	width: 20px !important;
+	height: 20px !important;
+	flex-shrink: 0 !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	color: var( --dak-primary ) !important;
+}
+
+.dak-section-icon svg {
+	width: 14px !important;
+	height: 14px !important;
+}
+
+.dak-section-header h2 {
+	font-size: 0.72rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.04em !important;
+	margin: 0 !important;
+	color: var( --dak-muted ) !important;
+	line-height: 1.3 !important;
+}
+
+/* Custom multi-select, styled like a bordered dropdown */
+.dak-multiselect {
+	position: relative !important;
+}
+
+.dak-multiselect-control {
+	min-height: 2.6rem !important;
+	display: flex !important;
+	align-items: center !important;
+	flex-wrap: wrap !important;
+	gap: 0.35rem !important;
+	cursor: pointer !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	padding: 0.4rem 0.7rem !important;
+	background: var( --dak-bg-card ) !important;
+}
+
+.dak-multiselect-control:hover {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-multiselect-placeholder {
+	color: var( --dak-muted ) !important;
+	font-size: 0.9rem !important;
+}
+
+.dak-multiselect-chips {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0.35rem !important;
+}
+
+.dak-chip {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.35rem !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+	border-radius: 999px !important;
+	padding: 0.2rem 0.6rem !important;
+	font-size: 0.8rem !important;
+}
+
+.dak-chip-remove {
+	border: 0 !important;
+	background: none !important;
+	cursor: pointer !important;
+	line-height: 1 !important;
+	padding: 0 !important;
+	color: inherit !important;
+}
+
+.dak-multiselect-dropdown {
+	position: absolute !important;
+	top: calc( 100% + 4px ) !important;
+	left: 0 !important;
+	right: 0 !important;
+	z-index: 20 !important;
+	max-height: 260px !important;
+	overflow-y: auto !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+}
+
+.dak-multiselect-search {
+	width: 100% !important;
+	box-sizing: border-box !important;
+	border: 0 !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	padding: 0.6rem 0.8rem !important;
+	font-size: 0.9rem !important;
+}
+
+.dak-multiselect-search:focus {
+	outline: none !important;
+}
+
+.dak-multiselect-options {
+	list-style: none !important;
+	margin: 0 !important;
+	padding: 0.3rem 0 !important;
+}
+
+.dak-multiselect-option {
+	cursor: pointer !important;
+	padding: 0.5rem 0.8rem !important;
+	font-size: 0.9rem !important;
+}
+
+.dak-multiselect-option:hover {
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-multiselect-option.is-selected {
+	color: var( --dak-primary-dark ) !important;
+	font-weight: 600 !important;
+}
+
+/* Consultation preference card */
+.dak-check-card {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 0.75rem !important;
+	border: 1.5px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	padding: 1rem 1.1rem !important;
+	cursor: pointer !important;
+	transition: border-color 0.15s ease, background-color 0.15s ease !important;
+}
+
+.dak-check-card-mark {
+	width: 22px !important;
+	height: 22px !important;
+	flex-shrink: 0 !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	border-radius: 50% !important;
+	border: 1.5px solid var( --dak-border ) !important;
+	color: transparent !important;
+	transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease !important;
+}
+
+.dak-check-card-mark svg {
+	width: 13px !important;
+	height: 13px !important;
+}
+
+.dak-check-card-text {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.15rem !important;
+}
+
+.dak-check-card-text small {
+	color: var( --dak-muted ) !important;
+	font-size: 0.82rem !important;
+}
+
+.dak-check-card.is-selected {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary-tint ) !important;
+}
+
+.dak-check-card.is-selected .dak-check-card-mark {
+	background: var( --dak-primary ) !important;
+	border-color: var( --dak-primary ) !important;
+	color: #ffffff !important;
+}
+
+/* Weekly availability day pills */
+.dak-day-pills {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0.5rem !important;
+	margin-bottom: 1rem !important;
+}
+
+.dak-day-pill {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	min-width: 3rem !important;
+	padding: 0.45rem 0.9rem !important;
+	border-radius: 999px !important;
+	border: 1.5px solid var( --dak-border ) !important;
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-muted ) !important;
+	cursor: pointer !important;
+	transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease !important;
+}
+
+.dak-day-pill.is-selected {
+	background: var( --dak-primary ) !important;
+	border-color: var( --dak-primary ) !important;
+	color: #ffffff !important;
+}
+
+/* Upload control */
+.dak-upload-control {
+	display: flex !important;
+	align-items: center !important;
+	gap: 1rem !important;
+	flex-wrap: wrap !important;
+}
+
+.dak-upload-control-text {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.3rem !important;
+}
+
+.dak-upload-control-text small {
+	color: var( --dak-muted ) !important;
+	font-size: 0.78rem !important;
+}
+
+.dak-button-icon {
+	display: inline-flex !important;
+	width: 14px !important;
+	height: 14px !important;
+}
+
+.dak-button-icon svg {
+	width: 100% !important;
+	height: 100% !important;
+}
+
+.dak-upload-preview {
+	width: 64px !important;
+	height: 64px !important;
+	border-radius: 50% !important;
+	overflow: hidden !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	flex-shrink: 0 !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-upload-preview img {
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+}
+
+.dak-upload-placeholder-icon svg {
+	width: 24px !important;
+	height: 24px !important;
+}
+
+.dak-upload-status {
+	font-size: 0.8rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-terms-hint {
+	font-size: 0.78rem !important;
+	color: var( --dak-muted ) !important;
+	margin-bottom: 1rem !important;
+}
+
+
+/* Modal */
+.dak-modal-overlay {
+	position: fixed !important;
+	inset: 0 !important;
+	z-index: 100 !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	background: rgba( 15, 23, 32, 0.45 ) !important;
+	padding: 1rem !important;
+}
+
+.dak-modal {
+	max-width: 420px !important;
+	width: 100% !important;
+	max-height: 90vh !important;
+	overflow-y: auto !important;
+	background: var( --dak-bg-card ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	padding: 1.5rem !important;
+	box-sizing: border-box !important;
+}
+
+.dak-modal-actions {
+	display: flex !important;
+	justify-content: flex-end !important;
+	gap: 0.75rem !important;
+	margin-top: 1rem !important;
+}
+
+@media ( max-width: 600px ) {
+	.dak-role-cards {
+		flex-direction: column !important;
+	}
+
+	.dak-day-pills {
+		justify-content: space-between !important;
+	}
+
+	.dak-day-pill {
+		flex: 1 1 auto !important;
+	}
+}

@@ -1,0 +1,171 @@
+/**
+ * Doctor AK Portal — Global booking modal.
+ *
+ * Loaded together with doctor-ak-auth.css, which provides the shared design
+ * tokens, form field styles (.dak-field*), button primitives (.dak-button*)
+ * and alert styles (.dak-alert*).
+ */
+
+.dak-modal {
+	position: fixed !important;
+	inset: 0 !important;
+	z-index: 1000 !important;
+	display: none !important;
+	align-items: flex-start !important;
+	justify-content: center !important;
+	padding: 4vh 1rem !important;
+	overflow-y: auto !important;
+}
+
+.dak-modal.is-open {
+	display: flex !important;
+}
+
+body.dak-modal-open {
+	overflow: hidden !important;
+}
+
+.dak-modal-overlay {
+	position: fixed !important;
+	inset: 0 !important;
+	background: rgba( 15, 23, 42, 0.55 ) !important;
+}
+
+.dak-modal-dialog {
+	position: relative !important;
+	width: 100% !important;
+	max-width: 560px !important;
+	background: var( --dak-bg-card ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	padding: 2rem !important;
+	box-sizing: border-box !important;
+}
+
+.dak-modal-close {
+	position: absolute !important;
+	top: 1rem !important;
+	right: 1rem !important;
+	width: 32px !important;
+	height: 32px !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	border: 0 !important;
+	background: none !important;
+	font-size: 1.5rem !important;
+	line-height: 1 !important;
+	color: var( --dak-muted ) !important;
+	cursor: pointer !important;
+}
+
+.dak-modal-close:hover {
+	color: var( --dak-text ) !important;
+}
+
+.dak-modal-header {
+	margin-bottom: 1.25rem !important;
+}
+
+.dak-modal-header h2 {
+	font-size: 1.4rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	margin: 0.3rem 0 0.4rem !important;
+}
+
+.dak-modal-header p {
+	color: var( --dak-muted ) !important;
+	font-size: 0.88rem !important;
+	margin: 0 !important;
+}
+
+.dak-booking-doctor-name {
+	font-size: 0.95rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	background: var( --dak-bg-subtle ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	padding: 0.65rem 0.85rem !important;
+	margin: 0 0 1rem !important;
+}
+
+.dak-booking-tabs {
+	display: flex !important;
+	gap: 0.5rem !important;
+	margin-bottom: 0.5rem !important;
+}
+
+.dak-booking-tab {
+	flex: 1 1 auto !important;
+	padding: 0.6rem 0.5rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.82rem !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+	text-align: center !important;
+}
+
+.dak-booking-tab.is-active {
+	background: var( --dak-primary-tint ) !important;
+	border-color: var( --dak-primary ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-booking-tab.is-disabled {
+	opacity: 0.5 !important;
+	cursor: not-allowed !important;
+}
+
+.dak-booking-identity-choices {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0.5rem !important;
+	margin-top: 0.5rem !important;
+}
+
+.dak-booking-identity-choices .dak-button {
+	flex: 1 1 auto !important;
+}
+
+#dak-booking-identity-loggedin,
+#dak-booking-identity-choice,
+#dak-booking-identity-guest {
+	margin: 1rem 0 !important;
+	padding-top: 1rem !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+@media ( max-width: 640px ) {
+	.dak-modal {
+		padding: 0 !important;
+		align-items: stretch !important;
+	}
+
+	.dak-modal-dialog {
+		width: 100% !important;
+		max-width: none !important;
+		min-height: 100vh !important;
+		min-height: 100dvh !important;
+		border-radius: 0 !important;
+		padding: 1.5rem !important;
+		padding-top: 3.5rem !important;
+		box-shadow: none !important;
+	}
+
+	.dak-modal-close {
+		top: 0.75rem !important;
+		right: 0.75rem !important;
+	}
+
+	.dak-booking-identity-choices {
+		flex-direction: column !important;
+	}
+
+	.dak-booking-identity-choices .dak-button {
+		width: 100% !important;
+	}
+}

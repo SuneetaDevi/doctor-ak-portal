@@ -1,0 +1,287 @@
+/**
+ * Doctor AK Portal — Site-wide header.
+ *
+ * Loaded together with doctor-ak-auth.css, which provides the shared design
+ * tokens (--dak-primary, --dak-border, etc.) and the defensive
+ * text-transform/letter-spacing reset scoped to .dak-portal.
+ */
+
+.dak-site-header {
+	position: sticky !important;
+	top: 0 !important;
+	z-index: 200 !important;
+	background: var( --dak-bg-card ) !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+}
+
+.dak-site-header-inner {
+	max-width: 1200px !important;
+	margin: 0 auto !important;
+	padding: 0.75rem 1.5rem !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: 1.5rem !important;
+}
+
+.dak-site-header-logo {
+	display: flex !important;
+	align-items: center !important;
+	flex-shrink: 0 !important;
+	text-decoration: none !important;
+}
+
+.dak-site-header-logo img {
+	display: block !important;
+	max-height: 48px !important;
+	width: auto !important;
+}
+
+.dak-site-header-logo-text {
+	font-size: 1.15rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-primary ) !important;
+}
+
+.dak-site-header-toggle {
+	display: none !important;
+	flex-direction: column !important;
+	justify-content: space-between !important;
+	width: 24px !important;
+	height: 18px !important;
+	border: 0 !important;
+	background: none !important;
+	cursor: pointer !important;
+	padding: 0 !important;
+	margin-left: auto !important;
+}
+
+.dak-site-header-toggle span {
+	display: block !important;
+	height: 2px !important;
+	width: 100% !important;
+	background: var( --dak-text ) !important;
+}
+
+.dak-site-header-nav {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+}
+
+.dak-site-header-menu {
+	list-style: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.35rem !important;
+	flex-wrap: wrap !important;
+}
+
+.dak-site-header-menu .menu-item {
+	position: relative !important;
+}
+
+.dak-site-header-menu a {
+	display: block !important;
+	padding: 0.6rem 0.85rem !important;
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+	text-decoration: none !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	white-space: nowrap !important;
+}
+
+.dak-site-header-menu > .menu-item > a:hover {
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+/* "Book Appointment" (last top-level item with children) rendered as a solid button */
+.dak-site-header-menu > .menu-item.menu-item-has-children:last-child > a {
+	background: var( --dak-primary ) !important;
+	color: #ffffff !important;
+}
+
+.dak-site-header-menu > .menu-item.menu-item-has-children:last-child > a:hover {
+	background: var( --dak-primary-dark ) !important;
+	color: #ffffff !important;
+}
+
+.dak-site-header-menu .sub-menu {
+	list-style: none !important;
+	margin: 0 !important;
+	padding: 0.4rem !important;
+	position: absolute !important;
+	top: 100% !important;
+	right: 0 !important;
+	min-width: 220px !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	opacity: 0 !important;
+	visibility: hidden !important;
+	transform: translateY( 6px ) !important;
+	transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s !important;
+}
+
+.dak-site-header-menu .menu-item-has-children:hover > .sub-menu,
+.dak-site-header-menu .menu-item-has-children.is-open > .sub-menu {
+	opacity: 1 !important;
+	visibility: visible !important;
+	transform: translateY( 0 ) !important;
+}
+
+.dak-site-header-menu .sub-menu a {
+	color: var( --dak-text ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+}
+
+.dak-site-header-menu .sub-menu a:hover {
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+/* Auth area */
+.dak-site-header-auth {
+	position: relative !important;
+	flex-shrink: 0 !important;
+	margin-left: auto !important;
+}
+
+.dak-site-header-account-link {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+	padding: 0.55rem 1rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 999px !important;
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+	text-decoration: none !important;
+	white-space: nowrap !important;
+}
+
+.dak-site-header-account-link:hover {
+	border-color: var( --dak-primary ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-site-header-account-icon {
+	display: inline-flex !important;
+	width: 16px !important;
+	height: 16px !important;
+}
+
+.dak-site-header-account-icon svg {
+	width: 100% !important;
+	height: 100% !important;
+}
+
+.dak-site-header-account {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.5rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 999px !important;
+	background: none !important;
+	padding: 0.35rem 0.9rem 0.35rem 0.35rem !important;
+	cursor: pointer !important;
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-site-header-account:hover {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-site-header-avatar {
+	width: 28px !important;
+	height: 28px !important;
+	border-radius: 50% !important;
+	object-fit: cover !important;
+}
+
+.dak-site-header-account-menu {
+	position: absolute !important;
+	top: calc( 100% + 8px ) !important;
+	right: 0 !important;
+	min-width: 200px !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	padding: 0.4rem !important;
+	display: none !important;
+	flex-direction: column !important;
+	gap: 0.15rem !important;
+}
+
+.dak-site-header-account-menu.is-open {
+	display: flex !important;
+}
+
+.dak-site-header-account-menu a {
+	padding: 0.55rem 0.7rem !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+	text-decoration: none !important;
+}
+
+.dak-site-header-account-menu a:hover {
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+@media ( max-width: 900px ) {
+	.dak-site-header-toggle {
+		display: flex !important;
+	}
+
+	.dak-site-header-nav {
+		flex-basis: 100% !important;
+		order: 3 !important;
+		display: none !important;
+	}
+
+	.dak-site-header-nav.is-open {
+		display: block !important;
+	}
+
+	.dak-site-header-menu {
+		flex-direction: column !important;
+		align-items: stretch !important;
+		gap: 0.15rem !important;
+		padding: 0.5rem 0 !important;
+	}
+
+	.dak-site-header-menu > .menu-item.menu-item-has-children:last-child > a {
+		background: var( --dak-bg-subtle ) !important;
+		color: var( --dak-text ) !important;
+	}
+
+	.dak-site-header-menu .sub-menu {
+		position: static !important;
+		opacity: 1 !important;
+		visibility: visible !important;
+		transform: none !important;
+		box-shadow: none !important;
+		border: 0 !important;
+		display: none !important;
+		padding-left: 1rem !important;
+	}
+
+	.dak-site-header-menu .menu-item-has-children.is-open > .sub-menu {
+		display: block !important;
+	}
+
+	.dak-site-header-inner {
+		flex-wrap: wrap !important;
+	}
+}

@@ -1,0 +1,54 @@
+/**
+ * Doctor AK Portal — Edit Profile structural styles.
+ *
+ * Loaded together with doctor-ak-auth.css and doctor-ak-registration.css,
+ * which provide the shared field/alert/multiselect/availability/upload
+ * primitives this page reuses. This file covers the profile/availability
+ * tab switcher and the standalone [doctor_profile] page's header — the
+ * doctor dashboard's embedded "Profile"/"Availability" tabs reuse the same
+ * tab-switcher classes without the header.
+ */
+
+.dak-profile-header {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	flex-wrap: wrap !important;
+	gap: 0.5rem !important;
+}
+
+.dak-profile-tabs {
+	display: flex !important;
+	gap: 1.5rem !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	margin-bottom: 1.5rem !important;
+}
+
+.dak-profile-tab {
+	border: 0 !important;
+	border-bottom: 2px solid transparent !important;
+	background: none !important;
+	cursor: pointer !important;
+	padding: 0 0 0.75rem !important;
+	margin-bottom: -1px !important;
+	font-size: 0.9rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-profile-tab.is-active {
+	color: var( --dak-primary-dark ) !important;
+	border-bottom-color: var( --dak-primary ) !important;
+}
+
+.dak-profile-tab-panel {
+	display: none !important;
+}
+
+.dak-profile-tab-panel.is-active {
+	display: block !important;
+}
+
+.dak-field-hint {
+	font-size: 0.85em !important;
+}

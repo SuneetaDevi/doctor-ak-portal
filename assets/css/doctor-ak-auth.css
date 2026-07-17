@@ -1,0 +1,393 @@
+/**
+ * Doctor AK Portal — Shared visual + structural styles for auth pages
+ * (registration, login, forgot/reset password).
+ *
+ * Design tokens here match the plugin's premium healthcare brief: white
+ * background, light grey sections, rounded cards/inputs, soft shadows,
+ * green primary / teal secondary accents. Full dashboard/profile styling
+ * follows in the rest of Phase 7 — this file covers the pieces shared by
+ * every auth page.
+ */
+
+/*
+ * Defensive reset: many themes/page builders (Elementor global typography
+ * kits especially) apply text-transform/line-height/letter-spacing to every
+ * heading, paragraph, label and span inside the content area. Since this
+ * markup can be dropped into any theme via the shortcode, we forcibly reset
+ * those properties here and re-apply only the ones this design actually
+ * wants (see .dak-eyebrow, .dak-section-header h2, etc. below).
+ */
+.dak-portal,
+.dak-portal * {
+	text-transform: none !important;
+	letter-spacing: normal !important;
+}
+
+.dak-portal {
+	--dak-primary: #7fb52d;
+	--dak-primary-dark: #6a9a24;
+	--dak-primary-tint: #f1f8e6;
+	--dak-secondary: #16b6a5;
+	--dak-text: #1f2933;
+	--dak-muted: #6b7280;
+	--dak-border: #e3e6ea;
+	--dak-bg-page: #f7f8fa;
+	--dak-bg-card: #ffffff;
+	--dak-bg-subtle: #f5f6f8;
+	--dak-danger: #d64545;
+	--dak-radius-lg: 16px;
+	--dak-radius-md: 10px;
+	--dak-radius-sm: 8px;
+	--dak-shadow: 0 4px 20px rgba( 20, 30, 40, 0.06 );
+
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+	color: var( --dak-text ) !important;
+}
+
+/*
+ * Dark theme: only the three dashboards (Admin/Doctor/Patient) support the
+ * toggle (see assets/js/doctor-ak-theme-toggle.js), so these overrides are
+ * scoped to `.dak-dashboard[data-theme="dark"]` rather than `.dak-portal`
+ * globally — auth pages, the directory and the booking modal stay light.
+ */
+.dak-portal.dak-dashboard[data-theme='dark'] {
+	--dak-primary-tint: #16210f;
+	--dak-text: #e9eaec;
+	--dak-muted: #9198a3;
+	--dak-border: #26282c;
+	--dak-bg-page: #000000;
+	--dak-bg-card: #0d0e10;
+	--dak-bg-subtle: #17181b;
+	--dak-shadow: 0 4px 20px rgba( 0, 0, 0, 0.6 );
+}
+
+.dak-auth-page {
+	display: flex !important;
+	justify-content: center !important;
+	padding: 2.5rem 1rem !important;
+}
+
+.dak-auth-card {
+	width: 100% !important;
+	background: var( --dak-bg-card ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	padding: 2rem !important;
+	box-sizing: border-box !important;
+}
+
+.dak-auth-header {
+	text-align: center !important;
+	margin-bottom: 1.5rem !important;
+}
+
+.dak-eyebrow {
+	display: inline-block !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+	font-size: 0.72rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.06em !important;
+	padding: 0.3rem 0.9rem !important;
+	border-radius: 999px !important;
+	margin-bottom: 0.85rem !important;
+}
+
+.dak-auth-header h1 {
+	font-size: 1.6rem !important;
+	font-weight: 700 !important;
+	margin: 0 0 0.5rem !important;
+}
+
+.dak-auth-header h1 .dak-accent {
+	color: var( --dak-primary ) !important;
+}
+
+.dak-auth-header p {
+	color: var( --dak-muted ) !important;
+	margin: 0 !important;
+	font-size: 0.95rem !important;
+}
+
+.dak-hidden {
+	display: none !important;
+}
+
+.dak-visually-hidden {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	padding: 0 !important;
+	margin: -1px !important;
+	overflow: hidden !important;
+	clip: rect( 0, 0, 0, 0 ) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
+}
+
+.dak-field-row {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 1rem !important;
+}
+
+.dak-field-row .dak-field {
+	flex: 1 1 240px !important;
+}
+
+.dak-field {
+	position: relative !important;
+	margin-bottom: 1.1rem !important;
+}
+
+.dak-field label,
+.dak-field-label {
+	display: flex !important;
+	align-items: center !important;
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+	margin-bottom: 0.4rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-required {
+	color: var( --dak-danger ) !important;
+}
+
+.dak-field-icon {
+	display: inline-flex !important;
+	width: 15px !important;
+	height: 15px !important;
+	margin-right: 0.4rem !important;
+	flex-shrink: 0 !important;
+}
+
+.dak-field-icon svg {
+	width: 100% !important;
+	height: 100% !important;
+}
+
+.dak-field-icon-email { color: var( --dak-primary ) !important; }
+.dak-field-icon-experience { color: #a855f7 !important; }
+.dak-field-icon-specialization { color: var( --dak-secondary ) !important; }
+.dak-field-icon-location { color: #f97316 !important; }
+.dak-field-icon-phone { color: #3b82f6 !important; }
+
+.dak-field input[type='text'],
+.dak-field input[type='email'],
+.dak-field input[type='password'],
+.dak-field input[type='tel'],
+.dak-field input[type='number'],
+.dak-field input[type='time'],
+.dak-field select {
+	width: 100% !important;
+	box-sizing: border-box !important;
+	padding: 0.65rem 0.85rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.95rem !important;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.dak-field input:focus,
+.dak-field select:focus {
+	outline: none !important;
+	border-color: var( --dak-primary ) !important;
+	box-shadow: 0 0 0 3px var( --dak-primary-tint ) !important;
+}
+
+.dak-password-field {
+	position: relative !important;
+}
+
+.dak-password-field input[type='password'],
+.dak-password-field input[type='text'] {
+	padding-right: 2.6rem !important;
+}
+
+.dak-password-toggle {
+	position: absolute !important;
+	top: 50% !important;
+	right: 0.65rem !important;
+	transform: translateY( -50% ) !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 1.75rem !important;
+	height: 1.75rem !important;
+	padding: 0 !important;
+	border: 0 !important;
+	background: none !important;
+	color: var( --dak-muted ) !important;
+	cursor: pointer !important;
+}
+
+.dak-password-toggle:hover {
+	color: var( --dak-text ) !important;
+}
+
+.dak-password-toggle svg {
+	width: 18px !important;
+	height: 18px !important;
+}
+
+.dak-password-toggle .dak-icon-eye-off {
+	display: none !important;
+}
+
+.dak-password-field.is-visible .dak-icon-eye {
+	display: none !important;
+}
+
+.dak-password-field.is-visible .dak-icon-eye-off {
+	display: block !important;
+}
+
+.dak-field-inline {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	flex-wrap: wrap !important;
+	gap: 0.75rem !important;
+}
+
+.dak-field-error {
+	display: none !important;
+	font-size: 0.8rem !important;
+	color: var( --dak-danger ) !important;
+	margin-top: 0.3rem !important;
+}
+
+.dak-field-error.is-visible {
+	display: block !important;
+}
+
+.dak-field-hint {
+	font-size: 0.82rem !important;
+	color: var( --dak-muted ) !important;
+	background: var( --dak-primary-tint ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	padding: 0.6rem 0.8rem !important;
+}
+
+.dak-alert {
+	padding: 0.75rem 1rem !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	font-size: 0.9rem !important;
+	margin-bottom: 1rem !important;
+}
+
+.dak-alert-success {
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-alert-error {
+	background: #fdecec !important;
+	color: var( --dak-danger ) !important;
+}
+
+.dak-checkbox {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+}
+
+.dak-link,
+.dak-link-button {
+	display: inline !important;
+	color: var( --dak-secondary ) !important;
+	text-decoration: none !important;
+	text-transform: none !important;
+	letter-spacing: normal !important;
+	font-size: 0.85rem !important;
+	font-weight: 400 !important;
+	line-height: normal !important;
+	background: none !important;
+	background-color: transparent !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+	width: auto !important;
+	min-width: 0 !important;
+	height: auto !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	cursor: pointer !important;
+}
+
+.dak-link:hover,
+.dak-link-button:hover {
+	text-decoration: underline !important;
+}
+
+.dak-form-footer-link {
+	text-align: center !important;
+	font-size: 0.88rem !important;
+	color: var( --dak-muted ) !important;
+	margin: 1rem 0 0 !important;
+}
+
+.dak-button {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 0.5rem !important;
+	border: 1px solid transparent !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	padding: 0.75rem 1.25rem !important;
+	font-size: 0.95rem !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+	transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.05s ease !important;
+}
+
+.dak-button:active {
+	transform: scale( 0.98 ) !important;
+}
+
+.dak-button-primary {
+	background: var( --dak-primary ) !important;
+	border-color: var( --dak-primary ) !important;
+	color: #ffffff !important;
+}
+
+.dak-button-primary:hover {
+	background: var( --dak-primary-dark ) !important;
+	border-color: var( --dak-primary-dark ) !important;
+}
+
+.dak-button-secondary {
+	background: var( --dak-bg-card ) !important;
+	border-color: var( --dak-border ) !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-button-secondary:hover {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-button-block {
+	display: flex !important;
+	width: 100% !important;
+}
+
+.dak-button-small {
+	padding: 0.45rem 0.9rem !important;
+	font-size: 0.85rem !important;
+}
+
+.dak-button.is-loading {
+	opacity: 0.7 !important;
+	pointer-events: none !important;
+}
+
+@media ( max-width: 600px ) {
+	.dak-auth-card {
+		padding: 1.5rem !important;
+		border-radius: var( --dak-radius-md ) !important;
+	}
+}

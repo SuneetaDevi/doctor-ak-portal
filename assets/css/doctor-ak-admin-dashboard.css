@@ -1,0 +1,169 @@
+/**
+ * Doctor AK Portal — Administrator dashboard (Users: Doctors/Patients).
+ *
+ * Loaded together with doctor-ak-auth.css and doctor-ak-dashboard.css, which
+ * provide the shared design tokens, sidebar/nav layout (.dak-dashboard-nav,
+ * .dak-nav-icon, .dak-stat-card, etc.), form field styles (.dak-field*),
+ * button primitives (.dak-button*) and alert styles (.dak-alert*). This
+ * stylesheet only adds what those don't already cover: grouped sidebar
+ * section labels, the accounts table, status badges, row action buttons
+ * and the "coming soon" placeholder card.
+ */
+
+.dak-nav-group {
+	margin-bottom: 1rem !important;
+}
+
+.dak-nav-group-label {
+	display: block !important;
+	padding: 0 0.75rem !important;
+	margin-bottom: 0.35rem !important;
+	font-size: 0.7rem !important;
+	font-weight: 700 !important;
+	letter-spacing: 0.06em !important;
+	color: var( --dak-muted ) !important;
+	opacity: 0.8 !important;
+}
+
+.dak-stat-value-pending {
+	font-size: 0.95rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-admin-placeholder-card {
+	text-align: center !important;
+	padding: 3rem 1.5rem !important;
+}
+
+.dak-admin-users-header {
+	display: flex !important;
+	align-items: flex-start !important;
+	justify-content: space-between !important;
+	gap: 1rem !important;
+	flex-wrap: wrap !important;
+}
+
+.dak-admin-users-card {
+	padding: 0 !important;
+	overflow: hidden !important;
+}
+
+.dak-table-scroll {
+	overflow-x: auto !important;
+}
+
+.dak-admin-users-table {
+	width: 100% !important;
+	border-collapse: collapse !important;
+}
+
+.dak-admin-users-table th,
+.dak-admin-users-table td {
+	padding: 0.9rem 1.25rem !important;
+	text-align: left !important;
+	font-size: 0.88rem !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	white-space: nowrap !important;
+}
+
+.dak-admin-users-table th {
+	color: var( --dak-muted ) !important;
+	font-weight: 600 !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-admin-users-table td {
+	color: var( --dak-text ) !important;
+}
+
+.dak-admin-users-table tbody tr:last-child td {
+	border-bottom: 0 !important;
+}
+
+.dak-status-badge {
+	display: inline-flex !important;
+	align-items: center !important;
+	padding: 0.25rem 0.65rem !important;
+	border-radius: 999px !important;
+	font-size: 0.76rem !important;
+	font-weight: 700 !important;
+}
+
+.dak-status-badge.is-active {
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-status-badge.is-disabled {
+	background: #fbeaea !important;
+	color: var( --dak-danger ) !important;
+}
+
+.dak-admin-users-actions-col {
+	white-space: nowrap !important;
+	width: 1% !important;
+}
+
+.dak-admin-users-actions {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+	flex-wrap: nowrap !important;
+}
+
+.dak-icon-button {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 32px !important;
+	height: 32px !important;
+	border: 1px solid var( --dak-border ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-muted ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	padding: 0 !important;
+	cursor: pointer !important;
+	transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease !important;
+}
+
+.dak-icon-button svg {
+	width: 16px !important;
+	height: 16px !important;
+}
+
+.dak-icon-button:hover {
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-icon-button-success:hover {
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-icon-button-warning:hover {
+	background: #fff4e5 !important;
+	color: #b45309 !important;
+	border-color: #b45309 !important;
+}
+
+.dak-icon-button-danger:hover {
+	background: #fbeaea !important;
+	color: var( --dak-danger ) !important;
+	border-color: var( --dak-danger ) !important;
+}
+
+@media ( max-width: 782px ) {
+	.dak-admin-users-table th,
+	.dak-admin-users-table td {
+		white-space: normal !important;
+	}
+
+	.dak-admin-users-actions-col,
+	.dak-admin-users-actions {
+		white-space: nowrap !important;
+	}
+}

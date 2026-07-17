@@ -1,0 +1,197 @@
+/**
+ * Doctor AK Portal — Doctors directory grid + public profile view.
+ *
+ * Loaded together with doctor-ak-auth.css, which provides the shared design
+ * tokens (--dak-primary, --dak-border, etc.), button primitives
+ * (.dak-button*), and the defensive text-transform/letter-spacing reset.
+ */
+
+.dak-directory {
+	max-width: 1200px !important;
+	margin: 0 auto !important;
+	padding: 2rem 1.5rem !important;
+}
+
+.dak-directory-header {
+	text-align: center !important;
+	margin-bottom: 2rem !important;
+}
+
+.dak-directory-header h1 {
+	font-size: 1.75rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	margin: 0 0 0.5rem !important;
+}
+
+.dak-directory-header p {
+	color: var( --dak-muted ) !important;
+	margin: 0 !important;
+}
+
+.dak-directory-grid {
+	display: grid !important;
+	grid-template-columns: repeat( auto-fill, minmax( 250px, 1fr ) ) !important;
+	gap: 1.5rem !important;
+}
+
+.dak-doctor-card {
+	position: relative !important;
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: center !important;
+	text-align: center !important;
+	gap: 0.5rem !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	padding: 1.5rem 1.25rem !important;
+}
+
+.dak-doctor-card-badge {
+	position: absolute !important;
+	top: 0.9rem !important;
+	right: 0.9rem !important;
+	padding: 0.2rem 0.6rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+	font-size: 0.68rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.03em !important;
+}
+
+/* .dak-avatar base rules (normally defined in doctor-ak-dashboard.css, which
+   isn't loaded on these public-facing pages) */
+.dak-avatar {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	flex-shrink: 0 !important;
+	border-radius: 50% !important;
+	overflow: hidden !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-avatar img {
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+}
+
+.dak-avatar-lg {
+	width: 84px !important;
+	height: 84px !important;
+	margin-bottom: 0.25rem !important;
+}
+
+.dak-avatar-lg svg {
+	width: 40px !important;
+	height: 40px !important;
+}
+
+.dak-doctor-card-name {
+	font-size: 1.05rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	margin: 0 !important;
+}
+
+.dak-doctor-card-specialties {
+	justify-content: center !important;
+}
+
+.dak-doctor-card-location {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 0.35rem !important;
+	font-size: 0.82rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-doctor-card-location .dak-location-icon {
+	display: inline-flex !important;
+	flex-shrink: 0 !important;
+	width: 14px !important;
+	height: 14px !important;
+	color: var( --dak-secondary ) !important;
+}
+
+.dak-doctor-card-location .dak-location-icon svg {
+	width: 100% !important;
+	height: 100% !important;
+}
+
+.dak-doctor-card-actions {
+	display: flex !important;
+	align-items: stretch !important;
+	gap: 0.5rem !important;
+	width: 100% !important;
+	margin-top: 0.5rem !important;
+}
+
+.dak-doctor-card-actions .dak-button-block {
+	flex: 1 1 auto !important;
+}
+
+.dak-doctor-card-book {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 42px !important;
+	padding: 0 !important;
+}
+
+.dak-doctor-card-book svg {
+	width: 18px !important;
+	height: 18px !important;
+}
+
+/* Public profile view ([doctor_profile_view]) */
+.dak-doctor-profile-view {
+	max-width: 420px !important;
+	margin: 0 auto !important;
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: center !important;
+	text-align: center !important;
+	gap: 0.6rem !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	padding: 2rem 1.5rem !important;
+}
+
+.dak-doctor-profile-view h1 {
+	font-size: 1.4rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	margin: 0 !important;
+}
+
+.dak-doctor-profile-view-experience {
+	color: var( --dak-muted ) !important;
+	font-size: 0.88rem !important;
+	margin: 0 !important;
+}
+
+.dak-doctor-profile-view .dak-button {
+	margin-top: 0.5rem !important;
+}
+
+@media ( max-width: 480px ) {
+	.dak-doctor-card-actions {
+		flex-direction: column !important;
+	}
+
+	.dak-doctor-card-book {
+		width: 100% !important;
+	}
+}
