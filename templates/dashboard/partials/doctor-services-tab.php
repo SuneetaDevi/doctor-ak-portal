@@ -17,7 +17,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $dak_service_icons = array(
 	'pin'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18s6-5.2 6-9.8A6 6 0 0 0 4 8.2C4 12.8 10 18 10 18z"/><circle cx="10" cy="8" r="2"/></svg>',
-	'video'  => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="11" height="10" rx="1.5"/><path d="M13 8.3l5-2.8v9l-5-2.8"/></svg>',
 	'edit'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 3.5a1.7 1.7 0 0 1 2.4 2.4L6.5 15.3l-3 .7.7-3 9.3-9.3z"/></svg>',
 	'delete' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h12M8 6V4.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V6M6 6l.6 9a1.5 1.5 0 0 0 1.5 1.4h3.8a1.5 1.5 0 0 0 1.5-1.4L14 6"/></svg>',
 );
@@ -44,7 +43,7 @@ $dak_service_icons = array(
 				<?php foreach ( $services as $service ) : ?>
 					<tr>
 						<td data-label="<?php esc_attr_e( 'Service', 'doctor-ak-portal' ); ?>">
-							<span class="dak-clinic-card-icon" aria-hidden="true"><?php echo $dak_service_icons[ 'video' === $service['type'] ? 'video' : 'pin' ]; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<span class="dak-clinic-card-icon" aria-hidden="true"><?php echo $dak_service_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 							<?php echo esc_html( $service['name'] ); ?>
 						</td>
 						<td data-label="<?php esc_attr_e( 'Charges', 'doctor-ak-portal' ); ?>">
@@ -66,7 +65,6 @@ $dak_service_icons = array(
 									class="dak-icon-button"
 									data-service-edit
 									data-service-id="<?php echo esc_attr( $service['id'] ); ?>"
-									data-type="<?php echo esc_attr( $service['type'] ); ?>"
 									data-name="<?php echo esc_attr( $service['name'] ); ?>"
 									data-category="<?php echo esc_attr( $service['category'] ); ?>"
 									data-charge="<?php echo esc_attr( $service['charge'] ); ?>"
@@ -110,19 +108,10 @@ $dak_service_icons = array(
 
 		<input type="hidden" id="dak-service-id" value="0">
 
-		<div class="dak-field-row">
-			<div class="dak-field">
-				<label for="dak-service-type"><?php esc_html_e( 'Type', 'doctor-ak-portal' ); ?></label>
-				<select id="dak-service-type">
-					<option value="clinic"><?php esc_html_e( 'Onsite (Clinic)', 'doctor-ak-portal' ); ?></option>
-					<option value="video"><?php esc_html_e( 'Online (Video)', 'doctor-ak-portal' ); ?></option>
-				</select>
-			</div>
-			<div class="dak-field">
-				<label for="dak-service-name"><?php esc_html_e( 'Service Name', 'doctor-ak-portal' ); ?></label>
-				<input type="text" id="dak-service-name" placeholder="<?php esc_attr_e( 'e.g. OPD Consultation', 'doctor-ak-portal' ); ?>">
-				<span class="dak-field-error" data-field="name"></span>
-			</div>
+		<div class="dak-field">
+			<label for="dak-service-name"><?php esc_html_e( 'Service Name', 'doctor-ak-portal' ); ?></label>
+			<input type="text" id="dak-service-name" placeholder="<?php esc_attr_e( 'e.g. OPD Consultation', 'doctor-ak-portal' ); ?>">
+			<span class="dak-field-error" data-field="name"></span>
 		</div>
 
 		<div class="dak-field">

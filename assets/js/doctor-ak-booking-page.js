@@ -30,6 +30,7 @@
 		wireQuickDates();
 		wireContinueButton();
 		wireGuestToggle();
+		wirePaymentChoice();
 		wireSubmit();
 
 		renderCalendar();
@@ -117,6 +118,12 @@
 
 		show( document.getElementById( 'dak-booking-clinic-hint' ) );
 		document.getElementById( 'dak-booking-clinic-hint' ).classList.toggle( 'dak-hidden', 'clinic' !== type );
+
+		var serviceSection = document.getElementById( 'dak-booking-service-section' );
+
+		if ( serviceSection ) {
+			serviceSection.classList.toggle( 'dak-hidden', 'video' === type );
+		}
 	}
 
 	function updateVideoAvailability( videoDisabled ) {
@@ -148,17 +155,21 @@
 		}
 
 		document.getElementById( 'dak-booking-service-id' ).value = '';
-
-		var services = window.dakBookingPage.services && window.dakBookingPage.services[ doctorId ]
-			? window.dakBookingPage.services[ doctorId ][ type ]
-			: null;
-
 		container.innerHTML = '';
 
 		if ( ! doctorId ) {
 			container.innerHTML = '<p class="dak-field-hint">Select a doctor to see their services.</p>';
 			return;
 		}
+
+		if ( 'video' === type ) {
+			updateVideoPriceCard( container, doctorId );
+			return;
+		}
+
+		var services = window.dakBookingPage.services && window.dakBookingPage.services[ doctorId ]
+			? window.dakBookingPage.services[ doctorId ][ type ]
+			: null;
 
 		if ( ! services || ! services.length ) {
 			container.innerHTML = '<p class="dak-field-hint">No specific services configured — you can still book a general appointment.</p>';
@@ -200,6 +211,46 @@
 				selectService( card );
 			}
 		} );
+	}
+
+	function updateVideoPriceCard( container, doctorId ) {
+		var pricing = window.dakBookingPage.videoPricing ? window.dakBookingPage.videoPricing[ doctorId ] : null;
+
+		if ( ! pricing || ! ( pricing.base_price > 0 ) ) {
+			container.innerHTML = '<p class="dak-field-hint">No fixed price configured yet — you can still book a free video consultation.</p>';
+			return;
+		}
+
+		var card = document.createElement( 'div' );
+		card.className = 'dak-booking-service-card is-selected is-fixed-price';
+		card.setAttribute( 'data-service-id', '0' );
+		card.setAttribute( 'data-service-name', 'Video Consultation' );
+		card.setAttribute( 'data-service-charge', pricing.final_price );
+		card.setAttribute( 'data-service-duration', '0' );
+
+		var nameEl = document.createElement( 'strong' );
+		nameEl.textContent = 'Video Consultation';
+
+		var metaEl = document.createElement( 'span' );
+
+		if ( pricing.discount_active ) {
+			var strike = document.createElement( 's' );
+			strike.textContent = 'PKR' + pricing.base_price;
+
+			metaEl.appendChild( strike );
+			metaEl.appendChild( document.createTextNode(
+				' PKR' + pricing.final_price + ' · ' + pricing.discount_percent + '% off, ends ' + pricing.discount_ends_at
+			) );
+		} else {
+			metaEl.textContent = pricing.final_price > 0 ? 'PKR' + pricing.final_price : 'Free';
+		}
+
+		card.appendChild( nameEl );
+		card.appendChild( metaEl );
+		container.appendChild( card );
+
+		document.getElementById( 'dak-booking-service-id' ).value = '0';
+		clearFieldError( 'service_id' );
 	}
 
 	function selectService( card ) {
@@ -662,6 +713,41 @@
 		var totalEl = document.getElementById( 'dak-booking-summary-total-amount' );
 		var charge = serviceCard ? parseFloat( serviceCard.getAttribute( 'data-service-charge' ) ) : 0;
 		totalEl.textContent = hasDoctor ? ( charge > 0 ? 'PKR' + charge : 'Free' ) : '—';
+
+		updatePaymentButtons( type, charge );
+	}
+
+	function updatePaymentButtons( type, charge ) {
+		var singleWrap = document.getElementById( 'dak-booking-submit-single' );
+		var choiceWrap = document.getElementById( 'dak-booking-submit-choice' );
+
+		if ( ! singleWrap || ! choiceWrap ) {
+			return;
+		}
+
+		// "Pay Now" / "Pay Later" is a choice only for clinic (onsite) visits.
+		// Video consultations always require payment upfront — a single
+		// "Pay Now" button, no "Pay Later" option.
+		var showChoice = 'clinic' === type && charge > 0;
+
+		singleWrap.classList.toggle( 'dak-hidden', showChoice );
+		choiceWrap.classList.toggle( 'dak-hidden', ! showChoice );
+
+		if ( showChoice ) {
+			return;
+		}
+
+		var isPaidVideo = 'video' === type && charge > 0;
+		var paymentChoiceInput = document.getElementById( 'dak-booking-payment-choice' );
+		var singleLabel = singleWrap.querySelector( '.dak-button-label' );
+
+		if ( paymentChoiceInput ) {
+			paymentChoiceInput.value = isPaidVideo ? 'now' : 'later';
+		}
+
+		if ( singleLabel ) {
+			singleLabel.textContent = isPaidVideo ? 'Pay Now' : 'Book Consultation';
+		}
 	}
 
 	/* ---------------------------------------------------------------------
@@ -740,6 +826,14 @@
 		} );
 	}
 
+	function wirePaymentChoice() {
+		document.querySelectorAll( '#dak-booking-submit-choice [data-payment-choice]' ).forEach( function ( button ) {
+			button.addEventListener( 'click', function () {
+				document.getElementById( 'dak-booking-payment-choice' ).value = button.getAttribute( 'data-payment-choice' );
+			} );
+		} );
+	}
+
 	/* ---------------------------------------------------------------------
 	 * Submit
 	 * ------------------------------------------------------------------- */
@@ -762,9 +856,11 @@
 				return;
 			}
 
-			var submitBtn = document.getElementById( 'dak-booking-submit' );
-			submitBtn.disabled = true;
-			submitBtn.classList.add( 'is-loading' );
+			var submitButtons = document.querySelectorAll( '#dak-booking-submit, #dak-booking-pay-later, #dak-booking-pay-now' );
+			submitButtons.forEach( function ( button ) {
+				button.disabled = true;
+				button.classList.add( 'is-loading' );
+			} );
 
 			var formData = new FormData();
 			formData.append( 'action', 'doctor_ak_book_appointment' );
@@ -775,6 +871,7 @@
 			formData.append( 'time', document.getElementById( 'dak-booking-time' ).value );
 			formData.append( 'notes', document.getElementById( 'dak-booking-notes' ).value );
 			formData.append( 'service_id', document.getElementById( 'dak-booking-service-id' ).value );
+			formData.append( 'payment_choice', document.getElementById( 'dak-booking-payment-choice' ).value );
 
 			var guestBlockVisible = ! document.getElementById( 'dak-booking-identity-guest' ).classList.contains( 'dak-hidden' );
 
@@ -787,8 +884,10 @@
 			fetch( window.dakBookingPage.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
 				.then( function ( response ) { return response.json(); } )
 				.then( function ( result ) {
-					submitBtn.disabled = false;
-					submitBtn.classList.remove( 'is-loading' );
+					submitButtons.forEach( function ( button ) {
+						button.disabled = false;
+						button.classList.remove( 'is-loading' );
+					} );
 
 					if ( result.success ) {
 						form.querySelectorAll( 'input, select, textarea, button' ).forEach( function ( field ) {
@@ -818,8 +917,10 @@
 					}
 				} )
 				.catch( function () {
-					submitBtn.disabled = false;
-					submitBtn.classList.remove( 'is-loading' );
+					submitButtons.forEach( function ( button ) {
+						button.disabled = false;
+						button.classList.remove( 'is-loading' );
+					} );
 
 					var errorAlert = document.getElementById( 'dak-booking-error' );
 					errorAlert.textContent = 'Something went wrong. Please try again.';

@@ -82,11 +82,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<p class="dak-field-hint" id="dak-booking-clinic-hint"><?php esc_html_e( 'Clinic address shared upon confirmation.', 'doctor-ak-portal' ); ?></p>
 					<p class="dak-field-hint dak-hidden" id="dak-booking-video-unavailable"><?php esc_html_e( 'This doctor does not offer online video consultations.', 'doctor-ak-portal' ); ?></p>
 
-					<div class="dak-booking-field-label"><?php esc_html_e( 'Service', 'doctor-ak-portal' ); ?></div>
-					<div class="dak-booking-service-cards" id="dak-booking-service-cards">
-						<p class="dak-field-hint" id="dak-booking-no-services"><?php esc_html_e( 'Select a doctor to see their services.', 'doctor-ak-portal' ); ?></p>
+					<div id="dak-booking-service-section" class="<?php echo 'video' === $selected_type ? 'dak-hidden' : ''; ?>">
+						<div class="dak-booking-field-label"><?php esc_html_e( 'Service', 'doctor-ak-portal' ); ?></div>
+						<div class="dak-booking-service-cards" id="dak-booking-service-cards">
+							<p class="dak-field-hint" id="dak-booking-no-services"><?php esc_html_e( 'Select a doctor to see their services.', 'doctor-ak-portal' ); ?></p>
+						</div>
+						<span class="dak-field-error" data-field="service_id"></span>
 					</div>
-					<span class="dak-field-error" data-field="service_id"></span>
 				</section>
 
 				<section class="dak-booking-card">
@@ -193,9 +195,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<textarea id="dak-booking-notes" name="notes" rows="2"></textarea>
 					</div>
 
-					<button type="submit" class="dak-button dak-button-primary dak-button-block" id="dak-booking-submit">
-						<span class="dak-button-label"><?php esc_html_e( 'Book Consultation', 'doctor-ak-portal' ); ?></span>
-					</button>
+					<input type="hidden" name="payment_choice" id="dak-booking-payment-choice" value="later">
+
+					<div id="dak-booking-submit-single">
+						<button type="submit" class="dak-button dak-button-primary dak-button-block" id="dak-booking-submit">
+							<span class="dak-button-label"><?php esc_html_e( 'Book Consultation', 'doctor-ak-portal' ); ?></span>
+						</button>
+					</div>
+
+					<div class="dak-booking-payment-choice dak-hidden" id="dak-booking-submit-choice">
+						<p class="dak-field-hint"><?php esc_html_e( 'This appointment has a charge. Pay now online, or book now and pay at the clinic.', 'doctor-ak-portal' ); ?></p>
+						<button type="submit" class="dak-button dak-button-secondary dak-button-block" id="dak-booking-pay-later" data-payment-choice="later">
+							<span class="dak-button-label"><?php esc_html_e( 'Book Now — Pay Later', 'doctor-ak-portal' ); ?></span>
+						</button>
+						<button type="submit" class="dak-button dak-button-primary dak-button-block" id="dak-booking-pay-now" data-payment-choice="now">
+							<span class="dak-button-label"><?php esc_html_e( 'Pay Now', 'doctor-ak-portal' ); ?></span>
+						</button>
+					</div>
 				</section>
 
 			</div>

@@ -6,7 +6,12 @@
  *
  * @package DoctorAKPortal\Templates
  *
- * @var array $appointments Rows from Appointments::all_for_admin().
+ * @var array  $appointments         Rows from Appointments::all_for_admin().
+ * @var string $filtered_patient     Name of the patient being filtered to, or '' if unfiltered.
+ * @var string $appointments_url     Unfiltered URL of this section, for the filter form and "Clear filter" link.
+ * @var array  $status_options       Status slug => label, see Appointments::status_options().
+ * @var array  $payment_mode_options Payment mode slug => label, see Appointments::payment_mode_options().
+ * @var array  $filters              Active filter values: patient_id, date, status, payment_mode.
  */
 
 // Prevent direct file access.
@@ -28,6 +33,66 @@ $dak_appt_icons = array(
 	</div>
 	<button type="button" class="dak-button dak-button-primary" id="dak-admin-appointment-add"><?php esc_html_e( '+ Add Appointment', 'doctor-ak-portal' ); ?></button>
 </div>
+
+<?php if ( '' !== $filtered_patient ) : ?>
+	<div class="dak-alert dak-alert-success">
+		<?php
+		echo esc_html(
+			sprintf(
+				/* translators: %s: patient's name. */
+				__( 'Showing appointments for %s.', 'doctor-ak-portal' ),
+				$filtered_patient
+			)
+		);
+		?>
+		<?php if ( $appointments_url ) : ?>
+			<a class="dak-link" href="<?php echo esc_url( $appointments_url ); ?>"><?php esc_html_e( 'Clear filter', 'doctor-ak-portal' ); ?></a>
+		<?php endif; ?>
+	</div>
+<?php endif; ?>
+
+<?php
+$dak_appt_has_filters = '' !== $filters['date'] || '' !== $filters['status'] || '' !== $filters['payment_mode'];
+?>
+<section class="dak-dashboard-card">
+	<form method="get" action="<?php echo esc_url( $appointments_url ); ?>" class="dak-field-row">
+		<?php if ( $filters['patient_id'] > 0 ) : ?>
+			<input type="hidden" name="patient_id" value="<?php echo esc_attr( $filters['patient_id'] ); ?>">
+		<?php endif; ?>
+
+		<div class="dak-field">
+			<label for="dak-admin-appointments-filter-date"><?php esc_html_e( 'Date', 'doctor-ak-portal' ); ?></label>
+			<input type="date" id="dak-admin-appointments-filter-date" name="date" value="<?php echo esc_attr( $filters['date'] ); ?>">
+		</div>
+
+		<div class="dak-field">
+			<label for="dak-admin-appointments-filter-status"><?php esc_html_e( 'Status', 'doctor-ak-portal' ); ?></label>
+			<select id="dak-admin-appointments-filter-status" name="status">
+				<option value=""><?php esc_html_e( 'All statuses', 'doctor-ak-portal' ); ?></option>
+				<?php foreach ( $status_options as $slug => $label ) : ?>
+					<option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $filters['status'], $slug ); ?>><?php echo esc_html( $label ); ?></option>
+				<?php endforeach; ?>
+			</select>
+		</div>
+
+		<div class="dak-field">
+			<label for="dak-admin-appointments-filter-payment-mode"><?php esc_html_e( 'Payment Mode', 'doctor-ak-portal' ); ?></label>
+			<select id="dak-admin-appointments-filter-payment-mode" name="payment_mode">
+				<option value=""><?php esc_html_e( 'All payment modes', 'doctor-ak-portal' ); ?></option>
+				<?php foreach ( $payment_mode_options as $slug => $label ) : ?>
+					<option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $filters['payment_mode'], $slug ); ?>><?php echo esc_html( $label ); ?></option>
+				<?php endforeach; ?>
+			</select>
+		</div>
+
+		<div class="dak-admin-filter-actions">
+			<button type="submit" class="dak-button dak-button-primary"><?php esc_html_e( 'Filter', 'doctor-ak-portal' ); ?></button>
+			<?php if ( $dak_appt_has_filters ) : ?>
+				<a class="dak-button dak-button-secondary" href="<?php echo esc_url( $filters['patient_id'] > 0 ? add_query_arg( 'patient_id', $filters['patient_id'], $appointments_url ) : $appointments_url ); ?>"><?php esc_html_e( 'Clear', 'doctor-ak-portal' ); ?></a>
+			<?php endif; ?>
+		</div>
+	</form>
+</section>
 
 <section class="dak-dashboard-card dak-admin-users-card">
 <?php if ( empty( $appointments ) ) : ?>

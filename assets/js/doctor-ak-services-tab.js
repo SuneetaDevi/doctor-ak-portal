@@ -24,7 +24,6 @@
 
 	function resetModalFields() {
 		document.getElementById( 'dak-service-id' ).value = '0';
-		document.getElementById( 'dak-service-type' ).value = 'clinic';
 		document.getElementById( 'dak-service-name' ).value = '';
 		document.getElementById( 'dak-service-category' ).value = '';
 		document.getElementById( 'dak-service-charge' ).value = '0';
@@ -93,7 +92,6 @@
 			setModalTitle( 'Edit Service' );
 
 			document.getElementById( 'dak-service-id' ).value = trigger.getAttribute( 'data-service-id' ) || '0';
-			document.getElementById( 'dak-service-type' ).value = trigger.getAttribute( 'data-type' ) || 'clinic';
 			document.getElementById( 'dak-service-name' ).value = trigger.getAttribute( 'data-name' ) || '';
 			document.getElementById( 'dak-service-category' ).value = trigger.getAttribute( 'data-category' ) || '';
 			document.getElementById( 'dak-service-charge' ).value = trigger.getAttribute( 'data-charge' ) || '0';
@@ -119,7 +117,6 @@
 			formData.append( 'action', 'doctor_ak_service_save' );
 			formData.append( 'nonce', window.dakServicesTab.nonce );
 			formData.append( 'service_id', document.getElementById( 'dak-service-id' ).value );
-			formData.append( 'type', document.getElementById( 'dak-service-type' ).value );
 			formData.append( 'name', document.getElementById( 'dak-service-name' ).value );
 			formData.append( 'category', document.getElementById( 'dak-service-category' ).value );
 			formData.append( 'charge', document.getElementById( 'dak-service-charge' ).value );

@@ -244,15 +244,22 @@
 }
 
 .dak-patient-appt-row-actions .dak-icon-button {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
 	width: 2rem !important;
 	height: 2rem !important;
+	flex-shrink: 0 !important;
 	cursor: pointer !important;
 	border: none !important;
+	border-radius: 50% !important;
+	padding: 0 !important;
 }
 
 .dak-patient-appt-row-actions .dak-icon-button svg {
-	width: 0.9rem !important;
-	height: 0.9rem !important;
+	width: 1rem !important;
+	height: 1rem !important;
+	flex-shrink: 0 !important;
 }
 
 .dak-patient-appt-row-actions .dak-icon-button-danger {

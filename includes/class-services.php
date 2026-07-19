@@ -58,8 +58,9 @@ class Services {
 			return new \WP_Error( 'doctor_ak_service_name_required', __( 'Please provide a name for this service.', 'doctor-ak-portal' ) );
 		}
 
-		$type = isset( $posted['type'] ) ? sanitize_key( wp_unslash( $posted['type'] ) ) : self::TYPE_CLINIC;
-		$type = self::TYPE_VIDEO === $type ? self::TYPE_VIDEO : self::TYPE_CLINIC;
+		// Services are onsite (clinic) only — video consultations use a
+		// fixed per-doctor price instead (see Video_Pricing).
+		$type = self::TYPE_CLINIC;
 
 		$category = isset( $posted['category'] ) ? sanitize_key( wp_unslash( $posted['category'] ) ) : '';
 

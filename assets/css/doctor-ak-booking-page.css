@@ -17,6 +17,16 @@
 	margin-bottom: 1rem !important;
 }
 
+.dak-booking-payment-choice {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.6rem !important;
+}
+
+.dak-booking-payment-choice.dak-hidden {
+	display: none !important;
+}
+
 .dak-booking-page-header h1 {
 	margin: 0.35rem 0 0.5rem !important;
 }
@@ -249,6 +259,14 @@
 	border-color: var( --dak-primary ) !important;
 	background: var( --dak-primary-tint ) !important;
 	width:fit-content;
+}
+
+.dak-booking-service-card.is-fixed-price {
+	cursor: default !important;
+}
+
+.dak-booking-service-card.is-fixed-price:hover {
+	border-color: var( --dak-primary ) !important;
 }
 
 .dak-booking-service-card strong {

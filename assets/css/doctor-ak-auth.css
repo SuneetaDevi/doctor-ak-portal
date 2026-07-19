@@ -180,6 +180,8 @@
 .dak-field input[type='tel'],
 .dak-field input[type='number'],
 .dak-field input[type='time'],
+.dak-field input[type='date'],
+.dak-field input[type='datetime-local'],
 .dak-field select {
 	width: 100% !important;
 	box-sizing: border-box !important;

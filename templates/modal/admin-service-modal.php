@@ -40,19 +40,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<span class="dak-field-error" data-field="doctor_id"></span>
 		</div>
 
-		<div class="dak-field-row">
-			<div class="dak-field">
-				<label for="dak-admin-service-type"><?php esc_html_e( 'Type', 'doctor-ak-portal' ); ?></label>
-				<select id="dak-admin-service-type">
-					<option value="clinic"><?php esc_html_e( 'Onsite (Clinic)', 'doctor-ak-portal' ); ?></option>
-					<option value="video"><?php esc_html_e( 'Online (Video)', 'doctor-ak-portal' ); ?></option>
-				</select>
-			</div>
-			<div class="dak-field">
-				<label for="dak-admin-service-name"><?php esc_html_e( 'Service Name', 'doctor-ak-portal' ); ?></label>
-				<input type="text" id="dak-admin-service-name" placeholder="<?php esc_attr_e( 'e.g. OPD Consultation', 'doctor-ak-portal' ); ?>">
-				<span class="dak-field-error" data-field="name"></span>
-			</div>
+		<div class="dak-field">
+			<label for="dak-admin-service-name"><?php esc_html_e( 'Service Name', 'doctor-ak-portal' ); ?></label>
+			<input type="text" id="dak-admin-service-name" placeholder="<?php esc_attr_e( 'e.g. OPD Consultation', 'doctor-ak-portal' ); ?>">
+			<span class="dak-field-error" data-field="name"></span>
 		</div>
 
 		<div class="dak-field">

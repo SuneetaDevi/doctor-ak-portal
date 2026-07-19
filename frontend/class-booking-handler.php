@@ -106,12 +106,13 @@ class Booking_Handler {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		$doctor_id  = isset( $_POST['doctor_id'] ) ? absint( $_POST['doctor_id'] ) : 0;
-		$type       = ( isset( $_POST['type'] ) && 'video' === $_POST['type'] ) ? 'video' : 'clinic';
-		$date       = isset( $_POST['date'] ) ? sanitize_text_field( wp_unslash( $_POST['date'] ) ) : '';
-		$time       = isset( $_POST['time'] ) ? sanitize_text_field( wp_unslash( $_POST['time'] ) ) : '';
-		$notes      = isset( $_POST['notes'] ) ? sanitize_textarea_field( wp_unslash( $_POST['notes'] ) ) : '';
-		$service_id = isset( $_POST['service_id'] ) ? absint( $_POST['service_id'] ) : 0;
+		$doctor_id      = isset( $_POST['doctor_id'] ) ? absint( $_POST['doctor_id'] ) : 0;
+		$type           = ( isset( $_POST['type'] ) && 'video' === $_POST['type'] ) ? 'video' : 'clinic';
+		$date           = isset( $_POST['date'] ) ? sanitize_text_field( wp_unslash( $_POST['date'] ) ) : '';
+		$time           = isset( $_POST['time'] ) ? sanitize_text_field( wp_unslash( $_POST['time'] ) ) : '';
+		$notes          = isset( $_POST['notes'] ) ? sanitize_textarea_field( wp_unslash( $_POST['notes'] ) ) : '';
+		$service_id     = isset( $_POST['service_id'] ) ? absint( $_POST['service_id'] ) : 0;
+		$payment_choice = ( isset( $_POST['payment_choice'] ) && 'now' === $_POST['payment_choice'] ) ? 'now' : 'later';
 
 		$errors = array();
 
@@ -151,15 +152,17 @@ class Booking_Handler {
 			}
 		}
 
-		if ( 'video' === $type && empty( $errors ) ) {
+		$requires_online_payment = 'video' === $type || 'now' === $payment_choice;
+
+		if ( $requires_online_payment && empty( $errors ) ) {
 			$phone_for_payment = $is_logged_in_patient ? get_user_meta( $current_user->ID, 'doctor_ak_phone_number', true ) : $guest_phone;
 
 			if ( '' === Swich_Payment::normalize_msisdn( $phone_for_payment ) ) {
 				if ( $is_logged_in_patient ) {
-					wp_send_json_error( array( 'message' => __( 'Please add a valid mobile number (e.g. 03xxxxxxxxx) to your profile before booking an online video consultation.', 'doctor-ak-portal' ) ) );
+					wp_send_json_error( array( 'message' => __( 'Please add a valid mobile number (e.g. 03xxxxxxxxx) to your profile before paying online.', 'doctor-ak-portal' ) ) );
 				}
 
-				$errors['guest_phone'] = __( 'A valid mobile number (e.g. 03xxxxxxxxx) is required to pay for an online video consultation.', 'doctor-ak-portal' );
+				$errors['guest_phone'] = __( 'A valid mobile number (e.g. 03xxxxxxxxx) is required to pay online.', 'doctor-ak-portal' );
 			}
 		}
 
@@ -179,6 +182,7 @@ class Booking_Handler {
 				'time'        => $time,
 				'notes'       => $notes,
 				'service_id'  => $service_id,
+				'payment_choice' => $payment_choice,
 			)
 		);
 

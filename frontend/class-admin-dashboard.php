@@ -16,6 +16,7 @@ use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Specializations;
 use DoctorAKPortal\Includes\Template_Loader;
 use DoctorAKPortal\Includes\Theme_Preference;
+use DoctorAKPortal\Includes\Video_Pricing;
 
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -68,9 +69,10 @@ class Admin_Dashboard {
 			'receptionist' => 'Receptionist',
 		),
 		'Clinic'  => array(
-			'clinic'          => 'Clinic',
-			'services'        => 'Services',
-			'doctor-sessions' => 'Doctor Sessions',
+			'clinic'             => 'Clinic',
+			'services'           => 'Services',
+			'video-consultation' => 'Video Consultation',
+			'doctor-sessions'    => 'Doctor Sessions',
 		),
 		'Account' => array(
 			'settings' => 'Settings',
@@ -218,6 +220,39 @@ class Admin_Dashboard {
 			);
 		}
 
+		if ( 'video-consultation' === self::requested_section() ) {
+			wp_enqueue_style(
+				'doctor-ak-portal-registration',
+				DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-registration.css',
+				array( 'doctor-ak-portal-auth' ),
+				Assets::version( 'assets/css/doctor-ak-registration.css' )
+			);
+
+			wp_enqueue_style(
+				'doctor-ak-portal-clinics',
+				DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-clinics.css',
+				array( 'doctor-ak-portal-registration' ),
+				Assets::version( 'assets/css/doctor-ak-clinics.css' )
+			);
+
+			wp_enqueue_script(
+				'doctor-ak-portal-admin-video-pricing',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-video-pricing.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-admin-video-pricing.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-admin-video-pricing',
+				'dakAdminVideoPricing',
+				array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+				)
+			);
+		}
+
 		if ( 'appointments' === self::requested_section() ) {
 			wp_enqueue_style(
 				'doctor-ak-portal-registration',
@@ -350,6 +385,8 @@ class Admin_Dashboard {
 			$modal_html = $this->doctor_sessions_modal_html();
 		} elseif ( 'services' === $section ) {
 			$modal_html = $this->service_modal_html();
+		} elseif ( 'video-consultation' === $section ) {
+			$modal_html = $this->video_pricing_modal_html();
 		} elseif ( 'appointments' === $section ) {
 			$modal_html = $this->appointment_modal_html();
 		}
@@ -392,9 +429,47 @@ class Admin_Dashboard {
 		}
 
 		if ( 'appointments' === $section ) {
+			$patient_id = isset( $_GET['patient_id'] ) ? absint( wp_unslash( $_GET['patient_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$date       = isset( $_GET['date'] ) ? sanitize_text_field( wp_unslash( $_GET['date'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$status     = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$payment_mode = isset( $_GET['payment_mode'] ) ? sanitize_key( wp_unslash( $_GET['payment_mode'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+
+			$status       = array_key_exists( $status, Appointments::status_options() ) ? $status : '';
+			$payment_mode = array_key_exists( $payment_mode, Appointments::payment_mode_options() ) ? $payment_mode : '';
+
+			$patient      = $patient_id > 0 ? get_userdata( $patient_id ) : false;
+			$patient_name = '';
+
+			if ( $patient ) {
+				$patient_name = trim( $patient->first_name . ' ' . $patient->last_name );
+				$patient_name = '' !== $patient_name ? $patient_name : $patient->display_name;
+			}
+
+			$dashboard_url     = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+			$appointments_url  = $dashboard_url ? add_query_arg( 'section', 'appointments', $dashboard_url ) : '';
+
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-appointments.php',
-				array( 'appointments' => Appointments::all_for_admin() )
+				array(
+					'appointments'      => Appointments::all_for_admin(
+						array(
+							'patient_id'   => $patient_id,
+							'date'         => $date,
+							'status'       => $status,
+							'payment_mode' => $payment_mode,
+						)
+					),
+					'filtered_patient'  => $patient_name,
+					'appointments_url'  => $appointments_url,
+					'status_options'    => Appointments::status_options(),
+					'payment_mode_options' => Appointments::payment_mode_options(),
+					'filters'           => array(
+						'patient_id'   => $patient_id,
+						'date'         => $date,
+						'status'       => $status,
+						'payment_mode' => $payment_mode,
+					),
+				)
 			);
 		}
 
@@ -409,6 +484,13 @@ class Admin_Dashboard {
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-services.php',
 				array( 'services' => Services::all_flat_for_admin() )
+			);
+		}
+
+		if ( 'video-consultation' === $section ) {
+			return $this->template_loader->get_template(
+				'dashboard/partials/admin-video-consultation.php',
+				array( 'pricing_rows' => Video_Pricing::all_flat_for_admin() )
 			);
 		}
 
@@ -457,6 +539,21 @@ class Admin_Dashboard {
 			array(
 				'doctor_options' => $this->doctor_options(),
 				'categories'     => Specializations::get_all(),
+			)
+		);
+	}
+
+	/**
+	 * Renders the "Edit Video Pricing" modal (shared single instance,
+	 * populated client-side from the clicked row's data).
+	 *
+	 * @return string
+	 */
+	private function video_pricing_modal_html() {
+		return $this->template_loader->get_template(
+			'modal/admin-video-pricing-modal.php',
+			array(
+				'doctor_options' => $this->doctor_options(),
 			)
 		);
 	}
@@ -575,11 +672,55 @@ class Admin_Dashboard {
 
 		$users = array_map( array( $this, 'row_data' ), $query->get_results() );
 
+		$is_doctors_section = 'doctors' === $section;
+
+		$status = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		$status = in_array( $status, array( 'active', 'disabled' ), true ) ? $status : '';
+
+		$specialization = '';
+
+		if ( $is_doctors_section ) {
+			$specialization = isset( $_GET['specialization'] ) ? sanitize_key( wp_unslash( $_GET['specialization'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$specialization = Specializations::is_valid( $specialization ) ? $specialization : '';
+		}
+
+		if ( '' !== $status ) {
+			$users = array_values(
+				array_filter(
+					$users,
+					function ( $row ) use ( $status ) {
+						return ( 'disabled' === $status ) === $row['is_disabled'];
+					}
+				)
+			);
+		}
+
+		if ( '' !== $specialization ) {
+			$users = array_values(
+				array_filter(
+					$users,
+					function ( $row ) use ( $specialization ) {
+						return in_array( $specialization, $row['specializations'], true );
+					}
+				)
+			);
+		}
+
+		$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+		$section_url   = $dashboard_url ? add_query_arg( 'section', $section, $dashboard_url ) : '';
+
 		return $this->template_loader->get_template(
 			'dashboard/partials/admin-user-table.php',
 			array(
-				'users'   => $users,
-				'section' => $section,
+				'users'              => $users,
+				'section'            => $section,
+				'appointments_url'   => $dashboard_url ? add_query_arg( 'section', 'appointments', $dashboard_url ) : '',
+				'section_url'        => $section_url,
+				'specializations'    => $is_doctors_section ? Specializations::get_all() : array(),
+				'filters'            => array(
+					'status'         => $status,
+					'specialization' => $specialization,
+				),
 			)
 		);
 	}
@@ -637,6 +778,7 @@ class Admin_Dashboard {
 			'name'                  => $display_name,
 			'email'                 => $user->user_email,
 			'location'              => $location,
+			'phone'                 => get_user_meta( $user->ID, 'doctor_ak_phone_number', true ),
 			'specializations'       => $specialization_slugs,
 			'specialization_label'  => implode( ', ', $specialization_labels ),
 			'is_disabled'           => 'yes' === get_user_meta( $user->ID, 'doctor_ak_account_disabled', true ),

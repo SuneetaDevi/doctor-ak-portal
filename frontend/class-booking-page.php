@@ -17,6 +17,7 @@ use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Specializations;
 use DoctorAKPortal\Includes\Template_Loader;
+use DoctorAKPortal\Includes\Video_Pricing;
 
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -109,6 +110,7 @@ class Booking_Page {
 				'registerUrl' => Page_Finder::url_for_shortcode( 'doctor_register' ),
 				'pageUrl'     => Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ),
 				'services'    => $this->services_by_doctor_and_type(),
+				'videoPricing' => $this->video_pricing_by_doctor(),
 			)
 		);
 	}
@@ -236,8 +238,10 @@ class Booking_Page {
 	}
 
 	/**
-	 * Every doctor's active services, shaped for the page's JS to filter
-	 * client-side as [doctor_id][type] => [{id, name, charge, duration_minutes}, ...].
+	 * Every doctor's active onsite (clinic) services, shaped for the page's
+	 * JS to filter client-side as [doctor_id]['clinic'] => [{id, name,
+	 * charge, duration_minutes}, ...]. Video consultations no longer use a
+	 * service list — see video_pricing_by_doctor().
 	 *
 	 * @return array
 	 */
@@ -245,18 +249,14 @@ class Booking_Page {
 		$map = array();
 
 		foreach ( array_keys( Appointments::doctor_options() ) as $doctor_id ) {
-			foreach ( array( 'clinic', 'video' ) as $type ) {
-				$services = Services::active_for_doctor( $doctor_id, $type );
+			$services = Services::active_for_doctor( $doctor_id, 'clinic' );
 
-				if ( empty( $services ) ) {
-					continue;
-				}
+			if ( empty( $services ) ) {
+				continue;
+			}
 
-				if ( ! isset( $map[ $doctor_id ] ) ) {
-					$map[ $doctor_id ] = array();
-				}
-
-				$map[ $doctor_id ][ $type ] = array_map(
+			$map[ $doctor_id ] = array(
+				'clinic' => array_map(
 					function ( $service ) {
 						return array(
 							'id'               => $service['id'],
@@ -266,8 +266,25 @@ class Booking_Page {
 						);
 					},
 					$services
-				);
-			}
+				),
+			);
+		}
+
+		return $map;
+	}
+
+	/**
+	 * Every doctor's fixed video-consultation price (with discount already
+	 * applied), for the page's JS to show a single price card instead of a
+	 * service list when the patient picks "Online Video".
+	 *
+	 * @return array doctor_id => Video_Pricing::effective_price_for_doctor() result.
+	 */
+	private function video_pricing_by_doctor() {
+		$map = array();
+
+		foreach ( array_keys( Appointments::doctor_options() ) as $doctor_id ) {
+			$map[ $doctor_id ] = Video_Pricing::effective_price_for_doctor( $doctor_id );
 		}
 
 		return $map;

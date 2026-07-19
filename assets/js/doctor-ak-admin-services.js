@@ -24,7 +24,6 @@
 	function resetModalFields() {
 		document.getElementById( 'dak-admin-service-id' ).value = '0';
 		document.getElementById( 'dak-admin-service-doctor' ).value = '';
-		document.getElementById( 'dak-admin-service-type' ).value = 'clinic';
 		document.getElementById( 'dak-admin-service-name' ).value = '';
 		document.getElementById( 'dak-admin-service-category' ).value = '';
 		document.getElementById( 'dak-admin-service-charge' ).value = '0';
@@ -94,7 +93,6 @@
 
 			document.getElementById( 'dak-admin-service-id' ).value = trigger.getAttribute( 'data-service-id' ) || '0';
 			document.getElementById( 'dak-admin-service-doctor' ).value = trigger.getAttribute( 'data-doctor-id' ) || '';
-			document.getElementById( 'dak-admin-service-type' ).value = trigger.getAttribute( 'data-type' ) || 'clinic';
 			document.getElementById( 'dak-admin-service-name' ).value = trigger.getAttribute( 'data-name' ) || '';
 			document.getElementById( 'dak-admin-service-category' ).value = trigger.getAttribute( 'data-category' ) || '';
 			document.getElementById( 'dak-admin-service-charge' ).value = trigger.getAttribute( 'data-charge' ) || '0';
@@ -134,7 +132,6 @@
 			formData.append( 'nonce', window.dakAdminServices.nonce );
 			formData.append( 'service_id', document.getElementById( 'dak-admin-service-id' ).value );
 			formData.append( 'doctor_id', doctorId );
-			formData.append( 'type', document.getElementById( 'dak-admin-service-type' ).value );
 			formData.append( 'name', document.getElementById( 'dak-admin-service-name' ).value );
 			formData.append( 'category', document.getElementById( 'dak-admin-service-category' ).value );
 			formData.append( 'charge', document.getElementById( 'dak-admin-service-charge' ).value );

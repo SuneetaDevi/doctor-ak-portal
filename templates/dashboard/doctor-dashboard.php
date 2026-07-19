@@ -16,11 +16,13 @@
  * @var string   $profile_form_html     Pre-rendered profile/profile-form.php output when $active_tab is 'profile'.
  * @var string   $clinics_tab_html      Pre-rendered doctor-clinics-tab.php output when $active_tab is 'clinics'.
  * @var string   $services_tab_html     Pre-rendered doctor-services-tab.php output when $active_tab is 'services'.
+ * @var string   $video_consultation_tab_html Pre-rendered doctor-video-consultation-tab.php output when $active_tab is 'video-consultation'.
  * @var string   $settings_tab_html     Pre-rendered dashboard-settings-tab.php output when $active_tab is 'settings'.
  * @var string   $dashboard_url         URL of this dashboard page.
  * @var string   $profile_url           Same-page URL for the Profile tab.
  * @var string   $clinics_url           Same-page URL for the Clinics tab.
  * @var string   $services_url          Same-page URL for the Services tab.
+ * @var string   $video_consultation_url Same-page URL for the Video Consultation tab.
  * @var string   $settings_url          Same-page URL for the Settings tab.
  * @var string   $theme                 'light' or 'dark' — the doctor's saved dashboard theme preference.
  * @var string   $logout_url            Nonce-protected logout URL.
@@ -116,6 +118,9 @@ $dak_dash_icons = array(
 				<?php if ( $services_url ) : ?>
 					<li class="<?php echo 'services' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $services_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['settings']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Services', 'doctor-ak-portal' ); ?></a></li>
 				<?php endif; ?>
+				<?php if ( $video_consultation_url ) : ?>
+					<li class="<?php echo 'video-consultation' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $video_consultation_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['video']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Video Consultation', 'doctor-ak-portal' ); ?></a></li>
+				<?php endif; ?>
 				<li><a href="#dak-doctor-appointments"><span class="dak-nav-icon"><?php echo $dak_dash_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Appointments', 'doctor-ak-portal' ); ?></a></li>
 				<?php if ( $profile_url ) : ?>
 					<li class="<?php echo 'profile' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $profile_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['person']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Profile', 'doctor-ak-portal' ); ?></a></li>
@@ -146,6 +151,8 @@ $dak_dash_icons = array(
 						esc_html_e( 'Clinics', 'doctor-ak-portal' );
 					} elseif ( 'services' === $active_tab ) {
 						esc_html_e( 'Services', 'doctor-ak-portal' );
+					} elseif ( 'video-consultation' === $active_tab ) {
+						esc_html_e( 'Video Consultation', 'doctor-ak-portal' );
 					} elseif ( 'settings' === $active_tab ) {
 						esc_html_e( 'Settings', 'doctor-ak-portal' );
 					} else {
@@ -160,6 +167,8 @@ $dak_dash_icons = array(
 					<?php echo $clinics_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-clinics-tab.php template, which escapes its own output. ?>
 				<?php elseif ( 'services' === $active_tab ) : ?>
 					<?php echo $services_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-services-tab.php template, which escapes its own output. ?>
+				<?php elseif ( 'video-consultation' === $active_tab ) : ?>
+					<?php echo $video_consultation_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-video-consultation-tab.php template, which escapes its own output. ?>
 				<?php elseif ( 'settings' === $active_tab ) : ?>
 					<?php echo $settings_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own dashboard-settings-tab.php template, which escapes its own output. ?>
 				<?php else : ?>

@@ -74,6 +74,16 @@ class Service_Handler {
 			Assets::version( 'assets/css/doctor-ak-booking-modal.css' )
 		);
 
+		// The Services tab's table markup (.dak-admin-users-table,
+		// .dak-admin-users-actions, .dak-icon-button) reuses the admin
+		// dashboard's table styles, so those styles need to be loaded here too.
+		wp_enqueue_style(
+			'doctor-ak-portal-admin-dashboard',
+			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-admin-dashboard.css',
+			array( 'doctor-ak-portal-booking-modal' ),
+			Assets::version( 'assets/css/doctor-ak-admin-dashboard.css' )
+		);
+
 		wp_enqueue_script(
 			'doctor-ak-portal-services-tab',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-services-tab.js',

@@ -127,12 +127,18 @@ class Appointments {
 		$notes         = isset( $data['notes'] ) ? sanitize_textarea_field( $data['notes'] ) : '';
 		$patient_label = $patient_id > 0 ? self::patient_display_name( $patient_id ) : $guest_name;
 
-		$service_id      = isset( $data['service_id'] ) ? (int) $data['service_id'] : 0;
-		$service_name    = '';
-		$charge          = 0.0;
-		$payment_mode    = self::PAYMENT_MODE_MANUAL;
+		$service_id   = isset( $data['service_id'] ) ? (int) $data['service_id'] : 0;
+		$service_name = '';
+		$charge       = 0.0;
+		$payment_mode = self::PAYMENT_MODE_MANUAL;
 
-		if ( $service_id > 0 ) {
+		if ( self::TYPE_VIDEO === $type ) {
+			// Video consultations use the doctor's fixed (possibly
+			// discounted) price instead of a picked service.
+			$service_id   = 0;
+			$service_name = __( 'Video Consultation', 'doctor-ak-portal' );
+			$charge       = Video_Pricing::effective_price_for_doctor( $doctor_id )['final_price'];
+		} elseif ( $service_id > 0 ) {
 			$service = Services::find( $service_id );
 
 			if ( ! $service || (int) $service['doctor_id'] !== $doctor_id || $service['type'] !== $type || empty( $service['active'] ) ) {
@@ -271,7 +277,13 @@ class Appointments {
 		$service_name = '';
 		$charge       = 0.0;
 
-		if ( $service_id > 0 ) {
+		if ( self::TYPE_VIDEO === $type ) {
+			// Video consultations use the doctor's fixed (possibly
+			// discounted) price instead of a picked service.
+			$service_id   = 0;
+			$service_name = __( 'Video Consultation', 'doctor-ak-portal' );
+			$charge       = Video_Pricing::effective_price_for_doctor( $doctor_id )['final_price'];
+		} elseif ( $service_id > 0 ) {
 			$service = Services::find( $service_id );
 
 			if ( ! $service || (int) $service['doctor_id'] !== $doctor_id || $service['type'] !== $type ) {
@@ -828,17 +840,59 @@ class Appointments {
 	 * Every appointment across every doctor and patient, most recent first,
 	 * as flat view-model rows ready for the admin "Appointments" table.
 	 *
+	 * @param array $filters {
+	 *     Optional. All filters are ANDed together; omit or pass '' / 0 to skip one.
+	 *
+	 *     @type int    $patient_id    Only this patient's appointments.
+	 *     @type string $date          'YYYY-MM-DD', only appointments on this date.
+	 *     @type string $status        One of the STATUS_* constants.
+	 *     @type string $payment_mode  One of the PAYMENT_MODE_* constants.
+	 * }
 	 * @return array
 	 */
-	public static function all_for_admin() {
-		$query = new \WP_Query(
-			array(
-				'post_type'      => self::POST_TYPE,
-				'post_status'    => 'publish',
-				'posts_per_page' => 200,
-				'no_found_rows'  => true,
-			)
+	public static function all_for_admin( array $filters = array() ) {
+		$args = array(
+			'post_type'      => self::POST_TYPE,
+			'post_status'    => 'publish',
+			'posts_per_page' => 200,
+			'no_found_rows'  => true,
 		);
+
+		$meta_query = array();
+
+		if ( ! empty( $filters['patient_id'] ) ) {
+			$meta_query[] = array(
+				'key'   => 'doctor_ak_appointment_patient_id',
+				'value' => (int) $filters['patient_id'],
+			);
+		}
+
+		if ( ! empty( $filters['date'] ) ) {
+			$meta_query[] = array(
+				'key'   => 'doctor_ak_appointment_date',
+				'value' => sanitize_text_field( $filters['date'] ),
+			);
+		}
+
+		if ( ! empty( $filters['status'] ) ) {
+			$meta_query[] = array(
+				'key'   => 'doctor_ak_appointment_status',
+				'value' => sanitize_text_field( $filters['status'] ),
+			);
+		}
+
+		if ( ! empty( $filters['payment_mode'] ) ) {
+			$meta_query[] = array(
+				'key'   => 'doctor_ak_appointment_payment_mode',
+				'value' => sanitize_text_field( $filters['payment_mode'] ),
+			);
+		}
+
+		if ( ! empty( $meta_query ) ) {
+			$args['meta_query'] = $meta_query; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- small, non-public post type; no better lookup available.
+		}
+
+		$query = new \WP_Query( $args );
 
 		$appointments = array_map( array( __CLASS__, 'get' ), wp_list_pluck( $query->posts, 'ID' ) );
 
@@ -911,6 +965,19 @@ class Appointments {
 			self::STATUS_CONFIRMED       => __( 'Booked', 'doctor-ak-portal' ),
 			self::STATUS_CANCELLED       => __( 'Cancelled', 'doctor-ak-portal' ),
 			self::STATUS_COMPLETED       => __( 'Completed', 'doctor-ak-portal' ),
+		);
+	}
+
+	/**
+	 * Every recognised payment mode, slug => label, for the admin
+	 * Appointments table's filter <select>.
+	 *
+	 * @return array
+	 */
+	public static function payment_mode_options() {
+		return array(
+			self::PAYMENT_MODE_MANUAL => __( 'Manual', 'doctor-ak-portal' ),
+			self::PAYMENT_MODE_ONLINE => __( 'Online', 'doctor-ak-portal' ),
 		);
 	}
 

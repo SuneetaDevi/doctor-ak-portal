@@ -28,6 +28,7 @@ use DoctorAKPortal\Frontend\Service_Handler;
 use DoctorAKPortal\Frontend\Shortcodes;
 use DoctorAKPortal\Frontend\Site_Header;
 use DoctorAKPortal\Frontend\Theme_Handler;
+use DoctorAKPortal\Frontend\Video_Pricing_Handler;
 
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -195,6 +196,11 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_service_delete', $service_handler, 'handle_delete_service' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_save', $service_handler, 'handle_admin_save_service' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_delete', $service_handler, 'handle_admin_delete_service' );
+
+		$video_pricing_handler = new Video_Pricing_Handler();
+		$this->loader->add_action( 'wp_enqueue_scripts', $video_pricing_handler, 'enqueue_assets' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_video_pricing_save', $video_pricing_handler, 'handle_save_price' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_video_pricing_save', $video_pricing_handler, 'handle_admin_save_price' );
 
 		$appointment_handler = new Appointment_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointment_save', $appointment_handler, 'handle_admin_save_appointment' );

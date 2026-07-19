@@ -43,10 +43,12 @@ class Swich_Payment {
 
 	/**
 	 * Filter callback for `doctor_ak_appointment_requires_payment`: online
-	 * video consultations require payment; clinic appointments don't.
+	 * video consultations always require payment when there's a charge;
+	 * clinic (onsite) appointments only require it when the patient
+	 * explicitly chose "Pay Now" over "Pay Later" on the booking page.
 	 *
 	 * @param bool  $requires_payment Default value from Appointments::create().
-	 * @param array $data             Raw data passed to Appointments::create().
+	 * @param array $data             Raw data passed to Appointments::create(), including 'payment_choice' ('now'|'later').
 	 * @return bool
 	 */
 	public static function requires_payment( $requires_payment, array $data ) {
@@ -56,7 +58,15 @@ class Swich_Payment {
 
 		$charge = isset( $data['charge'] ) ? (float) $data['charge'] : 0.0;
 
-		return isset( $data['type'] ) && Appointments::TYPE_VIDEO === $data['type'] && $charge > 0;
+		if ( $charge <= 0 || ! isset( $data['type'] ) ) {
+			return false;
+		}
+
+		if ( Appointments::TYPE_VIDEO === $data['type'] ) {
+			return true;
+		}
+
+		return Appointments::TYPE_CLINIC === $data['type'] && isset( $data['payment_choice'] ) && 'now' === $data['payment_choice'];
 	}
 
 	/**
