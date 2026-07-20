@@ -48,12 +48,17 @@ class Patient_Appointment_Handler {
 		}
 
 		$appointment_id = isset( $_POST['appointment_id'] ) ? absint( wp_unslash( $_POST['appointment_id'] ) ) : 0;
+		$result         = Appointments::cancel( $appointment_id, get_current_user_id() );
 
-		if ( ! Appointments::cancel( $appointment_id, get_current_user_id() ) ) {
+		if ( ! $result ) {
 			wp_send_json_error( array( 'message' => __( 'That appointment could not be found or cancelled.', 'doctor-ak-portal' ) ) );
 		}
 
-		wp_send_json_success( array( 'message' => __( 'Appointment cancelled.', 'doctor-ak-portal' ) ) );
+		$message = $result['refund_eligible']
+			? __( "Appointment cancelled. You're within the refund window, so our team will process your refund shortly.", 'doctor-ak-portal' )
+			: __( "Appointment cancelled. This was after the doctor's refund window, so no refund applies.", 'doctor-ak-portal' );
+
+		wp_send_json_success( array( 'message' => $message, 'refund_eligible' => $result['refund_eligible'] ) );
 	}
 
 	/**
@@ -83,8 +88,8 @@ class Patient_Appointment_Handler {
 			wp_send_json_error( array( 'message' => __( 'This appointment is already paid.', 'doctor-ak-portal' ) ) );
 		}
 
-		if ( Appointments::PAYMENT_MODE_ONLINE !== $appointment['payment_mode'] ) {
-			wp_send_json_error( array( 'message' => __( 'This appointment is paid in person at the clinic, not online.', 'doctor-ak-portal' ) ) );
+		if ( (float) $appointment['charge'] <= 0 ) {
+			wp_send_json_error( array( 'message' => __( 'There is nothing to pay for this appointment.', 'doctor-ak-portal' ) ) );
 		}
 
 		$payment_url = Swich_Payment::build_payment_url( $appointment_id );

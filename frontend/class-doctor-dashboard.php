@@ -7,6 +7,7 @@
 
 namespace DoctorAKPortal\Frontend;
 
+use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Page_Finder;
@@ -78,6 +79,17 @@ class Doctor_Dashboard {
 			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-dashboard.css',
 			array( 'doctor-ak-portal-auth' ),
 			Assets::version( 'assets/css/doctor-ak-dashboard.css' )
+		);
+
+		// The "Upcoming Appointments" card reuses the exact same row/status-pill
+		// markup and classes as the patient dashboard's appointment list (see
+		// dashboard/partials/doctor-appointment-row.php), so it needs this
+		// stylesheet too even though it's not the patient-facing page.
+		wp_enqueue_style(
+			'doctor-ak-portal-patient-dashboard',
+			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-patient-dashboard.css',
+			array( 'doctor-ak-portal-dashboard' ),
+			Assets::version( 'assets/css/doctor-ak-patient-dashboard.css' )
 		);
 
 		wp_enqueue_script(
@@ -303,6 +315,18 @@ class Doctor_Dashboard {
 		$active_tab  = self::requested_tab();
 		$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
 
+		$appointment_data        = Appointments::doctor_dashboard_data( $user->ID );
+		$appointment_groups_html = array();
+
+		foreach ( $appointment_data['groups'] as $group_key => $rows ) {
+			$appointment_groups_html[ $group_key ] = array_map(
+				function ( $row ) {
+					return $this->template_loader->get_template( 'dashboard/partials/doctor-appointment-row.php', array( 'appointment' => $row ) );
+				},
+				$rows
+			);
+		}
+
 		return array(
 			'user'                  => $user,
 			'avatar_url'            => $profile_picture_id > 0 ? wp_get_attachment_image_url( $profile_picture_id, 'thumbnail' ) : '',
@@ -312,6 +336,8 @@ class Doctor_Dashboard {
 			'specialization_labels' => $specialization_labels,
 			'clinic_location'       => $primary_clinic_location,
 			'video_consultation'    => Clinics::doctor_has_active_video_clinic( $user->ID ),
+			'appointment_groups'    => $appointment_groups_html,
+			'total_upcoming_appointments' => $appointment_data['total_upcoming_count'],
 			'theme'                 => Theme_Preference::get( $user->ID ),
 			'active_tab'            => $active_tab,
 			'profile_form_html'     => 'profile' === $active_tab ? $this->render_profile_form( $user ) : '',

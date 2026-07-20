@@ -109,16 +109,62 @@ class Patient_Dashboard {
 			'doctor-ak-portal-patient-dashboard',
 			'dakPatientDashboard',
 			array(
-				'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
-				'nonce'          => wp_create_nonce( self::NONCE_ACTION ),
-				'confirmCancel'  => __( 'Cancel this appointment? This cannot be undone.', 'doctor-ak-portal' ),
-				'genericError'   => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
+				'ajaxUrl'                       => admin_url( 'admin-ajax.php' ),
+				'nonce'                          => wp_create_nonce( self::NONCE_ACTION ),
+				'confirmCancelRefundEligible'    => __( "Cancel this appointment? You're within the refund window, so you'll be eligible for a refund. This cannot be undone.", 'doctor-ak-portal' ),
+				'confirmCancelNoRefund'          => __( "Cancel this appointment? This is after the doctor's refund window, so no refund will apply. This cannot be undone.", 'doctor-ak-portal' ),
+				'genericError'                   => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
 			)
 		);
+
+		// The Profile tab renders the same form as the standalone
+		// [doctor_profile] page (see Profile_Handler), so it needs its
+		// assets too — but only when that tab is actually showing.
+		if ( 'profile' === self::requested_tab() ) {
+			wp_enqueue_style(
+				'doctor-ak-portal-registration',
+				DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-registration.css',
+				array( 'doctor-ak-portal-auth' ),
+				Assets::version( 'assets/css/doctor-ak-registration.css' )
+			);
+
+			wp_enqueue_style(
+				'doctor-ak-portal-profile',
+				DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-profile.css',
+				array( 'doctor-ak-portal-registration' ),
+				Assets::version( 'assets/css/doctor-ak-profile.css' )
+			);
+
+			wp_enqueue_script(
+				'doctor-ak-portal-registration',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-registration.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-registration.js' ),
+				true
+			);
+
+			wp_enqueue_script(
+				'doctor-ak-portal-profile',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-profile.js',
+				array( 'doctor-ak-portal-registration' ),
+				Assets::version( 'assets/js/doctor-ak-profile.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-profile',
+				'dakProfile',
+				array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( Profile_Handler::NONCE_ACTION ),
+				)
+			);
+		}
 	}
 
 	/**
-	 * Reads the current 'tab' query var: 'dashboard' (default) or 'settings'.
+	 * Reads the current 'tab' query var: 'dashboard' (default), 'profile',
+	 * 'settings', 'medical-history', or 'payments'.
 	 *
 	 * @return string
 	 */
@@ -129,7 +175,19 @@ class Patient_Dashboard {
 
 		$tab = sanitize_key( wp_unslash( $_GET['tab'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 
-		return 'settings' === $tab ? 'settings' : 'dashboard';
+		return in_array( $tab, array( 'profile', 'settings', 'medical-history', 'payments' ), true ) ? $tab : 'dashboard';
+	}
+
+	/**
+	 * Renders the Profile tab's form content, sharing the exact same markup,
+	 * data and AJAX handlers as the standalone [doctor_profile] page instead
+	 * of duplicating them (mirrors Doctor_Dashboard::render_profile_form()).
+	 *
+	 * @param \WP_User $user Currently logged-in patient.
+	 * @return string
+	 */
+	private function render_profile_form( \WP_User $user ) {
+		return $this->template_loader->get_template( 'profile/profile-form.php', Profile_Handler::build_form_context( $user ) );
 	}
 
 	/**
@@ -235,15 +293,66 @@ class Patient_Dashboard {
 			'recent_activity'       => Appointments::recent_activity_for_patient( $user->ID ),
 			'booking_url'           => $booking_page_url,
 			'video_booking_url'     => $booking_page_url ? add_query_arg( 'type', 'video', $booking_page_url ) : '',
-			'profile_url'           => Page_Finder::url_for_shortcode( 'doctor_profile' ),
+			'profile_url'           => $dashboard_url ? add_query_arg( 'tab', 'profile', $dashboard_url ) : '',
 			'directory_url'         => Page_Finder::url_for_shortcode( 'doctors_directory' ),
-			'logout_url'         => wp_logout_url( Page_Finder::url_for_shortcode( 'doctor_login' ) ),
-			'theme'              => Theme_Preference::get( $user->ID ),
-			'active_tab'         => $active_tab,
-			'dashboard_url'      => $dashboard_url,
-			'settings_url'       => $dashboard_url ? add_query_arg( 'tab', 'settings', $dashboard_url ) : '',
-			'settings_tab_html'  => 'settings' === $active_tab ? $this->template_loader->get_template( 'dashboard/partials/dashboard-settings-tab.php' ) : '',
+			'logout_url'            => wp_logout_url( Page_Finder::url_for_shortcode( 'doctor_login' ) ),
+			'contact_url'           => self::contact_url(),
+			'theme'                 => Theme_Preference::get( $user->ID ),
+			'active_tab'            => $active_tab,
+			'dashboard_url'         => $dashboard_url,
+			'settings_url'          => $dashboard_url ? add_query_arg( 'tab', 'settings', $dashboard_url ) : '',
+			'medical_history_url'   => $dashboard_url ? add_query_arg( 'tab', 'medical-history', $dashboard_url ) : '',
+			'payments_url'          => $dashboard_url ? add_query_arg( 'tab', 'payments', $dashboard_url ) : '',
+			'profile_tab_html'      => 'profile' === $active_tab ? $this->render_profile_form( $user ) : '',
+			'settings_tab_html'     => 'settings' === $active_tab ? $this->template_loader->get_template( 'dashboard/partials/dashboard-settings-tab.php' ) : '',
+			'payments_tab_html'     => 'payments' === $active_tab ? $this->render_payments_tab( $user ) : '',
+			'coming_soon_html'      => 'medical-history' === $active_tab
+				? $this->template_loader->get_template(
+					'dashboard/partials/admin-placeholder.php',
+					array( 'section_label' => __( 'Medical History', 'doctor-ak-portal' ) )
+				)
+				: '',
 		);
+	}
+
+	/**
+	 * Renders the Payments tab: every appointment the patient has actually
+	 * paid for, via Appointments::payment_history_for_patient().
+	 *
+	 * @param \WP_User $user Currently logged-in patient.
+	 * @return string
+	 */
+	private function render_payments_tab( \WP_User $user ) {
+		$history = Appointments::payment_history_for_patient( $user->ID );
+
+		return $this->template_loader->get_template(
+			'dashboard/partials/patient-payments-tab.php',
+			array(
+				'rows'       => $history['rows'],
+				'total_paid' => $history['total_paid'],
+				'booking_url' => Page_Finder::url_for_shortcode( 'book_appointment' ),
+			)
+		);
+	}
+
+	/**
+	 * Best-effort "Contact Us" page URL for the sidebar's Contact Support
+	 * button — checks for a page at the common 'contact'/'contact-us'
+	 * slugs (no dedicated shortcode exists for this in the plugin), falling
+	 * back to the site's home page rather than a dead link.
+	 *
+	 * @return string
+	 */
+	private static function contact_url() {
+		foreach ( array( 'contact', 'contact-us' ) as $slug ) {
+			$page = get_page_by_path( $slug );
+
+			if ( $page instanceof \WP_Post ) {
+				return get_permalink( $page );
+			}
+		}
+
+		return home_url( '/' );
 	}
 
 	/**

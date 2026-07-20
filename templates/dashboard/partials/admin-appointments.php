@@ -56,6 +56,7 @@ $dak_appt_has_filters = '' !== $filters['date'] || '' !== $filters['status'] || 
 ?>
 <section class="dak-dashboard-card">
 	<form method="get" action="<?php echo esc_url( $appointments_url ); ?>" class="dak-field-row">
+		<input type="hidden" name="section" value="appointments">
 		<?php if ( $filters['patient_id'] > 0 ) : ?>
 			<input type="hidden" name="patient_id" value="<?php echo esc_attr( $filters['patient_id'] ); ?>">
 		<?php endif; ?>

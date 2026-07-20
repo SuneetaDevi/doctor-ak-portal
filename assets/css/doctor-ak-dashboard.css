@@ -628,6 +628,8 @@
 	font-weight: 700 !important;
 	padding: 0.15rem 0.5rem !important;
 	border-radius: 999px !important;
+	text-decoration: none !important;
+	cursor: default !important;
 }
 
 .dak-tag-video {
@@ -648,6 +650,22 @@
 .dak-tag-pending-payment {
 	background: #fef3c7 !important;
 	color: #b45309 !important;
+}
+
+.dak-tag-join-call {
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+	cursor: pointer !important;
+}
+
+.dak-tag-join-call:hover {
+	background: var( --dak-primary-dark ) !important;
+}
+
+.dak-tag-join-call.is-disabled {
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+	cursor: not-allowed !important;
 }
 
 .dak-appointment-item-meta {

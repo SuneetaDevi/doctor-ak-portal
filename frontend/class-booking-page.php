@@ -111,6 +111,7 @@ class Booking_Page {
 				'pageUrl'     => Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ),
 				'services'    => $this->services_by_doctor_and_type(),
 				'videoPricing' => $this->video_pricing_by_doctor(),
+				'bookingRules' => $this->booking_rules_by_doctor(),
 			)
 		);
 	}
@@ -285,6 +286,28 @@ class Booking_Page {
 
 		foreach ( array_keys( Appointments::doctor_options() ) as $doctor_id ) {
 			$map[ $doctor_id ] = Video_Pricing::effective_price_for_doctor( $doctor_id );
+		}
+
+		return $map;
+	}
+
+	/**
+	 * Every doctor's instant-booking and cancellation-refund settings, for
+	 * the page's JS to flag instant slots with their surcharge and show the
+	 * doctor's real cancellation policy instead of a generic hardcoded note.
+	 *
+	 * @return array doctor_id => { instant_lead_hours, instant_surcharge, cancel_refund_hours }.
+	 */
+	private function booking_rules_by_doctor() {
+		$map = array();
+
+		foreach ( array_keys( Appointments::doctor_options() ) as $doctor_id ) {
+			$settings           = Video_Pricing::get_for_doctor( $doctor_id );
+			$map[ $doctor_id ] = array(
+				'instant_lead_hours'  => $settings['instant_lead_hours'],
+				'instant_surcharge'   => $settings['instant_surcharge'],
+				'cancel_refund_hours' => $settings['cancel_refund_hours'],
+			);
 		}
 
 		return $map;

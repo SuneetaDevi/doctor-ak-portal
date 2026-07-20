@@ -274,6 +274,19 @@
 	padding: 0.6rem 0.8rem !important;
 }
 
+.dak-field-divider {
+	border: none !important;
+	border-top: 1px solid var( --dak-border ) !important;
+	margin: 1.5rem 0 1.1rem !important;
+}
+
+.dak-dashboard-subheading {
+	font-size: 1rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	margin: 0 0 0.35rem !important;
+}
+
 .dak-alert {
 	padding: 0.75rem 1rem !important;
 	border-radius: var( --dak-radius-sm ) !important;

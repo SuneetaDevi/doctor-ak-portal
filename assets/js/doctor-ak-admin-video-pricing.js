@@ -63,6 +63,10 @@
 			var discountEndsAt = trigger.getAttribute( 'data-discount-ends-at' ) || '';
 			document.getElementById( 'dak-admin-video-pricing-discount-ends-at' ).value = discountEndsAt ? discountEndsAt.replace( ' ', 'T' ) : '';
 
+			document.getElementById( 'dak-admin-video-pricing-instant-lead-hours' ).value = trigger.getAttribute( 'data-instant-lead-hours' ) || '0';
+			document.getElementById( 'dak-admin-video-pricing-instant-surcharge' ).value = trigger.getAttribute( 'data-instant-surcharge' ) || '0';
+			document.getElementById( 'dak-admin-video-pricing-cancel-refund-hours' ).value = trigger.getAttribute( 'data-cancel-refund-hours' ) || '0';
+
 			openModal( modal );
 		} );
 	}
@@ -98,6 +102,9 @@
 			formData.append( 'price', document.getElementById( 'dak-admin-video-pricing-price' ).value );
 			formData.append( 'discount_percent', document.getElementById( 'dak-admin-video-pricing-discount-percent' ).value );
 			formData.append( 'discount_ends_at', document.getElementById( 'dak-admin-video-pricing-discount-ends-at' ).value );
+			formData.append( 'instant_lead_hours', document.getElementById( 'dak-admin-video-pricing-instant-lead-hours' ).value );
+			formData.append( 'instant_surcharge', document.getElementById( 'dak-admin-video-pricing-instant-surcharge' ).value );
+			formData.append( 'cancel_refund_hours', document.getElementById( 'dak-admin-video-pricing-cancel-refund-hours' ).value );
 
 			fetch( window.dakAdminVideoPricing.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
 				.then( function ( response ) { return response.json(); } )

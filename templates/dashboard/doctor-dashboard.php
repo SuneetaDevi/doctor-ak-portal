@@ -18,6 +18,8 @@
  * @var string   $services_tab_html     Pre-rendered doctor-services-tab.php output when $active_tab is 'services'.
  * @var string   $video_consultation_tab_html Pre-rendered doctor-video-consultation-tab.php output when $active_tab is 'video-consultation'.
  * @var string   $settings_tab_html     Pre-rendered dashboard-settings-tab.php output when $active_tab is 'settings'.
+ * @var array    $appointment_groups    'today'|'tomorrow'|'this_week'|'later' => array of pre-rendered doctor-appointment-row.php strings.
+ * @var int      $total_upcoming_appointments Total upcoming (non-cancelled) appointment count.
  * @var string   $dashboard_url         URL of this dashboard page.
  * @var string   $profile_url           Same-page URL for the Profile tab.
  * @var string   $clinics_url           Same-page URL for the Clinics tab.
@@ -231,29 +233,29 @@ $dak_dash_icons = array(
 
 		<div class="dak-dashboard-grid dak-dashboard-grid-lists">
 			<section class="dak-dashboard-card dak-dashboard-appointments" id="dak-doctor-appointments">
-				<h2><?php esc_html_e( 'Upcoming Today', 'doctor-ak-portal' ); ?></h2>
+				<h2><?php esc_html_e( 'Upcoming Appointments', 'doctor-ak-portal' ); ?></h2>
 				<?php
-				ob_start();
-				/**
-				 * Fires inside the doctor dashboard's upcoming-appointments card.
-				 *
-				 * A future booking/appointment module (e.g. KiviCare) can hook
-				 * here to render real appointment data without modifying this
-				 * template.
-				 *
-				 * @param \WP_User $user Currently viewed doctor.
-				 */
-				do_action( 'doctor_ak_doctor_dashboard_appointments', $user );
-				$appointments_output = trim( ob_get_clean() );
-
-				if ( '' !== $appointments_output ) {
-					echo $appointments_output; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- hooked content is responsible for its own escaping.
-				} else {
-					?>
-					<p class="dak-empty-state"><?php esc_html_e( 'No appointments scheduled for today.', 'doctor-ak-portal' ); ?></p>
-					<?php
-				}
+				$dak_doctor_appt_group_labels = array(
+					'today'     => __( 'Today', 'doctor-ak-portal' ),
+					'tomorrow'  => __( 'Tomorrow', 'doctor-ak-portal' ),
+					'this_week' => __( 'This Week', 'doctor-ak-portal' ),
+					'later'     => __( 'Later', 'doctor-ak-portal' ),
+				);
 				?>
+				<?php if ( 0 === $total_upcoming_appointments ) : ?>
+					<p class="dak-empty-state"><?php esc_html_e( 'No upcoming appointments.', 'doctor-ak-portal' ); ?></p>
+				<?php else : ?>
+					<?php foreach ( $dak_doctor_appt_group_labels as $group_key => $group_label ) : ?>
+						<?php if ( ! empty( $appointment_groups[ $group_key ] ) ) : ?>
+							<div class="dak-patient-appt-group">
+								<h3 class="dak-patient-appt-group-label"><?php echo esc_html( $group_label ); ?></h3>
+								<?php foreach ( $appointment_groups[ $group_key ] as $appointment_row_html ) : ?>
+									<?php echo $appointment_row_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-appointment-row.php partial, which escapes its own output. ?>
+								<?php endforeach; ?>
+							</div>
+						<?php endif; ?>
+					<?php endforeach; ?>
+				<?php endif; ?>
 			</section>
 
 			<section class="dak-dashboard-card dak-dashboard-recent-patients">

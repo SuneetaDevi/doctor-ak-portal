@@ -467,6 +467,7 @@
 }
 
 .dak-booking-slot-card {
+	position: relative !important;
 	display: block !important;
 	width: 100% !important;
 	padding: 0.55rem 0.5rem !important;
@@ -477,6 +478,19 @@
 	font-weight: 600 !important;
 	text-align: center !important;
 	cursor: pointer !important;
+}
+
+.dak-booking-slot-card.is-instant {
+	border-style: dashed !important;
+}
+
+.dak-booking-slot-instant-badge {
+	position: absolute !important;
+	top: -0.4rem !important;
+	right: -0.3rem !important;
+	font-size: 0.7rem !important;
+	line-height: 1 !important;
+	filter: drop-shadow( 0 1px 1px rgba( 0, 0, 0, 0.25 ) ) !important;
 }
 
 .dak-booking-slot-card.is-available {

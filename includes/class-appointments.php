@@ -46,6 +46,15 @@ class Appointments {
 	const PAYMENT_MODE_ONLINE = 'online';
 
 	/**
+	 * How early, and for how long after the scheduled start, a video
+	 * appointment's "Join Call" link is active. There's no explicit call
+	 * duration stored anywhere, so the "after" window is a reasonable
+	 * assumed consultation length rather than a real end time.
+	 */
+	const VIDEO_JOIN_WINDOW_BEFORE_MINUTES = 15;
+	const VIDEO_JOIN_WINDOW_AFTER_MINUTES  = 60;
+
+	/**
 	 * Registers the (intentionally non-public) post type used for storage.
 	 *
 	 * @return void
@@ -151,6 +160,10 @@ class Appointments {
 			$service_id = 0;
 		}
 
+		$is_instant = Video_Pricing::is_instant_booking( $doctor_id, $date, $time );
+		$surcharge  = $is_instant ? Video_Pricing::instant_surcharge_for_doctor( $doctor_id ) : 0.0;
+		$charge    += $surcharge;
+
 		$data['charge'] = $charge;
 
 		$requires_payment = apply_filters( 'doctor_ak_appointment_requires_payment', false, $data );
@@ -199,6 +212,15 @@ class Appointments {
 		update_post_meta( $post_id, 'doctor_ak_appointment_service_name', $service_name );
 		update_post_meta( $post_id, 'doctor_ak_appointment_charge', $charge );
 		update_post_meta( $post_id, 'doctor_ak_appointment_payment_mode', $payment_mode );
+		update_post_meta( $post_id, 'doctor_ak_appointment_is_instant', $is_instant ? 1 : 0 );
+		update_post_meta( $post_id, 'doctor_ak_appointment_surcharge', $surcharge );
+
+		if ( self::TYPE_VIDEO === $type ) {
+			// A random, unguessable Jitsi Meet room per video appointment —
+			// anyone with the URL can join, so it must not be predictable
+			// from the appointment ID alone.
+			update_post_meta( $post_id, 'doctor_ak_appointment_video_room', 'dak-' . wp_generate_password( 24, false, false ) );
+		}
 
 		/**
 		 * Fires after a new appointment is saved.
@@ -413,7 +435,7 @@ class Appointments {
 	 * @param int    $doctor_id Doctor's user ID.
 	 * @param string $type      'clinic' or 'video'.
 	 * @param string $date      'YYYY-MM-DD'.
-	 * @return array List of `array( 'time' => 'HH:MM', 'status' => 'available'|'booked'|'past' )`, sorted ascending.
+	 * @return array List of `array( 'time' => 'HH:MM', 'status' => 'available'|'booked'|'past', 'is_instant' => bool, 'surcharge' => float )`, sorted ascending.
 	 */
 	public static function slot_statuses_for_date( $doctor_id, $type, $date ) {
 		$grid = Clinics::slot_grid_for_date( $doctor_id, $type, $date );
@@ -433,11 +455,12 @@ class Appointments {
 			}
 		}
 
-		$today = current_time( 'Y-m-d' );
-		$now   = current_time( 'H:i' );
+		$today             = current_time( 'Y-m-d' );
+		$now               = current_time( 'H:i' );
+		$instant_surcharge = Video_Pricing::instant_surcharge_for_doctor( $doctor_id );
 
 		return array_map(
-			function ( $slot ) use ( $booked, $date, $today, $now ) {
+			function ( $slot ) use ( $booked, $date, $today, $now, $doctor_id, $instant_surcharge ) {
 				if ( isset( $booked[ $slot ] ) ) {
 					$status = 'booked';
 				} elseif ( $date === $today && $slot <= $now ) {
@@ -446,9 +469,13 @@ class Appointments {
 					$status = 'available';
 				}
 
+				$is_instant = 'available' === $status && Video_Pricing::is_instant_booking( $doctor_id, $date, $slot );
+
 				return array(
-					'time'   => $slot,
-					'status' => $status,
+					'time'       => $slot,
+					'status'     => $status,
+					'is_instant' => $is_instant,
+					'surcharge'  => $is_instant ? $instant_surcharge : 0.0,
 				);
 			},
 			$grid
@@ -561,6 +588,153 @@ class Appointments {
 	}
 
 	/**
+	 * A patient's real payment history for the dashboard's "Payments" tab —
+	 * every appointment they've actually paid for (via Swich, or marked paid
+	 * by an admin), most recent appointment date first. There's no separate
+	 * "paid at" timestamp anywhere in the system (Swich's callback only
+	 * flips payment_status, see mark_paid()), so each entry is dated by its
+	 * real appointment date/time rather than an invented payment date.
+	 *
+	 * @param int $patient_id Patient's user ID.
+	 * @return array {
+	 *     @type array $rows        List of enriched rows, see patient_dashboard_row().
+	 *     @type float $total_paid  Sum of every row's charge.
+	 * }
+	 */
+	public static function payment_history_for_patient( $patient_id ) {
+		$today = current_time( 'Y-m-d' );
+		$now   = current_time( 'H:i' );
+
+		$paid = array_values(
+			array_filter(
+				self::for_patient( $patient_id ),
+				function ( $appointment ) {
+					return self::PAYMENT_STATUS_PAID === $appointment['payment_status'];
+				}
+			)
+		);
+
+		usort(
+			$paid,
+			function ( $a, $b ) {
+				return strcmp( $b['date'] . $b['time'], $a['date'] . $a['time'] );
+			}
+		);
+
+		$total_paid = 0.0;
+		$rows       = array();
+
+		foreach ( $paid as $appointment ) {
+			$rows[]      = self::patient_dashboard_row( $appointment, $today, $now );
+			$total_paid += (float) $appointment['charge'];
+		}
+
+		return array(
+			'rows'       => $rows,
+			'total_paid' => $total_paid,
+		);
+	}
+
+	/**
+	 * Whether a video appointment's "Join Call" link is usable right now,
+	 * and the Jitsi Meet room URL to use — the room is only ever generated
+	 * for video appointments (see create()), and joining requires the
+	 * appointment to be paid, not cancelled, and within the join window
+	 * around its scheduled start time.
+	 *
+	 * @param array $appointment Appointment array from get()/for_patient()/for_doctor().
+	 * @return array {
+	 *     @type bool   $applicable  Whether this is even a video appointment with a room.
+	 *     @type bool   $can_join    Whether the link is clickable right now.
+	 *     @type string $room_url    The Jitsi Meet URL, or '' if no room exists.
+	 *     @type string $hint        Human label for why it's disabled, or when it opens.
+	 * }
+	 */
+	public static function video_call_info( array $appointment ) {
+		if ( self::TYPE_VIDEO !== $appointment['type'] ) {
+			return array(
+				'applicable' => false,
+				'can_join'   => false,
+				'room_url'   => '',
+				'hint'       => '',
+			);
+		}
+
+		$video_room = $appointment['video_room'];
+
+		if ( '' === $video_room ) {
+			// Only reachable for a video appointment that predates create()
+			// generating a room (or was retargeted to video by an admin
+			// edit afterwards) — generate one lazily so Join Call still works.
+			$video_room = 'dak-' . wp_generate_password( 24, false, false );
+			update_post_meta( $appointment['id'], 'doctor_ak_appointment_video_room', $video_room );
+		}
+
+		$room_url = 'https://meet.jit.si/' . rawurlencode( $video_room );
+
+		if ( self::STATUS_CANCELLED === $appointment['status'] ) {
+			return array(
+				'applicable' => true,
+				'can_join'   => false,
+				'room_url'   => $room_url,
+				'hint'       => __( 'Appointment cancelled', 'doctor-ak-portal' ),
+			);
+		}
+
+		if ( self::PAYMENT_STATUS_PAID !== $appointment['payment_status'] ) {
+			return array(
+				'applicable' => true,
+				'can_join'   => false,
+				'room_url'   => $room_url,
+				'hint'       => __( 'Complete payment to get your call link', 'doctor-ak-portal' ),
+			);
+		}
+
+		$start = strtotime( $appointment['date'] . ' ' . $appointment['time'] );
+
+		if ( false === $start ) {
+			return array(
+				'applicable' => true,
+				'can_join'   => false,
+				'room_url'   => $room_url,
+				'hint'       => '',
+			);
+		}
+
+		$now       = current_time( 'timestamp' ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- comparing against a strtotime() of a stored local date/time string, not doing math that needs UTC.
+		$opens_at  = $start - self::VIDEO_JOIN_WINDOW_BEFORE_MINUTES * MINUTE_IN_SECONDS;
+		$closes_at = $start + self::VIDEO_JOIN_WINDOW_AFTER_MINUTES * MINUTE_IN_SECONDS;
+
+		if ( $now < $opens_at ) {
+			/* translators: %d: minutes before the appointment the call opens. */
+			$hint = sprintf( __( 'Available %d minutes before your appointment', 'doctor-ak-portal' ), self::VIDEO_JOIN_WINDOW_BEFORE_MINUTES );
+
+			return array(
+				'applicable' => true,
+				'can_join'   => false,
+				'room_url'   => $room_url,
+				'hint'       => $hint,
+			);
+		}
+
+		if ( $now > $closes_at ) {
+			return array(
+				'applicable' => true,
+				'can_join'   => false,
+				'room_url'   => $room_url,
+				'hint'       => __( 'Call window has ended', 'doctor-ak-portal' ),
+			);
+		}
+
+		return array(
+			'applicable' => true,
+			'can_join'   => true,
+			'room_url'   => $room_url,
+			'hint'       => '',
+		);
+	}
+
+	/**
 	 * Builds a single patient-dashboard row view-model from an appointment
 	 * array — resolves the doctor's name/avatar/specialization and adds a
 	 * human countdown label alongside the existing status/type labels.
@@ -624,7 +798,129 @@ class Appointments {
 			'payment_mode'          => $appointment['payment_mode'],
 			'service_name'          => $appointment['service_name'],
 			'charge'                => $appointment['charge'],
+			'is_instant'            => $appointment['is_instant'],
+			'surcharge'             => $appointment['surcharge'],
 			'countdown_label'       => self::countdown_label( $appointment['date'], $appointment['time'], $today, $now ),
+			'refund_eligible'       => Video_Pricing::is_cancellation_refund_eligible( $appointment['doctor_id'], $appointment['date'], $appointment['time'] ),
+			'video_call'            => self::video_call_info( $appointment ),
+		);
+	}
+
+	/**
+	 * Everything the doctor dashboard needs about a doctor's upcoming
+	 * appointments — every patient (or guest) who has booked them, grouped
+	 * into Today/Tomorrow/This Week/Later, mirroring patient_dashboard_data()
+	 * but scoped by doctor instead of by patient.
+	 *
+	 * @param int $doctor_id Doctor's user ID.
+	 * @return array {
+	 *     @type array $groups               'today'|'tomorrow'|'this_week'|'later' => array of rows.
+	 *     @type int   $total_upcoming_count Total upcoming (non-cancelled) appointments.
+	 * }
+	 */
+	public static function doctor_dashboard_data( $doctor_id ) {
+		$today = current_time( 'Y-m-d' );
+		$now   = current_time( 'H:i' );
+
+		$upcoming = array_values(
+			array_filter(
+				self::for_doctor( $doctor_id ),
+				function ( $appointment ) use ( $today, $now ) {
+					if ( self::STATUS_CANCELLED === $appointment['status'] ) {
+						return false;
+					}
+
+					if ( $appointment['date'] > $today ) {
+						return true;
+					}
+
+					return $appointment['date'] === $today && $appointment['time'] >= $now;
+				}
+			)
+		);
+
+		usort(
+			$upcoming,
+			function ( $a, $b ) {
+				return strcmp( $a['date'] . $a['time'], $b['date'] . $b['time'] );
+			}
+		);
+
+		$groups = array(
+			'today'     => array(),
+			'tomorrow'  => array(),
+			'this_week' => array(),
+			'later'     => array(),
+		);
+
+		$tomorrow    = gmdate( 'Y-m-d', strtotime( $today . ' +1 day' ) );
+		$week_cutoff = gmdate( 'Y-m-d', strtotime( $today . ' +7 days' ) );
+
+		foreach ( $upcoming as $appointment ) {
+			$row = self::doctor_dashboard_row( $appointment, $today, $now );
+
+			if ( $appointment['date'] === $today ) {
+				$groups['today'][] = $row;
+			} elseif ( $appointment['date'] === $tomorrow ) {
+				$groups['tomorrow'][] = $row;
+			} elseif ( $appointment['date'] <= $week_cutoff ) {
+				$groups['this_week'][] = $row;
+			} else {
+				$groups['later'][] = $row;
+			}
+		}
+
+		return array(
+			'groups'               => $groups,
+			'total_upcoming_count' => count( $upcoming ),
+		);
+	}
+
+	/**
+	 * Builds a single doctor-dashboard row view-model from an appointment
+	 * array — resolves the patient's (or guest's) name/avatar instead of
+	 * the doctor's, since this is the mirror image of patient_dashboard_row().
+	 *
+	 * @param array  $appointment Appointment array from get().
+	 * @param string $today       'YYYY-MM-DD', today per current_time().
+	 * @param string $now         'HH:MM', now per current_time().
+	 * @return array
+	 */
+	private static function doctor_dashboard_row( array $appointment, $today, $now ) {
+		$patient_name = self::patient_display_name_for( $appointment );
+		$avatar_url   = '';
+
+		if ( $appointment['patient_id'] > 0 ) {
+			$picture_id = (int) get_user_meta( $appointment['patient_id'], 'doctor_ak_profile_picture_id', true );
+
+			if ( $picture_id > 0 ) {
+				$url = wp_get_attachment_image_url( $picture_id, 'thumbnail' );
+
+				if ( $url ) {
+					$avatar_url = $url;
+				}
+			}
+		}
+
+		return array(
+			'id'                 => $appointment['id'],
+			'patient_name'       => '' !== $patient_name ? $patient_name : __( 'Unknown Patient', 'doctor-ak-portal' ),
+			'patient_avatar_url' => $avatar_url,
+			'is_guest'           => 0 === (int) $appointment['patient_id'],
+			'type'               => $appointment['type'],
+			'type_label'         => self::type_label( $appointment['type'] ),
+			'date'               => $appointment['date'],
+			'time'               => $appointment['time'],
+			'status'             => $appointment['status'],
+			'status_label'       => self::status_label( $appointment['status'] ),
+			'status_badge_class' => self::status_badge_class( $appointment['status'] ),
+			'payment_status'     => $appointment['payment_status'],
+			'is_paid'            => self::PAYMENT_STATUS_PAID === $appointment['payment_status'],
+			'payment_mode'       => $appointment['payment_mode'],
+			'service_name'       => $appointment['service_name'],
+			'charge'             => $appointment['charge'],
+			'countdown_label'    => self::countdown_label( $appointment['date'], $appointment['time'], $today, $now ),
+			'video_call'         => self::video_call_info( $appointment ),
 		);
 	}
 
@@ -707,16 +1003,20 @@ class Appointments {
 			if ( self::STATUS_CANCELLED === $appointment['status'] ) {
 				/* translators: %s: doctor's name. */
 				$label = sprintf( __( 'Appointment with Dr. %s was cancelled', 'doctor-ak-portal' ), $doctor_name );
+				$type  = 'cancelled';
 			} elseif ( self::PAYMENT_STATUS_PAID === $appointment['payment_status'] ) {
 				/* translators: %s: doctor's name. */
 				$label = sprintf( __( 'Payment confirmed for your visit with Dr. %s', 'doctor-ak-portal' ), $doctor_name );
+				$type  = 'paid';
 			} else {
 				/* translators: %s: doctor's name. */
 				$label = sprintf( __( 'Appointment booked with Dr. %s', 'doctor-ak-portal' ), $doctor_name );
+				$type  = 'booked';
 			}
 
 			$entries[] = array(
 				'label'     => $label,
+				'type'      => $type,
 				'timestamp' => $timestamp,
 				'date'      => $timestamp ? date_i18n( get_option( 'date_format' ), $timestamp ) : '',
 			);
@@ -738,9 +1038,15 @@ class Appointments {
 	 * patient who booked it can cancel it this way (admin cancellation
 	 * would go through Appointments::update() instead).
 	 *
+	 * Refund eligibility is computed at the moment of cancellation, against
+	 * the doctor's configured refund window (Video_Pricing::is_cancellation_refund_eligible()),
+	 * and returned for the caller to relay to the patient — there is no
+	 * automatic refund mechanism (the payment gateway has no refund API),
+	 * so this is informational only, not a tracked status.
+	 *
 	 * @param int $appointment_id Appointment post ID.
 	 * @param int $patient_id     Patient's user ID, must match the appointment's owner.
-	 * @return bool
+	 * @return array|false `array( 'refund_eligible' => bool )` on success, false if not found/not owned.
 	 */
 	public static function cancel( $appointment_id, $patient_id ) {
 		$appointment = self::get( $appointment_id );
@@ -749,9 +1055,11 @@ class Appointments {
 			return false;
 		}
 
+		$refund_eligible = Video_Pricing::is_cancellation_refund_eligible( $appointment['doctor_id'], $appointment['date'], $appointment['time'] );
+
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_CANCELLED );
 
-		return true;
+		return array( 'refund_eligible' => $refund_eligible );
 	}
 
 	/**
@@ -1064,6 +1372,7 @@ class Appointments {
 					'date'           => $appointment['date'],
 					'time'           => $appointment['time'],
 					'payment_status' => $appointment['payment_status'],
+					'video_call'     => self::video_call_info( $appointment ),
 				)
 			);
 		}
@@ -1100,6 +1409,7 @@ class Appointments {
 					'date'           => $appointment['date'],
 					'time'           => $appointment['time'],
 					'payment_status' => $appointment['payment_status'],
+					'video_call'     => self::video_call_info( $appointment ),
 				)
 			);
 		}
@@ -1225,6 +1535,9 @@ class Appointments {
 			'service_name'   => get_post_meta( $post->ID, 'doctor_ak_appointment_service_name', true ),
 			'charge'         => (float) get_post_meta( $post->ID, 'doctor_ak_appointment_charge', true ),
 			'payment_mode'   => get_post_meta( $post->ID, 'doctor_ak_appointment_payment_mode', true ),
+			'is_instant'     => (bool) get_post_meta( $post->ID, 'doctor_ak_appointment_is_instant', true ),
+			'surcharge'      => (float) get_post_meta( $post->ID, 'doctor_ak_appointment_surcharge', true ),
+			'video_room'     => get_post_meta( $post->ID, 'doctor_ak_appointment_video_room', true ),
 		);
 	}
 

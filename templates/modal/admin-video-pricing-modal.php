@@ -56,6 +56,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</div>
 		</div>
 
+		<hr class="dak-field-divider">
+
+		<h3 class="dak-dashboard-subheading"><?php esc_html_e( 'Booking Rules', 'doctor-ak-portal' ); ?></h3>
+		<p class="dak-field-hint"><?php esc_html_e( 'Applies to all this doctor\'s appointments — clinic visits and video consultations.', 'doctor-ak-portal' ); ?></p>
+
+		<div class="dak-field-row">
+			<div class="dak-field">
+				<label for="dak-admin-video-pricing-instant-lead-hours"><?php esc_html_e( 'Instant Booking Window (hours)', 'doctor-ak-portal' ); ?></label>
+				<input type="number" min="0" max="72" step="0.5" id="dak-admin-video-pricing-instant-lead-hours" value="0">
+				<span class="dak-field-error" data-field="instant_lead_hours"></span>
+			</div>
+			<div class="dak-field">
+				<label for="dak-admin-video-pricing-instant-surcharge"><?php esc_html_e( 'Instant Booking Surcharge (PKR)', 'doctor-ak-portal' ); ?></label>
+				<input type="number" min="0" step="0.01" id="dak-admin-video-pricing-instant-surcharge" value="0">
+				<span class="dak-field-error" data-field="instant_surcharge"></span>
+			</div>
+		</div>
+
+		<div class="dak-field">
+			<label for="dak-admin-video-pricing-cancel-refund-hours"><?php esc_html_e( 'Cancellation Refund Window (hours before appointment)', 'doctor-ak-portal' ); ?></label>
+			<input type="number" min="0" max="720" step="0.5" id="dak-admin-video-pricing-cancel-refund-hours" value="0">
+			<span class="dak-field-error" data-field="cancel_refund_hours"></span>
+		</div>
+
 		<button type="button" class="dak-button dak-button-primary dak-button-block" id="dak-admin-video-pricing-save">
 			<span class="dak-button-label"><?php esc_html_e( 'Save Video Pricing', 'doctor-ak-portal' ); ?></span>
 		</button>

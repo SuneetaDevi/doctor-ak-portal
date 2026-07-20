@@ -79,6 +79,9 @@ $dak_video_pricing_icons = array(
 									data-price="<?php echo esc_attr( $row['base_price'] ); ?>"
 									data-discount-percent="<?php echo esc_attr( $row['discount_percent'] ); ?>"
 									data-discount-ends-at="<?php echo esc_attr( $row['discount_ends_at'] ); ?>"
+									data-instant-lead-hours="<?php echo esc_attr( $row['booking_rules']['instant_lead_hours'] ); ?>"
+									data-instant-surcharge="<?php echo esc_attr( $row['booking_rules']['instant_surcharge'] ); ?>"
+									data-cancel-refund-hours="<?php echo esc_attr( $row['booking_rules']['cancel_refund_hours'] ); ?>"
 									title="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
 									aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
 								><?php echo $dak_video_pricing_icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>

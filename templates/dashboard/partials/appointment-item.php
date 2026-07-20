@@ -11,6 +11,7 @@
  * @var string $date           'YYYY-MM-DD'.
  * @var string $time           'HH:MM'.
  * @var string $payment_status 'paid' or 'pending'.
+ * @var array  $video_call     See Appointments::video_call_info().
  */
 
 // Prevent direct file access.
@@ -30,6 +31,13 @@ $is_paid        = 'paid' === $payment_status;
 			<span class="dak-tag <?php echo $is_paid ? 'dak-tag-paid' : 'dak-tag-pending-payment'; ?>">
 				<?php echo $is_paid ? esc_html__( 'Paid', 'doctor-ak-portal' ) : esc_html__( 'Payment Pending', 'doctor-ak-portal' ); ?>
 			</span>
+			<?php if ( ! empty( $video_call['applicable'] ) ) : ?>
+				<?php if ( $video_call['can_join'] ) : ?>
+					<a class="dak-tag dak-tag-join-call" href="<?php echo esc_url( $video_call['room_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></a>
+				<?php else : ?>
+					<span class="dak-tag dak-tag-join-call is-disabled" title="<?php echo esc_attr( $video_call['hint'] ); ?>"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></span>
+				<?php endif; ?>
+			<?php endif; ?>
 		</span>
 	</div>
 	<div class="dak-appointment-item-meta">

@@ -463,6 +463,7 @@
 	function resetDateSelection() {
 		document.getElementById( 'dak-booking-date' ).value = '';
 		document.getElementById( 'dak-booking-time' ).value = '';
+		selectedSlotSurcharge = 0;
 		hide( document.getElementById( 'dak-booking-slots-section' ) );
 		hide( document.getElementById( 'dak-booking-details' ) );
 		renderCalendar();
@@ -480,6 +481,7 @@
 
 		document.getElementById( 'dak-booking-date' ).value = dateStr;
 		document.getElementById( 'dak-booking-time' ).value = '';
+		selectedSlotSurcharge = 0;
 		hide( document.getElementById( 'dak-booking-details' ) );
 		renderCalendar();
 		updateSteps();
@@ -588,12 +590,20 @@
 			visibleSlots.forEach( function ( slot ) {
 				var card = document.createElement( 'button' );
 				card.type = 'button';
-				card.className = 'dak-booking-slot-card is-' + slot.status;
+				card.className = 'dak-booking-slot-card is-' + slot.status + ( slot.is_instant ? ' is-instant' : '' );
 				card.textContent = formatTimeLabel( slot.time );
+
+				if ( slot.is_instant ) {
+					var badge = document.createElement( 'span' );
+					badge.className = 'dak-booking-slot-instant-badge';
+					badge.textContent = '⚡';
+					card.appendChild( badge );
+					card.title = 'Instant booking — +PKR' + slot.surcharge + ' surcharge applies';
+				}
 
 				if ( 'available' === slot.status ) {
 					card.addEventListener( 'click', function () {
-						selectSlot( slot.time, card );
+						selectSlot( slot.time, card, slot.is_instant ? slot.surcharge : 0 );
 					} );
 				} else {
 					card.disabled = true;
@@ -613,7 +623,9 @@
 		}
 	}
 
-	function selectSlot( time, card ) {
+	var selectedSlotSurcharge = 0;
+
+	function selectSlot( time, card, surcharge ) {
 		document.getElementById( 'dak-booking-time' ).value = time;
 		clearFieldError( 'time' );
 
@@ -621,6 +633,8 @@
 			el.classList.remove( 'is-selected' );
 		} );
 		card.classList.add( 'is-selected' );
+
+		selectedSlotSurcharge = surcharge || 0;
 
 		updateSteps();
 		updateSummary();
@@ -683,6 +697,7 @@
 			service: ( hasDoctor && serviceCard ) ? serviceCard.getAttribute( 'data-service-name' ) + ( serviceCard.getAttribute( 'data-service-duration' ) > 0 ? ' · ' + serviceCard.getAttribute( 'data-service-duration' ) + ' min' : '' ) : '',
 			date: date ? formatDateLabel( date ) : '',
 			time: time ? formatTimeLabel( time ) : '',
+			instant: ( time && selectedSlotSurcharge > 0 ) ? ( 'Instant booking fee: +PKR' + selectedSlotSurcharge ) : '',
 		};
 
 		var anyVisible = false;
@@ -711,10 +726,33 @@
 		}
 
 		var totalEl = document.getElementById( 'dak-booking-summary-total-amount' );
-		var charge = serviceCard ? parseFloat( serviceCard.getAttribute( 'data-service-charge' ) ) : 0;
+		var baseCharge = serviceCard ? parseFloat( serviceCard.getAttribute( 'data-service-charge' ) ) : 0;
+		var charge = baseCharge + ( time ? selectedSlotSurcharge : 0 );
 		totalEl.textContent = hasDoctor ? ( charge > 0 ? 'PKR' + charge : 'Free' ) : '—';
 
+		updateCancellationNote( hasDoctor ? doctorCard.getAttribute( 'data-doctor-id' ) : '' );
 		updatePaymentButtons( type, charge );
+	}
+
+	function updateCancellationNote( doctorId ) {
+		var noteEl = document.getElementById( 'dak-booking-summary-cancellation-note' );
+
+		if ( ! noteEl ) {
+			return;
+		}
+
+		var rules = doctorId && window.dakBookingPage.bookingRules ? window.dakBookingPage.bookingRules[ doctorId ] : null;
+
+		if ( ! rules ) {
+			noteEl.textContent = 'Choose a doctor to see their cancellation policy.';
+			return;
+		}
+
+		var hours = parseFloat( rules.cancel_refund_hours );
+
+		noteEl.textContent = hours > 0
+			? ( 'Free cancellation up to ' + hours + ' hour' + ( 1 === hours ? '' : 's' ) + ' before your appointment.' )
+			: 'Free cancellation any time before your appointment starts.';
 	}
 
 	function updatePaymentButtons( type, charge ) {

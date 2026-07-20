@@ -9,6 +9,25 @@
  * recent-activity list, quick actions, and the mobile bottom nav + FAB.
  */
 
+/* Floating-card sidebar look, scoped to the patient dashboard only. */
+
+.dak-patient-dashboard {
+	gap: 1.25rem !important;
+	padding: 1.25rem !important;
+	box-sizing: border-box !important;
+}
+
+.dak-patient-dashboard .dak-dashboard-sidebar {
+	border-right: none !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	height: calc( 100vh - 2.5rem ) !important;
+}
+
+.dak-patient-dashboard .dak-dashboard-main {
+	min-width: 0 !important;
+}
+
 /* Sidebar patient card */
 
 .dak-sidebar-patient-card {
@@ -25,6 +44,62 @@
 	font-weight: 700 !important;
 	font-size: 0.95rem !important;
 	color: var( --dak-text ) !important;
+}
+
+.dak-sidebar-patient-badge {
+	display: inline-flex !important;
+	padding: 0.15rem 0.65rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+	font-size: 0.72rem !important;
+	font-weight: 700 !important;
+}
+
+/* Sidebar "Need Help" support card */
+
+.dak-sidebar-help-card {
+	margin-top: auto !important;
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: flex-start !important;
+	gap: 0.3rem !important;
+	padding: 1rem !important;
+	border-radius: var( --dak-radius-md ) !important;
+	background: var( --dak-primary-tint ) !important;
+}
+
+.dak-sidebar-help-icon {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 2rem !important;
+	height: 2rem !important;
+	margin-bottom: 0.3rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-sidebar-help-icon svg {
+	width: 1.1rem !important;
+	height: 1.1rem !important;
+}
+
+.dak-sidebar-help-card strong {
+	font-size: 0.85rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-sidebar-help-card p {
+	font-size: 0.76rem !important;
+	color: var( --dak-muted ) !important;
+	margin: 0 0 0.5rem !important;
+}
+
+.dak-sidebar-help-card .dak-button {
+	padding: 0.5rem 0.75rem !important;
+	font-size: 0.8rem !important;
 }
 
 .dak-nav-badge {
@@ -82,8 +157,76 @@
 
 /* Stat cards */
 
-.dak-stat-value-positive {
+.dak-patient-stat-row {
+	display: grid !important;
+	grid-template-columns: repeat( 3, 1fr ) !important;
+	gap: 1rem !important;
+	margin-bottom: 1.25rem !important;
+}
+
+.dak-patient-stat-card {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 0.85rem !important;
+	background: var( --dak-bg-card ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	padding: 1.25rem !important;
+}
+
+.dak-patient-stat-icon {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 2.75rem !important;
+	height: 2.75rem !important;
+	border-radius: 999px !important;
+}
+
+.dak-patient-stat-icon svg {
+	width: 1.3rem !important;
+	height: 1.3rem !important;
+}
+
+.dak-patient-stat-icon.is-green { background: #e3f6e8 !important; color: #157a3c !important; }
+.dak-patient-stat-icon.is-purple { background: #ede4fb !important; color: #6c3fc5 !important; }
+.dak-patient-stat-icon.is-blue { background: #e2eefd !important; color: #1c5fd6 !important; }
+
+.dak-patient-stat-body {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.15rem !important;
+	min-width: 0 !important;
+}
+
+.dak-patient-stat-label {
+	font-size: 0.78rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-patient-stat-value {
+	font-size: 1.3rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	white-space: nowrap !important;
+}
+
+.dak-patient-stat-sub {
+	font-size: 0.78rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-patient-stat-link {
+	font-size: 0.78rem !important;
+	font-weight: 700 !important;
 	color: var( --dak-primary-dark ) !important;
+	text-decoration: none !important;
+	margin-top: 0.15rem !important;
+}
+
+.dak-patient-stat-link:hover {
+	text-decoration: underline !important;
 }
 
 /* Two-column grid */
@@ -271,6 +414,60 @@
 	background: #f5d3d3 !important;
 }
 
+/* "More actions" kebab dropdown */
+
+.dak-patient-appt-kebab {
+	position: relative !important;
+}
+
+.dak-patient-appt-kebab-menu {
+	display: none !important;
+	position: absolute !important;
+	top: calc( 100% + 0.35rem ) !important;
+	right: 0 !important;
+	z-index: 20 !important;
+	min-width: 180px !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	padding: 0.35rem !important;
+}
+
+.dak-patient-appt-kebab.is-open .dak-patient-appt-kebab-menu {
+	display: block !important;
+}
+
+.dak-patient-appt-kebab-item {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.5rem !important;
+	width: 100% !important;
+	padding: 0.5rem 0.6rem !important;
+	border: none !important;
+	background: transparent !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	font-size: 0.82rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+	cursor: pointer !important;
+	text-align: left !important;
+}
+
+.dak-patient-appt-kebab-item svg {
+	width: 0.9rem !important;
+	height: 0.9rem !important;
+	flex-shrink: 0 !important;
+}
+
+.dak-patient-appt-kebab-item.is-danger {
+	color: #b42323 !important;
+}
+
+.dak-patient-appt-kebab-item:hover {
+	background: var( --dak-bg-subtle ) !important;
+}
+
 /* Status pills (neutral, read-only) vs. action pills (filled, clickable) —
    kept visually distinct so a status label is never mistaken for a button. */
 
@@ -282,6 +479,7 @@
 	font-weight: 700 !important;
 	padding: 0.2rem 0.6rem !important;
 	border-radius: 999px !important;
+	text-decoration: none !important;
 }
 
 .dak-status-pill-outline {
@@ -344,6 +542,62 @@
 	margin: 0 !important;
 }
 
+/* "Don't miss your appointments" reminder banner */
+
+.dak-patient-appt-reminder {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.85rem !important;
+	margin-top: 1.25rem !important;
+	padding: 1rem 1.1rem !important;
+	border-radius: var( --dak-radius-md ) !important;
+	background: var( --dak-primary-tint ) !important;
+}
+
+.dak-patient-appt-reminder-icon {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 2.5rem !important;
+	height: 2.5rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-patient-appt-reminder-icon svg {
+	width: 1.2rem !important;
+	height: 1.2rem !important;
+}
+
+.dak-patient-appt-reminder-body {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+}
+
+.dak-patient-appt-reminder-body strong {
+	display: block !important;
+	font-size: 0.88rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-patient-appt-reminder-body p {
+	margin: 0.15rem 0 0 !important;
+	font-size: 0.78rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-patient-appt-reminder .dak-button {
+	flex: 0 0 auto !important;
+}
+
+@media ( max-width: 560px ) {
+	.dak-patient-appt-reminder {
+		flex-wrap: wrap !important;
+	}
+}
+
 /* Profile summary */
 
 .dak-patient-profile-summary-body {
@@ -381,11 +635,22 @@
 	color: var( --dak-primary ) !important;
 }
 
-.dak-patient-profile-complete {
-	color: var( --dak-primary-dark ) !important;
+.dak-patient-profile-completion-row {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 0.5rem !important;
+	margin-bottom: 0.5rem !important;
+}
+
+.dak-patient-profile-percent {
+	font-size: 0.82rem !important;
 	font-weight: 700 !important;
-	font-size: 0.85rem !important;
-	margin: 0 0 0.5rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-patient-profile-summary .dak-progress-bar {
+	margin-bottom: 0.5rem !important;
 }
 
 /* Recent activity */
@@ -401,8 +666,8 @@
 
 .dak-patient-activity-list li {
 	display: flex !important;
-	flex-direction: column !important;
-	gap: 0.1rem !important;
+	align-items: flex-start !important;
+	gap: 0.6rem !important;
 	padding-bottom: 0.7rem !important;
 	border-bottom: 1px solid var( --dak-border ) !important;
 }
@@ -410,6 +675,33 @@
 .dak-patient-activity-list li:last-child {
 	border-bottom: 0 !important;
 	padding-bottom: 0 !important;
+}
+
+.dak-patient-activity-icon {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 1.75rem !important;
+	height: 1.75rem !important;
+	border-radius: 999px !important;
+	margin-top: 0.1rem !important;
+}
+
+.dak-patient-activity-icon svg {
+	width: 0.85rem !important;
+	height: 0.85rem !important;
+}
+
+.dak-patient-activity-icon.is-paid { background: #e3f6e8 !important; color: #157a3c !important; }
+.dak-patient-activity-icon.is-booked { background: #e2eefd !important; color: #1c5fd6 !important; }
+.dak-patient-activity-icon.is-cancelled { background: #fbeaea !important; color: #b42323 !important; }
+
+.dak-patient-activity-text {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.1rem !important;
+	min-width: 0 !important;
 }
 
 .dak-patient-activity-label {
@@ -424,22 +716,23 @@
 
 /* Quick actions */
 
-.dak-patient-quick-actions-row {
-	display: flex !important;
-	flex-direction: column !important;
-	gap: 0.5rem !important;
+.dak-patient-quick-actions-grid {
+	display: grid !important;
+	grid-template-columns: 1fr 1fr !important;
+	gap: 0.6rem !important;
 }
 
 .dak-patient-quick-action {
 	display: flex !important;
-	align-items: center !important;
-	gap: 0.55rem !important;
-	padding: 0.6rem 0.75rem !important;
+	flex-direction: column !important;
+	align-items: flex-start !important;
+	gap: 0.5rem !important;
+	padding: 0.85rem 0.75rem !important;
 	border-radius: var( --dak-radius-md ) !important;
 	border: 1px solid var( --dak-border ) !important;
 	background: var( --dak-bg-card ) !important;
 	color: var( --dak-text ) !important;
-	font-size: 0.85rem !important;
+	font-size: 0.82rem !important;
 	font-weight: 600 !important;
 	cursor: pointer !important;
 	text-decoration: none !important;
@@ -450,8 +743,8 @@
 }
 
 .dak-patient-quick-action .dak-nav-icon {
-	width: 1.1rem !important;
-	height: 1.1rem !important;
+	width: 1.3rem !important;
+	height: 1.3rem !important;
 	color: var( --dak-primary-dark ) !important;
 }
 
@@ -467,6 +760,10 @@
 
 @media ( max-width: 900px ) {
 	.dak-patient-dashboard-grid {
+		grid-template-columns: 1fr !important;
+	}
+
+	.dak-patient-stat-row {
 		grid-template-columns: 1fr !important;
 	}
 }
@@ -548,5 +845,99 @@
 	.dak-patient-fab svg {
 		width: 1.4rem !important;
 		height: 1.4rem !important;
+	}
+}
+
+/* Payments tab */
+
+.dak-patient-payments-summary {
+	display: flex !important;
+	align-items: baseline !important;
+	flex-wrap: wrap !important;
+	gap: 0.5rem !important;
+	margin-bottom: 1.25rem !important;
+}
+
+.dak-patient-payments-summary-label {
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-patient-payments-summary-amount {
+	font-size: 1.6rem !important;
+	font-weight: 800 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-patient-payments-summary-count {
+	font-size: 0.82rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-patient-payments-list {
+	list-style: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.75rem !important;
+}
+
+.dak-patient-payment-row {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.75rem !important;
+	padding: 0.85rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+}
+
+.dak-patient-payment-info {
+	display: flex !important;
+	flex-direction: column !important;
+	min-width: 0 !important;
+	flex: 1 1 auto !important;
+}
+
+.dak-patient-payment-info strong {
+	font-size: 0.9rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-patient-payment-meta {
+	font-size: 0.8rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-patient-payment-surcharge-note {
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-patient-payment-amount-wrap {
+	flex: 0 0 auto !important;
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: flex-end !important;
+	gap: 0.3rem !important;
+}
+
+.dak-patient-payment-amount {
+	font-size: 1rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	white-space: nowrap !important;
+}
+
+@media ( max-width: 560px ) {
+	.dak-patient-payment-row {
+		flex-wrap: wrap !important;
+	}
+
+	.dak-patient-payment-amount-wrap {
+		align-items: flex-start !important;
+		flex: 1 1 100% !important;
+		flex-direction: row !important;
+		justify-content: space-between !important;
 	}
 }

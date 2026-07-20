@@ -226,6 +226,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<li class="dak-hidden" data-summary-row="service"><span class="dak-booking-summary-icon" aria-hidden="true">&#128203;</span><span data-summary-value></span></li>
 						<li class="dak-hidden" data-summary-row="date"><span class="dak-booking-summary-icon" aria-hidden="true">&#128197;</span><span data-summary-value></span></li>
 						<li class="dak-hidden" data-summary-row="time"><span class="dak-booking-summary-icon" aria-hidden="true">&#128337;</span><span data-summary-value></span></li>
+						<li class="dak-hidden" data-summary-row="instant"><span class="dak-booking-summary-icon" aria-hidden="true">&#9889;</span><span data-summary-value></span></li>
 					</ul>
 
 					<p class="dak-empty-state dak-booking-summary-empty" id="dak-booking-summary-empty"><?php esc_html_e( 'Choose a doctor, date, and time to see your booking summary.', 'doctor-ak-portal' ); ?></p>
@@ -236,7 +237,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</div>
 
 					<button type="button" class="dak-button dak-button-primary dak-button-block" id="dak-booking-continue"><?php esc_html_e( 'Continue to confirm', 'doctor-ak-portal' ); ?></button>
-					<p class="dak-booking-summary-note"><?php esc_html_e( 'Free cancellation up to 2 hours before your appointment.', 'doctor-ak-portal' ); ?></p>
+					<p class="dak-booking-summary-note" id="dak-booking-summary-cancellation-note"><?php esc_html_e( 'Choose a doctor to see their cancellation policy.', 'doctor-ak-portal' ); ?></p>
 				</div>
 			</aside>
 		</div>

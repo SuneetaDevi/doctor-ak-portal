@@ -70,6 +70,32 @@ if ( ! defined( 'ABSPATH' ) ) {
 </div>
 <p class="dak-field-hint"><?php esc_html_e( 'Leave the discount at 0% (or clear the end date) to charge the full price.', 'doctor-ak-portal' ); ?></p>
 
+<hr class="dak-field-divider">
+
+<h3 class="dak-dashboard-subheading"><?php esc_html_e( 'Booking Rules', 'doctor-ak-portal' ); ?></h3>
+<p class="dak-field-hint"><?php esc_html_e( 'These apply to all your appointments — clinic visits and video consultations.', 'doctor-ak-portal' ); ?></p>
+
+<div class="dak-field-row">
+	<div class="dak-field">
+		<label for="dak-video-pricing-instant-lead-hours"><?php esc_html_e( 'Instant Booking Window (hours)', 'doctor-ak-portal' ); ?></label>
+		<input type="number" min="0" max="72" step="0.5" id="dak-video-pricing-instant-lead-hours" value="<?php echo esc_attr( $pricing['instant_lead_hours'] ); ?>">
+		<span class="dak-field-error" data-field="instant_lead_hours"></span>
+		<p class="dak-field-hint"><?php esc_html_e( 'A booking made less than this many hours before the appointment counts as "instant" and gets the surcharge below. Leave at 0 to turn this off.', 'doctor-ak-portal' ); ?></p>
+	</div>
+	<div class="dak-field">
+		<label for="dak-video-pricing-instant-surcharge"><?php esc_html_e( 'Instant Booking Surcharge (PKR)', 'doctor-ak-portal' ); ?></label>
+		<input type="number" min="0" step="0.01" id="dak-video-pricing-instant-surcharge" value="<?php echo esc_attr( $pricing['instant_surcharge'] ); ?>">
+		<span class="dak-field-error" data-field="instant_surcharge"></span>
+	</div>
+</div>
+
+<div class="dak-field">
+	<label for="dak-video-pricing-cancel-refund-hours"><?php esc_html_e( 'Cancellation Refund Window (hours before appointment)', 'doctor-ak-portal' ); ?></label>
+	<input type="number" min="0" max="720" step="0.5" id="dak-video-pricing-cancel-refund-hours" value="<?php echo esc_attr( $pricing['cancel_refund_hours'] ); ?>">
+	<span class="dak-field-error" data-field="cancel_refund_hours"></span>
+	<p class="dak-field-hint"><?php esc_html_e( 'A patient who cancels at least this many hours before their appointment is told they qualify for a refund; cancelling later is not. Leave at 0 to always allow a refund up until the appointment starts.', 'doctor-ak-portal' ); ?></p>
+</div>
+
 <button type="button" class="dak-button dak-button-primary" id="dak-video-pricing-save">
 	<span class="dak-button-label"><?php esc_html_e( 'Save Video Pricing', 'doctor-ak-portal' ); ?></span>
 </button>

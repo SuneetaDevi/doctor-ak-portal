@@ -25,6 +25,9 @@
 			formData.append( 'price', document.getElementById( 'dak-video-pricing-price' ).value );
 			formData.append( 'discount_percent', document.getElementById( 'dak-video-pricing-discount-percent' ).value );
 			formData.append( 'discount_ends_at', document.getElementById( 'dak-video-pricing-discount-ends-at' ).value );
+			formData.append( 'instant_lead_hours', document.getElementById( 'dak-video-pricing-instant-lead-hours' ).value );
+			formData.append( 'instant_surcharge', document.getElementById( 'dak-video-pricing-instant-surcharge' ).value );
+			formData.append( 'cancel_refund_hours', document.getElementById( 'dak-video-pricing-cancel-refund-hours' ).value );
 
 			fetch( window.dakVideoPricingTab.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
 				.then( function ( response ) { return response.json(); } )
