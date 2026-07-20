@@ -27,6 +27,11 @@ class Activator {
 	public static function activate() {
 		Db_Installer::install();
 		Roles::add_roles();
+
+		if ( ! wp_next_scheduled( Notifications::CRON_HOOK ) ) {
+			wp_schedule_event( time(), 'hourly', Notifications::CRON_HOOK );
+		}
+
 		flush_rewrite_rules();
 	}
 }

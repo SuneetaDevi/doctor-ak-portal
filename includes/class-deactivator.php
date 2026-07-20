@@ -27,6 +27,7 @@ class Deactivator {
 	 * @return void
 	 */
 	public static function deactivate() {
+		wp_clear_scheduled_hook( Notifications::CRON_HOOK );
 		flush_rewrite_rules();
 	}
 }

@@ -1059,6 +1059,13 @@ class Appointments {
 
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_CANCELLED );
 
+		/**
+		 * Fires after an appointment is cancelled.
+		 *
+		 * @param int $appointment_id Cancelled appointment's post ID.
+		 */
+		do_action( 'doctor_ak_appointment_cancelled', $appointment_id );
+
 		return array( 'refund_eligible' => $refund_eligible );
 	}
 
@@ -1074,6 +1081,82 @@ class Appointments {
 	}
 
 	/**
+	 * Everything a notification email needs about an appointment: the same
+	 * enriched shape as admin_row_data() (doctor/patient names, type/status
+	 * labels, date/time, service/charge) plus a resolved email address for
+	 * each side — the guest email when there's no account, otherwise the
+	 * WP user's email, same fallback Swich_Payment::build_payment_url() uses.
+	 *
+	 * @param int $appointment_id Appointment post ID.
+	 * @return array Empty array if the ID isn't a valid appointment.
+	 */
+	public static function notification_data( $appointment_id ) {
+		$appointment = self::get( $appointment_id );
+
+		if ( empty( $appointment ) ) {
+			return array();
+		}
+
+		$row = self::admin_row_data( $appointment );
+
+		$row['patient_email'] = '' !== $appointment['guest_email']
+			? $appointment['guest_email']
+			: ( $appointment['patient_id'] > 0 && get_userdata( $appointment['patient_id'] ) ? get_userdata( $appointment['patient_id'] )->user_email : '' );
+
+		return $row;
+	}
+
+	/**
+	 * Upcoming appointments on a given date that haven't had a reminder
+	 * email sent yet, for the daily reminder cron job.
+	 *
+	 * @param string $date 'YYYY-MM-DD'.
+	 * @return array List of decoded appointment arrays (see get()).
+	 */
+	public static function due_for_reminder( $date ) {
+		$query = new \WP_Query(
+			array(
+				'post_type'      => self::POST_TYPE,
+				'post_status'    => 'publish',
+				'posts_per_page' => 200,
+				'no_found_rows'  => true,
+				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- small, non-public post type; no better lookup available.
+					array(
+						'key'   => 'doctor_ak_appointment_date',
+						'value' => $date,
+					),
+					array(
+						'key'     => 'doctor_ak_appointment_reminder_sent',
+						'compare' => 'NOT EXISTS',
+					),
+				),
+			)
+		);
+
+		$appointments = array_map( array( __CLASS__, 'get' ), wp_list_pluck( $query->posts, 'ID' ) );
+
+		return array_values(
+			array_filter(
+				$appointments,
+				function ( $appointment ) {
+					return ! in_array( $appointment['status'], array( self::STATUS_CANCELLED, self::STATUS_COMPLETED ), true );
+				}
+			)
+		);
+	}
+
+	/**
+	 * Marks an appointment as having had its reminder email sent, so the
+	 * hourly reminder cron job never emails it twice.
+	 *
+	 * @param int $appointment_id Appointment post ID.
+	 * @return void
+	 */
+	public static function mark_reminder_sent( $appointment_id ) {
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_reminder_sent', 1 );
+	}
+
+	/**
 	 * Marks an appointment as paid and confirmed. Called once a Swich
 	 * PayIn transaction for the appointment succeeds (via callback, or the
 	 * return-page inquiry fallback).
@@ -1084,6 +1167,13 @@ class Appointments {
 	public static function mark_paid( $appointment_id ) {
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_payment_status', self::PAYMENT_STATUS_PAID );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_CONFIRMED );
+
+		/**
+		 * Fires after an appointment is marked paid (Swich callback or return-page fallback).
+		 *
+		 * @param int $appointment_id Paid appointment's post ID.
+		 */
+		do_action( 'doctor_ak_appointment_paid', $appointment_id );
 	}
 
 	/**

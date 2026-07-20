@@ -7,6 +7,7 @@
 
 namespace DoctorAKPortal\Includes;
 
+use DoctorAKPortal\Admin\Notification_Settings;
 use DoctorAKPortal\Admin\Swich_Settings;
 use DoctorAKPortal\Frontend\Admin_Dashboard;
 use DoctorAKPortal\Frontend\Admin_User_Handler;
@@ -114,6 +115,10 @@ class Plugin {
 		$swich_settings = new Swich_Settings();
 		$this->loader->add_action( 'admin_menu', $swich_settings, 'register_menu' );
 		$this->loader->add_action( 'admin_init', $swich_settings, 'register_settings' );
+
+		$notification_settings = new Notification_Settings();
+		$this->loader->add_action( 'admin_menu', $notification_settings, 'register_menu' );
+		$this->loader->add_action( 'admin_init', $notification_settings, 'register_settings' );
 	}
 
 	/**
@@ -181,6 +186,12 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_nopriv_doctor_ak_swich_callback', 'DoctorAKPortal\\Includes\\Swich_Payment', 'handle_callback' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_swich_return', 'DoctorAKPortal\\Includes\\Swich_Payment', 'handle_return' );
 		$this->loader->add_action( 'wp_ajax_nopriv_doctor_ak_swich_return', 'DoctorAKPortal\\Includes\\Swich_Payment', 'handle_return' );
+
+		$notifications = new Notifications();
+		$this->loader->add_action( 'doctor_ak_appointment_created', $notifications, 'notify_created', 10, 2 );
+		$this->loader->add_action( 'doctor_ak_appointment_cancelled', $notifications, 'notify_cancelled' );
+		$this->loader->add_action( 'doctor_ak_appointment_paid', $notifications, 'notify_paid' );
+		$this->loader->add_action( Notifications::CRON_HOOK, $notifications, 'send_reminders' );
 
 		$admin_dashboard = new Admin_Dashboard( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $admin_dashboard, 'enqueue_assets' );
