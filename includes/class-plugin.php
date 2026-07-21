@@ -16,11 +16,13 @@ use DoctorAKPortal\Frontend\Booking_Handler;
 use DoctorAKPortal\Frontend\Booking_Page;
 use DoctorAKPortal\Frontend\Booking_Trigger;
 use DoctorAKPortal\Frontend\Clinic_Handler;
+use DoctorAKPortal\Frontend\Doctor_Appointment_Handler;
 use DoctorAKPortal\Frontend\Doctor_Dashboard;
 use DoctorAKPortal\Frontend\Doctor_Profile_View;
 use DoctorAKPortal\Frontend\Doctors_Directory;
 use DoctorAKPortal\Frontend\Forgot_Password_Handler;
 use DoctorAKPortal\Frontend\Login_Handler;
+use DoctorAKPortal\Frontend\Notification_Handler;
 use DoctorAKPortal\Frontend\Patient_Appointment_Handler;
 use DoctorAKPortal\Frontend\Patient_Dashboard;
 use DoctorAKPortal\Frontend\Profile_Handler;
@@ -193,6 +195,18 @@ class Plugin {
 		$this->loader->add_action( 'doctor_ak_appointment_paid', $notifications, 'notify_paid' );
 		$this->loader->add_action( Notifications::CRON_HOOK, $notifications, 'send_reminders' );
 
+		// In-app "Notifications" tab (doctor/patient/admin dashboards) — the
+		// same lifecycle events as above, written to the notifications table
+		// instead of emailed.
+		$this->loader->add_action( 'doctor_ak_appointment_created', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_created', 10, 2 );
+		$this->loader->add_action( 'doctor_ak_appointment_cancelled', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_cancelled' );
+		$this->loader->add_action( 'doctor_ak_appointment_paid', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_paid' );
+		$this->loader->add_action( 'doctor_ak_appointment_completed', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_completed' );
+
+		$notification_handler = new Notification_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_notification_mark_read', $notification_handler, 'handle_mark_read' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_notification_mark_all_read', $notification_handler, 'handle_mark_all_read' );
+
 		$admin_dashboard = new Admin_Dashboard( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $admin_dashboard, 'enqueue_assets' );
 
@@ -221,6 +235,13 @@ class Plugin {
 		$patient_appointment_handler = new Patient_Appointment_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_cancel_appointment', $patient_appointment_handler, 'handle_cancel_appointment' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_pay_now', $patient_appointment_handler, 'handle_pay_now' );
+
+		$doctor_appointment_handler = new Doctor_Appointment_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_mark_completed', $doctor_appointment_handler, 'handle_mark_completed' );
+
+		// Reuses the existing hourly reminder cron (Notifications::CRON_HOOK)
+		// rather than scheduling a second event just for this.
+		$this->loader->add_action( Notifications::CRON_HOOK, 'DoctorAKPortal\\Includes\\Appointments', 'auto_complete_past_appointments' );
 
 		$shortcodes = new Shortcodes( $doctor_dashboard, $patient_dashboard, $profile_handler, $doctors_directory, $doctor_profile_view, $admin_dashboard, $booking_page );
 		$this->loader->add_action( 'init', $shortcodes, 'register' );

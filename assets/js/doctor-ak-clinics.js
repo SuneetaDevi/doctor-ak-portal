@@ -155,7 +155,7 @@
 	function collectClinicPayload( card ) {
 		var sessions = {};
 
-		card.querySelectorAll( '.dak-availability-row' ).forEach( function ( row ) {
+		card.querySelectorAll( '.dak-availability-row[data-day]' ).forEach( function ( row ) {
 			var day = row.getAttribute( 'data-day' );
 			var enabled = row.querySelector( '.dak-availability-toggle' ).checked;
 

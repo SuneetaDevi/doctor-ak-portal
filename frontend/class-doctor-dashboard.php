@@ -10,6 +10,7 @@ namespace DoctorAKPortal\Frontend;
 use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinics;
+use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
@@ -100,6 +101,42 @@ class Doctor_Dashboard {
 			true
 		);
 
+		wp_enqueue_script(
+			'doctor-ak-portal-doctor-appointments',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-doctor-appointments.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-doctor-appointments.js' ),
+			true
+		);
+
+		wp_localize_script(
+			'doctor-ak-portal-doctor-appointments',
+			'dakDoctorAppointments',
+			array(
+				'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
+				'nonce'         => wp_create_nonce( Doctor_Appointment_Handler::NONCE_ACTION ),
+				'confirmMessage' => __( 'Mark this appointment as completed?', 'doctor-ak-portal' ),
+				'genericError'  => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
+			)
+		);
+
+		wp_enqueue_script(
+			'doctor-ak-portal-notifications',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-notifications.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-notifications.js' ),
+			true
+		);
+
+		wp_localize_script(
+			'doctor-ak-portal-notifications',
+			'dakNotifications',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( Notification_Handler::NONCE_ACTION ),
+			)
+		);
+
 		// The Profile tab renders the same form as the standalone
 		// [doctor_profile] page (see Profile_Handler), so it needs its
 		// assets too — but only when that tab is actually showing. The
@@ -149,7 +186,7 @@ class Doctor_Dashboard {
 
 	/**
 	 * Reads the current 'tab' query var: 'dashboard' (default), 'profile',
-	 * 'clinics' or 'settings'.
+	 * 'clinics', 'services', 'video-consultation', 'appointments' or 'settings'.
 	 *
 	 * @return string
 	 */
@@ -160,7 +197,77 @@ class Doctor_Dashboard {
 
 		$tab = sanitize_key( wp_unslash( $_GET['tab'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 
-		return in_array( $tab, array( 'profile', 'clinics', 'services', 'video-consultation', 'settings' ), true ) ? $tab : 'dashboard';
+		return in_array( $tab, array( 'profile', 'clinics', 'services', 'video-consultation', 'appointments', 'notifications', 'settings' ), true ) ? $tab : 'dashboard';
+	}
+
+	/**
+	 * Renders the Notifications tab: every notification recorded for this
+	 * doctor, via Notification_Center::for_user().
+	 *
+	 * @param \WP_User $user Currently logged-in doctor.
+	 * @return string
+	 */
+	private function render_notifications_tab( \WP_User $user ) {
+		return $this->template_loader->get_template(
+			'dashboard/partials/notifications-list.php',
+			array( 'notifications' => Notification_Center::for_user( $user->ID ) )
+		);
+	}
+
+	/**
+	 * Reads the current 'status' query var for the Appointments tab's filter.
+	 *
+	 * @return string
+	 */
+	private static function requested_appointments_status() {
+		if ( ! isset( $_GET['status'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			return '';
+		}
+
+		$status = sanitize_key( wp_unslash( $_GET['status'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+
+		return array_key_exists( $status, Appointments::status_options() ) ? $status : '';
+	}
+
+	/**
+	 * Reads the current 'date' query var for the Appointments tab's filter.
+	 *
+	 * @return string
+	 */
+	private static function requested_appointments_date() {
+		if ( ! isset( $_GET['date'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			return '';
+		}
+
+		return sanitize_text_field( wp_unslash( $_GET['date'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+	}
+
+	/**
+	 * Renders the Appointments tab: every appointment this doctor has ever
+	 * had, filterable by date and status.
+	 *
+	 * @param \WP_User $user Currently logged-in doctor.
+	 * @return string
+	 */
+	private function render_appointments_tab( \WP_User $user ) {
+		$date   = self::requested_appointments_date();
+		$status = self::requested_appointments_status();
+
+		return $this->template_loader->get_template(
+			'dashboard/partials/doctor-appointments-list.php',
+			array(
+				'rows'           => Appointments::all_for_admin(
+					array(
+						'doctor_id' => $user->ID,
+						'date'      => $date,
+						'status'    => $status,
+					)
+				),
+				'status_options' => Appointments::status_options(),
+				'selected_date'  => $date,
+				'selected_status' => $status,
+			)
+		);
 	}
 
 	/**
@@ -344,12 +451,17 @@ class Doctor_Dashboard {
 			'clinics_tab_html'      => 'clinics' === $active_tab ? $this->render_clinics_tab( $user ) : '',
 			'services_tab_html'     => 'services' === $active_tab ? $this->render_services_tab( $user ) : '',
 			'video_consultation_tab_html' => 'video-consultation' === $active_tab ? $this->render_video_consultation_tab( $user ) : '',
+			'appointments_tab_html' => 'appointments' === $active_tab ? $this->render_appointments_tab( $user ) : '',
+			'notifications_tab_html' => 'notifications' === $active_tab ? $this->render_notifications_tab( $user ) : '',
+			'unread_notifications_count' => Notification_Center::unread_count( $user->ID ),
 			'settings_tab_html'     => 'settings' === $active_tab ? $this->render_settings_tab() : '',
 			'dashboard_url'         => $dashboard_url,
 			'profile_url'           => $dashboard_url ? add_query_arg( 'tab', 'profile', $dashboard_url ) : '',
 			'clinics_url'           => $dashboard_url ? add_query_arg( 'tab', 'clinics', $dashboard_url ) : '',
 			'services_url'          => $dashboard_url ? add_query_arg( 'tab', 'services', $dashboard_url ) : '',
 			'video_consultation_url' => $dashboard_url ? add_query_arg( 'tab', 'video-consultation', $dashboard_url ) : '',
+			'appointments_url'      => $dashboard_url ? add_query_arg( 'tab', 'appointments', $dashboard_url ) : '',
+			'notifications_url'     => $dashboard_url ? add_query_arg( 'tab', 'notifications', $dashboard_url ) : '',
 			'settings_url'          => $dashboard_url ? add_query_arg( 'tab', 'settings', $dashboard_url ) : '',
 			'logout_url'            => wp_logout_url( Page_Finder::url_for_shortcode( 'doctor_login' ) ),
 			'total_patients'        => isset( $user_counts['avail_roles'][ Roles::PATIENT_ROLE ] ) ? (int) $user_counts['avail_roles'][ Roles::PATIENT_ROLE ] : 0,

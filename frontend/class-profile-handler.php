@@ -370,11 +370,8 @@ class Profile_Handler {
 		$phone_number = isset( $_POST['phone_number'] ) ? sanitize_text_field( wp_unslash( $_POST['phone_number'] ) ) : '';
 
 		if ( '' === $phone_number ) {
-			$meta['doctor_ak_phone_number'] = '';
-			return $meta;
-		}
-
-		if ( ! preg_match( '/^[0-9+\-\s()]{7,20}$/', $phone_number ) ) {
+			$errors['phone_number'] = __( 'Phone number is required.', 'doctor-ak-portal' );
+		} elseif ( ! preg_match( '/^[0-9+\-\s()]{7,20}$/', $phone_number ) ) {
 			$errors['phone_number'] = __( 'Please provide a valid phone number.', 'doctor-ak-portal' );
 		} else {
 			$meta['doctor_ak_phone_number'] = $phone_number;

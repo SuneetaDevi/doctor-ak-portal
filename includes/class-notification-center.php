@@ -1,0 +1,392 @@
+<?php
+/**
+ * In-app notifications (the "Notifications" tab on the doctor, patient, and
+ * admin dashboards) — distinct from includes/class-notifications.php, which
+ * sends the *email* versions of these same events.
+ *
+ * @package DoctorAKPortal\Includes
+ */
+
+namespace DoctorAKPortal\Includes;
+
+// Prevent direct file access.
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Class Notification_Center
+ *
+ * Hooked to the exact same appointment-lifecycle actions
+ * includes/class-notifications.php already listens to for emails
+ * ('doctor_ak_appointment_created', '_cancelled', '_paid', '_completed') —
+ * each one writes one row per relevant recipient (the patient, the doctor,
+ * and every administrator), so every dashboard's Notifications tab reflects
+ * real events, never fabricated ones.
+ */
+class Notification_Center {
+
+	const TABLE = 'dak_notifications';
+
+	const TYPE_BOOKED    = 'booked';
+	const TYPE_CANCELLED = 'cancelled';
+	const TYPE_PAID      = 'paid';
+	const TYPE_COMPLETED = 'completed';
+
+	/**
+	 * Returns the fully prefixed table name.
+	 *
+	 * @return string
+	 */
+	public static function table_name() {
+		global $wpdb;
+
+		return $wpdb->prefix . self::TABLE;
+	}
+
+	/**
+	 * Hook callback: a new appointment was created.
+	 *
+	 * @param int   $appointment_id New appointment's post ID.
+	 * @param array $data           Raw data passed to Appointments::create() (unused, kept for hook signature).
+	 * @return void
+	 */
+	public static function notify_created( $appointment_id, $data ) {
+		$appt = Appointments::notification_data( $appointment_id );
+
+		if ( empty( $appt ) ) {
+			return;
+		}
+
+		if ( $appt['patient_id'] > 0 ) {
+			self::record(
+				$appt['patient_id'],
+				self::TYPE_BOOKED,
+				sprintf(
+					/* translators: %s: doctor's display name. */
+					__( 'Your appointment with Dr. %s has been booked.', 'doctor-ak-portal' ),
+					$appt['doctor_name']
+				),
+				$appointment_id
+			);
+		}
+
+		self::record(
+			$appt['doctor_id'],
+			self::TYPE_BOOKED,
+			sprintf(
+				/* translators: %s: patient's display name. */
+				__( 'New appointment booked with %s.', 'doctor-ak-portal' ),
+				$appt['patient_name']
+			),
+			$appointment_id
+		);
+
+		self::notify_admins(
+			sprintf(
+				/* translators: 1: patient's display name, 2: doctor's display name. */
+				__( '%1$s booked an appointment with Dr. %2$s.', 'doctor-ak-portal' ),
+				$appt['patient_name'],
+				$appt['doctor_name']
+			),
+			self::TYPE_BOOKED,
+			$appointment_id
+		);
+	}
+
+	/**
+	 * Hook callback: an appointment was cancelled.
+	 *
+	 * @param int $appointment_id Cancelled appointment's post ID.
+	 * @return void
+	 */
+	public static function notify_cancelled( $appointment_id ) {
+		$appt = Appointments::notification_data( $appointment_id );
+
+		if ( empty( $appt ) ) {
+			return;
+		}
+
+		if ( $appt['patient_id'] > 0 ) {
+			self::record(
+				$appt['patient_id'],
+				self::TYPE_CANCELLED,
+				sprintf(
+					/* translators: %s: doctor's display name. */
+					__( 'Your appointment with Dr. %s has been cancelled.', 'doctor-ak-portal' ),
+					$appt['doctor_name']
+				),
+				$appointment_id
+			);
+		}
+
+		self::record(
+			$appt['doctor_id'],
+			self::TYPE_CANCELLED,
+			sprintf(
+				/* translators: %s: patient's display name. */
+				__( 'Your appointment with %s has been cancelled.', 'doctor-ak-portal' ),
+				$appt['patient_name']
+			),
+			$appointment_id
+		);
+
+		self::notify_admins(
+			sprintf(
+				/* translators: 1: patient's display name, 2: doctor's display name. */
+				__( '%1$s cancelled their appointment with Dr. %2$s.', 'doctor-ak-portal' ),
+				$appt['patient_name'],
+				$appt['doctor_name']
+			),
+			self::TYPE_CANCELLED,
+			$appointment_id
+		);
+	}
+
+	/**
+	 * Hook callback: an appointment's online payment succeeded.
+	 *
+	 * @param int $appointment_id Paid appointment's post ID.
+	 * @return void
+	 */
+	public static function notify_paid( $appointment_id ) {
+		$appt = Appointments::notification_data( $appointment_id );
+
+		if ( empty( $appt ) ) {
+			return;
+		}
+
+		if ( $appt['patient_id'] > 0 ) {
+			self::record(
+				$appt['patient_id'],
+				self::TYPE_PAID,
+				sprintf(
+					/* translators: %s: doctor's display name. */
+					__( 'Payment received for your appointment with Dr. %s.', 'doctor-ak-portal' ),
+					$appt['doctor_name']
+				),
+				$appointment_id
+			);
+		}
+
+		self::record(
+			$appt['doctor_id'],
+			self::TYPE_PAID,
+			sprintf(
+				/* translators: %s: patient's display name. */
+				__( '%s has paid for their appointment.', 'doctor-ak-portal' ),
+				$appt['patient_name']
+			),
+			$appointment_id
+		);
+
+		self::notify_admins(
+			sprintf(
+				/* translators: 1: patient's display name, 2: doctor's display name. */
+				__( '%1$s paid for their appointment with Dr. %2$s.', 'doctor-ak-portal' ),
+				$appt['patient_name'],
+				$appt['doctor_name']
+			),
+			self::TYPE_PAID,
+			$appointment_id
+		);
+	}
+
+	/**
+	 * Hook callback: an appointment was marked completed (manually by the
+	 * doctor, or automatically — see Appointments::mark_completed()/
+	 * auto_complete_past_appointments()).
+	 *
+	 * @param int $appointment_id Completed appointment's post ID.
+	 * @return void
+	 */
+	public static function notify_completed( $appointment_id ) {
+		$appt = Appointments::notification_data( $appointment_id );
+
+		if ( empty( $appt ) ) {
+			return;
+		}
+
+		if ( $appt['patient_id'] > 0 ) {
+			self::record(
+				$appt['patient_id'],
+				self::TYPE_COMPLETED,
+				sprintf(
+					/* translators: %s: doctor's display name. */
+					__( 'Your appointment with Dr. %s is complete.', 'doctor-ak-portal' ),
+					$appt['doctor_name']
+				),
+				$appointment_id
+			);
+		}
+
+		self::notify_admins(
+			sprintf(
+				/* translators: 1: patient's display name, 2: doctor's display name. */
+				__( '%1$s\'s appointment with Dr. %2$s is complete.', 'doctor-ak-portal' ),
+				$appt['patient_name'],
+				$appt['doctor_name']
+			),
+			self::TYPE_COMPLETED,
+			$appointment_id
+		);
+	}
+
+	/**
+	 * Records one notification for every administrator account.
+	 *
+	 * @param string $message        Notification text.
+	 * @param string $type           One of the TYPE_* constants.
+	 * @param int    $appointment_id Related appointment's post ID.
+	 * @return void
+	 */
+	private static function notify_admins( $message, $type, $appointment_id ) {
+		foreach ( self::admin_user_ids() as $admin_id ) {
+			self::record( $admin_id, $type, $message, $appointment_id );
+		}
+	}
+
+	/**
+	 * Every administrator's user ID.
+	 *
+	 * @return array
+	 */
+	private static function admin_user_ids() {
+		return get_users(
+			array(
+				'role'   => 'administrator',
+				'fields' => 'ID',
+			)
+		);
+	}
+
+	/**
+	 * Inserts one notification row.
+	 *
+	 * @param int    $recipient_id   User who should see this.
+	 * @param string $type           One of the TYPE_* constants.
+	 * @param string $message        Notification text.
+	 * @param int    $appointment_id Related appointment's post ID.
+	 * @return void
+	 */
+	private static function record( $recipient_id, $type, $message, $appointment_id ) {
+		global $wpdb;
+
+		$wpdb->insert(
+			self::table_name(),
+			array(
+				'recipient_id'   => (int) $recipient_id,
+				'type'           => $type,
+				'message'        => $message,
+				'appointment_id' => (int) $appointment_id,
+				'is_read'        => 0,
+				'created_at'     => current_time( 'mysql' ),
+			),
+			array( '%d', '%s', '%s', '%d', '%d', '%s' )
+		);
+	}
+
+	/**
+	 * A user's notifications, most recent first.
+	 *
+	 * @param int $user_id Recipient's user ID.
+	 * @param int $limit   Max rows to return. Default 50.
+	 * @return array List of `array( 'id', 'type', 'message', 'is_read', 'date', 'appointment_id' )`.
+	 */
+	public static function for_user( $user_id, $limit = 50 ) {
+		global $wpdb;
+
+		$table = self::table_name();
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT id, type, message, appointment_id, is_read, created_at FROM {$table} WHERE recipient_id = %d ORDER BY created_at DESC, id DESC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table is our own table_name(), not user input.
+				$user_id,
+				$limit
+			),
+			ARRAY_A
+		);
+
+		if ( ! is_array( $rows ) ) {
+			return array();
+		}
+
+		return array_map(
+			function ( $row ) {
+				$timestamp = strtotime( $row['created_at'] );
+
+				return array(
+					'id'             => (int) $row['id'],
+					'type'           => $row['type'],
+					'message'        => $row['message'],
+					'appointment_id' => (int) $row['appointment_id'],
+					'is_read'        => '1' === $row['is_read'],
+					'date'           => $timestamp ? date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $timestamp ) : '',
+				);
+			},
+			$rows
+		);
+	}
+
+	/**
+	 * A user's unread notification count, for the sidebar badge.
+	 *
+	 * @param int $user_id Recipient's user ID.
+	 * @return int
+	 */
+	public static function unread_count( $user_id ) {
+		global $wpdb;
+
+		$table = self::table_name();
+
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$table} WHERE recipient_id = %d AND is_read = 0", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table is our own table_name(), not user input.
+				$user_id
+			)
+		);
+	}
+
+	/**
+	 * Marks a single notification read — ownership-checked (only the
+	 * recipient it belongs to can mark it read).
+	 *
+	 * @param int $notification_id Notification row ID.
+	 * @param int $user_id         Must match the notification's recipient.
+	 * @return bool
+	 */
+	public static function mark_read( $notification_id, $user_id ) {
+		global $wpdb;
+
+		$updated = $wpdb->update(
+			self::table_name(),
+			array( 'is_read' => 1 ),
+			array(
+				'id'           => (int) $notification_id,
+				'recipient_id' => (int) $user_id,
+			),
+			array( '%d' ),
+			array( '%d', '%d' )
+		);
+
+		return false !== $updated;
+	}
+
+	/**
+	 * Marks every one of a user's notifications read.
+	 *
+	 * @param int $user_id Recipient's user ID.
+	 * @return void
+	 */
+	public static function mark_all_read( $user_id ) {
+		global $wpdb;
+
+		$wpdb->update(
+			self::table_name(),
+			array( 'is_read' => 1 ),
+			array( 'recipient_id' => (int) $user_id ),
+			array( '%d' ),
+			array( '%d' )
+		);
+	}
+}

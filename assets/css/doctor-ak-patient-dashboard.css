@@ -414,6 +414,13 @@
 	background: #f5d3d3 !important;
 }
 
+.dak-patient-appt-video-hint {
+	margin: -0.2rem 0 0 !important;
+	padding: 0 0 0.6rem !important;
+	font-size: 0.76rem !important;
+	color: var( --dak-muted ) !important;
+}
+
 /* "More actions" kebab dropdown */
 
 .dak-patient-appt-kebab {
@@ -940,4 +947,26 @@
 		flex-direction: row !important;
 		justify-content: space-between !important;
 	}
+}
+
+/* Appointments tab filter bar (doctor + patient dashboards) */
+
+.dak-appt-filters-card {
+	margin-bottom: 1.25rem !important;
+}
+
+.dak-appt-filters-form {
+	display: flex !important;
+	align-items: flex-end !important;
+	flex-wrap: wrap !important;
+	gap: 1rem !important;
+}
+
+.dak-appt-filters-form .dak-field {
+	margin-bottom: 0 !important;
+	min-width: 160px !important;
+}
+
+.dak-appt-filters-form .dak-button {
+	white-space: nowrap !important;
 }

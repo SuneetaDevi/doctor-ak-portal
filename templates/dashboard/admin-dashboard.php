@@ -6,7 +6,7 @@
  *
  * @var string    $section          Active section slug (e.g. 'dashboard', 'doctors', 'patients', 'appointments'…).
  * @var string    $section_label    Human-readable label for the active section.
- * @var array     $nav_groups       Sidebar groups: [ [ 'label' => 'Main', 'items' => [ [ 'slug', 'label', 'url', 'is_active' ], … ] ], … ].
+ * @var array     $nav_groups       Sidebar groups: [ [ 'label' => 'Main', 'items' => [ [ 'slug', 'label', 'url', 'is_active', 'badge' ], … ] ], … ].
  * @var string    $dashboard_url    URL of this dashboard page.
  * @var string    $logout_url       Nonce-protected logout URL.
  * @var \WP_User  $current_user     Currently logged-in administrator.
@@ -34,12 +34,14 @@ $dak_admin_icons = array(
 	'pin'         => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18s6-5.2 6-9.8A6 6 0 0 0 4 8.2C4 12.8 10 18 10 18z"/><circle cx="10" cy="8" r="2"/></svg>',
 	'settings'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="2.6"/><path d="M10 2.8v2M10 15.2v2M17.2 10h-2M4.8 10h-2M15.1 4.9l-1.4 1.4M6.3 13.7l-1.4 1.4M15.1 15.1l-1.4-1.4M6.3 6.3 4.9 4.9"/></svg>',
 	'logout'      => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 17H4a1.5 1.5 0 0 1-1.5-1.5v-11A1.5 1.5 0 0 1 4 3h3.5"/><path d="M13 14l4-4-4-4"/><path d="M17 10H7.5"/></svg>',
+	'bell'        => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8a5 5 0 0 1 10 0c0 3.2 1 4.3 1.5 5H3.5C4 12.3 5 11.2 5 8z"/><path d="M8.2 15.5a1.8 1.8 0 0 0 3.6 0"/></svg>',
 );
 
 $dak_admin_section_icons = array(
 	'dashboard'       => 'dashboard',
 	'appointments'    => 'calendar',
 	'encounters'      => 'clock',
+	'notifications'   => 'bell',
 	'patients'        => 'users',
 	'doctors'         => 'person',
 	'receptionist'    => 'headset',
@@ -74,6 +76,7 @@ $dak_admin_section_icons = array(
 								<a href="<?php echo esc_url( $item['url'] ); ?>">
 									<span class="dak-nav-icon"><?php echo $dak_admin_icons[ $icon ]; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 									<?php echo esc_html( $item['label'] ); ?>
+									<?php if ( ! empty( $item['badge'] ) ) : ?><span class="dak-nav-badge"<?php echo 'notifications' === $item['slug'] ? ' id="dak-notifications-badge"' : ''; ?>><?php echo esc_html( $item['badge'] ); ?></span><?php endif; ?>
 								</a>
 							</li>
 						<?php endforeach; ?>

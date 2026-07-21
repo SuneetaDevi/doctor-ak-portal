@@ -338,6 +338,13 @@
 	text-decoration: underline !important;
 }
 
+button.dak-link-button {
+	background: none !important;
+	border: none !important;
+	padding: 0 !important;
+	cursor: pointer !important;
+}
+
 .dak-form-footer-link {
 	text-align: center !important;
 	font-size: 0.88rem !important;

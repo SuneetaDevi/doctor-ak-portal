@@ -30,6 +30,11 @@
  * @var string   $profile_tab_html      Pre-rendered profile/profile-form.php output when $active_tab is 'profile'.
  * @var string   $settings_tab_html     Pre-rendered dashboard-settings-tab.php output when $active_tab is 'settings'.
  * @var string   $payments_tab_html     Pre-rendered patient-payments-tab.php output when $active_tab is 'payments'.
+ * @var string   $appointments_url      Same-page URL for the Appointments tab.
+ * @var string   $appointments_tab_html Pre-rendered patient-appointments-list.php output when $active_tab is 'appointments'.
+ * @var string   $notifications_url     Same-page URL for the Notifications tab.
+ * @var string   $notifications_tab_html Pre-rendered notifications-list.php output when $active_tab is 'notifications'.
+ * @var int      $unread_notifications_count Unread notification count, for the sidebar badge.
  * @var string   $coming_soon_html      Pre-rendered admin-placeholder.php output when $active_tab is 'medical-history'.
  */
 
@@ -56,6 +61,7 @@ $dak_patient_icons = array(
 	'shield'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5 16.5 5v5c0 4.2-2.8 6.7-6.5 7.5C6.3 16.7 3.5 14.2 3.5 10V5L10 2.5z"/></svg>',
 	'headset'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11v-1a6.5 6.5 0 0 1 13 0v1"/><rect x="2.5" y="10.5" width="3" height="4.5" rx="1"/><rect x="14.5" y="10.5" width="3" height="4.5" rx="1"/><path d="M16.5 15v.5a2.3 2.3 0 0 1-2.3 2.3H11.8"/></svg>',
 	'clock'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.2"/><path d="M10 6.2V10l2.8 1.8"/></svg>',
+	'bell'      => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8a5 5 0 0 1 10 0c0 3.2 1 4.3 1.5 5H3.5C4 12.3 5 11.2 5 8z"/><path d="M8.2 15.5a1.8 1.8 0 0 0 3.6 0"/></svg>',
 	'check'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l3.5 3.5L16 6"/></svg>',
 	'x'         => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5l10 10M15 5L5 15"/></svg>',
 );
@@ -98,12 +104,15 @@ $appointment_group_labels = array(
 				<li class="<?php echo 'dashboard' === $active_tab ? 'is-active' : ''; ?>">
 					<a href="<?php echo esc_url( $dashboard_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_patient_icons['dashboard']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Dashboard', 'doctor-ak-portal' ); ?></a>
 				</li>
-				<li>
-					<a href="#dak-patient-appointments"><span class="dak-nav-icon"><?php echo $dak_patient_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Appointments', 'doctor-ak-portal' ); ?><?php if ( $total_upcoming_count > 0 ) : ?><span class="dak-nav-badge"><?php echo esc_html( $total_upcoming_count ); ?></span><?php endif; ?></a>
+				<li class="<?php echo 'appointments' === $active_tab ? 'is-active' : ''; ?>">
+					<a href="<?php echo esc_url( $appointments_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_patient_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Appointments', 'doctor-ak-portal' ); ?><?php if ( $total_upcoming_count > 0 ) : ?><span class="dak-nav-badge"><?php echo esc_html( $total_upcoming_count ); ?></span><?php endif; ?></a>
 				</li>
 				<?php if ( $directory_url ) : ?>
 					<li><a href="<?php echo esc_url( $directory_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_patient_icons['users']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Doctors', 'doctor-ak-portal' ); ?></a></li>
 				<?php endif; ?>
+				<li class="<?php echo 'notifications' === $active_tab ? 'is-active' : ''; ?>">
+					<a href="<?php echo esc_url( $notifications_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_patient_icons['bell']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Notifications', 'doctor-ak-portal' ); ?><?php if ( $unread_notifications_count > 0 ) : ?><span class="dak-nav-badge" id="dak-notifications-badge"><?php echo esc_html( $unread_notifications_count ); ?></span><?php endif; ?></a>
+				</li>
 				<?php if ( $profile_url ) : ?>
 					<li class="<?php echo 'profile' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $profile_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_patient_icons['person']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Profile', 'doctor-ak-portal' ); ?></a></li>
 				<?php endif; ?>
@@ -149,6 +158,22 @@ $appointment_group_labels = array(
 			<div class="dak-dashboard-card">
 				<?php echo $settings_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own dashboard-settings-tab.php template, which escapes its own output. ?>
 			</div>
+
+		<?php elseif ( 'appointments' === $active_tab ) : ?>
+
+			<div class="dak-dashboard-greeting">
+				<h1><?php esc_html_e( 'Appointments', 'doctor-ak-portal' ); ?></h1>
+			</div>
+
+			<?php echo $appointments_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own patient-appointments-list.php template, which escapes its own output. ?>
+
+		<?php elseif ( 'notifications' === $active_tab ) : ?>
+
+			<div class="dak-dashboard-greeting">
+				<h1><?php esc_html_e( 'Notifications', 'doctor-ak-portal' ); ?></h1>
+			</div>
+
+			<?php echo $notifications_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own notifications-list.php template, which escapes its own output. ?>
 
 		<?php elseif ( 'payments' === $active_tab ) : ?>
 
@@ -232,7 +257,7 @@ $appointment_group_labels = array(
 				<section class="dak-dashboard-card dak-dashboard-appointments" id="dak-patient-appointments">
 					<div class="dak-dashboard-card-header">
 						<h2><?php esc_html_e( 'Upcoming Appointments', 'doctor-ak-portal' ); ?></h2>
-						<a class="dak-link" href="#dak-patient-appointments"><?php esc_html_e( 'View all appointments', 'doctor-ak-portal' ); ?> &rarr;</a>
+						<a class="dak-link" href="<?php echo esc_url( $appointments_url ); ?>"><?php esc_html_e( 'View all appointments', 'doctor-ak-portal' ); ?> &rarr;</a>
 					</div>
 
 					<?php if ( ! $has_any_upcoming ) : ?>
@@ -369,7 +394,7 @@ $appointment_group_labels = array(
 	<?php if ( 'dashboard' === $active_tab ) : ?>
 		<nav class="dak-patient-bottom-nav">
 			<a href="<?php echo esc_url( $dashboard_url ); ?>" class="is-active"><?php echo $dak_patient_icons['dashboard']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?><span><?php esc_html_e( 'Dashboard', 'doctor-ak-portal' ); ?></span></a>
-			<a href="#dak-patient-appointments"><?php echo $dak_patient_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?><span><?php esc_html_e( 'Appointments', 'doctor-ak-portal' ); ?></span></a>
+			<a href="<?php echo esc_url( $appointments_url ); ?>"><?php echo $dak_patient_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?><span><?php esc_html_e( 'Appointments', 'doctor-ak-portal' ); ?></span></a>
 			<?php if ( $directory_url ) : ?>
 				<a href="<?php echo esc_url( $directory_url ); ?>"><?php echo $dak_patient_icons['users']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?><span><?php esc_html_e( 'Doctors', 'doctor-ak-portal' ); ?></span></a>
 			<?php endif; ?>

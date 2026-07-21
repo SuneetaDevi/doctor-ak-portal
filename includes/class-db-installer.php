@@ -55,6 +55,20 @@ class Db_Installer {
 	const SERVICES_DB_VERSION = '1.0.0';
 
 	/**
+	 * Option name tracking the installed notifications-table schema version.
+	 *
+	 * @var string
+	 */
+	const NOTIFICATIONS_DB_VERSION_OPTION = 'dak_notifications_db_version';
+
+	/**
+	 * Current notifications table schema version.
+	 *
+	 * @var string
+	 */
+	const NOTIFICATIONS_DB_VERSION = '1.0.0';
+
+	/**
 	 * Option name guarding the one-time legacy-data migration so it never
 	 * runs more than once.
 	 *
@@ -77,6 +91,9 @@ class Db_Installer {
 		self::create_services_table();
 		update_option( self::SERVICES_DB_VERSION_OPTION, self::SERVICES_DB_VERSION );
 
+		self::create_notifications_table();
+		update_option( self::NOTIFICATIONS_DB_VERSION_OPTION, self::NOTIFICATIONS_DB_VERSION );
+
 		if ( ! get_option( self::MIGRATION_OPTION ) ) {
 			self::migrate_legacy_data();
 			update_option( self::MIGRATION_OPTION, 'yes' );
@@ -96,6 +113,7 @@ class Db_Installer {
 	public static function maybe_upgrade() {
 		if ( self::DB_VERSION === get_option( self::DB_VERSION_OPTION )
 			&& self::SERVICES_DB_VERSION === get_option( self::SERVICES_DB_VERSION_OPTION )
+			&& self::NOTIFICATIONS_DB_VERSION === get_option( self::NOTIFICATIONS_DB_VERSION_OPTION )
 		) {
 			return;
 		}
@@ -160,6 +178,34 @@ class Db_Installer {
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),
 			KEY doctor_id (doctor_id)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Runs dbDelta() against the notifications table schema.
+	 *
+	 * @return void
+	 */
+	private static function create_notifications_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$table_name      = Notification_Center::table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table_name} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			recipient_id BIGINT UNSIGNED NOT NULL,
+			type VARCHAR(20) NOT NULL DEFAULT 'booked',
+			message VARCHAR(255) NOT NULL DEFAULT '',
+			appointment_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			is_read TINYINT(1) UNSIGNED NOT NULL DEFAULT 0,
+			created_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY recipient_read (recipient_id, is_read)
 		) {$charset_collate};";
 
 		dbDelta( $sql );

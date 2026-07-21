@@ -38,7 +38,7 @@
 		document.getElementById( 'dak-admin-session-email' ).value = '';
 		document.getElementById( 'dak-admin-session-address-field' ).classList.remove( 'dak-hidden' );
 
-		document.querySelectorAll( '#dak-admin-session-grid .dak-availability-row' ).forEach( function ( row ) {
+		document.querySelectorAll( '#dak-admin-session-grid .dak-availability-row[data-day]' ).forEach( function ( row ) {
 			row.querySelector( '.dak-availability-toggle' ).checked = false;
 			row.querySelector( '.dak-availability-start' ).value = '';
 			row.querySelector( '.dak-availability-start' ).disabled = true;
@@ -173,7 +173,7 @@
 				sessions = {};
 			}
 
-			document.querySelectorAll( '#dak-admin-session-grid .dak-availability-row' ).forEach( function ( row ) {
+			document.querySelectorAll( '#dak-admin-session-grid .dak-availability-row[data-day]' ).forEach( function ( row ) {
 				var day = row.getAttribute( 'data-day' );
 				var entry = sessions[ day ] || { enabled: false, start: '', end: '', slot_duration_minutes: '' };
 				var toggle = row.querySelector( '.dak-availability-toggle' );
@@ -220,7 +220,7 @@
 
 			var sessions = {};
 
-			document.querySelectorAll( '#dak-admin-session-grid .dak-availability-row' ).forEach( function ( row ) {
+			document.querySelectorAll( '#dak-admin-session-grid .dak-availability-row[data-day]' ).forEach( function ( row ) {
 				var day = row.getAttribute( 'data-day' );
 
 				sessions[ day ] = {

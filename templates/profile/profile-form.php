@@ -88,8 +88,8 @@ $current_picture_url = $current_profile_picture_id ? wp_get_attachment_image_url
 	<?php else : ?>
 
 		<div class="dak-field">
-			<label for="dak-profile-phone-number"><?php esc_html_e( 'Phone Number (Optional)', 'doctor-ak-portal' ); ?></label>
-			<input type="tel" id="dak-profile-phone-number" name="phone_number" value="<?php echo esc_attr( $current_phone_number ); ?>">
+			<label for="dak-profile-phone-number"><?php esc_html_e( 'Phone Number', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
+			<input type="tel" id="dak-profile-phone-number" name="phone_number" value="<?php echo esc_attr( $current_phone_number ); ?>" required>
 			<span class="dak-field-error" data-field="phone_number"></span>
 		</div>
 

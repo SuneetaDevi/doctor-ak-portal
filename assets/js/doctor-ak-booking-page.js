@@ -124,6 +124,29 @@
 		if ( serviceSection ) {
 			serviceSection.classList.toggle( 'dak-hidden', 'video' === type );
 		}
+
+		updatePhoneRequirement();
+	}
+
+	/**
+	 * Video consultations always require a phone number (they're always paid
+	 * online). Toggles the guest phone field's required marker, and warns a
+	 * logged-in patient with no phone on file before they hit submit.
+	 */
+	function updatePhoneRequirement() {
+		var isVideo = 'video' === getType();
+		var requiredMarker = document.getElementById( 'dak-booking-guest-phone-required' );
+
+		if ( requiredMarker ) {
+			requiredMarker.classList.toggle( 'dak-hidden', ! isVideo );
+		}
+
+		var missingPhoneNotice = document.getElementById( 'dak-booking-loggedin-phone-missing' );
+
+		if ( missingPhoneNotice ) {
+			var hasPhone = !! ( window.dakBookingPage.user && window.dakBookingPage.user.phone );
+			missingPhoneNotice.classList.toggle( 'dak-hidden', ! isVideo || hasPhone );
+		}
 	}
 
 	function updateVideoAvailability( videoDisabled ) {
@@ -763,28 +786,36 @@
 			return;
 		}
 
-		// "Pay Now" / "Pay Later" is a choice only for clinic (onsite) visits.
-		// Video consultations always require payment upfront — a single
-		// "Pay Now" button, no "Pay Later" option.
-		var showChoice = 'clinic' === type && charge > 0;
+		// Both clinic (onsite) and video visits offer the same Pay Now / Pay
+		// Later choice whenever there's a charge — a video consultation can
+		// be booked unpaid too, staying "Pending Payment" (no Join Call link)
+		// until the patient pays from their own dashboard.
+		var showChoice = charge > 0;
 
 		singleWrap.classList.toggle( 'dak-hidden', showChoice );
 		choiceWrap.classList.toggle( 'dak-hidden', ! showChoice );
 
 		if ( showChoice ) {
+			var hint = document.getElementById( 'dak-booking-submit-choice-hint' );
+
+			if ( hint ) {
+				hint.textContent = 'video' === type
+					? 'This appointment has a charge. Pay now online, or book now and pay later from your dashboard.'
+					: 'This appointment has a charge. Pay now online, or book now and pay at the clinic.';
+			}
+
 			return;
 		}
 
-		var isPaidVideo = 'video' === type && charge > 0;
 		var paymentChoiceInput = document.getElementById( 'dak-booking-payment-choice' );
 		var singleLabel = singleWrap.querySelector( '.dak-button-label' );
 
 		if ( paymentChoiceInput ) {
-			paymentChoiceInput.value = isPaidVideo ? 'now' : 'later';
+			paymentChoiceInput.value = 'later';
 		}
 
 		if ( singleLabel ) {
-			singleLabel.textContent = isPaidVideo ? 'Pay Now' : 'Book Consultation';
+			singleLabel.textContent = 'Book Consultation';
 		}
 	}
 
@@ -824,6 +855,8 @@
 		var choiceBlock = document.getElementById( 'dak-booking-identity-choice' );
 		var guestBlock = document.getElementById( 'dak-booking-identity-guest' );
 
+		updatePhoneRequirement();
+
 		if ( window.dakBookingPage.isLoggedIn ) {
 			show( loggedInBlock );
 			hide( choiceBlock );
@@ -832,6 +865,13 @@
 			document.getElementById( 'dak-booking-loggedin-name' ).value = window.dakBookingPage.user.name || '';
 			document.getElementById( 'dak-booking-loggedin-email' ).value = window.dakBookingPage.user.email || '';
 			document.getElementById( 'dak-booking-loggedin-phone' ).value = window.dakBookingPage.user.phone || '';
+
+			var phoneLink = document.getElementById( 'dak-booking-loggedin-phone-missing-link' );
+
+			if ( phoneLink && window.dakBookingPage.profileUrl ) {
+				phoneLink.href = window.dakBookingPage.profileUrl;
+			}
+
 			return;
 		}
 
@@ -894,6 +934,21 @@
 				return;
 			}
 
+			var guestBlockVisibleForValidation = ! document.getElementById( 'dak-booking-identity-guest' ).classList.contains( 'dak-hidden' );
+
+			if ( 'video' === getType() ) {
+				if ( guestBlockVisibleForValidation ) {
+					if ( ! document.getElementById( 'dak-booking-guest-phone' ).value.trim() ) {
+						showFieldError( 'guest_phone', 'A phone number is required to book a video consultation.' );
+						return;
+					}
+				} else if ( window.dakBookingPage.isLoggedIn && ! ( window.dakBookingPage.user && window.dakBookingPage.user.phone ) ) {
+					updatePhoneRequirement();
+					document.getElementById( 'dak-booking-loggedin-phone-missing' ).scrollIntoView( { behavior: 'smooth', block: 'center' } );
+					return;
+				}
+			}
+
 			var submitButtons = document.querySelectorAll( '#dak-booking-submit, #dak-booking-pay-later, #dak-booking-pay-now' );
 			submitButtons.forEach( function ( button ) {
 				button.disabled = true;
@@ -907,7 +962,6 @@
 			formData.append( 'type', getType() );
 			formData.append( 'date', document.getElementById( 'dak-booking-date' ).value );
 			formData.append( 'time', document.getElementById( 'dak-booking-time' ).value );
-			formData.append( 'notes', document.getElementById( 'dak-booking-notes' ).value );
 			formData.append( 'service_id', document.getElementById( 'dak-booking-service-id' ).value );
 			formData.append( 'payment_choice', document.getElementById( 'dak-booking-payment-choice' ).value );
 

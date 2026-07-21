@@ -729,3 +729,97 @@
 		order: 2 !important;
 	}
 }
+
+/* Notifications tab (doctor, patient, and admin dashboards) */
+
+.dak-nav-badge {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	min-width: 1.25rem !important;
+	height: 1.25rem !important;
+	padding: 0 0.35rem !important;
+	margin-left: auto !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+	font-size: 0.68rem !important;
+	font-weight: 700 !important;
+}
+
+.dak-notifications-list {
+	list-style: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.4rem !important;
+}
+
+.dak-notification-row {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 0.75rem !important;
+	padding: 0.85rem !important;
+	border-radius: var( --dak-radius-md ) !important;
+	border: 1px solid transparent !important;
+}
+
+.dak-notification-row.is-unread {
+	background: var( --dak-primary-tint ) !important;
+	border-color: var( --dak-primary-tint ) !important;
+	cursor: pointer !important;
+}
+
+.dak-notification-icon {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 2rem !important;
+	height: 2rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-notification-icon svg {
+	width: 1rem !important;
+	height: 1rem !important;
+}
+
+.dak-notification-icon.is-booked { background: #dbeafe !important; color: #1d4ed8 !important; }
+.dak-notification-icon.is-paid { background: #dcfce7 !important; color: #15803d !important; }
+.dak-notification-icon.is-completed { background: #dcfce7 !important; color: #15803d !important; }
+.dak-notification-icon.is-cancelled { background: #fbeaea !important; color: #b42323 !important; }
+
+.dak-notification-body {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.15rem !important;
+	min-width: 0 !important;
+	flex: 1 1 auto !important;
+}
+
+.dak-notification-message {
+	font-size: 0.88rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-notification-row.is-unread .dak-notification-message {
+	font-weight: 700 !important;
+}
+
+.dak-notification-date {
+	font-size: 0.76rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-notification-dot {
+	flex: 0 0 auto !important;
+	width: 0.5rem !important;
+	height: 0.5rem !important;
+	margin-top: 0.4rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary ) !important;
+}

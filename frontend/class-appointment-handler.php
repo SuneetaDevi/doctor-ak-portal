@@ -69,7 +69,12 @@ class Appointment_Handler {
 		if ( $appointment_id > 0 ) {
 			$result = Appointments::update( $appointment_id, $data );
 		} else {
-			$result = Appointments::create( $data );
+			// Lets the admin immediately choose Paid (they collected payment
+			// themselves) or Pending (the patient will pay later from their
+			// own dashboard) when booking on a patient's behalf — see the
+			// admin_override branch in Appointments::create().
+			$data['admin_override'] = true;
+			$result                 = Appointments::create( $data );
 		}
 
 		if ( is_wp_error( $result ) ) {

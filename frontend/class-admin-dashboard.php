@@ -10,6 +10,7 @@ namespace DoctorAKPortal\Frontend;
 use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinics;
+use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
@@ -62,6 +63,7 @@ class Admin_Dashboard {
 			'dashboard'   => 'Dashboard',
 			'appointments' => 'Appointments',
 			'encounters'  => 'Encounters',
+			'notifications' => 'Notifications',
 		),
 		'Users'  => array(
 			'patients'    => 'Patients',
@@ -151,6 +153,23 @@ class Admin_Dashboard {
 				'confirmDisable' => __( 'Deactivate this account? They will not be able to log in until reactivated.', 'doctor-ak-portal' ),
 				'confirmEnable'  => __( 'Reactivate this account?', 'doctor-ak-portal' ),
 				'genericError'   => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
+			)
+		);
+
+		wp_enqueue_script(
+			'doctor-ak-portal-notifications',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-notifications.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-notifications.js' ),
+			true
+		);
+
+		wp_localize_script(
+			'doctor-ak-portal-notifications',
+			'dakNotifications',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( Notification_Handler::NONCE_ACTION ),
 			)
 		);
 
@@ -355,6 +374,8 @@ class Admin_Dashboard {
 		$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
 		$all_sections  = self::all_sections();
 
+		$unread_notifications_count = Notification_Center::unread_count( get_current_user_id() );
+
 		$nav_groups = array();
 
 		foreach ( self::NAV_GROUPS as $group_label => $items ) {
@@ -366,6 +387,7 @@ class Admin_Dashboard {
 					'label'     => $label,
 					'url'       => $dashboard_url ? add_query_arg( 'section', $slug, $dashboard_url ) : '',
 					'is_active' => $slug === $section,
+					'badge'     => 'notifications' === $slug ? $unread_notifications_count : 0,
 				);
 			}
 
@@ -426,6 +448,13 @@ class Admin_Dashboard {
 	private function section_content_html( $section ) {
 		if ( 'dashboard' === $section ) {
 			return $this->template_loader->get_template( 'dashboard/partials/admin-overview.php', $this->overview_data() );
+		}
+
+		if ( 'notifications' === $section ) {
+			return $this->template_loader->get_template(
+				'dashboard/partials/notifications-list.php',
+				array( 'notifications' => Notification_Center::for_user( get_current_user_id() ) )
+			);
 		}
 
 		if ( 'appointments' === $section ) {

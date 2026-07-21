@@ -17,6 +17,11 @@
  * @var string   $clinics_tab_html      Pre-rendered doctor-clinics-tab.php output when $active_tab is 'clinics'.
  * @var string   $services_tab_html     Pre-rendered doctor-services-tab.php output when $active_tab is 'services'.
  * @var string   $video_consultation_tab_html Pre-rendered doctor-video-consultation-tab.php output when $active_tab is 'video-consultation'.
+ * @var string   $appointments_tab_html Pre-rendered doctor-appointments-list.php output when $active_tab is 'appointments'.
+ * @var string   $appointments_url      Same-page URL for the Appointments tab.
+ * @var string   $notifications_tab_html Pre-rendered notifications-list.php output when $active_tab is 'notifications'.
+ * @var string   $notifications_url      Same-page URL for the Notifications tab.
+ * @var int      $unread_notifications_count Unread notification count, for the sidebar badge.
  * @var string   $settings_tab_html     Pre-rendered dashboard-settings-tab.php output when $active_tab is 'settings'.
  * @var array    $appointment_groups    'today'|'tomorrow'|'this_week'|'later' => array of pre-rendered doctor-appointment-row.php strings.
  * @var int      $total_upcoming_appointments Total upcoming (non-cancelled) appointment count.
@@ -123,7 +128,8 @@ $dak_dash_icons = array(
 				<?php if ( $video_consultation_url ) : ?>
 					<li class="<?php echo 'video-consultation' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $video_consultation_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['video']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Video Consultation', 'doctor-ak-portal' ); ?></a></li>
 				<?php endif; ?>
-				<li><a href="#dak-doctor-appointments"><span class="dak-nav-icon"><?php echo $dak_dash_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Appointments', 'doctor-ak-portal' ); ?></a></li>
+				<li class="<?php echo 'appointments' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $appointments_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Appointments', 'doctor-ak-portal' ); ?></a></li>
+				<li class="<?php echo 'notifications' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $notifications_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['bell']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Notifications', 'doctor-ak-portal' ); ?><?php if ( $unread_notifications_count > 0 ) : ?><span class="dak-nav-badge" id="dak-notifications-badge"><?php echo esc_html( $unread_notifications_count ); ?></span><?php endif; ?></a></li>
 				<?php if ( $profile_url ) : ?>
 					<li class="<?php echo 'profile' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $profile_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['person']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Profile', 'doctor-ak-portal' ); ?></a></li>
 				<?php endif; ?>
@@ -144,7 +150,23 @@ $dak_dash_icons = array(
 			</div>
 		</header>
 
-		<?php if ( 'dashboard' !== $active_tab ) : ?>
+		<?php if ( 'appointments' === $active_tab ) : ?>
+
+			<div class="dak-dashboard-greeting">
+				<h1><?php esc_html_e( 'Appointments', 'doctor-ak-portal' ); ?></h1>
+			</div>
+
+			<?php echo $appointments_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-appointments-list.php template, which escapes its own output. ?>
+
+		<?php elseif ( 'notifications' === $active_tab ) : ?>
+
+			<div class="dak-dashboard-greeting">
+				<h1><?php esc_html_e( 'Notifications', 'doctor-ak-portal' ); ?></h1>
+			</div>
+
+			<?php echo $notifications_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own notifications-list.php template, which escapes its own output. ?>
+
+		<?php elseif ( 'dashboard' !== $active_tab ) : ?>
 
 			<div class="dak-dashboard-greeting">
 				<h1>

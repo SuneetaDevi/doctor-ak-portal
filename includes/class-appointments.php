@@ -55,6 +55,13 @@ class Appointments {
 	const VIDEO_JOIN_WINDOW_AFTER_MINUTES  = 60;
 
 	/**
+	 * Hours after a booked (confirmed) appointment's scheduled start before
+	 * it's assumed over and auto-completed if the doctor hasn't manually
+	 * marked it — see auto_complete_past_appointments().
+	 */
+	const AUTO_COMPLETE_HOURS_AFTER = 3;
+
+	/**
 	 * Registers the (intentionally non-public) post type used for storage.
 	 *
 	 * @return void
@@ -166,21 +173,33 @@ class Appointments {
 
 		$data['charge'] = $charge;
 
-		$requires_payment = apply_filters( 'doctor_ak_appointment_requires_payment', false, $data );
-		$status           = $requires_payment ? self::STATUS_PENDING_PAYMENT : self::STATUS_PENDING;
-		$payment_mode      = $requires_payment ? self::PAYMENT_MODE_ONLINE : self::PAYMENT_MODE_MANUAL;
+		if ( ! empty( $data['admin_override'] ) ) {
+			// The admin dashboard's "+ Add Appointment" lets an admin book on a
+			// patient's behalf and immediately choose whether they collected
+			// payment themselves (Paid) or the patient still needs to pay
+			// (Pending) — unlike the patient-facing Booking_Handler flow, which
+			// must never let the client dictate its own payment status.
+			$status_options = self::status_options();
+			$status         = isset( $data['status'] ) && array_key_exists( $data['status'], $status_options ) ? $data['status'] : self::STATUS_PENDING;
+			$payment_status = isset( $data['payment_status'] ) && self::PAYMENT_STATUS_PAID === $data['payment_status'] ? self::PAYMENT_STATUS_PAID : self::PAYMENT_STATUS_PENDING;
+			$payment_mode   = isset( $data['payment_mode'] ) && self::PAYMENT_MODE_ONLINE === $data['payment_mode'] ? self::PAYMENT_MODE_ONLINE : self::PAYMENT_MODE_MANUAL;
+		} else {
+			$requires_payment = apply_filters( 'doctor_ak_appointment_requires_payment', false, $data );
+			$status           = $requires_payment ? self::STATUS_PENDING_PAYMENT : self::STATUS_PENDING;
+			$payment_mode     = $requires_payment ? self::PAYMENT_MODE_ONLINE : self::PAYMENT_MODE_MANUAL;
 
-		/**
-		 * Filters a new appointment's payment status at creation time.
-		 *
-		 * Defaults to "pending" for every booking until a payment module is
-		 * built; that module would hook here to mark cash/gateway-confirmed
-		 * bookings as PAYMENT_STATUS_PAID immediately.
-		 *
-		 * @param string $payment_status Default PAYMENT_STATUS_PENDING.
-		 * @param array  $data           Raw data passed to create().
-		 */
-		$payment_status = apply_filters( 'doctor_ak_appointment_payment_status', self::PAYMENT_STATUS_PENDING, $data );
+			/**
+			 * Filters a new appointment's payment status at creation time.
+			 *
+			 * Defaults to "pending" for every booking until a payment module is
+			 * built; that module would hook here to mark cash/gateway-confirmed
+			 * bookings as PAYMENT_STATUS_PAID immediately.
+			 *
+			 * @param string $payment_status Default PAYMENT_STATUS_PENDING.
+			 * @param array  $data           Raw data passed to create().
+			 */
+			$payment_status = apply_filters( 'doctor_ak_appointment_payment_status', self::PAYMENT_STATUS_PENDING, $data );
+		}
 
 		$post_id = wp_insert_post(
 			array(
@@ -232,6 +251,11 @@ class Appointments {
 		 * @param array $data    Raw data passed to create().
 		 */
 		do_action( 'doctor_ak_appointment_created', $post_id, $data );
+
+		if ( self::PAYMENT_STATUS_PAID === $payment_status ) {
+			/** This action is documented in mark_paid() above. */
+			do_action( 'doctor_ak_appointment_paid', $post_id );
+		}
 
 		return $post_id;
 	}
@@ -681,6 +705,15 @@ class Appointments {
 			);
 		}
 
+		if ( self::STATUS_COMPLETED === $appointment['status'] ) {
+			return array(
+				'applicable' => true,
+				'can_join'   => false,
+				'room_url'   => $room_url,
+				'hint'       => __( 'Appointment completed', 'doctor-ak-portal' ),
+			);
+		}
+
 		if ( self::PAYMENT_STATUS_PAID !== $appointment['payment_status'] ) {
 			return array(
 				'applicable' => true,
@@ -707,7 +740,7 @@ class Appointments {
 
 		if ( $now < $opens_at ) {
 			/* translators: %d: minutes before the appointment the call opens. */
-			$hint = sprintf( __( 'Available %d minutes before your appointment', 'doctor-ak-portal' ), self::VIDEO_JOIN_WINDOW_BEFORE_MINUTES );
+			$hint = sprintf( __( 'Video consultation link will be available %d minutes before your appointment', 'doctor-ak-portal' ), self::VIDEO_JOIN_WINDOW_BEFORE_MINUTES );
 
 			return array(
 				'applicable' => true,
@@ -1177,6 +1210,83 @@ class Appointments {
 	}
 
 	/**
+	 * Marks an appointment as completed on the doctor's own behalf — used by
+	 * the doctor dashboard's "Mark as Completed" action. Ownership-checked
+	 * (only the doctor it belongs to can complete it this way; admin
+	 * completion would go through Appointments::update() instead), and only
+	 * allowed from 'confirmed' (booked) — a pending or already-cancelled
+	 * appointment was never actually seen, so there's nothing to complete.
+	 *
+	 * @param int $appointment_id Appointment post ID.
+	 * @param int $doctor_id      Doctor's user ID, must match the appointment's doctor.
+	 * @return bool
+	 */
+	public static function mark_completed( $appointment_id, $doctor_id ) {
+		$appointment = self::get( $appointment_id );
+
+		if ( empty( $appointment )
+			|| (int) $appointment['doctor_id'] !== (int) $doctor_id
+			|| self::STATUS_CONFIRMED !== $appointment['status']
+		) {
+			return false;
+		}
+
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_COMPLETED );
+
+		/**
+		 * Fires after an appointment is marked completed (manually or automatically).
+		 *
+		 * @param int $appointment_id Completed appointment's post ID.
+		 */
+		do_action( 'doctor_ak_appointment_completed', $appointment_id );
+
+		return true;
+	}
+
+	/**
+	 * Auto-completes booked (confirmed) appointments once enough time has
+	 * passed since their scheduled start that the visit is assumed over —
+	 * a safety net for doctors who don't manually mark_completed(). Run
+	 * hourly from Notifications::CRON_HOOK (see class-plugin.php).
+	 *
+	 * @return void
+	 */
+	public static function auto_complete_past_appointments() {
+		$query = new \WP_Query(
+			array(
+				'post_type'      => self::POST_TYPE,
+				'post_status'    => 'publish',
+				'posts_per_page' => 200,
+				'no_found_rows'  => true,
+				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- small, non-public post type; no better lookup available.
+					array(
+						'key'   => 'doctor_ak_appointment_status',
+						'value' => self::STATUS_CONFIRMED,
+					),
+				),
+			)
+		);
+
+		$now = current_time( 'timestamp' ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- comparing against strtotime() of stored local date/time strings, not doing math that needs UTC.
+
+		foreach ( wp_list_pluck( $query->posts, 'ID' ) as $appointment_id ) {
+			$appointment = self::get( $appointment_id );
+			$start       = strtotime( $appointment['date'] . ' ' . $appointment['time'] );
+
+			if ( false === $start ) {
+				continue;
+			}
+
+			if ( $now > $start + self::AUTO_COMPLETE_HOURS_AFTER * HOUR_IN_SECONDS ) {
+				update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_COMPLETED );
+
+				/** This action is documented in mark_completed() above. */
+				do_action( 'doctor_ak_appointment_completed', $appointment_id );
+			}
+		}
+	}
+
+	/**
 	 * Doctors available to book, for populating a <select>.
 	 *
 	 * @return array User ID => display name.
@@ -1238,10 +1348,15 @@ class Appointments {
 	 * Every appointment across every doctor and patient, most recent first,
 	 * as flat view-model rows ready for the admin "Appointments" table.
 	 *
+	 * Also used, with a `doctor_id` and/or `patient_id` filter, to back the
+	 * doctor and patient dashboards' own "Appointments" tabs — the same flat
+	 * row shape (see admin_row_data()) works for all three audiences.
+	 *
 	 * @param array $filters {
 	 *     Optional. All filters are ANDed together; omit or pass '' / 0 to skip one.
 	 *
 	 *     @type int    $patient_id    Only this patient's appointments.
+	 *     @type int    $doctor_id     Only this doctor's appointments.
 	 *     @type string $date          'YYYY-MM-DD', only appointments on this date.
 	 *     @type string $status        One of the STATUS_* constants.
 	 *     @type string $payment_mode  One of the PAYMENT_MODE_* constants.
@@ -1262,6 +1377,13 @@ class Appointments {
 			$meta_query[] = array(
 				'key'   => 'doctor_ak_appointment_patient_id',
 				'value' => (int) $filters['patient_id'],
+			);
+		}
+
+		if ( ! empty( $filters['doctor_id'] ) ) {
+			$meta_query[] = array(
+				'key'   => 'doctor_ak_appointment_doctor_id',
+				'value' => (int) $filters['doctor_id'],
 			);
 		}
 
@@ -1327,12 +1449,14 @@ class Appointments {
 			'patient_id'        => $appointment['patient_id'],
 			'patient_name'      => $patient_name,
 			'patient_initials'  => self::initials( $patient_name ),
+			'patient_avatar_url' => $appointment['patient_id'] > 0 ? self::avatar_url_for_user( $appointment['patient_id'] ) : '',
 			'guest_name'        => $appointment['guest_name'],
 			'guest_email'       => $appointment['guest_email'],
 			'guest_phone'       => $appointment['guest_phone'],
 			'doctor_id'         => $appointment['doctor_id'],
 			'doctor_name'       => '' !== $doctor_name ? $doctor_name : __( 'Unknown Doctor', 'doctor-ak-portal' ),
 			'doctor_email'      => $doctor ? $doctor->user_email : '',
+			'doctor_avatar_url' => $doctor ? self::avatar_url_for_user( $doctor->ID ) : '',
 			'type'              => $appointment['type'],
 			'type_label'        => self::type_label( $appointment['type'] ),
 			'date'              => $appointment['date'],
@@ -1347,7 +1471,31 @@ class Appointments {
 			'service_name'      => $appointment['service_name'],
 			'charge'            => $appointment['charge'],
 			'notes'             => $appointment['notes'],
+			'is_instant'        => $appointment['is_instant'],
+			'surcharge'         => $appointment['surcharge'],
+			'video_call'        => self::video_call_info( $appointment ),
 		);
+	}
+
+	/**
+	 * Resolves a user's (doctor or patient) uploaded profile picture, or ''
+	 * if none set. Shared helper for every row-builder that shows an avatar.
+	 *
+	 * @param int $user_id User ID.
+	 * @return string
+	 */
+	private static function avatar_url_for_user( $user_id ) {
+		$picture_id = (int) get_user_meta( $user_id, 'doctor_ak_profile_picture_id', true );
+
+		if ( $picture_id > 0 ) {
+			$url = wp_get_attachment_image_url( $picture_id, 'thumbnail' );
+
+			if ( $url ) {
+				return $url;
+			}
+		}
+
+		return '';
 	}
 
 	/**

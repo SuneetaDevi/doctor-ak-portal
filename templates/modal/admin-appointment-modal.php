@@ -111,11 +111,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 				</select>
 			</div>
 			<div class="dak-field">
-				<label for="dak-admin-appointment-payment-status"><?php esc_html_e( 'Payment Status', 'doctor-ak-portal' ); ?></label>
+				<label for="dak-admin-appointment-payment-status"><?php esc_html_e( 'Payment', 'doctor-ak-portal' ); ?></label>
 				<select id="dak-admin-appointment-payment-status">
-					<option value="pending"><?php esc_html_e( 'Pending', 'doctor-ak-portal' ); ?></option>
-					<option value="paid"><?php esc_html_e( 'Paid', 'doctor-ak-portal' ); ?></option>
+					<option value="pending"><?php esc_html_e( 'Ask the patient to pay (Pending)', 'doctor-ak-portal' ); ?></option>
+					<option value="paid"><?php esc_html_e( "I've collected payment (Paid)", 'doctor-ak-portal' ); ?></option>
 				</select>
+				<span class="dak-field-error" data-field="payment_status"></span>
 			</div>
 		</div>
 

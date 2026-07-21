@@ -152,17 +152,27 @@ class Booking_Handler {
 			}
 		}
 
-		$requires_online_payment = 'video' === $type || 'now' === $payment_choice;
+		// A phone number is always required for video consultations (so the
+		// clinic can reach the patient), regardless of whether they're paying
+		// now or later; for clinic (onsite) visits it's only needed when
+		// actually paying online right away.
+		$requires_phone = 'video' === $type || 'now' === $payment_choice;
 
-		if ( $requires_online_payment && empty( $errors ) ) {
+		if ( $requires_phone && empty( $errors ) ) {
 			$phone_for_payment = $is_logged_in_patient ? get_user_meta( $current_user->ID, 'doctor_ak_phone_number', true ) : $guest_phone;
 
 			if ( '' === Swich_Payment::normalize_msisdn( $phone_for_payment ) ) {
 				if ( $is_logged_in_patient ) {
-					wp_send_json_error( array( 'message' => __( 'Please add a valid mobile number (e.g. 03xxxxxxxxx) to your profile before paying online.', 'doctor-ak-portal' ) ) );
+					$message = 'video' === $type
+						? __( 'Please add a valid mobile number (e.g. 03xxxxxxxxx) to your profile before booking a video consultation.', 'doctor-ak-portal' )
+						: __( 'Please add a valid mobile number (e.g. 03xxxxxxxxx) to your profile before paying online.', 'doctor-ak-portal' );
+
+					wp_send_json_error( array( 'message' => $message ) );
 				}
 
-				$errors['guest_phone'] = __( 'A valid mobile number (e.g. 03xxxxxxxxx) is required to pay online.', 'doctor-ak-portal' );
+				$errors['guest_phone'] = 'video' === $type
+					? __( 'A valid mobile number (e.g. 03xxxxxxxxx) is required for a video consultation.', 'doctor-ak-portal' )
+					: __( 'A valid mobile number (e.g. 03xxxxxxxxx) is required to pay online.', 'doctor-ak-portal' );
 			}
 		}
 

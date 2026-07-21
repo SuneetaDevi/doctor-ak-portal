@@ -116,4 +116,8 @@ $can_pay_now     = ! $appointment['is_paid'] && (float) $appointment['charge'] >
 			<?php endif; ?>
 		</div>
 	</div>
+
+	<?php if ( ! empty( $appointment['video_call']['can_join'] ) ) : ?>
+		<p class="dak-patient-appt-video-hint"><?php esc_html_e( "If it says waiting for the host, please wait a moment — your doctor needs to start the call first.", 'doctor-ak-portal' ); ?></p>
+	<?php endif; ?>
 </div>

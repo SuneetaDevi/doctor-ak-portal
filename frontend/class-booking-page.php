@@ -108,6 +108,7 @@ class Booking_Page {
 				'user'        => $this->logged_in_patient_data(),
 				'loginUrl'    => Page_Finder::url_for_shortcode( 'doctor_login' ),
 				'registerUrl' => Page_Finder::url_for_shortcode( 'doctor_register' ),
+				'profileUrl'  => Page_Finder::url_for_shortcode( 'doctor_profile' ),
 				'pageUrl'     => Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ),
 				'services'    => $this->services_by_doctor_and_type(),
 				'videoPricing' => $this->video_pricing_by_doctor(),

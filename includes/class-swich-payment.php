@@ -42,10 +42,12 @@ class Swich_Payment {
 	const TOKEN_TRANSIENT = 'doctor_ak_swich_bearer_token_';
 
 	/**
-	 * Filter callback for `doctor_ak_appointment_requires_payment`: online
-	 * video consultations always require payment when there's a charge;
-	 * clinic (onsite) appointments only require it when the patient
-	 * explicitly chose "Pay Now" over "Pay Later" on the booking page.
+	 * Filter callback for `doctor_ak_appointment_requires_payment`: both
+	 * clinic (onsite) and video appointments only require payment right away
+	 * when the patient explicitly chose "Pay Now" over "Pay Later" on the
+	 * booking page — a video consultation can be booked unpaid too, staying
+	 * "Pending Payment" (no Join Call link, see Appointments::video_call_info())
+	 * until the patient pays from their own dashboard.
 	 *
 	 * @param bool  $requires_payment Default value from Appointments::create().
 	 * @param array $data             Raw data passed to Appointments::create(), including 'payment_choice' ('now'|'later').
@@ -58,15 +60,11 @@ class Swich_Payment {
 
 		$charge = isset( $data['charge'] ) ? (float) $data['charge'] : 0.0;
 
-		if ( $charge <= 0 || ! isset( $data['type'] ) ) {
+		if ( $charge <= 0 ) {
 			return false;
 		}
 
-		if ( Appointments::TYPE_VIDEO === $data['type'] ) {
-			return true;
-		}
-
-		return Appointments::TYPE_CLINIC === $data['type'] && isset( $data['payment_choice'] ) && 'now' === $data['payment_choice'];
+		return isset( $data['payment_choice'] ) && 'now' === $data['payment_choice'];
 	}
 
 	/**

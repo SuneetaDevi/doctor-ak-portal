@@ -82,8 +82,21 @@ $time_label     = $time_timestamp ? date_i18n( 'g:i A', $time_timestamp ) : $app
 
 		<div class="dak-patient-appt-row-actions">
 			<?php if ( ! empty( $appointment['video_call']['can_join'] ) ) : ?>
-				<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $appointment['video_call']['room_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></a>
+				<a
+					class="dak-status-pill dak-status-pill-action"
+					href="<?php echo esc_url( $appointment['video_call']['room_url'] ); ?>"
+					target="_blank"
+					rel="noopener"
+					title="<?php esc_attr_e( "You'll be asked to log in with a free account (Google, GitHub, etc.) to start the call — your patient won't need to.", 'doctor-ak-portal' ); ?>"
+				><?php esc_html_e( 'Start Call', 'doctor-ak-portal' ); ?></a>
+			<?php endif; ?>
+			<?php if ( 'confirmed' === $appointment['status'] ) : ?>
+				<button type="button" class="dak-status-pill dak-status-pill-action" data-mark-completed data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"><?php esc_html_e( 'Mark Completed', 'doctor-ak-portal' ); ?></button>
 			<?php endif; ?>
 		</div>
 	</div>
+
+	<?php if ( ! empty( $appointment['video_call']['can_join'] ) ) : ?>
+		<p class="dak-patient-appt-video-hint"><?php esc_html_e( "You'll be asked to log in with a free account to start the call — your patient won't need to log in.", 'doctor-ak-portal' ); ?></p>
+	<?php endif; ?>
 </div>
