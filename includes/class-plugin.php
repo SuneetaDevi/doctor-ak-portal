@@ -7,6 +7,7 @@
 
 namespace DoctorAKPortal\Includes;
 
+use DoctorAKPortal\Admin\Footer_Settings;
 use DoctorAKPortal\Admin\Notification_Settings;
 use DoctorAKPortal\Admin\Swich_Settings;
 use DoctorAKPortal\Frontend\Admin_Dashboard;
@@ -29,6 +30,7 @@ use DoctorAKPortal\Frontend\Profile_Handler;
 use DoctorAKPortal\Frontend\Registration_Handler;
 use DoctorAKPortal\Frontend\Service_Handler;
 use DoctorAKPortal\Frontend\Shortcodes;
+use DoctorAKPortal\Frontend\Site_Footer;
 use DoctorAKPortal\Frontend\Site_Header;
 use DoctorAKPortal\Frontend\Theme_Handler;
 use DoctorAKPortal\Frontend\Video_Pricing_Handler;
@@ -121,6 +123,10 @@ class Plugin {
 		$notification_settings = new Notification_Settings();
 		$this->loader->add_action( 'admin_menu', $notification_settings, 'register_menu' );
 		$this->loader->add_action( 'admin_init', $notification_settings, 'register_settings' );
+
+		$footer_settings = new Footer_Settings();
+		$this->loader->add_action( 'admin_menu', $footer_settings, 'register_menu' );
+		$this->loader->add_action( 'admin_init', $footer_settings, 'register_settings' );
 	}
 
 	/**
@@ -134,6 +140,11 @@ class Plugin {
 		$this->loader->add_action( 'wp_enqueue_scripts', $site_header, 'enqueue_assets' );
 		$this->loader->add_action( 'wp_body_open', $site_header, 'render' );
 		$this->loader->add_filter( 'nav_menu_link_attributes', $site_header, 'add_booking_trigger_attributes', 10, 3 );
+
+		$site_footer = new Site_Footer( new Template_Loader() );
+		$this->loader->add_action( 'after_setup_theme', $site_footer, 'register_menu_locations' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $site_footer, 'enqueue_assets' );
+		$this->loader->add_action( 'wp_footer', $site_footer, 'render' );
 
 		$doctor_dashboard  = new Doctor_Dashboard( new Template_Loader() );
 		$patient_dashboard = new Patient_Dashboard( new Template_Loader() );

@@ -1,18 +1,31 @@
 /**
  * Doctor AK Portal — Booking page ([book_appointment] shortcode).
  *
- * Doctor/service cards, an appointment-type segmented control, a month
- * calendar with availability dots, a slot-card grid grouped into
- * Morning/Afternoon/Evening, a running "Your Booking" summary sidebar, and
- * a Continue-to-confirm step revealing identity + notes + submit.
+ * A 6-step wizard: Doctor -> Service -> Personal Details -> Date & Time ->
+ * Payment -> Confirmation. Only one step's card is visible at once (see
+ * goToStep()); navigation between steps is explicit via "Next"/"Back"
+ * buttons (data-wizard-next/data-wizard-back), never automatic. A vertical
+ * sidebar step list mirrors the active/complete state of each step.
  */
 ( function () {
 	'use strict';
 
 	var form;
-	var calendarMonth; // Date, first of the currently displayed month.
+	var dateStripStart; // Date, first day of the visible 7-day date-strip window.
 	var todayStr;
-	var monthCache = {}; // 'doctorId:type:YYYY-MM' => { 'YYYY-MM-DD': { total, available } }
+	var monthCache = {}; // 'doctorId:type:YYYY-M' => { 'YYYY-MM-DD': { total, available } }
+	var selectedSlotSurcharge = 0;
+
+	var STEP_KEYS = [ 'doctor', 'service', 'identity', 'datetime', 'payment', 'confirmation' ];
+
+	var STEP_SECTION_IDS = {
+		doctor: 'dak-booking-step-doctor',
+		service: 'dak-booking-step-service',
+		identity: 'dak-booking-step-identity',
+		datetime: 'dak-booking-step-datetime',
+		payment: 'dak-booking-step-payment',
+		confirmation: 'dak-booking-step-confirmation',
+	};
 
 	document.addEventListener( 'DOMContentLoaded', function () {
 		form = document.getElementById( 'dak-booking-form' );
@@ -22,25 +35,25 @@
 		}
 
 		todayStr = formatDate( new Date() );
-		calendarMonth = startOfMonth( new Date() );
+		dateStripStart = new Date();
 
 		wireDoctorCards();
 		wireSegmentedControl();
-		wireCalendarNav();
+		wireDateStripNav();
 		wireQuickDates();
-		wireContinueButton();
+		wireWizardNav();
 		wireGuestToggle();
 		wirePaymentChoice();
 		wireSubmit();
 
-		renderCalendar();
+		renderDateStrip();
 		updateServiceCards( getDoctorId(), getType() );
 		applyIdentityState();
-		updateSteps();
 		updateSummary();
+		goToStep( 'doctor' );
 
 		if ( getDoctorId() ) {
-			fetchMonthAvailability();
+			fetchAndRenderDateStrip();
 		}
 	} );
 
@@ -50,6 +63,120 @@
 
 	function getType() {
 		return document.getElementById( 'dak-booking-type' ).value;
+	}
+
+	/* ---------------------------------------------------------------------
+	 * Wizard navigation: only one step section is visible at a time, moved
+	 * between explicitly via Back/Next buttons.
+	 * ------------------------------------------------------------------- */
+
+	function goToStep( key ) {
+		STEP_KEYS.forEach( function ( stepKey ) {
+			var section = document.getElementById( STEP_SECTION_IDS[ stepKey ] );
+
+			if ( section ) {
+				section.classList.toggle( 'dak-hidden', stepKey !== key );
+			}
+		} );
+
+		updateSteps( key );
+	}
+
+	function keyForSectionId( sectionId ) {
+		return STEP_KEYS.filter( function ( key ) {
+			return STEP_SECTION_IDS[ key ] === sectionId;
+		} )[ 0 ];
+	}
+
+	function wireWizardNav() {
+		document.querySelectorAll( '[data-wizard-next]' ).forEach( function ( button ) {
+			button.addEventListener( 'click', function () {
+				var card = button.closest( '.dak-booking-card' );
+				var currentKey = card ? keyForSectionId( card.id ) : null;
+
+				if ( currentKey && ! validateStepBeforeNext( currentKey ) ) {
+					return;
+				}
+
+				goToStep( button.getAttribute( 'data-wizard-next' ) );
+			} );
+		} );
+
+		document.querySelectorAll( '[data-wizard-back]' ).forEach( function ( button ) {
+			button.addEventListener( 'click', function () {
+				goToStep( button.getAttribute( 'data-wizard-back' ) );
+			} );
+		} );
+	}
+
+	function validateStepBeforeNext( key ) {
+		clearFieldErrors();
+
+		if ( 'doctor' === key ) {
+			if ( ! getDoctorId() ) {
+				showFieldError( 'doctor_id', 'Please choose a doctor.' );
+				return false;
+			}
+
+			return true;
+		}
+
+		if ( 'identity' === key ) {
+			var guestVisible = ! document.getElementById( 'dak-booking-identity-guest' ).classList.contains( 'dak-hidden' );
+
+			if ( guestVisible ) {
+				var name = document.getElementById( 'dak-booking-guest-name' ).value.trim();
+				var email = document.getElementById( 'dak-booking-guest-email' ).value.trim();
+				var phone = document.getElementById( 'dak-booking-guest-phone' ).value.trim();
+				var ok = true;
+
+				if ( ! name ) {
+					showFieldError( 'guest_name', 'Please enter your name.' );
+					ok = false;
+				}
+
+				if ( ! email ) {
+					showFieldError( 'guest_email', 'Please enter a valid email address.' );
+					ok = false;
+				}
+
+				if ( 'video' === getType() && ! phone ) {
+					showFieldError( 'guest_phone', 'A phone number is required to book a video consultation.' );
+					ok = false;
+				}
+
+				return ok;
+			}
+
+			if ( ! window.dakBookingPage.isLoggedIn ) {
+				return false;
+			}
+
+			if ( 'video' === getType() && ! ( window.dakBookingPage.user && window.dakBookingPage.user.phone ) ) {
+				updatePhoneRequirement();
+				document.getElementById( 'dak-booking-loggedin-phone-missing' ).scrollIntoView( { behavior: 'smooth', block: 'center' } );
+				return false;
+			}
+
+			return true;
+		}
+
+		if ( 'datetime' === key ) {
+			var dateOk = !! document.getElementById( 'dak-booking-date' ).value;
+			var timeOk = !! document.getElementById( 'dak-booking-time' ).value;
+
+			if ( ! dateOk ) {
+				showFieldError( 'date', 'Please choose an appointment date.' );
+			}
+
+			if ( ! timeOk ) {
+				showFieldError( 'time', 'Please choose an appointment time.' );
+			}
+
+			return dateOk && timeOk;
+		}
+
+		return true;
 	}
 
 	/* ---------------------------------------------------------------------
@@ -77,8 +204,8 @@
 		updateServiceCards( getDoctorId(), getType() );
 		resetDateSelection();
 		monthCache = {};
-		fetchMonthAvailability();
-		updateSteps();
+		fetchAndRenderDateStrip();
+		updateSteps( 'doctor' );
 		updateSummary();
 	}
 
@@ -99,7 +226,7 @@
 				monthCache = {};
 
 				if ( getDoctorId() ) {
-					fetchMonthAvailability();
+					fetchAndRenderDateStrip();
 				}
 
 				updateSummary();
@@ -116,7 +243,6 @@
 			segment.setAttribute( 'aria-selected', isActive ? 'true' : 'false' );
 		} );
 
-		show( document.getElementById( 'dak-booking-clinic-hint' ) );
 		document.getElementById( 'dak-booking-clinic-hint' ).classList.toggle( 'dak-hidden', 'clinic' !== type );
 
 		var serviceSection = document.getElementById( 'dak-booking-service-section' );
@@ -196,6 +322,8 @@
 
 		if ( ! services || ! services.length ) {
 			container.innerHTML = '<p class="dak-field-hint">No specific services configured — you can still book a general appointment.</p>';
+			document.getElementById( 'dak-booking-service-id' ).value = '0';
+			clearFieldError( 'service_id' );
 			return;
 		}
 
@@ -241,6 +369,8 @@
 
 		if ( ! pricing || ! ( pricing.base_price > 0 ) ) {
 			container.innerHTML = '<p class="dak-field-hint">No fixed price configured yet — you can still book a free video consultation.</p>';
+			document.getElementById( 'dak-booking-service-id' ).value = '0';
+			clearFieldError( 'service_id' );
 			return;
 		}
 
@@ -288,32 +418,24 @@
 	}
 
 	/* ---------------------------------------------------------------------
-	 * Calendar
+	 * Date & time: horizontal 7-day date-strip + slot cards.
 	 * ------------------------------------------------------------------- */
 
-	function wireCalendarNav() {
+	function wireDateStripNav() {
 		var prev = document.getElementById( 'dak-booking-cal-prev' );
 		var next = document.getElementById( 'dak-booking-cal-next' );
 
 		if ( prev ) {
 			prev.addEventListener( 'click', function () {
-				calendarMonth = new Date( calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1 );
-				renderCalendar();
-
-				if ( getDoctorId() ) {
-					fetchMonthAvailability();
-				}
+				dateStripStart = addDays( dateStripStart, -7 );
+				fetchAndRenderDateStrip();
 			} );
 		}
 
 		if ( next ) {
 			next.addEventListener( 'click', function () {
-				calendarMonth = new Date( calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1 );
-				renderCalendar();
-
-				if ( getDoctorId() ) {
-					fetchMonthAvailability();
-				}
+				dateStripStart = addDays( dateStripStart, 7 );
+				fetchAndRenderDateStrip();
 			} );
 		}
 	}
@@ -330,26 +452,22 @@
 
 		if ( tomorrowBtn ) {
 			tomorrowBtn.addEventListener( 'click', function () {
-				var tomorrow = new Date();
-				tomorrow.setDate( tomorrow.getDate() + 1 );
-				jumpToDate( tomorrow );
+				jumpToDate( addDays( new Date(), 1 ) );
 			} );
 		}
 	}
 
 	function jumpToDate( date ) {
-		calendarMonth = startOfMonth( date );
-		renderCalendar();
+		dateStripStart = new Date( date.getFullYear(), date.getMonth(), date.getDate() );
+		fetchAndRenderDateStrip();
 
 		if ( getDoctorId() ) {
-			fetchMonthAvailability();
+			selectDate( formatDate( date ) );
 		}
-
-		selectDate( formatDate( date ) );
 	}
 
-	function startOfMonth( date ) {
-		return new Date( date.getFullYear(), date.getMonth(), 1 );
+	function addDays( date, days ) {
+		return new Date( date.getFullYear(), date.getMonth(), date.getDate() + days );
 	}
 
 	function formatDate( date ) {
@@ -361,23 +479,19 @@
 	}
 
 	var monthLabels = [ 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December' ];
+	var weekdayShort = [ 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat' ];
 
-	function monthCacheKey() {
-		return getDoctorId() + ':' + getType() + ':' + calendarMonth.getFullYear() + '-' + ( calendarMonth.getMonth() + 1 );
-	}
-
-	function fetchMonthAvailability() {
+	function ensureMonthCached( year, month ) {
 		var doctorId = getDoctorId();
 
 		if ( ! doctorId ) {
-			return;
+			return Promise.resolve( {} );
 		}
 
-		var key = monthCacheKey();
+		var key = doctorId + ':' + getType() + ':' + year + '-' + month;
 
 		if ( monthCache[ key ] ) {
-			renderCalendar();
-			return;
+			return Promise.resolve( monthCache[ key ] );
 		}
 
 		var formData = new FormData();
@@ -385,63 +499,89 @@
 		formData.append( 'nonce', window.dakBookingPage.nonce );
 		formData.append( 'doctor_id', doctorId );
 		formData.append( 'type', getType() );
-		formData.append( 'year', calendarMonth.getFullYear() );
-		formData.append( 'month', calendarMonth.getMonth() + 1 );
+		formData.append( 'year', year );
+		formData.append( 'month', month );
 
-		fetch( window.dakBookingPage.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
+		return fetch( window.dakBookingPage.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
 			.then( function ( response ) { return response.json(); } )
 			.then( function ( result ) {
 				monthCache[ key ] = ( result.success && result.data && result.data.days ) ? result.data.days : {};
-				renderCalendar();
+				return monthCache[ key ];
 			} )
 			.catch( function () {
 				monthCache[ key ] = {};
-				renderCalendar();
+				return monthCache[ key ];
 			} );
 	}
 
-	function renderCalendar() {
-		var grid = document.getElementById( 'dak-booking-calendar-grid' );
+	function dayInfoFor( dateStr ) {
+		var parts = dateStr.split( '-' );
+		var key = getDoctorId() + ':' + getType() + ':' + parseInt( parts[ 0 ], 10 ) + '-' + parseInt( parts[ 1 ], 10 );
+
+		return monthCache[ key ] ? monthCache[ key ][ dateStr ] : null;
+	}
+
+	function fetchAndRenderDateStrip() {
+		if ( ! getDoctorId() ) {
+			renderDateStrip();
+			return;
+		}
+
+		var seen = {};
+		var months = [];
+
+		for ( var i = 0; i < 7; i++ ) {
+			var d = addDays( dateStripStart, i );
+			var mKey = d.getFullYear() + '-' + ( d.getMonth() + 1 );
+
+			if ( ! seen[ mKey ] ) {
+				seen[ mKey ] = true;
+				months.push( { year: d.getFullYear(), month: d.getMonth() + 1 } );
+			}
+		}
+
+		Promise.all( months.map( function ( m ) { return ensureMonthCached( m.year, m.month ); } ) )
+			.then( renderDateStrip );
+	}
+
+	function renderDateStrip() {
+		var strip = document.getElementById( 'dak-booking-date-strip' );
 		var title = document.getElementById( 'dak-booking-cal-title' );
 		var prev = document.getElementById( 'dak-booking-cal-prev' );
 
-		if ( ! grid ) {
+		if ( ! strip ) {
 			return;
 		}
 
 		if ( title ) {
-			title.textContent = monthLabels[ calendarMonth.getMonth() ] + ' ' + calendarMonth.getFullYear();
+			title.textContent = monthLabels[ dateStripStart.getMonth() ] + ' ' + dateStripStart.getFullYear();
 		}
-
-		var currentMonthStart = startOfMonth( new Date() );
 
 		if ( prev ) {
-			prev.disabled = calendarMonth.getTime() <= currentMonthStart.getTime();
+			prev.disabled = formatDate( dateStripStart ) <= todayStr;
 		}
 
-		grid.innerHTML = '';
+		strip.innerHTML = '';
 
-		var firstWeekday = calendarMonth.getDay();
-		var daysInMonth = new Date( calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0 ).getDate();
 		var selectedDate = document.getElementById( 'dak-booking-date' ).value;
-		var days = monthCache[ monthCacheKey() ] || null;
 
-		for ( var i = 0; i < firstWeekday; i++ ) {
-			var empty = document.createElement( 'span' );
-			empty.className = 'dak-booking-calendar-day dak-booking-calendar-day-empty';
-			grid.appendChild( empty );
-		}
-
-		for ( var day = 1; day <= daysInMonth; day++ ) {
-			var date = new Date( calendarMonth.getFullYear(), calendarMonth.getMonth(), day );
+		for ( var i = 0; i < 7; i++ ) {
+			var date = addDays( dateStripStart, i );
 			var dateStr = formatDate( date );
+
 			var button = document.createElement( 'button' );
 			button.type = 'button';
-			button.className = 'dak-booking-calendar-day';
+			button.className = 'dak-booking-date-strip-day';
 
-			var numberEl = document.createElement( 'span' );
-			numberEl.textContent = String( day );
-			button.appendChild( numberEl );
+			var dow = document.createElement( 'span' );
+			dow.className = 'dak-booking-date-strip-dow';
+			dow.textContent = weekdayShort[ date.getDay() ];
+			button.appendChild( dow );
+
+			var num = document.createElement( 'span' );
+			num.className = 'dak-booking-date-strip-num';
+			num.textContent = String( date.getDate() );
+			button.appendChild( num );
 
 			if ( dateStr < todayStr ) {
 				button.disabled = true;
@@ -452,9 +592,11 @@
 					};
 				}( dateStr ) );
 
-				if ( days && days[ dateStr ] ) {
+				var info = dayInfoFor( dateStr );
+
+				if ( info ) {
 					var dot = document.createElement( 'span' );
-					dot.className = 'dak-booking-dot ' + availabilityDotClass( days[ dateStr ] );
+					dot.className = 'dak-booking-dot ' + availabilityDotClass( info );
 					button.appendChild( dot );
 				}
 			}
@@ -463,7 +605,7 @@
 				button.classList.add( 'is-selected' );
 			}
 
-			grid.appendChild( button );
+			strip.appendChild( button );
 		}
 	}
 
@@ -479,17 +621,14 @@
 		return 'is-many';
 	}
 
-	/* ---------------------------------------------------------------------
-	 * Slot cards
-	 * ------------------------------------------------------------------- */
-
 	function resetDateSelection() {
 		document.getElementById( 'dak-booking-date' ).value = '';
 		document.getElementById( 'dak-booking-time' ).value = '';
 		selectedSlotSurcharge = 0;
-		hide( document.getElementById( 'dak-booking-slots-section' ) );
-		hide( document.getElementById( 'dak-booking-details' ) );
-		renderCalendar();
+		document.getElementById( 'dak-booking-slots-groups' ).innerHTML = '';
+		hide( document.getElementById( 'dak-booking-no-slots' ) );
+		updateCurrentlySelected();
+		renderDateStrip();
 	}
 
 	function selectDate( dateStr ) {
@@ -501,27 +640,19 @@
 		}
 
 		clearFieldError( 'doctor_id' );
+		clearFieldError( 'date' );
 
 		document.getElementById( 'dak-booking-date' ).value = dateStr;
 		document.getElementById( 'dak-booking-time' ).value = '';
 		selectedSlotSurcharge = 0;
-		hide( document.getElementById( 'dak-booking-details' ) );
-		renderCalendar();
-		updateSteps();
+		renderDateStrip();
+		updateCurrentlySelected();
 		updateSummary();
 
-		var section = document.getElementById( 'dak-booking-slots-section' );
 		var groups = document.getElementById( 'dak-booking-slots-groups' );
 		var noSlots = document.getElementById( 'dak-booking-no-slots' );
-		var dateLabel = document.getElementById( 'dak-booking-slots-date-label' );
 
-		show( section );
 		hide( noSlots );
-
-		if ( dateLabel ) {
-			dateLabel.textContent = formatDateLabel( dateStr );
-		}
-
 		groups.innerHTML = '<p>Loading times…</p>';
 
 		var formData = new FormData();
@@ -555,24 +686,12 @@
 	function renderSlotGroups( slots ) {
 		var groupsEl = document.getElementById( 'dak-booking-slots-groups' );
 		var noSlots = document.getElementById( 'dak-booking-no-slots' );
-		var dateLabel = document.getElementById( 'dak-booking-slots-date-label' );
 
 		groupsEl.innerHTML = '';
 
 		if ( ! slots.length ) {
 			show( noSlots );
-
-			if ( dateLabel ) {
-				dateLabel.textContent += ' · 0 slots';
-			}
-
 			return;
-		}
-
-		var availableCount = slots.filter( function ( slot ) { return 'available' === slot.status; } ).length;
-
-		if ( dateLabel ) {
-			dateLabel.textContent += ' · ' + availableCount + ' slot' + ( 1 === availableCount ? '' : 's' );
 		}
 
 		var groups = {
@@ -646,8 +765,6 @@
 		}
 	}
 
-	var selectedSlotSurcharge = 0;
-
 	function selectSlot( time, card, surcharge ) {
 		document.getElementById( 'dak-booking-time' ).value = time;
 		clearFieldError( 'time' );
@@ -659,8 +776,26 @@
 
 		selectedSlotSurcharge = surcharge || 0;
 
-		updateSteps();
+		updateCurrentlySelected();
 		updateSummary();
+	}
+
+	function updateCurrentlySelected() {
+		var bar = document.getElementById( 'dak-booking-currently-selected' );
+		var text = document.getElementById( 'dak-booking-currently-selected-text' );
+		var date = document.getElementById( 'dak-booking-date' ).value;
+		var time = document.getElementById( 'dak-booking-time' ).value;
+
+		if ( ! bar || ! text ) {
+			return;
+		}
+
+		if ( date && time ) {
+			text.textContent = formatDateLabel( date ) + ', ' + formatTimeLabel( time );
+			show( bar );
+		} else {
+			hide( bar );
+		}
 	}
 
 	function formatTimeLabel( time ) {
@@ -678,32 +813,31 @@
 	}
 
 	/* ---------------------------------------------------------------------
-	 * Step indicator + summary sidebar
+	 * Step sidebar + payment-step summary
 	 * ------------------------------------------------------------------- */
 
-	function updateSteps() {
-		var steps = document.querySelectorAll( '.dak-booking-step' );
+	function updateSteps( activeKey ) {
+		var completeness = {
+			doctor: !! getDoctorId(),
+			service: !! document.getElementById( 'dak-booking-service-id' ).value,
+			identity: window.dakBookingPage.isLoggedIn || ( !! document.getElementById( 'dak-booking-guest-name' ).value.trim() && !! document.getElementById( 'dak-booking-guest-email' ).value.trim() ),
+			datetime: !! document.getElementById( 'dak-booking-date' ).value && !! document.getElementById( 'dak-booking-time' ).value,
+			payment: false,
+			confirmation: false,
+		};
 
-		if ( ! steps.length ) {
-			return;
-		}
+		STEP_KEYS.forEach( function ( key ) {
+			var li = document.querySelector( '.dak-booking-wizard-step[data-step="' + key + '"]' );
 
-		var doctorDone = !! getDoctorId();
-		var dateDone = !! document.getElementById( 'dak-booking-date' ).value;
-		var timeDone = !! document.getElementById( 'dak-booking-time' ).value;
+			if ( ! li ) {
+				return;
+			}
 
-		setStepState( steps[ 0 ], doctorDone, ! doctorDone );
-		setStepState( steps[ 1 ], dateDone, doctorDone && ! dateDone );
-		setStepState( steps[ 2 ], timeDone, dateDone && ! timeDone );
-	}
+			var isActive = key === activeKey;
 
-	function setStepState( stepEl, isComplete, isActive ) {
-		if ( ! stepEl ) {
-			return;
-		}
-
-		stepEl.classList.toggle( 'is-complete', isComplete );
-		stepEl.classList.toggle( 'is-active', isActive );
+			li.classList.toggle( 'is-active', isActive );
+			li.classList.toggle( 'is-complete', ! isActive && completeness[ key ] );
+		} );
 	}
 
 	function updateSummary() {
@@ -723,8 +857,6 @@
 			instant: ( time && selectedSlotSurcharge > 0 ) ? ( 'Instant booking fee: +PKR' + selectedSlotSurcharge ) : '',
 		};
 
-		var anyVisible = false;
-
 		Object.keys( rows ).forEach( function ( key ) {
 			var row = document.querySelector( '[data-summary-row="' + key + '"]' );
 
@@ -739,14 +871,7 @@
 
 			row.querySelector( '[data-summary-value]' ).textContent = rows[ key ];
 			show( row );
-			anyVisible = true;
 		} );
-
-		hide( document.getElementById( 'dak-booking-summary-empty' ) );
-
-		if ( ! anyVisible ) {
-			show( document.getElementById( 'dak-booking-summary-empty' ) );
-		}
 
 		var totalEl = document.getElementById( 'dak-booking-summary-total-amount' );
 		var baseCharge = serviceCard ? parseFloat( serviceCard.getAttribute( 'data-service-charge' ) ) : 0;
@@ -820,35 +945,8 @@
 	}
 
 	/* ---------------------------------------------------------------------
-	 * Continue-to-confirm + identity
+	 * Identity
 	 * ------------------------------------------------------------------- */
-
-	function wireContinueButton() {
-		var button = document.getElementById( 'dak-booking-continue' );
-
-		if ( ! button ) {
-			return;
-		}
-
-		button.addEventListener( 'click', function () {
-			if ( ! getDoctorId() ) {
-				showFieldError( 'doctor_id', 'Please choose a doctor.' );
-				document.getElementById( 'dak-booking-doctor-cards' ).scrollIntoView( { behavior: 'smooth', block: 'start' } );
-				return;
-			}
-
-			if ( ! document.getElementById( 'dak-booking-date' ).value || ! document.getElementById( 'dak-booking-time' ).value ) {
-				showFieldError( 'time', 'Please choose a date and time.' );
-				document.getElementById( 'dak-booking-slots-section' ).scrollIntoView( { behavior: 'smooth', block: 'start' } );
-				return;
-			}
-
-			var details = document.getElementById( 'dak-booking-details' );
-			show( details );
-			applyIdentityState();
-			details.scrollIntoView( { behavior: 'smooth', block: 'start' } );
-		} );
-	}
 
 	function applyIdentityState() {
 		var loggedInBlock = document.getElementById( 'dak-booking-identity-loggedin' );
@@ -922,15 +1020,16 @@
 
 			clearFieldErrors();
 			hide( document.getElementById( 'dak-booking-error' ) );
-			hide( document.getElementById( 'dak-booking-success' ) );
 
 			if ( ! getDoctorId() ) {
 				showFieldError( 'doctor_id', 'Please choose a doctor.' );
+				goToStep( 'doctor' );
 				return;
 			}
 
 			if ( ! document.getElementById( 'dak-booking-date' ).value || ! document.getElementById( 'dak-booking-time' ).value ) {
 				showFieldError( 'time', 'Please choose a date and time.' );
+				goToStep( 'datetime' );
 				return;
 			}
 
@@ -940,10 +1039,12 @@
 				if ( guestBlockVisibleForValidation ) {
 					if ( ! document.getElementById( 'dak-booking-guest-phone' ).value.trim() ) {
 						showFieldError( 'guest_phone', 'A phone number is required to book a video consultation.' );
+						goToStep( 'identity' );
 						return;
 					}
 				} else if ( window.dakBookingPage.isLoggedIn && ! ( window.dakBookingPage.user && window.dakBookingPage.user.phone ) ) {
 					updatePhoneRequirement();
+					goToStep( 'identity' );
 					document.getElementById( 'dak-booking-loggedin-phone-missing' ).scrollIntoView( { behavior: 'smooth', block: 'center' } );
 					return;
 				}
@@ -986,6 +1087,8 @@
 							field.disabled = true;
 						} );
 
+						goToStep( 'confirmation' );
+
 						var successAlert = document.getElementById( 'dak-booking-success' );
 
 						if ( result.data.payment_url ) {
@@ -997,7 +1100,12 @@
 
 						successAlert.textContent = result.data.message;
 						show( successAlert );
-						successAlert.scrollIntoView( { behavior: 'smooth', block: 'start' } );
+
+						if ( result.data.redirect_url ) {
+							window.setTimeout( function () {
+								window.location.href = result.data.redirect_url;
+							}, 2500 );
+						}
 					} else if ( result.data && result.data.errors ) {
 						Object.keys( result.data.errors ).forEach( function ( field ) {
 							showFieldError( field, result.data.errors[ field ] );

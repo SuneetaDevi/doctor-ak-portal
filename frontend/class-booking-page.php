@@ -150,8 +150,27 @@ class Booking_Page {
 				'selected_doctor_name' => $selected_doctor_name,
 				'selected_type'        => $type,
 				'video_disabled'       => $video_disabled,
+				'contact_url'          => self::contact_url(),
 			)
 		);
+	}
+
+	/**
+	 * Resolves a "Contact Us" page URL for the sidebar's "Need help with
+	 * booking?" link, falling back to the home page if no such page exists.
+	 *
+	 * @return string
+	 */
+	private static function contact_url() {
+		foreach ( array( 'contact', 'contact-us' ) as $slug ) {
+			$page = get_page_by_path( $slug );
+
+			if ( $page instanceof \WP_Post ) {
+				return get_permalink( $page );
+			}
+		}
+
+		return home_url( '/' );
 	}
 
 	/**

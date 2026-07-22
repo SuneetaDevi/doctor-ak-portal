@@ -71,14 +71,22 @@ class Admin_User_Handler {
 			$errors['email'] = __( 'Please provide a valid email address.', 'doctor-ak-portal' );
 		}
 
-		if ( empty( $specializations ) ) {
-			$errors['specializations'] = __( 'Please select at least one specialization.', 'doctor-ak-portal' );
-		}
-
 		$existing_user = $user_id > 0 ? get_user_by( 'id', $user_id ) : false;
 
 		if ( $user_id > 0 && ! $existing_user ) {
 			wp_send_json_error( array( 'message' => __( 'That account no longer exists.', 'doctor-ak-portal' ) ) );
+		}
+
+		// Patients have no specialization field at all — only require/save it
+		// for doctors (existing doctor being edited, or a brand-new account
+		// whose role was explicitly posted as 'doctor').
+		$target_role  = $existing_user
+			? ( in_array( Roles::DOCTOR_ROLE, (array) $existing_user->roles, true ) ? Roles::DOCTOR_ROLE : Roles::PATIENT_ROLE )
+			: ( isset( $_POST['role'] ) ? sanitize_key( wp_unslash( $_POST['role'] ) ) : '' );
+		$is_for_doctor = Roles::DOCTOR_ROLE === $target_role;
+
+		if ( $is_for_doctor && empty( $specializations ) ) {
+			$errors['specializations'] = __( 'Please select at least one specialization.', 'doctor-ak-portal' );
 		}
 
 		if ( $existing_user && strtolower( $email ) !== strtolower( $existing_user->user_email ) && email_exists( $email ) ) {

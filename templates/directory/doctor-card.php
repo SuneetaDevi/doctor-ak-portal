@@ -26,7 +26,12 @@ $dak_card_icons = array(
 	'person'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.2"/><path d="M4 17c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/></svg>',
 );
 ?>
-<div class="dak-doctor-card">
+<div
+	class="dak-doctor-card"
+	data-doctor-card
+	data-search-name="<?php echo esc_attr( mb_strtolower( $name ) ); ?>"
+	data-search-specializations="<?php echo esc_attr( mb_strtolower( implode( ',', $specialization_labels ) ) ); ?>"
+>
 	<?php if ( $is_available ) : ?>
 		<span class="dak-doctor-card-badge"><?php esc_html_e( 'Available', 'doctor-ak-portal' ); ?></span>
 	<?php endif; ?>
@@ -75,14 +80,14 @@ $dak_card_icons = array(
 		</a>
 		<button
 			type="button"
-			class="dak-button dak-button-primary dak-doctor-card-book"
+			class="dak-button dak-button-primary dak-button-block"
 			data-dak-book-appointment
 			data-doctor-id="<?php echo esc_attr( $id ); ?>"
 			data-doctor-name="<?php echo esc_attr( sprintf( 'Dr. %s', $name ) ); ?>"
 			<?php if ( ! $video_consultation ) : ?>data-video-disabled="1"<?php endif; ?>
-			aria-label="<?php echo esc_attr( sprintf( __( 'Book a consultation with Dr. %s', 'doctor-ak-portal' ), $name ) ); ?>"
 		>
 			<?php echo $dak_card_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+			<?php esc_html_e( 'Book Appointment', 'doctor-ak-portal' ); ?>
 		</button>
 	</div>
 </div>

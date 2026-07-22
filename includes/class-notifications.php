@@ -73,29 +73,52 @@ class Notifications {
 			return;
 		}
 
-		$subject = __( 'Appointment Confirmed', 'doctor-ak-portal' );
+		// A booking with a charge that hasn't been paid yet (the patient
+		// chose "Pay Later", or is a guest awaiting manual payment) isn't
+		// really "confirmed" — say so plainly instead of overstating it.
+		$has_pending_charge = (float) $appt['charge'] > 0 && ! $appt['is_paid'];
+
+		$subject = $has_pending_charge
+			? __( 'Appointment Scheduled — Payment Pending', 'doctor-ak-portal' )
+			: __( 'Appointment Confirmed', 'doctor-ak-portal' );
+
+		$patient_intro = $has_pending_charge
+			? sprintf(
+				/* translators: %s: doctor's display name. */
+				__( 'Your appointment with Dr. %s is scheduled, but payment is still pending. Please pay from your dashboard to confirm it.', 'doctor-ak-portal' ),
+				$appt['doctor_name']
+			)
+			: sprintf(
+				/* translators: %s: doctor's display name. */
+				__( 'Your appointment with Dr. %s has been booked.', 'doctor-ak-portal' ),
+				$appt['doctor_name']
+			);
 
 		$this->send(
 			$appt['patient_email'],
 			$subject,
-			__( 'Your appointment is confirmed', 'doctor-ak-portal' ),
-			sprintf(
-				/* translators: %s: doctor's display name. */
-				__( 'Your appointment with Dr. %s has been booked.', 'doctor-ak-portal' ),
-				$appt['doctor_name']
-			),
+			$has_pending_charge ? __( 'Your appointment is scheduled — payment pending', 'doctor-ak-portal' ) : __( 'Your appointment is confirmed', 'doctor-ak-portal' ),
+			$patient_intro,
 			$appt
 		);
+
+		$doctor_intro = $has_pending_charge
+			? sprintf(
+				/* translators: %s: patient's display name. */
+				__( 'You have a new appointment with %s. Payment is still pending on their end.', 'doctor-ak-portal' ),
+				$appt['patient_name']
+			)
+			: sprintf(
+				/* translators: %s: patient's display name. */
+				__( 'You have a new appointment with %s.', 'doctor-ak-portal' ),
+				$appt['patient_name']
+			);
 
 		$this->send(
 			$appt['doctor_email'],
 			$subject,
 			__( 'New appointment booked', 'doctor-ak-portal' ),
-			sprintf(
-				/* translators: %s: patient's display name. */
-				__( 'You have a new appointment with %s.', 'doctor-ak-portal' ),
-				$appt['patient_name']
-			),
+			$doctor_intro,
 			$appt
 		);
 	}

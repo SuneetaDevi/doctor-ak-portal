@@ -58,15 +58,23 @@ class Notification_Center {
 			return;
 		}
 
+		$has_pending_charge = (float) $appt['charge'] > 0 && ! $appt['is_paid'];
+
 		if ( $appt['patient_id'] > 0 ) {
 			self::record(
 				$appt['patient_id'],
 				self::TYPE_BOOKED,
-				sprintf(
-					/* translators: %s: doctor's display name. */
-					__( 'Your appointment with Dr. %s has been booked.', 'doctor-ak-portal' ),
-					$appt['doctor_name']
-				),
+				$has_pending_charge
+					? sprintf(
+						/* translators: %s: doctor's display name. */
+						__( 'Your appointment with Dr. %s is scheduled — pay from your dashboard to confirm.', 'doctor-ak-portal' ),
+						$appt['doctor_name']
+					)
+					: sprintf(
+						/* translators: %s: doctor's display name. */
+						__( 'Your appointment with Dr. %s has been booked.', 'doctor-ak-portal' ),
+						$appt['doctor_name']
+					),
 				$appointment_id
 			);
 		}
@@ -74,11 +82,17 @@ class Notification_Center {
 		self::record(
 			$appt['doctor_id'],
 			self::TYPE_BOOKED,
-			sprintf(
-				/* translators: %s: patient's display name. */
-				__( 'New appointment booked with %s.', 'doctor-ak-portal' ),
-				$appt['patient_name']
-			),
+			$has_pending_charge
+				? sprintf(
+					/* translators: %s: patient's display name. */
+					__( 'New appointment with %s — payment pending.', 'doctor-ak-portal' ),
+					$appt['patient_name']
+				)
+				: sprintf(
+					/* translators: %s: patient's display name. */
+					__( 'New appointment booked with %s.', 'doctor-ak-portal' ),
+					$appt['patient_name']
+				),
 			$appointment_id
 		);
 

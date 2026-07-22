@@ -87,11 +87,15 @@
 			document.getElementById( 'dak-admin-user-last-name' ).value = trigger.getAttribute( 'data-last-name' ) || '';
 			document.getElementById( 'dak-admin-user-email' ).value = trigger.getAttribute( 'data-email' ) || '';
 
-			var specializations = ( trigger.getAttribute( 'data-specializations' ) || '' ).split( ',' ).filter( Boolean );
 			var select = document.getElementById( 'dak-admin-user-specializations' );
-			Array.prototype.forEach.call( select.options, function ( option ) {
-				option.selected = specializations.indexOf( option.value ) !== -1;
-			} );
+
+			if ( select ) {
+				var specializations = ( trigger.getAttribute( 'data-specializations' ) || '' ).split( ',' ).filter( Boolean );
+
+				Array.prototype.forEach.call( select.options, function ( option ) {
+					option.selected = specializations.indexOf( option.value ) !== -1;
+				} );
+			}
 
 			passwordField.required = false;
 			passwordHint.textContent = 'Leave blank to keep the current password.';

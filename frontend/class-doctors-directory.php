@@ -74,6 +74,14 @@ class Doctors_Directory {
 			array( 'doctor-ak-portal-auth' ),
 			Assets::version( 'assets/css/doctor-ak-directory.css' )
 		);
+
+		wp_enqueue_script(
+			'doctor-ak-portal-directory',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-directory.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-directory.js' ),
+			true
+		);
 	}
 
 	/**
@@ -89,15 +97,28 @@ class Doctors_Directory {
 			)
 		);
 
-		$doctors_html = array();
+		$doctors_html          = array();
+		$used_specializations = array();
+		$all_specializations   = Specializations::get_all();
 
 		foreach ( $query->get_results() as $doctor ) {
 			$doctors_html[] = $this->template_loader->get_template( 'directory/doctor-card.php', $this->card_data( $doctor ) );
+
+			foreach ( (array) get_user_meta( $doctor->ID, 'doctor_ak_specializations', true ) as $slug ) {
+				if ( isset( $all_specializations[ $slug ] ) ) {
+					$used_specializations[ $slug ] = $all_specializations[ $slug ];
+				}
+			}
 		}
+
+		asort( $used_specializations );
 
 		return $this->template_loader->get_template(
 			'directory/doctors-directory.php',
-			array( 'doctors_html' => $doctors_html )
+			array(
+				'doctors_html'    => $doctors_html,
+				'specializations' => $used_specializations,
+			)
 		);
 	}
 

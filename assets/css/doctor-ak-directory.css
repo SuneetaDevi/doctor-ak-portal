@@ -29,10 +29,64 @@
 	margin: 0 !important;
 }
 
+.dak-directory-filters {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0.75rem !important;
+	margin-bottom: 1.75rem !important;
+}
+
+.dak-directory-search {
+	position: relative !important;
+	flex: 1 1 280px !important;
+}
+
+.dak-directory-search-icon {
+	position: absolute !important;
+	top: 50% !important;
+	left: 0.85rem !important;
+	transform: translateY( -50% ) !important;
+	width: 1.1rem !important;
+	height: 1.1rem !important;
+	color: var( --dak-muted ) !important;
+	pointer-events: none !important;
+}
+
+.dak-directory-search input[type='search'] {
+	width: 100% !important;
+	box-sizing: border-box !important;
+	padding: 0.65rem 0.85rem 0.65rem 2.4rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.95rem !important;
+}
+
+.dak-directory-search input[type='search']:focus {
+	outline: none !important;
+	border-color: var( --dak-primary ) !important;
+	box-shadow: 0 0 0 3px var( --dak-primary-tint ) !important;
+}
+
+#dak-directory-specialization-filter {
+	flex: 0 1 220px !important;
+	padding: 0.65rem 0.85rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.95rem !important;
+}
+
 .dak-directory-grid {
 	display: grid !important;
 	grid-template-columns: repeat( auto-fill, minmax( 250px, 1fr ) ) !important;
 	gap: 1.5rem !important;
+}
+
+.dak-doctor-card.dak-hidden {
+	display: none !important;
 }
 
 .dak-doctor-card {
@@ -129,69 +183,371 @@
 
 .dak-doctor-card-actions {
 	display: flex !important;
-	align-items: stretch !important;
+	flex-direction: column !important;
 	gap: 0.5rem !important;
 	width: 100% !important;
 	margin-top: 0.5rem !important;
 }
 
-.dak-doctor-card-actions .dak-button-block {
-	flex: 1 1 auto !important;
-}
-
-.dak-doctor-card-book {
-	flex: 0 0 auto !important;
+.dak-doctor-card-actions .dak-button {
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: center !important;
-	width: 42px !important;
-	padding: 0 !important;
+	gap: 0.4rem !important;
 }
 
-.dak-doctor-card-book svg {
+.dak-doctor-card-actions .dak-button svg {
 	width: 18px !important;
 	height: 18px !important;
 }
 
-/* Public profile view ([doctor_profile_view]) */
-.dak-doctor-profile-view {
-	max-width: 420px !important;
-	margin: 0 auto !important;
+/* Specialty tags — also used on the dashboard (doctor-ak-dashboard.css),
+   redefined here since that stylesheet isn't loaded on these public pages. */
+.dak-specialty-tags {
 	display: flex !important;
-	flex-direction: column !important;
+	flex-wrap: wrap !important;
+	gap: 0.35rem !important;
+}
+
+.dak-specialty-tag {
+	display: inline-flex !important;
 	align-items: center !important;
-	text-align: center !important;
-	gap: 0.6rem !important;
+	padding: 0.2rem 0.6rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+	font-size: 0.78rem !important;
+	font-weight: 600 !important;
+}
+
+/* Public profile view ([doctor_profile_view]) */
+
+.dak-profile-breadcrumb {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+	margin-bottom: 1.25rem !important;
+	font-size: 0.85rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-profile-breadcrumb a {
+	color: var( --dak-muted ) !important;
+	text-decoration: none !important;
+}
+
+.dak-profile-breadcrumb a:hover {
+	color: var( --dak-primary-dark ) !important;
+	text-decoration: underline !important;
+}
+
+.dak-profile-breadcrumb span:last-child {
+	color: var( --dak-text ) !important;
+	font-weight: 600 !important;
+}
+
+.dak-profile-header-card {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 1.5rem !important;
 	background: var( --dak-bg-card ) !important;
 	border: 1px solid var( --dak-border ) !important;
 	border-radius: var( --dak-radius-lg ) !important;
 	box-shadow: var( --dak-shadow ) !important;
-	padding: 2rem 1.5rem !important;
+	padding: 1.75rem !important;
+	margin-bottom: 1.5rem !important;
 }
 
-.dak-doctor-profile-view h1 {
-	font-size: 1.4rem !important;
+.dak-profile-header-card .dak-avatar-lg {
+	width: 100px !important;
+	height: 100px !important;
+	margin-bottom: 0 !important;
+	flex: 0 0 auto !important;
+	font-size: 1.6rem !important;
+	font-weight: 700 !important;
+}
+
+.dak-profile-header-main {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.65rem !important;
+}
+
+.dak-profile-header-main h1 {
+	font-size: 1.6rem !important;
 	font-weight: 700 !important;
 	color: var( --dak-text ) !important;
 	margin: 0 !important;
 }
 
-.dak-doctor-profile-view-experience {
-	color: var( --dak-muted ) !important;
-	font-size: 0.88rem !important;
-	margin: 0 !important;
+.dak-profile-stats {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 1.5rem !important;
+	margin-top: 0.25rem !important;
 }
 
-.dak-doctor-profile-view .dak-button {
+.dak-profile-stat {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+	font-size: 0.8rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-profile-stat strong {
+	color: var( --dak-text ) !important;
+	font-size: 0.9rem !important;
+}
+
+.dak-profile-stat-icon {
+	display: inline-flex !important;
+	width: 1.1rem !important;
+	height: 1.1rem !important;
+	color: var( --dak-secondary ) !important;
+}
+
+.dak-profile-stat-icon svg {
+	width: 100% !important;
+	height: 100% !important;
+}
+
+.dak-profile-stat-link {
+	text-decoration: none !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	cursor: pointer !important;
+}
+
+.dak-profile-stat-link:hover {
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-profile-stat-link:hover strong {
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-profile-header-actions {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0.65rem !important;
 	margin-top: 0.5rem !important;
 }
 
-@media ( max-width: 480px ) {
-	.dak-doctor-card-actions {
+.dak-profile-header-actions .dak-button {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+}
+
+.dak-profile-header-actions .dak-button svg {
+	width: 1rem !important;
+	height: 1rem !important;
+}
+
+.dak-profile-layout {
+	display: grid !important;
+	grid-template-columns: 1fr 320px !important;
+	gap: 1.5rem !important;
+	align-items: start !important;
+}
+
+.dak-profile-main {
+	min-width: 0 !important;
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 1.5rem !important;
+}
+
+.dak-profile-card {
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	padding: 1.5rem !important;
+}
+
+.dak-profile-card h2 {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.5rem !important;
+	margin: 0 0 1rem !important;
+	font-size: 0.78rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.04em !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-profile-card-title-icon {
+	display: inline-flex !important;
+	width: 1rem !important;
+	height: 1rem !important;
+	color: var( --dak-secondary ) !important;
+}
+
+.dak-profile-card-title-icon svg {
+	width: 100% !important;
+	height: 100% !important;
+}
+
+#dak-profile-clinics {
+	scroll-margin-top: 1.5rem !important;
+}
+
+.dak-profile-clinics {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.75rem !important;
+}
+
+.dak-profile-clinic-row {
+	display: flex !important;
+	align-items: flex-start !important;
+	justify-content: space-between !important;
+	gap: 1rem !important;
+	padding: 1rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+}
+
+.dak-profile-clinic-info {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.3rem !important;
+	min-width: 0 !important;
+}
+
+.dak-profile-clinic-info strong {
+	font-size: 0.95rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-profile-clinic-meta {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.35rem !important;
+	font-size: 0.8rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-profile-clinic-meta .dak-location-icon {
+	display: inline-flex !important;
+	flex-shrink: 0 !important;
+	width: 0.9rem !important;
+	height: 0.9rem !important;
+	color: var( --dak-secondary ) !important;
+}
+
+.dak-profile-clinic-meta .dak-location-icon svg {
+	width: 100% !important;
+	height: 100% !important;
+}
+
+.dak-profile-clinic-fee {
+	flex: 0 0 auto !important;
+	text-align: right !important;
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.15rem !important;
+}
+
+.dak-profile-clinic-fee span {
+	font-size: 0.7rem !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.03em !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-profile-clinic-fee strong {
+	font-size: 1rem !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-profile-sidebar {
+	position: sticky !important;
+	top: 1.5rem !important;
+}
+
+.dak-profile-booking-card h2 {
+	text-transform: none !important;
+	letter-spacing: normal !important;
+	font-size: 1.15rem !important;
+	color: var( --dak-text ) !important;
+	margin: 0.5rem 0 0.35rem !important;
+}
+
+.dak-profile-booking-hint {
+	color: var( --dak-muted ) !important;
+	font-size: 0.85rem !important;
+	margin: 0 0 1rem !important;
+}
+
+.dak-profile-booking-fee {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	border-top: 1px solid var( --dak-border ) !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	padding: 0.75rem 0 !important;
+	margin-bottom: 1rem !important;
+	font-size: 0.88rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-profile-booking-fee strong {
+	color: var( --dak-text ) !important;
+	font-size: 1.05rem !important;
+}
+
+.dak-profile-booking-note {
+	font-size: 0.75rem !important;
+	color: var( --dak-muted ) !important;
+	text-align: center !important;
+	margin: 0.85rem 0 0 !important;
+}
+
+@media ( max-width: 860px ) {
+	.dak-profile-layout {
+		grid-template-columns: 1fr !important;
+	}
+
+	.dak-profile-sidebar {
+		position: static !important;
+	}
+}
+
+@media ( max-width: 600px ) {
+	.dak-profile-header-card {
+		flex-direction: column !important;
+		align-items: center !important;
+		text-align: center !important;
+	}
+
+	.dak-profile-stats {
+		justify-content: center !important;
+	}
+
+	.dak-profile-header-actions {
+		justify-content: center !important;
+		width: 100% !important;
+	}
+
+	.dak-profile-header-actions .dak-button {
+		flex: 1 1 auto !important;
+		justify-content: center !important;
+	}
+
+	.dak-profile-clinic-row {
 		flex-direction: column !important;
 	}
 
-	.dak-doctor-card-book {
-		width: 100% !important;
+	.dak-profile-clinic-fee {
+		text-align: left !important;
+		flex-direction: row !important;
+		align-items: center !important;
+		gap: 0.4rem !important;
 	}
 }

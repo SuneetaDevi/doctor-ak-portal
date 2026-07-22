@@ -53,15 +53,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<span class="dak-field-error" data-field="email"></span>
 			</div>
 
-			<div class="dak-field">
-				<label for="dak-admin-user-specializations"><?php esc_html_e( 'Specialization', 'doctor-ak-portal' ); ?></label>
-				<select id="dak-admin-user-specializations" name="specializations[]" multiple required>
-					<?php foreach ( $specializations as $slug => $label ) : ?>
-						<option value="<?php echo esc_attr( $slug ); ?>"><?php echo esc_html( $label ); ?></option>
-					<?php endforeach; ?>
-				</select>
-				<span class="dak-field-error" data-field="specializations"></span>
-			</div>
+			<?php if ( \DoctorAKPortal\Includes\Roles::DOCTOR_ROLE === $role ) : ?>
+				<div class="dak-field">
+					<label for="dak-admin-user-specializations"><?php esc_html_e( 'Specialization', 'doctor-ak-portal' ); ?></label>
+					<select id="dak-admin-user-specializations" name="specializations[]" multiple required>
+						<?php foreach ( $specializations as $slug => $label ) : ?>
+							<option value="<?php echo esc_attr( $slug ); ?>"><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<span class="dak-field-error" data-field="specializations"></span>
+				</div>
+			<?php endif; ?>
 
 			<div class="dak-field" id="dak-admin-user-password-field">
 				<label for="dak-admin-user-password"><?php esc_html_e( 'Password', 'doctor-ak-portal' ); ?></label>

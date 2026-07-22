@@ -8,6 +8,7 @@
 namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Appointments;
+use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Swich_Payment;
 
@@ -211,15 +212,33 @@ class Booking_Handler {
 			}
 		}
 
-		$message = $is_logged_in_patient
-			? __( 'Your appointment request has been received. You can track it from your dashboard.', 'doctor-ak-portal' )
-			: __( "Your appointment request has been received. We'll contact you shortly to confirm.", 'doctor-ak-portal' );
+		// "Pay Now" already redirects to Swich via $payment_url above. For
+		// "Pay Later" (no payment_url but there's still a charge to settle),
+		// a logged-in patient is sent straight to their own dashboard, where
+		// the appointment shows up with a working Pay Now button — same
+		// place Notifications/Notification_Center point them via email and
+		// the in-app Notifications tab.
+		$has_pending_charge = '' === $payment_url && (float) $appointment['charge'] > 0 && Appointments::PAYMENT_STATUS_PAID !== $appointment['payment_status'];
+		$redirect_url       = ( $is_logged_in_patient && '' === $payment_url )
+			? Page_Finder::url_for_shortcode( 'patient_dashboard' )
+			: '';
+
+		if ( $is_logged_in_patient ) {
+			$message = $has_pending_charge
+				? __( 'Your appointment is scheduled. Payment is still pending — pay any time from your dashboard.', 'doctor-ak-portal' )
+				: __( 'Your appointment request has been received. You can track it from your dashboard.', 'doctor-ak-portal' );
+		} else {
+			$message = $has_pending_charge
+				? __( "Your appointment request has been received. It has a pending payment — we'll contact you shortly to arrange it.", 'doctor-ak-portal' )
+				: __( "Your appointment request has been received. We'll contact you shortly to confirm.", 'doctor-ak-portal' );
+		}
 
 		wp_send_json_success(
 			array(
 				'message'        => $message,
 				'appointment_id' => $appointment_id,
 				'payment_url'    => $payment_url,
+				'redirect_url'   => $redirect_url,
 			)
 		);
 	}
