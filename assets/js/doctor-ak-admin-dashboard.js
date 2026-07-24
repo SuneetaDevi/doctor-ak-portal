@@ -1,118 +1,105 @@
 /**
  * Doctor AK Portal — Administrator dashboard (Users: Doctors/Patients).
  *
- * Handles the Add/Edit modal and the AJAX create/update/deactivate/delete
- * calls for the accounts table. On success, each action simply reloads the
- * page rather than patching the table client-side — the table is otherwise
- * fully server-rendered. No-ops entirely on sections that don't render a
- * modal or a table (Dashboard overview, and the placeholder sections).
+ * Handles the full-screen Add/Edit Doctor/Patient form (a normal page state
+ * reached via `?section=doctors&view=form[&user_id=X]`, rendered entirely
+ * server-side by admin-user-form-screen.php — no modal, no client-side
+ * populate/reset dance) plus the accounts table's Deactivate/Activate and
+ * Delete row actions. On success, each action simply reloads/redirects
+ * rather than patching anything client-side — the table and form are both
+ * otherwise fully server-rendered. No-ops entirely on sections that don't
+ * render this form or a table (Dashboard overview, and the placeholder
+ * sections).
  */
 ( function () {
 	'use strict';
 
 	document.addEventListener( 'DOMContentLoaded', function () {
-		initModal();
+		initUserForm();
 		initRowActions();
 	} );
 
 	/**
-	 * Wires up the Add/Edit modal: open/close, populating it for edits, and
-	 * submitting the form over AJAX.
+	 * Wires up the Add/Edit form: photo upload and AJAX submit.
 	 */
-	function initModal() {
-		var modal = document.getElementById( 'dak-admin-user-modal' );
+	function initUserForm() {
 		var form = document.getElementById( 'dak-admin-user-form' );
 
-		if ( ! modal || ! form ) {
+		if ( ! form ) {
 			return;
 		}
 
-		var addButton = document.getElementById( 'dak-admin-add-user' );
-		var title = document.getElementById( 'dak-admin-user-modal-title' );
-		var generalError = document.getElementById( 'dak-admin-user-modal-general-error' );
-		var passwordField = document.getElementById( 'dak-admin-user-password' );
-		var passwordHint = document.getElementById( 'dak-admin-user-password-hint' );
-		var roleInput = document.getElementById( 'dak-admin-user-role' );
-		var idInput = document.getElementById( 'dak-admin-user-id' );
-		var submitButton = document.getElementById( 'dak-admin-user-submit' );
+		var shared = window.DoctorAKPortal || {};
 
-		if ( addButton ) {
-			addButton.addEventListener( 'click', function () {
-				openForCreate( addButton.getAttribute( 'data-role' ) );
-			} );
+		if ( typeof shared.initMultiSelect === 'function' ) {
+			shared.initMultiSelect( document.getElementById( 'dak-admin-user-specializations' ), { allowCustom: true } );
 		}
 
-		document.addEventListener( 'click', function ( event ) {
-			if ( event.target.closest( '[data-dak-admin-modal-close]' ) ) {
-				closeModal();
-			}
+		var generalError = document.getElementById( 'dak-admin-user-modal-general-error' );
+		var idInput = document.getElementById( 'dak-admin-user-id' );
+		var submitButton = document.getElementById( 'dak-admin-user-submit' );
+		var pictureInput = document.getElementById( 'dak-admin-user-picture-input' );
+		var pictureIdInput = document.getElementById( 'dak-admin-user-picture-id' );
+		var picturePreview = document.getElementById( 'dak-admin-user-picture-preview' );
+		var pictureStatus = document.getElementById( 'dak-admin-user-picture-status' );
+		var listUrl = form.getAttribute( 'data-list-url' ) || '';
 
-			var editTrigger = event.target.closest( '[data-admin-edit-user]' );
-
-			if ( editTrigger ) {
-				openForEdit( editTrigger );
-			}
-		} );
-
-		document.addEventListener( 'keydown', function ( event ) {
-			if ( 'Escape' === event.key && modal.classList.contains( 'is-open' ) ) {
-				closeModal();
-			}
-		} );
+		wirePictureUpload();
 
 		form.addEventListener( 'submit', function ( event ) {
 			event.preventDefault();
 			submitForm();
 		} );
 
-		function openForCreate( role ) {
-			form.reset();
-			clearFieldErrors();
-			hideGeneralError();
-			idInput.value = '0';
-			roleInput.value = role;
-			passwordField.required = true;
-			passwordHint.textContent = '';
-			title.textContent = 'doctor' === role ? 'Add Doctor' : 'Add Patient';
-			openModal();
-		}
-
-		function openForEdit( trigger ) {
-			form.reset();
-			clearFieldErrors();
-			hideGeneralError();
-
-			idInput.value = trigger.getAttribute( 'data-user-id' );
-			document.getElementById( 'dak-admin-user-first-name' ).value = trigger.getAttribute( 'data-first-name' ) || '';
-			document.getElementById( 'dak-admin-user-last-name' ).value = trigger.getAttribute( 'data-last-name' ) || '';
-			document.getElementById( 'dak-admin-user-email' ).value = trigger.getAttribute( 'data-email' ) || '';
-
-			var select = document.getElementById( 'dak-admin-user-specializations' );
-
-			if ( select ) {
-				var specializations = ( trigger.getAttribute( 'data-specializations' ) || '' ).split( ',' ).filter( Boolean );
-
-				Array.prototype.forEach.call( select.options, function ( option ) {
-					option.selected = specializations.indexOf( option.value ) !== -1;
-				} );
+		function wirePictureUpload() {
+			if ( ! pictureInput ) {
+				return;
 			}
 
-			passwordField.required = false;
-			passwordHint.textContent = 'Leave blank to keep the current password.';
-			title.textContent = roleInput.value === 'doctor' ? 'Edit Doctor' : 'Edit Patient';
-			openModal();
-		}
+			pictureInput.addEventListener( 'change', function () {
+				var file = pictureInput.files[ 0 ];
 
-		function openModal() {
-			modal.classList.add( 'is-open' );
-			modal.setAttribute( 'aria-hidden', 'false' );
-			document.body.classList.add( 'dak-modal-open' );
-		}
+				if ( ! file ) {
+					return;
+				}
 
-		function closeModal() {
-			modal.classList.remove( 'is-open' );
-			modal.setAttribute( 'aria-hidden', 'true' );
-			document.body.classList.remove( 'dak-modal-open' );
+				if ( pictureStatus ) {
+					pictureStatus.textContent = 'Uploading…';
+				}
+
+				var formData = new FormData();
+				formData.append( 'action', 'doctor_ak_admin_upload_profile_picture' );
+				formData.append( 'nonce', dakAdminUsers.nonce );
+				formData.append( 'user_id', idInput.value );
+				formData.append( 'profile_picture', file );
+
+				fetch( dakAdminUsers.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
+					.then( function ( response ) { return response.json(); } )
+					.then( function ( result ) {
+						if ( result.success ) {
+							pictureIdInput.value = result.data.attachment_id;
+
+							if ( picturePreview ) {
+								picturePreview.innerHTML = '<img src="' + result.data.url + '" alt="">';
+							}
+
+							if ( pictureStatus ) {
+								pictureStatus.textContent = '';
+							}
+
+							return;
+						}
+
+						if ( pictureStatus ) {
+							pictureStatus.textContent = ( result.data && result.data.message ) || dakAdminUsers.genericError;
+						}
+					} )
+					.catch( function () {
+						if ( pictureStatus ) {
+							pictureStatus.textContent = dakAdminUsers.genericError;
+						}
+					} );
+			} );
 		}
 
 		function clearFieldErrors() {
@@ -130,13 +117,17 @@
 		}
 
 		function hideGeneralError() {
-			generalError.textContent = '';
-			generalError.classList.add( 'dak-hidden' );
+			if ( generalError ) {
+				generalError.textContent = '';
+				generalError.classList.add( 'dak-hidden' );
+			}
 		}
 
 		function showGeneralError( message ) {
-			generalError.textContent = message;
-			generalError.classList.remove( 'dak-hidden' );
+			if ( generalError ) {
+				generalError.textContent = message;
+				generalError.classList.remove( 'dak-hidden' );
+			}
 		}
 
 		function submitForm() {
@@ -153,7 +144,7 @@
 				.then( function ( response ) { return response.json(); } )
 				.then( function ( result ) {
 					if ( result.success ) {
-						window.location.reload();
+						window.location.href = listUrl || window.location.href;
 						return;
 					}
 

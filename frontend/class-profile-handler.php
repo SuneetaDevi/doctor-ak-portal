@@ -8,6 +8,7 @@
 namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
+use DoctorAKPortal\Includes\Doctor_Awards;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Profile_Picture_Uploader;
 use DoctorAKPortal\Includes\Roles;
@@ -105,9 +106,17 @@ class Profile_Handler {
 		);
 
 		wp_enqueue_script(
+			'doctor-ak-portal-awards-editor',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-awards-editor.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-awards-editor.js' ),
+			true
+		);
+
+		wp_enqueue_script(
 			'doctor-ak-portal-profile',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-profile.js',
-			array( 'doctor-ak-portal-registration' ),
+			array( 'doctor-ak-portal-registration', 'doctor-ak-portal-awards-editor' ),
 			Assets::version( 'assets/js/doctor-ak-profile.js' ),
 			true
 		);
@@ -172,6 +181,10 @@ class Profile_Handler {
 			'specializations'            => Specializations::get_all(),
 			'current_specializations'    => (array) get_user_meta( $user->ID, 'doctor_ak_specializations', true ),
 			'current_years_experience'   => get_user_meta( $user->ID, 'doctor_ak_years_experience', true ),
+			'current_qualification'      => get_user_meta( $user->ID, 'doctor_ak_qualification', true ),
+			'current_short_description'  => get_user_meta( $user->ID, 'doctor_ak_short_description', true ),
+			'current_expertise'          => get_user_meta( $user->ID, 'doctor_ak_expertise', true ),
+			'current_awards'             => Doctor_Awards::get_for_doctor( $user->ID ),
 			'current_phone_number'       => get_user_meta( $user->ID, 'doctor_ak_phone_number', true ),
 			'current_profile_picture_id' => (int) get_user_meta( $user->ID, 'doctor_ak_profile_picture_id', true ),
 		);
@@ -336,6 +349,25 @@ class Profile_Handler {
 		} else {
 			$meta['doctor_ak_years_experience'] = $years_experience;
 		}
+
+		$qualification = isset( $_POST['qualification'] ) ? sanitize_text_field( wp_unslash( $_POST['qualification'] ) ) : '';
+
+		if ( '' === $qualification ) {
+			$errors['qualification'] = __( 'Please provide your qualification(s), e.g. MBBS, FCPS.', 'doctor-ak-portal' );
+		} else {
+			$meta['doctor_ak_qualification'] = $qualification;
+		}
+
+		$short_description = isset( $_POST['short_description'] ) ? sanitize_text_field( wp_unslash( $_POST['short_description'] ) ) : '';
+
+		if ( mb_strlen( $short_description ) > 160 ) {
+			$errors['short_description'] = __( 'Short description must be 160 characters or fewer.', 'doctor-ak-portal' );
+		} else {
+			$meta['doctor_ak_short_description'] = $short_description;
+		}
+
+		$meta['doctor_ak_expertise'] = isset( $_POST['expertise'] ) ? sanitize_textarea_field( wp_unslash( $_POST['expertise'] ) ) : '';
+		$meta[ Doctor_Awards::META_KEY ] = Doctor_Awards::encode( Doctor_Awards::sanitize_from_request( $errors ) );
 
 		$specializations = array();
 

@@ -450,6 +450,56 @@
 	color: var( --dak-muted ) !important;
 }
 
+/* Awards & Recognition repeatable-row editor — shared by the doctor's own
+   profile form and the admin's Add/Edit Doctor modal (see
+   assets/js/doctor-ak-awards-editor.js). */
+.dak-awards-editor {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.6rem !important;
+}
+
+.dak-awards-rows {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.5rem !important;
+}
+
+.dak-awards-row {
+	display: grid !important;
+	grid-template-columns: 1fr 110px auto !important;
+	gap: 0.5rem !important;
+	align-items: center !important;
+}
+
+.dak-awards-remove {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 2.25rem !important;
+	height: 2.25rem !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 1.1rem !important;
+	line-height: 1 !important;
+	cursor: pointer !important;
+}
+
+.dak-awards-remove:hover {
+	background: #fbeaea !important;
+	color: var( --dak-danger ) !important;
+	border-color: var( --dak-danger ) !important;
+}
+
+@media ( max-width: 480px ) {
+	.dak-awards-row {
+		grid-template-columns: 1fr !important;
+	}
+}
+
 .dak-terms-hint {
 	font-size: 0.78rem !important;
 	color: var( --dak-muted ) !important;

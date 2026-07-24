@@ -43,7 +43,7 @@ class Notification_Settings {
 	 * @return void
 	 */
 	public function register_settings() {
-		foreach ( array( Notifications::OPTION_NOTIFY_BOOKING, Notifications::OPTION_NOTIFY_CANCELLED, Notifications::OPTION_NOTIFY_PAID, Notifications::OPTION_NOTIFY_REMINDER ) as $option ) {
+		foreach ( array( Notifications::OPTION_NOTIFY_BOOKING, Notifications::OPTION_NOTIFY_CANCELLED, Notifications::OPTION_NOTIFY_PAID, Notifications::OPTION_NOTIFY_REMINDER, Notifications::OPTION_NOTIFY_DOCTOR_REGISTRATION ) as $option ) {
 			register_setting(
 				'doctor_ak_notification_settings',
 				$option,
@@ -115,6 +115,15 @@ class Notification_Settings {
 							<label>
 								<input type="checkbox" name="<?php echo esc_attr( Notifications::OPTION_NOTIFY_REMINDER ); ?>" value="1" <?php checked( '1', get_option( Notifications::OPTION_NOTIFY_REMINDER, '1' ) ); ?>>
 								<?php esc_html_e( 'Email the patient and doctor the day before an upcoming appointment.', 'doctor-ak-portal' ); ?>
+							</label>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Doctor Registration', 'doctor-ak-portal' ); ?></th>
+						<td>
+							<label>
+								<input type="checkbox" name="<?php echo esc_attr( Notifications::OPTION_NOTIFY_DOCTOR_REGISTRATION ); ?>" value="1" <?php checked( '1', get_option( Notifications::OPTION_NOTIFY_DOCTOR_REGISTRATION, '1' ) ); ?>>
+								<?php esc_html_e( 'Email every administrator when a doctor registers, and email the doctor once their account is approved.', 'doctor-ak-portal' ); ?>
 							</label>
 						</td>
 					</tr>

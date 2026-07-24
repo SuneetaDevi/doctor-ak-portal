@@ -28,10 +28,12 @@ class Notification_Center {
 
 	const TABLE = 'dak_notifications';
 
-	const TYPE_BOOKED    = 'booked';
-	const TYPE_CANCELLED = 'cancelled';
-	const TYPE_PAID      = 'paid';
-	const TYPE_COMPLETED = 'completed';
+	const TYPE_BOOKED             = 'booked';
+	const TYPE_CANCELLED          = 'cancelled';
+	const TYPE_PAID               = 'paid';
+	const TYPE_COMPLETED          = 'completed';
+	const TYPE_DOCTOR_REGISTERED  = 'doctor_registered';
+	const TYPE_DOCTOR_APPROVED    = 'doctor_approved';
 
 	/**
 	 * Returns the fully prefixed table name.
@@ -244,6 +246,59 @@ class Notification_Center {
 			self::TYPE_COMPLETED,
 			$appointment_id
 		);
+	}
+
+	/**
+	 * Hook callback: a new doctor account was created and is awaiting admin
+	 * approval (see Registration_Handler::handle_register()).
+	 *
+	 * @param int $doctor_id New doctor's user ID.
+	 * @return void
+	 */
+	public static function notify_doctor_registered( $doctor_id ) {
+		$doctor = get_userdata( $doctor_id );
+
+		if ( ! $doctor ) {
+			return;
+		}
+
+		self::notify_admins(
+			sprintf(
+				/* translators: %s: doctor's display name. */
+				__( 'Dr. %s has registered and is awaiting your approval.', 'doctor-ak-portal' ),
+				self::doctor_display_name( $doctor )
+			),
+			self::TYPE_DOCTOR_REGISTERED,
+			0
+		);
+	}
+
+	/**
+	 * Hook callback: a pending doctor account was approved by an admin (see
+	 * Doctor_Requests_Handler::handle_approve()).
+	 *
+	 * @param int $doctor_id Approved doctor's user ID.
+	 * @return void
+	 */
+	public static function notify_doctor_approved( $doctor_id ) {
+		self::record(
+			$doctor_id,
+			self::TYPE_DOCTOR_APPROVED,
+			__( 'Your account has been approved. You can now log in.', 'doctor-ak-portal' ),
+			0
+		);
+	}
+
+	/**
+	 * A doctor user's display name, falling back to their WP display name.
+	 *
+	 * @param \WP_User $doctor Doctor user.
+	 * @return string
+	 */
+	private static function doctor_display_name( \WP_User $doctor ) {
+		$name = trim( $doctor->first_name . ' ' . $doctor->last_name );
+
+		return '' !== $name ? $name : $doctor->display_name;
 	}
 
 	/**

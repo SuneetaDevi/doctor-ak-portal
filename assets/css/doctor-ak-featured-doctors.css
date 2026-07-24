@@ -1,0 +1,162 @@
+/**
+ * Doctor AK Portal — Homepage doctors slider ([featured_doctors] shortcode).
+ *
+ * Loaded together with doctor-ak-auth.css (tokens, .dak-button*, .dak-eyebrow)
+ * and doctor-ak-directory.css (.dak-doctor-card and everything inside it —
+ * this stylesheet only adds the slider chrome around the same card partial
+ * the full directory grid uses).
+ */
+
+.dak-featured-doctors {
+	max-width: 1200px !important;
+	margin: 0 auto !important;
+	padding: 2rem 1.5rem !important;
+}
+
+.dak-featured-doctors-header {
+	display: flex !important;
+	align-items: flex-end !important;
+	justify-content: space-between !important;
+	gap: 1rem !important;
+	margin-bottom: 1.75rem !important;
+}
+
+.dak-featured-doctors-header h2 {
+	margin: 0.35rem 0 0.5rem !important;
+	font-size: 1.6rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-featured-doctors-header p {
+	margin: 0 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-featured-doctors-view-more {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+	white-space: nowrap !important;
+}
+
+.dak-featured-doctors-view-more svg {
+	width: 1rem !important;
+	height: 1rem !important;
+}
+
+.dak-featured-doctors-view-more-mobile {
+	display: none !important;
+	width: 100% !important;
+	margin-top: 1.25rem !important;
+	text-align: center !important;
+	justify-content: center !important;
+}
+
+.dak-featured-doctors-slider {
+	position: relative !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.75rem !important;
+}
+
+.dak-featured-doctors-track {
+	flex: 1 1 auto !important;
+	/* Flex items default to min-width: auto, which means a flex child won't
+	   shrink below its content's natural width — since the slides never
+	   wrap, that natural width is the full unscrolled row of every card
+	   end-to-end. Without this, the track just grows to fit all of them
+	   instead of clipping/scrolling, pushing the whole section (and often
+	   the page) wider than the viewport. */
+	min-width: 0 !important;
+	display: flex !important;
+	gap: 1.25rem !important;
+	overflow-x: auto !important;
+	scroll-snap-type: x mandatory !important;
+	scroll-behavior: smooth !important;
+	padding: 0.25rem 0.1rem 1rem !important;
+	/* Hide the scrollbar — navigation is via the prev/next buttons (and
+	   touch/trackpad swipe still works underneath). */
+	scrollbar-width: none !important;
+	-ms-overflow-style: none !important;
+}
+
+.dak-featured-doctors-track::-webkit-scrollbar {
+	display: none !important;
+}
+
+.dak-featured-doctors-slide {
+	flex: 0 0 auto !important;
+	width: 270px !important;
+	scroll-snap-align: start !important;
+}
+
+.dak-featured-doctors-slide .dak-doctor-card {
+	height: 100% !important;
+}
+
+.dak-featured-doctors-nav {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 2.5rem !important;
+	height: 2.5rem !important;
+	border-radius: 999px !important;
+	border: 1px solid var( --dak-border ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	cursor: pointer !important;
+}
+
+.dak-featured-doctors-nav svg {
+	width: 1.1rem !important;
+	height: 1.1rem !important;
+	flex-shrink: 0 !important;
+	display: block !important;
+	/* Belt-and-suspenders against the active theme resetting SVG stroke/fill
+	   globally (some page-builder themes strip icon colors expecting an
+	   <i> icon font instead) — pin these directly rather than relying only
+	   on the button's inherited `color`/currentColor. */
+	stroke: var( --dak-text ) !important;
+	fill: none !important;
+}
+
+.dak-featured-doctors-nav:hover:not( :disabled ) svg {
+	stroke: var( --dak-primary-dark ) !important;
+}
+
+.dak-featured-doctors-nav:hover:not( :disabled ) {
+	border-color: var( --dak-primary ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-featured-doctors-nav:disabled {
+	opacity: 0.4 !important;
+	cursor: not-allowed !important;
+}
+
+@media ( max-width: 640px ) {
+	.dak-featured-doctors-header {
+		flex-direction: column !important;
+		align-items: flex-start !important;
+	}
+
+	.dak-featured-doctors-view-more {
+		display: none !important;
+	}
+
+	.dak-featured-doctors-view-more-mobile {
+		display: inline-flex !important;
+	}
+
+	.dak-featured-doctors-nav {
+		display: none !important;
+	}
+
+	.dak-featured-doctors-slide {
+		width: 82vw !important;
+	}
+}

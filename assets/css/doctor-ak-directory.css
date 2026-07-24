@@ -69,7 +69,9 @@
 	box-shadow: 0 0 0 3px var( --dak-primary-tint ) !important;
 }
 
-#dak-directory-specialization-filter {
+#dak-directory-specialization-filter,
+#dak-directory-location-filter,
+#dak-directory-clinic-filter {
 	flex: 0 1 220px !important;
 	padding: 0.65rem 0.85rem !important;
 	border: 1px solid var( --dak-border ) !important;
@@ -283,6 +285,25 @@
 	margin: 0 !important;
 }
 
+.dak-profile-qualification {
+	margin: 0.3rem 0 0 !important;
+	font-size: 0.9rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-profile-tagline {
+	margin: 0.5rem 0 0 !important;
+	font-size: 0.95rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-profile-expertise {
+	margin: 0 !important;
+	color: var( --dak-text ) !important;
+	white-space: pre-line !important;
+}
+
 .dak-profile-stats {
 	display: flex !important;
 	flex-wrap: wrap !important;
@@ -464,6 +485,49 @@
 .dak-profile-clinic-fee strong {
 	font-size: 1rem !important;
 	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-profile-awards {
+	list-style: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.6rem !important;
+}
+
+.dak-profile-awards li {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.6rem !important;
+	padding: 0.7rem 0.9rem !important;
+	border-radius: var( --dak-radius-md ) !important;
+	background: var( --dak-primary-tint ) !important;
+}
+
+.dak-profile-award-icon {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	width: 1.2rem !important;
+	height: 1.2rem !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-profile-award-icon svg {
+	width: 100% !important;
+	height: 100% !important;
+}
+
+.dak-profile-award-title {
+	flex: 1 1 auto !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-profile-award-year {
+	flex: 0 0 auto !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.85rem !important;
 }
 
 .dak-profile-sidebar {

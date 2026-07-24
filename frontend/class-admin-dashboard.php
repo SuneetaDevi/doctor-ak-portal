@@ -10,6 +10,7 @@ namespace DoctorAKPortal\Frontend;
 use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinics;
+use DoctorAKPortal\Includes\Doctor_Awards;
 use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Roles;
@@ -29,11 +30,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Gates access to WordPress users who can 'manage_options' (the built-in
  * Administrator role). The sidebar mirrors the full clinic-management menu
- * (Dashboard/Appointments/Encounters, Patients/Doctors/Receptionist,
- * Clinic/Services/Doctor Sessions) so the shape is in place end to end, but
- * only the Doctors, Patients, and Appointments sections are backed by real
- * data today — every other section renders an honest "coming soon"
- * placeholder instead of fabricated numbers or forms.
+ * (Dashboard/Appointments/Encounters, Doctor Requests/Patients/Doctors/
+ * Receptionist, Clinic/Services/Doctor Sessions) so the shape is in place
+ * end to end, but only the Doctor Requests, Doctors, Patients, and
+ * Appointments sections are backed by real data today — every other
+ * section renders an honest "coming soon" placeholder instead of
+ * fabricated numbers or forms.
  */
 class Admin_Dashboard {
 
@@ -66,6 +68,7 @@ class Admin_Dashboard {
 			'notifications' => 'Notifications',
 		),
 		'Users'  => array(
+			'doctor-requests' => 'Doctor Requests',
 			'patients'    => 'Patients',
 			'doctors'     => 'Doctors',
 			'receptionist' => 'Receptionist',
@@ -129,16 +132,45 @@ class Admin_Dashboard {
 		);
 
 		wp_enqueue_style(
+			'doctor-ak-portal-registration',
+			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-registration.css',
+			array( 'doctor-ak-portal-auth' ),
+			Assets::version( 'assets/css/doctor-ak-registration.css' )
+		);
+
+		wp_enqueue_style(
 			'doctor-ak-portal-admin-dashboard',
 			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-admin-dashboard.css',
-			array( 'doctor-ak-portal-booking-modal' ),
+			array( 'doctor-ak-portal-booking-modal', 'doctor-ak-portal-registration' ),
 			Assets::version( 'assets/css/doctor-ak-admin-dashboard.css' )
+		);
+
+		wp_enqueue_script(
+			'doctor-ak-portal-awards-editor',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-awards-editor.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-awards-editor.js' ),
+			true
+		);
+
+		// Registration.js defines and exposes the shared tag-style
+		// window.DoctorAKPortal.initMultiSelect() enhancer the Add/Edit
+		// Doctor/Patient form's specialization field reuses (same one the
+		// registration form and the doctor's own profile-edit page use) —
+		// every other init function it runs on load is a safe no-op here
+		// since none of its target elements exist on this page.
+		wp_enqueue_script(
+			'doctor-ak-portal-registration',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-registration.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-registration.js' ),
+			true
 		);
 
 		wp_enqueue_script(
 			'doctor-ak-portal-admin-dashboard',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-dashboard.js',
-			array(),
+			array( 'doctor-ak-portal-awards-editor', 'doctor-ak-portal-registration' ),
 			Assets::version( 'assets/js/doctor-ak-admin-dashboard.js' ),
 			true
 		);
@@ -272,6 +304,28 @@ class Admin_Dashboard {
 			);
 		}
 
+		if ( 'doctor-requests' === self::requested_section() ) {
+			wp_enqueue_script(
+				'doctor-ak-portal-admin-doctor-requests',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-doctor-requests.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-admin-doctor-requests.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-admin-doctor-requests',
+				'dakAdminDoctorRequests',
+				array(
+					'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
+					'nonce'          => wp_create_nonce( self::NONCE_ACTION ),
+					'confirmApprove' => __( 'Approve this doctor? They will be able to log in immediately.', 'doctor-ak-portal' ),
+					'confirmReject'  => __( 'Reject this registration? They will not be able to log in.', 'doctor-ak-portal' ),
+					'genericError'   => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
+				)
+			);
+		}
+
 		if ( 'appointments' === self::requested_section() ) {
 			wp_enqueue_style(
 				'doctor-ak-portal-registration',
@@ -375,6 +429,7 @@ class Admin_Dashboard {
 		$all_sections  = self::all_sections();
 
 		$unread_notifications_count = Notification_Center::unread_count( get_current_user_id() );
+		$pending_doctors_count      = self::pending_doctors_count();
 
 		$nav_groups = array();
 
@@ -382,12 +437,20 @@ class Admin_Dashboard {
 			$group_items = array();
 
 			foreach ( $items as $slug => $label ) {
+				$badge = 0;
+
+				if ( 'notifications' === $slug ) {
+					$badge = $unread_notifications_count;
+				} elseif ( 'doctor-requests' === $slug ) {
+					$badge = $pending_doctors_count;
+				}
+
 				$group_items[] = array(
 					'slug'      => $slug,
 					'label'     => $label,
 					'url'       => $dashboard_url ? add_query_arg( 'section', $slug, $dashboard_url ) : '',
 					'is_active' => $slug === $section,
-					'badge'     => 'notifications' === $slug ? $unread_notifications_count : 0,
+					'badge'     => $badge,
 				);
 			}
 
@@ -397,13 +460,12 @@ class Admin_Dashboard {
 			);
 		}
 
-		$is_users_section = in_array( $section, array( 'doctors', 'patients' ), true );
+		$is_users_section  = in_array( $section, array( 'doctors', 'patients' ), true );
+		$is_user_form_view = $is_users_section && self::is_user_form_view();
 
 		$modal_html = '';
 
-		if ( $is_users_section ) {
-			$modal_html = $this->user_modal_html( $section );
-		} elseif ( 'doctor-sessions' === $section ) {
+		if ( 'doctor-sessions' === $section ) {
 			$modal_html = $this->doctor_sessions_modal_html();
 		} elseif ( 'services' === $section ) {
 			$modal_html = $this->service_modal_html();
@@ -413,6 +475,14 @@ class Admin_Dashboard {
 			$modal_html = $this->appointment_modal_html();
 		}
 
+		if ( $is_user_form_view ) {
+			$content_html = $this->user_form_screen_html( $section );
+		} elseif ( $is_users_section ) {
+			$content_html = $this->users_section_html( $section );
+		} else {
+			$content_html = $this->section_content_html( $section );
+		}
+
 		return array(
 			'section'           => $section,
 			'section_label'     => isset( $all_sections[ $section ] ) ? $all_sections[ $section ] : $section,
@@ -420,11 +490,24 @@ class Admin_Dashboard {
 			'dashboard_url'     => $dashboard_url,
 			'logout_url'        => wp_logout_url( Page_Finder::url_for_shortcode( 'doctor_login' ) ),
 			'current_user'      => wp_get_current_user(),
-			'content_html'      => $is_users_section ? $this->users_section_html( $section ) : $this->section_content_html( $section ),
+			'content_html'      => $content_html,
 			'modal_html'        => $modal_html,
 			'role'              => $is_users_section ? $this->role_for_section( $section ) : '',
+			'is_users_section'  => $is_users_section,
+			'is_user_form_view' => $is_user_form_view,
 			'theme'             => Theme_Preference::get( get_current_user_id() ),
 		);
+	}
+
+	/**
+	 * Whether the current request wants the full-screen Add/Edit Doctor or
+	 * Patient form instead of the accounts table (`?view=form`, optionally
+	 * with `&user_id=X` to edit; without it, it's the "Add" form).
+	 *
+	 * @return bool
+	 */
+	private static function is_user_form_view() {
+		return isset( $_GET['view'] ) && 'form' === sanitize_key( wp_unslash( $_GET['view'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 	}
 
 	/**
@@ -454,6 +537,13 @@ class Admin_Dashboard {
 			return $this->template_loader->get_template(
 				'dashboard/partials/notifications-list.php',
 				array( 'notifications' => Notification_Center::for_user( get_current_user_id() ) )
+			);
+		}
+
+		if ( 'doctor-requests' === $section ) {
+			return $this->template_loader->get_template(
+				'dashboard/partials/admin-doctor-requests.php',
+				array( 'pending_doctors' => $this->pending_doctors() )
 			);
 		}
 
@@ -684,6 +774,46 @@ class Admin_Dashboard {
 	}
 
 	/**
+	 * Doctor accounts still awaiting admin approval, most recently
+	 * registered first (see Registration_Handler::handle_register()).
+	 *
+	 * @return array Row view-models, see row_data().
+	 */
+	private function pending_doctors() {
+		$query = new \WP_User_Query(
+			array(
+				'role'       => Roles::DOCTOR_ROLE,
+				'meta_key'   => 'doctor_ak_registration_status', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value' => 'pending', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'orderby'    => 'registered',
+				'order'      => 'DESC',
+			)
+		);
+
+		return array_map( array( $this, 'row_data' ), $query->get_results() );
+	}
+
+	/**
+	 * Count of doctor accounts awaiting admin approval, for the sidebar's
+	 * "Doctor Requests" badge.
+	 *
+	 * @return int
+	 */
+	private static function pending_doctors_count() {
+		$query = new \WP_User_Query(
+			array(
+				'role'        => Roles::DOCTOR_ROLE,
+				'meta_key'    => 'doctor_ak_registration_status', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+				'meta_value'  => 'pending', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'fields'      => 'ID',
+				'count_total' => true,
+			)
+		);
+
+		return (int) $query->get_total();
+	}
+
+	/**
 	 * Renders the Doctors/Patients accounts table.
 	 *
 	 * @param string $section 'doctors' or 'patients'.
@@ -699,7 +829,25 @@ class Admin_Dashboard {
 			)
 		);
 
-		$users = array_map( array( $this, 'row_data' ), $query->get_results() );
+		$results = $query->get_results();
+
+		if ( 'doctors' === $section ) {
+			// Pending/rejected registrations live in the "Doctor Requests"
+			// tab, not the main roster — a pending doctor isn't "Active"
+			// yet, and a rejected one was never accepted.
+			$results = array_values(
+				array_filter(
+					$results,
+					function ( $user ) {
+						$status = get_user_meta( $user->ID, 'doctor_ak_registration_status', true );
+
+						return '' === $status || 'approved' === $status;
+					}
+				)
+			);
+		}
+
+		$users = array_map( array( $this, 'row_data' ), $results );
 
 		$is_doctors_section = 'doctors' === $section;
 
@@ -755,17 +903,29 @@ class Admin_Dashboard {
 	}
 
 	/**
-	 * Renders the Add/Edit Doctor or Patient modal.
+	 * Renders the full-screen Add/Edit Doctor or Patient form (replaces the
+	 * accounts table content area when `?view=form` is present) — same
+	 * fields the old modal had, just rendered in-page instead of a popup.
 	 *
 	 * @param string $section 'doctors' or 'patients'.
 	 * @return string
 	 */
-	private function user_modal_html( $section ) {
+	private function user_form_screen_html( $section ) {
+		$role    = $this->role_for_section( $section );
+		$user_id = isset( $_GET['user_id'] ) ? absint( wp_unslash( $_GET['user_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		$user    = $user_id > 0 ? get_user_by( 'id', $user_id ) : false;
+		$editing = ( $user && in_array( $role, (array) $user->roles, true ) ) ? $this->row_data( $user ) : null;
+
+		$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+
 		return $this->template_loader->get_template(
-			'modal/admin-user-modal.php',
+			'dashboard/partials/admin-user-form-screen.php',
 			array(
-				'role'            => $this->role_for_section( $section ),
+				'role'            => $role,
 				'specializations' => Specializations::get_all(),
+				'section'         => $section,
+				'list_url'        => $dashboard_url ? add_query_arg( 'section', $section, $dashboard_url ) : '',
+				'editing_user'    => $editing,
 			)
 		);
 	}
@@ -811,7 +971,34 @@ class Admin_Dashboard {
 			'specializations'       => $specialization_slugs,
 			'specialization_label'  => implode( ', ', $specialization_labels ),
 			'is_disabled'           => 'yes' === get_user_meta( $user->ID, 'doctor_ak_account_disabled', true ),
+			'years_experience'      => get_user_meta( $user->ID, 'doctor_ak_years_experience', true ),
+			'qualification'         => get_user_meta( $user->ID, 'doctor_ak_qualification', true ),
+			'short_description'     => get_user_meta( $user->ID, 'doctor_ak_short_description', true ),
+			'expertise'             => get_user_meta( $user->ID, 'doctor_ak_expertise', true ),
+			'awards'                => Doctor_Awards::get_for_doctor( $user->ID ),
+			'avatar_url'            => self::avatar_url( $user->ID ),
+			'registered_date'       => mysql2date( get_option( 'date_format' ), $user->user_registered ),
 		);
+	}
+
+	/**
+	 * Resolves a user's uploaded profile picture, or '' if none set.
+	 *
+	 * @param int $user_id User ID.
+	 * @return string
+	 */
+	private static function avatar_url( $user_id ) {
+		$picture_id = (int) get_user_meta( $user_id, 'doctor_ak_profile_picture_id', true );
+
+		if ( $picture_id > 0 ) {
+			$url = wp_get_attachment_image_url( $picture_id, 'thumbnail' );
+
+			if ( $url ) {
+				return $url;
+			}
+		}
+
+		return '';
 	}
 
 	/**

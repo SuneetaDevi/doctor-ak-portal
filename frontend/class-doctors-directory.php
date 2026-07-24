@@ -90,36 +90,64 @@ class Doctors_Directory {
 	 * @return string
 	 */
 	public function render() {
-		$query = new \WP_User_Query(
-			array(
-				'role'    => Roles::DOCTOR_ROLE,
-				'orderby' => 'display_name',
-			)
-		);
-
+		$cards                 = $this->doctor_cards_data();
 		$doctors_html          = array();
 		$used_specializations = array();
 		$all_specializations   = Specializations::get_all();
+		$used_locations        = array();
+		$used_clinics          = array();
 
-		foreach ( $query->get_results() as $doctor ) {
-			$doctors_html[] = $this->template_loader->get_template( 'directory/doctor-card.php', $this->card_data( $doctor ) );
+		foreach ( $cards as $card ) {
+			$doctors_html[] = $this->template_loader->get_template( 'directory/doctor-card.php', $card );
 
-			foreach ( (array) get_user_meta( $doctor->ID, 'doctor_ak_specializations', true ) as $slug ) {
+			foreach ( $card['specialization_slugs'] as $slug ) {
 				if ( isset( $all_specializations[ $slug ] ) ) {
 					$used_specializations[ $slug ] = $all_specializations[ $slug ];
 				}
 			}
+
+			foreach ( $card['location_labels'] as $label ) {
+				$used_locations[ $label ] = $label;
+			}
+
+			foreach ( $card['clinic_labels'] as $label ) {
+				$used_clinics[ $label ] = $label;
+			}
 		}
 
 		asort( $used_specializations );
+		asort( $used_locations );
+		asort( $used_clinics );
 
 		return $this->template_loader->get_template(
 			'directory/doctors-directory.php',
 			array(
 				'doctors_html'    => $doctors_html,
 				'specializations' => $used_specializations,
+				'locations'       => $used_locations,
+				'clinics'         => $used_clinics,
 			)
 		);
+	}
+
+	/**
+	 * Every registered doctor's directory-card view-model (see card_data()),
+	 * ordered by display name. Reused by Featured_Doctors for the homepage
+	 * slider so both shortcodes render the exact same card shape/data.
+	 *
+	 * @param int $limit Max number of doctors to return, or 0 for all.
+	 * @return array
+	 */
+	public function doctor_cards_data( $limit = 0 ) {
+		$query = new \WP_User_Query(
+			array(
+				'role'    => Roles::DOCTOR_ROLE,
+				'orderby' => 'display_name',
+				'number'  => $limit > 0 ? $limit : 0,
+			)
+		);
+
+		return array_map( array( $this, 'card_data' ), $query->get_results() );
 	}
 
 	/**
@@ -150,6 +178,8 @@ class Doctors_Directory {
 
 		$primary_clinic_location = '';
 		$extra_clinic_count      = 0;
+		$location_labels         = array();
+		$clinic_labels           = array();
 
 		foreach ( $clinics as $clinic ) {
 			if ( Clinics::TYPE_PHYSICAL !== $clinic['type'] ) {
@@ -161,6 +191,14 @@ class Doctors_Directory {
 			} else {
 				++$extra_clinic_count;
 			}
+
+			if ( '' !== $clinic['address'] ) {
+				$location_labels[] = $clinic['address'];
+			}
+
+			if ( '' !== $clinic['name'] ) {
+				$clinic_labels[] = $clinic['name'];
+			}
 		}
 
 		$display_name = trim( $doctor->first_name . ' ' . $doctor->last_name );
@@ -170,9 +208,12 @@ class Doctors_Directory {
 			'id'                    => $doctor->ID,
 			'name'                  => $display_name,
 			'avatar_url'            => self::avatar_url( $doctor->ID ),
+			'specialization_slugs'  => $specialization_slugs,
 			'specialization_labels' => $specialization_labels,
 			'clinic_location'       => $primary_clinic_location,
 			'extra_clinic_count'    => $extra_clinic_count,
+			'location_labels'       => $location_labels,
+			'clinic_labels'         => $clinic_labels,
 			'is_available'          => $is_available,
 			'video_consultation'    => Clinics::doctor_has_active_video_clinic( $doctor->ID ),
 			'profile_url'           => add_query_arg( 'doctor_id', $doctor->ID, Page_Finder::url_for_shortcode( 'doctor_profile_view' ) ),

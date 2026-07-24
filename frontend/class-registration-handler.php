@@ -242,6 +242,28 @@ class Registration_Handler {
 			$this->profile_picture_uploader->claim( $meta['doctor_ak_profile_picture_id'], $user_id );
 		}
 
+		if ( Roles::DOCTOR_ROLE === $register_as ) {
+			// Doctor accounts start locked out — Authentication::login() blocks
+			// them until an admin approves the request (see the "Doctor
+			// Requests" tab on the admin dashboard).
+			update_user_meta( $user_id, 'doctor_ak_registration_status', 'pending' );
+
+			/**
+			 * Fires once a new doctor account is created, still pending admin
+			 * approval. Notifications/Notification_Center hook this to alert
+			 * every administrator.
+			 *
+			 * @param int $user_id New doctor's user ID.
+			 */
+			do_action( 'doctor_ak_doctor_registered', $user_id );
+
+			wp_send_json_success(
+				array(
+					'message' => __( 'Your account has been created and is now awaiting admin approval. We will email you once it has been approved.', 'doctor-ak-portal' ),
+				)
+			);
+		}
+
 		wp_send_json_success(
 			array(
 				'message' => __( 'Your account has been created successfully. You can now log in.', 'doctor-ak-portal' ),
@@ -266,6 +288,23 @@ class Registration_Handler {
 			$errors['years_experience'] = __( 'Please provide a valid number of years of experience.', 'doctor-ak-portal' );
 		} else {
 			$meta['doctor_ak_years_experience'] = $years_experience;
+		}
+
+		$qualification = isset( $_POST['qualification'] ) ? sanitize_text_field( wp_unslash( $_POST['qualification'] ) ) : '';
+
+		if ( '' === $qualification ) {
+			$errors['qualification'] = __( 'Please provide your qualification(s), e.g. MBBS, FCPS.', 'doctor-ak-portal' );
+		} else {
+			$meta['doctor_ak_qualification'] = $qualification;
+		}
+
+		// Optional — a free-text field for anything not already covered by
+		// the structured specialization list (e.g. a niche procedure or
+		// interest area).
+		$expertise = isset( $_POST['expertise'] ) ? sanitize_textarea_field( wp_unslash( $_POST['expertise'] ) ) : '';
+
+		if ( '' !== $expertise ) {
+			$meta['doctor_ak_expertise'] = $expertise;
 		}
 
 		$specializations = array();

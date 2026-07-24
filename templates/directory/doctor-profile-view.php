@@ -13,6 +13,10 @@
  *     @type string[] $specialization_labels Selected specialization labels.
  *     @type array    $clinics               Doctor's clinics, each with added 'hours_label'/'fee_label'.
  *     @type string   $years_experience      Years of experience.
+ *     @type string   $qualification         Qualification(s), e.g. "MBBS, FCPS".
+ *     @type string   $short_description     One-line profile tagline, or ''.
+ *     @type string   $expertise             Other-expertise free text, or ''.
+ *     @type array    $awards                Awards list, see Doctor_Awards::get_for_doctor().
  *     @type bool     $video_consultation    Whether video consultations are offered.
  *     @type string   $phone                 First clinic with a phone number on file, or ''.
  * }
@@ -33,6 +37,7 @@ $dak_profile_view_icons = array(
 	'badge'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5l1.7 1.9 2.5-.4.4 2.5 1.9 1.7-1.9 1.7-.4 2.5-2.5-.4L10 13.9l-1.7-1.9-2.5.4-.4-2.5-1.9-1.7 1.9-1.7.4-2.5 2.5.4z"/><path d="M8 10l1.4 1.4L12.5 8"/></svg>',
 	'phone'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3.5h2.3l1 3.3-1.6 1.4a9 9 0 0 0 4.1 4.1l1.4-1.6 3.3 1v2.3c0 .8-.7 1.4-1.5 1.3C8.7 15 5 11.3 4.2 6c-.1-.8.5-1.5 1.3-1.5z"/></svg>',
 	'video'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="10" height="10" rx="1.5"/><path d="M12.5 8.5l5-2.5v8l-5-2.5"/></svg>',
+	'award'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7.5" r="4.5"/><path d="M7.3 11.4L6 17.5l4-2 4 2-1.3-6.1"/></svg>',
 );
 ?>
 <div class="dak-portal dak-directory">
@@ -65,12 +70,20 @@ $dak_profile_view_icons = array(
 			<div class="dak-profile-header-main">
 				<h1><?php echo esc_html( sprintf( 'Dr. %s', $doctor['name'] ) ); ?></h1>
 
+				<?php if ( '' !== $doctor['qualification'] ) : ?>
+					<p class="dak-profile-qualification"><?php echo esc_html( $doctor['qualification'] ); ?></p>
+				<?php endif; ?>
+
 				<?php if ( ! empty( $doctor['specialization_labels'] ) ) : ?>
 					<div class="dak-specialty-tags dak-doctor-card-specialties">
 						<?php foreach ( $doctor['specialization_labels'] as $label ) : ?>
 							<span class="dak-specialty-tag"><?php echo esc_html( $label ); ?></span>
 						<?php endforeach; ?>
 					</div>
+				<?php endif; ?>
+
+				<?php if ( '' !== $doctor['short_description'] ) : ?>
+					<p class="dak-profile-tagline"><?php echo esc_html( $doctor['short_description'] ); ?></p>
 				<?php endif; ?>
 
 				<div class="dak-profile-stats">
@@ -132,6 +145,32 @@ $dak_profile_view_icons = array(
 								<span class="dak-specialty-tag"><?php echo esc_html( $label ); ?></span>
 							<?php endforeach; ?>
 						</div>
+					</div>
+				<?php endif; ?>
+
+				<?php if ( '' !== $doctor['expertise'] ) : ?>
+					<div class="dak-profile-card">
+						<h2><?php esc_html_e( 'Other Expertise', 'doctor-ak-portal' ); ?></h2>
+						<p class="dak-profile-expertise"><?php echo esc_html( $doctor['expertise'] ); ?></p>
+					</div>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $doctor['awards'] ) ) : ?>
+					<div class="dak-profile-card">
+						<h2>
+							<span class="dak-profile-card-title-icon" aria-hidden="true"><?php echo $dak_profile_view_icons['award']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<?php esc_html_e( 'Awards & Recognition', 'doctor-ak-portal' ); ?>
+						</h2>
+
+						<ul class="dak-profile-awards">
+							<?php foreach ( $doctor['awards'] as $award ) : ?>
+								<li>
+									<span class="dak-profile-award-icon" aria-hidden="true"><?php echo $dak_profile_view_icons['award']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+									<span class="dak-profile-award-title"><?php echo esc_html( $award['title'] ); ?></span>
+									<span class="dak-profile-award-year"><?php echo esc_html( $award['year'] ); ?></span>
+								</li>
+							<?php endforeach; ?>
+						</ul>
 					</div>
 				<?php endif; ?>
 

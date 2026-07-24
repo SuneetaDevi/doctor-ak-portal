@@ -22,6 +22,7 @@ $dak_has_filters  = '' !== $filters['status'] || '' !== $filters['specialization
 ?>
 <section class="dak-dashboard-card">
 	<form method="get" action="<?php echo esc_url( $section_url ); ?>" class="dak-field-row">
+		<input type="hidden" name="section" value="<?php echo esc_attr( $section ); ?>">
 		<?php if ( ! $dak_is_patients ) : ?>
 			<div class="dak-field">
 				<label for="dak-admin-users-filter-specialization"><?php esc_html_e( 'Specialization', 'doctor-ak-portal' ); ?></label>
@@ -103,19 +104,12 @@ $dak_has_filters  = '' !== $filters['status'] || '' !== $filters['specialization
 										aria-label="<?php esc_attr_e( 'View Appointments', 'doctor-ak-portal' ); ?>"
 									><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="4" width="15" height="13" rx="1.5"/><path d="M2.5 8h15"/><path d="M6 2.5v3M14 2.5v3"/></svg></a>
 								<?php endif; ?>
-								<button
-									type="button"
+								<a
 									class="dak-icon-button"
-									data-admin-edit-user
-									data-user-id="<?php echo esc_attr( $row['id'] ); ?>"
-									data-first-name="<?php echo esc_attr( $row['first_name'] ); ?>"
-									data-last-name="<?php echo esc_attr( $row['last_name'] ); ?>"
-									data-email="<?php echo esc_attr( $row['email'] ); ?>"
-									data-location="<?php echo esc_attr( $row['location'] ); ?>"
-									data-specializations="<?php echo esc_attr( implode( ',', $row['specializations'] ) ); ?>"
+									href="<?php echo esc_url( add_query_arg( array( 'view' => 'form', 'user_id' => $row['id'] ), $section_url ) ); ?>"
 									title="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
 									aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
-								><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 3.5a1.7 1.7 0 0 1 2.4 2.4L6.5 15.3l-3 .7.7-3 9.3-9.3z"/></svg></button>
+								><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 3.5a1.7 1.7 0 0 1 2.4 2.4L6.5 15.3l-3 .7.7-3 9.3-9.3z"/></svg></a>
 								<button
 									type="button"
 									class="dak-icon-button<?php echo $row['is_disabled'] ? ' dak-icon-button-success' : ' dak-icon-button-warning'; ?>"

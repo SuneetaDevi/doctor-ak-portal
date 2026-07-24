@@ -191,11 +191,19 @@
 	 * unassisted if this script fails to load.
 	 *
 	 * @param {HTMLSelectElement} select Native multi-select element.
+	 * @param {Object}            [opts] Optional settings.
+	 * @param {boolean}           [opts.allowCustom] When true, typing a value
+	 *   that doesn't match any existing option and pressing Tab/Enter adds it
+	 *   as a brand-new option (and chip) instead of being ignored — used for
+	 *   the admin's Add/Edit Doctor screen, where an admin may need to tag a
+	 *   specialization that isn't in the canonical dropdown yet.
 	 */
-	function initMultiSelect( select ) {
+	function initMultiSelect( select, opts ) {
 		if ( ! select ) {
 			return;
 		}
+
+		opts = opts || {};
 
 		var wrapper = document.createElement( 'div' );
 		wrapper.className = 'dak-multiselect';
@@ -220,12 +228,12 @@
 		var search = document.createElement( 'input' );
 		search.type = 'text';
 		search.className = 'dak-multiselect-search';
-		search.setAttribute( 'placeholder', 'Search…' );
+		search.setAttribute( 'placeholder', opts.allowCustom ? 'Search or type to add new…' : 'Search…' );
 
 		var optionsList = document.createElement( 'ul' );
 		optionsList.className = 'dak-multiselect-options';
 
-		Array.prototype.forEach.call( select.options, function ( option ) {
+		function addOptionRow( option ) {
 			var li = document.createElement( 'li' );
 			li.className = 'dak-multiselect-option';
 			li.setAttribute( 'data-value', option.value );
@@ -243,7 +251,40 @@
 			} );
 
 			optionsList.appendChild( li );
-		} );
+
+			return li;
+		}
+
+		Array.prototype.forEach.call( select.options, addOptionRow );
+
+		/**
+		 * Adds a brand-new <option> (not part of the original dropdown) to
+		 * the underlying select, selected, plus its matching row — only
+		 * reachable when opts.allowCustom is true.
+		 *
+		 * @param {string} label Raw typed text to use as both the option's
+		 *   value and its display label.
+		 * @return {void}
+		 */
+		function addCustomOption( label ) {
+			var alreadyExists = Array.prototype.some.call( select.options, function ( option ) {
+				return option.textContent.toLowerCase() === label.toLowerCase();
+			} );
+
+			if ( alreadyExists ) {
+				return;
+			}
+
+			var option = document.createElement( 'option' );
+			option.value = label;
+			option.textContent = label;
+			option.selected = true;
+			select.appendChild( option );
+
+			addOptionRow( option );
+			renderChips();
+			select.dispatchEvent( new Event( 'change' ) );
+		}
 
 		dropdown.appendChild( search );
 		dropdown.appendChild( optionsList );
@@ -318,6 +359,42 @@
 			Array.prototype.forEach.call( optionsList.children, function ( li ) {
 				var matches = li.textContent.toLowerCase().indexOf( query ) !== -1;
 				li.classList.toggle( 'dak-hidden', ! matches );
+			} );
+		} );
+
+		// Tag-style shortcut: type a few letters, press Tab (or Enter) to
+		// turn the top matching option into a chip immediately, without
+		// having to reach for the mouse — same idea as an email "To:" field.
+		// When opts.allowCustom is set and nothing matches, the typed text
+		// itself becomes a brand-new tag instead of being dropped.
+		search.addEventListener( 'keydown', function ( event ) {
+			if ( 'Tab' !== event.key && 'Enter' !== event.key ) {
+				return;
+			}
+
+			var query = search.value.trim();
+
+			if ( '' === query ) {
+				return;
+			}
+
+			var topMatch = Array.prototype.filter.call( optionsList.children, function ( li ) {
+				return ! li.classList.contains( 'dak-hidden' ) && ! li.classList.contains( 'is-selected' );
+			} )[ 0 ];
+
+			if ( topMatch ) {
+				event.preventDefault();
+				topMatch.click();
+			} else if ( opts.allowCustom ) {
+				event.preventDefault();
+				addCustomOption( query );
+			} else {
+				return;
+			}
+
+			search.value = '';
+			Array.prototype.forEach.call( optionsList.children, function ( li ) {
+				li.classList.remove( 'dak-hidden' );
 			} );
 		} );
 

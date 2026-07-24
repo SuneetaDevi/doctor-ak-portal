@@ -49,6 +49,31 @@
 	overflow: hidden !important;
 }
 
+.dak-back-link {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.35rem !important;
+	margin-bottom: 0.5rem !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+	text-decoration: none !important;
+}
+
+.dak-back-link:hover {
+	color: var( --dak-primary-dark ) !important;
+	text-decoration: underline !important;
+}
+
+.dak-admin-user-form-actions {
+	display: flex !important;
+	justify-content: flex-end !important;
+	gap: 0.75rem !important;
+	margin-top: 1.5rem !important;
+	padding-top: 1.25rem !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
 .dak-table-scroll {
 	overflow-x: auto !important;
 }
@@ -103,6 +128,10 @@
 .dak-status-badge.is-pending {
 	background: #fff4e0 !important;
 	color: #b45f06 !important;
+}
+
+.dak-admin-users-table .dak-status-badge {
+	margin-left: 0.5rem !important;
 }
 
 .dak-admin-appt-details {

@@ -10,10 +10,12 @@
  * @var string    $dashboard_url    URL of this dashboard page.
  * @var string    $logout_url       Nonce-protected logout URL.
  * @var \WP_User  $current_user     Currently logged-in administrator.
- * @var string    $content_html     Pre-rendered main-column content for the active section.
- * @var string    $modal_html       Pre-rendered Add/Edit modal (only for the Doctors/Patients sections).
- * @var string    $role             Roles::DOCTOR_ROLE or Roles::PATIENT_ROLE (only for the Doctors/Patients sections).
- * @var string    $theme            'light' or 'dark' — the admin's saved dashboard theme preference.
+ * @var string    $content_html      Pre-rendered main-column content for the active section.
+ * @var string    $modal_html        Pre-rendered Add/Edit modal (Doctor Sessions/Services/Video Consultation/Appointments sections only).
+ * @var string    $role              Roles::DOCTOR_ROLE or Roles::PATIENT_ROLE (only for the Doctors/Patients sections).
+ * @var bool      $is_users_section  Whether the active section is 'doctors' or 'patients'.
+ * @var bool      $is_user_form_view Whether `?view=form` is active (full-screen Add/Edit form instead of the table).
+ * @var string    $theme             'light' or 'dark' — the admin's saved dashboard theme preference.
  */
 
 // Prevent direct file access.
@@ -21,8 +23,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$is_users_section = in_array( $section, array( 'doctors', 'patients' ), true );
-$add_button_label  = 'doctors' === $section ? __( '+ Add Doctor', 'doctor-ak-portal' ) : __( '+ Add Patient', 'doctor-ak-portal' );
+$add_button_label = 'doctors' === $section ? __( '+ Add Doctor', 'doctor-ak-portal' ) : __( '+ Add Patient', 'doctor-ak-portal' );
+$dak_add_user_url  = $dashboard_url ? add_query_arg( array( 'section' => $section, 'view' => 'form' ), $dashboard_url ) : '';
 
 $dak_admin_icons = array(
 	'dashboard'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="6.5" height="6.5" rx="1.2"/><rect x="11" y="2.5" width="6.5" height="6.5" rx="1.2"/><rect x="2.5" y="11" width="6.5" height="6.5" rx="1.2"/><rect x="11" y="11" width="6.5" height="6.5" rx="1.2"/></svg>',
@@ -35,6 +37,7 @@ $dak_admin_icons = array(
 	'settings'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="2.6"/><path d="M10 2.8v2M10 15.2v2M17.2 10h-2M4.8 10h-2M15.1 4.9l-1.4 1.4M6.3 13.7l-1.4 1.4M15.1 15.1l-1.4-1.4M6.3 6.3 4.9 4.9"/></svg>',
 	'logout'      => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 17H4a1.5 1.5 0 0 1-1.5-1.5v-11A1.5 1.5 0 0 1 4 3h3.5"/><path d="M13 14l4-4-4-4"/><path d="M17 10H7.5"/></svg>',
 	'bell'        => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8a5 5 0 0 1 10 0c0 3.2 1 4.3 1.5 5H3.5C4 12.3 5 11.2 5 8z"/><path d="M8.2 15.5a1.8 1.8 0 0 0 3.6 0"/></svg>',
+	'person-plus' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="7" r="3"/><path d="M2.5 17c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M15.5 7.5v4M13.5 9.5h4"/></svg>',
 );
 
 $dak_admin_section_icons = array(
@@ -42,6 +45,7 @@ $dak_admin_section_icons = array(
 	'appointments'    => 'calendar',
 	'encounters'      => 'clock',
 	'notifications'   => 'bell',
+	'doctor-requests' => 'person-plus',
 	'patients'        => 'users',
 	'doctors'         => 'person',
 	'receptionist'    => 'headset',
@@ -89,25 +93,24 @@ $dak_admin_section_icons = array(
 	</aside>
 
 	<main class="dak-dashboard-main">
-		<?php if ( $is_users_section ) : ?>
+		<?php if ( $is_users_section && ! $is_user_form_view ) : ?>
 			<div class="dak-dashboard-greeting dak-admin-users-header">
 				<div>
 					<h1><?php echo esc_html( $section_label ); ?></h1>
 					<p><?php esc_html_e( 'Add, edit, deactivate or delete accounts.', 'doctor-ak-portal' ); ?></p>
 				</div>
-				<button type="button" class="dak-button dak-button-primary" id="dak-admin-add-user" data-role="<?php echo esc_attr( $role ); ?>"><?php echo esc_html( $add_button_label ); ?></button>
+				<a class="dak-button dak-button-primary" href="<?php echo esc_url( $dak_add_user_url ); ?>"><?php echo esc_html( $add_button_label ); ?></a>
 			</div>
-
-			<div class="dak-alert dak-alert-success dak-hidden" id="dak-admin-users-success" role="status"></div>
-			<div class="dak-alert dak-alert-error dak-hidden" id="dak-admin-users-error" role="alert"></div>
 
 			<section class="dak-dashboard-card dak-admin-users-card">
 				<?php echo $content_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own admin-user-table.php template, which escapes its own output. ?>
 			</section>
+		<?php elseif ( $is_user_form_view ) : ?>
+			<?php echo $content_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own admin-user-form-screen.php template, which escapes its own output. ?>
 		<?php else : ?>
 			<?php echo $content_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own admin-overview.php/admin-placeholder.php templates, which escape their own output. ?>
 		<?php endif; ?>
 	</main>
 </div>
 
-<?php echo $modal_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own admin-user-modal.php template, which escapes its own output. ?>
+<?php echo $modal_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own admin-*-modal.php templates, which escape their own output. ?>

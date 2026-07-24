@@ -105,6 +105,12 @@ $dak_icons = array(
 					</div>
 
 					<div class="dak-field">
+						<label for="dak-qualification"><span class="dak-field-icon dak-field-icon-specialization"><?php echo $dak_icons['graduation']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Qualification', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
+						<input type="text" id="dak-qualification" name="qualification" placeholder="<?php esc_attr_e( 'e.g. MBBS, FCPS (Gastroenterology)', 'doctor-ak-portal' ); ?>" required>
+						<span class="dak-field-error" data-field="qualification"></span>
+					</div>
+
+					<div class="dak-field">
 						<label for="dak-specializations"><span class="dak-field-icon dak-field-icon-specialization"><?php echo $dak_icons['briefcase']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Specialization', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
 						<select id="dak-specializations" name="specializations[]" multiple>
 							<?php foreach ( $specializations as $slug => $label ) : ?>
@@ -112,6 +118,12 @@ $dak_icons = array(
 							<?php endforeach; ?>
 						</select>
 						<span class="dak-field-error" data-field="specializations"></span>
+					</div>
+
+					<div class="dak-field">
+						<label for="dak-expertise"><span class="dak-field-icon dak-field-icon-specialization"><?php echo $dak_icons['briefcase']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Other Expertise', 'doctor-ak-portal' ); ?></label>
+						<textarea id="dak-expertise" name="expertise" rows="3" placeholder="<?php esc_attr_e( 'Any additional skills, procedures, or areas of interest not covered above (optional).', 'doctor-ak-portal' ); ?>"></textarea>
+						<span class="dak-field-error" data-field="expertise"></span>
 					</div>
 
 					<p class="dak-field-hint"><?php esc_html_e( "You'll add your clinics and set your weekly session hours after registering, from your dashboard.", 'doctor-ak-portal' ); ?></p>

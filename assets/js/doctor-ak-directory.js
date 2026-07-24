@@ -12,6 +12,8 @@
 		var grid = document.getElementById( 'dak-directory-grid' );
 		var searchInput = document.getElementById( 'dak-directory-search-input' );
 		var specializationSelect = document.getElementById( 'dak-directory-specialization-filter' );
+		var locationSelect = document.getElementById( 'dak-directory-location-filter' );
+		var clinicSelect = document.getElementById( 'dak-directory-clinic-filter' );
 
 		if ( ! grid || ! searchInput ) {
 			return;
@@ -23,15 +25,21 @@
 		function applyFilters() {
 			var query = searchInput.value.trim().toLowerCase();
 			var specialization = specializationSelect ? specializationSelect.value : '';
+			var location = locationSelect ? locationSelect.value : '';
+			var clinic = clinicSelect ? clinicSelect.value : '';
 			var visibleCount = 0;
 
 			cards.forEach( function ( card ) {
 				var name = card.getAttribute( 'data-search-name' ) || '';
 				var specializations = card.getAttribute( 'data-search-specializations' ) || '';
+				var locations = card.getAttribute( 'data-search-location' ) || '';
+				var clinics = card.getAttribute( 'data-search-clinics' ) || '';
 
 				var matchesQuery = '' === query || name.indexOf( query ) !== -1 || specializations.indexOf( query ) !== -1;
 				var matchesSpecialization = '' === specialization || specializations.indexOf( specialization ) !== -1;
-				var isVisible = matchesQuery && matchesSpecialization;
+				var matchesLocation = '' === location || locations.indexOf( location ) !== -1;
+				var matchesClinic = '' === clinic || clinics.indexOf( clinic ) !== -1;
+				var isVisible = matchesQuery && matchesSpecialization && matchesLocation && matchesClinic;
 
 				card.classList.toggle( 'dak-hidden', ! isVisible );
 
@@ -47,8 +55,10 @@
 
 		searchInput.addEventListener( 'input', applyFilters );
 
-		if ( specializationSelect ) {
-			specializationSelect.addEventListener( 'change', applyFilters );
-		}
+		[ specializationSelect, locationSelect, clinicSelect ].forEach( function ( select ) {
+			if ( select ) {
+				select.addEventListener( 'change', applyFilters );
+			}
+		} );
 	} );
 } )();

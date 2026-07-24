@@ -182,7 +182,8 @@
 .dak-field input[type='time'],
 .dak-field input[type='date'],
 .dak-field input[type='datetime-local'],
-.dak-field select {
+.dak-field select,
+.dak-field textarea {
 	width: 100% !important;
 	box-sizing: border-box !important;
 	padding: 0.65rem 0.85rem !important;
@@ -191,11 +192,17 @@
 	background: var( --dak-bg-card ) !important;
 	color: var( --dak-text ) !important;
 	font-size: 0.95rem !important;
+	font-family: inherit !important;
 	transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
 }
 
+.dak-field textarea {
+	resize: vertical !important;
+}
+
 .dak-field input:focus,
-.dak-field select:focus {
+.dak-field select:focus,
+.dak-field textarea:focus {
 	outline: none !important;
 	border-color: var( --dak-primary ) !important;
 	box-shadow: 0 0 0 3px var( --dak-primary-tint ) !important;

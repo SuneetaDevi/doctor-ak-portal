@@ -9,6 +9,7 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinics;
+use DoctorAKPortal\Includes\Doctor_Awards;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
@@ -131,6 +132,10 @@ class Doctor_Profile_View {
 					'specialization_labels' => $specialization_labels,
 					'clinics'               => $clinics,
 					'years_experience'      => get_user_meta( $doctor->ID, 'doctor_ak_years_experience', true ),
+					'qualification'         => get_user_meta( $doctor->ID, 'doctor_ak_qualification', true ),
+					'short_description'     => get_user_meta( $doctor->ID, 'doctor_ak_short_description', true ),
+					'expertise'             => get_user_meta( $doctor->ID, 'doctor_ak_expertise', true ),
+					'awards'                => Doctor_Awards::get_for_doctor( $doctor->ID ),
 					'video_consultation'    => Clinics::doctor_has_active_video_clinic( $doctor->ID ),
 					'phone'                 => $phone,
 				),

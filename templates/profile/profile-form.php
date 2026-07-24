@@ -16,6 +16,10 @@
  * @var array    $specializations            All specialization slug => label.
  * @var array    $current_specializations    Doctor's currently selected specialization slugs.
  * @var string   $current_years_experience   Doctor's current years of experience.
+ * @var string   $current_qualification      Doctor's current qualification(s), e.g. "MBBS, FCPS".
+ * @var string   $current_short_description  Doctor's current one-line profile tagline, or ''.
+ * @var string   $current_expertise          Doctor's current other-expertise free text, or ''.
+ * @var array    $current_awards             Doctor's current awards, see Doctor_Awards::get_for_doctor().
  * @var string   $current_phone_number       Patient's current phone number.
  * @var int      $current_profile_picture_id Current profile picture attachment ID.
  */
@@ -76,6 +80,19 @@ $current_picture_url = $current_profile_picture_id ? wp_get_attachment_image_url
 		</div>
 
 		<div class="dak-field">
+			<label for="dak-profile-qualification"><?php esc_html_e( 'Qualification', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
+			<input type="text" id="dak-profile-qualification" name="qualification" value="<?php echo esc_attr( $current_qualification ); ?>" placeholder="<?php esc_attr_e( 'e.g. MBBS, FCPS (Gastroenterology)', 'doctor-ak-portal' ); ?>" required>
+			<span class="dak-field-error" data-field="qualification"></span>
+		</div>
+
+		<div class="dak-field">
+			<label for="dak-profile-short-description"><?php esc_html_e( 'Short Description', 'doctor-ak-portal' ); ?></label>
+			<input type="text" id="dak-profile-short-description" name="short_description" value="<?php echo esc_attr( $current_short_description ); ?>" maxlength="160" placeholder="<?php esc_attr_e( 'e.g. Compassionate primary care with 12+ years of experience', 'doctor-ak-portal' ); ?>">
+			<p class="dak-field-hint"><?php esc_html_e( 'A one-line tagline shown on your public profile (up to 160 characters).', 'doctor-ak-portal' ); ?></p>
+			<span class="dak-field-error" data-field="short_description"></span>
+		</div>
+
+		<div class="dak-field">
 			<label for="dak-profile-specializations"><?php esc_html_e( 'Specialization', 'doctor-ak-portal' ); ?></label>
 			<select id="dak-profile-specializations" name="specializations[]" multiple>
 				<?php foreach ( $specializations as $slug => $label ) : ?>
@@ -83,6 +100,31 @@ $current_picture_url = $current_profile_picture_id ? wp_get_attachment_image_url
 				<?php endforeach; ?>
 			</select>
 			<span class="dak-field-error" data-field="specializations"></span>
+		</div>
+
+		<div class="dak-field">
+			<label for="dak-profile-expertise"><?php esc_html_e( 'Other Expertise', 'doctor-ak-portal' ); ?></label>
+			<textarea id="dak-profile-expertise" name="expertise" rows="3" placeholder="<?php esc_attr_e( 'Any additional skills, procedures, or areas of interest not covered above (optional).', 'doctor-ak-portal' ); ?>"><?php echo esc_textarea( $current_expertise ); ?></textarea>
+			<span class="dak-field-error" data-field="expertise"></span>
+		</div>
+
+		<div class="dak-field">
+			<span class="dak-field-label"><?php esc_html_e( 'Awards & Recognition', 'doctor-ak-portal' ); ?></span>
+			<div class="dak-awards-editor" data-awards-editor>
+				<div class="dak-awards-rows" data-awards-rows>
+					<?php foreach ( $current_awards as $award ) : ?>
+						<div class="dak-awards-row" data-awards-row>
+							<input type="text" name="award_title[]" placeholder="<?php esc_attr_e( 'Award title', 'doctor-ak-portal' ); ?>" value="<?php echo esc_attr( $award['title'] ); ?>">
+							<input type="number" name="award_year[]" placeholder="<?php esc_attr_e( 'Year', 'doctor-ak-portal' ); ?>" min="1950" max="<?php echo esc_attr( gmdate( 'Y' ) + 1 ); ?>" value="<?php echo esc_attr( $award['year'] ); ?>">
+							<button type="button" class="dak-awards-remove" data-awards-remove-row aria-label="<?php esc_attr_e( 'Remove award', 'doctor-ak-portal' ); ?>">&times;</button>
+						</div>
+					<?php endforeach; ?>
+				</div>
+				<button type="button" class="dak-button dak-button-secondary dak-button-sm" data-awards-add-row>
+					<?php esc_html_e( '+ Add Award', 'doctor-ak-portal' ); ?>
+				</button>
+			</div>
+			<span class="dak-field-error" data-field="awards"></span>
 		</div>
 
 	<?php else : ?>

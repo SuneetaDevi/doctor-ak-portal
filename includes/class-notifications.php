@@ -25,12 +25,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class Notifications {
 
-	const OPTION_NOTIFY_BOOKING   = 'doctor_ak_notify_booking';
-	const OPTION_NOTIFY_CANCELLED = 'doctor_ak_notify_cancelled';
-	const OPTION_NOTIFY_PAID      = 'doctor_ak_notify_paid';
-	const OPTION_NOTIFY_REMINDER  = 'doctor_ak_notify_reminder';
-	const OPTION_FROM_NAME        = 'doctor_ak_notify_from_name';
-	const OPTION_FROM_EMAIL       = 'doctor_ak_notify_from_email';
+	const OPTION_NOTIFY_BOOKING             = 'doctor_ak_notify_booking';
+	const OPTION_NOTIFY_CANCELLED           = 'doctor_ak_notify_cancelled';
+	const OPTION_NOTIFY_PAID                = 'doctor_ak_notify_paid';
+	const OPTION_NOTIFY_REMINDER            = 'doctor_ak_notify_reminder';
+	const OPTION_NOTIFY_DOCTOR_REGISTRATION = 'doctor_ak_notify_doctor_registration';
+	const OPTION_FROM_NAME                  = 'doctor_ak_notify_from_name';
+	const OPTION_FROM_EMAIL                 = 'doctor_ak_notify_from_email';
 
 	const CRON_HOOK = 'doctor_ak_appointment_reminders';
 
@@ -42,10 +43,11 @@ class Notifications {
 	 */
 	public static function is_enabled( $type ) {
 		$option_map = array(
-			'booking'   => self::OPTION_NOTIFY_BOOKING,
-			'cancelled' => self::OPTION_NOTIFY_CANCELLED,
-			'paid'      => self::OPTION_NOTIFY_PAID,
-			'reminder'  => self::OPTION_NOTIFY_REMINDER,
+			'booking'             => self::OPTION_NOTIFY_BOOKING,
+			'cancelled'           => self::OPTION_NOTIFY_CANCELLED,
+			'paid'                => self::OPTION_NOTIFY_PAID,
+			'reminder'            => self::OPTION_NOTIFY_REMINDER,
+			'doctor_registration' => self::OPTION_NOTIFY_DOCTOR_REGISTRATION,
 		);
 
 		if ( ! isset( $option_map[ $type ] ) ) {
@@ -259,6 +261,111 @@ class Notifications {
 
 			Appointments::mark_reminder_sent( $appointment['id'] );
 		}
+	}
+
+	/**
+	 * Hook callback: a new doctor account was created and is awaiting admin
+	 * approval — emails every administrator.
+	 *
+	 * @param int $doctor_id New doctor's user ID.
+	 * @return void
+	 */
+	public function notify_doctor_registered( $doctor_id ) {
+		if ( ! self::is_enabled( 'doctor_registration' ) ) {
+			return;
+		}
+
+		$doctor = get_userdata( $doctor_id );
+
+		if ( ! $doctor ) {
+			return;
+		}
+
+		$name = trim( $doctor->first_name . ' ' . $doctor->last_name );
+		$name = '' !== $name ? $name : $doctor->display_name;
+
+		$heading = __( 'New Doctor Registration', 'doctor-ak-portal' );
+		$intro   = sprintf(
+			/* translators: 1: doctor's display name, 2: doctor's email address. */
+			__( 'Dr. %1$s (%2$s) has registered and is awaiting your approval. Review the request from the "Doctor Requests" tab on the admin dashboard.', 'doctor-ak-portal' ),
+			$name,
+			$doctor->user_email
+		);
+
+		foreach ( self::admin_emails() as $admin_email ) {
+			$this->send_simple( $admin_email, __( 'New Doctor Registration', 'doctor-ak-portal' ), $heading, $intro );
+		}
+	}
+
+	/**
+	 * Hook callback: a pending doctor account was approved by an admin —
+	 * emails the doctor.
+	 *
+	 * @param int $doctor_id Approved doctor's user ID.
+	 * @return void
+	 */
+	public function notify_doctor_approved( $doctor_id ) {
+		if ( ! self::is_enabled( 'doctor_registration' ) ) {
+			return;
+		}
+
+		$doctor = get_userdata( $doctor_id );
+
+		if ( ! $doctor ) {
+			return;
+		}
+
+		$this->send_simple(
+			$doctor->user_email,
+			__( 'Your Account Has Been Approved', 'doctor-ak-portal' ),
+			__( 'Account Approved', 'doctor-ak-portal' ),
+			__( 'Your account has been approved. You can now log in and start managing your clinic and appointments.', 'doctor-ak-portal' )
+		);
+	}
+
+	/**
+	 * Every administrator's email address.
+	 *
+	 * @return string[]
+	 */
+	private static function admin_emails() {
+		return array_map(
+			function ( $admin ) {
+				return $admin->user_email;
+			},
+			get_users( array( 'role' => 'administrator' ) )
+		);
+	}
+
+	/**
+	 * Sends one simple, non-appointment email — a heading and one-line
+	 * intro, no details table (see render_email() for the appointment-shaped
+	 * version used elsewhere in this class).
+	 *
+	 * @param string $to      Recipient email.
+	 * @param string $subject_suffix Appended after "[Site Name] " in the subject.
+	 * @param string $heading Email body heading.
+	 * @param string $intro   One-line message.
+	 * @return void
+	 */
+	private function send_simple( $to, $subject_suffix, $heading, $intro ) {
+		if ( '' === $to || ! is_email( $to ) ) {
+			return;
+		}
+
+		$site_name = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
+		/* translators: 1: site name, 2: email subject. */
+		$subject = sprintf( __( '[%1$s] %2$s', 'doctor-ak-portal' ), $site_name, $subject_suffix );
+		$html    = '<div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;">'
+			. '<div style="background:#4c8a3b;color:#ffffff;padding:16px 20px;font-size:18px;font-weight:700;">' . esc_html( $site_name ) . '</div>'
+			. '<div style="padding:20px;border:1px solid #e3e6ea;border-top:none;">'
+			. '<h2 style="margin:0 0 12px;font-size:17px;color:#111827;">' . esc_html( $heading ) . '</h2>'
+			. '<p style="margin:0;color:#374151;">' . esc_html( $intro ) . '</p>'
+			. '</div>'
+			. '</div>';
+		$headers = array_merge( array( 'Content-Type: text/html; charset=UTF-8' ), self::mail_headers() );
+
+		wp_mail( $to, $subject, $html, $headers );
 	}
 
 	/**

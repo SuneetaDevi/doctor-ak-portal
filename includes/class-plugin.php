@@ -20,7 +20,9 @@ use DoctorAKPortal\Frontend\Clinic_Handler;
 use DoctorAKPortal\Frontend\Doctor_Appointment_Handler;
 use DoctorAKPortal\Frontend\Doctor_Dashboard;
 use DoctorAKPortal\Frontend\Doctor_Profile_View;
+use DoctorAKPortal\Frontend\Doctor_Requests_Handler;
 use DoctorAKPortal\Frontend\Doctors_Directory;
+use DoctorAKPortal\Frontend\Featured_Doctors;
 use DoctorAKPortal\Frontend\Forgot_Password_Handler;
 use DoctorAKPortal\Frontend\Login_Handler;
 use DoctorAKPortal\Frontend\Notification_Handler;
@@ -172,6 +174,9 @@ class Plugin {
 		$this->loader->add_action( 'wp_enqueue_scripts', $doctors_directory, 'enqueue_assets' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $doctor_profile_view, 'enqueue_assets' );
 
+		$featured_doctors = new Featured_Doctors( new Template_Loader(), $doctors_directory );
+		$this->loader->add_action( 'wp_enqueue_scripts', $featured_doctors, 'enqueue_assets' );
+
 		$booking_page = new Booking_Page( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $booking_page, 'enqueue_assets' );
 
@@ -204,6 +209,8 @@ class Plugin {
 		$this->loader->add_action( 'doctor_ak_appointment_created', $notifications, 'notify_created', 10, 2 );
 		$this->loader->add_action( 'doctor_ak_appointment_cancelled', $notifications, 'notify_cancelled' );
 		$this->loader->add_action( 'doctor_ak_appointment_paid', $notifications, 'notify_paid' );
+		$this->loader->add_action( 'doctor_ak_doctor_registered', $notifications, 'notify_doctor_registered' );
+		$this->loader->add_action( 'doctor_ak_doctor_approved', $notifications, 'notify_doctor_approved' );
 		$this->loader->add_action( Notifications::CRON_HOOK, $notifications, 'send_reminders' );
 
 		// In-app "Notifications" tab (doctor/patient/admin dashboards) — the
@@ -213,6 +220,8 @@ class Plugin {
 		$this->loader->add_action( 'doctor_ak_appointment_cancelled', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_cancelled' );
 		$this->loader->add_action( 'doctor_ak_appointment_paid', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_paid' );
 		$this->loader->add_action( 'doctor_ak_appointment_completed', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_completed' );
+		$this->loader->add_action( 'doctor_ak_doctor_registered', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_doctor_registered' );
+		$this->loader->add_action( 'doctor_ak_doctor_approved', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_doctor_approved' );
 
 		$notification_handler = new Notification_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_notification_mark_read', $notification_handler, 'handle_mark_read' );
@@ -221,10 +230,15 @@ class Plugin {
 		$admin_dashboard = new Admin_Dashboard( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $admin_dashboard, 'enqueue_assets' );
 
-		$admin_user_handler = new Admin_User_Handler();
+		$admin_user_handler = new Admin_User_Handler( new Profile_Picture_Uploader() );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_save_user', $admin_user_handler, 'handle_save_user' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_delete_user', $admin_user_handler, 'handle_delete_user' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_toggle_status', $admin_user_handler, 'handle_toggle_status' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_upload_profile_picture', $admin_user_handler, 'handle_upload_profile_picture' );
+
+		$doctor_requests_handler = new Doctor_Requests_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_approve_doctor', $doctor_requests_handler, 'handle_approve' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_reject_doctor', $doctor_requests_handler, 'handle_reject' );
 
 		$service_handler = new Service_Handler();
 		$this->loader->add_action( 'wp_enqueue_scripts', $service_handler, 'enqueue_assets' );
@@ -254,7 +268,7 @@ class Plugin {
 		// rather than scheduling a second event just for this.
 		$this->loader->add_action( Notifications::CRON_HOOK, 'DoctorAKPortal\\Includes\\Appointments', 'auto_complete_past_appointments' );
 
-		$shortcodes = new Shortcodes( $doctor_dashboard, $patient_dashboard, $profile_handler, $doctors_directory, $doctor_profile_view, $admin_dashboard, $booking_page );
+		$shortcodes = new Shortcodes( $doctor_dashboard, $patient_dashboard, $profile_handler, $doctors_directory, $doctor_profile_view, $admin_dashboard, $booking_page, $featured_doctors );
 		$this->loader->add_action( 'init', $shortcodes, 'register' );
 
 		$specialization_requests = new Specialization_Request();

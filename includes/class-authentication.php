@@ -53,6 +53,20 @@ class Authentication {
 			return new \WP_Error( 'account_disabled', __( 'This account has been deactivated. Please contact the site administrator.', 'doctor-ak-portal' ) );
 		}
 
+		if ( $user instanceof \WP_User && in_array( Roles::DOCTOR_ROLE, (array) $user->roles, true ) ) {
+			$registration_status = get_user_meta( $user->ID, 'doctor_ak_registration_status', true );
+
+			if ( 'pending' === $registration_status ) {
+				wp_logout();
+				return new \WP_Error( 'account_pending', __( 'Your account is awaiting admin approval. We will email you once it has been approved.', 'doctor-ak-portal' ) );
+			}
+
+			if ( 'rejected' === $registration_status ) {
+				wp_logout();
+				return new \WP_Error( 'account_rejected', __( 'Your registration was not approved. Please contact the site administrator for more information.', 'doctor-ak-portal' ) );
+			}
+		}
+
 		return $user;
 	}
 

@@ -117,6 +117,14 @@ class Login_Handler {
 		$user = $this->authentication->login( $login, $password, $remember );
 
 		if ( is_wp_error( $user ) ) {
+			// Pending/rejected doctor accounts get their real reason — the
+			// visitor already proved they own these exact credentials, so
+			// there's no privacy benefit to hiding it behind a generic
+			// message the way we do for a wrong username/password.
+			if ( in_array( $user->get_error_code(), array( 'account_pending', 'account_rejected' ), true ) ) {
+				wp_send_json_error( array( 'message' => $user->get_error_message() ) );
+			}
+
 			// Deliberately generic: doesn't reveal whether the account exists.
 			wp_send_json_error( array( 'message' => __( 'Invalid username/email or password.', 'doctor-ak-portal' ) ) );
 		}

@@ -8,6 +8,9 @@
 namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Authentication;
+use DoctorAKPortal\Includes\Clinics;
+use DoctorAKPortal\Includes\Doctor_Awards;
+use DoctorAKPortal\Includes\Profile_Picture_Uploader;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Specializations;
 
@@ -24,6 +27,60 @@ if ( ! defined( 'ABSPATH' ) ) {
  * reachable directly regardless of which page rendered the form.
  */
 class Admin_User_Handler {
+
+	/**
+	 * Profile picture upload service.
+	 *
+	 * @var Profile_Picture_Uploader
+	 */
+	private $profile_picture_uploader;
+
+	/**
+	 * Sets up collaborators.
+	 *
+	 * @param Profile_Picture_Uploader $profile_picture_uploader Upload service.
+	 */
+	public function __construct( Profile_Picture_Uploader $profile_picture_uploader ) {
+		$this->profile_picture_uploader = $profile_picture_uploader;
+	}
+
+	/**
+	 * AJAX handler: uploads a doctor/patient's profile picture immediately.
+	 * When editing an existing account (`user_id` > 0) the attachment is
+	 * owned by that user right away; when adding a brand-new account
+	 * (`user_id` = 0, not created yet) it's uploaded unclaimed and
+	 * transferred to the new account once handle_save_user() creates it —
+	 * same two-step dance Registration_Handler uses for guest uploads.
+	 *
+	 * @return void
+	 */
+	public function handle_upload_profile_picture() {
+		if ( ! check_ajax_referer( Admin_Dashboard::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( empty( $_FILES['profile_picture'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'No file was received.', 'doctor-ak-portal' ) ) );
+		}
+
+		$user_id       = isset( $_POST['user_id'] ) ? absint( wp_unslash( $_POST['user_id'] ) ) : 0;
+		$attachment_id = $this->profile_picture_uploader->upload( $_FILES['profile_picture'], $user_id );
+
+		if ( is_wp_error( $attachment_id ) ) {
+			wp_send_json_error( array( 'message' => $attachment_id->get_error_message() ) );
+		}
+
+		wp_send_json_success(
+			array(
+				'attachment_id' => $attachment_id,
+				'url'           => wp_get_attachment_image_url( $attachment_id, 'thumbnail' ),
+			)
+		);
+	}
 
 	/**
 	 * AJAX handler: creates a new doctor/patient account, or updates an
@@ -47,17 +104,6 @@ class Admin_User_Handler {
 		$last_name  = isset( $_POST['last_name'] ) ? sanitize_text_field( wp_unslash( $_POST['last_name'] ) ) : '';
 		$email      = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
 		$password   = isset( $_POST['password'] ) ? (string) $_POST['password'] : '';
-
-		$specializations = array();
-		if ( isset( $_POST['specializations'] ) && is_array( $_POST['specializations'] ) ) {
-			foreach ( wp_unslash( $_POST['specializations'] ) as $slug ) {
-				$slug = sanitize_key( $slug );
-
-				if ( Specializations::is_valid( $slug ) ) {
-					$specializations[] = $slug;
-				}
-			}
-		}
 
 		if ( '' === $first_name ) {
 			$errors['first_name'] = __( 'First name is required.', 'doctor-ak-portal' );
@@ -85,9 +131,93 @@ class Admin_User_Handler {
 			: ( isset( $_POST['role'] ) ? sanitize_key( wp_unslash( $_POST['role'] ) ) : '' );
 		$is_for_doctor = Roles::DOCTOR_ROLE === $target_role;
 
-		if ( $is_for_doctor && empty( $specializations ) ) {
-			$errors['specializations'] = __( 'Please select at least one specialization.', 'doctor-ak-portal' );
+		$qualification     = '';
+		$short_description = '';
+		$expertise         = '';
+		$years_experience  = null;
+		$awards            = array();
+		$clinic_fields     = null;
+		$specializations   = array();
+
+		if ( $is_for_doctor ) {
+			$qualification = isset( $_POST['qualification'] ) ? sanitize_text_field( wp_unslash( $_POST['qualification'] ) ) : '';
+
+			if ( '' === $qualification ) {
+				$errors['qualification'] = __( 'Please provide the doctor\'s qualification(s), e.g. MBBS, FCPS.', 'doctor-ak-portal' );
+			}
+
+			$years_experience = isset( $_POST['years_experience'] ) && '' !== $_POST['years_experience']
+				? absint( wp_unslash( $_POST['years_experience'] ) )
+				: null;
+
+			if ( null === $years_experience || $years_experience > 80 ) {
+				$errors['years_experience'] = __( 'Please provide a valid number of years of experience.', 'doctor-ak-portal' );
+			}
+
+			$short_description = isset( $_POST['short_description'] ) ? sanitize_text_field( wp_unslash( $_POST['short_description'] ) ) : '';
+
+			if ( mb_strlen( $short_description ) > 160 ) {
+				$errors['short_description'] = __( 'Short description must be 160 characters or fewer.', 'doctor-ak-portal' );
+			}
+
+			$expertise = isset( $_POST['expertise'] ) ? sanitize_textarea_field( wp_unslash( $_POST['expertise'] ) ) : '';
+			$awards    = Doctor_Awards::sanitize_from_request( $errors );
+
+			// Specializations not in the canonical dropdown are allowed here
+			// (admin-added custom tags, see doctor-ak-registration.js's
+			// initMultiSelect( ..., { allowCustom: true } )) — this endpoint
+			// is manage_options-gated, unlike doctor self-registration/
+			// self-edit, which still only accept the canonical list.
+			$specializations = array();
+
+			if ( isset( $_POST['specializations'] ) && is_array( $_POST['specializations'] ) ) {
+				foreach ( wp_unslash( $_POST['specializations'] ) as $raw ) {
+					$raw  = (string) $raw;
+					$slug = sanitize_key( $raw );
+
+					if ( Specializations::is_valid( $slug ) ) {
+						$specializations[] = $slug;
+						continue;
+					}
+
+					$custom = sanitize_text_field( $raw );
+
+					if ( '' !== $custom ) {
+						$specializations[] = $custom;
+					}
+				}
+
+				$specializations = array_values( array_unique( $specializations ) );
+			}
+
+			if ( empty( $specializations ) ) {
+				$errors['specializations'] = __( 'Please select at least one specialization.', 'doctor-ak-portal' );
+			}
+
+			// Optional "quick-add" clinic — only attempted if a name was
+			// actually entered, so leaving all three fields blank (the
+			// common case when the doctor already has clinics, or will add
+			// them later from the Clinic tab) is never an error.
+			$posted_clinic_name = isset( $_POST['clinic_name'] ) ? sanitize_text_field( wp_unslash( $_POST['clinic_name'] ) ) : '';
+
+			if ( '' !== $posted_clinic_name ) {
+				$clinic_fields = Clinics::sanitize_clinic_fields_from_request(
+					array(
+						'name'    => isset( $_POST['clinic_name'] ) ? $_POST['clinic_name'] : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Clinics::sanitize_clinic_fields_from_request() unslashes/sanitizes each field itself.
+						'address' => isset( $_POST['clinic_address'] ) ? $_POST['clinic_address'] : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+						'phone'   => isset( $_POST['clinic_phone'] ) ? $_POST['clinic_phone'] : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+					),
+					Clinics::TYPE_PHYSICAL
+				);
+
+				if ( is_wp_error( $clinic_fields ) ) {
+					$errors['clinic_address'] = $clinic_fields->get_error_message();
+					$clinic_fields            = null;
+				}
+			}
 		}
+
+		$profile_picture_id = isset( $_POST['profile_picture_id'] ) ? absint( wp_unslash( $_POST['profile_picture_id'] ) ) : 0;
 
 		if ( $existing_user && strtolower( $email ) !== strtolower( $existing_user->user_email ) && email_exists( $email ) ) {
 			$errors['email'] = __( 'An account with that email address already exists.', 'doctor-ak-portal' );
@@ -154,7 +284,31 @@ class Admin_User_Handler {
 			}
 		}
 
-		update_user_meta( $saved_user_id, 'doctor_ak_specializations', $specializations );
+		if ( $is_for_doctor ) {
+			update_user_meta( $saved_user_id, 'doctor_ak_specializations', $specializations );
+			update_user_meta( $saved_user_id, 'doctor_ak_qualification', $qualification );
+			update_user_meta( $saved_user_id, 'doctor_ak_years_experience', $years_experience );
+			update_user_meta( $saved_user_id, 'doctor_ak_short_description', $short_description );
+			update_user_meta( $saved_user_id, 'doctor_ak_expertise', $expertise );
+			update_user_meta( $saved_user_id, Doctor_Awards::META_KEY, Doctor_Awards::encode( $awards ) );
+
+			if ( null !== $clinic_fields ) {
+				Clinics::create( $saved_user_id, $clinic_fields, Clinics::empty_sessions() );
+			}
+		}
+
+		if ( $profile_picture_id > 0 ) {
+			// When adding a brand-new account the picture was uploaded
+			// unclaimed (owner 0, see handle_upload_profile_picture()) —
+			// claim it now that the account exists. When editing an
+			// existing account the upload endpoint already set that
+			// account as the owner directly, so this is a no-op there.
+			if ( ! $existing_user && $this->profile_picture_uploader->is_unclaimed_image( $profile_picture_id ) ) {
+				$this->profile_picture_uploader->claim( $profile_picture_id, $saved_user_id );
+			}
+
+			update_user_meta( $saved_user_id, 'doctor_ak_profile_picture_id', $profile_picture_id );
+		}
 
 		wp_send_json_success(
 			array(

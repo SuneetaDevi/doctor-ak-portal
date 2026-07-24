@@ -10,6 +10,8 @@
  * @var string[] $specialization_labels Selected specialization labels.
  * @var string   $clinic_location       Doctor's primary (first) physical clinic's address/name, or '' if none.
  * @var int      $extra_clinic_count    Number of additional physical clinics beyond the primary one.
+ * @var string[] $location_labels       Every physical clinic address this doctor has, for the location filter.
+ * @var string[] $clinic_labels         Every physical clinic name this doctor has, for the clinic filter.
  * @var bool     $is_available          Whether the doctor has any clinic with an enabled session day.
  * @var bool     $video_consultation    Whether the doctor offers online video consultations.
  * @var string   $profile_url           URL of this doctor's [doctor_profile_view] page.
@@ -31,6 +33,8 @@ $dak_card_icons = array(
 	data-doctor-card
 	data-search-name="<?php echo esc_attr( mb_strtolower( $name ) ); ?>"
 	data-search-specializations="<?php echo esc_attr( mb_strtolower( implode( ',', $specialization_labels ) ) ); ?>"
+	data-search-location="<?php echo esc_attr( mb_strtolower( implode( ',', $location_labels ) ) ); ?>"
+	data-search-clinics="<?php echo esc_attr( mb_strtolower( implode( ',', $clinic_labels ) ) ); ?>"
 >
 	<?php if ( $is_available ) : ?>
 		<span class="dak-doctor-card-badge"><?php esc_html_e( 'Available', 'doctor-ak-portal' ); ?></span>
@@ -75,19 +79,9 @@ $dak_card_icons = array(
 	<?php endif; ?>
 
 	<div class="dak-doctor-card-actions">
-		<a class="dak-button dak-button-secondary dak-button-block" href="<?php echo esc_url( $profile_url ); ?>">
-			<?php esc_html_e( 'View Profile', 'doctor-ak-portal' ); ?>
-		</a>
-		<button
-			type="button"
-			class="dak-button dak-button-primary dak-button-block"
-			data-dak-book-appointment
-			data-doctor-id="<?php echo esc_attr( $id ); ?>"
-			data-doctor-name="<?php echo esc_attr( sprintf( 'Dr. %s', $name ) ); ?>"
-			<?php if ( ! $video_consultation ) : ?>data-video-disabled="1"<?php endif; ?>
-		>
+		<a class="dak-button dak-button-primary dak-button-block" href="<?php echo esc_url( $profile_url ); ?>">
 			<?php echo $dak_card_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 			<?php esc_html_e( 'Book Appointment', 'doctor-ak-portal' ); ?>
-		</button>
+		</a>
 	</div>
 </div>
