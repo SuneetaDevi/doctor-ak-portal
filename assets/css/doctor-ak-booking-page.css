@@ -444,11 +444,23 @@
 
 /* Horizontal date-strip */
 
+.dak-booking-date-strip-row {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.5rem !important;
+	margin-bottom: 1.25rem !important;
+}
+
+.dak-booking-date-strip-nav {
+	flex: 0 0 auto !important;
+}
+
 .dak-booking-date-strip {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
 	display: grid !important;
 	grid-template-columns: repeat( 7, 1fr ) !important;
 	gap: 0.5rem !important;
-	margin-bottom: 1.25rem !important;
 }
 
 .dak-booking-date-strip-day {

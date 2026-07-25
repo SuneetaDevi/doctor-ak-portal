@@ -452,22 +452,26 @@
 	 * ------------------------------------------------------------------- */
 
 	function wireDateStripNav() {
-		var prev = document.getElementById( 'dak-booking-cal-prev' );
-		var next = document.getElementById( 'dak-booking-cal-next' );
+		var prevButtons = [ document.getElementById( 'dak-booking-cal-prev' ), document.getElementById( 'dak-booking-strip-prev' ) ];
+		var nextButtons = [ document.getElementById( 'dak-booking-cal-next' ), document.getElementById( 'dak-booking-strip-next' ) ];
 
-		if ( prev ) {
-			prev.addEventListener( 'click', function () {
-				dateStripStart = addDays( dateStripStart, -7 );
-				fetchAndRenderDateStrip();
-			} );
-		}
+		prevButtons.forEach( function ( button ) {
+			if ( button ) {
+				button.addEventListener( 'click', function () {
+					dateStripStart = addDays( dateStripStart, -7 );
+					fetchAndRenderDateStrip();
+				} );
+			}
+		} );
 
-		if ( next ) {
-			next.addEventListener( 'click', function () {
-				dateStripStart = addDays( dateStripStart, 7 );
-				fetchAndRenderDateStrip();
-			} );
-		}
+		nextButtons.forEach( function ( button ) {
+			if ( button ) {
+				button.addEventListener( 'click', function () {
+					dateStripStart = addDays( dateStripStart, 7 );
+					fetchAndRenderDateStrip();
+				} );
+			}
+		} );
 	}
 
 	function wireQuickDates() {
@@ -577,7 +581,7 @@
 	function renderDateStrip() {
 		var strip = document.getElementById( 'dak-booking-date-strip' );
 		var title = document.getElementById( 'dak-booking-cal-title' );
-		var prev = document.getElementById( 'dak-booking-cal-prev' );
+		var prevButtons = [ document.getElementById( 'dak-booking-cal-prev' ), document.getElementById( 'dak-booking-strip-prev' ) ];
 
 		if ( ! strip ) {
 			return;
@@ -587,9 +591,13 @@
 			title.textContent = monthLabels[ dateStripStart.getMonth() ] + ' ' + dateStripStart.getFullYear();
 		}
 
-		if ( prev ) {
-			prev.disabled = formatDate( dateStripStart ) <= todayStr;
-		}
+		var atStart = formatDate( dateStripStart ) <= todayStr;
+
+		prevButtons.forEach( function ( button ) {
+			if ( button ) {
+				button.disabled = atStart;
+			}
+		} );
 
 		strip.innerHTML = '';
 

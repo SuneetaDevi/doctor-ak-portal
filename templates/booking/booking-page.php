@@ -201,7 +201,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</div>
 					</div>
 
-					<div class="dak-booking-date-strip" id="dak-booking-date-strip"></div>
+					<div class="dak-booking-date-strip-row">
+						<button type="button" class="dak-icon-button dak-booking-date-strip-nav" id="dak-booking-strip-prev" aria-label="<?php esc_attr_e( 'Previous week', 'doctor-ak-portal' ); ?>"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.5 5l-5 5 5 5"/></svg></button>
+						<div class="dak-booking-date-strip" id="dak-booking-date-strip"></div>
+						<button type="button" class="dak-icon-button dak-booking-date-strip-nav" id="dak-booking-strip-next" aria-label="<?php esc_attr_e( 'Next week', 'doctor-ak-portal' ); ?>"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 5l5 5-5 5"/></svg></button>
+					</div>
 
 					<div class="dak-booking-quick-dates">
 						<button type="button" class="dak-booking-quick-date" id="dak-booking-today-btn"><?php esc_html_e( 'Today', 'doctor-ak-portal' ); ?></button>
