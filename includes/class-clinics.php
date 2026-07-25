@@ -417,20 +417,31 @@ class Clinics {
 	}
 
 	/**
-	 * Whether a doctor has at least one active (has an enabled day) video
-	 * clinic entry — replaces the old `doctor_ak_video_consultation` boolean.
+	 * User meta key for the admin-controlled "does this doctor offer video
+	 * consultations at all" permission (see Admin_User_Handler::handle_save_user()).
+	 * Unset/anything other than '0' is treated as allowed, so existing
+	 * doctors who already scheduled a video clinic before this setting
+	 * existed keep working exactly as before.
+	 *
+	 * @var string
+	 */
+	const VIDEO_CONSULTATION_ALLOWED_META_KEY = 'doctor_ak_video_consultation_allowed';
+
+	/**
+	 * Whether a doctor offers video consultations at all — purely the
+	 * admin-controlled permission. Booking eligibility no longer additionally
+	 * requires the doctor to have already scheduled specific weekly video
+	 * session days: an admin turning this on should be enough for patients to
+	 * see the Online Video option, even before (or without) the doctor
+	 * separately configuring session hours. If no days are configured yet,
+	 * the date/time step simply shows its existing "no time slots configured"
+	 * empty state rather than hiding the option entirely.
 	 *
 	 * @param int $doctor_id Doctor's user ID.
 	 * @return bool
 	 */
 	public static function doctor_has_active_video_clinic( $doctor_id ) {
-		foreach ( self::get_for_doctor( $doctor_id ) as $clinic ) {
-			if ( self::TYPE_VIDEO === $clinic['type'] && ! empty( $clinic['enabled_days'] ) ) {
-				return true;
-			}
-		}
-
-		return false;
+		return '0' !== get_user_meta( $doctor_id, self::VIDEO_CONSULTATION_ALLOWED_META_KEY, true );
 	}
 
 	/**

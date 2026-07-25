@@ -8,6 +8,7 @@
  * @var string   $name                  Doctor's display name.
  * @var string   $avatar_url            Doctor's photo (or fallback avatar) URL.
  * @var string[] $specialization_labels Selected specialization labels.
+ * @var int|string $years_experience     Doctor's years of experience, or '' if not set.
  * @var string   $clinic_location       Doctor's primary (first) physical clinic's address/name, or '' if none.
  * @var int      $extra_clinic_count    Number of additional physical clinics beyond the primary one.
  * @var string[] $location_labels       Every physical clinic address this doctor has, for the location filter.
@@ -50,12 +51,18 @@ $dak_card_icons = array(
 
 	<h3 class="dak-doctor-card-name"><?php echo esc_html( sprintf( 'Dr. %s', $name ) ); ?></h3>
 
-	<?php if ( ! empty( $specialization_labels ) ) : ?>
-		<div class="dak-specialty-tags dak-doctor-card-specialties">
-			<?php foreach ( $specialization_labels as $label ) : ?>
-				<span class="dak-specialty-tag"><?php echo esc_html( $label ); ?></span>
-			<?php endforeach; ?>
-		</div>
+	<?php if ( '' !== $years_experience ) : ?>
+		<p class="dak-doctor-card-experience">
+			<?php
+			echo esc_html(
+				sprintf(
+					/* translators: %d: number of years of experience. */
+					_n( '%d year of experience', '%d years of experience', (int) $years_experience, 'doctor-ak-portal' ),
+					(int) $years_experience
+				)
+			);
+			?>
+		</p>
 	<?php endif; ?>
 
 	<?php if ( $clinic_location ) : ?>

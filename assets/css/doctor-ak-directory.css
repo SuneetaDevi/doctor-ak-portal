@@ -160,6 +160,13 @@
 	justify-content: center !important;
 }
 
+.dak-doctor-card-experience {
+	margin: 0 !important;
+	font-size: 0.9rem !important;
+	color: var( --dak-muted ) !important;
+	text-align: center !important;
+}
+
 .dak-doctor-card-location {
 	display: flex !important;
 	align-items: center !important;
@@ -296,6 +303,7 @@
 	margin: 0.5rem 0 0 !important;
 	font-size: 0.95rem !important;
 	color: var( --dak-text ) !important;
+	white-space: pre-line !important;
 }
 
 .dak-profile-expertise {

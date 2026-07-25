@@ -108,6 +108,23 @@
 	line-height: 1.5 !important;
 }
 
+.dak-table-specialty-tags {
+	max-width: 320px !important;
+}
+
+.dak-specialty-tag-more {
+	border: none !important;
+	cursor: pointer !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-specialty-tag-more:hover,
+.dak-specialty-tag-more.is-expanded {
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
 .dak-sidebar-doctor-location {
 	display: flex !important;
 	align-items: center !important;

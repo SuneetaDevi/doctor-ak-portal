@@ -161,7 +161,7 @@ class Site_Footer {
 		$menu_class = isset( $args['menu_class'] ) ? $args['menu_class'] : '';
 
 		$items = array(
-			__( 'Book Online Consultation', 'doctor-ak-portal' ) => Page_Finder::url_for_shortcode( 'book_appointment' ),
+			__( 'Book Online Consultation', 'doctor-ak-portal' ) => Page_Finder::url_for_shortcode( 'doctors_directory' ),
 			__( 'Refund & Return Policy', 'doctor-ak-portal' )   => self::find_page_url( __( 'Refund & Return Policy', 'doctor-ak-portal' ) ),
 			__( 'Cancellation Policy', 'doctor-ak-portal' )      => self::find_page_url( __( 'Cancellation Policy', 'doctor-ak-portal' ) ),
 			__( 'Privacy Policy', 'doctor-ak-portal' )           => self::find_page_url( __( 'Privacy Policy', 'doctor-ak-portal' ) ),

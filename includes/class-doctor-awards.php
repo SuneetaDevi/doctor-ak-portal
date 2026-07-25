@@ -52,11 +52,11 @@ class Doctor_Awards {
 	 * Validates and sanitizes the `award_title[]`/`award_year[]` parallel
 	 * arrays a request posts (one pair per repeatable row in the awards
 	 * editor). Blank trailing rows (both fields empty) are silently
-	 * dropped; a row with only one of the two fields filled in is a real
-	 * error.
+	 * dropped. The year is optional; a title is required for any row that
+	 * has one filled in, and a year, if provided, must be valid.
 	 *
 	 * @param array $errors Reference to the accumulating error list.
-	 * @return array List of `array( 'title' => string, 'year' => int )`.
+	 * @return array List of `array( 'title' => string, 'year' => int|'' )`.
 	 */
 	public static function sanitize_from_request( array &$errors ) {
 		$titles = isset( $_POST['award_title'] ) && is_array( $_POST['award_title'] ) ? wp_unslash( $_POST['award_title'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized per-item below.
@@ -73,14 +73,19 @@ class Doctor_Awards {
 				continue;
 			}
 
-			if ( '' === $title || '' === $year || ! ctype_digit( $year ) || (int) $year < self::MIN_YEAR || (int) $year > $max_year ) {
-				$errors['awards'] = __( 'Please provide both a title and a valid year for each award, or remove the incomplete row.', 'doctor-ak-portal' );
+			if ( '' === $title ) {
+				$errors['awards'] = __( 'Please provide a title for each award, or remove the incomplete row.', 'doctor-ak-portal' );
+				continue;
+			}
+
+			if ( '' !== $year && ( ! ctype_digit( $year ) || (int) $year < self::MIN_YEAR || (int) $year > $max_year ) ) {
+				$errors['awards'] = __( 'Please provide a valid year for each award, or leave it blank.', 'doctor-ak-portal' );
 				continue;
 			}
 
 			$awards[] = array(
 				'title' => $title,
-				'year'  => (int) $year,
+				'year'  => '' !== $year ? (int) $year : '',
 			);
 		}
 

@@ -163,6 +163,10 @@
 .dak-booking-wizard-help-icon svg {
 	width: 1.1rem !important;
 	height: 1.1rem !important;
+	flex-shrink: 0 !important;
+	display: block !important;
+	stroke: currentColor !important;
+	fill: none !important;
 }
 
 /* Step cards */
@@ -265,6 +269,29 @@
 	white-space: nowrap !important;
 	overflow: hidden !important;
 	text-overflow: ellipsis !important;
+}
+
+.dak-booking-selected-doctor {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.75rem !important;
+	margin-bottom: 1.25rem !important;
+	padding: 0.75rem 1rem !important;
+	border-radius: var( --dak-radius-md ) !important;
+	background: var( --dak-primary-tint ) !important;
+}
+
+.dak-booking-selected-doctor-label {
+	display: block !important;
+	font-size: 0.75rem !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-booking-selected-doctor-change {
+	flex: 0 0 auto !important;
+	margin-left: auto !important;
+	padding: 0.4rem 0.85rem !important;
+	font-size: 0.82rem !important;
 }
 
 .dak-booking-doctor-specialization {
@@ -485,7 +512,7 @@
 
 .dak-booking-dot.is-many { background: #2fae5a !important; }
 .dak-booking-dot.is-few { background: #e0a72c !important; }
-.dak-booking-dot.is-full { background: var( --dak-border ) !important; }
+.dak-booking-dot.is-full { background: #e26a6a !important; }
 
 .dak-booking-date-strip-day.is-selected .dak-booking-dot.is-many,
 .dak-booking-date-strip-day.is-selected .dak-booking-dot.is-few,
@@ -620,6 +647,10 @@
 .dak-booking-currently-selected-icon svg {
 	width: 1.15rem !important;
 	height: 1.15rem !important;
+	flex-shrink: 0 !important;
+	display: block !important;
+	stroke: currentColor !important;
+	fill: none !important;
 }
 
 /* Payment step summary */
@@ -696,6 +727,14 @@
 .dak-booking-page .dak-icon-button svg {
 	width: 1rem !important;
 	height: 1rem !important;
+	flex-shrink: 0 !important;
+	display: block !important;
+	/* Belt-and-suspenders against the active theme resetting SVG stroke/fill
+	   globally (some page-builder themes strip icon colors expecting an
+	   <i> icon font instead) — pin these directly rather than relying only
+	   on the inherited `color`/currentColor. */
+	stroke: var( --dak-text ) !important;
+	fill: none !important;
 }
 
 .dak-booking-page .dak-icon-button:hover {

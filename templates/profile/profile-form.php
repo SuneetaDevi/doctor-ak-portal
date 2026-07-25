@@ -87,8 +87,8 @@ $current_picture_url = $current_profile_picture_id ? wp_get_attachment_image_url
 
 		<div class="dak-field">
 			<label for="dak-profile-short-description"><?php esc_html_e( 'Short Description', 'doctor-ak-portal' ); ?></label>
-			<input type="text" id="dak-profile-short-description" name="short_description" value="<?php echo esc_attr( $current_short_description ); ?>" maxlength="160" placeholder="<?php esc_attr_e( 'e.g. Compassionate primary care with 12+ years of experience', 'doctor-ak-portal' ); ?>">
-			<p class="dak-field-hint"><?php esc_html_e( 'A one-line tagline shown on your public profile (up to 160 characters).', 'doctor-ak-portal' ); ?></p>
+			<textarea id="dak-profile-short-description" name="short_description" rows="3" placeholder="<?php esc_attr_e( 'e.g. Compassionate primary care with 12+ years of experience', 'doctor-ak-portal' ); ?>"><?php echo esc_textarea( $current_short_description ); ?></textarea>
+			<p class="dak-field-hint"><?php esc_html_e( 'A tagline shown on your public profile.', 'doctor-ak-portal' ); ?></p>
 			<span class="dak-field-error" data-field="short_description"></span>
 		</div>
 

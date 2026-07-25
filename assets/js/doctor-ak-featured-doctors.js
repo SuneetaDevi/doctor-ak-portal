@@ -35,6 +35,8 @@
 
 			prev.disabled = track.scrollLeft <= 4;
 			next.disabled = track.scrollLeft >= maxScroll - 4;
+
+			track.classList.toggle( 'dak-fade-end', ! next.disabled );
 		}
 
 		prev.addEventListener( 'click', function () {

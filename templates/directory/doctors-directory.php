@@ -5,7 +5,7 @@
  * @package DoctorAKPortal\Templates
  *
  * @var string[] $doctors_html    Pre-rendered directory/doctor-card.php output, one per doctor.
- * @var string[] $specializations Specialization slug => label, only those at least one listed doctor has.
+ * @var string[] $specializations Specialization slug => label (falls back to the slug itself for custom, non-canonical specializations), only those at least one listed doctor has.
  * @var string[] $locations       Distinct physical clinic addresses across every listed doctor.
  * @var string[] $clinics         Distinct physical clinic names across every listed doctor.
  */

@@ -8,9 +8,9 @@
  */
 
 .dak-featured-doctors {
-	max-width: 1200px !important;
+	max-width: 1280px !important;
 	margin: 0 auto !important;
-	padding: 2rem 1.5rem !important;
+	padding: 3.5rem 1.5rem !important;
 }
 
 .dak-featured-doctors-header {
@@ -18,18 +18,20 @@
 	align-items: flex-end !important;
 	justify-content: space-between !important;
 	gap: 1rem !important;
-	margin-bottom: 1.75rem !important;
+	margin-bottom: 2.5rem !important;
 }
 
 .dak-featured-doctors-header h2 {
-	margin: 0.35rem 0 0.5rem !important;
-	font-size: 1.6rem !important;
-	font-weight: 700 !important;
+	margin: 0.4rem 0 0.6rem !important;
+	font-size: 2rem !important;
+	font-weight: 800 !important;
+	letter-spacing: -0.01em !important;
 	color: var( --dak-text ) !important;
 }
 
 .dak-featured-doctors-header p {
 	margin: 0 !important;
+	max-width: 42ch !important;
 	color: var( --dak-muted ) !important;
 }
 
@@ -56,13 +58,9 @@
 
 .dak-featured-doctors-slider {
 	position: relative !important;
-	display: flex !important;
-	align-items: center !important;
-	gap: 0.75rem !important;
 }
 
 .dak-featured-doctors-track {
-	flex: 1 1 auto !important;
 	/* Flex items default to min-width: auto, which means a flex child won't
 	   shrink below its content's natural width — since the slides never
 	   wrap, that natural width is the full unscrolled row of every card
@@ -71,11 +69,11 @@
 	   the page) wider than the viewport. */
 	min-width: 0 !important;
 	display: flex !important;
-	gap: 1.25rem !important;
+	gap: 1.5rem !important;
 	overflow-x: auto !important;
 	scroll-snap-type: x mandatory !important;
 	scroll-behavior: smooth !important;
-	padding: 0.25rem 0.1rem 1rem !important;
+	padding: 0.75rem 0.1rem 1.25rem !important;
 	/* Hide the scrollbar — navigation is via the prev/next buttons (and
 	   touch/trackpad swipe still works underneath). */
 	scrollbar-width: none !important;
@@ -86,6 +84,14 @@
 	display: none !important;
 }
 
+/* Fades the right edge so a partially visible next card reads as "more to
+   scroll" rather than an abrupt clip. Only applied (via JS) while there is
+   more content to scroll to on that side. */
+.dak-featured-doctors-track.dak-fade-end {
+	mask-image: linear-gradient( to right, black calc( 100% - 3rem ), transparent 100% ) !important;
+	-webkit-mask-image: linear-gradient( to right, black calc( 100% - 3rem ), transparent 100% ) !important;
+}
+
 .dak-featured-doctors-slide {
 	flex: 0 0 auto !important;
 	width: 270px !important;
@@ -94,21 +100,51 @@
 
 .dak-featured-doctors-slide .dak-doctor-card {
 	height: 100% !important;
+	transition: transform 0.2s ease, box-shadow 0.2s ease !important;
 }
 
+.dak-featured-doctors-slide .dak-doctor-card:hover {
+	transform: translateY( -4px ) !important;
+	box-shadow: 0 12px 28px rgba( 20, 30, 40, 0.1 ) !important;
+}
+
+.dak-featured-doctors-slide .dak-avatar-lg {
+	width: 104px !important;
+	height: 104px !important;
+	border: 3px solid var( --dak-primary-tint ) !important;
+}
+
+.dak-featured-doctors-slide .dak-avatar-lg svg {
+	width: 48px !important;
+	height: 48px !important;
+}
+
+/* Floating overlay buttons instead of flex siblings, so they don't eat
+   into the track's width and clip the last visible card. */
 .dak-featured-doctors-nav {
-	flex: 0 0 auto !important;
+	position: absolute !important;
+	top: 45% !important;
+	transform: translateY( -50% ) !important;
+	z-index: 2 !important;
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: center !important;
-	width: 2.5rem !important;
-	height: 2.5rem !important;
+	width: 2.75rem !important;
+	height: 2.75rem !important;
 	border-radius: 999px !important;
 	border: 1px solid var( --dak-border ) !important;
 	background: var( --dak-bg-card ) !important;
 	color: var( --dak-text ) !important;
-	box-shadow: var( --dak-shadow ) !important;
+	box-shadow: 0 6px 18px rgba( 20, 30, 40, 0.14 ) !important;
 	cursor: pointer !important;
+}
+
+.dak-featured-doctors-prev {
+	left: -1.375rem !important;
+}
+
+.dak-featured-doctors-next {
+	right: -1.375rem !important;
 }
 
 .dak-featured-doctors-nav svg {
@@ -153,7 +189,16 @@
 	}
 
 	.dak-featured-doctors-nav {
-		display: none !important;
+		width: 2.25rem !important;
+		height: 2.25rem !important;
+	}
+
+	.dak-featured-doctors-prev {
+		left: -0.5rem !important;
+	}
+
+	.dak-featured-doctors-next {
+		right: -0.5rem !important;
 	}
 
 	.dak-featured-doctors-slide {

@@ -358,13 +358,9 @@ class Profile_Handler {
 			$meta['doctor_ak_qualification'] = $qualification;
 		}
 
-		$short_description = isset( $_POST['short_description'] ) ? sanitize_text_field( wp_unslash( $_POST['short_description'] ) ) : '';
+		$short_description = isset( $_POST['short_description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['short_description'] ) ) : '';
 
-		if ( mb_strlen( $short_description ) > 160 ) {
-			$errors['short_description'] = __( 'Short description must be 160 characters or fewer.', 'doctor-ak-portal' );
-		} else {
-			$meta['doctor_ak_short_description'] = $short_description;
-		}
+		$meta['doctor_ak_short_description'] = $short_description;
 
 		$meta['doctor_ak_expertise'] = isset( $_POST['expertise'] ) ? sanitize_textarea_field( wp_unslash( $_POST['expertise'] ) ) : '';
 		$meta[ Doctor_Awards::META_KEY ] = Doctor_Awards::encode( Doctor_Awards::sanitize_from_request( $errors ) );

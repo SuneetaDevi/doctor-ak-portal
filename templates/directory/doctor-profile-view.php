@@ -167,7 +167,9 @@ $dak_profile_view_icons = array(
 								<li>
 									<span class="dak-profile-award-icon" aria-hidden="true"><?php echo $dak_profile_view_icons['award']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 									<span class="dak-profile-award-title"><?php echo esc_html( $award['title'] ); ?></span>
-									<span class="dak-profile-award-year"><?php echo esc_html( $award['year'] ); ?></span>
+									<?php if ( '' !== $award['year'] ) : ?>
+										<span class="dak-profile-award-year"><?php echo esc_html( $award['year'] ); ?></span>
+									<?php endif; ?>
 								</li>
 							<?php endforeach; ?>
 						</ul>

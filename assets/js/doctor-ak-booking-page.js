@@ -50,12 +50,41 @@
 		updateServiceCards( getDoctorId(), getType() );
 		applyIdentityState();
 		updateSummary();
-		goToStep( 'doctor' );
+		updateServiceStepDoctorSummary();
+
+		// A doctor is already preselected (booking triggered from that
+		// doctor's card/profile), so skip straight to the Service step
+		// instead of making the patient pick a doctor again.
+		goToStep( getDoctorId() ? 'service' : 'doctor' );
 
 		if ( getDoctorId() ) {
 			fetchAndRenderDateStrip();
 		}
 	} );
+
+	/**
+	 * Mirrors the currently selected doctor's avatar/name into the small
+	 * "Booking with Dr. X" summary shown atop the Service step — the only
+	 * place a patient sees who they're booking once the Doctor step (1) is
+	 * skipped.
+	 */
+	function updateServiceStepDoctorSummary() {
+		var summary = document.getElementById( 'dak-booking-service-doctor-summary' );
+		var doctorCard = document.querySelector( '[data-doctor-card].is-selected' );
+
+		if ( ! summary ) {
+			return;
+		}
+
+		if ( ! doctorCard ) {
+			summary.classList.add( 'dak-hidden' );
+			return;
+		}
+
+		document.getElementById( 'dak-booking-service-doctor-avatar' ).innerHTML = doctorCard.querySelector( '.dak-booking-doctor-avatar' ).innerHTML;
+		document.getElementById( 'dak-booking-service-doctor-name' ).textContent = 'Dr. ' + doctorCard.getAttribute( 'data-doctor-name' );
+		summary.classList.remove( 'dak-hidden' );
+	}
 
 	function getDoctorId() {
 		return document.getElementById( 'dak-booking-doctor-id' ).value;
@@ -207,6 +236,7 @@
 		fetchAndRenderDateStrip();
 		updateSteps( 'doctor' );
 		updateSummary();
+		updateServiceStepDoctorSummary();
 	}
 
 	/* ---------------------------------------------------------------------

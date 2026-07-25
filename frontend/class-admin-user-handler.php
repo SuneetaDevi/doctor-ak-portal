@@ -109,10 +109,6 @@ class Admin_User_Handler {
 			$errors['first_name'] = __( 'First name is required.', 'doctor-ak-portal' );
 		}
 
-		if ( '' === $last_name ) {
-			$errors['last_name'] = __( 'Last name is required.', 'doctor-ak-portal' );
-		}
-
 		if ( '' === $email || ! is_email( $email ) ) {
 			$errors['email'] = __( 'Please provide a valid email address.', 'doctor-ak-portal' );
 		}
@@ -131,13 +127,14 @@ class Admin_User_Handler {
 			: ( isset( $_POST['role'] ) ? sanitize_key( wp_unslash( $_POST['role'] ) ) : '' );
 		$is_for_doctor = Roles::DOCTOR_ROLE === $target_role;
 
-		$qualification     = '';
-		$short_description = '';
-		$expertise         = '';
-		$years_experience  = null;
-		$awards            = array();
-		$clinic_fields     = null;
-		$specializations   = array();
+		$qualification              = '';
+		$short_description          = '';
+		$expertise                  = '';
+		$years_experience           = null;
+		$awards                     = array();
+		$clinic_fields              = null;
+		$specializations            = array();
+		$video_consultation_allowed = true;
 
 		if ( $is_for_doctor ) {
 			$qualification = isset( $_POST['qualification'] ) ? sanitize_text_field( wp_unslash( $_POST['qualification'] ) ) : '';
@@ -154,14 +151,12 @@ class Admin_User_Handler {
 				$errors['years_experience'] = __( 'Please provide a valid number of years of experience.', 'doctor-ak-portal' );
 			}
 
-			$short_description = isset( $_POST['short_description'] ) ? sanitize_text_field( wp_unslash( $_POST['short_description'] ) ) : '';
-
-			if ( mb_strlen( $short_description ) > 160 ) {
-				$errors['short_description'] = __( 'Short description must be 160 characters or fewer.', 'doctor-ak-portal' );
-			}
+			$short_description = isset( $_POST['short_description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['short_description'] ) ) : '';
 
 			$expertise = isset( $_POST['expertise'] ) ? sanitize_textarea_field( wp_unslash( $_POST['expertise'] ) ) : '';
 			$awards    = Doctor_Awards::sanitize_from_request( $errors );
+
+			$video_consultation_allowed = isset( $_POST['video_consultation_allowed'] );
 
 			// Specializations not in the canonical dropdown are allowed here
 			// (admin-added custom tags, see doctor-ak-registration.js's
@@ -232,7 +227,7 @@ class Admin_User_Handler {
 				$errors['role'] = __( 'Please choose whether this account is a Doctor or a Patient.', 'doctor-ak-portal' );
 			}
 
-			if ( '' === $password || strlen( $password ) < 8 ) {
+			if ( '' !== $password && strlen( $password ) < 8 ) {
 				$errors['password'] = __( 'Password must be at least 8 characters long.', 'doctor-ak-portal' );
 			}
 		} elseif ( '' !== $password && strlen( $password ) < 8 ) {
@@ -266,6 +261,12 @@ class Admin_User_Handler {
 		} else {
 			$user_login = self::unique_username_from_email( $email );
 
+			$password_was_generated = ( '' === $password );
+
+			if ( $password_was_generated ) {
+				$password = wp_generate_password( 20, true, true );
+			}
+
 			$authentication = new Authentication();
 			$saved_user_id  = $authentication->register_user(
 				array(
@@ -282,6 +283,10 @@ class Admin_User_Handler {
 			if ( is_wp_error( $saved_user_id ) ) {
 				wp_send_json_error( array( 'message' => $saved_user_id->get_error_message() ) );
 			}
+
+			if ( $password_was_generated ) {
+				wp_new_user_notification( $saved_user_id, null, 'user' );
+			}
 		}
 
 		if ( $is_for_doctor ) {
@@ -290,6 +295,7 @@ class Admin_User_Handler {
 			update_user_meta( $saved_user_id, 'doctor_ak_years_experience', $years_experience );
 			update_user_meta( $saved_user_id, 'doctor_ak_short_description', $short_description );
 			update_user_meta( $saved_user_id, 'doctor_ak_expertise', $expertise );
+			update_user_meta( $saved_user_id, Clinics::VIDEO_CONSULTATION_ALLOWED_META_KEY, $video_consultation_allowed ? '1' : '0' );
 			update_user_meta( $saved_user_id, Doctor_Awards::META_KEY, Doctor_Awards::encode( $awards ) );
 
 			if ( null !== $clinic_fields ) {

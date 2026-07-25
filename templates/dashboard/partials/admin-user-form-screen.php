@@ -86,7 +86,7 @@ $dak_noun            = $dak_is_doctor_form ? __( 'Doctor', 'doctor-ak-portal' ) 
 			</div>
 			<div class="dak-field">
 				<label for="dak-admin-user-last-name"><?php esc_html_e( 'Last Name', 'doctor-ak-portal' ); ?></label>
-				<input type="text" id="dak-admin-user-last-name" name="last_name" value="<?php echo esc_attr( $dak_is_editing ? $editing_user['last_name'] : '' ); ?>" required>
+				<input type="text" id="dak-admin-user-last-name" name="last_name" value="<?php echo esc_attr( $dak_is_editing ? $editing_user['last_name'] : '' ); ?>">
 				<span class="dak-field-error" data-field="last_name"></span>
 			</div>
 		</div>
@@ -132,8 +132,8 @@ $dak_noun            = $dak_is_doctor_form ? __( 'Doctor', 'doctor-ak-portal' ) 
 
 			<div class="dak-field">
 				<label for="dak-admin-user-short-description"><?php esc_html_e( 'Short Description', 'doctor-ak-portal' ); ?></label>
-				<input type="text" id="dak-admin-user-short-description" name="short_description" value="<?php echo esc_attr( $dak_is_editing ? $editing_user['short_description'] : '' ); ?>" maxlength="160" placeholder="<?php esc_attr_e( 'e.g. Compassionate primary care with 12+ years of experience', 'doctor-ak-portal' ); ?>">
-				<p class="dak-field-hint"><?php esc_html_e( 'A one-line tagline shown on the doctor\'s public profile (up to 160 characters).', 'doctor-ak-portal' ); ?></p>
+				<textarea id="dak-admin-user-short-description" name="short_description" rows="3" placeholder="<?php esc_attr_e( 'e.g. Compassionate primary care with 12+ years of experience', 'doctor-ak-portal' ); ?>"><?php echo esc_textarea( $dak_is_editing ? $editing_user['short_description'] : '' ); ?></textarea>
+				<p class="dak-field-hint"><?php esc_html_e( 'A tagline shown on the doctor\'s public profile.', 'doctor-ak-portal' ); ?></p>
 				<span class="dak-field-error" data-field="short_description"></span>
 			</div>
 
@@ -162,6 +162,14 @@ $dak_noun            = $dak_is_doctor_form ? __( 'Doctor', 'doctor-ak-portal' ) 
 				<span class="dak-field-error" data-field="awards"></span>
 			</div>
 
+			<div class="dak-field dak-field-inline">
+				<label class="dak-checkbox">
+					<input type="checkbox" id="dak-admin-user-video-consultation-allowed" name="video_consultation_allowed" value="1" <?php checked( ! $dak_is_editing || $editing_user['video_consultation_allowed'] ); ?>>
+					<span><?php esc_html_e( 'Allow this doctor to offer video consultations', 'doctor-ak-portal' ); ?></span>
+				</label>
+				<p class="dak-field-hint"><?php esc_html_e( "When off, this doctor can't be booked for a video consultation, even if they've set up a video clinic schedule.", 'doctor-ak-portal' ); ?></p>
+			</div>
+
 			<div class="dak-field">
 				<span class="dak-field-label"><?php esc_html_e( 'Add a Clinic (optional)', 'doctor-ak-portal' ); ?></span>
 				<p class="dak-field-hint"><?php esc_html_e( 'Quickly add one clinic location now — weekly session hours and additional clinics can be set later from the Doctor Sessions tab.', 'doctor-ak-portal' ); ?></p>
@@ -186,8 +194,8 @@ $dak_noun            = $dak_is_doctor_form ? __( 'Doctor', 'doctor-ak-portal' ) 
 
 		<div class="dak-field" id="dak-admin-user-password-field">
 			<label for="dak-admin-user-password"><?php echo esc_html( $dak_is_editing ? __( 'New Password', 'doctor-ak-portal' ) : __( 'Password', 'doctor-ak-portal' ) ); ?></label>
-			<input type="password" id="dak-admin-user-password" name="password" autocomplete="new-password" <?php echo $dak_is_editing ? '' : 'required'; ?>>
-			<span class="dak-field-hint"><?php echo $dak_is_editing ? esc_html__( 'Leave blank to keep the current password.', 'doctor-ak-portal' ) : ''; ?></span>
+			<input type="password" id="dak-admin-user-password" name="password" autocomplete="new-password">
+			<span class="dak-field-hint"><?php echo $dak_is_editing ? esc_html__( 'Leave blank to keep the current password.', 'doctor-ak-portal' ) : esc_html__( 'Leave blank to auto-generate a password.', 'doctor-ak-portal' ); ?></span>
 			<span class="dak-field-error" data-field="password"></span>
 		</div>
 

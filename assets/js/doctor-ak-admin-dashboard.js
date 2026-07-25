@@ -17,7 +17,33 @@
 	document.addEventListener( 'DOMContentLoaded', function () {
 		initUserForm();
 		initRowActions();
+		initSpecialtyTagToggles();
 	} );
+
+	/**
+	 * Wires the table's "+N" specialization chip — expands/collapses the
+	 * extra tags beyond the first two shown by default (see
+	 * admin-user-table.php).
+	 */
+	function initSpecialtyTagToggles() {
+		document.querySelectorAll( '[data-specialty-toggle]' ).forEach( function ( toggle ) {
+			toggle.addEventListener( 'click', function () {
+				var container = toggle.closest( '[data-specialty-tags]' );
+
+				if ( ! container ) {
+					return;
+				}
+
+				var expanded = toggle.classList.toggle( 'is-expanded' );
+
+				container.querySelectorAll( '.dak-specialty-tag-extra' ).forEach( function ( tag ) {
+					tag.classList.toggle( 'dak-hidden', ! expanded );
+				} );
+
+				toggle.textContent = expanded ? toggle.getAttribute( 'data-less-label' ) : toggle.getAttribute( 'data-more-label' );
+			} );
+		} );
+	}
 
 	/**
 	 * Wires up the Add/Edit form: photo upload and AJAX submit.
@@ -105,6 +131,7 @@
 		function clearFieldErrors() {
 			form.querySelectorAll( '.dak-field-error' ).forEach( function ( el ) {
 				el.textContent = '';
+				el.classList.remove( 'is-visible' );
 			} );
 		}
 
@@ -113,6 +140,7 @@
 
 			if ( el ) {
 				el.textContent = message;
+				el.classList.add( 'is-visible' );
 			}
 		}
 

@@ -72,6 +72,7 @@ $dak_has_filters  = '' !== $filters['status'] || '' !== $filters['specialization
 						<th><?php esc_html_e( 'Phone Number', 'doctor-ak-portal' ); ?></th>
 					<?php else : ?>
 						<th><?php esc_html_e( 'Specialization', 'doctor-ak-portal' ); ?></th>
+						<th><?php esc_html_e( 'Video Consultation', 'doctor-ak-portal' ); ?></th>
 					<?php endif; ?>
 					<th><?php esc_html_e( 'Email Address', 'doctor-ak-portal' ); ?></th>
 					<th><?php esc_html_e( 'Status', 'doctor-ak-portal' ); ?></th>
@@ -86,7 +87,31 @@ $dak_has_filters  = '' !== $filters['status'] || '' !== $filters['specialization
 						<?php if ( $dak_is_patients ) : ?>
 							<td data-label="<?php esc_attr_e( 'Phone Number', 'doctor-ak-portal' ); ?>"><?php echo esc_html( '' !== $row['phone'] ? $row['phone'] : '—' ); ?></td>
 						<?php else : ?>
-							<td data-label="<?php esc_attr_e( 'Specialization', 'doctor-ak-portal' ); ?>"><?php echo esc_html( $row['specialization_label'] ); ?></td>
+							<td data-label="<?php esc_attr_e( 'Specialization', 'doctor-ak-portal' ); ?>">
+								<?php if ( empty( $row['specialization_labels'] ) ) : ?>
+									&mdash;
+								<?php else : ?>
+									<div class="dak-specialty-tags dak-table-specialty-tags" data-specialty-tags>
+										<?php foreach ( $row['specialization_labels'] as $dak_spec_index => $dak_spec_label ) : ?>
+											<span class="dak-specialty-tag<?php echo $dak_spec_index >= 2 ? ' dak-specialty-tag-extra dak-hidden' : ''; ?>"><?php echo esc_html( $dak_spec_label ); ?></span>
+										<?php endforeach; ?>
+										<?php if ( count( $row['specialization_labels'] ) > 2 ) : ?>
+											<button
+												type="button"
+												class="dak-specialty-tag dak-specialty-tag-more"
+												data-specialty-toggle
+												data-more-label="<?php echo esc_attr( sprintf( '+%d', count( $row['specialization_labels'] ) - 2 ) ); ?>"
+												data-less-label="<?php esc_attr_e( 'Show less', 'doctor-ak-portal' ); ?>"
+											><?php echo esc_html( sprintf( '+%d', count( $row['specialization_labels'] ) - 2 ) ); ?></button>
+										<?php endif; ?>
+									</div>
+								<?php endif; ?>
+							</td>
+							<td data-label="<?php esc_attr_e( 'Video Consultation', 'doctor-ak-portal' ); ?>">
+								<span class="dak-status-badge <?php echo $row['video_consultation_allowed'] ? 'is-active' : 'is-disabled'; ?>">
+									<?php echo $row['video_consultation_allowed'] ? esc_html__( 'Yes', 'doctor-ak-portal' ) : esc_html__( 'No', 'doctor-ak-portal' ); ?>
+								</span>
+							</td>
 						<?php endif; ?>
 						<td data-label="<?php esc_attr_e( 'Email Address', 'doctor-ak-portal' ); ?>"><?php echo esc_html( $row['email'] ); ?></td>
 						<td data-label="<?php esc_attr_e( 'Status', 'doctor-ak-portal' ); ?>">

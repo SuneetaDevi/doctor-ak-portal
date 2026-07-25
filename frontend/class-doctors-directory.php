@@ -101,9 +101,7 @@ class Doctors_Directory {
 			$doctors_html[] = $this->template_loader->get_template( 'directory/doctor-card.php', $card );
 
 			foreach ( $card['specialization_slugs'] as $slug ) {
-				if ( isset( $all_specializations[ $slug ] ) ) {
-					$used_specializations[ $slug ] = $all_specializations[ $slug ];
-				}
+				$used_specializations[ $slug ] = isset( $all_specializations[ $slug ] ) ? $all_specializations[ $slug ] : $slug;
 			}
 
 			foreach ( $card['location_labels'] as $label ) {
@@ -210,6 +208,7 @@ class Doctors_Directory {
 			'avatar_url'            => self::avatar_url( $doctor->ID ),
 			'specialization_slugs'  => $specialization_slugs,
 			'specialization_labels' => $specialization_labels,
+			'years_experience'      => get_user_meta( $doctor->ID, 'doctor_ak_years_experience', true ),
 			'clinic_location'       => $primary_clinic_location,
 			'extra_clinic_count'    => $extra_clinic_count,
 			'location_labels'       => $location_labels,

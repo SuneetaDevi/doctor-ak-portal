@@ -99,6 +99,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<section class="dak-booking-card dak-hidden" id="dak-booking-step-service">
 					<h2 class="dak-booking-card-title"><?php esc_html_e( 'Appointment Type & Service', 'doctor-ak-portal' ); ?></h2>
 
+					<div class="dak-booking-selected-doctor dak-hidden" id="dak-booking-service-doctor-summary">
+						<span class="dak-booking-doctor-avatar" id="dak-booking-service-doctor-avatar"></span>
+						<span class="dak-booking-doctor-info">
+							<span class="dak-booking-selected-doctor-label"><?php esc_html_e( 'Booking with', 'doctor-ak-portal' ); ?></span>
+							<strong id="dak-booking-service-doctor-name"></strong>
+						</span>
+						<button type="button" class="dak-button dak-button-secondary dak-booking-selected-doctor-change" data-wizard-back="doctor"><?php esc_html_e( 'Change', 'doctor-ak-portal' ); ?></button>
+					</div>
+
 					<div class="dak-booking-field-label"><?php esc_html_e( 'Appointment type', 'doctor-ak-portal' ); ?></div>
 					<div class="dak-booking-segmented" role="tablist">
 						<button type="button" class="dak-booking-segment <?php echo 'clinic' === $selected_type ? 'is-active' : ''; ?>" data-type="clinic" role="tab" aria-selected="<?php echo 'clinic' === $selected_type ? 'true' : 'false'; ?>"><?php esc_html_e( 'Clinic Visit', 'doctor-ak-portal' ); ?></button>
