@@ -9,6 +9,7 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Authentication;
+use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Profile_Picture_Uploader;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Specializations;
@@ -93,9 +94,17 @@ class Registration_Handler {
 		);
 
 		wp_enqueue_script(
+			'doctor-ak-portal-city-area-select',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-city-area-select.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-city-area-select.js' ),
+			true
+		);
+
+		wp_enqueue_script(
 			'doctor-ak-portal-registration',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-registration.js',
-			array(),
+			array( 'doctor-ak-portal-city-area-select' ),
 			Assets::version( 'assets/js/doctor-ak-registration.js' ),
 			true
 		);
@@ -104,8 +113,9 @@ class Registration_Handler {
 			'doctor-ak-portal-registration',
 			'dakRegister',
 			array(
-				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-				'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+				'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+				'nonce'     => wp_create_nonce( self::NONCE_ACTION ),
+				'locations' => Locations::get_all(),
 			)
 		);
 	}
@@ -296,6 +306,18 @@ class Registration_Handler {
 			$errors['qualification'] = __( 'Please provide your qualification(s), e.g. MBBS, FCPS.', 'doctor-ak-portal' );
 		} else {
 			$meta['doctor_ak_qualification'] = $qualification;
+		}
+
+		$city = isset( $_POST['city'] ) ? sanitize_text_field( wp_unslash( $_POST['city'] ) ) : '';
+		$area = isset( $_POST['area'] ) ? sanitize_text_field( wp_unslash( $_POST['area'] ) ) : '';
+
+		if ( '' === $city || ! Locations::is_valid_city( $city ) ) {
+			$errors['city'] = __( 'Please select your city.', 'doctor-ak-portal' );
+		} elseif ( '' === $area || ! Locations::is_valid_area( $city, $area ) ) {
+			$errors['area'] = __( 'Please select your area.', 'doctor-ak-portal' );
+		} else {
+			$meta['doctor_ak_city'] = $city;
+			$meta['doctor_ak_area'] = $area;
 		}
 
 		// Optional — a free-text field for anything not already covered by

@@ -24,7 +24,41 @@
 		wireCancel();
 		wireSave();
 		wireDelete();
+
+		wireCityAreaSelectsIn( list );
 	} );
+
+	/**
+	 * Wires every City/Area select pair inside a container (the whole list
+	 * on page load, or a single freshly cloned card) via the shared
+	 * window.dakCityArea helper.
+	 *
+	 * @param {HTMLElement} container Element to search within.
+	 */
+	function wireCityAreaSelectsIn( container ) {
+		if ( ! window.dakCityArea || ! window.dakClinics ) {
+			return;
+		}
+
+		container.querySelectorAll( '.dak-clinic-card' ).forEach( function ( card ) {
+			var citySelect = card.querySelector( '.dak-clinic-city-select' );
+			var areaSelect = card.querySelector( '.dak-clinic-area-select' );
+
+			if ( ! citySelect || ! areaSelect || citySelect.getAttribute( 'data-wired' ) ) {
+				return;
+			}
+
+			citySelect.setAttribute( 'data-wired', '1' );
+
+			window.dakCityArea.wire(
+				citySelect,
+				areaSelect,
+				window.dakClinics.locations,
+				citySelect.getAttribute( 'data-clinic-city' ) || '',
+				areaSelect.getAttribute( 'data-clinic-area' ) || ''
+			);
+		} );
+	}
 
 	/**
 	 * Enables/disables each session row's time + slot-duration inputs based
@@ -59,11 +93,14 @@
 			}
 
 			var card = event.target.closest( '.dak-clinic-card' );
-			var addressField = card ? card.querySelector( '.dak-clinic-address-field' ) : null;
 
-			if ( addressField ) {
-				addressField.classList.toggle( 'dak-hidden', 'video' === event.target.value );
+			if ( ! card ) {
+				return;
 			}
+
+			card.querySelectorAll( '.dak-clinic-address-field' ).forEach( function ( field ) {
+				field.classList.toggle( 'dak-hidden', 'video' === event.target.value );
+			} );
 		} );
 	}
 
@@ -88,6 +125,7 @@
 
 			var clone = template.content.cloneNode( true );
 			list.appendChild( clone );
+			wireCityAreaSelectsIn( list );
 		} );
 	}
 
@@ -172,6 +210,8 @@
 			type: card.querySelector( '.dak-clinic-type-select' ).value,
 			name: card.querySelector( '.dak-clinic-name-input' ).value,
 			address: card.querySelector( '.dak-clinic-address-input' ).value,
+			city: card.querySelector( '.dak-clinic-city-select' ).value,
+			area: card.querySelector( '.dak-clinic-area-select' ).value,
 			phone: card.querySelector( '.dak-clinic-phone-input' ).value,
 			contact_email: card.querySelector( '.dak-clinic-email-input' ).value,
 			sessions: sessions,
@@ -206,6 +246,8 @@
 			formData.append( 'type', payload.type );
 			formData.append( 'name', payload.name );
 			formData.append( 'address', payload.address );
+			formData.append( 'city', payload.city );
+			formData.append( 'area', payload.area );
 			formData.append( 'phone', payload.phone );
 			formData.append( 'contact_email', payload.contact_email );
 

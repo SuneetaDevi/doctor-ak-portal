@@ -62,6 +62,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<span class="dak-field-error" data-field="address"></span>
 		</div>
 
+		<div class="dak-field-row" id="dak-admin-session-city-area-row">
+			<div class="dak-field">
+				<label for="dak-admin-session-city"><?php esc_html_e( 'City', 'doctor-ak-portal' ); ?></label>
+				<select id="dak-admin-session-city"></select>
+				<span class="dak-field-error" data-field="city"></span>
+			</div>
+			<div class="dak-field">
+				<label for="dak-admin-session-area"><?php esc_html_e( 'Area', 'doctor-ak-portal' ); ?></label>
+				<select id="dak-admin-session-area"></select>
+				<span class="dak-field-error" data-field="area"></span>
+			</div>
+		</div>
+
 		<div class="dak-field-row">
 			<div class="dak-field">
 				<label for="dak-admin-session-phone"><?php esc_html_e( 'Phone (optional)', 'doctor-ak-portal' ); ?></label>

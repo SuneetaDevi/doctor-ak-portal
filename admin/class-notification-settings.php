@@ -7,6 +7,7 @@
 
 namespace DoctorAKPortal\Admin;
 
+use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Notifications;
 
 // Prevent direct file access.
@@ -43,7 +44,7 @@ class Notification_Settings {
 	 * @return void
 	 */
 	public function register_settings() {
-		foreach ( array( Notifications::OPTION_NOTIFY_BOOKING, Notifications::OPTION_NOTIFY_CANCELLED, Notifications::OPTION_NOTIFY_PAID, Notifications::OPTION_NOTIFY_REMINDER, Notifications::OPTION_NOTIFY_DOCTOR_REGISTRATION ) as $option ) {
+		foreach ( array( Notifications::OPTION_NOTIFY_BOOKING, Notifications::OPTION_NOTIFY_CANCELLED, Notifications::OPTION_NOTIFY_PAID, Notifications::OPTION_NOTIFY_REMINDER, Notifications::OPTION_NOTIFY_VIDEO_LINK, Notifications::OPTION_NOTIFY_DOCTOR_REGISTRATION ) as $option ) {
 			register_setting(
 				'doctor_ak_notification_settings',
 				$option,
@@ -115,6 +116,23 @@ class Notification_Settings {
 							<label>
 								<input type="checkbox" name="<?php echo esc_attr( Notifications::OPTION_NOTIFY_REMINDER ); ?>" value="1" <?php checked( '1', get_option( Notifications::OPTION_NOTIFY_REMINDER, '1' ) ); ?>>
 								<?php esc_html_e( 'Email the patient and doctor the day before an upcoming appointment.', 'doctor-ak-portal' ); ?>
+							</label>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Video Link Ready', 'doctor-ak-portal' ); ?></th>
+						<td>
+							<label>
+								<input type="checkbox" name="<?php echo esc_attr( Notifications::OPTION_NOTIFY_VIDEO_LINK ); ?>" value="1" <?php checked( '1', get_option( Notifications::OPTION_NOTIFY_VIDEO_LINK, '1' ) ); ?>>
+								<?php
+								echo esc_html(
+									sprintf(
+										/* translators: %d: minutes before the appointment. */
+										__( 'Email the patient and doctor the video consultation join link about %d minutes before it starts.', 'doctor-ak-portal' ),
+										Appointments::VIDEO_JOIN_WINDOW_BEFORE_MINUTES
+									)
+								);
+								?>
 							</label>
 						</td>
 					</tr>

@@ -110,6 +110,19 @@ $dak_icons = array(
 						<span class="dak-field-error" data-field="qualification"></span>
 					</div>
 
+					<div class="dak-field-row">
+						<div class="dak-field">
+							<label for="dak-city"><span class="dak-field-icon dak-field-icon-specialization"><?php echo $dak_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'City', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
+							<select id="dak-city" name="city"></select>
+							<span class="dak-field-error" data-field="city"></span>
+						</div>
+						<div class="dak-field">
+							<label for="dak-area"><span class="dak-field-icon dak-field-icon-specialization"><?php echo $dak_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Area', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
+							<select id="dak-area" name="area"></select>
+							<span class="dak-field-error" data-field="area"></span>
+						</div>
+					</div>
+
 					<div class="dak-field">
 						<label for="dak-specializations"><span class="dak-field-icon dak-field-icon-specialization"><?php echo $dak_icons['briefcase']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Specialization', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
 						<select id="dak-specializations" name="specializations[]" multiple>

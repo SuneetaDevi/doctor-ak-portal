@@ -28,6 +28,7 @@ class Deactivator {
 	 */
 	public static function deactivate() {
 		wp_clear_scheduled_hook( Notifications::CRON_HOOK );
+		wp_clear_scheduled_hook( Notifications::VIDEO_LINK_CRON_HOOK );
 		flush_rewrite_rules();
 	}
 }

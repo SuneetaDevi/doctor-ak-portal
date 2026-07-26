@@ -45,7 +45,12 @@ function dak_render_clinic_card( $clinic, array $session_days, array $icons ) {
 				<span class="dak-clinic-card-meta" data-clinic-meta-display>
 					<?php
 					if ( ! $is_blank ) {
-						echo esc_html( 'video' === $clinic['type'] ? __( 'Video Consultation', 'doctor-ak-portal' ) : $clinic['address'] );
+						if ( 'video' === $clinic['type'] ) {
+							echo esc_html__( 'Video Consultation', 'doctor-ak-portal' );
+						} else {
+							$dak_clinic_location_parts = array_filter( array( $clinic['address'], $clinic['area_label'], $clinic['city_label'] ) );
+							echo esc_html( implode( ', ', $dak_clinic_location_parts ) );
+						}
 					}
 					?>
 				</span>
@@ -85,6 +90,19 @@ function dak_render_clinic_card( $clinic, array $session_days, array $icons ) {
 				<label><?php esc_html_e( 'Address', 'doctor-ak-portal' ); ?></label>
 				<input type="text" class="dak-clinic-address-input" value="<?php echo esc_attr( $is_blank ? '' : $clinic['address'] ); ?>">
 				<span class="dak-field-error" data-field="address"></span>
+			</div>
+
+			<div class="dak-field-row dak-clinic-address-field<?php echo ! $is_blank && 'video' === $clinic['type'] ? ' dak-hidden' : ''; ?>">
+				<div class="dak-field">
+					<label><?php esc_html_e( 'City', 'doctor-ak-portal' ); ?></label>
+					<select class="dak-clinic-city-select" data-clinic-city="<?php echo esc_attr( $is_blank ? '' : $clinic['city'] ); ?>"></select>
+					<span class="dak-field-error" data-field="city"></span>
+				</div>
+				<div class="dak-field">
+					<label><?php esc_html_e( 'Area', 'doctor-ak-portal' ); ?></label>
+					<select class="dak-clinic-area-select" data-clinic-area="<?php echo esc_attr( $is_blank ? '' : $clinic['area'] ); ?>"></select>
+					<span class="dak-field-error" data-field="area"></span>
+				</div>
 			</div>
 
 			<div class="dak-field-row">

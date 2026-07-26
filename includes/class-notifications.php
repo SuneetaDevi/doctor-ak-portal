@@ -17,11 +17,16 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Hooked to the appointment lifecycle actions Appointments already fires
  * (or now fires — see cancel()/mark_paid()) — 'doctor_ak_appointment_created',
- * '_cancelled', '_paid' — plus a WP-Cron event, 'doctor_ak_appointment_reminders',
- * for the day-before reminder (registered by Activator/cleared by
- * Deactivator). Each event type can be turned off from Settings → Email
- * Notifications (Admin\Notification_Settings), which also controls the
- * From name/email used on every email this class sends.
+ * '_cancelled', '_paid' — plus two WP-Cron events (registered by
+ * Activator/cleared by Deactivator, and self-healed on 'init' via
+ * ensure_video_link_cron_scheduled() for installs activated before it
+ * existed): 'doctor_ak_appointment_reminders' (CRON_HOOK, hourly) for the
+ * day-before reminder, and 'doctor_ak_video_link_emails'
+ * (VIDEO_LINK_CRON_HOOK, every 5 minutes) for the video-join-link email
+ * sent shortly before a paid video appointment starts. Each event type can
+ * be turned off from Settings → Email Notifications
+ * (Admin\Notification_Settings), which also controls the From name/email
+ * used on every email this class sends.
  */
 class Notifications {
 
@@ -29,11 +34,45 @@ class Notifications {
 	const OPTION_NOTIFY_CANCELLED           = 'doctor_ak_notify_cancelled';
 	const OPTION_NOTIFY_PAID                = 'doctor_ak_notify_paid';
 	const OPTION_NOTIFY_REMINDER            = 'doctor_ak_notify_reminder';
+	const OPTION_NOTIFY_VIDEO_LINK          = 'doctor_ak_notify_video_link';
 	const OPTION_NOTIFY_DOCTOR_REGISTRATION = 'doctor_ak_notify_doctor_registration';
 	const OPTION_FROM_NAME                  = 'doctor_ak_notify_from_name';
 	const OPTION_FROM_EMAIL                 = 'doctor_ak_notify_from_email';
 
-	const CRON_HOOK = 'doctor_ak_appointment_reminders';
+	const CRON_HOOK            = 'doctor_ak_appointment_reminders';
+	const VIDEO_LINK_CRON_HOOK = 'doctor_ak_video_link_emails';
+
+	/**
+	 * Registers a 5-minute WP-Cron interval (hooked to 'cron_schedules') for
+	 * VIDEO_LINK_CRON_HOOK — the hourly interval the reminder cron uses is
+	 * far too coarse to reliably catch each appointment's short
+	 * VIDEO_JOIN_WINDOW_BEFORE_MINUTES window.
+	 *
+	 * @param array $schedules Existing registered intervals.
+	 * @return array
+	 */
+	public static function add_cron_interval( $schedules ) {
+		$schedules['doctor_ak_five_minutes'] = array(
+			'interval' => 5 * MINUTE_IN_SECONDS,
+			'display'  => __( 'Every 5 Minutes (Doctor AK Portal)', 'doctor-ak-portal' ),
+		);
+
+		return $schedules;
+	}
+
+	/**
+	 * Schedules VIDEO_LINK_CRON_HOOK if it isn't already — a no-op on every
+	 * request once it's scheduled. Activator::activate() also schedules it,
+	 * but that only runs on a fresh plugin activation, not a code update on
+	 * an install that was activated before this cron event existed.
+	 *
+	 * @return void
+	 */
+	public static function ensure_video_link_cron_scheduled() {
+		if ( ! wp_next_scheduled( self::VIDEO_LINK_CRON_HOOK ) ) {
+			wp_schedule_event( time(), 'doctor_ak_five_minutes', self::VIDEO_LINK_CRON_HOOK );
+		}
+	}
 
 	/**
 	 * Whether a given notification type is enabled (default: all enabled).
@@ -47,6 +86,7 @@ class Notifications {
 			'cancelled'           => self::OPTION_NOTIFY_CANCELLED,
 			'paid'                => self::OPTION_NOTIFY_PAID,
 			'reminder'            => self::OPTION_NOTIFY_REMINDER,
+			'video_link'          => self::OPTION_NOTIFY_VIDEO_LINK,
 			'doctor_registration' => self::OPTION_NOTIFY_DOCTOR_REGISTRATION,
 		);
 
@@ -87,7 +127,9 @@ class Notifications {
 		$patient_intro = $has_pending_charge
 			? sprintf(
 				/* translators: %s: doctor's display name. */
-				__( 'Your appointment with Dr. %s is scheduled, but payment is still pending. Please pay from your dashboard to confirm it.', 'doctor-ak-portal' ),
+				(int) $appt['patient_id'] > 0
+					? __( 'Your appointment with Dr. %s is scheduled, but payment is still pending. Please pay from your dashboard to confirm it.', 'doctor-ak-portal' )
+					: __( 'Your appointment with Dr. %s is scheduled, but payment is still pending. Please contact us to arrange payment and confirm it.', 'doctor-ak-portal' ),
 				$appt['doctor_name']
 			)
 			: sprintf(
@@ -260,6 +302,66 @@ class Notifications {
 			);
 
 			Appointments::mark_reminder_sent( $appointment['id'] );
+		}
+	}
+
+	/**
+	 * Cron callback: emails the video-consultation join link for every paid
+	 * video appointment whose join window (Appointments::due_for_video_link_email())
+	 * has just opened — i.e. roughly VIDEO_JOIN_WINDOW_BEFORE_MINUTES before
+	 * it starts — that hasn't already had one sent.
+	 *
+	 * @return void
+	 */
+	public function send_video_link_emails() {
+		if ( ! self::is_enabled( 'video_link' ) ) {
+			return;
+		}
+
+		foreach ( Appointments::due_for_video_link_email() as $appointment ) {
+			$appt = Appointments::notification_data( $appointment['id'] );
+
+			if ( empty( $appt ) ) {
+				continue;
+			}
+
+			$video = Appointments::video_call_info( $appointment );
+
+			if ( ! $video['applicable'] || '' === $video['room_url'] ) {
+				continue;
+			}
+
+			$appt['video_room_url'] = $video['room_url'];
+
+			$subject = __( 'Your Video Consultation Link Is Ready', 'doctor-ak-portal' );
+
+			$this->send(
+				$appt['patient_email'],
+				$subject,
+				__( 'Your video consultation link is ready', 'doctor-ak-portal' ),
+				sprintf(
+					/* translators: 1: doctor's display name, 2: minutes before the appointment. */
+					__( 'Your video consultation with Dr. %1$s starts in about %2$d minutes. Use the link below to join.', 'doctor-ak-portal' ),
+					$appt['doctor_name'],
+					Appointments::VIDEO_JOIN_WINDOW_BEFORE_MINUTES
+				),
+				$appt
+			);
+
+			$this->send(
+				$appt['doctor_email'],
+				$subject,
+				__( 'Your video consultation link is ready', 'doctor-ak-portal' ),
+				sprintf(
+					/* translators: 1: patient's display name, 2: minutes before the appointment. */
+					__( 'Your video consultation with %1$s starts in about %2$d minutes. Use the link below to join.', 'doctor-ak-portal' ),
+					$appt['patient_name'],
+					Appointments::VIDEO_JOIN_WINDOW_BEFORE_MINUTES
+				),
+				$appt
+			);
+
+			Appointments::mark_video_link_sent( $appointment['id'] );
 		}
 	}
 
@@ -448,6 +550,15 @@ class Notifications {
 				'<tr><td style="padding:8px 12px;color:#6b7280;border-bottom:1px solid #e3e6ea;">%s</td><td style="padding:8px 12px;font-weight:600;border-bottom:1px solid #e3e6ea;">%s</td></tr>',
 				esc_html( $label ),
 				esc_html( $value )
+			);
+		}
+
+		if ( ! empty( $appointment['video_room_url'] ) ) {
+			$rows_html .= sprintf(
+				'<tr><td style="padding:8px 12px;color:#6b7280;border-bottom:1px solid #e3e6ea;">%s</td><td style="padding:8px 12px;font-weight:600;border-bottom:1px solid #e3e6ea;"><a href="%s" style="color:#2563eb;">%s</a></td></tr>',
+				esc_html__( 'Join Link', 'doctor-ak-portal' ),
+				esc_url( $appointment['video_room_url'] ),
+				esc_html__( 'Click to Join', 'doctor-ak-portal' )
 			);
 		}
 

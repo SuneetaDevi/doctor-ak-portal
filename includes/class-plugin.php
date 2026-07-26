@@ -8,6 +8,7 @@
 namespace DoctorAKPortal\Includes;
 
 use DoctorAKPortal\Admin\Footer_Settings;
+use DoctorAKPortal\Admin\Locations_Settings;
 use DoctorAKPortal\Admin\Notification_Settings;
 use DoctorAKPortal\Admin\Swich_Settings;
 use DoctorAKPortal\Frontend\Admin_Dashboard;
@@ -18,6 +19,7 @@ use DoctorAKPortal\Frontend\Booking_Page;
 use DoctorAKPortal\Frontend\Booking_Trigger;
 use DoctorAKPortal\Frontend\Clinic_Handler;
 use DoctorAKPortal\Frontend\Doctor_Appointment_Handler;
+use DoctorAKPortal\Frontend\Doctor_Patient_Handler;
 use DoctorAKPortal\Frontend\Doctor_Dashboard;
 use DoctorAKPortal\Frontend\Doctor_Profile_View;
 use DoctorAKPortal\Frontend\Doctor_Requests_Handler;
@@ -129,6 +131,11 @@ class Plugin {
 		$footer_settings = new Footer_Settings();
 		$this->loader->add_action( 'admin_menu', $footer_settings, 'register_menu' );
 		$this->loader->add_action( 'admin_init', $footer_settings, 'register_settings' );
+
+		$locations_settings = new Locations_Settings();
+		$this->loader->add_action( 'admin_menu', $locations_settings, 'register_menu' );
+		$this->loader->add_action( 'admin_init', $locations_settings, 'register_settings' );
+		$this->loader->add_action( 'admin_enqueue_scripts', $locations_settings, 'enqueue_assets' );
 	}
 
 	/**
@@ -212,6 +219,15 @@ class Plugin {
 		$this->loader->add_action( 'doctor_ak_doctor_registered', $notifications, 'notify_doctor_registered' );
 		$this->loader->add_action( 'doctor_ak_doctor_approved', $notifications, 'notify_doctor_approved' );
 		$this->loader->add_action( Notifications::CRON_HOOK, $notifications, 'send_reminders' );
+		$this->loader->add_filter( 'cron_schedules', 'DoctorAKPortal\\Includes\\Notifications', 'add_cron_interval' );
+		$this->loader->add_action( Notifications::VIDEO_LINK_CRON_HOOK, $notifications, 'send_video_link_emails' );
+
+		// Self-healing: installs that were activated before this cron event
+		// existed only get it scheduled on Activator::activate(), which
+		// doesn't re-run on a plugin code update — so make sure it's there
+		// on every request too, not just fresh activations. wp_next_scheduled()
+		// makes this a no-op once it's actually scheduled.
+		$this->loader->add_action( 'init', 'DoctorAKPortal\\Includes\\Notifications', 'ensure_video_link_cron_scheduled' );
 
 		// In-app "Notifications" tab (doctor/patient/admin dashboards) — the
 		// same lifecycle events as above, written to the notifications table
@@ -263,6 +279,9 @@ class Plugin {
 
 		$doctor_appointment_handler = new Doctor_Appointment_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_mark_completed', $doctor_appointment_handler, 'handle_mark_completed' );
+
+		$doctor_patient_handler = new Doctor_Patient_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_add_patient', $doctor_patient_handler, 'handle_add_patient' );
 
 		// Reuses the existing hourly reminder cron (Notifications::CRON_HOOK)
 		// rather than scheduling a second event just for this.

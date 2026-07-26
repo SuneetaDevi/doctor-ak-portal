@@ -15,6 +15,14 @@
 		initProfilePictureUpload();
 		initMultiSelect( document.getElementById( 'dak-specializations' ) );
 		initRegistrationForm();
+
+		if ( window.dakCityArea && window.dakRegister ) {
+			window.dakCityArea.wire(
+				document.getElementById( 'dak-city' ),
+				document.getElementById( 'dak-area' ),
+				window.dakRegister.locations
+			);
+		}
 	} );
 
 	/**

@@ -70,7 +70,8 @@
 }
 
 #dak-directory-specialization-filter,
-#dak-directory-location-filter,
+#dak-directory-city-filter,
+#dak-directory-area-filter,
 #dak-directory-clinic-filter {
 	flex: 0 1 220px !important;
 	padding: 0.65rem 0.85rem !important;

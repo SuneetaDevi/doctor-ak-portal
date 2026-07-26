@@ -9,6 +9,7 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinics;
+use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Specializations;
@@ -76,11 +77,27 @@ class Doctors_Directory {
 		);
 
 		wp_enqueue_script(
+			'doctor-ak-portal-city-area-select',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-city-area-select.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-city-area-select.js' ),
+			true
+		);
+
+		wp_enqueue_script(
 			'doctor-ak-portal-directory',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-directory.js',
-			array(),
+			array( 'doctor-ak-portal-city-area-select' ),
 			Assets::version( 'assets/js/doctor-ak-directory.js' ),
 			true
+		);
+
+		wp_localize_script(
+			'doctor-ak-portal-directory',
+			'dakDirectory',
+			array(
+				'locations' => Locations::get_all(),
+			)
 		);
 	}
 
@@ -90,12 +107,12 @@ class Doctors_Directory {
 	 * @return string
 	 */
 	public function render() {
-		$cards                 = $this->doctor_cards_data();
-		$doctors_html          = array();
+		$cards                = $this->doctor_cards_data();
+		$doctors_html         = array();
 		$used_specializations = array();
-		$all_specializations   = Specializations::get_all();
-		$used_locations        = array();
-		$used_clinics          = array();
+		$all_specializations  = Specializations::get_all();
+		$used_cities          = array();
+		$used_clinics         = array();
 
 		foreach ( $cards as $card ) {
 			$doctors_html[] = $this->template_loader->get_template( 'directory/doctor-card.php', $card );
@@ -104,8 +121,8 @@ class Doctors_Directory {
 				$used_specializations[ $slug ] = isset( $all_specializations[ $slug ] ) ? $all_specializations[ $slug ] : $slug;
 			}
 
-			foreach ( $card['location_labels'] as $label ) {
-				$used_locations[ $label ] = $label;
+			foreach ( $card['city_slugs'] as $slug ) {
+				$used_cities[ $slug ] = Locations::city_label( $slug );
 			}
 
 			foreach ( $card['clinic_labels'] as $label ) {
@@ -114,7 +131,7 @@ class Doctors_Directory {
 		}
 
 		asort( $used_specializations );
-		asort( $used_locations );
+		asort( $used_cities );
 		asort( $used_clinics );
 
 		return $this->template_loader->get_template(
@@ -122,7 +139,7 @@ class Doctors_Directory {
 			array(
 				'doctors_html'    => $doctors_html,
 				'specializations' => $used_specializations,
-				'locations'       => $used_locations,
+				'cities'          => $used_cities,
 				'clinics'         => $used_clinics,
 			)
 		);
@@ -139,9 +156,21 @@ class Doctors_Directory {
 	public function doctor_cards_data( $limit = 0 ) {
 		$query = new \WP_User_Query(
 			array(
-				'role'    => Roles::DOCTOR_ROLE,
-				'orderby' => 'display_name',
-				'number'  => $limit > 0 ? $limit : 0,
+				'role'       => Roles::DOCTOR_ROLE,
+				'orderby'    => 'display_name',
+				'number'     => $limit > 0 ? $limit : 0,
+				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- no better lookup available; excludes deactivated doctors from every public listing.
+					'relation' => 'OR',
+					array(
+						'key'     => 'doctor_ak_account_disabled',
+						'compare' => 'NOT EXISTS',
+					),
+					array(
+						'key'     => 'doctor_ak_account_disabled',
+						'value'   => 'yes',
+						'compare' => '!=',
+					),
+				),
 			)
 		);
 
@@ -176,8 +205,9 @@ class Doctors_Directory {
 
 		$primary_clinic_location = '';
 		$extra_clinic_count      = 0;
-		$location_labels         = array();
 		$clinic_labels           = array();
+		$city_slugs              = array();
+		$area_slugs              = array();
 
 		foreach ( $clinics as $clinic ) {
 			if ( Clinics::TYPE_PHYSICAL !== $clinic['type'] ) {
@@ -190,14 +220,37 @@ class Doctors_Directory {
 				++$extra_clinic_count;
 			}
 
-			if ( '' !== $clinic['address'] ) {
-				$location_labels[] = $clinic['address'];
-			}
-
 			if ( '' !== $clinic['name'] ) {
 				$clinic_labels[] = $clinic['name'];
 			}
+
+			if ( '' !== $clinic['city'] ) {
+				$city_slugs[] = $clinic['city'];
+			}
+
+			if ( '' !== $clinic['area'] ) {
+				$area_slugs[] = $clinic['area'];
+			}
 		}
+
+		// No physical clinic has a city/area set yet (or no physical clinic
+		// at all) — fall back to the doctor's own profile-level city/area
+		// so they still show up under the directory's location filter.
+		if ( empty( $city_slugs ) ) {
+			$profile_city = get_user_meta( $doctor->ID, 'doctor_ak_city', true );
+			$profile_area = get_user_meta( $doctor->ID, 'doctor_ak_area', true );
+
+			if ( '' !== $profile_city ) {
+				$city_slugs[] = $profile_city;
+			}
+
+			if ( '' !== $profile_area ) {
+				$area_slugs[] = $profile_area;
+			}
+		}
+
+		$city_slugs = array_values( array_unique( $city_slugs ) );
+		$area_slugs = array_values( array_unique( $area_slugs ) );
 
 		$display_name = trim( $doctor->first_name . ' ' . $doctor->last_name );
 		$display_name = '' !== $display_name ? $display_name : $doctor->display_name;
@@ -211,7 +264,8 @@ class Doctors_Directory {
 			'years_experience'      => get_user_meta( $doctor->ID, 'doctor_ak_years_experience', true ),
 			'clinic_location'       => $primary_clinic_location,
 			'extra_clinic_count'    => $extra_clinic_count,
-			'location_labels'       => $location_labels,
+			'city_slugs'            => $city_slugs,
+			'area_slugs'            => $area_slugs,
 			'clinic_labels'         => $clinic_labels,
 			'is_available'          => $is_available,
 			'video_consultation'    => Clinics::doctor_has_active_video_clinic( $doctor->ID ),

@@ -23,6 +23,14 @@
 		wireEdit( modal );
 		wireSave( modal );
 		wireDelete();
+
+		if ( window.dakCityArea ) {
+			window.dakCityArea.wire(
+				document.getElementById( 'dak-admin-session-city' ),
+				document.getElementById( 'dak-admin-session-area' ),
+				window.dakAdminSessions.locations
+			);
+		}
 	} );
 
 	/**
@@ -37,6 +45,15 @@
 		document.getElementById( 'dak-admin-session-phone' ).value = '';
 		document.getElementById( 'dak-admin-session-email' ).value = '';
 		document.getElementById( 'dak-admin-session-address-field' ).classList.remove( 'dak-hidden' );
+		document.getElementById( 'dak-admin-session-city-area-row' ).classList.remove( 'dak-hidden' );
+
+		if ( window.dakCityArea ) {
+			window.dakCityArea.wire(
+				document.getElementById( 'dak-admin-session-city' ),
+				document.getElementById( 'dak-admin-session-area' ),
+				window.dakAdminSessions.locations
+			);
+		}
 
 		document.querySelectorAll( '#dak-admin-session-grid .dak-availability-row[data-day]' ).forEach( function ( row ) {
 			row.querySelector( '.dak-availability-toggle' ).checked = false;
@@ -105,8 +122,14 @@
 			return;
 		}
 
+		var cityAreaRow = document.getElementById( 'dak-admin-session-city-area-row' );
+
 		typeSelect.addEventListener( 'change', function () {
 			addressField.classList.toggle( 'dak-hidden', 'video' === typeSelect.value );
+
+			if ( cityAreaRow ) {
+				cityAreaRow.classList.toggle( 'dak-hidden', 'video' === typeSelect.value );
+			}
 		} );
 	}
 
@@ -160,10 +183,25 @@
 			document.getElementById( 'dak-admin-session-phone' ).value = trigger.getAttribute( 'data-phone' ) || '';
 			document.getElementById( 'dak-admin-session-email' ).value = trigger.getAttribute( 'data-contact-email' ) || '';
 
-			document.getElementById( 'dak-admin-session-address-field' ).classList.toggle(
-				'dak-hidden',
-				'video' === document.getElementById( 'dak-admin-session-type' ).value
-			);
+			var isVideo = 'video' === document.getElementById( 'dak-admin-session-type' ).value;
+
+			document.getElementById( 'dak-admin-session-address-field' ).classList.toggle( 'dak-hidden', isVideo );
+
+			var cityAreaRow = document.getElementById( 'dak-admin-session-city-area-row' );
+
+			if ( cityAreaRow ) {
+				cityAreaRow.classList.toggle( 'dak-hidden', isVideo );
+			}
+
+			if ( window.dakCityArea ) {
+				window.dakCityArea.wire(
+					document.getElementById( 'dak-admin-session-city' ),
+					document.getElementById( 'dak-admin-session-area' ),
+					window.dakAdminSessions.locations,
+					trigger.getAttribute( 'data-city' ) || '',
+					trigger.getAttribute( 'data-area' ) || ''
+				);
+			}
 
 			var sessions = {};
 
@@ -239,6 +277,8 @@
 			formData.append( 'type', document.getElementById( 'dak-admin-session-type' ).value );
 			formData.append( 'name', document.getElementById( 'dak-admin-session-name' ).value );
 			formData.append( 'address', document.getElementById( 'dak-admin-session-address' ).value );
+			formData.append( 'city', document.getElementById( 'dak-admin-session-city' ).value );
+			formData.append( 'area', document.getElementById( 'dak-admin-session-area' ).value );
 			formData.append( 'phone', document.getElementById( 'dak-admin-session-phone' ).value );
 			formData.append( 'contact_email', document.getElementById( 'dak-admin-session-email' ).value );
 

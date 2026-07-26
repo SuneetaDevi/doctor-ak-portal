@@ -10,6 +10,7 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinics;
+use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Roles;
 
 // Prevent direct file access.
@@ -75,9 +76,17 @@ class Clinic_Handler {
 		);
 
 		wp_enqueue_script(
+			'doctor-ak-portal-city-area-select',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-city-area-select.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-city-area-select.js' ),
+			true
+		);
+
+		wp_enqueue_script(
 			'doctor-ak-portal-clinics',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-clinics.js',
-			array( 'doctor-ak-portal-registration' ),
+			array( 'doctor-ak-portal-registration', 'doctor-ak-portal-city-area-select' ),
 			Assets::version( 'assets/js/doctor-ak-clinics.js' ),
 			true
 		);
@@ -86,8 +95,9 @@ class Clinic_Handler {
 			'doctor-ak-portal-clinics',
 			'dakClinics',
 			array(
-				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-				'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+				'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+				'nonce'     => wp_create_nonce( self::NONCE_ACTION ),
+				'locations' => Locations::get_all(),
 			)
 		);
 	}
@@ -190,7 +200,17 @@ class Clinic_Handler {
 		$fields = Clinics::sanitize_clinic_fields_from_request( $_POST, $type ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Clinics::sanitize_clinic_fields_from_request() unslashes/sanitizes each field itself.
 
 		if ( is_wp_error( $fields ) ) {
-			wp_send_json_error( array( 'errors' => array( 'name' => $fields->get_error_message() ) ) );
+			$field_by_error_code = array(
+				'doctor_ak_clinic_name_required'    => 'name',
+				'doctor_ak_clinic_address_required' => 'address',
+				'doctor_ak_clinic_city_required'    => 'city',
+				'doctor_ak_clinic_area_required'    => 'area',
+				'doctor_ak_clinic_phone_invalid'    => 'phone',
+				'doctor_ak_clinic_email_invalid'    => 'contact_email',
+			);
+			$field = isset( $field_by_error_code[ $fields->get_error_code() ] ) ? $field_by_error_code[ $fields->get_error_code() ] : 'name';
+
+			wp_send_json_error( array( 'errors' => array( $field => $fields->get_error_message() ) ) );
 		}
 
 		$posted_sessions = isset( $_POST['sessions'] ) && is_array( $_POST['sessions'] ) ? $_POST['sessions'] : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Clinics::sanitize_sessions_from_request() unslashes/sanitizes each field itself.

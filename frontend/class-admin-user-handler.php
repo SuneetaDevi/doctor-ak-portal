@@ -10,6 +10,7 @@ namespace DoctorAKPortal\Frontend;
 use DoctorAKPortal\Includes\Authentication;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Doctor_Awards;
+use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Profile_Picture_Uploader;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Specializations;
@@ -151,6 +152,15 @@ class Admin_User_Handler {
 				$errors['years_experience'] = __( 'Please provide a valid number of years of experience.', 'doctor-ak-portal' );
 			}
 
+			$city = isset( $_POST['city'] ) ? sanitize_text_field( wp_unslash( $_POST['city'] ) ) : '';
+			$area = isset( $_POST['area'] ) ? sanitize_text_field( wp_unslash( $_POST['area'] ) ) : '';
+
+			if ( '' === $city || ! Locations::is_valid_city( $city ) ) {
+				$errors['city'] = __( "Please select the doctor's city.", 'doctor-ak-portal' );
+			} elseif ( '' === $area || ! Locations::is_valid_area( $city, $area ) ) {
+				$errors['area'] = __( "Please select the doctor's area.", 'doctor-ak-portal' );
+			}
+
 			$short_description = isset( $_POST['short_description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['short_description'] ) ) : '';
 
 			$expertise = isset( $_POST['expertise'] ) ? sanitize_textarea_field( wp_unslash( $_POST['expertise'] ) ) : '';
@@ -196,10 +206,15 @@ class Admin_User_Handler {
 			$posted_clinic_name = isset( $_POST['clinic_name'] ) ? sanitize_text_field( wp_unslash( $_POST['clinic_name'] ) ) : '';
 
 			if ( '' !== $posted_clinic_name ) {
+				// Reuses the doctor's own City/Area (already validated above)
+				// rather than asking for them a second time in this
+				// optional quick-add block.
 				$clinic_fields = Clinics::sanitize_clinic_fields_from_request(
 					array(
 						'name'    => isset( $_POST['clinic_name'] ) ? $_POST['clinic_name'] : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Clinics::sanitize_clinic_fields_from_request() unslashes/sanitizes each field itself.
 						'address' => isset( $_POST['clinic_address'] ) ? $_POST['clinic_address'] : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+						'city'    => $city,
+						'area'    => $area,
 						'phone'   => isset( $_POST['clinic_phone'] ) ? $_POST['clinic_phone'] : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
 					),
 					Clinics::TYPE_PHYSICAL
@@ -209,6 +224,14 @@ class Admin_User_Handler {
 					$errors['clinic_address'] = $clinic_fields->get_error_message();
 					$clinic_fields            = null;
 				}
+			}
+		} else {
+			$phone_number = isset( $_POST['phone_number'] ) ? sanitize_text_field( wp_unslash( $_POST['phone_number'] ) ) : '';
+
+			if ( '' === $phone_number ) {
+				$errors['phone_number'] = __( 'Phone number is required.', 'doctor-ak-portal' );
+			} elseif ( ! preg_match( '/^[0-9+\-\s()]{7,20}$/', $phone_number ) ) {
+				$errors['phone_number'] = __( 'Please provide a valid phone number.', 'doctor-ak-portal' );
 			}
 		}
 
@@ -292,6 +315,8 @@ class Admin_User_Handler {
 		if ( $is_for_doctor ) {
 			update_user_meta( $saved_user_id, 'doctor_ak_specializations', $specializations );
 			update_user_meta( $saved_user_id, 'doctor_ak_qualification', $qualification );
+			update_user_meta( $saved_user_id, 'doctor_ak_city', $city );
+			update_user_meta( $saved_user_id, 'doctor_ak_area', $area );
 			update_user_meta( $saved_user_id, 'doctor_ak_years_experience', $years_experience );
 			update_user_meta( $saved_user_id, 'doctor_ak_short_description', $short_description );
 			update_user_meta( $saved_user_id, 'doctor_ak_expertise', $expertise );
@@ -301,6 +326,8 @@ class Admin_User_Handler {
 			if ( null !== $clinic_fields ) {
 				Clinics::create( $saved_user_id, $clinic_fields, Clinics::empty_sessions() );
 			}
+		} else {
+			update_user_meta( $saved_user_id, 'doctor_ak_phone_number', $phone_number );
 		}
 
 		if ( $profile_picture_id > 0 ) {

@@ -11,7 +11,8 @@
  * @var int|string $years_experience     Doctor's years of experience, or '' if not set.
  * @var string   $clinic_location       Doctor's primary (first) physical clinic's address/name, or '' if none.
  * @var int      $extra_clinic_count    Number of additional physical clinics beyond the primary one.
- * @var string[] $location_labels       Every physical clinic address this doctor has, for the location filter.
+ * @var string[] $city_slugs            City slugs across every physical clinic this doctor has (or their own profile city if none), for the City filter.
+ * @var string[] $area_slugs            Area slugs across every physical clinic this doctor has (or their own profile area if none), for the Area filter.
  * @var string[] $clinic_labels         Every physical clinic name this doctor has, for the clinic filter.
  * @var bool     $is_available          Whether the doctor has any clinic with an enabled session day.
  * @var bool     $video_consultation    Whether the doctor offers online video consultations.
@@ -34,7 +35,8 @@ $dak_card_icons = array(
 	data-doctor-card
 	data-search-name="<?php echo esc_attr( mb_strtolower( $name ) ); ?>"
 	data-search-specializations="<?php echo esc_attr( mb_strtolower( implode( ',', $specialization_labels ) ) ); ?>"
-	data-search-location="<?php echo esc_attr( mb_strtolower( implode( ',', $location_labels ) ) ); ?>"
+	data-search-city="<?php echo esc_attr( implode( ',', $city_slugs ) ); ?>"
+	data-search-area="<?php echo esc_attr( implode( ',', $area_slugs ) ); ?>"
 	data-search-clinics="<?php echo esc_attr( mb_strtolower( implode( ',', $clinic_labels ) ) ); ?>"
 >
 	<?php if ( $is_available ) : ?>

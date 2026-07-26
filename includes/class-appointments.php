@@ -1190,6 +1190,85 @@ class Appointments {
 	}
 
 	/**
+	 * Paid, upcoming video appointments whose join window (see
+	 * VIDEO_JOIN_WINDOW_BEFORE_MINUTES) has just opened but haven't had
+	 * their "your video link is ready" email sent yet — for the video-link
+	 * cron job. Matches on today's date plus a small look-ahead window
+	 * rather than an exact minute, since the cron only runs every few
+	 * minutes.
+	 *
+	 * @return array List of decoded appointment arrays (see get()).
+	 */
+	public static function due_for_video_link_email() {
+		$today = current_time( 'Y-m-d' );
+
+		$query = new \WP_Query(
+			array(
+				'post_type'      => self::POST_TYPE,
+				'post_status'    => 'publish',
+				'posts_per_page' => 200,
+				'no_found_rows'  => true,
+				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- small, non-public post type; no better lookup available.
+					array(
+						'key'   => 'doctor_ak_appointment_date',
+						'value' => $today,
+					),
+					array(
+						'key'   => 'doctor_ak_appointment_type',
+						'value' => self::TYPE_VIDEO,
+					),
+					array(
+						'key'   => 'doctor_ak_appointment_payment_status',
+						'value' => self::PAYMENT_STATUS_PAID,
+					),
+					array(
+						'key'     => 'doctor_ak_appointment_video_link_sent',
+						'compare' => 'NOT EXISTS',
+					),
+				),
+			)
+		);
+
+		$appointments = array_map( array( __CLASS__, 'get' ), wp_list_pluck( $query->posts, 'ID' ) );
+		$now          = current_time( 'timestamp' ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- comparing against a strtotime() of a stored local date/time string, not doing math that needs UTC.
+
+		return array_values(
+			array_filter(
+				$appointments,
+				function ( $appointment ) use ( $now ) {
+					if ( in_array( $appointment['status'], array( self::STATUS_CANCELLED, self::STATUS_COMPLETED ), true ) ) {
+						return false;
+					}
+
+					$start = strtotime( $appointment['date'] . ' ' . $appointment['time'] );
+
+					if ( false === $start ) {
+						return false;
+					}
+
+					$opens_at = $start - self::VIDEO_JOIN_WINDOW_BEFORE_MINUTES * MINUTE_IN_SECONDS;
+
+					// The join window has opened, and the appointment hasn't
+					// started yet — once it's started there's no more "get
+					// ready" value in emailing the link.
+					return $now >= $opens_at && $now < $start;
+				}
+			)
+		);
+	}
+
+	/**
+	 * Marks an appointment as having had its "your video link is ready"
+	 * email sent, so the video-link cron job never emails it twice.
+	 *
+	 * @param int $appointment_id Appointment post ID.
+	 * @return void
+	 */
+	public static function mark_video_link_sent( $appointment_id ) {
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_video_link_sent', 1 );
+	}
+
+	/**
 	 * Marks an appointment as paid and confirmed. Called once a Swich
 	 * PayIn transaction for the appointment succeeds (via callback, or the
 	 * return-page inquiry fallback).

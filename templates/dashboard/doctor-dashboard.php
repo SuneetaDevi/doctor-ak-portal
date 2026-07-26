@@ -281,7 +281,10 @@ $dak_dash_icons = array(
 			</section>
 
 			<section class="dak-dashboard-card dak-dashboard-recent-patients">
-				<h2><?php esc_html_e( 'Recent Patients', 'doctor-ak-portal' ); ?></h2>
+				<div class="dak-dashboard-card-header">
+					<h2><?php esc_html_e( 'Recent Patients', 'doctor-ak-portal' ); ?></h2>
+					<button type="button" class="dak-button dak-button-secondary dak-button-sm" id="dak-doctor-add-patient-open"><?php esc_html_e( '+ Add Patient', 'doctor-ak-portal' ); ?></button>
+				</div>
 				<?php
 				ob_start();
 				/**
@@ -340,6 +343,51 @@ $dak_dash_icons = array(
 			<?php
 		endif;
 		?>
+
+		<div class="dak-portal dak-modal" id="dak-doctor-add-patient-modal" aria-hidden="true">
+			<div class="dak-modal-overlay" data-dak-add-patient-close></div>
+
+			<div class="dak-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="dak-doctor-add-patient-title">
+				<button type="button" class="dak-modal-close" data-dak-add-patient-close aria-label="<?php esc_attr_e( 'Close', 'doctor-ak-portal' ); ?>">&times;</button>
+
+				<div class="dak-modal-header">
+					<h2 id="dak-doctor-add-patient-title"><?php esc_html_e( 'Add Patient', 'doctor-ak-portal' ); ?></h2>
+				</div>
+
+				<div class="dak-alert dak-alert-error dak-hidden" id="dak-doctor-add-patient-general-error" role="alert"></div>
+
+				<div class="dak-field-row">
+					<div class="dak-field">
+						<label for="dak-doctor-add-patient-first-name"><?php esc_html_e( 'First Name', 'doctor-ak-portal' ); ?></label>
+						<input type="text" id="dak-doctor-add-patient-first-name">
+						<span class="dak-field-error" data-field="first_name"></span>
+					</div>
+					<div class="dak-field">
+						<label for="dak-doctor-add-patient-last-name"><?php esc_html_e( 'Last Name', 'doctor-ak-portal' ); ?></label>
+						<input type="text" id="dak-doctor-add-patient-last-name">
+						<span class="dak-field-error" data-field="last_name"></span>
+					</div>
+				</div>
+
+				<div class="dak-field">
+					<label for="dak-doctor-add-patient-email"><?php esc_html_e( 'Email Address', 'doctor-ak-portal' ); ?></label>
+					<input type="email" id="dak-doctor-add-patient-email">
+					<span class="dak-field-error" data-field="email"></span>
+				</div>
+
+				<div class="dak-field">
+					<label for="dak-doctor-add-patient-phone"><?php esc_html_e( 'Phone Number', 'doctor-ak-portal' ); ?></label>
+					<input type="tel" id="dak-doctor-add-patient-phone" placeholder="0300000000">
+					<span class="dak-field-error" data-field="phone_number"></span>
+				</div>
+
+				<p class="dak-field-hint"><?php esc_html_e( 'A password will be generated automatically and the patient will get an email to set their own.', 'doctor-ak-portal' ); ?></p>
+
+				<button type="button" class="dak-button dak-button-primary dak-button-block" id="dak-doctor-add-patient-save">
+					<span class="dak-button-label"><?php esc_html_e( 'Add Patient', 'doctor-ak-portal' ); ?></span>
+				</button>
+			</div>
+		</div>
 
 		<?php endif; ?>
 

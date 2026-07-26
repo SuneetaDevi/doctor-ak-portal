@@ -38,7 +38,7 @@ class Db_Installer {
 	 *
 	 * @var string
 	 */
-	const DB_VERSION = '1.0.0';
+	const DB_VERSION = '1.1.0';
 
 	/**
 	 * Option name tracking the installed services-table schema version.
@@ -140,6 +140,8 @@ class Db_Installer {
 			type VARCHAR(20) NOT NULL DEFAULT 'physical',
 			name VARCHAR(191) NOT NULL,
 			address VARCHAR(255) NOT NULL DEFAULT '',
+			city VARCHAR(120) NOT NULL DEFAULT '',
+			area VARCHAR(191) NOT NULL DEFAULT '',
 			phone VARCHAR(30) NOT NULL DEFAULT '',
 			contact_email VARCHAR(191) NOT NULL DEFAULT '',
 			sessions LONGTEXT NOT NULL,
@@ -258,6 +260,8 @@ class Db_Installer {
 						'type'          => 'physical',
 						'name'          => $clinic_location,
 						'address'       => $clinic_location,
+						'city'          => '',
+						'area'          => '',
 						'phone'         => '',
 						'contact_email' => '',
 					),
@@ -273,6 +277,8 @@ class Db_Installer {
 						'type'          => 'video',
 						'name'          => __( 'Online Consultation', 'doctor-ak-portal' ),
 						'address'       => '',
+						'city'          => '',
+						'area'          => '',
 						'phone'         => '',
 						'contact_email' => '',
 					),

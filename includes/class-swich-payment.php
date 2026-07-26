@@ -230,29 +230,75 @@ class Swich_Payment {
 			}
 		}
 
-		$paid          = Appointments::PAYMENT_STATUS_PAID === $appointment['payment_status'];
-		$dashboard_url = Page_Finder::url_for_shortcode( 'patient_dashboard' );
-		$continue_url  = '' !== $dashboard_url ? $dashboard_url : home_url( '/' );
+		$paid = Appointments::PAYMENT_STATUS_PAID === $appointment['payment_status'];
+
+		// A guest booking has no account, so there's no dashboard for them
+		// to land on or check back at — send them home instead, and show
+		// the appointment details right here since this page is the only
+		// record of it they'll see.
+		$is_guest = 0 === (int) $appointment['patient_id'];
+
+		if ( $is_guest ) {
+			$continue_url   = home_url( '/' );
+			$continue_label = __( 'Return to Home', 'doctor-ak-portal' );
+		} else {
+			$dashboard_url  = Page_Finder::url_for_shortcode( 'patient_dashboard' );
+			$continue_url   = '' !== $dashboard_url ? $dashboard_url : home_url( '/' );
+			$continue_label = __( 'Go to Dashboard', 'doctor-ak-portal' );
+		}
 
 		$heading = $paid
 			? __( 'Payment received', 'doctor-ak-portal' )
 			: __( "We're still confirming your payment", 'doctor-ak-portal' );
 
-		$message = $paid
-			? __( 'Your online video consultation has been confirmed. You can view it from your dashboard.', 'doctor-ak-portal' )
-			: __( "We haven't received confirmation from the payment gateway yet. If the amount was deducted, this will update shortly — please check your dashboard in a few minutes.", 'doctor-ak-portal' );
+		if ( $is_guest ) {
+			$message = $paid
+				? __( 'Your online video consultation has been confirmed. Details are below — please save or screenshot this page, as it will not be emailed again.', 'doctor-ak-portal' )
+				: __( "We haven't received confirmation from the payment gateway yet. If the amount was deducted, this will update shortly. Please save this page and check back, or contact us with the details below if it doesn't update.", 'doctor-ak-portal' );
+		} else {
+			$message = $paid
+				? __( 'Your online video consultation has been confirmed. You can view it from your dashboard.', 'doctor-ak-portal' )
+				: __( "We haven't received confirmation from the payment gateway yet. If the amount was deducted, this will update shortly — please check your dashboard in a few minutes.", 'doctor-ak-portal' );
+		}
+
+		$details_html = '';
+
+		if ( $is_guest ) {
+			$doctor      = $appointment['doctor_id'] ? get_userdata( $appointment['doctor_id'] ) : false;
+			$doctor_name = $doctor ? trim( $doctor->first_name . ' ' . $doctor->last_name ) : '';
+			$doctor_name = '' !== $doctor_name ? $doctor_name : ( $doctor ? $doctor->display_name : __( 'Unknown Doctor', 'doctor-ak-portal' ) );
+
+			$details_html = sprintf(
+				'<table style="width:100%%;border-collapse:collapse;margin:0 0 24px;text-align:left;">
+					<tr><td style="padding:6px 0;color:#666;">%1$s</td><td style="padding:6px 0;font-weight:600;text-align:right;">%2$s</td></tr>
+					<tr><td style="padding:6px 0;color:#666;">%3$s</td><td style="padding:6px 0;font-weight:600;text-align:right;">%4$s</td></tr>
+					<tr><td style="padding:6px 0;color:#666;">%5$s</td><td style="padding:6px 0;font-weight:600;text-align:right;">%6$s</td></tr>
+					<tr><td style="padding:6px 0;color:#666;">%7$s</td><td style="padding:6px 0;font-weight:600;text-align:right;">%8$s</td></tr>
+				</table>',
+				esc_html__( 'Doctor', 'doctor-ak-portal' ),
+				esc_html( sprintf( 'Dr. %s', $doctor_name ) ),
+				esc_html__( 'Date', 'doctor-ak-portal' ),
+				esc_html( $appointment['date'] ),
+				esc_html__( 'Time', 'doctor-ak-portal' ),
+				esc_html( $appointment['time'] ),
+				esc_html__( 'Reference', 'doctor-ak-portal' ),
+				esc_html( '#' . $appointment['id'] )
+			);
+		}
 
 		wp_die(
 			sprintf(
 				'<div style="font-family:sans-serif;max-width:520px;margin:80px auto;text-align:center;">
 					<h1 style="margin-bottom:8px;">%1$s</h1>
 					<p style="color:#555;margin-bottom:24px;">%2$s</p>
-					<a href="%3$s" style="display:inline-block;padding:10px 20px;background:#2563eb;color:#fff;border-radius:6px;text-decoration:none;">%4$s</a>
+					%3$s
+					<a href="%4$s" style="display:inline-block;padding:10px 20px;background:#2563eb;color:#fff;border-radius:6px;text-decoration:none;">%5$s</a>
 				</div>',
 				esc_html( $heading ),
 				esc_html( $message ),
+				$details_html, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built above from esc_html()-wrapped pieces.
 				esc_url( $continue_url ),
-				esc_html__( 'Go to dashboard', 'doctor-ak-portal' )
+				esc_html( $continue_label )
 			),
 			esc_html( $heading ),
 			array( 'response' => 200 )

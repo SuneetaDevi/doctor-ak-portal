@@ -191,10 +191,10 @@ $dak_profile_view_icons = array(
 											<?php echo esc_html( \DoctorAKPortal\Includes\Clinics::TYPE_VIDEO === $clinic['type'] ? __( 'Online Consultation', 'doctor-ak-portal' ) : $clinic['name'] ); ?>
 										</strong>
 
-										<?php if ( \DoctorAKPortal\Includes\Clinics::TYPE_VIDEO !== $clinic['type'] && '' !== $clinic['address'] ) : ?>
+										<?php if ( \DoctorAKPortal\Includes\Clinics::TYPE_VIDEO !== $clinic['type'] && ( '' !== $clinic['address'] || '' !== $clinic['area_label'] || '' !== $clinic['city_label'] ) ) : ?>
 											<span class="dak-profile-clinic-meta">
 												<span class="dak-location-icon" aria-hidden="true"><?php echo $dak_profile_view_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-												<?php echo esc_html( $clinic['address'] ); ?>
+												<?php echo esc_html( implode( ', ', array_filter( array( $clinic['address'], $clinic['area_label'], $clinic['city_label'] ) ) ) ); ?>
 											</span>
 										<?php endif; ?>
 

@@ -11,6 +11,7 @@ use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Doctor_Awards;
+use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Roles;
@@ -168,9 +169,17 @@ class Admin_Dashboard {
 		);
 
 		wp_enqueue_script(
+			'doctor-ak-portal-city-area-select',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-city-area-select.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-city-area-select.js' ),
+			true
+		);
+
+		wp_enqueue_script(
 			'doctor-ak-portal-admin-dashboard',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-dashboard.js',
-			array( 'doctor-ak-portal-awards-editor', 'doctor-ak-portal-registration' ),
+			array( 'doctor-ak-portal-awards-editor', 'doctor-ak-portal-registration', 'doctor-ak-portal-city-area-select' ),
 			Assets::version( 'assets/js/doctor-ak-admin-dashboard.js' ),
 			true
 		);
@@ -185,6 +194,7 @@ class Admin_Dashboard {
 				'confirmDisable' => __( 'Deactivate this account? They will not be able to log in until reactivated.', 'doctor-ak-portal' ),
 				'confirmEnable'  => __( 'Reactivate this account?', 'doctor-ak-portal' ),
 				'genericError'   => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
+				'locations'      => Locations::get_all(),
 			)
 		);
 
@@ -221,9 +231,17 @@ class Admin_Dashboard {
 			);
 
 			wp_enqueue_script(
+				'doctor-ak-portal-city-area-select',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-city-area-select.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-city-area-select.js' ),
+				true
+			);
+
+			wp_enqueue_script(
 				'doctor-ak-portal-admin-sessions',
 				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-sessions.js',
-				array(),
+				array( 'doctor-ak-portal-city-area-select' ),
 				Assets::version( 'assets/js/doctor-ak-admin-sessions.js' ),
 				true
 			);
@@ -232,8 +250,9 @@ class Admin_Dashboard {
 				'doctor-ak-portal-admin-sessions',
 				'dakAdminSessions',
 				array(
-					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-					'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+					'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+					'nonce'     => wp_create_nonce( self::NONCE_ACTION ),
+					'locations' => Locations::get_all(),
 				)
 			);
 		}
@@ -974,6 +993,8 @@ class Admin_Dashboard {
 			'is_disabled'                 => 'yes' === get_user_meta( $user->ID, 'doctor_ak_account_disabled', true ),
 			'years_experience'            => get_user_meta( $user->ID, 'doctor_ak_years_experience', true ),
 			'qualification'               => get_user_meta( $user->ID, 'doctor_ak_qualification', true ),
+			'city'                        => get_user_meta( $user->ID, 'doctor_ak_city', true ),
+			'area'                        => get_user_meta( $user->ID, 'doctor_ak_area', true ),
 			'short_description'           => get_user_meta( $user->ID, 'doctor_ak_short_description', true ),
 			'expertise'                   => get_user_meta( $user->ID, 'doctor_ak_expertise', true ),
 			'video_consultation_allowed'  => '0' !== get_user_meta( $user->ID, Clinics::VIDEO_CONSULTATION_ALLOWED_META_KEY, true ),

@@ -61,6 +61,21 @@
 			shared.initMultiSelect( document.getElementById( 'dak-admin-user-specializations' ), { allowCustom: true } );
 		}
 
+		if ( window.dakCityArea ) {
+			var citySelect = document.getElementById( 'dak-admin-user-city' );
+			var areaSelect = document.getElementById( 'dak-admin-user-area' );
+
+			if ( citySelect && areaSelect ) {
+				window.dakCityArea.wire(
+					citySelect,
+					areaSelect,
+					window.dakAdminUsers.locations,
+					citySelect.getAttribute( 'data-current' ) || '',
+					areaSelect.getAttribute( 'data-current' ) || ''
+				);
+			}
+		}
+
 		var generalError = document.getElementById( 'dak-admin-user-modal-general-error' );
 		var idInput = document.getElementById( 'dak-admin-user-id' );
 		var submitButton = document.getElementById( 'dak-admin-user-submit' );

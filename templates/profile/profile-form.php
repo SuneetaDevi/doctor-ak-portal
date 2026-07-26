@@ -17,6 +17,8 @@
  * @var array    $current_specializations    Doctor's currently selected specialization slugs.
  * @var string   $current_years_experience   Doctor's current years of experience.
  * @var string   $current_qualification      Doctor's current qualification(s), e.g. "MBBS, FCPS".
+ * @var string   $current_city               Doctor's current city slug, or ''.
+ * @var string   $current_area               Doctor's current area slug, or ''.
  * @var string   $current_short_description  Doctor's current one-line profile tagline, or ''.
  * @var string   $current_expertise          Doctor's current other-expertise free text, or ''.
  * @var array    $current_awards             Doctor's current awards, see Doctor_Awards::get_for_doctor().
@@ -83,6 +85,19 @@ $current_picture_url = $current_profile_picture_id ? wp_get_attachment_image_url
 			<label for="dak-profile-qualification"><?php esc_html_e( 'Qualification', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
 			<input type="text" id="dak-profile-qualification" name="qualification" value="<?php echo esc_attr( $current_qualification ); ?>" placeholder="<?php esc_attr_e( 'e.g. MBBS, FCPS (Gastroenterology)', 'doctor-ak-portal' ); ?>" required>
 			<span class="dak-field-error" data-field="qualification"></span>
+		</div>
+
+		<div class="dak-field-row">
+			<div class="dak-field">
+				<label for="dak-profile-city"><?php esc_html_e( 'City', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
+				<select id="dak-profile-city" name="city" data-current="<?php echo esc_attr( $current_city ); ?>"></select>
+				<span class="dak-field-error" data-field="city"></span>
+			</div>
+			<div class="dak-field">
+				<label for="dak-profile-area"><?php esc_html_e( 'Area', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
+				<select id="dak-profile-area" name="area" data-current="<?php echo esc_attr( $current_area ); ?>"></select>
+				<span class="dak-field-error" data-field="area"></span>
+			</div>
 		</div>
 
 		<div class="dak-field">

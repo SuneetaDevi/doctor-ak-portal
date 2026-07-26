@@ -17,6 +17,21 @@
 
 		initProfilePictureUpload();
 		initProfileForm( shared );
+
+		if ( window.dakCityArea && window.dakProfile ) {
+			var citySelect = document.getElementById( 'dak-profile-city' );
+			var areaSelect = document.getElementById( 'dak-profile-area' );
+
+			if ( citySelect && areaSelect ) {
+				window.dakCityArea.wire(
+					citySelect,
+					areaSelect,
+					window.dakProfile.locations,
+					citySelect.getAttribute( 'data-current' ) || '',
+					areaSelect.getAttribute( 'data-current' ) || ''
+				);
+			}
+		}
 	} );
 
 	/**

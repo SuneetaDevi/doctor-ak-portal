@@ -137,6 +137,27 @@ class Doctor_Dashboard {
 			)
 		);
 
+		// The "+ Add Patient" modal only exists on the overview (default)
+		// tab (see doctor-dashboard.php).
+		if ( 'dashboard' === self::requested_tab() ) {
+			wp_enqueue_script(
+				'doctor-ak-portal-doctor-add-patient',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-doctor-add-patient.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-doctor-add-patient.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-doctor-add-patient',
+				'dakDoctorAddPatient',
+				array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( Doctor_Patient_Handler::NONCE_ACTION ),
+				)
+			);
+		}
+
 		// The Profile tab renders the same form as the standalone
 		// [doctor_profile] page (see Profile_Handler), so it needs its
 		// assets too — but only when that tab is actually showing. The

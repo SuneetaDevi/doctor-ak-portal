@@ -112,6 +112,19 @@ $dak_noun            = $dak_is_doctor_form ? __( 'Doctor', 'doctor-ak-portal' ) 
 				</div>
 			</div>
 
+			<div class="dak-field-row">
+				<div class="dak-field">
+					<label for="dak-admin-user-city"><?php esc_html_e( 'City', 'doctor-ak-portal' ); ?></label>
+					<select id="dak-admin-user-city" name="city" data-current="<?php echo esc_attr( $dak_is_editing ? $editing_user['city'] : '' ); ?>" required></select>
+					<span class="dak-field-error" data-field="city"></span>
+				</div>
+				<div class="dak-field">
+					<label for="dak-admin-user-area"><?php esc_html_e( 'Area', 'doctor-ak-portal' ); ?></label>
+					<select id="dak-admin-user-area" name="area" data-current="<?php echo esc_attr( $dak_is_editing ? $editing_user['area'] : '' ); ?>" required></select>
+					<span class="dak-field-error" data-field="area"></span>
+				</div>
+			</div>
+
 			<div class="dak-field">
 				<label for="dak-admin-user-specializations"><?php esc_html_e( 'Specialization', 'doctor-ak-portal' ); ?></label>
 				<select id="dak-admin-user-specializations" name="specializations[]" multiple required>
@@ -188,6 +201,14 @@ $dak_noun            = $dak_is_doctor_form ? __( 'Doctor', 'doctor-ak-portal' ) 
 						<input type="text" id="dak-admin-user-clinic-phone" name="clinic_phone">
 					</div>
 				</div>
+			</div>
+
+		<?php else : ?>
+
+			<div class="dak-field">
+				<label for="dak-admin-user-phone"><?php esc_html_e( 'Phone Number', 'doctor-ak-portal' ); ?></label>
+				<input type="tel" id="dak-admin-user-phone" name="phone_number" value="<?php echo esc_attr( $dak_is_editing ? $editing_user['phone'] : '' ); ?>" placeholder="0300000000" required>
+				<span class="dak-field-error" data-field="phone_number"></span>
 			</div>
 
 		<?php endif; ?>

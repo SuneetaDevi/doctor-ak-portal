@@ -9,6 +9,7 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Doctor_Awards;
+use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Profile_Picture_Uploader;
 use DoctorAKPortal\Includes\Roles;
@@ -98,9 +99,17 @@ class Profile_Handler {
 		);
 
 		wp_enqueue_script(
+			'doctor-ak-portal-city-area-select',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-city-area-select.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-city-area-select.js' ),
+			true
+		);
+
+		wp_enqueue_script(
 			'doctor-ak-portal-registration',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-registration.js',
-			array(),
+			array( 'doctor-ak-portal-city-area-select' ),
 			Assets::version( 'assets/js/doctor-ak-registration.js' ),
 			true
 		);
@@ -116,7 +125,7 @@ class Profile_Handler {
 		wp_enqueue_script(
 			'doctor-ak-portal-profile',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-profile.js',
-			array( 'doctor-ak-portal-registration', 'doctor-ak-portal-awards-editor' ),
+			array( 'doctor-ak-portal-registration', 'doctor-ak-portal-awards-editor', 'doctor-ak-portal-city-area-select' ),
 			Assets::version( 'assets/js/doctor-ak-profile.js' ),
 			true
 		);
@@ -125,8 +134,9 @@ class Profile_Handler {
 			'doctor-ak-portal-profile',
 			'dakProfile',
 			array(
-				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-				'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+				'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+				'nonce'     => wp_create_nonce( self::NONCE_ACTION ),
+				'locations' => Locations::get_all(),
 			)
 		);
 	}
@@ -182,6 +192,8 @@ class Profile_Handler {
 			'current_specializations'    => (array) get_user_meta( $user->ID, 'doctor_ak_specializations', true ),
 			'current_years_experience'   => get_user_meta( $user->ID, 'doctor_ak_years_experience', true ),
 			'current_qualification'      => get_user_meta( $user->ID, 'doctor_ak_qualification', true ),
+			'current_city'               => get_user_meta( $user->ID, 'doctor_ak_city', true ),
+			'current_area'               => get_user_meta( $user->ID, 'doctor_ak_area', true ),
 			'current_short_description'  => get_user_meta( $user->ID, 'doctor_ak_short_description', true ),
 			'current_expertise'          => get_user_meta( $user->ID, 'doctor_ak_expertise', true ),
 			'current_awards'             => Doctor_Awards::get_for_doctor( $user->ID ),
@@ -356,6 +368,18 @@ class Profile_Handler {
 			$errors['qualification'] = __( 'Please provide your qualification(s), e.g. MBBS, FCPS.', 'doctor-ak-portal' );
 		} else {
 			$meta['doctor_ak_qualification'] = $qualification;
+		}
+
+		$city = isset( $_POST['city'] ) ? sanitize_text_field( wp_unslash( $_POST['city'] ) ) : '';
+		$area = isset( $_POST['area'] ) ? sanitize_text_field( wp_unslash( $_POST['area'] ) ) : '';
+
+		if ( '' === $city || ! Locations::is_valid_city( $city ) ) {
+			$errors['city'] = __( 'Please select your city.', 'doctor-ak-portal' );
+		} elseif ( '' === $area || ! Locations::is_valid_area( $city, $area ) ) {
+			$errors['area'] = __( 'Please select your area.', 'doctor-ak-portal' );
+		} else {
+			$meta['doctor_ak_city'] = $city;
+			$meta['doctor_ak_area'] = $area;
 		}
 
 		$short_description = isset( $_POST['short_description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['short_description'] ) ) : '';

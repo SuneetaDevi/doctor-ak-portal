@@ -170,8 +170,23 @@ class Clinics {
 			return new \WP_Error( 'doctor_ak_clinic_address_required', __( 'Please provide this clinic\'s address.', 'doctor-ak-portal' ) );
 		}
 
+		$city = isset( $posted['city'] ) ? sanitize_text_field( wp_unslash( $posted['city'] ) ) : '';
+		$area = isset( $posted['area'] ) ? sanitize_text_field( wp_unslash( $posted['area'] ) ) : '';
+
+		if ( self::TYPE_PHYSICAL === $type ) {
+			if ( '' === $city || ! Locations::is_valid_city( $city ) ) {
+				return new \WP_Error( 'doctor_ak_clinic_city_required', __( 'Please select this clinic\'s city.', 'doctor-ak-portal' ) );
+			}
+
+			if ( '' === $area || ! Locations::is_valid_area( $city, $area ) ) {
+				return new \WP_Error( 'doctor_ak_clinic_area_required', __( 'Please select this clinic\'s area.', 'doctor-ak-portal' ) );
+			}
+		}
+
 		if ( self::TYPE_VIDEO === $type ) {
 			$address = '';
+			$city    = '';
+			$area    = '';
 		}
 
 		$phone = isset( $posted['phone'] ) ? sanitize_text_field( wp_unslash( $posted['phone'] ) ) : '';
@@ -190,6 +205,8 @@ class Clinics {
 			'type'          => $type,
 			'name'          => $name,
 			'address'       => $address,
+			'city'          => $city,
+			'area'          => $area,
 			'phone'         => $phone,
 			'contact_email' => $contact_email,
 		);
@@ -218,13 +235,15 @@ class Clinics {
 				'type'          => $fields['type'],
 				'name'          => $fields['name'],
 				'address'       => $fields['address'],
+				'city'          => $fields['city'],
+				'area'          => $fields['area'],
 				'phone'         => $fields['phone'],
 				'contact_email' => $fields['contact_email'],
 				'sessions'      => wp_json_encode( $sessions ),
 				'created_at'    => $now,
 				'updated_at'    => $now,
 			),
-			array( '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
+			array( '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
 		);
 
 		return $inserted ? (int) $wpdb->insert_id : false;
@@ -256,13 +275,15 @@ class Clinics {
 				'type'          => $fields['type'],
 				'name'          => $fields['name'],
 				'address'       => $fields['address'],
+				'city'          => $fields['city'],
+				'area'          => $fields['area'],
 				'phone'         => $fields['phone'],
 				'contact_email' => $fields['contact_email'],
 				'sessions'      => wp_json_encode( $sessions ),
 				'updated_at'    => current_time( 'mysql' ),
 			),
 			$where,
-			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s' ),
+			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ),
 			$where_types
 		);
 
@@ -515,12 +536,19 @@ class Clinics {
 			}
 		}
 
+		$city = isset( $row['city'] ) ? $row['city'] : '';
+		$area = isset( $row['area'] ) ? $row['area'] : '';
+
 		return array(
 			'id'            => (int) $row['id'],
 			'doctor_id'     => (int) $row['doctor_id'],
 			'type'          => $row['type'],
 			'name'          => $row['name'],
 			'address'       => $row['address'],
+			'city'          => $city,
+			'city_label'    => '' !== $city ? Locations::city_label( $city ) : '',
+			'area'          => $area,
+			'area_label'    => '' !== $area ? Locations::area_label( $city, $area ) : '',
 			'phone'         => $row['phone'],
 			'contact_email' => $row['contact_email'],
 			'sessions'      => $sessions,
