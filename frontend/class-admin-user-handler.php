@@ -152,12 +152,15 @@ class Admin_User_Handler {
 				$errors['years_experience'] = __( 'Please provide a valid number of years of experience.', 'doctor-ak-portal' );
 			}
 
-			$city = isset( $_POST['city'] ) ? sanitize_text_field( wp_unslash( $_POST['city'] ) ) : '';
-			$area = isset( $_POST['area'] ) ? sanitize_text_field( wp_unslash( $_POST['area'] ) ) : '';
+			$country = isset( $_POST['country'] ) ? sanitize_text_field( wp_unslash( $_POST['country'] ) ) : '';
+			$city    = isset( $_POST['city'] ) ? sanitize_text_field( wp_unslash( $_POST['city'] ) ) : '';
+			$area    = isset( $_POST['area'] ) ? sanitize_text_field( wp_unslash( $_POST['area'] ) ) : '';
 
-			if ( '' === $city || ! Locations::is_valid_city( $city ) ) {
+			if ( '' === $country || ! Locations::is_valid_country( $country ) ) {
+				$errors['country'] = __( "Please select the doctor's country.", 'doctor-ak-portal' );
+			} elseif ( '' === $city || ! Locations::is_valid_city( $country, $city ) ) {
 				$errors['city'] = __( "Please select the doctor's city.", 'doctor-ak-portal' );
-			} elseif ( '' === $area || ! Locations::is_valid_area( $city, $area ) ) {
+			} elseif ( '' === $area || ! Locations::is_valid_area( $country, $city, $area ) ) {
 				$errors['area'] = __( "Please select the doctor's area.", 'doctor-ak-portal' );
 			}
 
@@ -213,6 +216,7 @@ class Admin_User_Handler {
 					array(
 						'name'    => isset( $_POST['clinic_name'] ) ? $_POST['clinic_name'] : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Clinics::sanitize_clinic_fields_from_request() unslashes/sanitizes each field itself.
 						'address' => isset( $_POST['clinic_address'] ) ? $_POST['clinic_address'] : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+						'country' => $country,
 						'city'    => $city,
 						'area'    => $area,
 						'phone'   => isset( $_POST['clinic_phone'] ) ? $_POST['clinic_phone'] : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
@@ -315,6 +319,7 @@ class Admin_User_Handler {
 		if ( $is_for_doctor ) {
 			update_user_meta( $saved_user_id, 'doctor_ak_specializations', $specializations );
 			update_user_meta( $saved_user_id, 'doctor_ak_qualification', $qualification );
+			update_user_meta( $saved_user_id, 'doctor_ak_country', $country );
 			update_user_meta( $saved_user_id, 'doctor_ak_city', $city );
 			update_user_meta( $saved_user_id, 'doctor_ak_area', $area );
 			update_user_meta( $saved_user_id, 'doctor_ak_years_experience', $years_experience );

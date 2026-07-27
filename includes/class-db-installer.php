@@ -38,7 +38,7 @@ class Db_Installer {
 	 *
 	 * @var string
 	 */
-	const DB_VERSION = '1.1.0';
+	const DB_VERSION = '1.2.0';
 
 	/**
 	 * Option name tracking the installed services-table schema version.
@@ -140,6 +140,7 @@ class Db_Installer {
 			type VARCHAR(20) NOT NULL DEFAULT 'physical',
 			name VARCHAR(191) NOT NULL,
 			address VARCHAR(255) NOT NULL DEFAULT '',
+			country VARCHAR(120) NOT NULL DEFAULT '',
 			city VARCHAR(120) NOT NULL DEFAULT '',
 			area VARCHAR(191) NOT NULL DEFAULT '',
 			phone VARCHAR(30) NOT NULL DEFAULT '',
@@ -245,7 +246,11 @@ class Db_Installer {
 					continue;
 				}
 
-				$sessions[ $day ] = array(
+				// The old single-block-per-day schedule becomes that day's
+				// "morning" period; afternoon/evening stay empty (doctors
+				// can split it up later from the Clinics tab if they want a
+				// break).
+				$sessions[ $day ]['morning'] = array(
 					'enabled'               => true,
 					'start'                 => $entry['start'],
 					'end'                   => $entry['end'],
@@ -260,6 +265,7 @@ class Db_Installer {
 						'type'          => 'physical',
 						'name'          => $clinic_location,
 						'address'       => $clinic_location,
+						'country'       => '',
 						'city'          => '',
 						'area'          => '',
 						'phone'         => '',
@@ -277,6 +283,7 @@ class Db_Installer {
 						'type'          => 'video',
 						'name'          => __( 'Online Consultation', 'doctor-ak-portal' ),
 						'address'       => '',
+						'country'       => '',
 						'city'          => '',
 						'area'          => '',
 						'phone'         => '',

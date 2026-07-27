@@ -29,9 +29,9 @@
 	} );
 
 	/**
-	 * Wires every City/Area select pair inside a container (the whole list
-	 * on page load, or a single freshly cloned card) via the shared
-	 * window.dakCityArea helper.
+	 * Wires every Country/City/Area select trio inside a container (the
+	 * whole list on page load, or a single freshly cloned card) via the
+	 * shared window.dakCityArea helper.
 	 *
 	 * @param {HTMLElement} container Element to search within.
 	 */
@@ -41,19 +41,22 @@
 		}
 
 		container.querySelectorAll( '.dak-clinic-card' ).forEach( function ( card ) {
+			var countrySelect = card.querySelector( '.dak-clinic-country-select' );
 			var citySelect = card.querySelector( '.dak-clinic-city-select' );
 			var areaSelect = card.querySelector( '.dak-clinic-area-select' );
 
-			if ( ! citySelect || ! areaSelect || citySelect.getAttribute( 'data-wired' ) ) {
+			if ( ! countrySelect || ! citySelect || ! areaSelect || countrySelect.getAttribute( 'data-wired' ) ) {
 				return;
 			}
 
-			citySelect.setAttribute( 'data-wired', '1' );
+			countrySelect.setAttribute( 'data-wired', '1' );
 
 			window.dakCityArea.wire(
+				countrySelect,
 				citySelect,
 				areaSelect,
 				window.dakClinics.locations,
+				countrySelect.getAttribute( 'data-clinic-country' ) || '',
 				citySelect.getAttribute( 'data-clinic-city' ) || '',
 				areaSelect.getAttribute( 'data-clinic-area' ) || ''
 			);
@@ -193,16 +196,21 @@
 	function collectClinicPayload( card ) {
 		var sessions = {};
 
-		card.querySelectorAll( '.dak-availability-row[data-day]' ).forEach( function ( row ) {
-			var day = row.getAttribute( 'data-day' );
-			var enabled = row.querySelector( '.dak-availability-toggle' ).checked;
+		card.querySelectorAll( '.dak-clinic-sessions-day[data-day]' ).forEach( function ( dayEl ) {
+			var day = dayEl.getAttribute( 'data-day' );
+			sessions[ day ] = {};
 
-			sessions[ day ] = {
-				enabled: enabled ? '1' : '',
-				start: row.querySelector( '.dak-availability-start' ).value,
-				end: row.querySelector( '.dak-availability-end' ).value,
-				slot_duration_minutes: row.querySelector( '.dak-clinic-slot-duration' ).value,
-			};
+			dayEl.querySelectorAll( '.dak-availability-row[data-period]' ).forEach( function ( row ) {
+				var period = row.getAttribute( 'data-period' );
+				var enabled = row.querySelector( '.dak-availability-toggle' ).checked;
+
+				sessions[ day ][ period ] = {
+					enabled: enabled ? '1' : '',
+					start: row.querySelector( '.dak-availability-start' ).value,
+					end: row.querySelector( '.dak-availability-end' ).value,
+					slot_duration_minutes: row.querySelector( '.dak-clinic-slot-duration' ).value,
+				};
+			} );
 		} );
 
 		return {
@@ -210,6 +218,7 @@
 			type: card.querySelector( '.dak-clinic-type-select' ).value,
 			name: card.querySelector( '.dak-clinic-name-input' ).value,
 			address: card.querySelector( '.dak-clinic-address-input' ).value,
+			country: card.querySelector( '.dak-clinic-country-select' ).value,
 			city: card.querySelector( '.dak-clinic-city-select' ).value,
 			area: card.querySelector( '.dak-clinic-area-select' ).value,
 			phone: card.querySelector( '.dak-clinic-phone-input' ).value,
@@ -246,17 +255,20 @@
 			formData.append( 'type', payload.type );
 			formData.append( 'name', payload.name );
 			formData.append( 'address', payload.address );
+			formData.append( 'country', payload.country );
 			formData.append( 'city', payload.city );
 			formData.append( 'area', payload.area );
 			formData.append( 'phone', payload.phone );
 			formData.append( 'contact_email', payload.contact_email );
 
 			Object.keys( payload.sessions ).forEach( function ( day ) {
-				var entry = payload.sessions[ day ];
-				formData.append( 'sessions[' + day + '][enabled]', entry.enabled );
-				formData.append( 'sessions[' + day + '][start]', entry.start );
-				formData.append( 'sessions[' + day + '][end]', entry.end );
-				formData.append( 'sessions[' + day + '][slot_duration_minutes]', entry.slot_duration_minutes );
+				Object.keys( payload.sessions[ day ] ).forEach( function ( period ) {
+					var entry = payload.sessions[ day ][ period ];
+					formData.append( 'sessions[' + day + '][' + period + '][enabled]', entry.enabled );
+					formData.append( 'sessions[' + day + '][' + period + '][start]', entry.start );
+					formData.append( 'sessions[' + day + '][' + period + '][end]', entry.end );
+					formData.append( 'sessions[' + day + '][' + period + '][slot_duration_minutes]', entry.slot_duration_minutes );
+				} );
 			} );
 
 			fetch( window.dakClinics.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )

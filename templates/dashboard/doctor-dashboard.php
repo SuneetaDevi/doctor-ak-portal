@@ -19,6 +19,9 @@
  * @var string   $video_consultation_tab_html Pre-rendered doctor-video-consultation-tab.php output when $active_tab is 'video-consultation'.
  * @var string   $appointments_tab_html Pre-rendered doctor-appointments-list.php output when $active_tab is 'appointments'.
  * @var string   $appointments_url      Same-page URL for the Appointments tab.
+ * @var string   $patients_tab_html     Pre-rendered doctor-patients-tab.php output when $active_tab is 'patients'.
+ * @var string   $patients_url          Same-page URL for the Patients tab.
+ * @var array    $doctor_clinics        Doctor's clinics, see Clinics::get_for_doctor() — populates the Add/Edit Patient modal's clinic dropdown.
  * @var string   $notifications_tab_html Pre-rendered notifications-list.php output when $active_tab is 'notifications'.
  * @var string   $notifications_url      Same-page URL for the Notifications tab.
  * @var int      $unread_notifications_count Unread notification count, for the sidebar badge.
@@ -128,8 +131,15 @@ $dak_dash_icons = array(
 				<?php if ( $video_consultation_url ) : ?>
 					<li class="<?php echo 'video-consultation' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $video_consultation_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['video']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Video Consultation', 'doctor-ak-portal' ); ?></a></li>
 				<?php endif; ?>
-				<li class="<?php echo 'appointments' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $appointments_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Appointments', 'doctor-ak-portal' ); ?></a></li>
-				<li class="<?php echo 'notifications' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $notifications_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['bell']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Notifications', 'doctor-ak-portal' ); ?><?php if ( $unread_notifications_count > 0 ) : ?><span class="dak-nav-badge" id="dak-notifications-badge"><?php echo esc_html( $unread_notifications_count ); ?></span><?php endif; ?></a></li>
+				<?php if ( $appointments_url ) : ?>
+					<li class="<?php echo 'appointments' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $appointments_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Appointments', 'doctor-ak-portal' ); ?></a></li>
+				<?php endif; ?>
+				<?php if ( $patients_url ) : ?>
+					<li class="<?php echo 'patients' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $patients_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['users']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Patients', 'doctor-ak-portal' ); ?></a></li>
+				<?php endif; ?>
+				<?php if ( $notifications_url ) : ?>
+					<li class="<?php echo 'notifications' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $notifications_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['bell']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Notifications', 'doctor-ak-portal' ); ?><?php if ( $unread_notifications_count > 0 ) : ?><span class="dak-nav-badge" id="dak-notifications-badge"><?php echo esc_html( $unread_notifications_count ); ?></span><?php endif; ?></a></li>
+				<?php endif; ?>
 				<?php if ( $profile_url ) : ?>
 					<li class="<?php echo 'profile' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $profile_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['person']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Profile', 'doctor-ak-portal' ); ?></a></li>
 				<?php endif; ?>
@@ -165,6 +175,14 @@ $dak_dash_icons = array(
 			</div>
 
 			<?php echo $notifications_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own notifications-list.php template, which escapes its own output. ?>
+
+		<?php elseif ( 'patients' === $active_tab ) : ?>
+
+			<div class="dak-dashboard-greeting">
+				<h1><?php esc_html_e( 'Patients', 'doctor-ak-portal' ); ?></h1>
+			</div>
+
+			<?php echo $patients_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-patients-tab.php template, which escapes its own output. ?>
 
 		<?php elseif ( 'dashboard' !== $active_tab ) : ?>
 
@@ -344,6 +362,9 @@ $dak_dash_icons = array(
 		endif;
 		?>
 
+		<?php endif; ?>
+
+		<?php if ( in_array( $active_tab, array( 'dashboard', 'patients' ), true ) ) : ?>
 		<div class="dak-portal dak-modal" id="dak-doctor-add-patient-modal" aria-hidden="true">
 			<div class="dak-modal-overlay" data-dak-add-patient-close></div>
 
@@ -351,10 +372,12 @@ $dak_dash_icons = array(
 				<button type="button" class="dak-modal-close" data-dak-add-patient-close aria-label="<?php esc_attr_e( 'Close', 'doctor-ak-portal' ); ?>">&times;</button>
 
 				<div class="dak-modal-header">
-					<h2 id="dak-doctor-add-patient-title"><?php esc_html_e( 'Add Patient', 'doctor-ak-portal' ); ?></h2>
+					<h2 id="dak-doctor-add-patient-title"><span id="dak-doctor-add-patient-title-text"><?php esc_html_e( 'Add Patient', 'doctor-ak-portal' ); ?></span></h2>
 				</div>
 
 				<div class="dak-alert dak-alert-error dak-hidden" id="dak-doctor-add-patient-general-error" role="alert"></div>
+
+				<input type="hidden" id="dak-doctor-add-patient-id" value="0">
 
 				<div class="dak-field-row">
 					<div class="dak-field">
@@ -381,15 +404,58 @@ $dak_dash_icons = array(
 					<span class="dak-field-error" data-field="phone_number"></span>
 				</div>
 
-				<p class="dak-field-hint"><?php esc_html_e( 'A password will be generated automatically and the patient will get an email to set their own.', 'doctor-ak-portal' ); ?></p>
+				<?php if ( ! empty( $doctor_clinics ) ) : ?>
+					<div class="dak-field" id="dak-doctor-add-patient-clinic-field">
+						<label for="dak-doctor-add-patient-clinic"><?php esc_html_e( 'Clinic', 'doctor-ak-portal' ); ?></label>
+						<select id="dak-doctor-add-patient-clinic">
+							<option value="0"><?php esc_html_e( '— Select clinic (optional) —', 'doctor-ak-portal' ); ?></option>
+							<?php foreach ( $doctor_clinics as $dak_add_patient_clinic ) : ?>
+								<option value="<?php echo esc_attr( $dak_add_patient_clinic['id'] ); ?>"><?php echo esc_html( $dak_add_patient_clinic['name'] ); ?></option>
+							<?php endforeach; ?>
+						</select>
+						<span class="dak-field-error" data-field="clinic_id"></span>
+					</div>
+				<?php endif; ?>
+
+				<p class="dak-field-hint" id="dak-doctor-add-patient-hint"><?php esc_html_e( 'A password will be generated automatically and the patient will get an email to set their own.', 'doctor-ak-portal' ); ?></p>
 
 				<button type="button" class="dak-button dak-button-primary dak-button-block" id="dak-doctor-add-patient-save">
-					<span class="dak-button-label"><?php esc_html_e( 'Add Patient', 'doctor-ak-portal' ); ?></span>
+					<span class="dak-button-label" id="dak-doctor-add-patient-save-label"><?php esc_html_e( 'Add Patient', 'doctor-ak-portal' ); ?></span>
 				</button>
 			</div>
 		</div>
-
 		<?php endif; ?>
+
+		<div class="dak-portal dak-modal" id="dak-reschedule-appointment-modal" aria-hidden="true">
+			<div class="dak-modal-overlay" data-dak-reschedule-close></div>
+
+			<div class="dak-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="dak-reschedule-appointment-title">
+				<button type="button" class="dak-modal-close" data-dak-reschedule-close aria-label="<?php esc_attr_e( 'Close', 'doctor-ak-portal' ); ?>">&times;</button>
+
+				<div class="dak-modal-header">
+					<h2 id="dak-reschedule-appointment-title"><?php esc_html_e( 'Reschedule Appointment', 'doctor-ak-portal' ); ?></h2>
+				</div>
+
+				<div class="dak-alert dak-alert-error dak-hidden" id="dak-reschedule-appointment-error" role="alert"></div>
+
+				<input type="hidden" id="dak-reschedule-appointment-id" value="0">
+
+				<div class="dak-field-row">
+					<div class="dak-field">
+						<label for="dak-reschedule-appointment-date"><?php esc_html_e( 'New Date', 'doctor-ak-portal' ); ?></label>
+						<input type="date" id="dak-reschedule-appointment-date">
+					</div>
+					<div class="dak-field">
+						<label for="dak-reschedule-appointment-time"><?php esc_html_e( 'New Time', 'doctor-ak-portal' ); ?></label>
+						<input type="time" id="dak-reschedule-appointment-time">
+					</div>
+				</div>
+
+				<button type="button" class="dak-button dak-button-primary dak-button-block" id="dak-reschedule-appointment-save">
+					<span class="dak-button-label"><?php esc_html_e( 'Save New Time', 'doctor-ak-portal' ); ?></span>
+				</button>
+			</div>
+		</div>
 
 	</main>
 </div>

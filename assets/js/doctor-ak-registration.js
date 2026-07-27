@@ -18,6 +18,7 @@
 
 		if ( window.dakCityArea && window.dakRegister ) {
 			window.dakCityArea.wire(
+				document.getElementById( 'dak-country' ),
 				document.getElementById( 'dak-city' ),
 				document.getElementById( 'dak-area' ),
 				window.dakRegister.locations

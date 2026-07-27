@@ -14,6 +14,7 @@ use DoctorAKPortal\Includes\Doctor_Awards;
 use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Page_Finder;
+use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Specializations;
@@ -81,7 +82,9 @@ class Admin_Dashboard {
 			'doctor-sessions'    => 'Doctor Sessions',
 		),
 		'Account' => array(
-			'settings' => 'Settings',
+			'role-permissions' => 'Roles & Permissions',
+			'locations'        => 'Locations',
+			'settings'         => 'Settings',
 		),
 	);
 
@@ -215,7 +218,7 @@ class Admin_Dashboard {
 			)
 		);
 
-		if ( 'doctor-sessions' === self::requested_section() ) {
+		if ( in_array( self::requested_section(), array( 'doctor-sessions', 'clinic' ), true ) ) {
 			wp_enqueue_style(
 				'doctor-ak-portal-registration',
 				DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-registration.css',
@@ -253,6 +256,55 @@ class Admin_Dashboard {
 					'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
 					'nonce'     => wp_create_nonce( self::NONCE_ACTION ),
 					'locations' => Locations::get_all(),
+				)
+			);
+
+			if ( self::is_session_form_view() ) {
+				wp_enqueue_script(
+					'doctor-ak-portal-admin-session-form',
+					DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-session-form.js',
+					array( 'doctor-ak-portal-admin-sessions', 'doctor-ak-portal-city-area-select' ),
+					Assets::version( 'assets/js/doctor-ak-admin-session-form.js' ),
+					true
+				);
+			}
+		}
+
+		if ( 'role-permissions' === self::requested_section() ) {
+			wp_enqueue_script(
+				'doctor-ak-portal-admin-role-permissions',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-role-permissions.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-admin-role-permissions.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-admin-role-permissions',
+				'dakRolePermissions',
+				array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( Role_Permissions_Handler::NONCE_ACTION ),
+				)
+			);
+		}
+
+		if ( 'locations' === self::requested_section() ) {
+			wp_enqueue_script(
+				'doctor-ak-portal-admin-locations',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-locations.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-admin-locations.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-admin-locations',
+				'dakLocations',
+				array(
+					'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
+					'nonce'            => wp_create_nonce( Locations_Handler::NONCE_ACTION ),
+					'defaultCountries' => Locations::default_seed_data(),
 				)
 			);
 		}
@@ -484,9 +536,7 @@ class Admin_Dashboard {
 
 		$modal_html = '';
 
-		if ( 'doctor-sessions' === $section ) {
-			$modal_html = $this->doctor_sessions_modal_html();
-		} elseif ( 'services' === $section ) {
+		if ( 'services' === $section ) {
 			$modal_html = $this->service_modal_html();
 		} elseif ( 'video-consultation' === $section ) {
 			$modal_html = $this->video_pricing_modal_html();
@@ -527,6 +577,47 @@ class Admin_Dashboard {
 	 */
 	private static function is_user_form_view() {
 		return isset( $_GET['view'] ) && 'form' === sanitize_key( wp_unslash( $_GET['view'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+	}
+
+	/**
+	 * Whether the current request wants the full-screen Add/Edit Session
+	 * form instead of the Doctor Sessions table (`?view=form`, optionally
+	 * with `&clinic_id=X` to edit; without it, it's the "Add" form). Mirrors
+	 * is_user_form_view() for the 'doctor-sessions'/'clinic' section.
+	 *
+	 * @return bool
+	 */
+	private static function is_session_form_view() {
+		return isset( $_GET['view'] ) && 'form' === sanitize_key( wp_unslash( $_GET['view'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+	}
+
+	/**
+	 * Renders the full-screen Add/Edit Session form (replaces the Doctor
+	 * Sessions table content area when `?view=form` is present) — a
+	 * Country/City/Area-aware clinic form plus a Morning/Afternoon/Evening
+	 * weekly sessions grid, submitted to the same
+	 * Clinic_Handler::handle_admin_save_clinic() AJAX endpoint the old modal
+	 * used, just rendered in-page instead of a popup so there's room to work.
+	 *
+	 * @param string $section 'doctor-sessions' or 'clinic'.
+	 * @return string
+	 */
+	private function session_form_screen_html( $section ) {
+		$clinic_id = isset( $_GET['clinic_id'] ) ? absint( wp_unslash( $_GET['clinic_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		$editing   = $clinic_id > 0 ? Clinics::find( $clinic_id ) : null;
+
+		$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+
+		return $this->template_loader->get_template(
+			'dashboard/partials/admin-session-form-screen.php',
+			array(
+				'session_days'    => Clinics::session_days(),
+				'session_periods' => Clinics::session_periods(),
+				'doctor_options'  => $this->doctor_options(),
+				'list_url'        => $dashboard_url ? add_query_arg( 'section', $section, $dashboard_url ) : '',
+				'editing_clinic'  => $editing,
+			)
+		);
 	}
 
 	/**
@@ -611,10 +702,17 @@ class Admin_Dashboard {
 			);
 		}
 
-		if ( 'doctor-sessions' === $section ) {
+		if ( 'doctor-sessions' === $section || 'clinic' === $section ) {
+			if ( self::is_session_form_view() ) {
+				return $this->session_form_screen_html( $section );
+			}
+
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-doctor-sessions.php',
-				array( 'clinics' => Clinics::all_flat_for_admin() )
+				array(
+					'clinics'    => Clinics::all_flat_for_admin(),
+					'section_url' => add_query_arg( 'section', $section, Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ) ),
+				)
 			);
 		}
 
@@ -639,6 +737,24 @@ class Admin_Dashboard {
 			);
 		}
 
+		if ( 'role-permissions' === $section ) {
+			return $this->template_loader->get_template(
+				'dashboard/partials/admin-role-permissions.php',
+				array(
+					'doctor_tabs'  => Role_Permissions::doctor_tabs(),
+					'patient_tabs' => Role_Permissions::patient_tabs(),
+					'saved'        => Role_Permissions::get_all(),
+				)
+			);
+		}
+
+		if ( 'locations' === $section ) {
+			return $this->template_loader->get_template(
+				'dashboard/partials/admin-locations.php',
+				array( 'countries' => Locations::get_all() )
+			);
+		}
+
 		$all_sections = self::all_sections();
 
 		return $this->template_loader->get_template(
@@ -649,21 +765,6 @@ class Admin_Dashboard {
 		);
 	}
 
-	/**
-	 * Renders the "Doctor Sessions" edit modal (shared single instance,
-	 * populated client-side from the clicked row's data).
-	 *
-	 * @return string
-	 */
-	private function doctor_sessions_modal_html() {
-		return $this->template_loader->get_template(
-			'modal/admin-doctor-session-modal.php',
-			array(
-				'session_days'    => Clinics::session_days(),
-				'doctor_options'  => $this->doctor_options(),
-			)
-		);
-	}
 
 	/**
 	 * Renders the "Add/Edit Service" modal (shared single instance,
@@ -993,6 +1094,7 @@ class Admin_Dashboard {
 			'is_disabled'                 => 'yes' === get_user_meta( $user->ID, 'doctor_ak_account_disabled', true ),
 			'years_experience'            => get_user_meta( $user->ID, 'doctor_ak_years_experience', true ),
 			'qualification'               => get_user_meta( $user->ID, 'doctor_ak_qualification', true ),
+			'country'                     => get_user_meta( $user->ID, 'doctor_ak_country', true ),
 			'city'                        => get_user_meta( $user->ID, 'doctor_ak_city', true ),
 			'area'                        => get_user_meta( $user->ID, 'doctor_ak_area', true ),
 			'short_description'           => get_user_meta( $user->ID, 'doctor_ak_short_description', true ),

@@ -5,9 +5,12 @@
  *
  * @package DoctorAKPortal\Templates
  *
- * @var array  $appointment  Appointment array from Appointments::find().
- * @var string $patient_name Resolved patient/guest display name.
- * @var string $doctor_name  Resolved doctor display name.
+ * @var array  $appointment    Appointment array from Appointments::find().
+ * @var string $patient_name   Resolved patient/guest display name.
+ * @var string $doctor_name    Resolved doctor display name.
+ * @var string $clinic_name    Clinic name (Settings → Footer Settings), or 'Main Clinic' if unset.
+ * @var string $clinic_address Clinic address (Settings → Footer Settings), or '' if unset.
+ * @var string $clinic_phone   Clinic contact phone (Settings → Footer Settings), or '' if unset.
  */
 
 // Prevent direct file access.
@@ -27,6 +30,9 @@ $dak_slip_paid = 'paid' === $appointment['payment_status'];
 		body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; max-width: 480px; margin: 40px auto; padding: 0 20px; }
 		h1 { font-size: 1.3rem; margin-bottom: 4px; }
 		.dak-slip-meta { color: #666; font-size: 0.85rem; margin-bottom: 24px; }
+		.dak-slip-header { text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 16px; margin-bottom: 20px; }
+		.dak-slip-clinic-name { font-size: 1.4rem; font-weight: 700; color: #2563eb; margin: 0 0 4px; }
+		.dak-slip-clinic-meta { color: #666; font-size: 0.8rem; margin: 0; }
 		table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
 		td { padding: 8px 0; border-bottom: 1px solid #eee; vertical-align: top; }
 		td:first-child { color: #666; width: 40%; }
@@ -35,10 +41,28 @@ $dak_slip_paid = 'paid' === $appointment['payment_status'];
 		.dak-slip-status.is-paid { background: #e3f6e8; color: #157a3c; }
 		.dak-slip-status.is-pending { background: #fff4e0; color: #b45f06; }
 		.dak-slip-print { margin-top: 8px; padding: 10px 18px; border: 0; border-radius: 6px; background: #2563eb; color: #fff; cursor: pointer; }
+		.dak-slip-footer { border-top: 1px solid #eee; margin-top: 16px; padding-top: 12px; text-align: center; color: #666; font-size: 0.78rem; }
+		.dak-slip-footer strong { display: block; color: #1a1a1a; font-size: 0.85rem; margin-bottom: 2px; }
 		@media print { .dak-slip-print { display: none; } }
 	</style>
 </head>
 <body>
+	<div class="dak-slip-header">
+		<p class="dak-slip-clinic-name"><?php echo esc_html( $clinic_name ); ?></p>
+		<?php if ( '' !== $clinic_address || '' !== $clinic_phone ) : ?>
+			<p class="dak-slip-clinic-meta">
+				<?php
+				echo esc_html(
+					implode(
+						' · ',
+						array_filter( array( $clinic_address, $clinic_phone ) )
+					)
+				);
+				?>
+			</p>
+		<?php endif; ?>
+	</div>
+
 	<h1><?php esc_html_e( 'Appointment Slip', 'doctor-ak-portal' ); ?></h1>
 	<p class="dak-slip-meta"><?php echo esc_html( sprintf( /* translators: %d: appointment ID. */ __( 'Reference #%d', 'doctor-ak-portal' ), $appointment['id'] ) ); ?></p>
 
@@ -57,6 +81,18 @@ $dak_slip_paid = 'paid' === $appointment['payment_status'];
 	</table>
 
 	<button type="button" class="dak-slip-print" onclick="window.print();"><?php esc_html_e( 'Print', 'doctor-ak-portal' ); ?></button>
+
+	<div class="dak-slip-footer">
+		<strong><?php echo esc_html( $clinic_name ); ?></strong>
+		<?php
+		echo esc_html(
+			implode(
+				' · ',
+				array_filter( array( $clinic_address, $clinic_phone ) )
+			)
+		);
+		?>
+	</div>
 
 	<script>window.addEventListener( 'load', function () { window.print(); } );</script>
 </body>

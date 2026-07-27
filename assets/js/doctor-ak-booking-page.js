@@ -771,13 +771,23 @@
 				var card = document.createElement( 'button' );
 				card.type = 'button';
 				card.className = 'dak-booking-slot-card is-' + slot.status + ( slot.is_instant ? ' is-instant' : '' );
-				card.textContent = formatTimeLabel( slot.time );
+
+				var timeLabel = document.createElement( 'span' );
+				timeLabel.className = 'dak-booking-slot-time';
+				timeLabel.textContent = formatTimeLabel( slot.time );
+				card.appendChild( timeLabel );
 
 				if ( slot.is_instant ) {
 					var badge = document.createElement( 'span' );
 					badge.className = 'dak-booking-slot-instant-badge';
 					badge.textContent = '⚡';
 					card.appendChild( badge );
+
+					var surchargeLabel = document.createElement( 'span' );
+					surchargeLabel.className = 'dak-booking-slot-surcharge';
+					surchargeLabel.textContent = '+PKR' + slot.surcharge;
+					card.appendChild( surchargeLabel );
+
 					card.title = 'Instant booking — +PKR' + slot.surcharge + ' surcharge applies';
 				}
 

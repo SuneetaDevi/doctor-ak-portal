@@ -90,8 +90,18 @@ $time_label     = $time_timestamp ? date_i18n( 'g:i A', $time_timestamp ) : $app
 					title="<?php esc_attr_e( "You'll be asked to log in with a free account (Google, GitHub, etc.) to start the call — your patient won't need to.", 'doctor-ak-portal' ); ?>"
 				><?php esc_html_e( 'Start Call', 'doctor-ak-portal' ); ?></a>
 			<?php endif; ?>
-			<?php if ( 'confirmed' === $appointment['status'] ) : ?>
+			<?php if ( in_array( $appointment['status'], array( 'confirmed', 'paid', 'rescheduled' ), true ) ) : ?>
 				<button type="button" class="dak-status-pill dak-status-pill-action" data-mark-completed data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"><?php esc_html_e( 'Mark Completed', 'doctor-ak-portal' ); ?></button>
+			<?php endif; ?>
+			<?php if ( ! in_array( $appointment['status'], array( 'cancelled', 'completed' ), true ) ) : ?>
+				<button
+					type="button"
+					class="dak-status-pill dak-status-pill-action"
+					data-reschedule-appointment
+					data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"
+					data-date="<?php echo esc_attr( $appointment['date'] ); ?>"
+					data-time="<?php echo esc_attr( $appointment['time'] ); ?>"
+				><?php esc_html_e( 'Reschedule', 'doctor-ak-portal' ); ?></button>
 			<?php endif; ?>
 		</div>
 	</div>

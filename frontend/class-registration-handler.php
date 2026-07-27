@@ -308,16 +308,20 @@ class Registration_Handler {
 			$meta['doctor_ak_qualification'] = $qualification;
 		}
 
-		$city = isset( $_POST['city'] ) ? sanitize_text_field( wp_unslash( $_POST['city'] ) ) : '';
-		$area = isset( $_POST['area'] ) ? sanitize_text_field( wp_unslash( $_POST['area'] ) ) : '';
+		$country = isset( $_POST['country'] ) ? sanitize_text_field( wp_unslash( $_POST['country'] ) ) : '';
+		$city    = isset( $_POST['city'] ) ? sanitize_text_field( wp_unslash( $_POST['city'] ) ) : '';
+		$area    = isset( $_POST['area'] ) ? sanitize_text_field( wp_unslash( $_POST['area'] ) ) : '';
 
-		if ( '' === $city || ! Locations::is_valid_city( $city ) ) {
+		if ( '' === $country || ! Locations::is_valid_country( $country ) ) {
+			$errors['country'] = __( 'Please select your country.', 'doctor-ak-portal' );
+		} elseif ( '' === $city || ! Locations::is_valid_city( $country, $city ) ) {
 			$errors['city'] = __( 'Please select your city.', 'doctor-ak-portal' );
-		} elseif ( '' === $area || ! Locations::is_valid_area( $city, $area ) ) {
+		} elseif ( '' === $area || ! Locations::is_valid_area( $country, $city, $area ) ) {
 			$errors['area'] = __( 'Please select your area.', 'doctor-ak-portal' );
 		} else {
-			$meta['doctor_ak_city'] = $city;
-			$meta['doctor_ak_area'] = $area;
+			$meta['doctor_ak_country'] = $country;
+			$meta['doctor_ak_city']    = $city;
+			$meta['doctor_ak_area']    = $area;
 		}
 
 		// Optional — a free-text field for anything not already covered by

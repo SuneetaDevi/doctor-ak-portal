@@ -106,6 +106,14 @@ $can_pay_now     = ! $appointment['is_paid'] && (float) $appointment['charge'] >
 					<div class="dak-patient-appt-kebab-menu" data-kebab-menu>
 						<button
 							type="button"
+							class="dak-patient-appt-kebab-item"
+							data-reschedule-appointment
+							data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"
+							data-date="<?php echo esc_attr( $appointment['date'] ); ?>"
+							data-time="<?php echo esc_attr( $appointment['time'] ); ?>"
+						><?php esc_html_e( 'Reschedule Appointment', 'doctor-ak-portal' ); ?></button>
+						<button
+							type="button"
 							class="dak-patient-appt-kebab-item is-danger"
 							data-cancel-appointment
 							data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"

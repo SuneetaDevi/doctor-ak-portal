@@ -12,6 +12,7 @@ use DoctorAKPortal\Includes\Doctor_Awards;
 use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Profile_Picture_Uploader;
+use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Specializations;
 use DoctorAKPortal\Includes\Template_Loader;
@@ -159,6 +160,17 @@ class Profile_Handler {
 
 		$user      = wp_get_current_user();
 		$is_doctor = in_array( Roles::DOCTOR_ROLE, (array) $user->roles, true );
+		$role      = $is_doctor ? Roles::DOCTOR_ROLE : Roles::PATIENT_ROLE;
+
+		if ( ! Role_Permissions::is_tab_allowed( $role, 'profile' ) ) {
+			return $this->template_loader->get_template(
+				'dashboard/access-denied.php',
+				array(
+					'reason'        => 'not_permitted',
+					'dashboard_url' => Page_Finder::url_for_shortcode( $is_doctor ? 'doctor_dashboard' : 'patient_dashboard' ),
+				)
+			);
+		}
 
 		$form_context = self::build_form_context( $user );
 
@@ -192,6 +204,7 @@ class Profile_Handler {
 			'current_specializations'    => (array) get_user_meta( $user->ID, 'doctor_ak_specializations', true ),
 			'current_years_experience'   => get_user_meta( $user->ID, 'doctor_ak_years_experience', true ),
 			'current_qualification'      => get_user_meta( $user->ID, 'doctor_ak_qualification', true ),
+			'current_country'            => get_user_meta( $user->ID, 'doctor_ak_country', true ),
 			'current_city'               => get_user_meta( $user->ID, 'doctor_ak_city', true ),
 			'current_area'               => get_user_meta( $user->ID, 'doctor_ak_area', true ),
 			'current_short_description'  => get_user_meta( $user->ID, 'doctor_ak_short_description', true ),
@@ -256,6 +269,10 @@ class Profile_Handler {
 
 		$user      = wp_get_current_user();
 		$is_doctor = in_array( Roles::DOCTOR_ROLE, (array) $user->roles, true );
+
+		if ( ! Role_Permissions::is_tab_allowed( $is_doctor ? Roles::DOCTOR_ROLE : Roles::PATIENT_ROLE, 'profile' ) ) {
+			wp_send_json_error( array( 'message' => __( 'An administrator has turned off profile editing for your account.', 'doctor-ak-portal' ) ), 403 );
+		}
 
 		$errors = array();
 
@@ -370,16 +387,20 @@ class Profile_Handler {
 			$meta['doctor_ak_qualification'] = $qualification;
 		}
 
-		$city = isset( $_POST['city'] ) ? sanitize_text_field( wp_unslash( $_POST['city'] ) ) : '';
-		$area = isset( $_POST['area'] ) ? sanitize_text_field( wp_unslash( $_POST['area'] ) ) : '';
+		$country = isset( $_POST['country'] ) ? sanitize_text_field( wp_unslash( $_POST['country'] ) ) : '';
+		$city    = isset( $_POST['city'] ) ? sanitize_text_field( wp_unslash( $_POST['city'] ) ) : '';
+		$area    = isset( $_POST['area'] ) ? sanitize_text_field( wp_unslash( $_POST['area'] ) ) : '';
 
-		if ( '' === $city || ! Locations::is_valid_city( $city ) ) {
+		if ( '' === $country || ! Locations::is_valid_country( $country ) ) {
+			$errors['country'] = __( 'Please select your country.', 'doctor-ak-portal' );
+		} elseif ( '' === $city || ! Locations::is_valid_city( $country, $city ) ) {
 			$errors['city'] = __( 'Please select your city.', 'doctor-ak-portal' );
-		} elseif ( '' === $area || ! Locations::is_valid_area( $city, $area ) ) {
+		} elseif ( '' === $area || ! Locations::is_valid_area( $country, $city, $area ) ) {
 			$errors['area'] = __( 'Please select your area.', 'doctor-ak-portal' );
 		} else {
-			$meta['doctor_ak_city'] = $city;
-			$meta['doctor_ak_area'] = $area;
+			$meta['doctor_ak_country'] = $country;
+			$meta['doctor_ak_city']    = $city;
+			$meta['doctor_ak_area']    = $area;
 		}
 
 		$short_description = isset( $_POST['short_description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['short_description'] ) ) : '';

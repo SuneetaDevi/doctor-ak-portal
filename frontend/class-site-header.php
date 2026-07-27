@@ -9,6 +9,7 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Page_Finder;
+use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Template_Loader;
 
@@ -150,6 +151,14 @@ class Site_Header {
 	private function prepare_data() {
 		$user      = wp_get_current_user();
 		$is_doctor = in_array( Roles::DOCTOR_ROLE, (array) $user->roles, true );
+		$is_patient = in_array( Roles::PATIENT_ROLE, (array) $user->roles, true );
+
+		// Profile editing can be turned off per role (Settings -> Roles &
+		// Permissions); admins (and any account with neither role) aren't
+		// gated by that setting, so their link always shows.
+		$profile_allowed = ! $is_doctor && ! $is_patient
+			? true
+			: Role_Permissions::is_tab_allowed( $is_doctor ? Roles::DOCTOR_ROLE : Roles::PATIENT_ROLE, 'profile' );
 
 		return array(
 			'menu_location'   => self::MENU_LOCATION,
@@ -160,7 +169,7 @@ class Site_Header {
 			'dashboard_url' => is_user_logged_in()
 				? Page_Finder::url_for_shortcode( self::dashboard_shortcode_for( $user, $is_doctor ) )
 				: '',
-			'profile_url'   => is_user_logged_in() ? Page_Finder::url_for_shortcode( 'doctor_profile' ) : '',
+			'profile_url'   => ( is_user_logged_in() && $profile_allowed ) ? Page_Finder::url_for_shortcode( 'doctor_profile' ) : '',
 			'login_url'     => Page_Finder::url_for_shortcode( 'doctor_login' ),
 			'logout_url'    => wp_logout_url( home_url( '/' ) ),
 		);

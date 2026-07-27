@@ -113,50 +113,54 @@
 	border-top: 1px solid var( --dak-border ) !important;
 }
 
-.dak-clinic-sessions-grid {
+.dak-clinic-sessions-days {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.75rem !important;
+}
+
+.dak-clinic-sessions-day {
 	border: 1px solid var( --dak-border ) !important;
 	border-radius: var( --dak-radius-sm ) !important;
 	overflow: hidden !important;
 }
 
-.dak-clinic-sessions-grid .dak-availability-row {
-	display: grid !important;
-	grid-template-columns: 108px 78px 10px 78px 74px !important;
-	align-items: center !important;
-	gap: 0.4rem !important;
-	flex-wrap: nowrap !important;
-	padding: 0.3rem 0.6rem !important;
-	border-bottom: 1px solid var( --dak-border ) !important;
-}
-
-.dak-clinic-sessions-grid .dak-availability-row:last-child {
-	border-bottom: 0 !important;
-}
-
-.dak-clinic-sessions-grid .dak-availability-row-header {
+.dak-clinic-sessions-day-label {
+	display: block !important;
 	padding: 0.4rem 0.6rem !important;
 	background: var( --dak-bg-subtle ) !important;
-}
-
-.dak-availability-col-label {
-	font-size: 0.72rem !important;
+	font-size: 0.78rem !important;
 	font-weight: 700 !important;
 	text-transform: uppercase !important;
 	letter-spacing: 0.03em !important;
 	color: var( --dak-muted ) !important;
 }
 
-.dak-clinic-sessions-grid .dak-checkbox {
+.dak-clinic-sessions-periods .dak-availability-row {
+	display: grid !important;
+	grid-template-columns: 108px 78px 10px 78px 74px !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+	flex-wrap: nowrap !important;
+	padding: 0.4rem 0.6rem !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+.dak-clinic-sessions-periods .dak-availability-row:last-child {
+	border-bottom: 0 !important;
+}
+
+.dak-clinic-sessions-periods .dak-checkbox {
 	font-size: 0.85rem !important;
 }
 
-.dak-clinic-sessions-grid .dak-availability-start,
-.dak-clinic-sessions-grid .dak-availability-end {
+.dak-clinic-sessions-periods .dak-availability-start,
+.dak-clinic-sessions-periods .dak-availability-end {
 	padding: 0.3rem 0.4rem !important;
 	font-size: 0.8rem !important;
 }
 
-.dak-clinic-sessions-grid .dak-availability-sep {
+.dak-clinic-sessions-periods .dak-availability-sep {
 	text-align: center !important;
 }
 
@@ -181,17 +185,17 @@
 }
 
 @media ( max-width: 480px ) {
-	.dak-clinic-sessions-grid {
+	.dak-clinic-sessions-day {
 		overflow-x: auto !important;
 	}
 
-	.dak-clinic-sessions-grid .dak-availability-row {
+	.dak-clinic-sessions-periods .dak-availability-row {
 		grid-template-columns: 96px 66px 8px 66px 60px !important;
 		gap: 0.3rem !important;
 		padding: 0.3rem 0.4rem !important;
 	}
 
-	.dak-clinic-sessions-grid .dak-checkbox span {
+	.dak-clinic-sessions-periods .dak-checkbox span {
 		font-size: 0.78rem !important;
 	}
 }

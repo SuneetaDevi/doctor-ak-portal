@@ -9,6 +9,7 @@
 namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
+use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
 
@@ -116,6 +117,10 @@ class Service_Handler {
 			wp_send_json_error( array( 'message' => __( 'You must be logged in as a doctor.', 'doctor-ak-portal' ) ), 401 );
 		}
 
+		if ( ! Role_Permissions::is_tab_allowed( Roles::DOCTOR_ROLE, 'services' ) ) {
+			wp_send_json_error( array( 'message' => __( 'An administrator has turned off the Services page for your account.', 'doctor-ak-portal' ) ), 403 );
+		}
+
 		$this->process_save( get_current_user_id(), get_current_user_id() );
 	}
 
@@ -131,6 +136,10 @@ class Service_Handler {
 
 		if ( ! is_user_logged_in() || ! in_array( Roles::DOCTOR_ROLE, (array) wp_get_current_user()->roles, true ) ) {
 			wp_send_json_error( array( 'message' => __( 'You must be logged in as a doctor.', 'doctor-ak-portal' ) ), 401 );
+		}
+
+		if ( ! Role_Permissions::is_tab_allowed( Roles::DOCTOR_ROLE, 'services' ) ) {
+			wp_send_json_error( array( 'message' => __( 'An administrator has turned off the Services page for your account.', 'doctor-ak-portal' ) ), 403 );
 		}
 
 		$this->process_delete( get_current_user_id() );

@@ -46,7 +46,7 @@
 		document.getElementById( 'dak-admin-appointment-guest-phone' ).value = '';
 		document.getElementById( 'dak-admin-appointment-date' ).value = '';
 		document.getElementById( 'dak-admin-appointment-time' ).value = '';
-		document.getElementById( 'dak-admin-appointment-status' ).value = 'pending';
+		document.getElementById( 'dak-admin-appointment-status' ).value = 'confirmed';
 		document.getElementById( 'dak-admin-appointment-payment-status' ).value = 'pending';
 		document.getElementById( 'dak-admin-appointment-payment-mode' ).value = 'manual';
 		document.getElementById( 'dak-admin-appointment-notes' ).value = '';
@@ -185,7 +185,7 @@
 			document.getElementById( 'dak-admin-appointment-guest-phone' ).value = trigger.getAttribute( 'data-guest-phone' ) || '';
 			document.getElementById( 'dak-admin-appointment-date' ).value = trigger.getAttribute( 'data-date' ) || '';
 			document.getElementById( 'dak-admin-appointment-time' ).value = trigger.getAttribute( 'data-time' ) || '';
-			document.getElementById( 'dak-admin-appointment-status' ).value = trigger.getAttribute( 'data-status' ) || 'pending';
+			document.getElementById( 'dak-admin-appointment-status' ).value = trigger.getAttribute( 'data-status' ) || 'confirmed';
 			document.getElementById( 'dak-admin-appointment-payment-status' ).value = trigger.getAttribute( 'data-payment-status' ) || 'pending';
 			document.getElementById( 'dak-admin-appointment-payment-mode' ).value = trigger.getAttribute( 'data-payment-mode' ) || 'manual';
 			document.getElementById( 'dak-admin-appointment-notes' ).value = trigger.getAttribute( 'data-notes' ) || '';

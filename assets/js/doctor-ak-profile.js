@@ -19,14 +19,17 @@
 		initProfileForm( shared );
 
 		if ( window.dakCityArea && window.dakProfile ) {
+			var countrySelect = document.getElementById( 'dak-profile-country' );
 			var citySelect = document.getElementById( 'dak-profile-city' );
 			var areaSelect = document.getElementById( 'dak-profile-area' );
 
-			if ( citySelect && areaSelect ) {
+			if ( countrySelect && citySelect && areaSelect ) {
 				window.dakCityArea.wire(
+					countrySelect,
 					citySelect,
 					areaSelect,
 					window.dakProfile.locations,
+					countrySelect.getAttribute( 'data-current' ) || '',
 					citySelect.getAttribute( 'data-current' ) || '',
 					areaSelect.getAttribute( 'data-current' ) || ''
 				);

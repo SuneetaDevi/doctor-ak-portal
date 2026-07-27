@@ -11,6 +11,7 @@ use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Page_Finder;
+use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Template_Loader;
 use DoctorAKPortal\Includes\Theme_Preference;
@@ -90,6 +91,15 @@ class Patient_Dashboard {
 			Assets::version( 'assets/css/doctor-ak-patient-dashboard.css' )
 		);
 
+		// The "Book Appointment" FAB and the Reschedule Appointment modal
+		// both use the .dak-modal overlay/dialog styling.
+		wp_enqueue_style(
+			'doctor-ak-portal-booking-modal',
+			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-booking-modal.css',
+			array( 'doctor-ak-portal-dashboard' ),
+			Assets::version( 'assets/css/doctor-ak-booking-modal.css' )
+		);
+
 		wp_enqueue_script(
 			'doctor-ak-portal-dashboard',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-dashboard.js',
@@ -115,6 +125,25 @@ class Patient_Dashboard {
 				'confirmCancelRefundEligible'    => __( "Cancel this appointment? You're within the refund window, so you'll be eligible for a refund. This cannot be undone.", 'doctor-ak-portal' ),
 				'confirmCancelNoRefund'          => __( "Cancel this appointment? This is after the doctor's refund window, so no refund will apply. This cannot be undone.", 'doctor-ak-portal' ),
 				'genericError'                   => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
+			)
+		);
+
+		wp_enqueue_script(
+			'doctor-ak-portal-appointment-reschedule',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-appointment-reschedule.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-appointment-reschedule.js' ),
+			true
+		);
+
+		wp_localize_script(
+			'doctor-ak-portal-appointment-reschedule',
+			'dakAppointmentReschedule',
+			array(
+				'ajaxUrl'  => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( self::NONCE_ACTION ),
+				'action'   => 'doctor_ak_patient_reschedule_appointment',
+				'genericError' => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
 			)
 		);
 
@@ -193,7 +222,36 @@ class Patient_Dashboard {
 
 		$tab = sanitize_key( wp_unslash( $_GET['tab'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 
-		return in_array( $tab, array( 'profile', 'appointments', 'notifications', 'settings', 'medical-history', 'payments' ), true ) ? $tab : 'dashboard';
+		if ( ! in_array( $tab, array( 'profile', 'appointments', 'notifications', 'settings', 'medical-history', 'payments' ), true ) ) {
+			return 'dashboard';
+		}
+
+		// An admin can turn a tab off entirely (Settings → Roles &
+		// Permissions) — a direct/bookmarked link to it then falls back to
+		// the Dashboard tab exactly like an unrecognized slug would.
+		if ( ! Role_Permissions::is_tab_allowed( Roles::PATIENT_ROLE, $tab ) ) {
+			return 'dashboard';
+		}
+
+		return $tab;
+	}
+
+	/**
+	 * A tab's nav URL, or '' if the dashboard URL isn't resolvable or an
+	 * admin has turned that tab off for patients (Settings → Roles &
+	 * Permissions) — the template only renders a nav link when this is
+	 * non-empty, so a disallowed tab's link simply doesn't appear.
+	 *
+	 * @param string $dashboard_url Base dashboard URL, or ''.
+	 * @param string $tab           Tab slug.
+	 * @return string
+	 */
+	private static function tab_url( $dashboard_url, $tab ) {
+		if ( '' === $dashboard_url || ! Role_Permissions::is_tab_allowed( Roles::PATIENT_ROLE, $tab ) ) {
+			return '';
+		}
+
+		return add_query_arg( 'tab', $tab, $dashboard_url );
 	}
 
 	/**
@@ -381,18 +439,18 @@ class Patient_Dashboard {
 			'recent_activity'       => Appointments::recent_activity_for_patient( $user->ID ),
 			'booking_url'           => $booking_page_url,
 			'video_booking_url'     => $booking_page_url ? add_query_arg( 'type', 'video', $booking_page_url ) : '',
-			'profile_url'           => $dashboard_url ? add_query_arg( 'tab', 'profile', $dashboard_url ) : '',
+			'profile_url'           => self::tab_url( $dashboard_url, 'profile' ),
 			'directory_url'         => Page_Finder::url_for_shortcode( 'doctors_directory' ),
 			'logout_url'            => wp_logout_url( Page_Finder::url_for_shortcode( 'doctor_login' ) ),
 			'contact_url'           => self::contact_url(),
 			'theme'                 => Theme_Preference::get( $user->ID ),
 			'active_tab'            => $active_tab,
 			'dashboard_url'         => $dashboard_url,
-			'settings_url'          => $dashboard_url ? add_query_arg( 'tab', 'settings', $dashboard_url ) : '',
-			'medical_history_url'   => $dashboard_url ? add_query_arg( 'tab', 'medical-history', $dashboard_url ) : '',
-			'payments_url'          => $dashboard_url ? add_query_arg( 'tab', 'payments', $dashboard_url ) : '',
-			'appointments_url'      => $dashboard_url ? add_query_arg( 'tab', 'appointments', $dashboard_url ) : '',
-			'notifications_url'     => $dashboard_url ? add_query_arg( 'tab', 'notifications', $dashboard_url ) : '',
+			'settings_url'          => self::tab_url( $dashboard_url, 'settings' ),
+			'medical_history_url'   => self::tab_url( $dashboard_url, 'medical-history' ),
+			'payments_url'          => self::tab_url( $dashboard_url, 'payments' ),
+			'appointments_url'      => self::tab_url( $dashboard_url, 'appointments' ),
+			'notifications_url'     => self::tab_url( $dashboard_url, 'notifications' ),
 			'unread_notifications_count' => Notification_Center::unread_count( $user->ID ),
 			'profile_tab_html'      => 'profile' === $active_tab ? $this->render_profile_form( $user ) : '',
 			'settings_tab_html'     => 'settings' === $active_tab ? $this->template_loader->get_template( 'dashboard/partials/dashboard-settings-tab.php' ) : '',

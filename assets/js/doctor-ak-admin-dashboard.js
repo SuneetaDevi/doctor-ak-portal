@@ -62,14 +62,17 @@
 		}
 
 		if ( window.dakCityArea ) {
+			var countrySelect = document.getElementById( 'dak-admin-user-country' );
 			var citySelect = document.getElementById( 'dak-admin-user-city' );
 			var areaSelect = document.getElementById( 'dak-admin-user-area' );
 
-			if ( citySelect && areaSelect ) {
+			if ( countrySelect && citySelect && areaSelect ) {
 				window.dakCityArea.wire(
+					countrySelect,
 					citySelect,
 					areaSelect,
 					window.dakAdminUsers.locations,
+					countrySelect.getAttribute( 'data-current' ) || '',
 					citySelect.getAttribute( 'data-current' ) || '',
 					areaSelect.getAttribute( 'data-current' ) || ''
 				);

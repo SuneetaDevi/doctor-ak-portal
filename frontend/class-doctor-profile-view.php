@@ -176,16 +176,18 @@ class Doctor_Profile_View {
 		$end   = '';
 
 		foreach ( $sessions as $day ) {
-			if ( empty( $day['enabled'] ) ) {
-				continue;
-			}
+			foreach ( $day as $period ) {
+				if ( empty( $period['enabled'] ) ) {
+					continue;
+				}
 
-			if ( '' === $start || $day['start'] < $start ) {
-				$start = $day['start'];
-			}
+				if ( '' === $start || $period['start'] < $start ) {
+					$start = $period['start'];
+				}
 
-			if ( '' === $end || $day['end'] > $end ) {
-				$end = $day['end'];
+				if ( '' === $end || $period['end'] > $end ) {
+					$end = $period['end'];
+				}
 			}
 		}
 

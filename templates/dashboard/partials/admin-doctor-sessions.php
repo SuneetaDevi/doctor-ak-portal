@@ -6,7 +6,8 @@
  *
  * @package DoctorAKPortal\Templates
  *
- * @var array $clinics Rows from Clinics::all_flat_for_admin(), each with an added 'doctor' sub-array.
+ * @var array  $clinics     Rows from Clinics::all_flat_for_admin(), each with an added 'doctor' sub-array.
+ * @var string $section_url This section's own URL (?section=doctor-sessions or ?section=clinic), for building the Add/Edit links.
  */
 
 // Prevent direct file access.
@@ -26,7 +27,7 @@ $dak_session_icons = array(
 		<h1><?php esc_html_e( 'Doctor Sessions', 'doctor-ak-portal' ); ?></h1>
 		<p><?php esc_html_e( "Every doctor's clinics and their weekly session hours, in one place.", 'doctor-ak-portal' ); ?></p>
 	</div>
-	<button type="button" class="dak-button dak-button-primary" id="dak-admin-session-add"><?php esc_html_e( '+ Add Session', 'doctor-ak-portal' ); ?></button>
+	<a class="dak-button dak-button-primary" href="<?php echo esc_url( add_query_arg( 'view', 'form', $section_url ) ); ?>"><?php esc_html_e( '+ Add Session', 'doctor-ak-portal' ); ?></a>
 </div>
 
 <section class="dak-dashboard-card dak-admin-users-card">
@@ -48,8 +49,17 @@ $dak_session_icons = array(
 			<tbody>
 				<?php foreach ( $clinics as $clinic ) : ?>
 					<?php
-					$slot_durations = wp_list_pluck( array_filter( $clinic['sessions'], function ( $day ) { return ! empty( $day['enabled'] ); } ), 'slot_duration_minutes' );
-					$slot_label     = ! empty( $slot_durations ) ? sprintf( /* translators: %d: minutes. */ __( '%d min', 'doctor-ak-portal' ), (int) reset( $slot_durations ) ) : '—';
+					$slot_durations = array();
+
+					foreach ( $clinic['sessions'] as $dak_session_day ) {
+						foreach ( $dak_session_day as $dak_session_period ) {
+							if ( ! empty( $dak_session_period['enabled'] ) ) {
+								$slot_durations[] = $dak_session_period['slot_duration_minutes'];
+							}
+						}
+					}
+
+					$slot_label = ! empty( $slot_durations ) ? sprintf( /* translators: %d: minutes. */ __( '%d min', 'doctor-ak-portal' ), (int) reset( $slot_durations ) ) : '—';
 					?>
 					<tr data-clinic-row="<?php echo esc_attr( $clinic['id'] ); ?>">
 						<td data-label="ID">#<?php echo esc_html( $clinic['id'] ); ?></td>
@@ -70,23 +80,12 @@ $dak_session_icons = array(
 						<td data-label="<?php esc_attr_e( 'Time Slot', 'doctor-ak-portal' ); ?>"><?php echo esc_html( $slot_label ); ?></td>
 						<td class="dak-admin-users-actions-col">
 							<div class="dak-admin-users-actions">
-								<button
-									type="button"
+								<a
 									class="dak-icon-button"
-									data-admin-session-edit
-									data-clinic-id="<?php echo esc_attr( $clinic['id'] ); ?>"
-									data-doctor-id="<?php echo esc_attr( $clinic['doctor_id'] ); ?>"
-									data-type="<?php echo esc_attr( $clinic['type'] ); ?>"
-									data-name="<?php echo esc_attr( $clinic['name'] ); ?>"
-									data-address="<?php echo esc_attr( $clinic['address'] ); ?>"
-									data-city="<?php echo esc_attr( $clinic['city'] ); ?>"
-									data-area="<?php echo esc_attr( $clinic['area'] ); ?>"
-									data-phone="<?php echo esc_attr( $clinic['phone'] ); ?>"
-									data-contact-email="<?php echo esc_attr( $clinic['contact_email'] ); ?>"
-									data-sessions="<?php echo esc_attr( wp_json_encode( $clinic['sessions'] ) ); ?>"
+									href="<?php echo esc_url( add_query_arg( array( 'view' => 'form', 'clinic_id' => $clinic['id'] ), $section_url ) ); ?>"
 									title="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
 									aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
-								><?php echo $dak_session_icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
+								><?php echo $dak_session_icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 								<button
 									type="button"
 									class="dak-icon-button dak-icon-button-danger"

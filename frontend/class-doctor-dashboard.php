@@ -12,6 +12,7 @@ use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Page_Finder;
+use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Specializations;
@@ -93,6 +94,15 @@ class Doctor_Dashboard {
 			Assets::version( 'assets/css/doctor-ak-patient-dashboard.css' )
 		);
 
+		// The Add/Edit Patient and Reschedule Appointment modals reuse the
+		// same .dak-modal overlay/dialog styling as the public booking modal.
+		wp_enqueue_style(
+			'doctor-ak-portal-booking-modal',
+			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-booking-modal.css',
+			array( 'doctor-ak-portal-dashboard' ),
+			Assets::version( 'assets/css/doctor-ak-booking-modal.css' )
+		);
+
 		wp_enqueue_script(
 			'doctor-ak-portal-dashboard',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-dashboard.js',
@@ -121,6 +131,25 @@ class Doctor_Dashboard {
 		);
 
 		wp_enqueue_script(
+			'doctor-ak-portal-appointment-reschedule',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-appointment-reschedule.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-appointment-reschedule.js' ),
+			true
+		);
+
+		wp_localize_script(
+			'doctor-ak-portal-appointment-reschedule',
+			'dakAppointmentReschedule',
+			array(
+				'ajaxUrl'  => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( Doctor_Appointment_Handler::NONCE_ACTION ),
+				'action'   => 'doctor_ak_doctor_reschedule_appointment',
+				'genericError' => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
+			)
+		);
+
+		wp_enqueue_script(
 			'doctor-ak-portal-notifications',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-notifications.js',
 			array(),
@@ -137,9 +166,9 @@ class Doctor_Dashboard {
 			)
 		);
 
-		// The "+ Add Patient" modal only exists on the overview (default)
-		// tab (see doctor-dashboard.php).
-		if ( 'dashboard' === self::requested_tab() ) {
+		// The Add/Edit Patient modal exists on the overview (default) tab
+		// and the Patients tab (see doctor-dashboard.php / doctor-patients-tab.php).
+		if ( in_array( self::requested_tab(), array( 'dashboard', 'patients' ), true ) ) {
 			wp_enqueue_script(
 				'doctor-ak-portal-doctor-add-patient',
 				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-doctor-add-patient.js',
@@ -218,7 +247,36 @@ class Doctor_Dashboard {
 
 		$tab = sanitize_key( wp_unslash( $_GET['tab'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 
-		return in_array( $tab, array( 'profile', 'clinics', 'services', 'video-consultation', 'appointments', 'notifications', 'settings' ), true ) ? $tab : 'dashboard';
+		if ( ! in_array( $tab, array( 'profile', 'clinics', 'services', 'video-consultation', 'appointments', 'patients', 'notifications', 'settings' ), true ) ) {
+			return 'dashboard';
+		}
+
+		// An admin can turn a tab off entirely (Settings → Roles &
+		// Permissions) — a direct/bookmarked link to it then falls back to
+		// the Dashboard tab exactly like an unrecognized slug would.
+		if ( ! Role_Permissions::is_tab_allowed( Roles::DOCTOR_ROLE, $tab ) ) {
+			return 'dashboard';
+		}
+
+		return $tab;
+	}
+
+	/**
+	 * A tab's nav URL, or '' if the dashboard URL isn't resolvable or an
+	 * admin has turned that tab off for doctors (Settings → Roles &
+	 * Permissions) — the template only renders a nav link when this is
+	 * non-empty, so a disallowed tab's link simply doesn't appear.
+	 *
+	 * @param string $dashboard_url Base dashboard URL, or ''.
+	 * @param string $tab           Tab slug.
+	 * @return string
+	 */
+	private static function tab_url( $dashboard_url, $tab ) {
+		if ( '' === $dashboard_url || ! Role_Permissions::is_tab_allowed( Roles::DOCTOR_ROLE, $tab ) ) {
+			return '';
+		}
+
+		return add_query_arg( 'tab', $tab, $dashboard_url );
 	}
 
 	/**
@@ -354,6 +412,23 @@ class Doctor_Dashboard {
 	}
 
 	/**
+	 * Renders the Patients tab: every patient "belonging" to this doctor
+	 * (Appointments::patients_for_doctor()) — from appointment history
+	 * and/or added directly by them — each editable in place.
+	 *
+	 * @param \WP_User $user Currently logged-in doctor.
+	 * @return string
+	 */
+	private function render_patients_tab( \WP_User $user ) {
+		return $this->template_loader->get_template(
+			'dashboard/partials/doctor-patients-tab.php',
+			array(
+				'patients' => Appointments::patients_for_doctor( $user->ID ),
+			)
+		);
+	}
+
+	/**
 	 * Renders the Services tab: a doctor's bookable services (e.g. "OPD
 	 * Consultation"), each with its own category, charge, and duration.
 	 *
@@ -439,7 +514,6 @@ class Doctor_Dashboard {
 			$specializations
 		);
 
-		$user_counts = count_users();
 		$active_tab  = self::requested_tab();
 		$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
 
@@ -473,19 +547,22 @@ class Doctor_Dashboard {
 			'services_tab_html'     => 'services' === $active_tab ? $this->render_services_tab( $user ) : '',
 			'video_consultation_tab_html' => 'video-consultation' === $active_tab ? $this->render_video_consultation_tab( $user ) : '',
 			'appointments_tab_html' => 'appointments' === $active_tab ? $this->render_appointments_tab( $user ) : '',
+			'patients_tab_html'     => 'patients' === $active_tab ? $this->render_patients_tab( $user ) : '',
 			'notifications_tab_html' => 'notifications' === $active_tab ? $this->render_notifications_tab( $user ) : '',
 			'unread_notifications_count' => Notification_Center::unread_count( $user->ID ),
 			'settings_tab_html'     => 'settings' === $active_tab ? $this->render_settings_tab() : '',
 			'dashboard_url'         => $dashboard_url,
-			'profile_url'           => $dashboard_url ? add_query_arg( 'tab', 'profile', $dashboard_url ) : '',
-			'clinics_url'           => $dashboard_url ? add_query_arg( 'tab', 'clinics', $dashboard_url ) : '',
-			'services_url'          => $dashboard_url ? add_query_arg( 'tab', 'services', $dashboard_url ) : '',
-			'video_consultation_url' => $dashboard_url ? add_query_arg( 'tab', 'video-consultation', $dashboard_url ) : '',
-			'appointments_url'      => $dashboard_url ? add_query_arg( 'tab', 'appointments', $dashboard_url ) : '',
-			'notifications_url'     => $dashboard_url ? add_query_arg( 'tab', 'notifications', $dashboard_url ) : '',
-			'settings_url'          => $dashboard_url ? add_query_arg( 'tab', 'settings', $dashboard_url ) : '',
+			'profile_url'           => self::tab_url( $dashboard_url, 'profile' ),
+			'clinics_url'           => self::tab_url( $dashboard_url, 'clinics' ),
+			'services_url'          => self::tab_url( $dashboard_url, 'services' ),
+			'video_consultation_url' => self::tab_url( $dashboard_url, 'video-consultation' ),
+			'appointments_url'      => self::tab_url( $dashboard_url, 'appointments' ),
+			'patients_url'          => self::tab_url( $dashboard_url, 'patients' ),
+			'notifications_url'     => self::tab_url( $dashboard_url, 'notifications' ),
+			'settings_url'          => self::tab_url( $dashboard_url, 'settings' ),
 			'logout_url'            => wp_logout_url( Page_Finder::url_for_shortcode( 'doctor_login' ) ),
-			'total_patients'        => isset( $user_counts['avail_roles'][ Roles::PATIENT_ROLE ] ) ? (int) $user_counts['avail_roles'][ Roles::PATIENT_ROLE ] : 0,
+			'total_patients'        => Appointments::unique_patient_count_for_doctor( $user->ID ),
+			'doctor_clinics'        => Clinics::get_for_doctor( $user->ID ),
 			/**
 			 * Filters the doctor dashboard's "Today's Appointments" stat.
 			 *

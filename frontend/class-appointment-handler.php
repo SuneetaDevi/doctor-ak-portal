@@ -61,7 +61,7 @@ class Appointment_Handler {
 			'time'           => isset( $_POST['time'] ) ? sanitize_text_field( wp_unslash( $_POST['time'] ) ) : '',
 			'notes'          => isset( $_POST['notes'] ) ? sanitize_textarea_field( wp_unslash( $_POST['notes'] ) ) : '',
 			'service_id'     => isset( $_POST['service_id'] ) ? absint( wp_unslash( $_POST['service_id'] ) ) : 0,
-			'status'         => isset( $_POST['status'] ) ? sanitize_key( wp_unslash( $_POST['status'] ) ) : Appointments::STATUS_PENDING,
+			'status'         => isset( $_POST['status'] ) ? sanitize_key( wp_unslash( $_POST['status'] ) ) : Appointments::STATUS_CONFIRMED,
 			'payment_status' => isset( $_POST['payment_status'] ) ? sanitize_key( wp_unslash( $_POST['payment_status'] ) ) : Appointments::PAYMENT_STATUS_PENDING,
 			'payment_mode'   => isset( $_POST['payment_mode'] ) ? sanitize_key( wp_unslash( $_POST['payment_mode'] ) ) : Appointments::PAYMENT_MODE_MANUAL,
 		);
@@ -166,9 +166,12 @@ class Appointment_Handler {
 		echo $template_loader->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- template escapes its own output.
 			'print/appointment-slip.php',
 			array(
-				'appointment'  => $appointment,
-				'patient_name' => '' !== $patient_name ? $patient_name : __( 'Guest', 'doctor-ak-portal' ),
-				'doctor_name'  => '' !== $doctor_name ? $doctor_name : ( $doctor ? $doctor->display_name : __( 'Unknown Doctor', 'doctor-ak-portal' ) ),
+				'appointment'     => $appointment,
+				'patient_name'    => '' !== $patient_name ? $patient_name : __( 'Guest', 'doctor-ak-portal' ),
+				'doctor_name'     => '' !== $doctor_name ? $doctor_name : ( $doctor ? $doctor->display_name : __( 'Unknown Doctor', 'doctor-ak-portal' ) ),
+				'clinic_name'     => get_option( Site_Footer::OPTION_CLINIC_NAME, 'Main Clinic' ),
+				'clinic_address'  => get_option( Site_Footer::OPTION_CLINIC_ADDRESS, '' ),
+				'clinic_phone'    => get_option( Site_Footer::OPTION_CLINIC_PHONE, '' ),
 			)
 		);
 

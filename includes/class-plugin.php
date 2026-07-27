@@ -9,6 +9,7 @@ namespace DoctorAKPortal\Includes;
 
 use DoctorAKPortal\Admin\Footer_Settings;
 use DoctorAKPortal\Admin\Locations_Settings;
+use DoctorAKPortal\Admin\Role_Permissions_Settings;
 use DoctorAKPortal\Admin\Notification_Settings;
 use DoctorAKPortal\Admin\Swich_Settings;
 use DoctorAKPortal\Frontend\Admin_Dashboard;
@@ -19,6 +20,8 @@ use DoctorAKPortal\Frontend\Booking_Page;
 use DoctorAKPortal\Frontend\Booking_Trigger;
 use DoctorAKPortal\Frontend\Clinic_Handler;
 use DoctorAKPortal\Frontend\Doctor_Appointment_Handler;
+use DoctorAKPortal\Frontend\Locations_Handler;
+use DoctorAKPortal\Frontend\Role_Permissions_Handler;
 use DoctorAKPortal\Frontend\Doctor_Patient_Handler;
 use DoctorAKPortal\Frontend\Doctor_Dashboard;
 use DoctorAKPortal\Frontend\Doctor_Profile_View;
@@ -136,6 +139,10 @@ class Plugin {
 		$this->loader->add_action( 'admin_menu', $locations_settings, 'register_menu' );
 		$this->loader->add_action( 'admin_init', $locations_settings, 'register_settings' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $locations_settings, 'enqueue_assets' );
+
+		$role_permissions_settings = new Role_Permissions_Settings();
+		$this->loader->add_action( 'admin_menu', $role_permissions_settings, 'register_menu' );
+		$this->loader->add_action( 'admin_init', $role_permissions_settings, 'register_settings' );
 	}
 
 	/**
@@ -276,12 +283,21 @@ class Plugin {
 		$patient_appointment_handler = new Patient_Appointment_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_cancel_appointment', $patient_appointment_handler, 'handle_cancel_appointment' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_pay_now', $patient_appointment_handler, 'handle_pay_now' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_reschedule_appointment', $patient_appointment_handler, 'handle_reschedule' );
 
 		$doctor_appointment_handler = new Doctor_Appointment_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_mark_completed', $doctor_appointment_handler, 'handle_mark_completed' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_reschedule_appointment', $doctor_appointment_handler, 'handle_reschedule' );
+
+		$role_permissions_handler = new Role_Permissions_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_role_permissions_save', $role_permissions_handler, 'handle_save' );
+
+		$locations_handler = new Locations_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_locations_save', $locations_handler, 'handle_save' );
 
 		$doctor_patient_handler = new Doctor_Patient_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_add_patient', $doctor_patient_handler, 'handle_add_patient' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_edit_patient', $doctor_patient_handler, 'handle_edit_patient' );
 
 		// Reuses the existing hourly reminder cron (Notifications::CRON_HOOK)
 		// rather than scheduling a second event just for this.

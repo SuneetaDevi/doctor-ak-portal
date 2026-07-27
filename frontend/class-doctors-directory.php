@@ -111,7 +111,6 @@ class Doctors_Directory {
 		$doctors_html         = array();
 		$used_specializations = array();
 		$all_specializations  = Specializations::get_all();
-		$used_cities          = array();
 		$used_clinics         = array();
 
 		foreach ( $cards as $card ) {
@@ -121,25 +120,25 @@ class Doctors_Directory {
 				$used_specializations[ $slug ] = isset( $all_specializations[ $slug ] ) ? $all_specializations[ $slug ] : $slug;
 			}
 
-			foreach ( $card['city_slugs'] as $slug ) {
-				$used_cities[ $slug ] = Locations::city_label( $slug );
-			}
-
 			foreach ( $card['clinic_labels'] as $label ) {
 				$used_clinics[ $label ] = $label;
 			}
 		}
 
 		asort( $used_specializations );
-		asort( $used_cities );
 		asort( $used_clinics );
 
+		// Country/City/Area are rendered as empty <select>s and populated/
+		// cascaded client-side from the full admin-managed Locations list
+		// (see enqueue_assets()'s 'locations' localization and
+		// assets/js/doctor-ak-directory.js), the same pattern every other
+		// location picker in the plugin uses — rather than pre-filtering to
+		// only locations a listed doctor happens to have.
 		return $this->template_loader->get_template(
 			'directory/doctors-directory.php',
 			array(
 				'doctors_html'    => $doctors_html,
 				'specializations' => $used_specializations,
-				'cities'          => $used_cities,
 				'clinics'         => $used_clinics,
 			)
 		);
@@ -206,6 +205,7 @@ class Doctors_Directory {
 		$primary_clinic_location = '';
 		$extra_clinic_count      = 0;
 		$clinic_labels           = array();
+		$country_slugs           = array();
 		$city_slugs              = array();
 		$area_slugs              = array();
 
@@ -224,6 +224,10 @@ class Doctors_Directory {
 				$clinic_labels[] = $clinic['name'];
 			}
 
+			if ( '' !== $clinic['country'] ) {
+				$country_slugs[] = $clinic['country'];
+			}
+
 			if ( '' !== $clinic['city'] ) {
 				$city_slugs[] = $clinic['city'];
 			}
@@ -233,12 +237,18 @@ class Doctors_Directory {
 			}
 		}
 
-		// No physical clinic has a city/area set yet (or no physical clinic
-		// at all) — fall back to the doctor's own profile-level city/area
-		// so they still show up under the directory's location filter.
-		if ( empty( $city_slugs ) ) {
-			$profile_city = get_user_meta( $doctor->ID, 'doctor_ak_city', true );
-			$profile_area = get_user_meta( $doctor->ID, 'doctor_ak_area', true );
+		// No physical clinic has a country/city/area set yet (or no
+		// physical clinic at all) — fall back to the doctor's own
+		// profile-level location so they still show up under the
+		// directory's location filter.
+		if ( empty( $country_slugs ) ) {
+			$profile_country = get_user_meta( $doctor->ID, 'doctor_ak_country', true );
+			$profile_city    = get_user_meta( $doctor->ID, 'doctor_ak_city', true );
+			$profile_area    = get_user_meta( $doctor->ID, 'doctor_ak_area', true );
+
+			if ( '' !== $profile_country ) {
+				$country_slugs[] = $profile_country;
+			}
 
 			if ( '' !== $profile_city ) {
 				$city_slugs[] = $profile_city;
@@ -249,8 +259,9 @@ class Doctors_Directory {
 			}
 		}
 
-		$city_slugs = array_values( array_unique( $city_slugs ) );
-		$area_slugs = array_values( array_unique( $area_slugs ) );
+		$country_slugs = array_values( array_unique( $country_slugs ) );
+		$city_slugs    = array_values( array_unique( $city_slugs ) );
+		$area_slugs    = array_values( array_unique( $area_slugs ) );
 
 		$display_name = trim( $doctor->first_name . ' ' . $doctor->last_name );
 		$display_name = '' !== $display_name ? $display_name : $doctor->display_name;
@@ -264,6 +275,7 @@ class Doctors_Directory {
 			'years_experience'      => get_user_meta( $doctor->ID, 'doctor_ak_years_experience', true ),
 			'clinic_location'       => $primary_clinic_location,
 			'extra_clinic_count'    => $extra_clinic_count,
+			'country_slugs'         => $country_slugs,
 			'city_slugs'            => $city_slugs,
 			'area_slugs'            => $area_slugs,
 			'clinic_labels'         => $clinic_labels,

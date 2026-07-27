@@ -30,11 +30,12 @@ class Appointments {
 	 */
 	const POST_TYPE = 'dak_appointment';
 
-	const STATUS_PENDING         = 'pending';
 	const STATUS_PENDING_PAYMENT = 'pending_payment';
 	const STATUS_CONFIRMED       = 'confirmed';
+	const STATUS_PAID            = 'paid';
 	const STATUS_CANCELLED       = 'cancelled';
 	const STATUS_COMPLETED       = 'completed';
+	const STATUS_RESCHEDULED     = 'rescheduled';
 
 	const TYPE_CLINIC = 'clinic';
 	const TYPE_VIDEO  = 'video';
@@ -180,12 +181,12 @@ class Appointments {
 			// (Pending) — unlike the patient-facing Booking_Handler flow, which
 			// must never let the client dictate its own payment status.
 			$status_options = self::status_options();
-			$status         = isset( $data['status'] ) && array_key_exists( $data['status'], $status_options ) ? $data['status'] : self::STATUS_PENDING;
+			$status         = isset( $data['status'] ) && array_key_exists( $data['status'], $status_options ) ? $data['status'] : self::STATUS_CONFIRMED;
 			$payment_status = isset( $data['payment_status'] ) && self::PAYMENT_STATUS_PAID === $data['payment_status'] ? self::PAYMENT_STATUS_PAID : self::PAYMENT_STATUS_PENDING;
 			$payment_mode   = isset( $data['payment_mode'] ) && self::PAYMENT_MODE_ONLINE === $data['payment_mode'] ? self::PAYMENT_MODE_ONLINE : self::PAYMENT_MODE_MANUAL;
 		} else {
 			$requires_payment = apply_filters( 'doctor_ak_appointment_requires_payment', false, $data );
-			$status           = $requires_payment ? self::STATUS_PENDING_PAYMENT : self::STATUS_PENDING;
+			$status           = $requires_payment ? self::STATUS_PENDING_PAYMENT : self::STATUS_CONFIRMED;
 			$payment_mode     = $requires_payment ? self::PAYMENT_MODE_ONLINE : self::PAYMENT_MODE_MANUAL;
 
 			/**
@@ -343,7 +344,7 @@ class Appointments {
 		}
 
 		$status_options = self::status_options();
-		$status         = isset( $data['status'] ) && array_key_exists( $data['status'], $status_options ) ? $data['status'] : self::STATUS_PENDING;
+		$status         = isset( $data['status'] ) && array_key_exists( $data['status'], $status_options ) ? $data['status'] : self::STATUS_CONFIRMED;
 		$payment_status = isset( $data['payment_status'] ) && self::PAYMENT_STATUS_PAID === $data['payment_status'] ? self::PAYMENT_STATUS_PAID : self::PAYMENT_STATUS_PENDING;
 		$payment_mode   = isset( $data['payment_mode'] ) && self::PAYMENT_MODE_ONLINE === $data['payment_mode'] ? self::PAYMENT_MODE_ONLINE : self::PAYMENT_MODE_MANUAL;
 
@@ -517,6 +518,27 @@ class Appointments {
 	}
 
 	/**
+	 * Count of distinct patients (registered or guest) who have ever booked
+	 * an appointment with a given doctor — for the doctor dashboard's "Total
+	 * Patients" stat, so it reflects that doctor's own patients rather than
+	 * every patient account site-wide.
+	 *
+	 * @param int $doctor_id Doctor's user ID.
+	 * @return int
+	 */
+	public static function unique_patient_count_for_doctor( $doctor_id ) {
+		$seen = array();
+
+		foreach ( self::for_doctor( $doctor_id ) as $appointment ) {
+			$key = $appointment['patient_id'] > 0 ? 'u' . $appointment['patient_id'] : 'g' . strtolower( $appointment['guest_email'] );
+
+			$seen[ $key ] = true;
+		}
+
+		return count( $seen );
+	}
+
+	/**
 	 * Appointments booked by a given (logged-in) patient, most recent last.
 	 *
 	 * @param int $patient_id Patient's user ID.
@@ -524,6 +546,106 @@ class Appointments {
 	 */
 	public static function for_patient( $patient_id ) {
 		return self::query( 'doctor_ak_appointment_patient_id', $patient_id );
+	}
+
+	/**
+	 * Whether a patient "belongs" to a doctor — either they have (or have
+	 * had) an appointment with that doctor, or the doctor added them
+	 * directly (doctor_ak_added_by_doctor, see Doctor_Patient_Handler).
+	 * Gates the doctor dashboard's Patients tab edit action so a doctor can
+	 * never edit another doctor's patient.
+	 *
+	 * @param int $doctor_id  Doctor's user ID.
+	 * @param int $patient_id Patient's user ID.
+	 * @return bool
+	 */
+	public static function is_doctors_patient( $doctor_id, $patient_id ) {
+		if ( (int) get_user_meta( $patient_id, 'doctor_ak_added_by_doctor', true ) === (int) $doctor_id ) {
+			return true;
+		}
+
+		foreach ( self::for_doctor( $doctor_id ) as $appointment ) {
+			if ( (int) $appointment['patient_id'] === (int) $patient_id ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Every registered patient "belonging" to a doctor (see
+	 * is_doctors_patient()) — from appointment history and/or having been
+	 * added directly by that doctor — for the doctor dashboard's Patients
+	 * tab. Guests (no account) aren't included since there's no profile to
+	 * edit. Most-recently-seen first; patients with no visit yet (added but
+	 * not yet booked) sort last.
+	 *
+	 * @param int $doctor_id Doctor's user ID.
+	 * @return array List of `array( 'id', 'name', 'email', 'phone', 'clinic_name', 'last_visit' )`, 'last_visit' '' if none yet.
+	 */
+	public static function patients_for_doctor( $doctor_id ) {
+		$last_visit = array();
+
+		foreach ( self::for_doctor( $doctor_id ) as $appointment ) {
+			if ( $appointment['patient_id'] <= 0 ) {
+				continue;
+			}
+
+			$patient_id = (int) $appointment['patient_id'];
+
+			if ( ! isset( $last_visit[ $patient_id ] ) || $appointment['date'] > $last_visit[ $patient_id ] ) {
+				$last_visit[ $patient_id ] = $appointment['date'];
+			}
+		}
+
+		$added_query = new \WP_User_Query(
+			array(
+				'role'       => Roles::PATIENT_ROLE,
+				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- no better lookup available; small per-doctor result set.
+					array(
+						'key'   => 'doctor_ak_added_by_doctor',
+						'value' => $doctor_id,
+					),
+				),
+				'fields'     => 'ID',
+			)
+		);
+
+		$patient_ids = array_unique( array_merge( array_keys( $last_visit ), array_map( 'intval', $added_query->get_results() ) ) );
+
+		$rows = array();
+
+		foreach ( $patient_ids as $patient_id ) {
+			$patient = get_userdata( $patient_id );
+
+			if ( ! $patient ) {
+				continue;
+			}
+
+			$clinic_id   = (int) get_user_meta( $patient_id, 'doctor_ak_added_by_clinic', true );
+			$clinic_name = $clinic_id > 0 ? Clinics::clinic_name_for_doctor( $doctor_id, $clinic_id ) : '';
+
+			$rows[] = array(
+				'id'          => $patient_id,
+				'name'        => self::patient_display_name( $patient_id ),
+				'first_name'  => $patient->first_name,
+				'last_name'   => $patient->last_name,
+				'email'       => $patient->user_email,
+				'phone'       => get_user_meta( $patient_id, 'doctor_ak_phone_number', true ),
+				'clinic_name' => $clinic_name,
+				'last_visit'  => isset( $last_visit[ $patient_id ] ) ? $last_visit[ $patient_id ] : '',
+			);
+		}
+
+		usort(
+			$rows,
+			function ( $a, $b ) {
+				return strcmp( $b['last_visit'], $a['last_visit'] );
+			}
+		);
+
+		return $rows;
 	}
 
 	/**
@@ -1103,6 +1225,58 @@ class Appointments {
 	}
 
 	/**
+	 * Moves an appointment to a new date/time and flags it 'rescheduled' —
+	 * used by the doctor dashboard, patient dashboard, and admin Edit
+	 * modal's Reschedule actions. Ownership is the caller's responsibility
+	 * (see Doctor_Appointment_Handler::handle_reschedule() and
+	 * Patient_Appointment_Handler::handle_reschedule(), which check the
+	 * appointment belongs to the requesting doctor/patient before calling
+	 * this); admin reschedules go through this too but skip the ownership
+	 * check entirely since the admin can already retarget the appointment.
+	 *
+	 * @param int    $appointment_id Appointment post ID.
+	 * @param string $date           New date, 'YYYY-MM-DD'.
+	 * @param string $time           New time, 'HH:MM'.
+	 * @return true|\WP_Error
+	 */
+	public static function reschedule( $appointment_id, $date, $time ) {
+		$appointment = self::get( $appointment_id );
+
+		if ( empty( $appointment ) ) {
+			return new \WP_Error( 'doctor_ak_invalid_appointment', __( 'That appointment could not be found.', 'doctor-ak-portal' ) );
+		}
+
+		if ( in_array( $appointment['status'], array( self::STATUS_CANCELLED, self::STATUS_COMPLETED ), true ) ) {
+			return new \WP_Error( 'doctor_ak_appointment_not_reschedulable', __( 'This appointment can no longer be rescheduled.', 'doctor-ak-portal' ) );
+		}
+
+		if ( ! self::is_valid_date( $date ) ) {
+			return new \WP_Error( 'doctor_ak_invalid_date', __( 'Please choose a valid appointment date.', 'doctor-ak-portal' ) );
+		}
+
+		if ( ! self::is_valid_time( $time ) ) {
+			return new \WP_Error( 'doctor_ak_invalid_time', __( 'Please choose a valid appointment time.', 'doctor-ak-portal' ) );
+		}
+
+		if ( self::is_slot_taken( $appointment['doctor_id'], $date, $time, $appointment_id ) ) {
+			return new \WP_Error( 'doctor_ak_slot_taken', __( 'That time slot is already booked. Please choose another time.', 'doctor-ak-portal' ) );
+		}
+
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_date', $date );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_time', $time );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_RESCHEDULED );
+
+		/**
+		 * Fires after an appointment is rescheduled to a new date/time.
+		 *
+		 * @param int $appointment_id Rescheduled appointment's post ID.
+		 */
+		do_action( 'doctor_ak_appointment_rescheduled', $appointment_id );
+
+		return true;
+	}
+
+	/**
 	 * Reads a single appointment's meta into a plain array. Public wrapper
 	 * around get() for callers outside this class (e.g. Swich_Payment).
 	 *
@@ -1278,7 +1452,7 @@ class Appointments {
 	 */
 	public static function mark_paid( $appointment_id ) {
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_payment_status', self::PAYMENT_STATUS_PAID );
-		update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_CONFIRMED );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_PAID );
 
 		/**
 		 * Fires after an appointment is marked paid (Swich callback or return-page fallback).
@@ -1293,8 +1467,9 @@ class Appointments {
 	 * the doctor dashboard's "Mark as Completed" action. Ownership-checked
 	 * (only the doctor it belongs to can complete it this way; admin
 	 * completion would go through Appointments::update() instead), and only
-	 * allowed from 'confirmed' (booked) — a pending or already-cancelled
-	 * appointment was never actually seen, so there's nothing to complete.
+	 * allowed from 'confirmed' (booked), 'paid', or 'rescheduled' — a
+	 * pending-payment or already-cancelled appointment was never actually
+	 * seen, so there's nothing to complete.
 	 *
 	 * @param int $appointment_id Appointment post ID.
 	 * @param int $doctor_id      Doctor's user ID, must match the appointment's doctor.
@@ -1305,7 +1480,7 @@ class Appointments {
 
 		if ( empty( $appointment )
 			|| (int) $appointment['doctor_id'] !== (int) $doctor_id
-			|| self::STATUS_CONFIRMED !== $appointment['status']
+			|| ! in_array( $appointment['status'], array( self::STATUS_CONFIRMED, self::STATUS_PAID, self::STATUS_RESCHEDULED ), true )
 		) {
 			return false;
 		}
@@ -1339,8 +1514,9 @@ class Appointments {
 				'no_found_rows'  => true,
 				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- small, non-public post type; no better lookup available.
 					array(
-						'key'   => 'doctor_ak_appointment_status',
-						'value' => self::STATUS_CONFIRMED,
+						'key'     => 'doctor_ak_appointment_status',
+						'value'   => array( self::STATUS_CONFIRMED, self::STATUS_PAID, self::STATUS_RESCHEDULED ),
+						'compare' => 'IN',
 					),
 				),
 			)
@@ -1585,11 +1761,12 @@ class Appointments {
 	 */
 	public static function status_options() {
 		return array(
-			self::STATUS_PENDING         => __( 'Pending', 'doctor-ak-portal' ),
-			self::STATUS_PENDING_PAYMENT => __( 'Pending Payment', 'doctor-ak-portal' ),
 			self::STATUS_CONFIRMED       => __( 'Booked', 'doctor-ak-portal' ),
+			self::STATUS_PENDING_PAYMENT => __( 'Pending Payment', 'doctor-ak-portal' ),
+			self::STATUS_PAID            => __( 'Paid', 'doctor-ak-portal' ),
 			self::STATUS_CANCELLED       => __( 'Cancelled', 'doctor-ak-portal' ),
 			self::STATUS_COMPLETED       => __( 'Completed', 'doctor-ak-portal' ),
+			self::STATUS_RESCHEDULED     => __( 'Rescheduled', 'doctor-ak-portal' ),
 		);
 	}
 
@@ -1629,8 +1806,12 @@ class Appointments {
 			return 'is-disabled';
 		}
 
-		if ( self::STATUS_CONFIRMED === $status || self::STATUS_COMPLETED === $status ) {
+		if ( self::STATUS_CONFIRMED === $status || self::STATUS_COMPLETED === $status || self::STATUS_PAID === $status ) {
 			return 'is-active';
+		}
+
+		if ( self::STATUS_RESCHEDULED === $status ) {
+			return 'is-rescheduled';
 		}
 
 		return 'is-pending';
@@ -1869,12 +2050,13 @@ class Appointments {
 	 * @param string $time      'HH:MM'.
 	 * @return bool
 	 */
-	private static function is_slot_taken( $doctor_id, $date, $time ) {
+	private static function is_slot_taken( $doctor_id, $date, $time, $exclude_appointment_id = 0 ) {
 		foreach ( self::for_doctor( $doctor_id ) as $appointment ) {
 			if ( $appointment['date'] === $date
 				&& $appointment['time'] === $time
 				&& self::PAYMENT_STATUS_PAID === $appointment['payment_status']
 				&& self::STATUS_CANCELLED !== $appointment['status']
+				&& (int) $appointment['id'] !== (int) $exclude_appointment_id
 			) {
 				return true;
 			}

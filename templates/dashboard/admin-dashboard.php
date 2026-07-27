@@ -51,8 +51,10 @@ $dak_admin_section_icons = array(
 	'receptionist'    => 'headset',
 	'clinic'          => 'pin',
 	'services'        => 'settings',
-	'doctor-sessions' => 'clock',
-	'settings'        => 'settings',
+	'doctor-sessions'  => 'clock',
+	'role-permissions' => 'settings',
+	'locations'        => 'pin',
+	'settings'         => 'settings',
 );
 ?>
 <div class="dak-portal dak-dashboard dak-admin-dashboard" data-role="administrator" data-theme="<?php echo esc_attr( $theme ); ?>">

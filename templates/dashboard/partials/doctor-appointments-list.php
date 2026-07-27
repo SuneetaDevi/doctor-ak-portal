@@ -77,8 +77,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<?php if ( ! empty( $row['video_call']['can_join'] ) ) : ?>
 							<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $row['video_call']['room_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Start Call', 'doctor-ak-portal' ); ?></a>
 						<?php endif; ?>
-						<?php if ( 'confirmed' === $row['status'] ) : ?>
+						<?php if ( in_array( $row['status'], array( 'confirmed', 'paid', 'rescheduled' ), true ) ) : ?>
 							<button type="button" class="dak-status-pill dak-status-pill-action" data-mark-completed data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"><?php esc_html_e( 'Mark Completed', 'doctor-ak-portal' ); ?></button>
+						<?php endif; ?>
+						<?php if ( ! in_array( $row['status'], array( 'cancelled', 'completed' ), true ) ) : ?>
+							<button
+								type="button"
+								class="dak-status-pill dak-status-pill-action"
+								data-reschedule-appointment
+								data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"
+								data-date="<?php echo esc_attr( $row['date'] ); ?>"
+								data-time="<?php echo esc_attr( $row['time'] ); ?>"
+							><?php esc_html_e( 'Reschedule', 'doctor-ak-portal' ); ?></button>
 						<?php endif; ?>
 					</div>
 				</li>

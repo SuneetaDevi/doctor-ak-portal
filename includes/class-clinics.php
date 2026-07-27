@@ -69,20 +69,53 @@ class Clinics {
 	}
 
 	/**
-	 * Returns a sessions structure with every day disabled.
+	 * The (up to) three sessions a single day can be split into, in display
+	 * order, keyed by slug — lets a doctor take a midday break instead of
+	 * being open for one unbroken block. A day counts as "open" if any one
+	 * of its periods is enabled; slots are generated independently per
+	 * enabled period, so the gap between e.g. a morning and evening period
+	 * naturally becomes a break with no bookable slots in it.
+	 *
+	 * @return array
+	 */
+	public static function session_periods() {
+		return array(
+			'morning'   => __( 'Morning', 'doctor-ak-portal' ),
+			'afternoon' => __( 'Afternoon', 'doctor-ak-portal' ),
+			'evening'   => __( 'Evening', 'doctor-ak-portal' ),
+		);
+	}
+
+	/**
+	 * One disabled period's shape.
+	 *
+	 * @return array
+	 */
+	private static function empty_period() {
+		return array(
+			'enabled'               => false,
+			'start'                 => '',
+			'end'                   => '',
+			'slot_duration_minutes' => 0,
+		);
+	}
+
+	/**
+	 * Returns a sessions structure with every day/period disabled.
 	 *
 	 * @return array
 	 */
 	public static function empty_sessions() {
 		$sessions = array();
 
-		foreach ( self::session_days() as $slug => $label ) {
-			$sessions[ $slug ] = array(
-				'enabled'               => false,
-				'start'                 => '',
-				'end'                   => '',
-				'slot_duration_minutes' => 0,
-			);
+		foreach ( self::session_days() as $day_slug => $day_label ) {
+			$periods = array();
+
+			foreach ( self::session_periods() as $period_slug => $period_label ) {
+				$periods[ $period_slug ] = self::empty_period();
+			}
+
+			$sessions[ $day_slug ] = $periods;
 		}
 
 		return $sessions;
@@ -92,7 +125,7 @@ class Clinics {
 	 * Validates and sanitizes the `sessions` portion of a request.
 	 *
 	 * Expects the shape produced by fields named
-	 * `sessions[day][enabled|start|end|slot_duration_minutes]`.
+	 * `sessions[day][period][enabled|start|end|slot_duration_minutes]`.
 	 *
 	 * @param array $posted_sessions Raw `sessions` sub-array from the request.
 	 * @return array|\WP_Error Sanitized sessions, or WP_Error on invalid input.
@@ -100,49 +133,57 @@ class Clinics {
 	public static function sanitize_sessions_from_request( array $posted_sessions ) {
 		$sessions = array();
 
-		foreach ( self::session_days() as $slug => $label ) {
-			$day = isset( $posted_sessions[ $slug ] ) && is_array( $posted_sessions[ $slug ] )
-				? $posted_sessions[ $slug ]
+		foreach ( self::session_days() as $day_slug => $day_label ) {
+			$posted_day = isset( $posted_sessions[ $day_slug ] ) && is_array( $posted_sessions[ $day_slug ] )
+				? $posted_sessions[ $day_slug ]
 				: array();
 
-			$enabled = ! empty( $day['enabled'] );
+			$periods = array();
 
-			if ( ! $enabled ) {
-				$sessions[ $slug ] = array(
-					'enabled'               => false,
-					'start'                 => '',
-					'end'                   => '',
-					'slot_duration_minutes' => 0,
+			foreach ( self::session_periods() as $period_slug => $period_label ) {
+				$period = isset( $posted_day[ $period_slug ] ) && is_array( $posted_day[ $period_slug ] )
+					? $posted_day[ $period_slug ]
+					: array();
+
+				$enabled = ! empty( $period['enabled'] );
+
+				if ( ! $enabled ) {
+					$periods[ $period_slug ] = self::empty_period();
+					continue;
+				}
+
+				$start = isset( $period['start'] ) ? sanitize_text_field( wp_unslash( $period['start'] ) ) : '';
+				$end   = isset( $period['end'] ) ? sanitize_text_field( wp_unslash( $period['end'] ) ) : '';
+
+				/* translators: 1: period name (Morning/Afternoon/Evening), 2: day of the week. */
+				$period_day_label = sprintf( __( '%1$s on %2$s', 'doctor-ak-portal' ), $period_label, $day_label );
+
+				if ( ! self::is_valid_time( $start ) || ! self::is_valid_time( $end ) ) {
+					/* translators: %s: e.g. "Morning on Monday". */
+					return new \WP_Error( 'doctor_ak_invalid_session_time', sprintf( __( 'Please provide a valid start and end time for %s.', 'doctor-ak-portal' ), $period_day_label ) );
+				}
+
+				if ( $start >= $end ) {
+					/* translators: %s: e.g. "Morning on Monday". */
+					return new \WP_Error( 'doctor_ak_invalid_session_range', sprintf( __( 'The end time must be after the start time for %s.', 'doctor-ak-portal' ), $period_day_label ) );
+				}
+
+				$slot_duration = isset( $period['slot_duration_minutes'] ) ? absint( wp_unslash( $period['slot_duration_minutes'] ) ) : 0;
+
+				if ( $slot_duration < 5 || $slot_duration > 240 ) {
+					/* translators: %s: e.g. "Morning on Monday". */
+					return new \WP_Error( 'doctor_ak_invalid_slot_duration', sprintf( __( 'Please provide a slot duration between 5 and 240 minutes for %s.', 'doctor-ak-portal' ), $period_day_label ) );
+				}
+
+				$periods[ $period_slug ] = array(
+					'enabled'               => true,
+					'start'                 => $start,
+					'end'                   => $end,
+					'slot_duration_minutes' => $slot_duration,
 				);
-				continue;
 			}
 
-			$start = isset( $day['start'] ) ? sanitize_text_field( wp_unslash( $day['start'] ) ) : '';
-			$end   = isset( $day['end'] ) ? sanitize_text_field( wp_unslash( $day['end'] ) ) : '';
-
-			if ( ! self::is_valid_time( $start ) || ! self::is_valid_time( $end ) ) {
-				/* translators: %s: day of the week. */
-				return new \WP_Error( 'doctor_ak_invalid_session_time', sprintf( __( 'Please provide a valid start and end time for %s.', 'doctor-ak-portal' ), $label ) );
-			}
-
-			if ( $start >= $end ) {
-				/* translators: %s: day of the week. */
-				return new \WP_Error( 'doctor_ak_invalid_session_range', sprintf( __( 'The end time must be after the start time for %s.', 'doctor-ak-portal' ), $label ) );
-			}
-
-			$slot_duration = isset( $day['slot_duration_minutes'] ) ? absint( wp_unslash( $day['slot_duration_minutes'] ) ) : 0;
-
-			if ( $slot_duration < 5 || $slot_duration > 240 ) {
-				/* translators: %s: day of the week. */
-				return new \WP_Error( 'doctor_ak_invalid_slot_duration', sprintf( __( 'Please provide a slot duration between 5 and 240 minutes for %s.', 'doctor-ak-portal' ), $label ) );
-			}
-
-			$sessions[ $slug ] = array(
-				'enabled'               => true,
-				'start'                 => $start,
-				'end'                   => $end,
-				'slot_duration_minutes' => $slot_duration,
-			);
+			$sessions[ $day_slug ] = $periods;
 		}
 
 		return $sessions;
@@ -170,21 +211,27 @@ class Clinics {
 			return new \WP_Error( 'doctor_ak_clinic_address_required', __( 'Please provide this clinic\'s address.', 'doctor-ak-portal' ) );
 		}
 
-		$city = isset( $posted['city'] ) ? sanitize_text_field( wp_unslash( $posted['city'] ) ) : '';
-		$area = isset( $posted['area'] ) ? sanitize_text_field( wp_unslash( $posted['area'] ) ) : '';
+		$country = isset( $posted['country'] ) ? sanitize_text_field( wp_unslash( $posted['country'] ) ) : '';
+		$city    = isset( $posted['city'] ) ? sanitize_text_field( wp_unslash( $posted['city'] ) ) : '';
+		$area    = isset( $posted['area'] ) ? sanitize_text_field( wp_unslash( $posted['area'] ) ) : '';
 
 		if ( self::TYPE_PHYSICAL === $type ) {
-			if ( '' === $city || ! Locations::is_valid_city( $city ) ) {
+			if ( '' === $country || ! Locations::is_valid_country( $country ) ) {
+				return new \WP_Error( 'doctor_ak_clinic_country_required', __( 'Please select this clinic\'s country.', 'doctor-ak-portal' ) );
+			}
+
+			if ( '' === $city || ! Locations::is_valid_city( $country, $city ) ) {
 				return new \WP_Error( 'doctor_ak_clinic_city_required', __( 'Please select this clinic\'s city.', 'doctor-ak-portal' ) );
 			}
 
-			if ( '' === $area || ! Locations::is_valid_area( $city, $area ) ) {
+			if ( '' === $area || ! Locations::is_valid_area( $country, $city, $area ) ) {
 				return new \WP_Error( 'doctor_ak_clinic_area_required', __( 'Please select this clinic\'s area.', 'doctor-ak-portal' ) );
 			}
 		}
 
 		if ( self::TYPE_VIDEO === $type ) {
 			$address = '';
+			$country = '';
 			$city    = '';
 			$area    = '';
 		}
@@ -205,6 +252,7 @@ class Clinics {
 			'type'          => $type,
 			'name'          => $name,
 			'address'       => $address,
+			'country'       => $country,
 			'city'          => $city,
 			'area'          => $area,
 			'phone'         => $phone,
@@ -235,6 +283,7 @@ class Clinics {
 				'type'          => $fields['type'],
 				'name'          => $fields['name'],
 				'address'       => $fields['address'],
+				'country'       => $fields['country'],
 				'city'          => $fields['city'],
 				'area'          => $fields['area'],
 				'phone'         => $fields['phone'],
@@ -243,7 +292,7 @@ class Clinics {
 				'created_at'    => $now,
 				'updated_at'    => $now,
 			),
-			array( '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
+			array( '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
 		);
 
 		return $inserted ? (int) $wpdb->insert_id : false;
@@ -275,6 +324,7 @@ class Clinics {
 				'type'          => $fields['type'],
 				'name'          => $fields['name'],
 				'address'       => $fields['address'],
+				'country'       => $fields['country'],
 				'city'          => $fields['city'],
 				'area'          => $fields['area'],
 				'phone'         => $fields['phone'],
@@ -283,7 +333,7 @@ class Clinics {
 				'updated_at'    => current_time( 'mysql' ),
 			),
 			$where,
-			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ),
+			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ),
 			$where_types
 		);
 
@@ -346,6 +396,26 @@ class Clinics {
 	}
 
 	/**
+	 * A clinic's name, only if it actually belongs to the given doctor —
+	 * used to safely resolve a "which clinic was this patient added at"
+	 * label without trusting a stored clinic_id blindly (e.g. after the
+	 * clinic was later deleted, or reused across doctors).
+	 *
+	 * @param int $doctor_id Doctor's user ID.
+	 * @param int $clinic_id Clinic ID.
+	 * @return string Empty string if not found or not owned by this doctor.
+	 */
+	public static function clinic_name_for_doctor( $doctor_id, $clinic_id ) {
+		foreach ( self::get_for_doctor( $doctor_id ) as $clinic ) {
+			if ( (int) $clinic['id'] === (int) $clinic_id ) {
+				return $clinic['name'];
+			}
+		}
+
+		return '';
+	}
+
+	/**
 	 * Total number of clinics across every doctor, for the admin dashboard's
 	 * "Total Clinics" stat card.
 	 *
@@ -399,23 +469,27 @@ class Clinics {
 				continue;
 			}
 
-			$day = isset( $clinic['sessions'][ $weekday ] ) ? $clinic['sessions'][ $weekday ] : null;
+			$day = isset( $clinic['sessions'][ $weekday ] ) ? $clinic['sessions'][ $weekday ] : array();
 
-			if ( ! $day || empty( $day['enabled'] ) ) {
-				continue;
-			}
+			foreach ( self::session_periods() as $period_slug => $period_label ) {
+				$period = isset( $day[ $period_slug ] ) ? $day[ $period_slug ] : null;
 
-			$slot_duration = (int) $day['slot_duration_minutes'];
+				if ( ! $period || empty( $period['enabled'] ) ) {
+					continue;
+				}
 
-			if ( $slot_duration <= 0 ) {
-				continue;
-			}
+				$slot_duration = (int) $period['slot_duration_minutes'];
 
-			$start_minutes = self::time_to_minutes( $day['start'] );
-			$end_minutes   = self::time_to_minutes( $day['end'] );
+				if ( $slot_duration <= 0 ) {
+					continue;
+				}
 
-			for ( $minutes = $start_minutes; $minutes + $slot_duration <= $end_minutes; $minutes += $slot_duration ) {
-				$slots[] = sprintf( '%02d:%02d', intdiv( $minutes, 60 ), $minutes % 60 );
+				$start_minutes = self::time_to_minutes( $period['start'] );
+				$end_minutes   = self::time_to_minutes( $period['end'] );
+
+				for ( $minutes = $start_minutes; $minutes + $slot_duration <= $end_minutes; $minutes += $slot_duration ) {
+					$slots[] = sprintf( '%02d:%02d', intdiv( $minutes, 60 ), $minutes % 60 );
+				}
 			}
 		}
 
@@ -520,24 +594,49 @@ class Clinics {
 	 * @return array
 	 */
 	private static function decode_row( array $row ) {
-		$sessions = json_decode( (string) $row['sessions'], true );
+		$decoded = json_decode( (string) $row['sessions'], true );
+		$sessions = self::empty_sessions();
 
-		if ( ! is_array( $sessions ) ) {
-			$sessions = self::empty_sessions();
-		} else {
-			$sessions = wp_parse_args( $sessions, self::empty_sessions() );
+		if ( is_array( $decoded ) ) {
+			foreach ( self::session_days() as $day_slug => $day_label ) {
+				if ( ! isset( $decoded[ $day_slug ] ) || ! is_array( $decoded[ $day_slug ] ) ) {
+					continue;
+				}
+
+				$day = $decoded[ $day_slug ];
+
+				if ( array_key_exists( 'enabled', $day ) ) {
+					// Pre-existing clinic saved before per-day sessions were
+					// split into Morning/Afternoon/Evening periods: a single
+					// flat { enabled, start, end, slot_duration_minutes }.
+					// Carry it forward as that day's "morning" period so
+					// doctors who already had a schedule don't lose it.
+					$sessions[ $day_slug ]['morning'] = wp_parse_args( $day, self::empty_period() );
+					continue;
+				}
+
+				foreach ( self::session_periods() as $period_slug => $period_label ) {
+					if ( isset( $day[ $period_slug ] ) && is_array( $day[ $period_slug ] ) ) {
+						$sessions[ $day_slug ][ $period_slug ] = wp_parse_args( $day[ $period_slug ], self::empty_period() );
+					}
+				}
+			}
 		}
 
 		$enabled_days = array();
 
 		foreach ( self::session_days() as $slug => $label ) {
-			if ( ! empty( $sessions[ $slug ]['enabled'] ) ) {
-				$enabled_days[ $slug ] = $label;
+			foreach ( $sessions[ $slug ] as $period ) {
+				if ( ! empty( $period['enabled'] ) ) {
+					$enabled_days[ $slug ] = $label;
+					break;
+				}
 			}
 		}
 
-		$city = isset( $row['city'] ) ? $row['city'] : '';
-		$area = isset( $row['area'] ) ? $row['area'] : '';
+		$country = isset( $row['country'] ) ? $row['country'] : '';
+		$city    = isset( $row['city'] ) ? $row['city'] : '';
+		$area    = isset( $row['area'] ) ? $row['area'] : '';
 
 		return array(
 			'id'            => (int) $row['id'],
@@ -545,10 +644,12 @@ class Clinics {
 			'type'          => $row['type'],
 			'name'          => $row['name'],
 			'address'       => $row['address'],
+			'country'       => $country,
+			'country_label' => '' !== $country ? Locations::country_label( $country ) : '',
 			'city'          => $city,
-			'city_label'    => '' !== $city ? Locations::city_label( $city ) : '',
+			'city_label'    => '' !== $city ? Locations::city_label( $country, $city ) : '',
 			'area'          => $area,
-			'area_label'    => '' !== $area ? Locations::area_label( $city, $area ) : '',
+			'area_label'    => '' !== $area ? Locations::area_label( $country, $city, $area ) : '',
 			'phone'         => $row['phone'],
 			'contact_email' => $row['contact_email'],
 			'sessions'      => $sessions,

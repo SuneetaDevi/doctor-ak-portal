@@ -583,7 +583,10 @@
 
 .dak-booking-slot-card {
 	position: relative !important;
-	display: block !important;
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: center !important;
+	gap: 0.15rem !important;
 	width: 100% !important;
 	padding: 0.55rem 0.5rem !important;
 	border-radius: var( --dak-radius-md ) !important;
@@ -595,8 +598,13 @@
 	cursor: pointer !important;
 }
 
+.dak-booking-slot-time {
+	display: block !important;
+}
+
 .dak-booking-slot-card.is-instant {
 	border-style: dashed !important;
+	border-color: #e0a72c !important;
 }
 
 .dak-booking-slot-instant-badge {
@@ -606,6 +614,17 @@
 	font-size: 0.7rem !important;
 	line-height: 1 !important;
 	filter: drop-shadow( 0 1px 1px rgba( 0, 0, 0, 0.25 ) ) !important;
+}
+
+.dak-booking-slot-surcharge {
+	display: block !important;
+	font-size: 0.68rem !important;
+	font-weight: 700 !important;
+	color: #b45f06 !important;
+}
+
+.dak-booking-slot-card.is-selected .dak-booking-slot-surcharge {
+	color: rgba( 255, 255, 255, 0.9 ) !important;
 }
 
 .dak-booking-slot-card.is-available {

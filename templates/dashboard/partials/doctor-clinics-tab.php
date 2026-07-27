@@ -33,9 +33,10 @@ $dak_clinic_icons = array(
  */
 if ( ! function_exists( 'dak_render_clinic_card' ) ) :
 function dak_render_clinic_card( $clinic, array $session_days, array $icons ) {
-	$is_blank = null === $clinic;
-	$type     = $is_blank ? 'physical' : $clinic['type'];
-	$sessions = $is_blank ? \DoctorAKPortal\Includes\Clinics::empty_sessions() : $clinic['sessions'];
+	$is_blank       = null === $clinic;
+	$type           = $is_blank ? 'physical' : $clinic['type'];
+	$sessions       = $is_blank ? \DoctorAKPortal\Includes\Clinics::empty_sessions() : $clinic['sessions'];
+	$session_periods = \DoctorAKPortal\Includes\Clinics::session_periods();
 	?>
 	<div class="dak-clinic-card" data-clinic-id="<?php echo esc_attr( $is_blank ? '0' : $clinic['id'] ); ?>">
 		<div class="dak-clinic-card-summary<?php echo $is_blank ? ' dak-hidden' : ''; ?>">
@@ -94,6 +95,11 @@ function dak_render_clinic_card( $clinic, array $session_days, array $icons ) {
 
 			<div class="dak-field-row dak-clinic-address-field<?php echo ! $is_blank && 'video' === $clinic['type'] ? ' dak-hidden' : ''; ?>">
 				<div class="dak-field">
+					<label><?php esc_html_e( 'Country', 'doctor-ak-portal' ); ?></label>
+					<select class="dak-clinic-country-select" data-clinic-country="<?php echo esc_attr( $is_blank ? '' : $clinic['country'] ); ?>"></select>
+					<span class="dak-field-error" data-field="country"></span>
+				</div>
+				<div class="dak-field">
 					<label><?php esc_html_e( 'City', 'doctor-ak-portal' ); ?></label>
 					<select class="dak-clinic-city-select" data-clinic-city="<?php echo esc_attr( $is_blank ? '' : $clinic['city'] ); ?>"></select>
 					<span class="dak-field-error" data-field="city"></span>
@@ -120,25 +126,27 @@ function dak_render_clinic_card( $clinic, array $session_days, array $icons ) {
 
 			<div class="dak-field">
 				<span class="dak-field-label"><?php esc_html_e( 'Weekly Sessions', 'doctor-ak-portal' ); ?></span>
-				<div class="dak-availability-grid dak-clinic-sessions-grid">
-					<div class="dak-availability-row dak-availability-row-header">
-						<span></span>
-						<span class="dak-availability-col-label"><?php esc_html_e( 'Start', 'doctor-ak-portal' ); ?></span>
-						<span></span>
-						<span class="dak-availability-col-label"><?php esc_html_e( 'End', 'doctor-ak-portal' ); ?></span>
-						<span class="dak-availability-col-label"><?php esc_html_e( 'Slot (min)', 'doctor-ak-portal' ); ?></span>
-					</div>
-					<?php foreach ( $session_days as $slug => $label ) : ?>
-						<?php $day = isset( $sessions[ $slug ] ) ? $sessions[ $slug ] : array( 'enabled' => false, 'start' => '', 'end' => '', 'slot_duration_minutes' => '' ); ?>
-						<div class="dak-availability-row" data-day="<?php echo esc_attr( $slug ); ?>">
-							<label class="dak-checkbox">
-								<input type="checkbox" class="dak-availability-toggle" <?php checked( ! empty( $day['enabled'] ) ); ?>>
-								<span><?php echo esc_html( $label ); ?></span>
-							</label>
-							<input type="time" class="dak-availability-start" aria-label="<?php esc_attr_e( 'Start time', 'doctor-ak-portal' ); ?>" value="<?php echo esc_attr( $day['start'] ); ?>" <?php disabled( empty( $day['enabled'] ) ); ?>>
-							<span class="dak-availability-sep">&ndash;</span>
-							<input type="time" class="dak-availability-end" aria-label="<?php esc_attr_e( 'End time', 'doctor-ak-portal' ); ?>" value="<?php echo esc_attr( $day['end'] ); ?>" <?php disabled( empty( $day['enabled'] ) ); ?>>
-							<input type="number" min="5" max="240" class="dak-clinic-slot-duration" aria-label="<?php esc_attr_e( 'Slot duration in minutes', 'doctor-ak-portal' ); ?>" placeholder="<?php esc_attr_e( 'min', 'doctor-ak-portal' ); ?>" value="<?php echo esc_attr( '' !== $day['slot_duration_minutes'] ? $day['slot_duration_minutes'] : '' ); ?>" <?php disabled( empty( $day['enabled'] ) ); ?>>
+				<p class="dak-field-hint"><?php esc_html_e( 'Split a day into Morning/Afternoon/Evening sessions to give yourself a break in between — leave a period unchecked to keep it closed.', 'doctor-ak-portal' ); ?></p>
+				<div class="dak-clinic-sessions-days">
+					<?php foreach ( $session_days as $day_slug => $day_label ) : ?>
+						<?php $day_periods = isset( $sessions[ $day_slug ] ) ? $sessions[ $day_slug ] : array(); ?>
+						<div class="dak-clinic-sessions-day" data-day="<?php echo esc_attr( $day_slug ); ?>">
+							<span class="dak-clinic-sessions-day-label"><?php echo esc_html( $day_label ); ?></span>
+							<div class="dak-clinic-sessions-periods">
+								<?php foreach ( $session_periods as $period_slug => $period_label ) : ?>
+									<?php $period = isset( $day_periods[ $period_slug ] ) ? $day_periods[ $period_slug ] : array( 'enabled' => false, 'start' => '', 'end' => '', 'slot_duration_minutes' => '' ); ?>
+									<div class="dak-availability-row" data-period="<?php echo esc_attr( $period_slug ); ?>">
+										<label class="dak-checkbox">
+											<input type="checkbox" class="dak-availability-toggle" <?php checked( ! empty( $period['enabled'] ) ); ?>>
+											<span><?php echo esc_html( $period_label ); ?></span>
+										</label>
+										<input type="time" class="dak-availability-start" aria-label="<?php echo esc_attr( sprintf( __( '%s start time', 'doctor-ak-portal' ), $period_label ) ); ?>" value="<?php echo esc_attr( $period['start'] ); ?>" <?php disabled( empty( $period['enabled'] ) ); ?>>
+										<span class="dak-availability-sep">&ndash;</span>
+										<input type="time" class="dak-availability-end" aria-label="<?php echo esc_attr( sprintf( __( '%s end time', 'doctor-ak-portal' ), $period_label ) ); ?>" value="<?php echo esc_attr( $period['end'] ); ?>" <?php disabled( empty( $period['enabled'] ) ); ?>>
+										<input type="number" min="5" max="240" class="dak-clinic-slot-duration" aria-label="<?php echo esc_attr( sprintf( __( '%s slot duration in minutes', 'doctor-ak-portal' ), $period_label ) ); ?>" placeholder="<?php esc_attr_e( 'min', 'doctor-ak-portal' ); ?>" value="<?php echo esc_attr( '' !== $period['slot_duration_minutes'] ? $period['slot_duration_minutes'] : '' ); ?>" <?php disabled( empty( $period['enabled'] ) ); ?>>
+									</div>
+								<?php endforeach; ?>
+							</div>
 						</div>
 					<?php endforeach; ?>
 				</div>

@@ -114,6 +114,11 @@ $dak_noun            = $dak_is_doctor_form ? __( 'Doctor', 'doctor-ak-portal' ) 
 
 			<div class="dak-field-row">
 				<div class="dak-field">
+					<label for="dak-admin-user-country"><?php esc_html_e( 'Country', 'doctor-ak-portal' ); ?></label>
+					<select id="dak-admin-user-country" name="country" data-current="<?php echo esc_attr( $dak_is_editing ? $editing_user['country'] : '' ); ?>" required></select>
+					<span class="dak-field-error" data-field="country"></span>
+				</div>
+				<div class="dak-field">
 					<label for="dak-admin-user-city"><?php esc_html_e( 'City', 'doctor-ak-portal' ); ?></label>
 					<select id="dak-admin-user-city" name="city" data-current="<?php echo esc_attr( $dak_is_editing ? $editing_user['city'] : '' ); ?>" required></select>
 					<span class="dak-field-error" data-field="city"></span>

@@ -6,7 +6,6 @@
  *
  * @var string[] $doctors_html    Pre-rendered directory/doctor-card.php output, one per doctor.
  * @var string[] $specializations Specialization slug => label (falls back to the slug itself for custom, non-canonical specializations), only those at least one listed doctor has.
- * @var string[] $cities          City slug => label, only those at least one listed doctor has.
  * @var string[] $clinics         Distinct physical clinic names across every listed doctor.
  */
 
@@ -37,17 +36,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<?php endforeach; ?>
 				</select>
 			<?php endif; ?>
-			<?php if ( ! empty( $cities ) ) : ?>
-				<select id="dak-directory-city-filter" aria-label="<?php esc_attr_e( 'Filter by city', 'doctor-ak-portal' ); ?>">
-					<option value=""><?php esc_html_e( 'All cities', 'doctor-ak-portal' ); ?></option>
-					<?php foreach ( $cities as $slug => $label ) : ?>
-						<option value="<?php echo esc_attr( $slug ); ?>"><?php echo esc_html( $label ); ?></option>
-					<?php endforeach; ?>
-				</select>
-				<select id="dak-directory-area-filter" aria-label="<?php esc_attr_e( 'Filter by area', 'doctor-ak-portal' ); ?>" disabled>
-					<option value=""><?php esc_html_e( 'All areas', 'doctor-ak-portal' ); ?></option>
-				</select>
-			<?php endif; ?>
+			<select id="dak-directory-country-filter" aria-label="<?php esc_attr_e( 'Filter by country', 'doctor-ak-portal' ); ?>"></select>
+			<select id="dak-directory-city-filter" aria-label="<?php esc_attr_e( 'Filter by city', 'doctor-ak-portal' ); ?>" disabled></select>
+			<select id="dak-directory-area-filter" aria-label="<?php esc_attr_e( 'Filter by area', 'doctor-ak-portal' ); ?>" disabled></select>
 			<?php if ( ! empty( $clinics ) ) : ?>
 				<select id="dak-directory-clinic-filter" aria-label="<?php esc_attr_e( 'Filter by clinic', 'doctor-ak-portal' ); ?>">
 					<option value=""><?php esc_html_e( 'All clinics', 'doctor-ak-portal' ); ?></option>

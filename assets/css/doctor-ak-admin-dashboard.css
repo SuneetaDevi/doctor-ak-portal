@@ -49,6 +49,96 @@
 	overflow: hidden !important;
 }
 
+#dak-role-permissions-form,
+#dak-locations-form {
+	padding: 24px !important;
+	overflow: visible !important;
+}
+
+#dak-role-permissions-form h3 {
+	margin: 24px 0 8px !important;
+}
+
+#dak-role-permissions-form h3:first-child {
+	margin-top: 0 !important;
+}
+
+.dak-countries-rows {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 1rem !important;
+}
+
+.dak-country-row {
+	padding: 16px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 10px !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-country-row-header {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.5rem !important;
+	margin-bottom: 0.75rem !important;
+}
+
+.dak-country-row-header .dak-country-name {
+	flex: 1 1 auto !important;
+	font-weight: 700 !important;
+	font-size: 0.95rem !important;
+}
+
+.dak-cities-rows {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.6rem !important;
+	margin-left: 1.25rem !important;
+	padding-left: 0.75rem !important;
+	border-left: 2px solid var( --dak-border ) !important;
+}
+
+.dak-city-row {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 0.5rem !important;
+}
+
+.dak-city-row .dak-city-name {
+	flex: 0 1 200px !important;
+	font-weight: 600 !important;
+}
+
+.dak-areas-rows {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0.4rem !important;
+	flex: 1 1 auto !important;
+}
+
+.dak-area-chip {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.15rem !important;
+}
+
+.dak-area-chip .dak-area-name {
+	width: 130px !important;
+	font-size: 0.82rem !important;
+	padding: 0.35rem 0.55rem !important;
+}
+
+.dak-country-name,
+.dak-city-name,
+.dak-area-name {
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 8px !important;
+	padding: 0.5rem 0.7rem !important;
+	background: var( --dak-bg-card ) !important;
+	color: inherit !important;
+}
+
 .dak-back-link {
 	display: inline-flex !important;
 	align-items: center !important;
@@ -128,6 +218,11 @@
 .dak-status-badge.is-pending {
 	background: #fff4e0 !important;
 	color: #b45f06 !important;
+}
+
+.dak-status-badge.is-rescheduled {
+	background: #e6f0fd !important;
+	color: #1d5fc2 !important;
 }
 
 .dak-admin-users-table .dak-status-badge {

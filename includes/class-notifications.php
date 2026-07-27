@@ -7,6 +7,8 @@
 
 namespace DoctorAKPortal\Includes;
 
+use DoctorAKPortal\Frontend\Site_Footer;
+
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -445,7 +447,7 @@ class Notifications {
 	 * version used elsewhere in this class).
 	 *
 	 * @param string $to      Recipient email.
-	 * @param string $subject_suffix Appended after "[Site Name] " in the subject.
+	 * @param string $subject_suffix Appended after "[Clinic Name] " in the subject.
 	 * @param string $heading Email body heading.
 	 * @param string $intro   One-line message.
 	 * @return void
@@ -455,12 +457,10 @@ class Notifications {
 			return;
 		}
 
-		$site_name = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
-		/* translators: 1: site name, 2: email subject. */
-		$subject = sprintf( __( '[%1$s] %2$s', 'doctor-ak-portal' ), $site_name, $subject_suffix );
+		/* translators: 1: clinic name, 2: email subject. */
+		$subject = sprintf( __( '[%1$s] %2$s', 'doctor-ak-portal' ), self::clinic_name(), $subject_suffix );
 		$html    = '<div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;">'
-			. '<div style="background:#4c8a3b;color:#ffffff;padding:16px 20px;font-size:18px;font-weight:700;">' . esc_html( $site_name ) . '</div>'
-			. '<div style="padding:20px;border:1px solid #e3e6ea;border-top:none;">'
+			. '<div style="padding:20px;border:1px solid #e3e6ea;border-radius:8px;">'
 			. '<h2 style="margin:0 0 12px;font-size:17px;color:#111827;">' . esc_html( $heading ) . '</h2>'
 			. '<p style="margin:0;color:#374151;">' . esc_html( $intro ) . '</p>'
 			. '</div>'
@@ -475,7 +475,7 @@ class Notifications {
 	 * addresses (e.g. a deleted patient account with no guest email).
 	 *
 	 * @param string $to             Recipient email.
-	 * @param string $subject_suffix Appended after "[Site Name] " in the subject.
+	 * @param string $subject_suffix Appended after "[Clinic Name] " in the subject.
 	 * @param string $heading        Email body heading.
 	 * @param string $intro          One-line intro sentence.
 	 * @param array  $appointment    Row from Appointments::notification_data().
@@ -486,13 +486,23 @@ class Notifications {
 			return;
 		}
 
-		$site_name = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
-		/* translators: 1: site name, 2: email subject. */
-		$subject = sprintf( __( '[%1$s] %2$s', 'doctor-ak-portal' ), $site_name, $subject_suffix );
-		$html    = self::render_email( $site_name, $heading, $intro, $appointment );
+		/* translators: 1: clinic name, 2: email subject. */
+		$subject = sprintf( __( '[%1$s] %2$s', 'doctor-ak-portal' ), self::clinic_name(), $subject_suffix );
+		$html    = self::render_email( $heading, $intro, $appointment );
 		$headers = array_merge( array( 'Content-Type: text/html; charset=UTF-8' ), self::mail_headers() );
 
 		wp_mail( $to, $subject, $html, $headers );
+	}
+
+	/**
+	 * The clinic's configured name (Settings → Footer Settings), falling
+	 * back to 'Main Clinic' if unset — used as every notification email's
+	 * From name and subject-line prefix instead of the WordPress site title.
+	 *
+	 * @return string
+	 */
+	private static function clinic_name() {
+		return get_option( Site_Footer::OPTION_CLINIC_NAME, 'Main Clinic' );
 	}
 
 	/**
@@ -505,7 +515,7 @@ class Notifications {
 		$email = get_option( self::OPTION_FROM_EMAIL, '' );
 
 		if ( '' === $name ) {
-			$name = wp_specialchars_decode( get_option( 'blogname' ), ENT_QUOTES );
+			$name = self::clinic_name();
 		}
 
 		if ( '' === $email || ! is_email( $email ) ) {
@@ -517,16 +527,17 @@ class Notifications {
 
 	/**
 	 * Renders the shared HTML template every notification email uses: a
-	 * site-name header bar, a one-line intro, and a details table built
-	 * from whichever of Doctor/Patient/Type/Date/Time/Service/Charge apply.
+	 * heading, a one-line intro, and a details table built from whichever of
+	 * Doctor/Patient/Type/Date/Time/Service/Charge apply. No site/clinic
+	 * name banner — the clinic name is already the email's visible "From"
+	 * sender, so repeating it in the body would be redundant.
 	 *
-	 * @param string $site_name   Site name for the header bar.
 	 * @param string $heading     Body heading.
 	 * @param string $intro       One-line intro sentence.
 	 * @param array  $appointment Row from Appointments::notification_data().
 	 * @return string
 	 */
-	private static function render_email( $site_name, $heading, $intro, array $appointment ) {
+	private static function render_email( $heading, $intro, array $appointment ) {
 		$rows = array(
 			__( 'Doctor', 'doctor-ak-portal' )  => sprintf( 'Dr. %s', $appointment['doctor_name'] ),
 			__( 'Patient', 'doctor-ak-portal' ) => $appointment['patient_name'],
@@ -563,8 +574,7 @@ class Notifications {
 		}
 
 		return '<div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;">'
-			. '<div style="background:#4c8a3b;color:#ffffff;padding:16px 20px;font-size:18px;font-weight:700;">' . esc_html( $site_name ) . '</div>'
-			. '<div style="padding:20px;border:1px solid #e3e6ea;border-top:none;">'
+			. '<div style="padding:20px;border:1px solid #e3e6ea;border-radius:8px;">'
 			. '<h2 style="margin:0 0 12px;font-size:17px;color:#111827;">' . esc_html( $heading ) . '</h2>'
 			. '<p style="margin:0 0 16px;color:#374151;">' . esc_html( $intro ) . '</p>'
 			. '<table style="width:100%;border-collapse:collapse;">' . $rows_html . '</table>'

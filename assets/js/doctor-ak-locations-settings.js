@@ -1,5 +1,5 @@
 /**
- * Doctor AK Portal — Settings → Locations admin page: repeatable City rows.
+ * Doctor AK Portal — Settings → Locations admin page: repeatable Country rows.
  */
 ( function () {
 	'use strict';
@@ -23,22 +23,37 @@
 		}
 
 		/**
-		 * Appends one row, optionally pre-filled with a city name + areas.
+		 * Builds the `cities` textarea value from a default-seed country's
+		 * cities array: one "City: Area 1, Area 2" line per city.
 		 *
-		 * @param {string} [cityName] City name to pre-fill.
-		 * @param {string[]} [areaNames] Area names to pre-fill (one per line).
+		 * @param {Object[]} cities List of `{ name, areas: [ { name } ] }`.
+		 * @return {string}
 		 */
-		function addRow( cityName, areaNames ) {
+		function citiesToTextareaValue( cities ) {
+			return cities.map( function ( city ) {
+				var areaNames = city.areas.map( function ( area ) { return area.name; } );
+
+				return areaNames.length ? city.name + ': ' + areaNames.join( ', ' ) : city.name;
+			} ).join( '\n' );
+		}
+
+		/**
+		 * Appends one row, optionally pre-filled with a country name + cities.
+		 *
+		 * @param {string} [countryName] Country name to pre-fill.
+		 * @param {string} [citiesText]  Pre-built `cities` textarea value.
+		 */
+		function addRow( countryName, citiesText ) {
 			removeEmptyState();
 
 			var clone = template.content.cloneNode( true );
 
-			if ( cityName ) {
-				clone.querySelector( 'input' ).value = cityName;
+			if ( countryName ) {
+				clone.querySelector( 'input' ).value = countryName;
 			}
 
-			if ( areaNames && areaNames.length ) {
-				clone.querySelector( 'textarea' ).value = areaNames.join( '\n' );
+			if ( citiesText ) {
+				clone.querySelector( 'textarea' ).value = citiesText;
 			}
 
 			rows.appendChild( clone );
@@ -50,18 +65,18 @@
 
 		if ( loadDefaultsButton ) {
 			loadDefaultsButton.addEventListener( 'click', function () {
-				var defaults = ( window.dakLocationsSettings && window.dakLocationsSettings.defaultCities ) || [];
+				var defaults = ( window.dakLocationsSettings && window.dakLocationsSettings.defaultCountries ) || [];
 
 				if ( ! defaults.length ) {
 					return;
 				}
 
-				if ( ! window.confirm( 'Add ' + defaults.length + ' default cities below the current list? You can review, edit, or remove any of them before saving.' ) ) {
+				if ( ! window.confirm( 'Add ' + defaults.length + ' default countries below the current list? You can review, edit, or remove any of them before saving.' ) ) {
 					return;
 				}
 
-				defaults.forEach( function ( city ) {
-					addRow( city.name, city.areas.map( function ( area ) { return area.name; } ) );
+				defaults.forEach( function ( country ) {
+					addRow( country.name, citiesToTextareaValue( country.cities ) );
 				} );
 			} );
 		}

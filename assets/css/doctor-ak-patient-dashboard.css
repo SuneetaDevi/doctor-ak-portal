@@ -510,6 +510,11 @@
 	color: #b42323 !important;
 }
 
+.dak-status-pill-outline.dak-status-pill-is-rescheduled {
+	border-color: #a9c8f5 !important;
+	color: #1d5fc2 !important;
+}
+
 .dak-status-pill-disabled {
 	background: var( --dak-bg-subtle ) !important;
 	color: var( --dak-muted ) !important;

@@ -17,6 +17,7 @@
  * @var array    $current_specializations    Doctor's currently selected specialization slugs.
  * @var string   $current_years_experience   Doctor's current years of experience.
  * @var string   $current_qualification      Doctor's current qualification(s), e.g. "MBBS, FCPS".
+ * @var string   $current_country            Doctor's current country slug, or ''.
  * @var string   $current_city               Doctor's current city slug, or ''.
  * @var string   $current_area               Doctor's current area slug, or ''.
  * @var string   $current_short_description  Doctor's current one-line profile tagline, or ''.
@@ -88,6 +89,11 @@ $current_picture_url = $current_profile_picture_id ? wp_get_attachment_image_url
 		</div>
 
 		<div class="dak-field-row">
+			<div class="dak-field">
+				<label for="dak-profile-country"><?php esc_html_e( 'Country', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
+				<select id="dak-profile-country" name="country" data-current="<?php echo esc_attr( $current_country ); ?>"></select>
+				<span class="dak-field-error" data-field="country"></span>
+			</div>
 			<div class="dak-field">
 				<label for="dak-profile-city"><?php esc_html_e( 'City', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
 				<select id="dak-profile-city" name="city" data-current="<?php echo esc_attr( $current_city ); ?>"></select>
