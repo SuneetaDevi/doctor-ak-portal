@@ -9,6 +9,7 @@
 namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
+use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Role_Permissions;
@@ -166,7 +167,7 @@ class Clinic_Handler {
 			wp_send_json_error( array( 'message' => __( 'That doctor no longer exists.', 'doctor-ak-portal' ) ) );
 		}
 
-		$this->process_save( $doctor_id, null );
+		$this->process_save( $doctor_id, null, true );
 	}
 
 	/**
@@ -190,11 +191,12 @@ class Clinic_Handler {
 	/**
 	 * Shared save logic for both the doctor-facing and admin-facing endpoints.
 	 *
-	 * @param int      $owner_doctor_id Doctor ID the clinic is created under (for new clinics).
-	 * @param int|null $ownership_check Doctor ID an existing clinic must belong to, or null to skip the check (admin context).
+	 * @param int      $owner_doctor_id      Doctor ID the clinic is created under (for new clinics).
+	 * @param int|null $ownership_check      Doctor ID an existing clinic must belong to, or null to skip the check (admin context).
+	 * @param bool     $requires_clinic_location Whether a physical clinic must be aligned to a Clinic_Locations master record — true only from the admin "Doctor Sessions" form, whose picker replaces free-typed name/address/location. The doctor's own self-service Clinics tab keeps typing these directly.
 	 * @return void
 	 */
-	private function process_save( $owner_doctor_id, $ownership_check ) {
+	private function process_save( $owner_doctor_id, $ownership_check, $requires_clinic_location = false ) {
 		$clinic_id = isset( $_POST['clinic_id'] ) ? absint( wp_unslash( $_POST['clinic_id'] ) ) : 0;
 		$type      = isset( $_POST['type'] ) ? sanitize_key( wp_unslash( $_POST['type'] ) ) : Clinics::TYPE_PHYSICAL;
 
@@ -203,6 +205,42 @@ class Clinic_Handler {
 
 			if ( ! $existing || ( null !== $ownership_check && (int) $existing['doctor_id'] !== (int) $ownership_check ) ) {
 				wp_send_json_error( array( 'message' => __( 'That clinic no longer exists.', 'doctor-ak-portal' ) ) );
+			}
+		}
+
+		// The admin "Doctor Sessions" form aligns a doctor to one of the
+		// admin-managed master clinics (Clinic_Locations) instead of typing
+		// a name/address/location freehand — its posted clinic_location_id's
+		// fields override whatever was (or wasn't) typed before validating
+		// below. The doctor's own self-service Clinics tab never posts this,
+		// so it keeps working exactly as before.
+		$clinic_location_id = isset( $_POST['clinic_location_id'] ) ? absint( wp_unslash( $_POST['clinic_location_id'] ) ) : 0;
+
+		if ( Clinics::TYPE_PHYSICAL === $type && $clinic_location_id > 0 ) {
+			$clinic_location = Clinic_Locations::find( $clinic_location_id );
+
+			if ( ! $clinic_location ) {
+				wp_send_json_error( array( 'errors' => array( 'clinic_location_id' => __( 'Please choose a valid clinic.', 'doctor-ak-portal' ) ) ) );
+			}
+
+			$_POST['name']    = $clinic_location['name'];
+			$_POST['address'] = $clinic_location['address'];
+			$_POST['country'] = $clinic_location['country'];
+			$_POST['city']    = $clinic_location['city'];
+			$_POST['area']    = $clinic_location['area'];
+		} elseif ( Clinics::TYPE_PHYSICAL === $type && $requires_clinic_location ) {
+			if ( $clinic_id > 0 && isset( $existing ) && $existing ) {
+				// Editing a clinic that predates this feature (never aligned
+				// to a master Clinic_Locations record) — keep its own
+				// already-saved name/address/location instead of forcing the
+				// admin to pick one just to change, say, its weekly hours.
+				$_POST['name']    = $existing['name'];
+				$_POST['address'] = $existing['address'];
+				$_POST['country'] = $existing['country'];
+				$_POST['city']    = $existing['city'];
+				$_POST['area']    = $existing['area'];
+			} else {
+				wp_send_json_error( array( 'errors' => array( 'clinic_location_id' => __( 'Please choose a clinic.', 'doctor-ak-portal' ) ) ) );
 			}
 		}
 

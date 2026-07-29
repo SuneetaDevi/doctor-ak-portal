@@ -38,7 +38,7 @@ class Db_Installer {
 	 *
 	 * @var string
 	 */
-	const DB_VERSION = '1.2.0';
+	const DB_VERSION = '1.3.0';
 
 	/**
 	 * Option name tracking the installed services-table schema version.
@@ -69,6 +69,20 @@ class Db_Installer {
 	const NOTIFICATIONS_DB_VERSION = '1.0.0';
 
 	/**
+	 * Option name tracking the installed clinic-locations-table schema version.
+	 *
+	 * @var string
+	 */
+	const CLINIC_LOCATIONS_DB_VERSION_OPTION = 'dak_clinic_locations_db_version';
+
+	/**
+	 * Current clinic-locations table schema version.
+	 *
+	 * @var string
+	 */
+	const CLINIC_LOCATIONS_DB_VERSION = '1.0.0';
+
+	/**
 	 * Option name guarding the one-time legacy-data migration so it never
 	 * runs more than once.
 	 *
@@ -94,6 +108,9 @@ class Db_Installer {
 		self::create_notifications_table();
 		update_option( self::NOTIFICATIONS_DB_VERSION_OPTION, self::NOTIFICATIONS_DB_VERSION );
 
+		self::create_clinic_locations_table();
+		update_option( self::CLINIC_LOCATIONS_DB_VERSION_OPTION, self::CLINIC_LOCATIONS_DB_VERSION );
+
 		if ( ! get_option( self::MIGRATION_OPTION ) ) {
 			self::migrate_legacy_data();
 			update_option( self::MIGRATION_OPTION, 'yes' );
@@ -114,6 +131,7 @@ class Db_Installer {
 		if ( self::DB_VERSION === get_option( self::DB_VERSION_OPTION )
 			&& self::SERVICES_DB_VERSION === get_option( self::SERVICES_DB_VERSION_OPTION )
 			&& self::NOTIFICATIONS_DB_VERSION === get_option( self::NOTIFICATIONS_DB_VERSION_OPTION )
+			&& self::CLINIC_LOCATIONS_DB_VERSION === get_option( self::CLINIC_LOCATIONS_DB_VERSION_OPTION )
 		) {
 			return;
 		}
@@ -145,11 +163,49 @@ class Db_Installer {
 			area VARCHAR(191) NOT NULL DEFAULT '',
 			phone VARCHAR(30) NOT NULL DEFAULT '',
 			contact_email VARCHAR(191) NOT NULL DEFAULT '',
+			clinic_location_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
 			sessions LONGTEXT NOT NULL,
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),
-			KEY doctor_id (doctor_id)
+			KEY doctor_id (doctor_id),
+			KEY clinic_location_id (clinic_location_id)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Runs dbDelta() against the clinic-locations table schema — the
+	 * admin-managed master list of physical clinics (Country/City/Area/Name)
+	 * doctors get aligned to from the "Doctor Sessions" admin form, see
+	 * Clinic_Locations. Independent of the per-doctor `dak_clinics` table
+	 * above, which still stores each doctor's own weekly session schedule at
+	 * a clinic (referencing it via `clinic_location_id`).
+	 *
+	 * @return void
+	 */
+	private static function create_clinic_locations_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$table_name      = Clinic_Locations::table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table_name} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			country VARCHAR(120) NOT NULL DEFAULT '',
+			city VARCHAR(120) NOT NULL DEFAULT '',
+			area VARCHAR(191) NOT NULL DEFAULT '',
+			name VARCHAR(191) NOT NULL,
+			address VARCHAR(255) NOT NULL DEFAULT '',
+			phone VARCHAR(30) NOT NULL DEFAULT '',
+			contact_email VARCHAR(191) NOT NULL DEFAULT '',
+			created_at DATETIME NOT NULL,
+			updated_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY country_city_area (country, city, area)
 		) {$charset_collate};";
 
 		dbDelta( $sql );

@@ -67,11 +67,12 @@ $dak_has_filters  = '' !== $filters['status'] || '' !== $filters['specialization
 			<thead>
 				<tr>
 					<th><?php esc_html_e( 'Name', 'doctor-ak-portal' ); ?></th>
-					<th><?php esc_html_e( 'Location', 'doctor-ak-portal' ); ?></th>
 					<?php if ( $dak_is_patients ) : ?>
+						<th><?php esc_html_e( 'Location', 'doctor-ak-portal' ); ?></th>
 						<th><?php esc_html_e( 'Phone Number', 'doctor-ak-portal' ); ?></th>
 					<?php else : ?>
 						<th><?php esc_html_e( 'Specialization', 'doctor-ak-portal' ); ?></th>
+						<th><?php esc_html_e( 'Clinic', 'doctor-ak-portal' ); ?></th>
 						<th><?php esc_html_e( 'Video Consultation', 'doctor-ak-portal' ); ?></th>
 					<?php endif; ?>
 					<th><?php esc_html_e( 'Email Address', 'doctor-ak-portal' ); ?></th>
@@ -83,8 +84,8 @@ $dak_has_filters  = '' !== $filters['status'] || '' !== $filters['specialization
 				<?php foreach ( $users as $row ) : ?>
 					<tr data-user-row="<?php echo esc_attr( $row['id'] ); ?>">
 						<td data-label="<?php esc_attr_e( 'Name', 'doctor-ak-portal' ); ?>"><?php echo esc_html( $row['name'] ); ?></td>
-						<td data-label="<?php esc_attr_e( 'Location', 'doctor-ak-portal' ); ?>"><?php echo esc_html( $row['location'] ); ?></td>
 						<?php if ( $dak_is_patients ) : ?>
+							<td data-label="<?php esc_attr_e( 'Location', 'doctor-ak-portal' ); ?>"><?php echo esc_html( $row['location'] ); ?></td>
 							<td data-label="<?php esc_attr_e( 'Phone Number', 'doctor-ak-portal' ); ?>"><?php echo esc_html( '' !== $row['phone'] ? $row['phone'] : '—' ); ?></td>
 						<?php else : ?>
 							<td data-label="<?php esc_attr_e( 'Specialization', 'doctor-ak-portal' ); ?>">
@@ -103,6 +104,26 @@ $dak_has_filters  = '' !== $filters['status'] || '' !== $filters['specialization
 												data-more-label="<?php echo esc_attr( sprintf( '+%d', count( $row['specialization_labels'] ) - 2 ) ); ?>"
 												data-less-label="<?php esc_attr_e( 'Show less', 'doctor-ak-portal' ); ?>"
 											><?php echo esc_html( sprintf( '+%d', count( $row['specialization_labels'] ) - 2 ) ); ?></button>
+										<?php endif; ?>
+									</div>
+								<?php endif; ?>
+							</td>
+							<td data-label="<?php esc_attr_e( 'Clinic', 'doctor-ak-portal' ); ?>">
+								<?php if ( empty( $row['clinic_labels'] ) ) : ?>
+									&mdash;
+								<?php else : ?>
+									<div class="dak-specialty-tags dak-table-specialty-tags" data-specialty-tags>
+										<?php foreach ( $row['clinic_labels'] as $dak_clinic_index => $dak_clinic_label ) : ?>
+											<span class="dak-specialty-tag<?php echo $dak_clinic_index >= 2 ? ' dak-specialty-tag-extra dak-hidden' : ''; ?>"><?php echo esc_html( $dak_clinic_label ); ?></span>
+										<?php endforeach; ?>
+										<?php if ( count( $row['clinic_labels'] ) > 2 ) : ?>
+											<button
+												type="button"
+												class="dak-specialty-tag dak-specialty-tag-more"
+												data-specialty-toggle
+												data-more-label="<?php echo esc_attr( sprintf( '+%d', count( $row['clinic_labels'] ) - 2 ) ); ?>"
+												data-less-label="<?php esc_attr_e( 'Show less', 'doctor-ak-portal' ); ?>"
+											><?php echo esc_html( sprintf( '+%d', count( $row['clinic_labels'] ) - 2 ) ); ?></button>
 										<?php endif; ?>
 									</div>
 								<?php endif; ?>

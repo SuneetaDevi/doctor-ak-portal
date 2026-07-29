@@ -14,6 +14,7 @@
 	document.addEventListener( 'DOMContentLoaded', function () {
 		var modal = document.getElementById( 'dak-admin-appointment-modal' );
 		var viewModal = document.getElementById( 'dak-admin-appointment-view-modal' );
+		var refundModal = document.getElementById( 'dak-admin-process-refund-modal' );
 
 		if ( ! modal || ! viewModal || ! window.dakAdminAppointments ) {
 			return;
@@ -34,7 +35,101 @@
 		wireView( viewModal );
 		wireSave( modal );
 		wireDelete();
+
+		if ( refundModal ) {
+			wireModalClose( refundModal, 'dak-admin-process-refund-modal-close' );
+			wireProcessRefund( refundModal );
+			wireProcessRefundSave( refundModal );
+		}
 	} );
+
+	function wireProcessRefund( refundModal ) {
+		document.addEventListener( 'click', function ( event ) {
+			var trigger = event.target.closest( '[data-admin-process-refund]' );
+
+			if ( ! trigger ) {
+				return;
+			}
+
+			clearRefundErrors();
+
+			document.getElementById( 'dak-admin-process-refund-appointment-id' ).value = trigger.getAttribute( 'data-appointment-id' ) || '0';
+			setText( 'dak-admin-process-refund-patient', trigger.getAttribute( 'data-patient-name' ) );
+			setText( 'dak-admin-process-refund-reason', trigger.getAttribute( 'data-reason' ) );
+
+			var charge = parseFloat( trigger.getAttribute( 'data-charge' ) || '0' );
+			var refundAmount = parseFloat( trigger.getAttribute( 'data-refund-amount' ) || '0' );
+
+			setText( 'dak-admin-process-refund-charge', 'PKR' + charge.toFixed( 0 ) );
+			document.getElementById( 'dak-admin-process-refund-amount' ).value = refundAmount > 0 ? refundAmount : charge;
+			document.getElementById( 'dak-admin-process-refund-amount' ).max = charge;
+
+			openModal( refundModal );
+		} );
+	}
+
+	function wireProcessRefundSave( refundModal ) {
+		var saveButton = document.getElementById( 'dak-admin-process-refund-save' );
+
+		if ( ! saveButton ) {
+			return;
+		}
+
+		saveButton.addEventListener( 'click', function () {
+			clearRefundErrors();
+
+			if ( ! window.confirm( 'Process this refund via Swich? This cannot be undone.' ) ) {
+				return;
+			}
+
+			saveButton.disabled = true;
+
+			var formData = new FormData();
+			formData.append( 'action', 'doctor_ak_admin_process_refund' );
+			formData.append( 'nonce', window.dakAdminAppointments.nonce );
+			formData.append( 'appointment_id', document.getElementById( 'dak-admin-process-refund-appointment-id' ).value );
+			formData.append( 'amount', document.getElementById( 'dak-admin-process-refund-amount' ).value );
+
+			fetch( window.dakAdminAppointments.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
+				.then( function ( response ) { return response.json(); } )
+				.then( function ( result ) {
+					saveButton.disabled = false;
+
+					if ( result.success ) {
+						window.location.reload();
+						return;
+					}
+
+					showRefundError( errorsToMessage( result ) );
+				} )
+				.catch( function () {
+					saveButton.disabled = false;
+					showRefundError( 'Something went wrong. Please try again.' );
+				} );
+		} );
+	}
+
+	function clearRefundErrors() {
+		document.querySelectorAll( '#dak-admin-process-refund-modal .dak-field-error' ).forEach( function ( el ) {
+			el.textContent = '';
+		} );
+
+		var generalError = document.getElementById( 'dak-admin-process-refund-general-error' );
+
+		if ( generalError ) {
+			generalError.textContent = '';
+			generalError.classList.add( 'dak-hidden' );
+		}
+	}
+
+	function showRefundError( message ) {
+		var el = document.getElementById( 'dak-admin-process-refund-general-error' );
+
+		if ( el ) {
+			el.textContent = message;
+			el.classList.remove( 'dak-hidden' );
+		}
+	}
 
 	function resetModalFields() {
 		document.getElementById( 'dak-admin-appointment-id' ).value = '0';

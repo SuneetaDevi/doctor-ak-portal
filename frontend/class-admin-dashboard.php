@@ -9,6 +9,7 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
+use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Doctor_Awards;
 use DoctorAKPortal\Includes\Locations;
@@ -218,7 +219,7 @@ class Admin_Dashboard {
 			)
 		);
 
-		if ( in_array( self::requested_section(), array( 'doctor-sessions', 'clinic' ), true ) ) {
+		if ( 'doctor-sessions' === self::requested_section() ) {
 			wp_enqueue_style(
 				'doctor-ak-portal-registration',
 				DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-registration.css',
@@ -253,9 +254,10 @@ class Admin_Dashboard {
 				'doctor-ak-portal-admin-sessions',
 				'dakAdminSessions',
 				array(
-					'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
-					'nonce'     => wp_create_nonce( self::NONCE_ACTION ),
-					'locations' => Locations::get_all(),
+					'ajaxUrl'         => admin_url( 'admin-ajax.php' ),
+					'nonce'           => wp_create_nonce( self::NONCE_ACTION ),
+					'locations'       => Locations::get_all(),
+					'clinicLocations' => Clinic_Locations::get_all(),
 				)
 			);
 
@@ -268,6 +270,41 @@ class Admin_Dashboard {
 					true
 				);
 			}
+		}
+
+		if ( 'clinic' === self::requested_section() ) {
+			wp_enqueue_style(
+				'doctor-ak-portal-registration',
+				DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-registration.css',
+				array( 'doctor-ak-portal-auth' ),
+				Assets::version( 'assets/css/doctor-ak-registration.css' )
+			);
+
+			wp_enqueue_script(
+				'doctor-ak-portal-city-area-select',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-city-area-select.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-city-area-select.js' ),
+				true
+			);
+
+			wp_enqueue_script(
+				'doctor-ak-portal-admin-clinic-locations',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-clinic-locations.js',
+				array( 'doctor-ak-portal-city-area-select' ),
+				Assets::version( 'assets/js/doctor-ak-admin-clinic-locations.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-admin-clinic-locations',
+				'dakAdminClinicLocations',
+				array(
+					'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+					'nonce'     => wp_create_nonce( self::NONCE_ACTION ),
+					'locations' => Locations::get_all(),
+				)
+			);
 		}
 
 		if ( 'role-permissions' === self::requested_section() ) {
@@ -542,6 +579,8 @@ class Admin_Dashboard {
 			$modal_html = $this->video_pricing_modal_html();
 		} elseif ( 'appointments' === $section ) {
 			$modal_html = $this->appointment_modal_html();
+		} elseif ( 'clinic' === $section ) {
+			$modal_html = $this->clinic_location_modal_html();
 		}
 
 		if ( $is_user_form_view ) {
@@ -611,11 +650,12 @@ class Admin_Dashboard {
 		return $this->template_loader->get_template(
 			'dashboard/partials/admin-session-form-screen.php',
 			array(
-				'session_days'    => Clinics::session_days(),
-				'session_periods' => Clinics::session_periods(),
-				'doctor_options'  => $this->doctor_options(),
-				'list_url'        => $dashboard_url ? add_query_arg( 'section', $section, $dashboard_url ) : '',
-				'editing_clinic'  => $editing,
+				'session_days'     => Clinics::session_days(),
+				'session_periods'  => Clinics::session_periods(),
+				'doctor_options'   => $this->doctor_options(),
+				'clinic_locations' => Clinic_Locations::get_all(),
+				'list_url'         => $dashboard_url ? add_query_arg( 'section', $section, $dashboard_url ) : '',
+				'editing_clinic'   => $editing,
 			)
 		);
 	}
@@ -702,7 +742,7 @@ class Admin_Dashboard {
 			);
 		}
 
-		if ( 'doctor-sessions' === $section || 'clinic' === $section ) {
+		if ( 'doctor-sessions' === $section ) {
 			if ( self::is_session_form_view() ) {
 				return $this->session_form_screen_html( $section );
 			}
@@ -713,6 +753,13 @@ class Admin_Dashboard {
 					'clinics'    => Clinics::all_flat_for_admin(),
 					'section_url' => add_query_arg( 'section', $section, Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ) ),
 				)
+			);
+		}
+
+		if ( 'clinic' === $section ) {
+			return $this->template_loader->get_template(
+				'dashboard/partials/admin-clinic-locations.php',
+				array( 'clinic_locations' => Clinic_Locations::get_all() )
 			);
 		}
 
@@ -765,6 +812,17 @@ class Admin_Dashboard {
 		);
 	}
 
+
+	/**
+	 * Renders the "Add/Edit Clinic" modal (shared single instance, populated
+	 * client-side from the clicked row's data) for the "Clinic" section's
+	 * master Clinic_Locations list.
+	 *
+	 * @return string
+	 */
+	private function clinic_location_modal_html() {
+		return $this->template_loader->get_template( 'modal/admin-clinic-location-modal.php', array() );
+	}
 
 	/**
 	 * Renders the "Add/Edit Service" modal (shared single instance,
@@ -1041,11 +1099,12 @@ class Admin_Dashboard {
 		return $this->template_loader->get_template(
 			'dashboard/partials/admin-user-form-screen.php',
 			array(
-				'role'            => $role,
-				'specializations' => Specializations::get_all(),
-				'section'         => $section,
-				'list_url'        => $dashboard_url ? add_query_arg( 'section', $section, $dashboard_url ) : '',
-				'editing_user'    => $editing,
+				'role'             => $role,
+				'specializations'  => Specializations::get_all(),
+				'section'          => $section,
+				'list_url'         => $dashboard_url ? add_query_arg( 'section', $section, $dashboard_url ) : '',
+				'editing_user'     => $editing,
+				'clinic_locations' => Clinic_Locations::get_all(),
 			)
 		);
 	}
@@ -1069,15 +1128,28 @@ class Admin_Dashboard {
 		$display_name = trim( $user->first_name . ' ' . $user->last_name );
 		$display_name = '' !== $display_name ? $display_name : $user->display_name;
 
-		$location = '';
+		$location      = '';
+		$clinic_labels = array();
 
 		if ( in_array( Roles::DOCTOR_ROLE, (array) $user->roles, true ) ) {
-			$clinic_count = count( Clinics::get_for_doctor( $user->ID ) );
+			$doctor_clinics = Clinics::get_for_doctor( $user->ID );
+			$clinic_count   = count( $doctor_clinics );
 
 			if ( $clinic_count > 0 ) {
 				/* translators: %d: number of clinics. */
 				$location = sprintf( _n( '%d clinic', '%d clinics', $clinic_count, 'doctor-ak-portal' ), $clinic_count );
 			}
+
+			$clinic_labels = array_values(
+				array_unique(
+					array_map(
+						function ( $clinic ) {
+							return Clinics::TYPE_VIDEO === $clinic['type'] ? __( 'Video Consultation', 'doctor-ak-portal' ) : $clinic['name'];
+						},
+						$doctor_clinics
+					)
+				)
+			);
 		}
 
 		return array(
@@ -1091,6 +1163,7 @@ class Admin_Dashboard {
 			'specializations'             => $specialization_slugs,
 			'specialization_label'        => implode( ', ', $specialization_labels ),
 			'specialization_labels'       => $specialization_labels,
+			'clinic_labels'               => $clinic_labels,
 			'is_disabled'                 => 'yes' === get_user_meta( $user->ID, 'doctor_ak_account_disabled', true ),
 			'years_experience'            => get_user_meta( $user->ID, 'doctor_ak_years_experience', true ),
 			'qualification'               => get_user_meta( $user->ID, 'doctor_ak_qualification', true ),

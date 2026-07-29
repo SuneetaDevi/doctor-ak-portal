@@ -87,6 +87,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 								data-time="<?php echo esc_attr( $row['time'] ); ?>"
 							><?php esc_html_e( 'Reschedule', 'doctor-ak-portal' ); ?></button>
 						<?php endif; ?>
+						<?php if ( 'cancelled' === $row['status'] && $row['is_paid'] && 'online' === $row['payment_mode'] && '' === $row['refund_status'] ) : ?>
+							<button type="button" class="dak-status-pill dak-status-pill-action" data-request-refund data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"><?php esc_html_e( 'Request Refund', 'doctor-ak-portal' ); ?></button>
+						<?php elseif ( 'requested' === $row['refund_status'] ) : ?>
+							<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-pending"><?php esc_html_e( 'Refund Requested', 'doctor-ak-portal' ); ?></span>
+						<?php elseif ( 'processed' === $row['refund_status'] ) : ?>
+							<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-active"><?php esc_html_e( 'Refund Processed', 'doctor-ak-portal' ); ?></span>
+						<?php endif; ?>
 					</div>
 				</li>
 			<?php endforeach; ?>

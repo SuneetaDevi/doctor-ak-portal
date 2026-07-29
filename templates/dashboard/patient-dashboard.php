@@ -430,6 +430,33 @@ $appointment_group_labels = array(
 		</div>
 	</div>
 
+	<div class="dak-portal dak-modal" id="dak-request-refund-modal" aria-hidden="true">
+		<div class="dak-modal-overlay" data-dak-request-refund-close></div>
+
+		<div class="dak-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="dak-request-refund-title">
+			<button type="button" class="dak-modal-close" data-dak-request-refund-close aria-label="<?php esc_attr_e( 'Close', 'doctor-ak-portal' ); ?>">&times;</button>
+
+			<div class="dak-modal-header">
+				<h2 id="dak-request-refund-title"><?php esc_html_e( 'Request Refund', 'doctor-ak-portal' ); ?></h2>
+			</div>
+
+			<div class="dak-alert dak-alert-error dak-hidden" id="dak-request-refund-error" role="alert"></div>
+
+			<input type="hidden" id="dak-request-refund-appointment-id" value="0">
+
+			<div class="dak-field">
+				<label for="dak-request-refund-reason"><?php esc_html_e( 'Reason', 'doctor-ak-portal' ); ?></label>
+				<textarea id="dak-request-refund-reason" rows="4" maxlength="500" placeholder="<?php esc_attr_e( 'Tell us why you\'re requesting a refund…', 'doctor-ak-portal' ); ?>"></textarea>
+			</div>
+
+			<p class="dak-field-hint"><?php esc_html_e( 'Our team will review your request and process the refund to your original payment method.', 'doctor-ak-portal' ); ?></p>
+
+			<button type="button" class="dak-button dak-button-primary dak-button-block" id="dak-request-refund-save">
+				<span class="dak-button-label"><?php esc_html_e( 'Submit Request', 'doctor-ak-portal' ); ?></span>
+			</button>
+		</div>
+	</div>
+
 	<?php if ( 'dashboard' === $active_tab ) : ?>
 		<nav class="dak-patient-bottom-nav">
 			<a href="<?php echo esc_url( $dashboard_url ); ?>" class="is-active"><?php echo $dak_patient_icons['dashboard']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?><span><?php esc_html_e( 'Dashboard', 'doctor-ak-portal' ); ?></span></a>

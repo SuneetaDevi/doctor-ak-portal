@@ -20,24 +20,80 @@
 		wireTypeToggle();
 		wireSubmit( form );
 
-		if ( window.dakCityArea ) {
-			var countrySelect = document.getElementById( 'dak-admin-session-country' );
-			var citySelect = document.getElementById( 'dak-admin-session-city' );
-			var areaSelect = document.getElementById( 'dak-admin-session-area' );
+		var countrySelect = document.getElementById( 'dak-admin-session-country' );
+		var citySelect = document.getElementById( 'dak-admin-session-city' );
+		var areaSelect = document.getElementById( 'dak-admin-session-area' );
+		var clinicLocationSelect = document.getElementById( 'dak-admin-session-clinic-location' );
 
-			if ( countrySelect && citySelect && areaSelect ) {
-				window.dakCityArea.wire(
-					countrySelect,
-					citySelect,
-					areaSelect,
-					window.dakAdminSessions.locations,
-					countrySelect.getAttribute( 'data-current' ) || '',
-					citySelect.getAttribute( 'data-current' ) || '',
-					areaSelect.getAttribute( 'data-current' ) || ''
-				);
-			}
+		if ( window.dakCityArea && countrySelect && citySelect && areaSelect ) {
+			window.dakCityArea.wire(
+				countrySelect,
+				citySelect,
+				areaSelect,
+				window.dakAdminSessions.locations,
+				countrySelect.getAttribute( 'data-current' ) || '',
+				citySelect.getAttribute( 'data-current' ) || '',
+				areaSelect.getAttribute( 'data-current' ) || ''
+			);
+		}
+
+		if ( clinicLocationSelect ) {
+			var preselectClinicLocationId = clinicLocationSelect.getAttribute( 'data-current' ) || '';
+
+			renderClinicLocationOptions( clinicLocationSelect, countrySelect, citySelect, areaSelect, preselectClinicLocationId );
+
+			[ countrySelect, citySelect, areaSelect ].forEach( function ( select ) {
+				if ( select ) {
+					select.addEventListener( 'change', function () {
+						renderClinicLocationOptions( clinicLocationSelect, countrySelect, citySelect, areaSelect, '' );
+					} );
+				}
+			} );
 		}
 	} );
+
+	/**
+	 * Fills the Clinic <select> from window.dakAdminSessions.clinicLocations,
+	 * filtered to whichever Country/City/Area are currently selected —
+	 * narrowing as the admin picks a more specific location.
+	 *
+	 * @param {HTMLSelectElement} clinicLocationSelect The Clinic <select>.
+	 * @param {HTMLSelectElement} countrySelect        The Country <select>.
+	 * @param {HTMLSelectElement} citySelect            The City <select>.
+	 * @param {HTMLSelectElement} areaSelect            The Area <select>.
+	 * @param {string}            preselectId           Clinic-location ID to pre-select, if any.
+	 */
+	function renderClinicLocationOptions( clinicLocationSelect, countrySelect, citySelect, areaSelect, preselectId ) {
+		var allClinicLocations = ( window.dakAdminSessions && window.dakAdminSessions.clinicLocations ) || [];
+		var country = countrySelect ? countrySelect.value : '';
+		var city = citySelect ? citySelect.value : '';
+		var area = areaSelect ? areaSelect.value : '';
+
+		var filtered = allClinicLocations.filter( function ( clinicLocation ) {
+			return ( ! country || clinicLocation.country === country )
+				&& ( ! city || clinicLocation.city === city )
+				&& ( ! area || clinicLocation.area === area );
+		} );
+
+		clinicLocationSelect.innerHTML = '';
+
+		var placeholderOption = document.createElement( 'option' );
+		placeholderOption.value = '';
+		placeholderOption.textContent = filtered.length ? 'Select a clinic…' : 'No clinics for this area yet';
+		clinicLocationSelect.appendChild( placeholderOption );
+
+		filtered.forEach( function ( clinicLocation ) {
+			var option = document.createElement( 'option' );
+			option.value = String( clinicLocation.id );
+			option.textContent = clinicLocation.name + ' — ' + clinicLocation.area_label + ', ' + clinicLocation.city_label;
+
+			if ( String( clinicLocation.id ) === String( preselectId ) ) {
+				option.selected = true;
+			}
+
+			clinicLocationSelect.appendChild( option );
+		} );
+	}
 
 	/**
 	 * Enables/disables each period row's time + slot-duration inputs based
@@ -74,8 +130,14 @@
 		}
 
 		typeSelect.addEventListener( 'change', function () {
+			var isVideo = 'video' === typeSelect.value;
+
 			document.querySelectorAll( '.dak-admin-session-address-field' ).forEach( function ( field ) {
-				field.classList.toggle( 'dak-hidden', 'video' === typeSelect.value );
+				field.classList.toggle( 'dak-hidden', isVideo );
+			} );
+
+			document.querySelectorAll( '.dak-admin-session-video-name-field' ).forEach( function ( field ) {
+				field.classList.toggle( 'dak-hidden', ! isVideo );
 			} );
 		} );
 	}

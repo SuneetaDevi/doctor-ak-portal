@@ -345,6 +345,64 @@ class Swich_Payment {
 	}
 
 	/**
+	 * Calls Swich's refund API for a settled PayIn transaction.
+	 *
+	 * POST {api_base}/gateway/payin/v2.0/purchase/refund
+	 * `{ OrderId, Reason, Amount }` — Amount may be less than the original
+	 * transaction amount (a partial refund); Swich records that itself, this
+	 * class doesn't need to distinguish full vs. partial.
+	 *
+	 * @param string $order_id Swich order ID (Appointments::mark_paid() stores this via the callback's OrderId, see META_ORDER_ID).
+	 * @param string $reason   Refund reason (max 500 chars).
+	 * @param float  $amount   Amount in PKR — equal to or less than the original transaction amount.
+	 * @return array|\WP_Error Decoded response body, or an error.
+	 */
+	public static function refund( $order_id, $reason, $amount ) {
+		if ( '' === $order_id ) {
+			return new \WP_Error( 'doctor_ak_swich_missing_order', __( 'This appointment has no Swich order reference to refund.', 'doctor-ak-portal' ) );
+		}
+
+		$token = self::get_bearer_token();
+
+		if ( is_wp_error( $token ) ) {
+			return $token;
+		}
+
+		$response = wp_remote_post(
+			self::api_base_url() . '/gateway/payin/v2.0/purchase/refund',
+			array(
+				'timeout' => 20,
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $token,
+					'Content-Type'  => 'application/json',
+				),
+				'body'    => wp_json_encode(
+					array(
+						'OrderId' => $order_id,
+						'Reason'  => mb_substr( $reason, 0, 500 ),
+						'Amount'  => (float) $amount,
+					)
+				),
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$status_code = wp_remote_retrieve_response_code( $response );
+		$body        = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( $status_code < 200 || $status_code >= 300 ) {
+			$message = is_array( $body ) && ! empty( $body['message'] ) ? $body['message'] : __( 'The payment gateway rejected the refund.', 'doctor-ak-portal' );
+
+			return new \WP_Error( 'doctor_ak_swich_refund_failed', $message );
+		}
+
+		return is_array( $body ) ? $body : array();
+	}
+
+	/**
 	 * Normalizes a loosely-formatted phone number to Swich's preferred
 	 * "03xxxxxxxxx" MSISDN format, returning an empty string if it can't be.
 	 *

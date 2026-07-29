@@ -26,8 +26,14 @@
 		var doctorId = trigger.getAttribute( 'data-doctor-id' );
 
 		if ( ! doctorId ) {
-			if ( window.dakBookingRedirect.directoryUrl ) {
-				window.location.href = window.dakBookingRedirect.directoryUrl;
+			// Prefer the doctors directory so the visitor can pick a doctor
+			// first; if the site owner hasn't published a page with
+			// [doctors_directory] yet, fall back to the booking page itself
+			// rather than silently doing nothing.
+			var fallbackUrl = window.dakBookingRedirect.directoryUrl || window.dakBookingRedirect.pageUrl;
+
+			if ( fallbackUrl ) {
+				window.location.href = fallbackUrl;
 			}
 
 			return;

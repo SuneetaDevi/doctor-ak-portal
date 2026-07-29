@@ -138,11 +138,11 @@
 
 .dak-clinic-sessions-periods .dak-availability-row {
 	display: grid !important;
-	grid-template-columns: 108px 78px 10px 78px 74px !important;
+	grid-template-columns: 130px minmax( 130px, 1fr ) 16px minmax( 130px, 1fr ) 110px !important;
 	align-items: center !important;
-	gap: 0.4rem !important;
+	gap: 0.75rem !important;
 	flex-wrap: nowrap !important;
-	padding: 0.4rem 0.6rem !important;
+	padding: 0.75rem 0.9rem !important;
 	border-bottom: 1px solid var( --dak-border ) !important;
 }
 
@@ -151,23 +151,27 @@
 }
 
 .dak-clinic-sessions-periods .dak-checkbox {
-	font-size: 0.85rem !important;
+	font-size: 0.9rem !important;
 }
 
 .dak-clinic-sessions-periods .dak-availability-start,
 .dak-clinic-sessions-periods .dak-availability-end {
-	padding: 0.3rem 0.4rem !important;
-	font-size: 0.8rem !important;
+	width: 100% !important;
+	min-width: 0 !important;
+	padding: 0.55rem 0.6rem !important;
+	font-size: 0.9rem !important;
 }
 
 .dak-clinic-sessions-periods .dak-availability-sep {
 	text-align: center !important;
+	color: var( --dak-muted ) !important;
 }
 
 .dak-clinic-slot-duration {
 	width: 100% !important;
-	padding: 0.3rem 0.4rem !important;
-	font-size: 0.8rem !important;
+	min-width: 0 !important;
+	padding: 0.55rem 0.6rem !important;
+	font-size: 0.9rem !important;
 }
 
 .dak-clinic-card-form-actions {
@@ -184,18 +188,20 @@
 	width: auto !important;
 }
 
-@media ( max-width: 480px ) {
-	.dak-clinic-sessions-day {
-		overflow-x: auto !important;
-	}
-
+@media ( max-width: 640px ) {
 	.dak-clinic-sessions-periods .dak-availability-row {
-		grid-template-columns: 96px 66px 8px 66px 60px !important;
-		gap: 0.3rem !important;
-		padding: 0.3rem 0.4rem !important;
+		grid-template-columns: 1fr !important;
+		gap: 0.5rem !important;
+		padding: 0.75rem 0.9rem !important;
 	}
 
-	.dak-clinic-sessions-periods .dak-checkbox span {
-		font-size: 0.78rem !important;
+	.dak-clinic-sessions-periods .dak-availability-sep {
+		display: none !important;
+	}
+
+	.dak-clinic-sessions-periods .dak-availability-start,
+	.dak-clinic-sessions-periods .dak-availability-end,
+	.dak-clinic-slot-duration {
+		font-size: 1rem !important;
 	}
 }

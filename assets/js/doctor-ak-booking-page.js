@@ -417,13 +417,30 @@
 		var metaEl = document.createElement( 'span' );
 
 		if ( pricing.discount_active ) {
+			metaEl.className = 'dak-price-with-discount';
+
 			var strike = document.createElement( 's' );
+			strike.className = 'dak-price-original';
 			strike.textContent = 'PKR' + pricing.base_price;
 
+			var salePrice = document.createElement( 'span' );
+			salePrice.className = 'dak-price-sale';
+			salePrice.textContent = 'PKR' + pricing.final_price;
+
+			var badge = document.createElement( 'span' );
+			badge.className = 'dak-price-discount-badge';
+			badge.textContent = pricing.discount_percent + '% off';
+
 			metaEl.appendChild( strike );
-			metaEl.appendChild( document.createTextNode(
-				' PKR' + pricing.final_price + ' · ' + pricing.discount_percent + '% off, ends ' + pricing.discount_ends_at
-			) );
+			metaEl.appendChild( salePrice );
+			metaEl.appendChild( badge );
+
+			if ( pricing.discount_ends_at ) {
+				var endsAt = document.createElement( 'span' );
+				endsAt.className = 'dak-price-discount-ends';
+				endsAt.textContent = 'Ends ' + pricing.discount_ends_at;
+				metaEl.appendChild( endsAt );
+			}
 		} else {
 			metaEl.textContent = pricing.final_price > 0 ? 'PKR' + pricing.final_price : 'Free';
 		}

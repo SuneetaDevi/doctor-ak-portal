@@ -35,6 +35,7 @@ use DoctorAKPortal\Frontend\Patient_Appointment_Handler;
 use DoctorAKPortal\Frontend\Patient_Dashboard;
 use DoctorAKPortal\Frontend\Profile_Handler;
 use DoctorAKPortal\Frontend\Registration_Handler;
+use DoctorAKPortal\Frontend\Clinic_Location_Handler;
 use DoctorAKPortal\Frontend\Service_Handler;
 use DoctorAKPortal\Frontend\Shortcodes;
 use DoctorAKPortal\Frontend\Site_Footer;
@@ -223,6 +224,8 @@ class Plugin {
 		$this->loader->add_action( 'doctor_ak_appointment_created', $notifications, 'notify_created', 10, 2 );
 		$this->loader->add_action( 'doctor_ak_appointment_cancelled', $notifications, 'notify_cancelled' );
 		$this->loader->add_action( 'doctor_ak_appointment_paid', $notifications, 'notify_paid' );
+		$this->loader->add_action( 'doctor_ak_appointment_refund_requested', $notifications, 'notify_refund_requested' );
+		$this->loader->add_action( 'doctor_ak_appointment_refund_processed', $notifications, 'notify_refund_processed' );
 		$this->loader->add_action( 'doctor_ak_doctor_registered', $notifications, 'notify_doctor_registered' );
 		$this->loader->add_action( 'doctor_ak_doctor_approved', $notifications, 'notify_doctor_approved' );
 		$this->loader->add_action( Notifications::CRON_HOOK, $notifications, 'send_reminders' );
@@ -243,6 +246,8 @@ class Plugin {
 		$this->loader->add_action( 'doctor_ak_appointment_cancelled', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_cancelled' );
 		$this->loader->add_action( 'doctor_ak_appointment_paid', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_paid' );
 		$this->loader->add_action( 'doctor_ak_appointment_completed', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_completed' );
+		$this->loader->add_action( 'doctor_ak_appointment_refund_requested', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_refund_requested' );
+		$this->loader->add_action( 'doctor_ak_appointment_refund_processed', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_refund_processed' );
 		$this->loader->add_action( 'doctor_ak_doctor_registered', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_doctor_registered' );
 		$this->loader->add_action( 'doctor_ak_doctor_approved', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_doctor_approved' );
 
@@ -270,6 +275,10 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_save', $service_handler, 'handle_admin_save_service' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_delete', $service_handler, 'handle_admin_delete_service' );
 
+		$clinic_location_handler = new Clinic_Location_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_clinic_location_save', $clinic_location_handler, 'handle_admin_save' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_clinic_location_delete', $clinic_location_handler, 'handle_admin_delete' );
+
 		$video_pricing_handler = new Video_Pricing_Handler();
 		$this->loader->add_action( 'wp_enqueue_scripts', $video_pricing_handler, 'enqueue_assets' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_video_pricing_save', $video_pricing_handler, 'handle_save_price' );
@@ -279,11 +288,13 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointment_save', $appointment_handler, 'handle_admin_save_appointment' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointment_delete', $appointment_handler, 'handle_admin_delete_appointment' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointment_print', $appointment_handler, 'handle_print' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_process_refund', $appointment_handler, 'handle_admin_process_refund' );
 
 		$patient_appointment_handler = new Patient_Appointment_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_cancel_appointment', $patient_appointment_handler, 'handle_cancel_appointment' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_pay_now', $patient_appointment_handler, 'handle_pay_now' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_reschedule_appointment', $patient_appointment_handler, 'handle_reschedule' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_request_refund', $patient_appointment_handler, 'handle_request_refund' );
 
 		$doctor_appointment_handler = new Doctor_Appointment_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_mark_completed', $doctor_appointment_handler, 'handle_mark_completed' );

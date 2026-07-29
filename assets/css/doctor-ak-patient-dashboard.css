@@ -795,14 +795,6 @@
 		padding-bottom: 5.5rem !important;
 	}
 
-	.dak-patient-dashboard .dak-dashboard-sidebar {
-		display: none !important;
-	}
-
-	.dak-patient-dashboard .dak-dashboard-sidebar-toggle {
-		display: none !important;
-	}
-
 	.dak-patient-bottom-nav {
 		display: flex !important;
 		position: fixed !important;
@@ -836,28 +828,6 @@
 		color: var( --dak-primary-dark ) !important;
 	}
 
-	.dak-patient-fab {
-		display: flex !important;
-		align-items: center !important;
-		justify-content: center !important;
-		position: fixed !important;
-		right: 1.25rem !important;
-		bottom: 4.75rem !important;
-		z-index: 901 !important;
-		width: 3.25rem !important;
-		height: 3.25rem !important;
-		border-radius: 999px !important;
-		background: var( --dak-primary ) !important;
-		color: #fff !important;
-		border: none !important;
-		box-shadow: var( --dak-shadow ) !important;
-		cursor: pointer !important;
-	}
-
-	.dak-patient-fab svg {
-		width: 1.4rem !important;
-		height: 1.4rem !important;
-	}
 }
 
 /* Payments tab */

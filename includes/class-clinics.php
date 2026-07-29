@@ -248,15 +248,23 @@ class Clinics {
 			return new \WP_Error( 'doctor_ak_clinic_email_invalid', __( 'Please provide a valid contact email address.', 'doctor-ak-portal' ) );
 		}
 
+		// Set by Clinic_Handler::process_save() when the admin "Doctor
+		// Sessions" form aligned this clinic to a Clinic_Locations master
+		// record (which also already overwrote name/address/country/city/area
+		// above with that record's own values) — carried through so the
+		// association itself is stored, not just a name/address snapshot.
+		$clinic_location_id = isset( $posted['clinic_location_id'] ) ? absint( wp_unslash( $posted['clinic_location_id'] ) ) : 0;
+
 		return array(
-			'type'          => $type,
-			'name'          => $name,
-			'address'       => $address,
-			'country'       => $country,
-			'city'          => $city,
-			'area'          => $area,
-			'phone'         => $phone,
-			'contact_email' => $contact_email,
+			'type'               => $type,
+			'name'               => $name,
+			'address'            => $address,
+			'country'            => $country,
+			'city'               => $city,
+			'area'               => $area,
+			'phone'              => $phone,
+			'contact_email'      => $contact_email,
+			'clinic_location_id' => $clinic_location_id,
 		);
 	}
 
@@ -279,20 +287,21 @@ class Clinics {
 		$inserted = $wpdb->insert(
 			self::table_name(),
 			array(
-				'doctor_id'     => (int) $doctor_id,
-				'type'          => $fields['type'],
-				'name'          => $fields['name'],
-				'address'       => $fields['address'],
-				'country'       => $fields['country'],
-				'city'          => $fields['city'],
-				'area'          => $fields['area'],
-				'phone'         => $fields['phone'],
-				'contact_email' => $fields['contact_email'],
-				'sessions'      => wp_json_encode( $sessions ),
-				'created_at'    => $now,
-				'updated_at'    => $now,
+				'doctor_id'          => (int) $doctor_id,
+				'type'               => $fields['type'],
+				'name'               => $fields['name'],
+				'address'            => $fields['address'],
+				'country'            => $fields['country'],
+				'city'               => $fields['city'],
+				'area'               => $fields['area'],
+				'phone'              => $fields['phone'],
+				'contact_email'      => $fields['contact_email'],
+				'clinic_location_id' => isset( $fields['clinic_location_id'] ) ? (int) $fields['clinic_location_id'] : 0,
+				'sessions'           => wp_json_encode( $sessions ),
+				'created_at'         => $now,
+				'updated_at'         => $now,
 			),
-			array( '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
+			array( '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s' )
 		);
 
 		return $inserted ? (int) $wpdb->insert_id : false;
@@ -321,19 +330,20 @@ class Clinics {
 		$updated = $wpdb->update(
 			self::table_name(),
 			array(
-				'type'          => $fields['type'],
-				'name'          => $fields['name'],
-				'address'       => $fields['address'],
-				'country'       => $fields['country'],
-				'city'          => $fields['city'],
-				'area'          => $fields['area'],
-				'phone'         => $fields['phone'],
-				'contact_email' => $fields['contact_email'],
-				'sessions'      => wp_json_encode( $sessions ),
-				'updated_at'    => current_time( 'mysql' ),
+				'type'               => $fields['type'],
+				'name'               => $fields['name'],
+				'address'            => $fields['address'],
+				'country'            => $fields['country'],
+				'city'               => $fields['city'],
+				'area'               => $fields['area'],
+				'phone'              => $fields['phone'],
+				'contact_email'      => $fields['contact_email'],
+				'clinic_location_id' => isset( $fields['clinic_location_id'] ) ? (int) $fields['clinic_location_id'] : 0,
+				'sessions'           => wp_json_encode( $sessions ),
+				'updated_at'         => current_time( 'mysql' ),
 			),
 			$where,
-			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ),
+			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s' ),
 			$where_types
 		);
 
@@ -639,21 +649,22 @@ class Clinics {
 		$area    = isset( $row['area'] ) ? $row['area'] : '';
 
 		return array(
-			'id'            => (int) $row['id'],
-			'doctor_id'     => (int) $row['doctor_id'],
-			'type'          => $row['type'],
-			'name'          => $row['name'],
-			'address'       => $row['address'],
-			'country'       => $country,
-			'country_label' => '' !== $country ? Locations::country_label( $country ) : '',
-			'city'          => $city,
-			'city_label'    => '' !== $city ? Locations::city_label( $country, $city ) : '',
-			'area'          => $area,
-			'area_label'    => '' !== $area ? Locations::area_label( $country, $city, $area ) : '',
-			'phone'         => $row['phone'],
-			'contact_email' => $row['contact_email'],
-			'sessions'      => $sessions,
-			'enabled_days'  => $enabled_days,
+			'id'                 => (int) $row['id'],
+			'doctor_id'          => (int) $row['doctor_id'],
+			'type'               => $row['type'],
+			'name'               => $row['name'],
+			'address'            => $row['address'],
+			'country'            => $country,
+			'country_label'      => '' !== $country ? Locations::country_label( $country ) : '',
+			'city'               => $city,
+			'city_label'         => '' !== $city ? Locations::city_label( $country, $city ) : '',
+			'area'               => $area,
+			'area_label'         => '' !== $area ? Locations::area_label( $country, $city, $area ) : '',
+			'phone'              => $row['phone'],
+			'contact_email'      => $row['contact_email'],
+			'clinic_location_id' => isset( $row['clinic_location_id'] ) ? (int) $row['clinic_location_id'] : 0,
+			'sessions'           => $sessions,
+			'enabled_days'       => $enabled_days,
 		);
 	}
 

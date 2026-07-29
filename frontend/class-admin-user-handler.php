@@ -8,6 +8,7 @@
 namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Authentication;
+use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Doctor_Awards;
 use DoctorAKPortal\Includes\Locations;
@@ -133,7 +134,7 @@ class Admin_User_Handler {
 		$expertise                  = '';
 		$years_experience           = null;
 		$awards                     = array();
-		$clinic_fields              = null;
+		$clinic_fields_list         = array();
 		$specializations            = array();
 		$video_consultation_allowed = true;
 
@@ -202,32 +203,47 @@ class Admin_User_Handler {
 				$errors['specializations'] = __( 'Please select at least one specialization.', 'doctor-ak-portal' );
 			}
 
-			// Optional "quick-add" clinic — only attempted if a name was
-			// actually entered, so leaving all three fields blank (the
-			// common case when the doctor already has clinics, or will add
-			// them later from the Clinic tab) is never an error.
-			$posted_clinic_name = isset( $_POST['clinic_name'] ) ? sanitize_text_field( wp_unslash( $_POST['clinic_name'] ) ) : '';
+			// Optional "align to clinics" — only attempted for whichever
+			// clinics were actually picked from the master Clinic_Locations
+			// list, so leaving it unset (the common case when the doctor
+			// already has clinics, or will be aligned later from the Doctor
+			// Sessions section) is never an error. Each picked clinic becomes
+			// its own Clinics row below, once the account itself is saved.
+			$posted_clinic_location_ids = isset( $_POST['clinic_location_ids'] ) && is_array( $_POST['clinic_location_ids'] )
+				? array_unique( array_map( 'absint', wp_unslash( $_POST['clinic_location_ids'] ) ) ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- wp_unslash() applied above before array_map().
+				: array();
 
-			if ( '' !== $posted_clinic_name ) {
-				// Reuses the doctor's own City/Area (already validated above)
-				// rather than asking for them a second time in this
-				// optional quick-add block.
+			foreach ( $posted_clinic_location_ids as $posted_clinic_location_id ) {
+				if ( $posted_clinic_location_id <= 0 ) {
+					continue;
+				}
+
+				$clinic_location = Clinic_Locations::find( $posted_clinic_location_id );
+
+				if ( ! $clinic_location ) {
+					$errors['clinic_location_ids'] = __( 'One of the chosen clinics could not be found.', 'doctor-ak-portal' );
+					continue;
+				}
+
 				$clinic_fields = Clinics::sanitize_clinic_fields_from_request(
 					array(
-						'name'    => isset( $_POST['clinic_name'] ) ? $_POST['clinic_name'] : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Clinics::sanitize_clinic_fields_from_request() unslashes/sanitizes each field itself.
-						'address' => isset( $_POST['clinic_address'] ) ? $_POST['clinic_address'] : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
-						'country' => $country,
-						'city'    => $city,
-						'area'    => $area,
-						'phone'   => isset( $_POST['clinic_phone'] ) ? $_POST['clinic_phone'] : '', // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+						'name'               => $clinic_location['name'],
+						'address'            => $clinic_location['address'],
+						'country'            => $clinic_location['country'],
+						'city'               => $clinic_location['city'],
+						'area'               => $clinic_location['area'],
+						'phone'              => $clinic_location['phone'],
+						'clinic_location_id' => $posted_clinic_location_id,
 					),
 					Clinics::TYPE_PHYSICAL
 				);
 
 				if ( is_wp_error( $clinic_fields ) ) {
-					$errors['clinic_address'] = $clinic_fields->get_error_message();
-					$clinic_fields            = null;
+					$errors['clinic_location_ids'] = $clinic_fields->get_error_message();
+					continue;
 				}
+
+				$clinic_fields_list[] = $clinic_fields;
 			}
 		} else {
 			$phone_number = isset( $_POST['phone_number'] ) ? sanitize_text_field( wp_unslash( $_POST['phone_number'] ) ) : '';
@@ -328,7 +344,7 @@ class Admin_User_Handler {
 			update_user_meta( $saved_user_id, Clinics::VIDEO_CONSULTATION_ALLOWED_META_KEY, $video_consultation_allowed ? '1' : '0' );
 			update_user_meta( $saved_user_id, Doctor_Awards::META_KEY, Doctor_Awards::encode( $awards ) );
 
-			if ( null !== $clinic_fields ) {
+			foreach ( $clinic_fields_list as $clinic_fields ) {
 				Clinics::create( $saved_user_id, $clinic_fields, Clinics::empty_sessions() );
 			}
 		} else {

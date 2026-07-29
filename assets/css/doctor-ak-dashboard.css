@@ -747,6 +747,24 @@
 	}
 }
 
+/* Phones: tighter padding, and stat/list grids fall back to a single
+   column instead of leaving their minmax() minimum wider than the
+   viewport (which would force the whole page to scroll horizontally). */
+@media ( max-width: 480px ) {
+	.dak-dashboard-main {
+		padding: 1rem !important;
+	}
+
+	.dak-dashboard-statistics,
+	.dak-dashboard-grid {
+		grid-template-columns: 1fr !important;
+	}
+
+	.dak-dashboard-greeting h1 {
+		font-size: 1.3rem !important;
+	}
+}
+
 /* Notifications tab (doctor, patient, and admin dashboards) */
 
 .dak-nav-badge {

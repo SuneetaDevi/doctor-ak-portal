@@ -226,7 +226,7 @@
 
 		var placeholder = document.createElement( 'span' );
 		placeholder.className = 'dak-multiselect-placeholder';
-		placeholder.textContent = 'Select specializations…';
+		placeholder.textContent = opts.placeholder || 'Select specializations…';
 
 		control.appendChild( chipsContainer );
 		control.appendChild( placeholder );

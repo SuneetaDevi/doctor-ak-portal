@@ -38,6 +38,7 @@ class Notifications {
 	const OPTION_NOTIFY_REMINDER            = 'doctor_ak_notify_reminder';
 	const OPTION_NOTIFY_VIDEO_LINK          = 'doctor_ak_notify_video_link';
 	const OPTION_NOTIFY_DOCTOR_REGISTRATION = 'doctor_ak_notify_doctor_registration';
+	const OPTION_NOTIFY_REFUND              = 'doctor_ak_notify_refund';
 	const OPTION_FROM_NAME                  = 'doctor_ak_notify_from_name';
 	const OPTION_FROM_EMAIL                 = 'doctor_ak_notify_from_email';
 
@@ -90,6 +91,7 @@ class Notifications {
 			'reminder'            => self::OPTION_NOTIFY_REMINDER,
 			'video_link'          => self::OPTION_NOTIFY_VIDEO_LINK,
 			'doctor_registration' => self::OPTION_NOTIFY_DOCTOR_REGISTRATION,
+			'refund'              => self::OPTION_NOTIFY_REFUND,
 		);
 
 		if ( ! isset( $option_map[ $type ] ) ) {
@@ -424,6 +426,71 @@ class Notifications {
 			__( 'Your Account Has Been Approved', 'doctor-ak-portal' ),
 			__( 'Account Approved', 'doctor-ak-portal' ),
 			__( 'Your account has been approved. You can now log in and start managing your clinic and appointments.', 'doctor-ak-portal' )
+		);
+	}
+
+	/**
+	 * Hook callback: a patient requested a refund on a cancelled, paid
+	 * appointment — emails every administrator to review and process it from
+	 * the admin Appointments section.
+	 *
+	 * @param int $appointment_id Appointment post ID.
+	 * @return void
+	 */
+	public function notify_refund_requested( $appointment_id ) {
+		if ( ! self::is_enabled( 'refund' ) ) {
+			return;
+		}
+
+		$appt = Appointments::notification_data( $appointment_id );
+
+		if ( empty( $appt ) ) {
+			return;
+		}
+
+		$heading = __( 'Refund Requested', 'doctor-ak-portal' );
+		$intro   = sprintf(
+			/* translators: 1: patient's display name, 2: doctor's display name, 3: refund reason, 4: amount. */
+			__( '%1$s requested a refund for their appointment with Dr. %2$s (PKR%4$s). Reason: %3$s. Review and process it from the admin dashboard\'s Appointments section.', 'doctor-ak-portal' ),
+			$appt['patient_name'],
+			$appt['doctor_name'],
+			$appt['refund_reason'],
+			number_format( (float) $appt['refund_amount'], 0 )
+		);
+
+		foreach ( self::admin_emails() as $admin_email ) {
+			$this->send_simple( $admin_email, $heading, $heading, $intro );
+		}
+	}
+
+	/**
+	 * Hook callback: an admin successfully processed a refund through
+	 * Swich — emails the patient.
+	 *
+	 * @param int $appointment_id Appointment post ID.
+	 * @return void
+	 */
+	public function notify_refund_processed( $appointment_id ) {
+		if ( ! self::is_enabled( 'refund' ) ) {
+			return;
+		}
+
+		$appt = Appointments::notification_data( $appointment_id );
+
+		if ( empty( $appt ) || '' === $appt['patient_email'] ) {
+			return;
+		}
+
+		$this->send_simple(
+			$appt['patient_email'],
+			__( 'Refund Processed', 'doctor-ak-portal' ),
+			__( 'Refund Processed', 'doctor-ak-portal' ),
+			sprintf(
+				/* translators: 1: amount, 2: doctor's display name. */
+				__( 'We\'ve processed a refund of PKR%1$s for your appointment with Dr. %2$s. It may take a few business days to appear in your account.', 'doctor-ak-portal' ),
+				number_format( (float) $appt['refund_amount'], 0 ),
+				$appt['doctor_name']
+			)
 		);
 	}
 

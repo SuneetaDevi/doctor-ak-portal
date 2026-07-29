@@ -47,6 +47,7 @@ $time_label     = $time_timestamp ? date_i18n( 'g:i A', $time_timestamp ) : $app
 
 $is_cancellable = ! in_array( $appointment['status'], array( 'cancelled', 'completed' ), true );
 $can_pay_now     = ! $appointment['is_paid'] && (float) $appointment['charge'] > 0;
+$can_request_refund = 'cancelled' === $appointment['status'] && $appointment['is_paid'] && 'online' === $appointment['payment_mode'] && '' === $appointment['refund_status'];
 ?>
 <div class="dak-patient-appt-row" data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>">
 	<div class="dak-patient-appt-row-top">
@@ -81,11 +82,19 @@ $can_pay_now     = ! $appointment['is_paid'] && (float) $appointment['charge'] >
 					<?php echo esc_html( sprintf( /* translators: %s: surcharge amount. */ __( 'Instant · +PKR%s', 'doctor-ak-portal' ), number_format( (float) $appointment['surcharge'], 0 ) ) ); ?>
 				</span>
 			<?php endif; ?>
+			<?php if ( 'requested' === $appointment['refund_status'] ) : ?>
+				<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-pending"><?php esc_html_e( 'Refund Requested', 'doctor-ak-portal' ); ?></span>
+			<?php elseif ( 'processed' === $appointment['refund_status'] ) : ?>
+				<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-active"><?php esc_html_e( 'Refund Processed', 'doctor-ak-portal' ); ?></span>
+			<?php endif; ?>
 		</div>
 
 		<div class="dak-patient-appt-row-actions">
 			<?php if ( ! empty( $appointment['video_call']['can_join'] ) ) : ?>
 				<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $appointment['video_call']['room_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></a>
+			<?php endif; ?>
+			<?php if ( $can_request_refund ) : ?>
+				<button type="button" class="dak-status-pill dak-status-pill-action" data-request-refund data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"><?php esc_html_e( 'Request Refund', 'doctor-ak-portal' ); ?></button>
 			<?php endif; ?>
 			<?php if ( $can_pay_now ) : ?>
 				<button type="button" class="dak-status-pill dak-status-pill-action" data-pay-now data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>">

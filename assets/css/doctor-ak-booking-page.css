@@ -384,6 +384,40 @@
 	color: var( --dak-muted ) !important;
 }
 
+.dak-price-with-discount {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+}
+
+.dak-price-original {
+	font-size: 0.78rem !important;
+	color: var( --dak-muted ) !important;
+	text-decoration: line-through !important;
+}
+
+.dak-price-sale {
+	font-size: 0.95rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-primary-dark, var( --dak-primary ) ) !important;
+}
+
+.dak-price-discount-badge {
+	font-size: 0.68rem !important;
+	font-weight: 700 !important;
+	padding: 0.1rem 0.4rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-danger-tint, #fbeaea ) !important;
+	color: var( --dak-danger, #c0392b ) !important;
+}
+
+.dak-price-discount-ends {
+	flex-basis: 100% !important;
+	font-size: 0.7rem !important;
+	color: var( --dak-muted ) !important;
+}
+
 /* Identity step */
 
 .dak-booking-identity-choices {

@@ -11,11 +11,12 @@
  *
  * @package DoctorAKPortal\Templates
  *
- * @var array      $session_days    Day slug => label, see Clinics::session_days().
- * @var array      $session_periods Period slug => label, see Clinics::session_periods().
- * @var array      $doctor_options  Doctor user ID => display name.
- * @var string     $list_url        Back-to-list URL (the Doctor Sessions table).
- * @var array|null $editing_clinic  Decoded clinic row (see Clinics::find()) when editing, null when adding.
+ * @var array      $session_days     Day slug => label, see Clinics::session_days().
+ * @var array      $session_periods  Period slug => label, see Clinics::session_periods().
+ * @var array      $doctor_options   Doctor user ID => display name.
+ * @var array      $clinic_locations Master clinic list, see Clinic_Locations::get_all().
+ * @var string     $list_url         Back-to-list URL (the Doctor Sessions table).
+ * @var array|null $editing_clinic   Decoded clinic row (see Clinics::find()) when editing, null when adding.
  */
 
 // Prevent direct file access.
@@ -61,35 +62,36 @@ $dak_sessions   = $dak_is_editing ? $editing_clinic['sessions'] : \DoctorAKPorta
 					<option value="video" <?php selected( 'video' === $dak_type ); ?>><?php esc_html_e( 'Video Consultation', 'doctor-ak-portal' ); ?></option>
 				</select>
 			</div>
-			<div class="dak-field">
+			<div class="dak-field dak-admin-session-video-name-field<?php echo 'video' !== $dak_type ? ' dak-hidden' : ''; ?>">
 				<label for="dak-admin-session-name"><?php esc_html_e( 'Clinic Name', 'doctor-ak-portal' ); ?></label>
 				<input type="text" id="dak-admin-session-name" name="name" value="<?php echo esc_attr( $dak_is_editing ? $editing_clinic['name'] : '' ); ?>">
 				<span class="dak-field-error" data-field="name"></span>
 			</div>
 		</div>
 
-		<div class="dak-field dak-admin-session-address-field<?php echo $dak_is_editing && 'video' === $dak_type ? ' dak-hidden' : ''; ?>">
-			<label for="dak-admin-session-address"><?php esc_html_e( 'Address', 'doctor-ak-portal' ); ?></label>
-			<input type="text" id="dak-admin-session-address" name="address" value="<?php echo esc_attr( $dak_is_editing ? $editing_clinic['address'] : '' ); ?>">
-			<span class="dak-field-error" data-field="address"></span>
-		</div>
-
 		<div class="dak-field-row dak-admin-session-address-field<?php echo $dak_is_editing && 'video' === $dak_type ? ' dak-hidden' : ''; ?>">
 			<div class="dak-field">
 				<label for="dak-admin-session-country"><?php esc_html_e( 'Country', 'doctor-ak-portal' ); ?></label>
-				<select id="dak-admin-session-country" name="country" data-current="<?php echo esc_attr( $dak_is_editing ? $editing_clinic['country'] : '' ); ?>"></select>
+				<select id="dak-admin-session-country" data-current="<?php echo esc_attr( $dak_is_editing ? $editing_clinic['country'] : '' ); ?>"></select>
 				<span class="dak-field-error" data-field="country"></span>
 			</div>
 			<div class="dak-field">
 				<label for="dak-admin-session-city"><?php esc_html_e( 'City', 'doctor-ak-portal' ); ?></label>
-				<select id="dak-admin-session-city" name="city" data-current="<?php echo esc_attr( $dak_is_editing ? $editing_clinic['city'] : '' ); ?>"></select>
+				<select id="dak-admin-session-city" data-current="<?php echo esc_attr( $dak_is_editing ? $editing_clinic['city'] : '' ); ?>"></select>
 				<span class="dak-field-error" data-field="city"></span>
 			</div>
 			<div class="dak-field">
 				<label for="dak-admin-session-area"><?php esc_html_e( 'Area', 'doctor-ak-portal' ); ?></label>
-				<select id="dak-admin-session-area" name="area" data-current="<?php echo esc_attr( $dak_is_editing ? $editing_clinic['area'] : '' ); ?>"></select>
+				<select id="dak-admin-session-area" data-current="<?php echo esc_attr( $dak_is_editing ? $editing_clinic['area'] : '' ); ?>"></select>
 				<span class="dak-field-error" data-field="area"></span>
 			</div>
+		</div>
+
+		<div class="dak-field dak-admin-session-address-field<?php echo $dak_is_editing && 'video' === $dak_type ? ' dak-hidden' : ''; ?>">
+			<label for="dak-admin-session-clinic-location"><?php esc_html_e( 'Clinic', 'doctor-ak-portal' ); ?></label>
+			<select id="dak-admin-session-clinic-location" name="clinic_location_id" data-current="<?php echo esc_attr( $dak_is_editing ? $editing_clinic['clinic_location_id'] : '' ); ?>"></select>
+			<span class="dak-field-error" data-field="clinic_location_id"></span>
+			<p class="dak-field-hint"><?php esc_html_e( 'No clinic for this area yet? Add it first from the admin "Clinic" section, then come back here to align this doctor to it.', 'doctor-ak-portal' ); ?></p>
 		</div>
 
 		<div class="dak-field-row">

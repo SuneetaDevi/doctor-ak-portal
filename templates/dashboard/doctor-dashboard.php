@@ -86,10 +86,19 @@ $dak_dash_icons = array(
 			<?php if ( ! empty( $specialization_labels ) ) : ?>
 				<div class="dak-sidebar-doctor-block">
 					<span class="dak-sidebar-doctor-block-label"><?php esc_html_e( 'Specialization', 'doctor-ak-portal' ); ?></span>
-					<div class="dak-specialty-tags">
-						<?php foreach ( $specialization_labels as $specialization_label ) : ?>
-							<span class="dak-specialty-tag"><?php echo esc_html( $specialization_label ); ?></span>
+					<div class="dak-specialty-tags" data-specialty-tags>
+						<?php foreach ( $specialization_labels as $dak_spec_index => $specialization_label ) : ?>
+							<span class="dak-specialty-tag<?php echo $dak_spec_index >= 2 ? ' dak-specialty-tag-extra dak-hidden' : ''; ?>"><?php echo esc_html( $specialization_label ); ?></span>
 						<?php endforeach; ?>
+						<?php if ( count( $specialization_labels ) > 2 ) : ?>
+							<button
+								type="button"
+								class="dak-specialty-tag dak-specialty-tag-more"
+								data-specialty-toggle
+								data-more-label="<?php echo esc_attr( sprintf( '+%d', count( $specialization_labels ) - 2 ) ); ?>"
+								data-less-label="<?php esc_attr_e( 'Show less', 'doctor-ak-portal' ); ?>"
+							><?php echo esc_html( sprintf( '+%d', count( $specialization_labels ) - 2 ) ); ?></button>
+						<?php endif; ?>
 					</div>
 				</div>
 			<?php endif; ?>

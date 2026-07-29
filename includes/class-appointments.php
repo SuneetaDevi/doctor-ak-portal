@@ -43,6 +43,11 @@ class Appointments {
 	const PAYMENT_STATUS_PENDING = 'pending';
 	const PAYMENT_STATUS_PAID    = 'paid';
 
+	const REFUND_STATUS_REQUESTED = 'requested';
+	const REFUND_STATUS_PROCESSED = 'processed';
+
+	const REFUND_REASON_MAX_LENGTH = 500;
+
 	const PAYMENT_MODE_MANUAL = 'manual';
 	const PAYMENT_MODE_ONLINE = 'online';
 
@@ -957,6 +962,7 @@ class Appointments {
 			'surcharge'             => $appointment['surcharge'],
 			'countdown_label'       => self::countdown_label( $appointment['date'], $appointment['time'], $today, $now ),
 			'refund_eligible'       => Video_Pricing::is_cancellation_refund_eligible( $appointment['doctor_id'], $appointment['date'], $appointment['time'] ),
+			'refund_status'         => $appointment['refund_status'],
 			'video_call'            => self::video_call_info( $appointment ),
 		);
 	}
@@ -1274,6 +1280,88 @@ class Appointments {
 		do_action( 'doctor_ak_appointment_rescheduled', $appointment_id );
 
 		return true;
+	}
+
+	/**
+	 * Records a patient's refund request on a cancelled, paid, online
+	 * appointment — used by the patient dashboard's "Request Refund" action.
+	 * Doesn't touch the payment gateway itself; an admin reviews the request
+	 * and triggers the actual Swich refund from the admin Appointments
+	 * section (see Appointment_Handler::handle_admin_process_refund() and
+	 * mark_refund_processed() below). Ownership-checked: only the patient who
+	 * paid can request it, and only once per appointment.
+	 *
+	 * @param int    $appointment_id Appointment post ID.
+	 * @param int    $patient_id     Patient's user ID, must match the appointment's owner.
+	 * @param string $reason         Patient's refund reason (max REFUND_REASON_MAX_LENGTH chars).
+	 * @return true|\WP_Error
+	 */
+	public static function mark_refund_requested( $appointment_id, $patient_id, $reason ) {
+		$appointment = self::get( $appointment_id );
+
+		if ( empty( $appointment ) || (int) $appointment['patient_id'] !== (int) $patient_id ) {
+			return new \WP_Error( 'doctor_ak_invalid_appointment', __( 'That appointment could not be found.', 'doctor-ak-portal' ) );
+		}
+
+		if ( self::STATUS_CANCELLED !== $appointment['status'] ) {
+			return new \WP_Error( 'doctor_ak_refund_not_cancelled', __( 'Only a cancelled appointment can be refunded.', 'doctor-ak-portal' ) );
+		}
+
+		if ( self::PAYMENT_STATUS_PAID !== $appointment['payment_status'] || self::PAYMENT_MODE_ONLINE !== $appointment['payment_mode'] ) {
+			return new \WP_Error( 'doctor_ak_refund_not_paid_online', __( 'Only an online payment can be refunded this way. Please contact us for a manual payment.', 'doctor-ak-portal' ) );
+		}
+
+		if ( '' !== $appointment['refund_status'] ) {
+			return new \WP_Error( 'doctor_ak_refund_already_requested', __( 'A refund has already been requested for this appointment.', 'doctor-ak-portal' ) );
+		}
+
+		$reason = trim( (string) $reason );
+
+		if ( '' === $reason ) {
+			return new \WP_Error( 'doctor_ak_refund_reason_required', __( 'Please tell us why you\'re requesting a refund.', 'doctor-ak-portal' ) );
+		}
+
+		if ( mb_strlen( $reason ) > self::REFUND_REASON_MAX_LENGTH ) {
+			/* translators: %d: maximum character count. */
+			return new \WP_Error( 'doctor_ak_refund_reason_too_long', sprintf( __( 'Please keep the reason under %d characters.', 'doctor-ak-portal' ), self::REFUND_REASON_MAX_LENGTH ) );
+		}
+
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_refund_status', self::REFUND_STATUS_REQUESTED );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_refund_reason', $reason );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_refund_amount', $appointment['charge'] );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_refund_requested_at', current_time( 'mysql' ) );
+
+		/**
+		 * Fires after a patient requests a refund — Notifications/
+		 * Notification_Center hook here to email/portal-notify every admin.
+		 *
+		 * @param int $appointment_id Appointment post ID.
+		 */
+		do_action( 'doctor_ak_appointment_refund_requested', $appointment_id );
+
+		return true;
+	}
+
+	/**
+	 * Records that an admin has successfully processed a refund through
+	 * Swich's refund API — called only after that API call actually
+	 * succeeds (see Appointment_Handler::handle_admin_process_refund()).
+	 *
+	 * @param int   $appointment_id Appointment post ID.
+	 * @param float $amount         Amount actually refunded (may be a partial refund).
+	 * @return void
+	 */
+	public static function mark_refund_processed( $appointment_id, $amount ) {
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_refund_status', self::REFUND_STATUS_PROCESSED );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_refund_amount', (float) $amount );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_refund_processed_at', current_time( 'mysql' ) );
+
+		/**
+		 * Fires after an admin successfully processes a refund.
+		 *
+		 * @param int $appointment_id Appointment post ID.
+		 */
+		do_action( 'doctor_ak_appointment_refund_processed', $appointment_id );
 	}
 
 	/**
@@ -1729,6 +1817,9 @@ class Appointments {
 			'is_instant'        => $appointment['is_instant'],
 			'surcharge'         => $appointment['surcharge'],
 			'video_call'        => self::video_call_info( $appointment ),
+			'refund_status'     => $appointment['refund_status'],
+			'refund_reason'     => $appointment['refund_reason'],
+			'refund_amount'     => $appointment['refund_amount'],
 		);
 	}
 
@@ -2036,6 +2127,11 @@ class Appointments {
 			'is_instant'     => (bool) get_post_meta( $post->ID, 'doctor_ak_appointment_is_instant', true ),
 			'surcharge'      => (float) get_post_meta( $post->ID, 'doctor_ak_appointment_surcharge', true ),
 			'video_room'     => get_post_meta( $post->ID, 'doctor_ak_appointment_video_room', true ),
+			'refund_status'       => get_post_meta( $post->ID, 'doctor_ak_appointment_refund_status', true ),
+			'refund_reason'       => get_post_meta( $post->ID, 'doctor_ak_appointment_refund_reason', true ),
+			'refund_amount'       => (float) get_post_meta( $post->ID, 'doctor_ak_appointment_refund_amount', true ),
+			'refund_requested_at' => get_post_meta( $post->ID, 'doctor_ak_appointment_refund_requested_at', true ),
+			'refund_processed_at' => get_post_meta( $post->ID, 'doctor_ak_appointment_refund_processed_at', true ),
 		);
 	}
 

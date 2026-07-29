@@ -59,24 +59,23 @@
 
 		if ( typeof shared.initMultiSelect === 'function' ) {
 			shared.initMultiSelect( document.getElementById( 'dak-admin-user-specializations' ), { allowCustom: true } );
+			shared.initMultiSelect( document.getElementById( 'dak-admin-user-clinic-locations' ), { placeholder: 'Select clinics…' } );
 		}
 
-		if ( window.dakCityArea ) {
-			var countrySelect = document.getElementById( 'dak-admin-user-country' );
-			var citySelect = document.getElementById( 'dak-admin-user-city' );
-			var areaSelect = document.getElementById( 'dak-admin-user-area' );
+		var countrySelect = document.getElementById( 'dak-admin-user-country' );
+		var citySelect = document.getElementById( 'dak-admin-user-city' );
+		var areaSelect = document.getElementById( 'dak-admin-user-area' );
 
-			if ( countrySelect && citySelect && areaSelect ) {
-				window.dakCityArea.wire(
-					countrySelect,
-					citySelect,
-					areaSelect,
-					window.dakAdminUsers.locations,
-					countrySelect.getAttribute( 'data-current' ) || '',
-					citySelect.getAttribute( 'data-current' ) || '',
-					areaSelect.getAttribute( 'data-current' ) || ''
-				);
-			}
+		if ( window.dakCityArea && countrySelect && citySelect && areaSelect ) {
+			window.dakCityArea.wire(
+				countrySelect,
+				citySelect,
+				areaSelect,
+				window.dakAdminUsers.locations,
+				countrySelect.getAttribute( 'data-current' ) || '',
+				citySelect.getAttribute( 'data-current' ) || '',
+				areaSelect.getAttribute( 'data-current' ) || ''
+			);
 		}
 
 		var generalError = document.getElementById( 'dak-admin-user-modal-general-error' );

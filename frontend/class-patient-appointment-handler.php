@@ -147,4 +147,37 @@ class Patient_Appointment_Handler {
 
 		wp_send_json_success( array( 'message' => __( 'Appointment rescheduled.', 'doctor-ak-portal' ) ) );
 	}
+
+	/**
+	 * AJAX handler: requests a refund on a cancelled, paid, online
+	 * appointment belonging to the logged-in patient. Doesn't call Swich
+	 * itself — just records the request and notifies admins, who process
+	 * the actual refund from the admin dashboard.
+	 *
+	 * @return void
+	 */
+	public function handle_request_refund() {
+		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! is_user_logged_in() || ! in_array( Roles::PATIENT_ROLE, (array) wp_get_current_user()->roles, true ) ) {
+			wp_send_json_error( array( 'message' => __( 'You must be logged in as a patient.', 'doctor-ak-portal' ) ), 401 );
+		}
+
+		if ( ! Role_Permissions::is_tab_allowed( Roles::PATIENT_ROLE, 'appointments' ) ) {
+			wp_send_json_error( array( 'message' => __( 'An administrator has turned off the Appointments page for your account.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$appointment_id = isset( $_POST['appointment_id'] ) ? absint( wp_unslash( $_POST['appointment_id'] ) ) : 0;
+		$reason         = isset( $_POST['reason'] ) ? sanitize_textarea_field( wp_unslash( $_POST['reason'] ) ) : '';
+
+		$result = Appointments::mark_refund_requested( $appointment_id, get_current_user_id(), $reason );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		wp_send_json_success( array( 'message' => __( "Refund requested. Our team will review it and process it shortly.", 'doctor-ak-portal' ) ) );
+	}
 }

@@ -15,6 +15,7 @@
  * @var string     $section         'doctors' or 'patients'.
  * @var string     $list_url        Back-to-list URL (the table view of this same section).
  * @var array|null $editing_user    Row view-model (see Admin_Dashboard::row_data()) when editing, null when adding.
+ * @var array      $clinic_locations Master clinic list, see Clinic_Locations::get_all().
  */
 
 // Prevent direct file access.
@@ -189,23 +190,18 @@ $dak_noun            = $dak_is_doctor_form ? __( 'Doctor', 'doctor-ak-portal' ) 
 			</div>
 
 			<div class="dak-field">
-				<span class="dak-field-label"><?php esc_html_e( 'Add a Clinic (optional)', 'doctor-ak-portal' ); ?></span>
-				<p class="dak-field-hint"><?php esc_html_e( 'Quickly add one clinic location now — weekly session hours and additional clinics can be set later from the Doctor Sessions tab.', 'doctor-ak-portal' ); ?></p>
-				<div class="dak-field">
-					<label for="dak-admin-user-clinic-name"><?php esc_html_e( 'Clinic Name', 'doctor-ak-portal' ); ?></label>
-					<input type="text" id="dak-admin-user-clinic-name" name="clinic_name">
-				</div>
-				<div class="dak-field-row">
-					<div class="dak-field">
-						<label for="dak-admin-user-clinic-address"><?php esc_html_e( 'Address', 'doctor-ak-portal' ); ?></label>
-						<input type="text" id="dak-admin-user-clinic-address" name="clinic_address">
-						<span class="dak-field-error" data-field="clinic_address"></span>
-					</div>
-					<div class="dak-field">
-						<label for="dak-admin-user-clinic-phone"><?php esc_html_e( 'Phone', 'doctor-ak-portal' ); ?></label>
-						<input type="text" id="dak-admin-user-clinic-phone" name="clinic_phone">
-					</div>
-				</div>
+				<span class="dak-field-label"><?php esc_html_e( 'Align to Clinics (optional)', 'doctor-ak-portal' ); ?></span>
+				<p class="dak-field-hint"><?php esc_html_e( 'Choose one or more clinics already added under the admin "Clinic" section — weekly session hours for each can be set later from the Doctor Sessions tab.', 'doctor-ak-portal' ); ?></p>
+				<label for="dak-admin-user-clinic-locations"><?php esc_html_e( 'Clinics', 'doctor-ak-portal' ); ?></label>
+				<select id="dak-admin-user-clinic-locations" name="clinic_location_ids[]" multiple>
+					<?php foreach ( $clinic_locations as $clinic_location ) : ?>
+						<option value="<?php echo esc_attr( $clinic_location['id'] ); ?>"><?php echo esc_html( sprintf( '%1$s — %2$s, %3$s', $clinic_location['name'], $clinic_location['area_label'], $clinic_location['city_label'] ) ); ?></option>
+					<?php endforeach; ?>
+				</select>
+				<span class="dak-field-error" data-field="clinic_location_ids"></span>
+				<?php if ( empty( $clinic_locations ) ) : ?>
+					<p class="dak-field-hint"><?php esc_html_e( 'No clinics added yet — add one first from the admin "Clinic" section.', 'doctor-ak-portal' ); ?></p>
+				<?php endif; ?>
 			</div>
 
 		<?php else : ?>

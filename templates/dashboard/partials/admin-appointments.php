@@ -24,6 +24,7 @@ $dak_appt_icons = array(
 	'view'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10s2.7-5.5 8-5.5S18 10 18 10s-2.7 5.5-8 5.5S2 10 2 10z"/><circle cx="10" cy="10" r="2.2"/></svg>',
 	'print'  => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 7V3h9v4"/><rect x="3.5" y="7" width="13" height="6.5" rx="1"/><path d="M5.5 12.5h9V17h-9v-4.5z"/></svg>',
 	'delete' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h12M8 6V4.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V6M6 6l.6 9a1.5 1.5 0 0 0 1.5 1.4h3.8a1.5 1.5 0 0 0 1.5-1.4L14 6"/></svg>',
+	'refund' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a6 6 0 1 1 1.8 4.3"/><path d="M4 14v-3.5H7.5"/><path d="M10 6.5v4l2.5 1.5"/></svg>',
 );
 ?>
 <div class="dak-dashboard-greeting dak-admin-users-header">
@@ -134,6 +135,11 @@ $dak_appt_has_filters = '' !== $filters['date'] || '' !== $filters['status'] || 
 						</td>
 						<td data-label="<?php esc_attr_e( 'Status', 'doctor-ak-portal' ); ?>">
 							<span class="dak-status-badge <?php echo esc_attr( $row['status_badge_class'] ); ?>"><?php echo esc_html( $row['status_label'] ); ?></span>
+							<?php if ( 'requested' === $row['refund_status'] ) : ?>
+								<span class="dak-status-badge is-pending"><?php esc_html_e( 'Refund Requested', 'doctor-ak-portal' ); ?></span>
+							<?php elseif ( 'processed' === $row['refund_status'] ) : ?>
+								<span class="dak-status-badge is-active"><?php esc_html_e( 'Refund Processed', 'doctor-ak-portal' ); ?></span>
+							<?php endif; ?>
 						</td>
 						<td class="dak-admin-users-actions-col">
 							<div class="dak-admin-users-actions">
@@ -176,6 +182,20 @@ $dak_appt_has_filters = '' !== $filters['date'] || '' !== $filters['status'] || 
 									title="<?php esc_attr_e( 'View', 'doctor-ak-portal' ); ?>"
 									aria-label="<?php esc_attr_e( 'View', 'doctor-ak-portal' ); ?>"
 								><?php echo $dak_appt_icons['view']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
+								<?php if ( 'requested' === $row['refund_status'] ) : ?>
+									<button
+										type="button"
+										class="dak-icon-button"
+										data-admin-process-refund
+										data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"
+										data-patient-name="<?php echo esc_attr( $row['patient_name'] ); ?>"
+										data-reason="<?php echo esc_attr( $row['refund_reason'] ); ?>"
+										data-charge="<?php echo esc_attr( $row['charge'] ); ?>"
+										data-refund-amount="<?php echo esc_attr( $row['refund_amount'] ); ?>"
+										title="<?php esc_attr_e( 'Process Refund', 'doctor-ak-portal' ); ?>"
+										aria-label="<?php esc_attr_e( 'Process Refund', 'doctor-ak-portal' ); ?>"
+									><?php echo $dak_appt_icons['refund']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
+								<?php endif; ?>
 								<a
 									class="dak-icon-button"
 									href="<?php echo esc_url( \DoctorAKPortal\Frontend\Appointment_Handler::print_url( $row['id'] ) ); ?>"

@@ -34,6 +34,8 @@ class Notification_Center {
 	const TYPE_COMPLETED          = 'completed';
 	const TYPE_DOCTOR_REGISTERED  = 'doctor_registered';
 	const TYPE_DOCTOR_APPROVED    = 'doctor_approved';
+	const TYPE_REFUND_REQUESTED   = 'refund_requested';
+	const TYPE_REFUND_PROCESSED   = 'refund_processed';
 
 	/**
 	 * Returns the fully prefixed table name.
@@ -287,6 +289,62 @@ class Notification_Center {
 			__( 'Your account has been approved. You can now log in.', 'doctor-ak-portal' ),
 			0
 		);
+	}
+
+	/**
+	 * Hook callback: a patient requested a refund — notifies every admin.
+	 *
+	 * @param int $appointment_id Appointment post ID.
+	 * @return void
+	 */
+	public static function notify_refund_requested( $appointment_id ) {
+		$appt = Appointments::notification_data( $appointment_id );
+
+		if ( empty( $appt ) ) {
+			return;
+		}
+
+		self::notify_admins(
+			sprintf(
+				/* translators: 1: patient's display name, 2: doctor's display name, 3: amount. */
+				__( '%1$s requested a refund of PKR%3$s for their appointment with Dr. %2$s.', 'doctor-ak-portal' ),
+				$appt['patient_name'],
+				$appt['doctor_name'],
+				number_format( (float) $appt['refund_amount'], 0 )
+			),
+			self::TYPE_REFUND_REQUESTED,
+			$appointment_id
+		);
+	}
+
+	/**
+	 * Hook callback: an admin processed a refund — notifies the patient.
+	 *
+	 * @param int $appointment_id Appointment post ID.
+	 * @return void
+	 */
+	public static function notify_refund_processed( $appointment_id ) {
+		$appt = Appointments::notification_data( $appointment_id );
+
+		if ( empty( $appt ) ) {
+			return;
+		}
+
+		$patient_id = (int) get_post_meta( $appointment_id, 'doctor_ak_appointment_patient_id', true );
+
+		if ( $patient_id > 0 ) {
+			self::record(
+				$patient_id,
+				self::TYPE_REFUND_PROCESSED,
+				sprintf(
+					/* translators: 1: amount, 2: doctor's display name. */
+					__( 'Your refund of PKR%1$s for your appointment with Dr. %2$s has been processed.', 'doctor-ak-portal' ),
+					number_format( (float) $appt['refund_amount'], 0 ),
+					$appt['doctor_name']
+				),
+				$appointment_id
+			);
+		}
 	}
 
 	/**

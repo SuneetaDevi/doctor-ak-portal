@@ -148,6 +148,24 @@ class Patient_Dashboard {
 		);
 
 		wp_enqueue_script(
+			'doctor-ak-portal-request-refund',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-request-refund.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-request-refund.js' ),
+			true
+		);
+
+		wp_localize_script(
+			'doctor-ak-portal-request-refund',
+			'dakRequestRefund',
+			array(
+				'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
+				'nonce'        => wp_create_nonce( self::NONCE_ACTION ),
+				'genericError' => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
+			)
+		);
+
+		wp_enqueue_script(
 			'doctor-ak-portal-notifications',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-notifications.js',
 			array(),

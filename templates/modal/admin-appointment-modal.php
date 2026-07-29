@@ -168,3 +168,38 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</a>
 	</div>
 </div>
+
+<div class="dak-portal dak-modal" id="dak-admin-process-refund-modal" aria-hidden="true">
+	<div class="dak-modal-overlay" data-dak-admin-process-refund-modal-close></div>
+
+	<div class="dak-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="dak-admin-process-refund-title">
+		<button type="button" class="dak-modal-close" data-dak-admin-process-refund-modal-close aria-label="<?php esc_attr_e( 'Close', 'doctor-ak-portal' ); ?>">&times;</button>
+
+		<div class="dak-modal-header">
+			<h2 id="dak-admin-process-refund-title"><?php esc_html_e( 'Process Refund', 'doctor-ak-portal' ); ?></h2>
+		</div>
+
+		<div class="dak-alert dak-alert-error dak-hidden" id="dak-admin-process-refund-general-error" role="alert"></div>
+
+		<input type="hidden" id="dak-admin-process-refund-appointment-id" value="0">
+
+		<table class="dak-admin-users-table">
+			<tbody>
+				<tr><td><?php esc_html_e( 'Patient', 'doctor-ak-portal' ); ?></td><td id="dak-admin-process-refund-patient"></td></tr>
+				<tr><td><?php esc_html_e( 'Reason', 'doctor-ak-portal' ); ?></td><td id="dak-admin-process-refund-reason"></td></tr>
+				<tr><td><?php esc_html_e( 'Original Charge', 'doctor-ak-portal' ); ?></td><td id="dak-admin-process-refund-charge"></td></tr>
+			</tbody>
+		</table>
+
+		<div class="dak-field">
+			<label for="dak-admin-process-refund-amount"><?php esc_html_e( 'Refund Amount (PKR)', 'doctor-ak-portal' ); ?></label>
+			<input type="number" min="0" step="0.01" id="dak-admin-process-refund-amount">
+			<span class="dak-field-error" data-field="amount"></span>
+			<p class="dak-field-hint"><?php esc_html_e( 'Defaults to the full charge. Enter a lower amount for a partial refund.', 'doctor-ak-portal' ); ?></p>
+		</div>
+
+		<button type="button" class="dak-button dak-button-primary dak-button-block" id="dak-admin-process-refund-save">
+			<span class="dak-button-label"><?php esc_html_e( 'Process Refund via Swich', 'doctor-ak-portal' ); ?></span>
+		</button>
+	</div>
+</div>

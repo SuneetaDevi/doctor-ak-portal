@@ -9,6 +9,7 @@
 namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Appointments;
+use DoctorAKPortal\Includes\Swich_Payment;
 use DoctorAKPortal\Includes\Template_Loader;
 
 // Prevent direct file access.
@@ -114,6 +115,54 @@ class Appointment_Handler {
 		}
 
 		wp_send_json_success( array( 'message' => __( 'Appointment deleted.', 'doctor-ak-portal' ) ) );
+	}
+
+	/**
+	 * AJAX handler: admin processes a patient's refund request — calls
+	 * Swich's refund API for the real transaction (POST
+	 * /gateway/payin/v2.0/purchase/refund) and, only if that succeeds,
+	 * records it via Appointments::mark_refund_processed(). Amount defaults
+	 * to the full charge but the admin can send a lower one for a partial
+	 * refund, per Swich's API.
+	 *
+	 * @return void
+	 */
+	public function handle_admin_process_refund() {
+		if ( ! check_ajax_referer( Admin_Dashboard::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$appointment_id = isset( $_POST['appointment_id'] ) ? absint( wp_unslash( $_POST['appointment_id'] ) ) : 0;
+		$appointment    = $appointment_id > 0 ? Appointments::find( $appointment_id ) : array();
+
+		if ( empty( $appointment ) ) {
+			wp_send_json_error( array( 'message' => __( 'That appointment no longer exists.', 'doctor-ak-portal' ) ) );
+		}
+
+		if ( Appointments::REFUND_STATUS_REQUESTED !== $appointment['refund_status'] ) {
+			wp_send_json_error( array( 'message' => __( 'This appointment has no pending refund request.', 'doctor-ak-portal' ) ) );
+		}
+
+		$amount = isset( $_POST['amount'] ) ? (float) wp_unslash( $_POST['amount'] ) : (float) $appointment['refund_amount'];
+
+		if ( $amount <= 0 || $amount > (float) $appointment['charge'] ) {
+			wp_send_json_error( array( 'message' => __( 'Please enter a valid refund amount, up to the original charge.', 'doctor-ak-portal' ) ) );
+		}
+
+		$order_id = get_post_meta( $appointment_id, Swich_Payment::META_ORDER_ID, true );
+		$result   = Swich_Payment::refund( $order_id, $appointment['refund_reason'], $amount );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		Appointments::mark_refund_processed( $appointment_id, $amount );
+
+		wp_send_json_success( array( 'message' => __( 'Refund processed successfully.', 'doctor-ak-portal' ) ) );
 	}
 
 	/**

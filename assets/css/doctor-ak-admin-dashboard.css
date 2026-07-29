@@ -139,6 +139,40 @@
 	color: inherit !important;
 }
 
+@media ( max-width: 600px ) {
+	.dak-country-row {
+		padding: 12px !important;
+	}
+
+	.dak-cities-rows {
+		margin-left: 0.6rem !important;
+		padding-left: 0.5rem !important;
+	}
+
+	.dak-city-row {
+		flex-direction: column !important;
+		align-items: stretch !important;
+	}
+
+	.dak-city-row .dak-city-name {
+		flex: 1 1 auto !important;
+	}
+
+	.dak-areas-rows {
+		width: 100% !important;
+	}
+
+	.dak-area-chip {
+		flex: 1 1 auto !important;
+	}
+
+	.dak-area-chip .dak-area-name {
+		width: auto !important;
+		flex: 1 1 auto !important;
+		min-width: 0 !important;
+	}
+}
+
 .dak-back-link {
 	display: inline-flex !important;
 	align-items: center !important;
@@ -166,6 +200,7 @@
 
 .dak-table-scroll {
 	overflow-x: auto !important;
+	-webkit-overflow-scrolling: touch !important;
 }
 
 .dak-admin-users-table {
