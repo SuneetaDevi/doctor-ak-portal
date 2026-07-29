@@ -36,6 +36,7 @@ class Notification_Center {
 	const TYPE_DOCTOR_APPROVED    = 'doctor_approved';
 	const TYPE_REFUND_REQUESTED   = 'refund_requested';
 	const TYPE_REFUND_PROCESSED   = 'refund_processed';
+	const TYPE_RESCHEDULED        = 'rescheduled';
 
 	/**
 	 * Returns the fully prefixed table name.
@@ -157,6 +158,59 @@ class Notification_Center {
 				$appt['doctor_name']
 			),
 			self::TYPE_CANCELLED,
+			$appointment_id
+		);
+	}
+
+	/**
+	 * Hook callback: an appointment was rescheduled to a new date/time.
+	 *
+	 * @param int $appointment_id Rescheduled appointment's post ID.
+	 * @return void
+	 */
+	public static function notify_rescheduled( $appointment_id ) {
+		$appt = Appointments::notification_data( $appointment_id );
+
+		if ( empty( $appt ) ) {
+			return;
+		}
+
+		if ( $appt['patient_id'] > 0 ) {
+			self::record(
+				$appt['patient_id'],
+				self::TYPE_RESCHEDULED,
+				sprintf(
+					/* translators: 1: doctor's display name, 2: date, 3: time. */
+					__( 'Your appointment with Dr. %1$s has been rescheduled to %2$s at %3$s.', 'doctor-ak-portal' ),
+					$appt['doctor_name'],
+					$appt['date'],
+					$appt['time']
+				),
+				$appointment_id
+			);
+		}
+
+		self::record(
+			$appt['doctor_id'],
+			self::TYPE_RESCHEDULED,
+			sprintf(
+				/* translators: 1: patient's display name, 2: date, 3: time. */
+				__( 'Your appointment with %1$s has been rescheduled to %2$s at %3$s.', 'doctor-ak-portal' ),
+				$appt['patient_name'],
+				$appt['date'],
+				$appt['time']
+			),
+			$appointment_id
+		);
+
+		self::notify_admins(
+			sprintf(
+				/* translators: 1: patient's display name, 2: doctor's display name. */
+				__( '%1$s\'s appointment with Dr. %2$s was rescheduled.', 'doctor-ak-portal' ),
+				$appt['patient_name'],
+				$appt['doctor_name']
+			),
+			self::TYPE_RESCHEDULED,
 			$appointment_id
 		);
 	}
@@ -379,12 +433,18 @@ class Notification_Center {
 	 * @return array
 	 */
 	private static function admin_user_ids() {
-		return get_users(
-			array(
-				'role'   => 'administrator',
-				'fields' => 'ID',
-			)
-		);
+		static $ids = null;
+
+		if ( null === $ids ) {
+			$ids = get_users(
+				array(
+					'role'   => 'administrator',
+					'fields' => 'ID',
+				)
+			);
+		}
+
+		return $ids;
 	}
 
 	/**

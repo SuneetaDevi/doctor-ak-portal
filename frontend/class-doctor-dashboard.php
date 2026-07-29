@@ -517,7 +517,11 @@ class Doctor_Dashboard {
 		$active_tab  = self::requested_tab();
 		$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
 
-		$appointment_data        = Appointments::doctor_dashboard_data( $user->ID );
+		// Fetched once and reused for both the dashboard's upcoming-appointment
+		// groups and the "Total Patients" stat below, instead of each running
+		// its own identical for_doctor() query.
+		$doctor_appointments     = Appointments::for_doctor( $user->ID );
+		$appointment_data        = Appointments::doctor_dashboard_data( $user->ID, $doctor_appointments );
 		$appointment_groups_html = array();
 
 		foreach ( $appointment_data['groups'] as $group_key => $rows ) {
@@ -561,8 +565,8 @@ class Doctor_Dashboard {
 			'notifications_url'     => self::tab_url( $dashboard_url, 'notifications' ),
 			'settings_url'          => self::tab_url( $dashboard_url, 'settings' ),
 			'logout_url'            => wp_logout_url( Page_Finder::url_for_shortcode( 'doctor_login' ) ),
-			'total_patients'        => Appointments::unique_patient_count_for_doctor( $user->ID ),
-			'doctor_clinics'        => Clinics::get_for_doctor( $user->ID ),
+			'total_patients'        => Appointments::unique_patient_count_for_doctor( $user->ID, $doctor_appointments ),
+			'doctor_clinics'        => $clinics,
 			/**
 			 * Filters the doctor dashboard's "Today's Appointments" stat.
 			 *

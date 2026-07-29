@@ -275,10 +275,13 @@
 
 		document.getElementById( 'dak-booking-clinic-hint' ).classList.toggle( 'dak-hidden', 'clinic' !== type );
 
-		var serviceSection = document.getElementById( 'dak-booking-service-section' );
+		// The video consultation's fixed fee card renders into this same
+		// section (see updateServiceCards()/updateVideoPriceCard()) — it must
+		// stay visible for "Online Video" too, just with a label that fits.
+		var serviceLabel = document.getElementById( 'dak-booking-service-label' );
 
-		if ( serviceSection ) {
-			serviceSection.classList.toggle( 'dak-hidden', 'video' === type );
+		if ( serviceLabel ) {
+			serviceLabel.textContent = 'video' === type ? 'Video Consultation Fee' : 'Service';
 		}
 
 		updatePhoneRequirement();

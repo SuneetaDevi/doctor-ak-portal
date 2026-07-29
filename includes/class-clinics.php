@@ -406,6 +406,39 @@ class Clinics {
 	}
 
 	/**
+	 * Every clinic for a batch of doctors in one query, grouped by doctor_id
+	 * — avoids the N+1 pattern of calling get_for_doctor() once per row when
+	 * rendering a table of many doctors at once (see Admin_Dashboard::row_data()).
+	 *
+	 * @param array $doctor_ids Doctor user IDs.
+	 * @return array doctor_id => array of decoded clinic rows (see decode_row()). Doctors with no clinics are simply absent, not an empty array key.
+	 */
+	public static function get_for_doctors( array $doctor_ids ) {
+		global $wpdb;
+
+		$doctor_ids = array_values( array_unique( array_map( 'absint', $doctor_ids ) ) );
+
+		if ( empty( $doctor_ids ) ) {
+			return array();
+		}
+
+		$placeholders = implode( ',', array_fill( 0, count( $doctor_ids ), '%d' ) );
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare( 'SELECT * FROM ' . self::table_name() . " WHERE doctor_id IN ({$placeholders}) ORDER BY doctor_id ASC, id ASC", $doctor_ids ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- table name/placeholder count, not user input.
+			ARRAY_A
+		);
+
+		$grouped = array();
+
+		foreach ( $rows as $row ) {
+			$grouped[ (int) $row['doctor_id'] ][] = self::decode_row( $row );
+		}
+
+		return $grouped;
+	}
+
+	/**
 	 * A clinic's name, only if it actually belongs to the given doctor —
 	 * used to safely resolve a "which clinic was this patient added at"
 	 * label without trusting a stored clinic_id blindly (e.g. after the

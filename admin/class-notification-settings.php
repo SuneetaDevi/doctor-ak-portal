@@ -44,7 +44,7 @@ class Notification_Settings {
 	 * @return void
 	 */
 	public function register_settings() {
-		foreach ( array( Notifications::OPTION_NOTIFY_BOOKING, Notifications::OPTION_NOTIFY_CANCELLED, Notifications::OPTION_NOTIFY_PAID, Notifications::OPTION_NOTIFY_REMINDER, Notifications::OPTION_NOTIFY_VIDEO_LINK, Notifications::OPTION_NOTIFY_DOCTOR_REGISTRATION, Notifications::OPTION_NOTIFY_REFUND ) as $option ) {
+		foreach ( array( Notifications::OPTION_NOTIFY_BOOKING, Notifications::OPTION_NOTIFY_CANCELLED, Notifications::OPTION_NOTIFY_PAID, Notifications::OPTION_NOTIFY_REMINDER, Notifications::OPTION_NOTIFY_VIDEO_LINK, Notifications::OPTION_NOTIFY_DOCTOR_REGISTRATION, Notifications::OPTION_NOTIFY_REFUND, Notifications::OPTION_NOTIFY_RESCHEDULED ) as $option ) {
 			register_setting(
 				'doctor_ak_notification_settings',
 				$option,
@@ -142,6 +142,15 @@ class Notification_Settings {
 							<label>
 								<input type="checkbox" name="<?php echo esc_attr( Notifications::OPTION_NOTIFY_DOCTOR_REGISTRATION ); ?>" value="1" <?php checked( '1', get_option( Notifications::OPTION_NOTIFY_DOCTOR_REGISTRATION, '1' ) ); ?>>
 								<?php esc_html_e( 'Email every administrator when a doctor registers, and email the doctor once their account is approved.', 'doctor-ak-portal' ); ?>
+							</label>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Appointment Rescheduled', 'doctor-ak-portal' ); ?></th>
+						<td>
+							<label>
+								<input type="checkbox" name="<?php echo esc_attr( Notifications::OPTION_NOTIFY_RESCHEDULED ); ?>" value="1" <?php checked( '1', get_option( Notifications::OPTION_NOTIFY_RESCHEDULED, '1' ) ); ?>>
+								<?php esc_html_e( 'Email the patient and doctor when an appointment is rescheduled to a new date/time.', 'doctor-ak-portal' ); ?>
 							</label>
 						</td>
 					</tr>

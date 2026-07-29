@@ -189,11 +189,23 @@
 					}
 
 					if ( result.data && result.data.errors ) {
+						var messages = [];
+
 						Object.keys( result.data.errors ).forEach( function ( field ) {
+							messages.push( result.data.errors[ field ] );
 							showFieldError( field, result.data.errors[ field ] );
 						} );
+
+						// The field-specific message above may be far off-screen
+						// (e.g. a single day/period deep inside the Weekly
+						// Sessions grid), so always surface it at the top of the
+						// form too — otherwise a re-enabled Save button with no
+						// visible change looks like the click did nothing.
+						showGeneralError( messages.join( ' ' ) );
+						scrollToFirstError();
 					} else {
 						showGeneralError( ( result.data && result.data.message ) || 'Something went wrong. Please try again.' );
+						scrollToFirstError();
 					}
 				} )
 				.catch( function () {
@@ -233,6 +245,18 @@
 		if ( el ) {
 			el.textContent = message;
 			el.classList.remove( 'dak-hidden' );
+		}
+	}
+
+	/**
+	 * Scrolls the general error banner into view so a validation failure is
+	 * never invisible just because it happened below the fold.
+	 */
+	function scrollToFirstError() {
+		var el = document.getElementById( 'dak-admin-session-general-error' );
+
+		if ( el ) {
+			el.scrollIntoView( { behavior: 'smooth', block: 'center' } );
 		}
 	}
 } )();

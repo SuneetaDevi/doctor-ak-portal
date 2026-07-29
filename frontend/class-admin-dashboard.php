@@ -968,7 +968,15 @@ class Admin_Dashboard {
 			)
 		);
 
-		return array_map( array( $this, 'row_data' ), $query->get_results() );
+		$results           = $query->get_results();
+		$clinics_by_doctor = Clinics::get_for_doctors( wp_list_pluck( $results, 'ID' ) );
+
+		return array_map(
+			function ( $user ) use ( $clinics_by_doctor ) {
+				return $this->row_data( $user, $clinics_by_doctor );
+			},
+			$results
+		);
 	}
 
 	/**
@@ -1025,7 +1033,14 @@ class Admin_Dashboard {
 			);
 		}
 
-		$users = array_map( array( $this, 'row_data' ), $results );
+		$clinics_by_doctor = 'doctors' === $section ? Clinics::get_for_doctors( wp_list_pluck( $results, 'ID' ) ) : array();
+
+		$users = array_map(
+			function ( $user ) use ( $clinics_by_doctor ) {
+				return $this->row_data( $user, $clinics_by_doctor );
+			},
+			$results
+		);
 
 		$is_doctors_section = 'doctors' === $section;
 
@@ -1112,10 +1127,11 @@ class Admin_Dashboard {
 	/**
 	 * Builds a single user row's view-model for the table.
 	 *
-	 * @param \WP_User $user Doctor or patient user.
+	 * @param \WP_User   $user              Doctor or patient user.
+	 * @param array|null $clinics_by_doctor Optional pre-fetched doctor_id => clinics map (see Clinics::get_for_doctors()) — pass this when building many rows at once so each row doesn't run its own clinics query. Falls back to a single-doctor query when omitted (fine for one-off lookups like the Add/Edit Doctor form).
 	 * @return array
 	 */
-	private function row_data( \WP_User $user ) {
+	private function row_data( \WP_User $user, $clinics_by_doctor = null ) {
 		$specialization_slugs  = (array) get_user_meta( $user->ID, 'doctor_ak_specializations', true );
 		$all_specializations   = Specializations::get_all();
 		$specialization_labels = array_map(
@@ -1132,7 +1148,9 @@ class Admin_Dashboard {
 		$clinic_labels = array();
 
 		if ( in_array( Roles::DOCTOR_ROLE, (array) $user->roles, true ) ) {
-			$doctor_clinics = Clinics::get_for_doctor( $user->ID );
+			$doctor_clinics = null !== $clinics_by_doctor
+				? ( isset( $clinics_by_doctor[ $user->ID ] ) ? $clinics_by_doctor[ $user->ID ] : array() )
+				: Clinics::get_for_doctor( $user->ID );
 			$clinic_count   = count( $doctor_clinics );
 
 			if ( $clinic_count > 0 ) {

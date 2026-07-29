@@ -108,6 +108,15 @@
 	line-height: 1.5 !important;
 }
 
+/* Higher specificity than .dak-specialty-tag above so a collapsed "+N"
+   extra tag actually stays hidden — .dak-hidden alone is the same
+   specificity tier and can lose the cascade depending on stylesheet load
+   order (e.g. this file loading after doctor-ak-auth.css, which is where
+   .dak-hidden is defined). */
+.dak-specialty-tag.dak-hidden {
+	display: none !important;
+}
+
 .dak-table-specialty-tags {
 	max-width: 320px !important;
 }

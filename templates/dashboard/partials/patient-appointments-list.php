@@ -74,6 +74,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<span class="dak-status-pill dak-status-pill-outline <?php echo $row['is_paid'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-pending'; ?>">
 							<?php echo $row['is_paid'] ? esc_html__( 'Paid', 'doctor-ak-portal' ) : esc_html__( 'Payment Pending', 'doctor-ak-portal' ); ?>
 						</span>
+						<?php if ( ! $row['is_paid'] && (float) $row['charge'] > 0 && ! in_array( $row['status'], array( 'cancelled', 'completed' ), true ) ) : ?>
+							<button type="button" class="dak-status-pill dak-status-pill-action" data-pay-now data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>">
+								<?php echo esc_html( sprintf( /* translators: %s: amount. */ __( 'Pay PKR%s', 'doctor-ak-portal' ), number_format( (float) $row['charge'], 0 ) ) ); ?>
+							</button>
+						<?php endif; ?>
 						<?php if ( ! empty( $row['video_call']['can_join'] ) ) : ?>
 							<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $row['video_call']['room_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></a>
 						<?php endif; ?>

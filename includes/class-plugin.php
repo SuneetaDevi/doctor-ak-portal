@@ -223,6 +223,7 @@ class Plugin {
 		$notifications = new Notifications();
 		$this->loader->add_action( 'doctor_ak_appointment_created', $notifications, 'notify_created', 10, 2 );
 		$this->loader->add_action( 'doctor_ak_appointment_cancelled', $notifications, 'notify_cancelled' );
+		$this->loader->add_action( 'doctor_ak_appointment_rescheduled', $notifications, 'notify_rescheduled' );
 		$this->loader->add_action( 'doctor_ak_appointment_paid', $notifications, 'notify_paid' );
 		$this->loader->add_action( 'doctor_ak_appointment_refund_requested', $notifications, 'notify_refund_requested' );
 		$this->loader->add_action( 'doctor_ak_appointment_refund_processed', $notifications, 'notify_refund_processed' );
@@ -244,6 +245,7 @@ class Plugin {
 		// instead of emailed.
 		$this->loader->add_action( 'doctor_ak_appointment_created', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_created', 10, 2 );
 		$this->loader->add_action( 'doctor_ak_appointment_cancelled', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_cancelled' );
+		$this->loader->add_action( 'doctor_ak_appointment_rescheduled', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_rescheduled' );
 		$this->loader->add_action( 'doctor_ak_appointment_paid', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_paid' );
 		$this->loader->add_action( 'doctor_ak_appointment_completed', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_completed' );
 		$this->loader->add_action( 'doctor_ak_appointment_refund_requested', 'DoctorAKPortal\\Includes\\Notification_Center', 'notify_refund_requested' );

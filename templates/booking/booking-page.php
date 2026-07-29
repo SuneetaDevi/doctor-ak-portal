@@ -116,8 +116,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<p class="dak-field-hint" id="dak-booking-clinic-hint"><?php esc_html_e( 'Clinic address shared upon confirmation.', 'doctor-ak-portal' ); ?></p>
 					<p class="dak-field-hint dak-hidden" id="dak-booking-video-unavailable"><?php esc_html_e( 'This doctor does not offer online video consultations.', 'doctor-ak-portal' ); ?></p>
 
-					<div id="dak-booking-service-section" class="<?php echo 'video' === $selected_type ? 'dak-hidden' : ''; ?>">
-						<div class="dak-booking-field-label"><?php esc_html_e( 'Service', 'doctor-ak-portal' ); ?></div>
+					<div id="dak-booking-service-section">
+						<div class="dak-booking-field-label" id="dak-booking-service-label"><?php echo esc_html( 'video' === $selected_type ? __( 'Video Consultation Fee', 'doctor-ak-portal' ) : __( 'Service', 'doctor-ak-portal' ) ); ?></div>
 						<div class="dak-booking-service-cards" id="dak-booking-service-cards">
 							<p class="dak-field-hint" id="dak-booking-no-services"><?php esc_html_e( 'Select a doctor to see their services.', 'doctor-ak-portal' ); ?></p>
 						</div>

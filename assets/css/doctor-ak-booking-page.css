@@ -503,6 +503,7 @@
 	align-items: center !important;
 	justify-content: center !important;
 	gap: 0.3rem !important;
+	min-height: 3rem !important;
 	padding: 0.65rem 0.25rem !important;
 	border-radius: var( --dak-radius-md ) !important;
 	border: 1px solid var( --dak-border ) !important;
@@ -847,6 +848,40 @@
 	}
 }
 
+@media ( max-width: 600px ) {
+	/* All 7 days stay visible and swipeable (scroll-snap) instead of being
+	   squeezed into fewer, cramped columns — a fixed column count can't
+	   shrink below its content's minimum width without wrapping/clipping. */
+	.dak-booking-date-strip {
+		display: flex !important;
+		overflow-x: auto !important;
+		-webkit-overflow-scrolling: touch !important;
+		scroll-snap-type: x proximity !important;
+		padding-bottom: 0.25rem !important;
+	}
+
+	.dak-booking-date-strip-day {
+		flex: 0 0 auto !important;
+		width: 3.5rem !important;
+		min-height: 3.5rem !important;
+		scroll-snap-align: start !important;
+	}
+
+	.dak-booking-calendar-title {
+		min-width: 0 !important;
+		font-size: 0.85rem !important;
+	}
+
+	.dak-booking-page .dak-icon-button {
+		width: 2.75rem !important;
+		height: 2.75rem !important;
+	}
+
+	.dak-booking-slot-card {
+		min-height: 2.75rem !important;
+	}
+}
+
 @media ( max-width: 480px ) {
 	.dak-booking-page {
 		padding: 2rem 1rem 3rem !important;
@@ -855,9 +890,5 @@
 	.dak-booking-doctor-cards,
 	.dak-field-row {
 		grid-template-columns: 1fr !important;
-	}
-
-	.dak-booking-date-strip {
-		grid-template-columns: repeat( 4, 1fr ) !important;
 	}
 }

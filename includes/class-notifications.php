@@ -39,6 +39,7 @@ class Notifications {
 	const OPTION_NOTIFY_VIDEO_LINK          = 'doctor_ak_notify_video_link';
 	const OPTION_NOTIFY_DOCTOR_REGISTRATION = 'doctor_ak_notify_doctor_registration';
 	const OPTION_NOTIFY_REFUND              = 'doctor_ak_notify_refund';
+	const OPTION_NOTIFY_RESCHEDULED         = 'doctor_ak_notify_rescheduled';
 	const OPTION_FROM_NAME                  = 'doctor_ak_notify_from_name';
 	const OPTION_FROM_EMAIL                 = 'doctor_ak_notify_from_email';
 
@@ -92,6 +93,7 @@ class Notifications {
 			'video_link'          => self::OPTION_NOTIFY_VIDEO_LINK,
 			'doctor_registration' => self::OPTION_NOTIFY_DOCTOR_REGISTRATION,
 			'refund'              => self::OPTION_NOTIFY_REFUND,
+			'rescheduled'         => self::OPTION_NOTIFY_RESCHEDULED,
 		);
 
 		if ( ! isset( $option_map[ $type ] ) ) {
@@ -209,6 +211,50 @@ class Notifications {
 			sprintf(
 				/* translators: %s: patient's display name. */
 				__( 'Your appointment with %s has been cancelled.', 'doctor-ak-portal' ),
+				$appt['patient_name']
+			),
+			$appt
+		);
+	}
+
+	/**
+	 * Hook callback: an appointment was rescheduled to a new date/time.
+	 *
+	 * @param int $appointment_id Rescheduled appointment's post ID.
+	 * @return void
+	 */
+	public function notify_rescheduled( $appointment_id ) {
+		if ( ! self::is_enabled( 'rescheduled' ) ) {
+			return;
+		}
+
+		$appt = Appointments::notification_data( $appointment_id );
+
+		if ( empty( $appt ) ) {
+			return;
+		}
+
+		$subject = __( 'Appointment Rescheduled', 'doctor-ak-portal' );
+
+		$this->send(
+			$appt['patient_email'],
+			$subject,
+			__( 'Your appointment has been rescheduled', 'doctor-ak-portal' ),
+			sprintf(
+				/* translators: %s: doctor's display name. */
+				__( 'Your appointment with Dr. %s has been rescheduled to a new date/time — see the details below.', 'doctor-ak-portal' ),
+				$appt['doctor_name']
+			),
+			$appt
+		);
+
+		$this->send(
+			$appt['doctor_email'],
+			$subject,
+			__( 'Appointment rescheduled', 'doctor-ak-portal' ),
+			sprintf(
+				/* translators: %s: patient's display name. */
+				__( 'Your appointment with %s has been rescheduled to a new date/time — see the details below.', 'doctor-ak-portal' ),
 				$appt['patient_name']
 			),
 			$appt

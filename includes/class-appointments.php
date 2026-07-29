@@ -58,7 +58,7 @@ class Appointments {
 	 * assumed consultation length rather than a real end time.
 	 */
 	const VIDEO_JOIN_WINDOW_BEFORE_MINUTES = 15;
-	const VIDEO_JOIN_WINDOW_AFTER_MINUTES  = 60;
+	const VIDEO_JOIN_WINDOW_AFTER_MINUTES  = 90;
 
 	/**
 	 * Hours after a booked (confirmed) appointment's scheduled start before
@@ -528,13 +528,14 @@ class Appointments {
 	 * Patients" stat, so it reflects that doctor's own patients rather than
 	 * every patient account site-wide.
 	 *
-	 * @param int $doctor_id Doctor's user ID.
+	 * @param int        $doctor_id    Doctor's user ID.
+	 * @param array|null $appointments Optional pre-fetched self::for_doctor() result, so a caller that already has it (e.g. Doctor_Dashboard::prepare_data()) doesn't trigger a second identical query.
 	 * @return int
 	 */
-	public static function unique_patient_count_for_doctor( $doctor_id ) {
+	public static function unique_patient_count_for_doctor( $doctor_id, $appointments = null ) {
 		$seen = array();
 
-		foreach ( self::for_doctor( $doctor_id ) as $appointment ) {
+		foreach ( ( null !== $appointments ? $appointments : self::for_doctor( $doctor_id ) ) as $appointment ) {
 			$key = $appointment['patient_id'] > 0 ? 'u' . $appointment['patient_id'] : 'g' . strtolower( $appointment['guest_email'] );
 
 			$seen[ $key ] = true;
@@ -973,19 +974,20 @@ class Appointments {
 	 * into Today/Tomorrow/This Week/Later, mirroring patient_dashboard_data()
 	 * but scoped by doctor instead of by patient.
 	 *
-	 * @param int $doctor_id Doctor's user ID.
+	 * @param int        $doctor_id    Doctor's user ID.
+	 * @param array|null $appointments Optional pre-fetched self::for_doctor() result, so a caller that already has it doesn't trigger a second identical query.
 	 * @return array {
 	 *     @type array $groups               'today'|'tomorrow'|'this_week'|'later' => array of rows.
 	 *     @type int   $total_upcoming_count Total upcoming (non-cancelled) appointments.
 	 * }
 	 */
-	public static function doctor_dashboard_data( $doctor_id ) {
+	public static function doctor_dashboard_data( $doctor_id, $appointments = null ) {
 		$today = current_time( 'Y-m-d' );
 		$now   = current_time( 'H:i' );
 
 		$upcoming = array_values(
 			array_filter(
-				self::for_doctor( $doctor_id ),
+				null !== $appointments ? $appointments : self::for_doctor( $doctor_id ),
 				function ( $appointment ) use ( $today, $now ) {
 					if ( self::STATUS_CANCELLED === $appointment['status'] ) {
 						return false;
