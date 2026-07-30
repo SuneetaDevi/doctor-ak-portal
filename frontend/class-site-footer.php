@@ -134,16 +134,40 @@ class Site_Footer {
 	}
 
 	/**
-	 * Resolves the bundled logo's URL (same file the header uses).
+	 * Resolves the bundled logo's URL (same file the header uses) — public
+	 * so email templates (Notifications::render_invoice_email()) can embed
+	 * it too, since an email needs a real absolute image URL, not markup.
 	 *
 	 * @return string Logo URL, or '' if no bundled logo file exists.
 	 */
-	private static function bundled_logo_url() {
+	public static function bundled_logo_url() {
+		$relative_path = self::bundled_logo_relative_path();
+
+		return '' !== $relative_path ? DOCTOR_AK_PORTAL_URL . $relative_path : '';
+	}
+
+	/**
+	 * Resolves the bundled logo's absolute filesystem path — used by
+	 * Invoice_Pdf, which needs to read the actual image bytes (GD can't
+	 * fetch a URL reliably from inside an email-sending request).
+	 *
+	 * @return string Absolute path, or '' if no bundled logo file exists.
+	 */
+	public static function bundled_logo_path() {
+		$relative_path = self::bundled_logo_relative_path();
+
+		return '' !== $relative_path ? DOCTOR_AK_PORTAL_PATH . $relative_path : '';
+	}
+
+	/**
+	 * @return string e.g. 'assets/images/logo.png', or '' if none exists.
+	 */
+	private static function bundled_logo_relative_path() {
 		foreach ( array( 'png', 'svg', 'jpg', 'jpeg', 'webp' ) as $extension ) {
 			$relative_path = 'assets/images/logo.' . $extension;
 
 			if ( file_exists( DOCTOR_AK_PORTAL_PATH . $relative_path ) ) {
-				return DOCTOR_AK_PORTAL_URL . $relative_path;
+				return $relative_path;
 			}
 		}
 

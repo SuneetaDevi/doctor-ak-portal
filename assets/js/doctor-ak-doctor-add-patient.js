@@ -63,7 +63,8 @@
 			formData.append( 'first_name', document.getElementById( 'dak-doctor-add-patient-first-name' ).value );
 			formData.append( 'last_name', document.getElementById( 'dak-doctor-add-patient-last-name' ).value );
 			formData.append( 'email', document.getElementById( 'dak-doctor-add-patient-email' ).value );
-			formData.append( 'phone_number', document.getElementById( 'dak-doctor-add-patient-phone' ).value );
+			formData.append( 'phone_country_code', document.getElementById( 'dak-doctor-add-patient-phone-code' ).value );
+			formData.append( 'phone_number', document.getElementById( 'dak-doctor-add-patient-phone-number' ).value );
 
 			if ( isEdit ) {
 				formData.append( 'patient_id', patientId );
@@ -119,7 +120,8 @@
 			document.getElementById( 'dak-doctor-add-patient-first-name' ).value = '';
 			document.getElementById( 'dak-doctor-add-patient-last-name' ).value = '';
 			document.getElementById( 'dak-doctor-add-patient-email' ).value = '';
-			document.getElementById( 'dak-doctor-add-patient-phone' ).value = '';
+			document.getElementById( 'dak-doctor-add-patient-phone-code' ).value = '92';
+			document.getElementById( 'dak-doctor-add-patient-phone-number' ).value = '';
 
 			var clinicSelect = document.getElementById( 'dak-doctor-add-patient-clinic' );
 
@@ -152,7 +154,8 @@
 			document.getElementById( 'dak-doctor-add-patient-first-name' ).value = editButton.getAttribute( 'data-first-name' ) || '';
 			document.getElementById( 'dak-doctor-add-patient-last-name' ).value = editButton.getAttribute( 'data-last-name' ) || '';
 			document.getElementById( 'dak-doctor-add-patient-email' ).value = editButton.getAttribute( 'data-email' ) || '';
-			document.getElementById( 'dak-doctor-add-patient-phone' ).value = editButton.getAttribute( 'data-phone' ) || '';
+			document.getElementById( 'dak-doctor-add-patient-phone-code' ).value = editButton.getAttribute( 'data-phone-code' ) || '92';
+			document.getElementById( 'dak-doctor-add-patient-phone-number' ).value = editButton.getAttribute( 'data-phone-number' ) || '';
 
 			if ( titleText ) {
 				titleText.textContent = 'Edit Patient';

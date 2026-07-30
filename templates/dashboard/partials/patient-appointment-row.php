@@ -113,14 +113,16 @@ $can_request_refund = 'cancelled' === $appointment['status'] && $appointment['is
 						aria-expanded="false"
 					><?php echo $dak_patient_appt_icons['kebab']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
 					<div class="dak-patient-appt-kebab-menu" data-kebab-menu>
-						<button
-							type="button"
-							class="dak-patient-appt-kebab-item"
-							data-reschedule-appointment
-							data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"
-							data-date="<?php echo esc_attr( $appointment['date'] ); ?>"
-							data-time="<?php echo esc_attr( $appointment['time'] ); ?>"
-						><?php esc_html_e( 'Reschedule Appointment', 'doctor-ak-portal' ); ?></button>
+						<?php if ( ! empty( $appointment['reschedulable'] ) ) : ?>
+							<button
+								type="button"
+								class="dak-patient-appt-kebab-item"
+								data-reschedule-appointment
+								data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"
+								data-date="<?php echo esc_attr( $appointment['date'] ); ?>"
+								data-time="<?php echo esc_attr( $appointment['time'] ); ?>"
+							><?php esc_html_e( 'Reschedule Appointment', 'doctor-ak-portal' ); ?></button>
+						<?php endif; ?>
 						<button
 							type="button"
 							class="dak-patient-appt-kebab-item is-danger"

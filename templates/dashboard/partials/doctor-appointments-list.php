@@ -80,7 +80,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<?php if ( in_array( $row['status'], array( 'confirmed', 'paid', 'rescheduled' ), true ) ) : ?>
 							<button type="button" class="dak-status-pill dak-status-pill-action" data-mark-completed data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"><?php esc_html_e( 'Mark Completed', 'doctor-ak-portal' ); ?></button>
 						<?php endif; ?>
-						<?php if ( ! in_array( $row['status'], array( 'cancelled', 'completed' ), true ) ) : ?>
+						<?php if ( ! empty( $row['reschedulable'] ) ) : ?>
 							<button
 								type="button"
 								class="dak-status-pill dak-status-pill-action"

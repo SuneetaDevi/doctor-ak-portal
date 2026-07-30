@@ -290,6 +290,7 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointment_save', $appointment_handler, 'handle_admin_save_appointment' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointment_delete', $appointment_handler, 'handle_admin_delete_appointment' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointment_print', $appointment_handler, 'handle_print' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_invoice_download', $appointment_handler, 'handle_download_invoice' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_process_refund', $appointment_handler, 'handle_admin_process_refund' );
 
 		$patient_appointment_handler = new Patient_Appointment_Handler();

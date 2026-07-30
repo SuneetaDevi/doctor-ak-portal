@@ -67,6 +67,7 @@ class Admin_Dashboard {
 		'Main'   => array(
 			'dashboard'   => 'Dashboard',
 			'appointments' => 'Appointments',
+			'billing'     => 'Billing',
 			'encounters'  => 'Encounters',
 			'notifications' => 'Notifications',
 		),
@@ -742,6 +743,33 @@ class Admin_Dashboard {
 			);
 		}
 
+		if ( 'billing' === $section ) {
+			$date_from = isset( $_GET['date_from'] ) ? sanitize_text_field( wp_unslash( $_GET['date_from'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$date_to   = isset( $_GET['date_to'] ) ? sanitize_text_field( wp_unslash( $_GET['date_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+
+			$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+			$billing_url   = $dashboard_url ? add_query_arg( 'section', 'billing', $dashboard_url ) : '';
+
+			return $this->template_loader->get_template(
+				'dashboard/partials/admin-billing.php',
+				array(
+					'invoices'    => Appointments::all_for_admin(
+						array(
+							'payment_status' => Appointments::PAYMENT_STATUS_PAID,
+							'date_from'      => $date_from,
+							'date_to'        => $date_to,
+						)
+					),
+					'revenue'     => Appointments::revenue_summary(),
+					'billing_url' => $billing_url,
+					'filters'     => array(
+						'date_from' => $date_from,
+						'date_to'   => $date_to,
+					),
+				)
+			);
+		}
+
 		if ( 'doctor-sessions' === $section ) {
 			if ( self::is_session_form_view() ) {
 				return $this->session_form_screen_html( $section );
@@ -948,6 +976,7 @@ class Admin_Dashboard {
 			'total_patients'     => isset( $user_counts['avail_roles'][ Roles::PATIENT_ROLE ] ) ? (int) $user_counts['avail_roles'][ Roles::PATIENT_ROLE ] : 0,
 			'total_clinics'      => Clinics::total_count(),
 			'total_appointments' => Appointments::total_count(),
+			'total_revenue'      => Appointments::revenue_summary()['total'],
 		);
 	}
 

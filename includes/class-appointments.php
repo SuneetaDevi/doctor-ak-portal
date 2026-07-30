@@ -61,6 +61,12 @@ class Appointments {
 	const VIDEO_JOIN_WINDOW_AFTER_MINUTES  = 90;
 
 	/**
+	 * How close to an appointment's current scheduled start it can still be
+	 * rescheduled — see reschedule().
+	 */
+	const RESCHEDULE_CUTOFF_MINUTES_BEFORE = 30;
+
+	/**
 	 * Hours after a booked (confirmed) appointment's scheduled start before
 	 * it's assumed over and auto-completed if the doctor hasn't manually
 	 * marked it — see auto_complete_past_appointments().
@@ -279,6 +285,8 @@ class Appointments {
 	public static function update( $appointment_id, array $data ) {
 		$post = get_post( $appointment_id );
 
+		$was_already_paid = self::PAYMENT_STATUS_PAID === get_post_meta( $appointment_id, 'doctor_ak_appointment_payment_status', true );
+
 		if ( ! $post || self::POST_TYPE !== $post->post_type ) {
 			return new \WP_Error( 'doctor_ak_invalid_appointment', __( 'That appointment no longer exists.', 'doctor-ak-portal' ) );
 		}
@@ -377,6 +385,16 @@ class Appointments {
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_service_name', $service_name );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_charge', $charge );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_payment_mode', $payment_mode );
+
+		// Covers the "offline patient" flow: an admin adds a walk-in
+		// patient's appointment as Pending, they pay at the desk, and the
+		// admin then edits it to Paid — the same invoice email + PDF an
+		// online payment triggers should fire here too, but only once (not
+		// on every subsequent edit of an already-paid appointment).
+		if ( self::PAYMENT_STATUS_PAID === $payment_status && ! $was_already_paid ) {
+			/** This action is documented in mark_paid() above. */
+			do_action( 'doctor_ak_appointment_paid', $appointment_id );
+		}
 
 		return true;
 	}
@@ -965,6 +983,7 @@ class Appointments {
 			'refund_eligible'       => Video_Pricing::is_cancellation_refund_eligible( $appointment['doctor_id'], $appointment['date'], $appointment['time'] ),
 			'refund_status'         => $appointment['refund_status'],
 			'video_call'            => self::video_call_info( $appointment ),
+			'reschedulable'         => self::is_reschedulable( $appointment ),
 		);
 	}
 
@@ -1084,6 +1103,7 @@ class Appointments {
 			'charge'             => $appointment['charge'],
 			'countdown_label'    => self::countdown_label( $appointment['date'], $appointment['time'], $today, $now ),
 			'video_call'         => self::video_call_info( $appointment ),
+			'reschedulable'      => self::is_reschedulable( $appointment ),
 		);
 	}
 
@@ -1258,6 +1278,17 @@ class Appointments {
 			return new \WP_Error( 'doctor_ak_appointment_not_reschedulable', __( 'This appointment can no longer be rescheduled.', 'doctor-ak-portal' ) );
 		}
 
+		$current_start = strtotime( $appointment['date'] . ' ' . $appointment['time'] );
+
+		if ( false !== $current_start ) {
+			$now = current_time( 'timestamp' ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- comparing against strtotime() of a stored local date/time string, not doing math that needs UTC.
+
+			if ( $now > $current_start - self::RESCHEDULE_CUTOFF_MINUTES_BEFORE * MINUTE_IN_SECONDS ) {
+				/* translators: %d: minutes before the appointment. */
+				return new \WP_Error( 'doctor_ak_reschedule_cutoff', sprintf( __( 'This appointment can no longer be rescheduled — it starts in less than %d minutes (or has already started).', 'doctor-ak-portal' ), self::RESCHEDULE_CUTOFF_MINUTES_BEFORE ) );
+			}
+		}
+
 		if ( ! self::is_valid_date( $date ) ) {
 			return new \WP_Error( 'doctor_ak_invalid_date', __( 'Please choose a valid appointment date.', 'doctor-ak-portal' ) );
 		}
@@ -1282,6 +1313,30 @@ class Appointments {
 		do_action( 'doctor_ak_appointment_rescheduled', $appointment_id );
 
 		return true;
+	}
+
+	/**
+	 * Whether an appointment is still within the reschedule window — used by
+	 * dashboard templates to hide the "Reschedule" action once it would just
+	 * fail server-side (see reschedule()'s own authoritative check).
+	 *
+	 * @param array $appointment Appointment array (must have 'status', 'date', 'time').
+	 * @return bool
+	 */
+	public static function is_reschedulable( array $appointment ) {
+		if ( in_array( $appointment['status'], array( self::STATUS_CANCELLED, self::STATUS_COMPLETED ), true ) ) {
+			return false;
+		}
+
+		$start = strtotime( $appointment['date'] . ' ' . $appointment['time'] );
+
+		if ( false === $start ) {
+			return true;
+		}
+
+		$now = current_time( 'timestamp' ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- comparing against strtotime() of a stored local date/time string, not doing math that needs UTC.
+
+		return $now <= $start - self::RESCHEDULE_CUTOFF_MINUTES_BEFORE * MINUTE_IN_SECONDS;
 	}
 
 	/**
@@ -1700,11 +1755,14 @@ class Appointments {
 	 * @param array $filters {
 	 *     Optional. All filters are ANDed together; omit or pass '' / 0 to skip one.
 	 *
-	 *     @type int    $patient_id    Only this patient's appointments.
-	 *     @type int    $doctor_id     Only this doctor's appointments.
-	 *     @type string $date          'YYYY-MM-DD', only appointments on this date.
-	 *     @type string $status        One of the STATUS_* constants.
-	 *     @type string $payment_mode  One of the PAYMENT_MODE_* constants.
+	 *     @type int    $patient_id     Only this patient's appointments.
+	 *     @type int    $doctor_id      Only this doctor's appointments.
+	 *     @type string $date           'YYYY-MM-DD', only appointments on this date.
+	 *     @type string $date_from      'YYYY-MM-DD', only appointments on/after this date.
+	 *     @type string $date_to        'YYYY-MM-DD', only appointments on/before this date.
+	 *     @type string $status         One of the STATUS_* constants.
+	 *     @type string $payment_status One of the PAYMENT_STATUS_* constants.
+	 *     @type string $payment_mode   One of the PAYMENT_MODE_* constants.
 	 * }
 	 * @return array
 	 */
@@ -1739,10 +1797,44 @@ class Appointments {
 			);
 		}
 
+		if ( ! empty( $filters['date_from'] ) && ! empty( $filters['date_to'] ) ) {
+			$meta_query[] = array(
+				'key'     => 'doctor_ak_appointment_date',
+				'value'   => array( sanitize_text_field( $filters['date_from'] ), sanitize_text_field( $filters['date_to'] ) ),
+				'compare' => 'BETWEEN',
+				'type'    => 'DATE',
+			);
+		} else {
+			if ( ! empty( $filters['date_from'] ) ) {
+				$meta_query[] = array(
+					'key'     => 'doctor_ak_appointment_date',
+					'value'   => sanitize_text_field( $filters['date_from'] ),
+					'compare' => '>=',
+					'type'    => 'DATE',
+				);
+			}
+
+			if ( ! empty( $filters['date_to'] ) ) {
+				$meta_query[] = array(
+					'key'     => 'doctor_ak_appointment_date',
+					'value'   => sanitize_text_field( $filters['date_to'] ),
+					'compare' => '<=',
+					'type'    => 'DATE',
+				);
+			}
+		}
+
 		if ( ! empty( $filters['status'] ) ) {
 			$meta_query[] = array(
 				'key'   => 'doctor_ak_appointment_status',
 				'value' => sanitize_text_field( $filters['status'] ),
+			);
+		}
+
+		if ( ! empty( $filters['payment_status'] ) ) {
+			$meta_query[] = array(
+				'key'   => 'doctor_ak_appointment_payment_status',
+				'value' => sanitize_text_field( $filters['payment_status'] ),
 			);
 		}
 
@@ -1769,6 +1861,45 @@ class Appointments {
 		);
 
 		return array_map( array( __CLASS__, 'admin_row_data' ), $appointments );
+	}
+
+	/**
+	 * Revenue stat cards for the admin "Billing" section: all-time, this
+	 * month, and today, each summed from that period's paid appointments'
+	 * charges. A payment counts on the day the *appointment* falls on, not
+	 * the day it was paid — matching how the Billing table itself groups
+	 * invoices by appointment date.
+	 *
+	 * @return array { @type float total, @type float this_month, @type float today, @type int invoice_count (all-time) }
+	 */
+	public static function revenue_summary() {
+		$all_paid = self::all_for_admin( array( 'payment_status' => self::PAYMENT_STATUS_PAID ) );
+		$today    = current_time( 'Y-m-d' );
+		$month    = gmdate( 'Y-m', strtotime( $today ) );
+
+		$total       = 0.0;
+		$this_month  = 0.0;
+		$today_total = 0.0;
+
+		foreach ( $all_paid as $row ) {
+			$charge = (float) $row['charge'];
+			$total += $charge;
+
+			if ( 0 === strpos( $row['date'], $month ) ) {
+				$this_month += $charge;
+			}
+
+			if ( $row['date'] === $today ) {
+				$today_total += $charge;
+			}
+		}
+
+		return array(
+			'total'          => $total,
+			'this_month'     => $this_month,
+			'today'          => $today_total,
+			'invoice_count'  => count( $all_paid ),
+		);
 	}
 
 	/**
@@ -1822,6 +1953,7 @@ class Appointments {
 			'refund_status'     => $appointment['refund_status'],
 			'refund_reason'     => $appointment['refund_reason'],
 			'refund_amount'     => $appointment['refund_amount'],
+			'reschedulable'     => self::is_reschedulable( $appointment ),
 		);
 	}
 

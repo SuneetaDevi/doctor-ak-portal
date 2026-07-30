@@ -151,8 +151,19 @@ $current_picture_url = $current_profile_picture_id ? wp_get_attachment_image_url
 	<?php else : ?>
 
 		<div class="dak-field">
-			<label for="dak-profile-phone-number"><?php esc_html_e( 'Phone Number', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
-			<input type="tel" id="dak-profile-phone-number" name="phone_number" value="<?php echo esc_attr( $current_phone_number ); ?>" required>
+			<label for="dak-profile-phone-number-code"><?php esc_html_e( 'Phone Number', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
+			<?php
+			$dak_current_phone_parts = \DoctorAKPortal\Includes\Phone::split( $current_phone_number );
+			echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- template escapes its own output.
+				'partials/phone-field.php',
+				array(
+					'id_prefix' => 'dak-profile-phone-number',
+					'dial_code' => $dak_current_phone_parts['dial_code'],
+					'number'    => $dak_current_phone_parts['number'],
+					'required'  => true,
+				)
+			);
+			?>
 			<span class="dak-field-error" data-field="phone_number"></span>
 		</div>
 

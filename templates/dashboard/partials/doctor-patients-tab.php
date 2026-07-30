@@ -51,7 +51,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 								data-first-name="<?php echo esc_attr( $patient['first_name'] ); ?>"
 								data-last-name="<?php echo esc_attr( $patient['last_name'] ); ?>"
 								data-email="<?php echo esc_attr( $patient['email'] ); ?>"
-								data-phone="<?php echo esc_attr( $patient['phone'] ); ?>"
+								<?php $dak_edit_patient_phone_parts = \DoctorAKPortal\Includes\Phone::split( $patient['phone'] ); ?>
+								data-phone-code="<?php echo esc_attr( $dak_edit_patient_phone_parts['dial_code'] ); ?>"
+								data-phone-number="<?php echo esc_attr( $dak_edit_patient_phone_parts['number'] ); ?>"
 							><?php esc_html_e( 'Edit', 'doctor-ak-portal' ); ?></button>
 						</td>
 					</tr>

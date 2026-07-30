@@ -2,17 +2,17 @@
 /**
  * Template: Administrator dashboard's "Dashboard" overview (stat cards).
  *
- * Total Doctors, Total Patients, Total Clinics and Total Appointments are
- * backed by real data; Active Services and Total Revenue still show
- * "Coming soon" since neither a Services CRUD nor payment-revenue tracking
- * exists yet.
+ * Total Doctors, Total Patients, Total Clinics, Total Appointments, and
+ * Total Revenue are backed by real data; Active Services still shows
+ * "Coming soon" since no Services CRUD exists yet.
  *
  * @package DoctorAKPortal\Templates
  *
- * @var int $total_doctors      Count of users holding the Doctor role.
- * @var int $total_patients     Count of users holding the Patient role.
- * @var int $total_clinics      Count of clinic rows across every doctor.
- * @var int $total_appointments Count of published appointments ever booked.
+ * @var int   $total_doctors      Count of users holding the Doctor role.
+ * @var int   $total_patients     Count of users holding the Patient role.
+ * @var int   $total_clinics      Count of clinic rows across every doctor.
+ * @var int   $total_appointments Count of published appointments ever booked.
+ * @var float $total_revenue      Sum of every paid appointment's charge, see Appointments::revenue_summary().
  */
 
 // Prevent direct file access.
@@ -56,9 +56,10 @@ $cards = array(
 		'label' => __( 'Active Services', 'doctor-ak-portal' ),
 	),
 	array(
-		'icon'  => 'money',
-		'value' => null,
-		'label' => __( 'Total Revenue', 'doctor-ak-portal' ),
+		'icon'   => 'money',
+		'value'  => $total_revenue,
+		'prefix' => 'PKR ',
+		'label'  => __( 'Total Revenue', 'doctor-ak-portal' ),
 	),
 );
 ?>
@@ -71,7 +72,7 @@ $cards = array(
 		<div class="dak-stat-card">
 			<span class="dak-stat-icon dak-stat-icon-green" aria-hidden="true"><?php echo $dak_overview_icons[ $card['icon'] ]; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 			<?php if ( null !== $card['value'] ) : ?>
-				<span class="dak-stat-value"><?php echo esc_html( number_format_i18n( $card['value'] ) ); ?></span>
+				<span class="dak-stat-value"><?php echo esc_html( ( isset( $card['prefix'] ) ? $card['prefix'] : '' ) . number_format_i18n( $card['value'] ) ); ?></span>
 			<?php else : ?>
 				<span class="dak-stat-value dak-stat-value-pending"><?php esc_html_e( 'Coming soon', 'doctor-ak-portal' ); ?></span>
 			<?php endif; ?>

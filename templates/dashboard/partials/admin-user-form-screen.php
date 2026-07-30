@@ -207,8 +207,19 @@ $dak_noun            = $dak_is_doctor_form ? __( 'Doctor', 'doctor-ak-portal' ) 
 		<?php else : ?>
 
 			<div class="dak-field">
-				<label for="dak-admin-user-phone"><?php esc_html_e( 'Phone Number', 'doctor-ak-portal' ); ?></label>
-				<input type="tel" id="dak-admin-user-phone" name="phone_number" value="<?php echo esc_attr( $dak_is_editing ? $editing_user['phone'] : '' ); ?>" placeholder="0300000000" required>
+				<label for="dak-admin-user-phone-code"><?php esc_html_e( 'Phone Number', 'doctor-ak-portal' ); ?></label>
+				<?php
+				$dak_admin_phone_parts = \DoctorAKPortal\Includes\Phone::split( $dak_is_editing ? $editing_user['phone'] : '' );
+				echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- template escapes its own output.
+					'partials/phone-field.php',
+					array(
+						'id_prefix' => 'dak-admin-user-phone',
+						'dial_code' => $dak_admin_phone_parts['dial_code'],
+						'number'    => $dak_admin_phone_parts['number'],
+						'required'  => true,
+					)
+				);
+				?>
 				<span class="dak-field-error" data-field="phone_number"></span>
 			</div>
 

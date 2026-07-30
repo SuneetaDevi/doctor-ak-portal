@@ -11,6 +11,7 @@ namespace DoctorAKPortal\Frontend;
 use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Authentication;
 use DoctorAKPortal\Includes\Clinics;
+use DoctorAKPortal\Includes\Phone;
 use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
 
@@ -66,8 +67,12 @@ class Doctor_Patient_Handler {
 		$first_name = isset( $_POST['first_name'] ) ? sanitize_text_field( wp_unslash( $_POST['first_name'] ) ) : '';
 		$last_name  = isset( $_POST['last_name'] ) ? sanitize_text_field( wp_unslash( $_POST['last_name'] ) ) : '';
 		$email      = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
-		$phone      = isset( $_POST['phone_number'] ) ? sanitize_text_field( wp_unslash( $_POST['phone_number'] ) ) : '';
 		$clinic_id  = isset( $_POST['clinic_id'] ) ? absint( wp_unslash( $_POST['clinic_id'] ) ) : 0;
+
+		$phone = Phone::sanitize_from_request(
+			isset( $_POST['phone_country_code'] ) ? wp_unslash( $_POST['phone_country_code'] ) : '',
+			isset( $_POST['phone_number'] ) ? wp_unslash( $_POST['phone_number'] ) : ''
+		);
 
 		if ( '' === $first_name ) {
 			$errors['first_name'] = __( 'First name is required.', 'doctor-ak-portal' );
@@ -79,10 +84,8 @@ class Doctor_Patient_Handler {
 			$errors['email'] = __( 'An account with that email address already exists.', 'doctor-ak-portal' );
 		}
 
-		if ( '' === $phone ) {
-			$errors['phone_number'] = __( 'Phone number is required.', 'doctor-ak-portal' );
-		} elseif ( ! preg_match( '/^[0-9+\-\s()]{7,20}$/', $phone ) ) {
-			$errors['phone_number'] = __( 'Please provide a valid phone number.', 'doctor-ak-portal' );
+		if ( is_wp_error( $phone ) ) {
+			$errors['phone_number'] = $phone->get_error_message();
 		}
 
 		// Optional — but if given, must actually be one of this doctor's own
@@ -165,7 +168,11 @@ class Doctor_Patient_Handler {
 		$first_name = isset( $_POST['first_name'] ) ? sanitize_text_field( wp_unslash( $_POST['first_name'] ) ) : '';
 		$last_name  = isset( $_POST['last_name'] ) ? sanitize_text_field( wp_unslash( $_POST['last_name'] ) ) : '';
 		$email      = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
-		$phone      = isset( $_POST['phone_number'] ) ? sanitize_text_field( wp_unslash( $_POST['phone_number'] ) ) : '';
+
+		$phone = Phone::sanitize_from_request(
+			isset( $_POST['phone_country_code'] ) ? wp_unslash( $_POST['phone_country_code'] ) : '',
+			isset( $_POST['phone_number'] ) ? wp_unslash( $_POST['phone_number'] ) : ''
+		);
 
 		if ( '' === $first_name ) {
 			$errors['first_name'] = __( 'First name is required.', 'doctor-ak-portal' );
@@ -177,10 +184,8 @@ class Doctor_Patient_Handler {
 			$errors['email'] = __( 'An account with that email address already exists.', 'doctor-ak-portal' );
 		}
 
-		if ( '' === $phone ) {
-			$errors['phone_number'] = __( 'Phone number is required.', 'doctor-ak-portal' );
-		} elseif ( ! preg_match( '/^[0-9+\-\s()]{7,20}$/', $phone ) ) {
-			$errors['phone_number'] = __( 'Please provide a valid phone number.', 'doctor-ak-portal' );
+		if ( is_wp_error( $phone ) ) {
+			$errors['phone_number'] = $phone->get_error_message();
 		}
 
 		if ( ! empty( $errors ) ) {

@@ -200,8 +200,18 @@ $dak_icons = array(
 							<span class="dak-field-error" data-field="email"></span>
 						</div>
 						<div class="dak-field">
-							<label for="dak-phone-number"><span class="dak-field-icon dak-field-icon-phone"><?php echo $dak_icons['phone']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Phone Number', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
-							<input type="tel" id="dak-phone-number" name="phone_number" placeholder="0300000000" required>
+							<label for="dak-phone-number-code"><span class="dak-field-icon dak-field-icon-phone"><?php echo $dak_icons['phone']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Phone Number', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
+							<?php
+							echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- template escapes its own output.
+								'partials/phone-field.php',
+								array(
+									'id_prefix' => 'dak-phone-number',
+									'dial_code' => \DoctorAKPortal\Includes\Phone::DEFAULT_DIAL_CODE,
+									'number'    => '',
+									'required'  => true,
+								)
+							);
+							?>
 							<span class="dak-field-error" data-field="phone_number"></span>
 						</div>
 					</div>

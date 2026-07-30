@@ -208,6 +208,28 @@
 	box-shadow: 0 0 0 3px var( --dak-primary-tint ) !important;
 }
 
+.dak-phone-field {
+	display: flex !important;
+	gap: 0.5rem !important;
+}
+
+.dak-phone-field-code {
+	flex: 0 0 auto !important;
+	width: auto !important;
+	max-width: 9.5rem !important;
+}
+
+.dak-phone-field-number {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+}
+
+@media ( max-width: 400px ) {
+	.dak-phone-field-code {
+		max-width: 6.5rem !important;
+	}
+}
+
 .dak-password-field {
 	position: relative !important;
 }

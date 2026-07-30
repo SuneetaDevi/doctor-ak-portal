@@ -9,6 +9,7 @@
 namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Appointments;
+use DoctorAKPortal\Includes\Invoice_Pdf;
 use DoctorAKPortal\Includes\Swich_Payment;
 use DoctorAKPortal\Includes\Template_Loader;
 
@@ -34,6 +35,13 @@ class Appointment_Handler {
 	 * @var string
 	 */
 	const PRINT_NONCE_ACTION = 'doctor_ak_admin_appointment_print';
+
+	/**
+	 * Nonce action shared with the Billing section's "Download" link.
+	 *
+	 * @var string
+	 */
+	const INVOICE_NONCE_ACTION = 'doctor_ak_admin_invoice_download';
 
 	/**
 	 * AJAX handler: admin creates/updates an appointment.
@@ -223,6 +231,62 @@ class Appointment_Handler {
 				'clinic_phone'    => get_option( Site_Footer::OPTION_CLINIC_PHONE, '' ),
 			)
 		);
+
+		exit;
+	}
+
+	/**
+	 * Builds the "Download Invoice" URL for a single paid appointment, used
+	 * by the admin Billing section.
+	 *
+	 * @param int $appointment_id Appointment post ID.
+	 * @return string
+	 */
+	public static function invoice_download_url( $appointment_id ) {
+		return add_query_arg(
+			array(
+				'action'         => 'doctor_ak_admin_invoice_download',
+				'appointment_id' => (int) $appointment_id,
+				'nonce'          => wp_create_nonce( self::INVOICE_NONCE_ACTION ),
+			),
+			admin_url( 'admin-ajax.php' )
+		);
+	}
+
+	/**
+	 * AJAX handler (GET): streams a paid appointment's invoice PDF (the
+	 * same one emailed at payment time, see Invoice_Pdf/Notifications::send_invoice())
+	 * as a download, for the admin Billing section's "Download" action.
+	 *
+	 * @return void
+	 */
+	public function handle_download_invoice() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to do this.', 'doctor-ak-portal' ) );
+		}
+
+		$nonce = isset( $_GET['nonce'] ) ? sanitize_text_field( wp_unslash( $_GET['nonce'] ) ) : '';
+
+		if ( ! wp_verify_nonce( $nonce, self::INVOICE_NONCE_ACTION ) ) {
+			wp_die( esc_html__( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) );
+		}
+
+		$appointment_id = isset( $_GET['appointment_id'] ) ? absint( wp_unslash( $_GET['appointment_id'] ) ) : 0;
+		$appointment    = $appointment_id ? Appointments::notification_data( $appointment_id ) : array();
+
+		if ( empty( $appointment ) || Appointments::PAYMENT_STATUS_PAID !== $appointment['payment_status'] ) {
+			wp_die( esc_html__( 'That invoice could not be found.', 'doctor-ak-portal' ) );
+		}
+
+		$pdf_bytes      = Invoice_Pdf::build( $appointment );
+		$invoice_number = sprintf( 'INV-%05d', $appointment_id );
+
+		nocache_headers();
+		header( 'Content-Type: application/pdf' );
+		header( 'Content-Disposition: attachment; filename="' . $invoice_number . '.pdf"' );
+		header( 'Content-Length: ' . strlen( $pdf_bytes ) );
+
+		echo $pdf_bytes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw binary PDF bytes, not HTML output.
 
 		exit;
 	}

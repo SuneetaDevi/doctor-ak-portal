@@ -10,6 +10,7 @@ namespace DoctorAKPortal\Frontend;
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Authentication;
 use DoctorAKPortal\Includes\Locations;
+use DoctorAKPortal\Includes\Phone;
 use DoctorAKPortal\Includes\Profile_Picture_Uploader;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Specializations;
@@ -406,14 +407,15 @@ class Registration_Handler {
 	private function validate_patient_fields( array &$errors ) {
 		$meta = array();
 
-		$phone_number = isset( $_POST['phone_number'] ) ? sanitize_text_field( wp_unslash( $_POST['phone_number'] ) ) : '';
+		$phone = Phone::sanitize_from_request(
+			isset( $_POST['phone_country_code'] ) ? wp_unslash( $_POST['phone_country_code'] ) : '',
+			isset( $_POST['phone_number'] ) ? wp_unslash( $_POST['phone_number'] ) : ''
+		);
 
-		if ( '' === $phone_number ) {
-			$errors['phone_number'] = __( 'Phone number is required.', 'doctor-ak-portal' );
-		} elseif ( ! preg_match( '/^[0-9+\-\s()]{7,20}$/', $phone_number ) ) {
-			$errors['phone_number'] = __( 'Please provide a valid phone number.', 'doctor-ak-portal' );
+		if ( is_wp_error( $phone ) ) {
+			$errors['phone_number'] = $phone->get_error_message();
 		} else {
-			$meta['doctor_ak_phone_number'] = $phone_number;
+			$meta['doctor_ak_phone_number'] = $phone;
 		}
 
 		return $meta;

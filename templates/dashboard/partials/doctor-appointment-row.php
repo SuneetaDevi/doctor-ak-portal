@@ -93,7 +93,7 @@ $time_label     = $time_timestamp ? date_i18n( 'g:i A', $time_timestamp ) : $app
 			<?php if ( in_array( $appointment['status'], array( 'confirmed', 'paid', 'rescheduled' ), true ) ) : ?>
 				<button type="button" class="dak-status-pill dak-status-pill-action" data-mark-completed data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"><?php esc_html_e( 'Mark Completed', 'doctor-ak-portal' ); ?></button>
 			<?php endif; ?>
-			<?php if ( ! in_array( $appointment['status'], array( 'cancelled', 'completed' ), true ) ) : ?>
+			<?php if ( ! empty( $appointment['reschedulable'] ) ) : ?>
 				<button
 					type="button"
 					class="dak-status-pill dak-status-pill-action"
