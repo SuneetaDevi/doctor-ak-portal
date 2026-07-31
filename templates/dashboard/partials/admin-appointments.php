@@ -115,7 +115,7 @@ $dak_appt_has_filters = '' !== $filters['date'] || '' !== $filters['status'] || 
 			</thead>
 			<tbody>
 				<?php foreach ( $appointments as $row ) : ?>
-					<tr data-appointment-row="<?php echo esc_attr( $row['id'] ); ?>">
+					<tr id="dak-appointment-<?php echo esc_attr( $row['id'] ); ?>" data-appointment-row="<?php echo esc_attr( $row['id'] ); ?>">
 						<td data-label="<?php esc_attr_e( 'Appointment Details', 'doctor-ak-portal' ); ?>">
 							<div class="dak-admin-appt-details">
 								<span class="dak-admin-appt-avatar" aria-hidden="true"><?php echo esc_html( $row['patient_initials'] ); ?></span>

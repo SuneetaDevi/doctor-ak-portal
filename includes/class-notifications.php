@@ -40,6 +40,7 @@ class Notifications {
 	const OPTION_NOTIFY_DOCTOR_REGISTRATION = 'doctor_ak_notify_doctor_registration';
 	const OPTION_NOTIFY_REFUND              = 'doctor_ak_notify_refund';
 	const OPTION_NOTIFY_RESCHEDULED         = 'doctor_ak_notify_rescheduled';
+	const OPTION_NOTIFY_PATIENT_WELCOME     = 'doctor_ak_notify_patient_welcome';
 	const OPTION_FROM_NAME                  = 'doctor_ak_notify_from_name';
 	const OPTION_FROM_EMAIL                 = 'doctor_ak_notify_from_email';
 
@@ -94,6 +95,7 @@ class Notifications {
 			'doctor_registration' => self::OPTION_NOTIFY_DOCTOR_REGISTRATION,
 			'refund'              => self::OPTION_NOTIFY_REFUND,
 			'rescheduled'         => self::OPTION_NOTIFY_RESCHEDULED,
+			'patient_welcome'     => self::OPTION_NOTIFY_PATIENT_WELCOME,
 		);
 
 		if ( ! isset( $option_map[ $type ] ) ) {
@@ -455,11 +457,50 @@ class Notifications {
 			return;
 		}
 
+		$login_url = Page_Finder::url_for_shortcode( 'doctor_login' );
+
 		$this->send_simple(
 			$doctor->user_email,
 			__( 'Your Account Has Been Approved', 'doctor-ak-portal' ),
 			__( 'Account Approved', 'doctor-ak-portal' ),
-			__( 'Your account has been approved. You can now log in and start managing your clinic and appointments.', 'doctor-ak-portal' )
+			__( 'Your account has been approved. You can now log in and start managing your clinic and appointments.', 'doctor-ak-portal' ),
+			$login_url,
+			__( 'Log In to Your Dashboard', 'doctor-ak-portal' )
+		);
+	}
+
+	/**
+	 * Hook callback: a new patient account was created — whether by
+	 * self-registration, an admin (Users → Patients → Add), or a doctor
+	 * adding a walk-in patient from their own dashboard. Doesn't handle
+	 * password setup itself (wp_new_user_notification(), called by each of
+	 * those three creation points, already emails a secure link for that) —
+	 * this is just a friendly welcome with a direct link to log in once
+	 * they've set one.
+	 *
+	 * @param int $patient_id New patient's user ID.
+	 * @return void
+	 */
+	public function notify_patient_added( $patient_id ) {
+		if ( ! self::is_enabled( 'patient_welcome' ) ) {
+			return;
+		}
+
+		$patient = get_userdata( $patient_id );
+
+		if ( ! $patient ) {
+			return;
+		}
+
+		$login_url = Page_Finder::url_for_shortcode( 'doctor_login' );
+
+		$this->send_simple(
+			$patient->user_email,
+			__( 'Welcome', 'doctor-ak-portal' ),
+			__( 'Welcome!', 'doctor-ak-portal' ),
+			__( "Your account has been created. Once you've set your password, you can log in to book and manage your appointments.", 'doctor-ak-portal' ),
+			$login_url,
+			__( 'Log In to Your Dashboard', 'doctor-ak-portal' )
 		);
 	}
 
@@ -553,9 +594,17 @@ class Notifications {
 	 * @param string $intro   One-line message.
 	 * @return void
 	 */
-	private function send_simple( $to, $subject_suffix, $heading, $intro ) {
+	private function send_simple( $to, $subject_suffix, $heading, $intro, $cta_url = '', $cta_label = '' ) {
 		if ( '' === $to || ! is_email( $to ) ) {
 			return;
+		}
+
+		$cta_html = '';
+
+		if ( '' !== $cta_url && '' !== $cta_label ) {
+			$cta_html = '<p style="margin:20px 0 0;">'
+				. '<a href="' . esc_url( $cta_url ) . '" style="display:inline-block;padding:10px 20px;background:#2563eb;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">' . esc_html( $cta_label ) . '</a>'
+				. '</p>';
 		}
 
 		/* translators: 1: clinic name, 2: email subject. */
@@ -564,6 +613,7 @@ class Notifications {
 			. '<div style="padding:20px;border:1px solid #e3e6ea;border-radius:8px;">'
 			. '<h2 style="margin:0 0 12px;font-size:17px;color:#111827;">' . esc_html( $heading ) . '</h2>'
 			. '<p style="margin:0;color:#374151;">' . esc_html( $intro ) . '</p>'
+			. $cta_html // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built above from esc_url()/esc_html()-wrapped pieces.
 			. '</div>'
 			. '</div>';
 		$headers = array_merge( array( 'Content-Type: text/html; charset=UTF-8' ), self::mail_headers() );
@@ -684,20 +734,32 @@ class Notifications {
 			$logo_html = sprintf( '<img src="%s" alt="%s" style="max-height:56px;max-width:220px;display:block;margin-bottom:10px;">', esc_url( $logo_url ), esc_attr( $clinic_name ) );
 		}
 
-		$service_label = '' !== $appointment['service_name'] ? $appointment['service_name'] : $appointment['type_label'];
-		$charge        = (float) $appointment['charge'];
+		$service_label    = '' !== $appointment['service_name'] ? $appointment['service_name'] : $appointment['type_label'];
+		$charge           = (float) $appointment['charge'];
+		$base_charge      = (float) $appointment['base_charge'] + (float) $appointment['surcharge'];
+		$discount_percent = (int) $appointment['discount_percent'];
+		$has_discount     = $discount_percent > 0 && $base_charge > $charge;
+
+		$amount_cell_html = $has_discount
+			? sprintf(
+				'<s style="color:#9ca3af;">PKR%1$s</s><br><span style="color:#111827;">PKR%2$s</span><br><span style="color:#16a34a;font-size:11px;">%3$s%% ' . esc_html__( 'off', 'doctor-ak-portal' ) . '</span>',
+				esc_html( number_format( $base_charge, 0 ) ),
+				esc_html( number_format( $charge, 0 ) ),
+				esc_html( $discount_percent )
+			)
+			: 'PKR' . esc_html( number_format( $charge, 0 ) );
 
 		$line_items_html = sprintf(
 			'<tr>
 				<td style="padding:10px 12px;border-bottom:1px solid #e3e6ea;">%1$s<br><span style="color:#6b7280;font-size:12px;">%2$s %3$s %4$s with Dr. %5$s</span></td>
-				<td style="padding:10px 12px;border-bottom:1px solid #e3e6ea;text-align:right;white-space:nowrap;">PKR%6$s</td>
+				<td style="padding:10px 12px;border-bottom:1px solid #e3e6ea;text-align:right;white-space:nowrap;">%6$s</td>
 			</tr>',
 			esc_html( $service_label ),
 			esc_html( $appointment['date'] ),
 			'&middot;',
 			esc_html( $appointment['time'] ),
 			esc_html( $appointment['doctor_name'] ),
-			esc_html( number_format( $charge, 0 ) )
+			$amount_cell_html // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built above from esc_html()-wrapped pieces.
 		);
 
 		return '<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#111827;">'
@@ -722,6 +784,7 @@ class Notifications {
 			. '<table style="width:100%;border-collapse:collapse;">'
 			. '<tr><th style="text-align:left;padding:0 12px 8px;border-bottom:2px solid #111827;font-size:12px;color:#6b7280;text-transform:uppercase;">' . esc_html__( 'Description', 'doctor-ak-portal' ) . '</th><th style="text-align:right;padding:0 12px 8px;border-bottom:2px solid #111827;font-size:12px;color:#6b7280;text-transform:uppercase;">' . esc_html__( 'Amount', 'doctor-ak-portal' ) . '</th></tr>'
 			. $line_items_html // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built above from esc_html()-wrapped pieces.
+			. ( $has_discount ? '<tr><td style="padding:0 12px;text-align:right;color:#16a34a;font-size:12px;">' . esc_html__( 'You Saved', 'doctor-ak-portal' ) . '</td><td style="padding:0 12px;text-align:right;color:#16a34a;font-size:12px;">PKR' . esc_html( number_format( $base_charge - $charge, 0 ) ) . '</td></tr>' : '' )
 			. '<tr><td style="padding:12px;text-align:right;font-weight:700;">' . esc_html__( 'Total Paid', 'doctor-ak-portal' ) . '</td><td style="padding:12px;text-align:right;font-weight:700;">PKR' . esc_html( number_format( $charge, 0 ) ) . '</td></tr>'
 			. '</table>'
 			. '<p style="margin:24px 0 0;color:#6b7280;font-size:13px;">' . esc_html__( 'Thank you for choosing us — we look forward to seeing you.', 'doctor-ak-portal' ) . '</p>'

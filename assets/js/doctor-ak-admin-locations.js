@@ -38,6 +38,7 @@
 			input.type = 'text';
 			input.className = 'dak-area-name';
 			input.placeholder = 'Area';
+			input.setAttribute( 'list', 'dak-area-datalist' );
 			input.value = areaName || '';
 
 			var removeButton = document.createElement( 'button' );
@@ -63,6 +64,7 @@
 			nameInput.type = 'text';
 			nameInput.className = 'dak-city-name';
 			nameInput.placeholder = 'City name';
+			nameInput.setAttribute( 'list', 'dak-city-datalist' );
 			nameInput.value = cityName || '';
 
 			var areasRows = document.createElement( 'div' );
@@ -109,6 +111,7 @@
 			nameInput.type = 'text';
 			nameInput.className = 'dak-country-name';
 			nameInput.placeholder = 'Country name';
+			nameInput.setAttribute( 'list', 'dak-country-datalist' );
 			nameInput.value = countryName || '';
 
 			var removeCountryButton = document.createElement( 'button' );

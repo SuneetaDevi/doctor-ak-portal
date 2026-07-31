@@ -725,6 +725,37 @@
 @media ( max-width: 782px ) {
 	.dak-dashboard-sidebar-toggle {
 		display: flex !important;
+		flex-shrink: 0 !important;
+	}
+
+	/* Hamburger → X morph while the drawer is open (progressive
+	   enhancement — :has() support is universal in current browsers; in
+	   older ones the icon just stays a plain hamburger). */
+	.dak-dashboard-sidebar-toggle span {
+		transition: transform 0.2s ease, opacity 0.2s ease !important;
+	}
+
+	/* While open, the toggle becomes the drawer's close button — pinned to
+	   a fixed spot instead of staying in its normal in-page position (which
+	   would otherwise float wherever the page happened to be scrolled to,
+	   landing awkwardly mid-drawer instead of at its top). */
+	.dak-dashboard:has( .dak-dashboard-sidebar.is-open ) .dak-dashboard-sidebar-toggle {
+		position: fixed !important;
+		top: 1rem !important;
+		left: calc( min( 300px, 85vw ) - 44px ) !important;
+		z-index: 1001 !important;
+	}
+
+	.dak-dashboard:has( .dak-dashboard-sidebar.is-open ) .dak-dashboard-sidebar-toggle span:nth-child( 1 ) {
+		transform: translateY( 9px ) rotate( 45deg ) !important;
+	}
+
+	.dak-dashboard:has( .dak-dashboard-sidebar.is-open ) .dak-dashboard-sidebar-toggle span:nth-child( 2 ) {
+		opacity: 0 !important;
+	}
+
+	.dak-dashboard:has( .dak-dashboard-sidebar.is-open ) .dak-dashboard-sidebar-toggle span:nth-child( 3 ) {
+		transform: translateY( -9px ) rotate( -45deg ) !important;
 	}
 
 	.dak-dashboard {
@@ -741,8 +772,20 @@
 		box-sizing: border-box !important;
 	}
 
+	/* Slide-in drawer with a dimmed backdrop — the backdrop is a single
+	   oversized box-shadow (no extra markup/pseudo-element needed), which
+	   doesn't add to the page's scrollable area the way a real full-screen
+	   element would. */
 	.dak-dashboard-sidebar.is-open {
 		display: flex !important;
+		position: fixed !important;
+		inset: 0 auto 0 0 !important;
+		width: 300px !important;
+		max-width: 85vw !important;
+		z-index: 1000 !important;
+		border-radius: 0 var( --dak-radius-lg, 16px ) var( --dak-radius-lg, 16px ) 0 !important;
+		box-shadow: 0 0 0 100vmax rgba( 15, 23, 42, 0.55 ), 8px 0 24px rgba( 15, 23, 42, 0.18 ) !important;
+		animation: dak-sidebar-slide-in 0.22s ease !important;
 	}
 
 	.dak-dashboard-topbar {
@@ -756,21 +799,121 @@
 	}
 }
 
-/* Phones: tighter padding, and stat/list grids fall back to a single
-   column instead of leaving their minmax() minimum wider than the
-   viewport (which would force the whole page to scroll horizontally). */
+@keyframes dak-sidebar-slide-in {
+	from {
+		transform: translateX( -100% );
+	}
+
+	to {
+		transform: translateX( 0 );
+	}
+}
+
+/* Phones: tighter padding, and a denser, more colourful "creative" layout —
+   a gradient hero banner for the page title, a 2-column stat grid with a
+   distinct accent colour per card, and appointment/patient rows styled as
+   small accent-bordered cards instead of plain list rows. */
 @media ( max-width: 480px ) {
 	.dak-dashboard-main {
 		padding: 1rem !important;
 	}
 
-	.dak-dashboard-statistics,
 	.dak-dashboard-grid {
 		grid-template-columns: 1fr !important;
 	}
 
+	/* Gradient hero banner */
+	.dak-dashboard-greeting {
+		background: linear-gradient( 135deg, #2563eb 0%, #4f46e5 100% ) !important;
+		background-image:
+			radial-gradient( circle at 92% 8%, rgba( 255, 255, 255, 0.14 ) 0, transparent 45% ),
+			radial-gradient( circle at 6% 92%, rgba( 255, 255, 255, 0.1 ) 0, transparent 40% ),
+			linear-gradient( 135deg, #2563eb 0%, #4f46e5 100% ) !important;
+		border-radius: var( --dak-radius-lg, 16px ) !important;
+		padding: 1.25rem 1.35rem !important;
+		margin: 0 0 1.25rem !important;
+		box-shadow: 0 10px 24px rgba( 37, 99, 235, 0.25 ) !important;
+	}
+
+	.dak-dashboard-greeting h1,
+	.dak-dashboard-greeting h1 span {
+		color: #fff !important;
+	}
+
+	.dak-dashboard-greeting p {
+		color: rgba( 255, 255, 255, 0.85 ) !important;
+	}
+
+	/* 2-column, colour-coded stat cards */
+	.dak-dashboard-statistics {
+		grid-template-columns: 1fr 1fr !important;
+		gap: 0.75rem !important;
+	}
+
+	.dak-stat-card {
+		padding: 0.9rem !important;
+		border: 0 !important;
+		border-radius: 14px !important;
+		box-shadow: 0 1px 3px rgba( 15, 23, 42, 0.08 ) !important;
+	}
+
+	.dak-stat-value {
+		font-size: 1.35rem !important;
+	}
+
+	.dak-stat-card:nth-child( 4n + 1 ) { background: #dbeafe !important; }
+	.dak-stat-card:nth-child( 4n + 2 ) { background: #ede9fe !important; }
+	.dak-stat-card:nth-child( 4n + 3 ) { background: #dcfce7 !important; }
+	.dak-stat-card:nth-child( 4n + 4 ) { background: #fef3c7 !important; }
+
+	.dak-stat-card:nth-child( 4n + 1 ) .dak-stat-icon { background: #bfdbfe !important; color: #1d4ed8 !important; }
+	.dak-stat-card:nth-child( 4n + 2 ) .dak-stat-icon { background: #ddd6fe !important; color: #6d28d9 !important; }
+	.dak-stat-card:nth-child( 4n + 3 ) .dak-stat-icon { background: #bbf7d0 !important; color: #15803d !important; }
+	.dak-stat-card:nth-child( 4n + 4 ) .dak-stat-icon { background: #fde68a !important; color: #b45309 !important; }
+
 	.dak-dashboard-greeting h1 {
 		font-size: 1.3rem !important;
+	}
+
+	/* Appointment/patient rows as small accent-bordered cards */
+	.dak-appointment-item,
+	.dak-patient-item {
+		position: relative !important;
+		align-items: center !important;
+		background: var( --dak-bg-card ) !important;
+		border: 0 !important;
+		border-radius: 12px !important;
+		padding: 0.85rem 0.85rem 0.85rem 1rem !important;
+		margin-bottom: 0.6rem !important;
+		box-shadow: 0 1px 3px rgba( 15, 23, 42, 0.08 ) !important;
+	}
+
+	.dak-appointment-item::before,
+	.dak-patient-item::before {
+		content: '' !important;
+		position: absolute !important;
+		top: 0.6rem !important;
+		bottom: 0.6rem !important;
+		left: 0 !important;
+		width: 4px !important;
+		border-radius: 999px !important;
+		background: var( --dak-primary ) !important;
+	}
+
+	.dak-appointment-item:last-child,
+	.dak-patient-item:last-child {
+		margin-bottom: 0 !important;
+	}
+
+	/* Sidebar profile card: plain, neutral card (not a colour gradient) —
+	   just a touch more rounded than desktop to fit the drawer's look. */
+	.dak-sidebar-doctor-card,
+	.dak-sidebar-patient-card {
+		border-radius: 14px !important;
+	}
+
+	.dak-dashboard-nav li.is-active a {
+		box-shadow: 0 1px 3px rgba( 37, 99, 235, 0.15 ) !important;
 	}
 }
 
@@ -803,16 +946,30 @@
 .dak-notification-row {
 	display: flex !important;
 	align-items: flex-start !important;
-	gap: 0.75rem !important;
-	padding: 0.85rem !important;
+	padding: 0 !important;
 	border-radius: var( --dak-radius-md ) !important;
 	border: 1px solid transparent !important;
+	overflow: hidden !important;
 }
 
 .dak-notification-row.is-unread {
 	background: var( --dak-primary-tint ) !important;
 	border-color: var( --dak-primary-tint ) !important;
 	cursor: pointer !important;
+}
+
+.dak-notification-row-link {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 0.75rem !important;
+	width: 100% !important;
+	padding: 0.85rem !important;
+	color: inherit !important;
+	text-decoration: none !important;
+}
+
+a.dak-notification-row-link:hover {
+	background: var( --dak-bg-subtle ) !important;
 }
 
 .dak-notification-icon {
@@ -866,4 +1023,46 @@
 	margin-top: 0.4rem !important;
 	border-radius: 999px !important;
 	background: var( --dak-primary ) !important;
+}
+
+.dak-notifications-group {
+	margin-bottom: 1.25rem !important;
+}
+
+.dak-notifications-group:last-child {
+	margin-bottom: 0 !important;
+}
+
+.dak-notifications-group-label {
+	font-size: 0.75rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.04em !important;
+	color: var( --dak-muted ) !important;
+	margin: 0 0 0.6rem !important;
+}
+
+/* Appointments/Notifications filter bar — shared by the doctor, patient,
+   and admin dashboards (the admin Appointments table has its own simpler
+   .dak-field-row filter form, but the Notifications filter added here uses
+   this same layout everywhere for a consistent look). */
+
+.dak-appt-filters-card {
+	margin-bottom: 1.25rem !important;
+}
+
+.dak-appt-filters-form {
+	display: flex !important;
+	align-items: flex-end !important;
+	flex-wrap: wrap !important;
+	gap: 1rem !important;
+}
+
+.dak-appt-filters-form .dak-field {
+	margin-bottom: 0 !important;
+	min-width: 160px !important;
+}
+
+.dak-appt-filters-form .dak-button {
+	white-space: nowrap !important;
 }

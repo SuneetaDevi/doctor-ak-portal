@@ -155,17 +155,25 @@ class Appointments {
 		$notes         = isset( $data['notes'] ) ? sanitize_textarea_field( $data['notes'] ) : '';
 		$patient_label = $patient_id > 0 ? self::patient_display_name( $patient_id ) : $guest_name;
 
-		$service_id   = isset( $data['service_id'] ) ? (int) $data['service_id'] : 0;
-		$service_name = '';
-		$charge       = 0.0;
-		$payment_mode = self::PAYMENT_MODE_MANUAL;
+		$service_id       = isset( $data['service_id'] ) ? (int) $data['service_id'] : 0;
+		$service_name     = '';
+		$charge           = 0.0;
+		$base_charge      = 0.0;
+		$discount_percent = 0;
+		$payment_mode     = self::PAYMENT_MODE_MANUAL;
 
 		if ( self::TYPE_VIDEO === $type ) {
 			// Video consultations use the doctor's fixed (possibly
 			// discounted) price instead of a picked service.
 			$service_id   = 0;
 			$service_name = __( 'Video Consultation', 'doctor-ak-portal' );
-			$charge       = Video_Pricing::effective_price_for_doctor( $doctor_id )['final_price'];
+			$pricing      = Video_Pricing::effective_price_for_doctor( $doctor_id );
+			$charge       = $pricing['final_price'];
+			$base_charge  = $pricing['base_price'];
+
+			if ( $pricing['discount_active'] ) {
+				$discount_percent = $pricing['discount_percent'];
+			}
 		} elseif ( $service_id > 0 ) {
 			$service = Services::find( $service_id );
 
@@ -175,8 +183,10 @@ class Appointments {
 
 			$service_name = $service['name'];
 			$charge       = (float) $service['charge'];
+			$base_charge  = $charge;
 		} else {
-			$service_id = 0;
+			$service_id  = 0;
+			$base_charge = $charge;
 		}
 
 		$is_instant = Video_Pricing::is_instant_booking( $doctor_id, $date, $time );
@@ -242,6 +252,8 @@ class Appointments {
 		update_post_meta( $post_id, 'doctor_ak_appointment_service_id', $service_id );
 		update_post_meta( $post_id, 'doctor_ak_appointment_service_name', $service_name );
 		update_post_meta( $post_id, 'doctor_ak_appointment_charge', $charge );
+		update_post_meta( $post_id, 'doctor_ak_appointment_base_charge', $base_charge );
+		update_post_meta( $post_id, 'doctor_ak_appointment_discount_percent', $discount_percent );
 		update_post_meta( $post_id, 'doctor_ak_appointment_payment_mode', $payment_mode );
 		update_post_meta( $post_id, 'doctor_ak_appointment_is_instant', $is_instant ? 1 : 0 );
 		update_post_meta( $post_id, 'doctor_ak_appointment_surcharge', $surcharge );
@@ -333,16 +345,24 @@ class Appointments {
 		$notes         = isset( $data['notes'] ) ? sanitize_textarea_field( $data['notes'] ) : '';
 		$patient_label = $patient_id > 0 ? self::patient_display_name( $patient_id ) : $guest_name;
 
-		$service_id   = isset( $data['service_id'] ) ? (int) $data['service_id'] : 0;
-		$service_name = '';
-		$charge       = 0.0;
+		$service_id       = isset( $data['service_id'] ) ? (int) $data['service_id'] : 0;
+		$service_name     = '';
+		$charge           = 0.0;
+		$base_charge      = 0.0;
+		$discount_percent = 0;
 
 		if ( self::TYPE_VIDEO === $type ) {
 			// Video consultations use the doctor's fixed (possibly
 			// discounted) price instead of a picked service.
 			$service_id   = 0;
 			$service_name = __( 'Video Consultation', 'doctor-ak-portal' );
-			$charge       = Video_Pricing::effective_price_for_doctor( $doctor_id )['final_price'];
+			$pricing      = Video_Pricing::effective_price_for_doctor( $doctor_id );
+			$charge       = $pricing['final_price'];
+			$base_charge  = $pricing['base_price'];
+
+			if ( $pricing['discount_active'] ) {
+				$discount_percent = $pricing['discount_percent'];
+			}
 		} elseif ( $service_id > 0 ) {
 			$service = Services::find( $service_id );
 
@@ -352,8 +372,10 @@ class Appointments {
 
 			$service_name = $service['name'];
 			$charge       = (float) $service['charge'];
+			$base_charge  = $charge;
 		} else {
-			$service_id = 0;
+			$service_id  = 0;
+			$base_charge = $charge;
 		}
 
 		$status_options = self::status_options();
@@ -384,6 +406,8 @@ class Appointments {
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_service_id', $service_id );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_service_name', $service_name );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_charge', $charge );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_base_charge', $base_charge );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_discount_percent', $discount_percent );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_payment_mode', $payment_mode );
 
 		// Covers the "offline patient" flow: an admin adds a walk-in
@@ -1946,6 +1970,8 @@ class Appointments {
 			'service_id'        => $appointment['service_id'],
 			'service_name'      => $appointment['service_name'],
 			'charge'            => $appointment['charge'],
+			'base_charge'       => $appointment['base_charge'],
+			'discount_percent'  => $appointment['discount_percent'],
 			'notes'             => $appointment['notes'],
 			'is_instant'        => $appointment['is_instant'],
 			'surcharge'         => $appointment['surcharge'],
@@ -2256,7 +2282,9 @@ class Appointments {
 			'notes'          => get_post_meta( $post->ID, 'doctor_ak_appointment_notes', true ),
 			'service_id'     => (int) get_post_meta( $post->ID, 'doctor_ak_appointment_service_id', true ),
 			'service_name'   => get_post_meta( $post->ID, 'doctor_ak_appointment_service_name', true ),
-			'charge'         => (float) get_post_meta( $post->ID, 'doctor_ak_appointment_charge', true ),
+			'charge'            => (float) get_post_meta( $post->ID, 'doctor_ak_appointment_charge', true ),
+			'base_charge'       => (float) get_post_meta( $post->ID, 'doctor_ak_appointment_base_charge', true ),
+			'discount_percent'  => (int) get_post_meta( $post->ID, 'doctor_ak_appointment_discount_percent', true ),
 			'payment_mode'   => get_post_meta( $post->ID, 'doctor_ak_appointment_payment_mode', true ),
 			'is_instant'     => (bool) get_post_meta( $post->ID, 'doctor_ak_appointment_is_instant', true ),
 			'surcharge'      => (float) get_post_meta( $post->ID, 'doctor_ak_appointment_surcharge', true ),

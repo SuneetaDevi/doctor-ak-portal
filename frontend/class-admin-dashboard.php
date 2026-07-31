@@ -685,9 +685,18 @@ class Admin_Dashboard {
 		}
 
 		if ( 'notifications' === $section ) {
+			$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+			$selected_date = isset( $_GET['date'] ) ? sanitize_text_field( wp_unslash( $_GET['date'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+
 			return $this->template_loader->get_template(
 				'dashboard/partials/notifications-list.php',
-				array( 'notifications' => Notification_Center::for_user( get_current_user_id() ) )
+				array(
+					'notification_groups' => Notification_Center::group_by_recency( Notification_Center::for_user( get_current_user_id(), 100, $selected_date ) ),
+					'appointments_url'    => $dashboard_url ? add_query_arg( 'section', 'appointments', $dashboard_url ) : '',
+					'selected_date'       => $selected_date,
+					'filter_field_name'   => 'section',
+					'filter_field_value'  => 'notifications',
+				)
 			);
 		}
 
@@ -826,7 +835,12 @@ class Admin_Dashboard {
 		if ( 'locations' === $section ) {
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-locations.php',
-				array( 'countries' => Locations::get_all() )
+				array(
+					'countries'       => Locations::get_all(),
+					'country_names'   => Locations::all_country_names(),
+					'city_names'      => Locations::suggested_city_names(),
+					'area_names'      => Locations::suggested_area_names(),
+				)
 			);
 		}
 

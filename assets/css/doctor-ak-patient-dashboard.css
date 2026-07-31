@@ -873,6 +873,15 @@
 	padding: 0.85rem !important;
 	border: 1px solid var( --dak-border ) !important;
 	border-radius: var( --dak-radius-md ) !important;
+	scroll-margin-top: 1rem !important;
+	transition: background-color 0.3s ease, border-color 0.3s ease !important;
+}
+
+/* Landed on from a notification link (e.g. "#dak-appointment-123") — briefly
+   emphasized so it's obvious which row it's pointing at. */
+.dak-patient-payment-row:target {
+	background: var( --dak-primary-tint ) !important;
+	border-color: var( --dak-primary ) !important;
 }
 
 .dak-patient-payment-info {
@@ -924,24 +933,6 @@
 	}
 }
 
-/* Appointments tab filter bar (doctor + patient dashboards) */
-
-.dak-appt-filters-card {
-	margin-bottom: 1.25rem !important;
-}
-
-.dak-appt-filters-form {
-	display: flex !important;
-	align-items: flex-end !important;
-	flex-wrap: wrap !important;
-	gap: 1rem !important;
-}
-
-.dak-appt-filters-form .dak-field {
-	margin-bottom: 0 !important;
-	min-width: 160px !important;
-}
-
-.dak-appt-filters-form .dak-button {
-	white-space: nowrap !important;
-}
+/* Appointments/Notifications filter bar moved to the shared
+   doctor-ak-dashboard.css — see that file — since the admin dashboard
+   (which doesn't load this stylesheet) now uses it too. */

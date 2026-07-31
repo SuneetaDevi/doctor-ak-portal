@@ -223,6 +223,17 @@
 	background: var( --dak-bg-subtle ) !important;
 }
 
+.dak-admin-users-table tbody tr {
+	scroll-margin-top: 1rem !important;
+	transition: background-color 0.3s ease !important;
+}
+
+/* Landed on from a notification link (e.g. "#dak-appointment-123") — briefly
+   emphasized so it's obvious which row it's pointing at. */
+.dak-admin-users-table tbody tr:target {
+	background: var( --dak-primary-tint ) !important;
+}
+
 .dak-admin-users-table td {
 	color: var( --dak-text ) !important;
 }

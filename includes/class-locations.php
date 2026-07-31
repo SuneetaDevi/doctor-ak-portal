@@ -416,6 +416,98 @@ class Locations {
 	}
 
 	/**
+	 * Every country name, for the Settings → Locations admin page's Country
+	 * fields — offered as browser-native `<datalist>` autocomplete
+	 * suggestions while typing (so e.g. typing "United" surfaces "United
+	 * States", "United Arab Emirates", etc.), not a closed dropdown; the
+	 * admin can still type any name not on this list.
+	 *
+	 * @return string[]
+	 */
+	public static function all_country_names() {
+		return array(
+			'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 'Argentina', 'Armenia', 'Australia', 'Austria',
+			'Azerbaijan', 'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium', 'Belize', 'Benin', 'Bhutan',
+			'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brunei', 'Bulgaria', 'Burkina Faso', 'Burundi', 'Cabo Verde', 'Cambodia',
+			'Cameroon', 'Canada', 'Central African Republic', 'Chad', 'Chile', 'China', 'Colombia', 'Comoros', 'Congo (Republic of the)', 'Congo (Democratic Republic of the)',
+			'Costa Rica', "Cote d'Ivoire", 'Croatia', 'Cuba', 'Cyprus', 'Czechia', 'Denmark', 'Djibouti', 'Dominica', 'Dominican Republic',
+			'Ecuador', 'Egypt', 'El Salvador', 'Equatorial Guinea', 'Eritrea', 'Estonia', 'Eswatini', 'Ethiopia', 'Fiji', 'Finland',
+			'France', 'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana', 'Greece', 'Grenada', 'Guatemala', 'Guinea',
+			'Guinea-Bissau', 'Guyana', 'Haiti', 'Honduras', 'Hungary', 'Iceland', 'India', 'Indonesia', 'Iran', 'Iraq',
+			'Ireland', 'Israel', 'Italy', 'Jamaica', 'Japan', 'Jordan', 'Kazakhstan', 'Kenya', 'Kiribati', 'Kuwait',
+			'Kyrgyzstan', 'Laos', 'Latvia', 'Lebanon', 'Lesotho', 'Liberia', 'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg',
+			'Madagascar', 'Malawi', 'Malaysia', 'Maldives', 'Mali', 'Malta', 'Marshall Islands', 'Mauritania', 'Mauritius', 'Mexico',
+			'Micronesia', 'Moldova', 'Monaco', 'Mongolia', 'Montenegro', 'Morocco', 'Mozambique', 'Myanmar', 'Namibia', 'Nauru',
+			'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Niger', 'Nigeria', 'North Korea', 'North Macedonia', 'Norway', 'Oman',
+			'Pakistan', 'Palau', 'Palestine', 'Panama', 'Papua New Guinea', 'Paraguay', 'Peru', 'Philippines', 'Poland', 'Portugal',
+			'Qatar', 'Romania', 'Russia', 'Rwanda', 'Saint Kitts and Nevis', 'Saint Lucia', 'Saint Vincent and the Grenadines', 'Samoa', 'San Marino', 'Sao Tome and Principe',
+			'Saudi Arabia', 'Senegal', 'Serbia', 'Seychelles', 'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia', 'Solomon Islands', 'Somalia',
+			'South Africa', 'South Korea', 'South Sudan', 'Spain', 'Sri Lanka', 'Sudan', 'Suriname', 'Sweden', 'Switzerland', 'Syria',
+			'Taiwan', 'Tajikistan', 'Tanzania', 'Thailand', 'Timor-Leste', 'Togo', 'Tonga', 'Trinidad and Tobago', 'Tunisia', 'Turkey',
+			'Turkmenistan', 'Tuvalu', 'Uganda', 'Ukraine', 'United Arab Emirates', 'United Kingdom', 'United States of America', 'Uruguay', 'Uzbekistan', 'Vanuatu',
+			'Vatican City', 'Venezuela', 'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe',
+		);
+	}
+
+	/**
+	 * Every city name already known to the system — from what's currently
+	 * saved (get_all()) plus the built-in seed data (default_seed_countries(),
+	 * which covers Pakistan's major cities even before an admin has saved
+	 * anything) — for the Settings → Locations admin page's City fields'
+	 * `<datalist>` autocomplete. Not country-scoped (a plain flat pool of
+	 * names), since the admin form itself doesn't restrict a city to a
+	 * particular country's suggestions either — it's a typing aid, not
+	 * validation.
+	 *
+	 * @return string[] Sorted, de-duplicated.
+	 */
+	public static function suggested_city_names() {
+		return self::suggested_names_at_depth( 'cities' );
+	}
+
+	/**
+	 * Every area name already known to the system, same sourcing as
+	 * suggested_city_names() — for the City fields' sibling Area fields.
+	 *
+	 * @return string[] Sorted, de-duplicated.
+	 */
+	public static function suggested_area_names() {
+		return self::suggested_names_at_depth( 'areas' );
+	}
+
+	/**
+	 * Shared implementation for suggested_city_names()/suggested_area_names().
+	 *
+	 * @param string $depth 'cities' or 'areas'.
+	 * @return string[] Sorted, de-duplicated.
+	 */
+	private static function suggested_names_at_depth( $depth ) {
+		$names = array();
+
+		foreach ( array_merge( self::get_all(), self::default_seed_countries() ) as $country ) {
+			foreach ( $country['cities'] as $city ) {
+				if ( 'cities' === $depth ) {
+					$names[] = $city['name'];
+					continue;
+				}
+
+				$areas = isset( $city['areas'][0]['name'] ) || empty( $city['areas'] )
+					? wp_list_pluck( $city['areas'], 'name' )
+					: $city['areas']; // default_seed_countries() stores areas as plain strings, not {name} arrays.
+
+				foreach ( $areas as $area_name ) {
+					$names[] = $area_name;
+				}
+			}
+		}
+
+		$names = array_unique( array_filter( array_map( 'trim', $names ) ) );
+		sort( $names, SORT_STRING | SORT_FLAG_CASE );
+
+		return array_values( $names );
+	}
+
+	/**
 	 * Builds a URL/DB-safe slug from a free-text name, matching the pattern
 	 * Doctor_Awards/Specializations-adjacent free-text-to-slug conversions
 	 * elsewhere use.

@@ -476,20 +476,29 @@ class Notification_Center {
 	/**
 	 * A user's notifications, most recent first.
 	 *
-	 * @param int $user_id Recipient's user ID.
-	 * @param int $limit   Max rows to return. Default 50.
-	 * @return array List of `array( 'id', 'type', 'message', 'is_read', 'date', 'appointment_id' )`.
+	 * @param int    $user_id     Recipient's user ID.
+	 * @param int    $limit       Max rows to return. Default 100.
+	 * @param string $date_filter Optional 'YYYY-MM-DD' — only notifications from that day.
+	 * @return array List of `array( 'id', 'type', 'message', 'is_read', 'date', 'date_raw', 'appointment_id' )`.
 	 */
-	public static function for_user( $user_id, $limit = 50 ) {
+	public static function for_user( $user_id, $limit = 100, $date_filter = '' ) {
 		global $wpdb;
 
-		$table = self::table_name();
+		$table  = self::table_name();
+		$where  = 'recipient_id = %d';
+		$params = array( $user_id );
+
+		if ( '' !== $date_filter ) {
+			$where   .= ' AND DATE(created_at) = %s';
+			$params[] = $date_filter;
+		}
+
+		$params[] = $limit;
 
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT id, type, message, appointment_id, is_read, created_at FROM {$table} WHERE recipient_id = %d ORDER BY created_at DESC, id DESC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table is our own table_name(), not user input.
-				$user_id,
-				$limit
+				"SELECT id, type, message, appointment_id, is_read, created_at FROM {$table} WHERE {$where} ORDER BY created_at DESC, id DESC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table is our own table_name(), $where is built from our own hardcoded fragments above, not user input.
+				$params
 			),
 			ARRAY_A
 		);
@@ -509,10 +518,42 @@ class Notification_Center {
 					'appointment_id' => (int) $row['appointment_id'],
 					'is_read'        => '1' === $row['is_read'],
 					'date'           => $timestamp ? date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $timestamp ) : '',
+					'date_raw'       => $timestamp ? date_i18n( 'Y-m-d', $timestamp ) : '',
 				);
 			},
 			$rows
 		);
+	}
+
+	/**
+	 * Groups a for_user() result into "Today" / "Yesterday" / "Earlier" —
+	 * the Facebook/Instagram-style buckets the Notifications tab (shared by
+	 * all three dashboards) displays as separate sections.
+	 *
+	 * @param array $notifications Rows from for_user().
+	 * @return array `array( 'today' => [...], 'yesterday' => [...], 'earlier' => [...] )`, each in the same order they were passed in.
+	 */
+	public static function group_by_recency( array $notifications ) {
+		$today     = current_time( 'Y-m-d' );
+		$yesterday = gmdate( 'Y-m-d', strtotime( $today . ' -1 day' ) );
+
+		$groups = array(
+			'today'     => array(),
+			'yesterday' => array(),
+			'earlier'   => array(),
+		);
+
+		foreach ( $notifications as $notification ) {
+			if ( $notification['date_raw'] === $today ) {
+				$groups['today'][] = $notification;
+			} elseif ( $notification['date_raw'] === $yesterday ) {
+				$groups['yesterday'][] = $notification;
+			} else {
+				$groups['earlier'][] = $notification;
+			}
+		}
+
+		return $groups;
 	}
 
 	/**

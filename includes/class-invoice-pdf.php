@@ -48,8 +48,11 @@ class Invoice_Pdf {
 		$clinic_phone   = get_option( Site_Footer::OPTION_CLINIC_PHONE, '' );
 		$invoice_number = sprintf( 'INV-%05d', (int) $appointment['id'] );
 		$paid_date      = date_i18n( get_option( 'date_format' ) );
-		$service_label  = '' !== $appointment['service_name'] ? $appointment['service_name'] : $appointment['type_label'];
-		$charge         = (float) $appointment['charge'];
+		$service_label    = '' !== $appointment['service_name'] ? $appointment['service_name'] : $appointment['type_label'];
+		$charge           = (float) $appointment['charge'];
+		$base_charge      = (float) $appointment['base_charge'] + (float) $appointment['surcharge'];
+		$discount_percent = (int) $appointment['discount_percent'];
+		$has_discount     = $discount_percent > 0 && $base_charge > $charge;
 
 		$logo = self::load_logo_jpeg();
 
@@ -104,13 +107,30 @@ class Invoice_Pdf {
 		$meta_line = sprintf( __( '%1$s at %2$s with Dr. %3$s', 'doctor-ak-portal' ), $appointment['date'], $appointment['time'], $appointment['doctor_name'] );
 
 		$stream .= self::draw_text( $left, $y, 'F1', 10, $service_label );
-		$stream .= self::draw_text_right( $right, $y, 'F1', 10, 'PKR ' . number_format( $charge, 0 ) );
-		$y      -= 13;
+
+		if ( $has_discount ) {
+			$stream .= self::draw_text_right_struck( $right, $y, 'F1', 9, 'PKR ' . number_format( $base_charge, 0 ), 0.55 );
+			$y      -= 12;
+			$stream .= self::draw_text_right( $right, $y, 'F2', 10, 'PKR ' . number_format( $charge, 0 ) );
+			$y      -= 11;
+			$stream .= self::draw_text_right( $right, $y, 'F1', 8, sprintf( '%d%% %s', $discount_percent, __( 'off', 'doctor-ak-portal' ) ), 0.35 );
+			$y      -= 13;
+		} else {
+			$stream .= self::draw_text_right( $right, $y, 'F1', 10, 'PKR ' . number_format( $charge, 0 ) );
+			$y      -= 13;
+		}
+
 		$stream .= self::draw_text( $left, $y, 'F1', 8, $meta_line, 0.4 );
 		$y      -= 16;
 
 		$stream .= self::draw_line( $left, $y, $right, $y, 0.6, 0.6, 0.6 );
 		$y      -= 18;
+
+		if ( $has_discount ) {
+			$stream .= self::draw_text_right( $right - 90, $y, 'F1', 9, __( 'You Saved', 'doctor-ak-portal' ), 0.3 );
+			$stream .= self::draw_text_right( $right, $y, 'F1', 9, 'PKR ' . number_format( $base_charge - $charge, 0 ), 0.3 );
+			$y      -= 16;
+		}
 
 		$stream .= self::draw_text_right( $right - 90, $y, 'F2', 11, __( 'Total Paid', 'doctor-ak-portal' ) );
 		$stream .= self::draw_text_right( $right, $y, 'F2', 11, 'PKR ' . number_format( $charge, 0 ) );
@@ -217,6 +237,22 @@ class Invoice_Pdf {
 		$estimated_width = self::mb_strlen_safe( $text ) * $avg_char_width;
 
 		return self::draw_text( $right_x - $estimated_width, $y, $font, $size, $text, $gray );
+	}
+
+	/**
+	 * Right-aligned text with a horizontal strike-through line — used for the
+	 * original (pre-discount) price on an invoice with an active discount.
+	 * PDF has no native strikethrough, so this draws a thin line over the
+	 * middle of the estimated text width (see draw_text_right()).
+	 */
+	private static function draw_text_right_struck( $right_x, $y, $font, $size, $text, $gray = 0 ) {
+		$bold             = 'F2' === $font;
+		$avg_char_width   = $size * ( $bold ? 0.60 : 0.52 );
+		$estimated_width  = self::mb_strlen_safe( $text ) * $avg_char_width;
+		$x                = $right_x - $estimated_width;
+
+		return self::draw_text( $x, $y, $font, $size, $text, $gray )
+			. self::draw_line( $x - 1, $y + $size * 0.32, $right_x + 1, $y + $size * 0.32, $gray, $gray, $gray, 0.6 );
 	}
 
 	/**

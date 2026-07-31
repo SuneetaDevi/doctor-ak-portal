@@ -106,6 +106,20 @@ class Authentication {
 
 		$user_id = wp_insert_user( $userdata );
 
+		if ( ! is_wp_error( $user_id ) && Roles::PATIENT_ROLE === $role ) {
+			/**
+			 * Fires after a new patient account is created — via
+			 * self-registration, an admin, or a doctor adding a walk-in
+			 * patient (every path creates the account through this one
+			 * method), so this is the single place to hook a "welcome, here's
+			 * how to log in" email rather than duplicating that call at each
+			 * of those three separate call sites.
+			 *
+			 * @param int $user_id New patient's user ID.
+			 */
+			do_action( 'doctor_ak_patient_added', $user_id );
+		}
+
 		return $user_id;
 	}
 }

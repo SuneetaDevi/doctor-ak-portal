@@ -45,7 +45,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<?php else : ?>
 		<ul class="dak-patient-payments-list">
 			<?php foreach ( $rows as $row ) : ?>
-				<li class="dak-patient-payment-row">
+				<li id="dak-appointment-<?php echo esc_attr( $row['id'] ); ?>" class="dak-patient-payment-row">
 					<span class="dak-patient-appt-avatar">
 						<?php if ( $row['patient_avatar_url'] ) : ?>
 							<img src="<?php echo esc_url( $row['patient_avatar_url'] ); ?>" alt="">

@@ -280,9 +280,18 @@ class Patient_Dashboard {
 	 * @return string
 	 */
 	private function render_notifications_tab( \WP_User $user ) {
+		$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+		$selected_date = self::requested_appointments_date();
+
 		return $this->template_loader->get_template(
 			'dashboard/partials/notifications-list.php',
-			array( 'notifications' => Notification_Center::for_user( $user->ID ) )
+			array(
+				'notification_groups' => Notification_Center::group_by_recency( Notification_Center::for_user( $user->ID, 100, $selected_date ) ),
+				'appointments_url'    => self::tab_url( $dashboard_url, 'appointments' ),
+				'selected_date'       => $selected_date,
+				'filter_field_name'   => 'tab',
+				'filter_field_value'  => 'notifications',
+			)
 		);
 	}
 
