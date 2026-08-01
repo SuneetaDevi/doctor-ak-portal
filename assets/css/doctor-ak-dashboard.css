@@ -462,21 +462,104 @@
 	height: 18px !important;
 }
 
-.dak-dashboard-greeting {
-	margin-bottom: 1.75rem !important;
+.dak-icon-button:hover {
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
 }
 
-.dak-dashboard-greeting h1 {
+/* Topbar theme-toggle (compact variant of .dak-theme-toggle, used next to
+   the settings-tab's full labelled row) and the notifications bell. */
+.dak-theme-toggle.dak-icon-button {
+	width: 38px !important;
+	height: 38px !important;
+	padding: 0 !important;
+	margin-bottom: 0 !important;
+	border-radius: 50% !important;
+	background: var( --dak-bg-subtle ) !important;
+	justify-content: center !important;
+}
+
+.dak-theme-toggle.dak-icon-button .dak-theme-icon {
+	width: 18px !important;
+	height: 18px !important;
+}
+
+.dak-topbar-bell {
+	position: relative !important;
+	text-decoration: none !important;
+}
+
+.dak-topbar-bell-badge {
+	position: absolute !important;
+	top: -2px !important;
+	right: -2px !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	min-width: 1.1rem !important;
+	height: 1.1rem !important;
+	padding: 0 0.3rem !important;
+	border-radius: 999px !important;
+	border: 2px solid var( --dak-bg-card ) !important;
+	background: var( --dak-danger ) !important;
+	color: #fff !important;
+	font-size: 0.62rem !important;
+	font-weight: 700 !important;
+	line-height: 1 !important;
+}
+
+/* Hero greeting banner — brand-gradient card (same green used everywhere
+   else in the portal), replacing the plain heading on every dashboard
+   section header. .dak-admin-users-header (Doctors/Patients list headers)
+   keeps its own layout (title + "+ Add" button) via the row rules below. */
+.dak-dashboard-greeting {
+	background: linear-gradient( 135deg, var( --dak-primary ) 0%, var( --dak-primary-dark ) 100% ) !important;
+	background-image:
+		radial-gradient( circle at 94% 10%, rgba( 255, 255, 255, 0.14 ) 0, transparent 45% ),
+		radial-gradient( circle at 4% 94%, rgba( 255, 255, 255, 0.1 ) 0, transparent 40% ),
+		linear-gradient( 135deg, var( --dak-primary ) 0%, var( --dak-primary-dark ) 100% ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	padding: 1.5rem 1.75rem !important;
+	margin-bottom: 1.75rem !important;
+	box-shadow: 0 10px 24px rgba( 127, 181, 45, 0.25 ) !important;
+}
+
+.dak-dashboard-greeting h1,
+.dak-dashboard-greeting h1 span {
 	font-size: 1.5rem !important;
 	font-weight: 700 !important;
 	margin: 0 0 0.35rem !important;
-	color: var( --dak-text ) !important;
+	color: #fff !important;
 }
 
 .dak-dashboard-greeting p {
 	margin: 0 !important;
-	color: var( --dak-muted ) !important;
+	color: rgba( 255, 255, 255, 0.85 ) !important;
 	font-size: 0.92rem !important;
+}
+
+.dak-dashboard-greeting .dak-link {
+	color: #fff !important;
+	text-decoration: underline !important;
+}
+
+/* Doctors/Patients list header ("+ Add Doctor/Patient") sits inline with
+   the gradient banner instead of stacking below it. */
+.dak-admin-users-header {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 1rem !important;
+	flex-wrap: wrap !important;
+}
+
+.dak-admin-users-header .dak-button-primary {
+	background: #fff !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-admin-users-header .dak-button-primary:hover {
+	background: rgba( 255, 255, 255, 0.9 ) !important;
 }
 
 /* Stat cards */
@@ -493,9 +576,16 @@
 	align-items: flex-start !important;
 	gap: 0.5rem !important;
 	background: var( --dak-bg-card ) !important;
-	border: 1px solid var( --dak-border ) !important;
+	border: 0 !important;
 	border-radius: var( --dak-radius-md ) !important;
 	padding: 1.1rem 1.25rem !important;
+	box-shadow: var( --dak-shadow ) !important;
+	transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.dak-stat-card:hover {
+	transform: translateY( -2px ) !important;
+	box-shadow: 0 8px 24px rgba( 20, 30, 40, 0.1 ) !important;
 }
 
 .dak-stat-icon {
@@ -517,6 +607,24 @@
 	color: var( --dak-primary ) !important;
 }
 
+/* Give each stat card's icon chip a slightly different tint from the
+   existing palette (green / teal / neutral / amber) instead of every card
+   looking identical — a small touch of variety, still on-brand. */
+.dak-stat-card:nth-child( 4n + 2 ) .dak-stat-icon {
+	background: var( --dak-tint-teal ) !important;
+	color: var( --dak-secondary ) !important;
+}
+
+.dak-stat-card:nth-child( 4n + 3 ) .dak-stat-icon {
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-stat-card:nth-child( 4n + 4 ) .dak-stat-icon {
+	background: var( --dak-tint-amber ) !important;
+	color: var( --dak-tint-amber-text ) !important;
+}
+
 .dak-stat-value {
 	font-size: 1.6rem !important;
 	font-weight: 700 !important;
@@ -526,6 +634,56 @@
 .dak-stat-label {
 	font-size: 0.82rem !important;
 	color: var( --dak-muted ) !important;
+}
+
+.dak-stat-delta {
+	font-size: 0.78rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-tint-success-text ) !important;
+}
+
+/* Admin dashboard's "Pending doctor approvals" widget cards */
+.dak-pending-doctor-card {
+	padding: 1rem !important;
+	margin-bottom: 0.85rem !important;
+	background: var( --dak-bg-subtle ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+}
+
+.dak-pending-doctor-card:last-of-type {
+	margin-bottom: 0 !important;
+}
+
+.dak-pending-doctor-header {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.65rem !important;
+	margin-bottom: 0.65rem !important;
+}
+
+.dak-pending-doctor-info {
+	display: flex !important;
+	flex-direction: column !important;
+	min-width: 0 !important;
+}
+
+.dak-pending-doctor-info strong {
+	font-size: 0.9rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-pending-doctor-info span {
+	font-size: 0.78rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-pending-doctor-card .dak-specialty-tags {
+	margin-bottom: 0.85rem !important;
+}
+
+.dak-pending-doctor-actions {
+	display: flex !important;
+	gap: 0.6rem !important;
 }
 
 /* Dashboard cards (lists) */
@@ -542,10 +700,11 @@
 .dak-dashboard-card {
 	min-width: 0 !important;
 	background: var( --dak-bg-card ) !important;
-	border: 1px solid var( --dak-border ) !important;
+	border: 0 !important;
 	border-radius: var( --dak-radius-md ) !important;
 	padding: 1.25rem !important;
 	box-sizing: border-box !important;
+	box-shadow: var( --dak-shadow ) !important;
 }
 
 .dak-dashboard-card h2 {
@@ -607,14 +766,15 @@
 	display: flex !important;
 	align-items: center !important;
 	gap: 0.85rem !important;
-	padding: 0.75rem 0 !important;
-	border-bottom: 1px solid var( --dak-border ) !important;
+	padding: 0.75rem 0.85rem !important;
+	margin-bottom: 0.5rem !important;
+	background: var( --dak-bg-subtle ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
 }
 
 .dak-appointment-item:last-child,
 .dak-patient-item:last-child {
-	border-bottom: 0 !important;
-	padding-bottom: 0 !important;
+	margin-bottom: 0 !important;
 }
 
 .dak-appointment-item-body,
@@ -669,13 +829,13 @@
 }
 
 .dak-tag-paid {
-	background: #dcfce7 !important;
-	color: #15803d !important;
+	background: var( --dak-tint-success ) !important;
+	color: var( --dak-tint-success-text ) !important;
 }
 
 .dak-tag-pending-payment {
-	background: #fef3c7 !important;
-	color: #b45309 !important;
+	background: var( --dak-tint-amber ) !important;
+	color: var( --dak-tint-amber-text ) !important;
 }
 
 .dak-tag-join-call {
@@ -822,29 +982,19 @@
 		grid-template-columns: 1fr !important;
 	}
 
-	/* Gradient hero banner */
 	.dak-dashboard-greeting {
-		background: linear-gradient( 135deg, #2563eb 0%, #4f46e5 100% ) !important;
-		background-image:
-			radial-gradient( circle at 92% 8%, rgba( 255, 255, 255, 0.14 ) 0, transparent 45% ),
-			radial-gradient( circle at 6% 92%, rgba( 255, 255, 255, 0.1 ) 0, transparent 40% ),
-			linear-gradient( 135deg, #2563eb 0%, #4f46e5 100% ) !important;
-		border-radius: var( --dak-radius-lg, 16px ) !important;
 		padding: 1.25rem 1.35rem !important;
 		margin: 0 0 1.25rem !important;
-		box-shadow: 0 10px 24px rgba( 37, 99, 235, 0.25 ) !important;
 	}
 
-	.dak-dashboard-greeting h1,
-	.dak-dashboard-greeting h1 span {
-		color: #fff !important;
+	.dak-dashboard-greeting h1 {
+		font-size: 1.3rem !important;
 	}
 
-	.dak-dashboard-greeting p {
-		color: rgba( 255, 255, 255, 0.85 ) !important;
-	}
-
-	/* 2-column, colour-coded stat cards */
+	/* 2-column stat cards, each tinted a shade of the existing palette
+	   (primary green / teal secondary / neutral / amber) — not new brand
+	   colours, just spreading the tokens already used elsewhere (e.g. the
+	   amber "Payment Pending" tag) across the grid for visual variety. */
 	.dak-dashboard-statistics {
 		grid-template-columns: 1fr 1fr !important;
 		gap: 0.75rem !important;
@@ -852,28 +1002,22 @@
 
 	.dak-stat-card {
 		padding: 0.9rem !important;
-		border: 0 !important;
 		border-radius: 14px !important;
-		box-shadow: 0 1px 3px rgba( 15, 23, 42, 0.08 ) !important;
 	}
 
 	.dak-stat-value {
 		font-size: 1.35rem !important;
 	}
 
-	.dak-stat-card:nth-child( 4n + 1 ) { background: #dbeafe !important; }
-	.dak-stat-card:nth-child( 4n + 2 ) { background: #ede9fe !important; }
-	.dak-stat-card:nth-child( 4n + 3 ) { background: #dcfce7 !important; }
-	.dak-stat-card:nth-child( 4n + 4 ) { background: #fef3c7 !important; }
+	.dak-stat-card:nth-child( 4n + 1 ) { background: var( --dak-primary-tint ) !important; }
+	.dak-stat-card:nth-child( 4n + 2 ) { background: var( --dak-tint-teal ) !important; }
+	.dak-stat-card:nth-child( 4n + 3 ) { background: var( --dak-bg-subtle ) !important; }
+	.dak-stat-card:nth-child( 4n + 4 ) { background: var( --dak-tint-amber ) !important; }
 
-	.dak-stat-card:nth-child( 4n + 1 ) .dak-stat-icon { background: #bfdbfe !important; color: #1d4ed8 !important; }
-	.dak-stat-card:nth-child( 4n + 2 ) .dak-stat-icon { background: #ddd6fe !important; color: #6d28d9 !important; }
-	.dak-stat-card:nth-child( 4n + 3 ) .dak-stat-icon { background: #bbf7d0 !important; color: #15803d !important; }
-	.dak-stat-card:nth-child( 4n + 4 ) .dak-stat-icon { background: #fde68a !important; color: #b45309 !important; }
-
-	.dak-dashboard-greeting h1 {
-		font-size: 1.3rem !important;
-	}
+	.dak-stat-card:nth-child( 4n + 1 ) .dak-stat-icon { background: var( --dak-bg-card ) !important; color: var( --dak-primary-dark ) !important; }
+	.dak-stat-card:nth-child( 4n + 2 ) .dak-stat-icon { background: var( --dak-bg-card ) !important; color: var( --dak-secondary ) !important; }
+	.dak-stat-card:nth-child( 4n + 3 ) .dak-stat-icon { background: var( --dak-bg-card ) !important; color: var( --dak-muted ) !important; }
+	.dak-stat-card:nth-child( 4n + 4 ) .dak-stat-icon { background: var( --dak-bg-card ) !important; color: var( --dak-tint-amber-text ) !important; }
 
 	/* Appointment/patient rows as small accent-bordered cards */
 	.dak-appointment-item,
@@ -989,10 +1133,10 @@ a.dak-notification-row-link:hover {
 	height: 1rem !important;
 }
 
-.dak-notification-icon.is-booked { background: #dbeafe !important; color: #1d4ed8 !important; }
-.dak-notification-icon.is-paid { background: #dcfce7 !important; color: #15803d !important; }
-.dak-notification-icon.is-completed { background: #dcfce7 !important; color: #15803d !important; }
-.dak-notification-icon.is-cancelled { background: #fbeaea !important; color: #b42323 !important; }
+.dak-notification-icon.is-booked { background: var( --dak-tint-info ) !important; color: var( --dak-tint-info-text ) !important; }
+.dak-notification-icon.is-paid { background: var( --dak-tint-success ) !important; color: var( --dak-tint-success-text ) !important; }
+.dak-notification-icon.is-completed { background: var( --dak-tint-success ) !important; color: var( --dak-tint-success-text ) !important; }
+.dak-notification-icon.is-cancelled { background: var( --dak-tint-danger ) !important; color: var( --dak-tint-danger-text ) !important; }
 
 .dak-notification-body {
 	display: flex !important;

@@ -9,26 +9,28 @@
 	'use strict';
 
 	document.addEventListener( 'DOMContentLoaded', function () {
-		var button = document.getElementById( 'dak-theme-toggle' );
+		var buttons = document.querySelectorAll( '.dak-theme-toggle' );
 		var dashboard = document.querySelector( '.dak-dashboard' );
 
-		if ( ! button || ! dashboard || ! window.dakTheme ) {
+		if ( ! buttons.length || ! dashboard || ! window.dakTheme ) {
 			return;
 		}
 
-		button.addEventListener( 'click', function () {
-			var newTheme = 'dark' === dashboard.getAttribute( 'data-theme' ) ? 'light' : 'dark';
-			dashboard.setAttribute( 'data-theme', newTheme );
+		buttons.forEach( function ( button ) {
+			button.addEventListener( 'click', function () {
+				var newTheme = 'dark' === dashboard.getAttribute( 'data-theme' ) ? 'light' : 'dark';
+				dashboard.setAttribute( 'data-theme', newTheme );
 
-			var formData = new FormData();
-			formData.append( 'action', 'doctor_ak_toggle_theme' );
-			formData.append( 'nonce', window.dakTheme.nonce );
+				var formData = new FormData();
+				formData.append( 'action', 'doctor_ak_toggle_theme' );
+				formData.append( 'nonce', window.dakTheme.nonce );
 
-			fetch( window.dakTheme.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
-				.catch( function () {
-					// Non-fatal: the toggle already applied visually; a failed
-					// save just means it won't be remembered next visit.
-				} );
+				fetch( window.dakTheme.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
+					.catch( function () {
+						// Non-fatal: the toggle already applied visually; a failed
+						// save just means it won't be remembered next visit.
+					} );
+			} );
 		} );
 	} );
 } )();

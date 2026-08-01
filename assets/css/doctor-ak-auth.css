@@ -39,6 +39,17 @@
 	--dak-radius-md: 10px;
 	--dak-radius-sm: 8px;
 	--dak-shadow: 0 4px 20px rgba( 20, 30, 40, 0.06 );
+	--dak-tint-teal: #e6f7f5;
+	--dak-tint-amber: #fef3c7;
+	--dak-tint-amber-text: #b45309;
+	--dak-tint-success: #dcfce7;
+	--dak-tint-success-text: #15803d;
+	--dak-tint-danger: #fbeaea;
+	--dak-tint-danger-text: #b42323;
+	--dak-tint-info: #dbeafe;
+	--dak-tint-info-text: #1d4ed8;
+	--dak-tint-purple: #ede4fb;
+	--dak-tint-purple-text: #6c3fc5;
 
 	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
 	color: var( --dak-text ) !important;
@@ -59,6 +70,17 @@
 	--dak-bg-card: #0d0e10;
 	--dak-bg-subtle: #17181b;
 	--dak-shadow: 0 4px 20px rgba( 0, 0, 0, 0.6 );
+	--dak-tint-teal: #0f2422;
+	--dak-tint-amber: #2a2110;
+	--dak-tint-amber-text: #f2b84b;
+	--dak-tint-success: #10241a;
+	--dak-tint-success-text: #4ade80;
+	--dak-tint-danger: #2a1414;
+	--dak-tint-danger-text: #f28b8b;
+	--dak-tint-info: #10203a;
+	--dak-tint-info-text: #6fa8f5;
+	--dak-tint-purple: #241a33;
+	--dak-tint-purple-text: #b394ec;
 }
 
 .dak-auth-page {
@@ -425,7 +447,8 @@ button.dak-link-button {
 	width: 100% !important;
 }
 
-.dak-button-small {
+.dak-button-small,
+.dak-button-sm {
 	padding: 0.45rem 0.9rem !important;
 	font-size: 0.85rem !important;
 }

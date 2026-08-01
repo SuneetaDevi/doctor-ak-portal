@@ -39,6 +39,7 @@ $dak_admin_icons = array(
 	'bell'        => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8a5 5 0 0 1 10 0c0 3.2 1 4.3 1.5 5H3.5C4 12.3 5 11.2 5 8z"/><path d="M8.2 15.5a1.8 1.8 0 0 0 3.6 0"/></svg>',
 	'person-plus' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="7" r="3"/><path d="M2.5 17c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M15.5 7.5v4M13.5 9.5h4"/></svg>',
 	'money'       => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.2"/><path d="M10 6.2v7.6M12.2 8.1c0-1-1-1.6-2.2-1.6s-2.2.6-2.2 1.5c0 2.2 4.4 1 4.4 3.2 0 .9-1 1.5-2.2 1.5s-2.2-.6-2.2-1.6"/></svg>',
+	'search'      => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg>',
 );
 
 $dak_admin_section_icons = array(
@@ -97,6 +98,24 @@ $dak_admin_section_icons = array(
 	</aside>
 
 	<main class="dak-dashboard-main">
+		<?php if ( ! $is_user_form_view ) : ?>
+			<header class="dak-dashboard-topbar">
+				<div class="dak-dashboard-search">
+					<span class="dak-dashboard-search-icon" aria-hidden="true"><?php echo $dak_admin_icons['search']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+					<input type="search" placeholder="<?php esc_attr_e( 'Search doctors, patients, appointments…', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search doctors, patients, appointments…', 'doctor-ak-portal' ); ?>">
+				</div>
+				<?php
+				echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own topbar-actions.php template, which escapes its own output.
+					'dashboard/partials/topbar-actions.php',
+					array(
+						'notifications_url'          => $notifications_url,
+						'unread_notifications_count' => $unread_notifications_count,
+					)
+				);
+				?>
+			</header>
+		<?php endif; ?>
+
 		<?php if ( $is_users_section && ! $is_user_form_view ) : ?>
 			<div class="dak-dashboard-greeting dak-admin-users-header">
 				<div>

@@ -64,6 +64,7 @@ $dak_patient_icons = array(
 	'bell'      => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8a5 5 0 0 1 10 0c0 3.2 1 4.3 1.5 5H3.5C4 12.3 5 11.2 5 8z"/><path d="M8.2 15.5a1.8 1.8 0 0 0 3.6 0"/></svg>',
 	'check'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l3.5 3.5L16 6"/></svg>',
 	'x'         => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5l10 10M15 5L5 15"/></svg>',
+	'search'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg>',
 );
 
 $dak_activity_icons = array(
@@ -146,6 +147,22 @@ $appointment_group_labels = array(
 	</aside>
 
 	<main class="dak-dashboard-main">
+		<header class="dak-dashboard-topbar">
+			<div class="dak-dashboard-search">
+				<span class="dak-dashboard-search-icon" aria-hidden="true"><?php echo $dak_patient_icons['search']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+				<input type="search" placeholder="<?php esc_attr_e( 'Search doctors, appointments…', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search doctors, appointments…', 'doctor-ak-portal' ); ?>">
+			</div>
+			<?php
+			echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own topbar-actions.php template, which escapes its own output.
+				'dashboard/partials/topbar-actions.php',
+				array(
+					'notifications_url'          => $notifications_url,
+					'unread_notifications_count' => $unread_notifications_count,
+				)
+			);
+			?>
+		</header>
+
 		<?php if ( 'profile' === $active_tab ) : ?>
 
 			<div class="dak-dashboard-greeting">

@@ -257,18 +257,18 @@
 }
 
 .dak-status-badge.is-disabled {
-	background: #fbeaea !important;
+	background: var( --dak-tint-danger ) !important;
 	color: var( --dak-danger ) !important;
 }
 
 .dak-status-badge.is-pending {
-	background: #fff4e0 !important;
-	color: #b45f06 !important;
+	background: var( --dak-tint-amber ) !important;
+	color: var( --dak-tint-amber-text ) !important;
 }
 
 .dak-status-badge.is-rescheduled {
-	background: #e6f0fd !important;
-	color: #1d5fc2 !important;
+	background: var( --dak-tint-info ) !important;
+	color: var( --dak-tint-info-text ) !important;
 }
 
 .dak-admin-users-table .dak-status-badge {
@@ -348,13 +348,13 @@
 }
 
 .dak-icon-button-warning:hover {
-	background: #fff4e5 !important;
-	color: #b45309 !important;
-	border-color: #b45309 !important;
+	background: var( --dak-tint-amber ) !important;
+	color: var( --dak-tint-amber-text ) !important;
+	border-color: var( --dak-tint-amber-text ) !important;
 }
 
 .dak-icon-button-danger:hover {
-	background: #fbeaea !important;
+	background: var( --dak-tint-danger ) !important;
 	color: var( --dak-danger ) !important;
 	border-color: var( --dak-danger ) !important;
 }

@@ -167,6 +167,15 @@ $dak_dash_icons = array(
 				<span class="dak-dashboard-search-icon" aria-hidden="true"><?php echo $dak_dash_icons['search']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 				<input type="search" placeholder="<?php esc_attr_e( 'Search patients, appointments…', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search patients, appointments…', 'doctor-ak-portal' ); ?>">
 			</div>
+			<?php
+			echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own topbar-actions.php template, which escapes its own output.
+				'dashboard/partials/topbar-actions.php',
+				array(
+					'notifications_url'          => $notifications_url,
+					'unread_notifications_count' => $unread_notifications_count,
+				)
+			);
+			?>
 		</header>
 
 		<?php if ( 'appointments' === $active_tab ) : ?>

@@ -145,9 +145,16 @@ class Admin_Dashboard {
 		);
 
 		wp_enqueue_style(
+			'doctor-ak-portal-patient-dashboard',
+			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-patient-dashboard.css',
+			array( 'doctor-ak-portal-dashboard' ),
+			Assets::version( 'assets/css/doctor-ak-patient-dashboard.css' )
+		);
+
+		wp_enqueue_style(
 			'doctor-ak-portal-admin-dashboard',
 			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-admin-dashboard.css',
-			array( 'doctor-ak-portal-booking-modal', 'doctor-ak-portal-registration' ),
+			array( 'doctor-ak-portal-booking-modal', 'doctor-ak-portal-registration', 'doctor-ak-portal-patient-dashboard' ),
 			Assets::version( 'assets/css/doctor-ak-admin-dashboard.css' )
 		);
 
@@ -413,7 +420,7 @@ class Admin_Dashboard {
 			);
 		}
 
-		if ( 'doctor-requests' === self::requested_section() ) {
+		if ( in_array( self::requested_section(), array( 'doctor-requests', 'dashboard' ), true ) ) {
 			wp_enqueue_script(
 				'doctor-ak-portal-admin-doctor-requests',
 				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-doctor-requests.js',
@@ -605,6 +612,8 @@ class Admin_Dashboard {
 			'is_users_section'  => $is_users_section,
 			'is_user_form_view' => $is_user_form_view,
 			'theme'             => Theme_Preference::get( get_current_user_id() ),
+			'unread_notifications_count' => $unread_notifications_count,
+			'notifications_url'          => $dashboard_url ? add_query_arg( 'section', 'notifications', $dashboard_url ) : '',
 		);
 	}
 
@@ -983,14 +992,30 @@ class Admin_Dashboard {
 	 * @return array
 	 */
 	private function overview_data() {
-		$user_counts = count_users();
+		$user_counts   = count_users();
+		$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+		$today         = current_time( 'Y-m-d' );
+
+		$upcoming = Appointments::all_for_admin( array( 'date_from' => $today ) );
+		// all_for_admin() sorts furthest-future-first; the dashboard widget
+		// wants soonest-first instead.
+		$latest_appointments = array_slice( array_reverse( $upcoming ), 0, 6 );
 
 		return array(
-			'total_doctors'      => isset( $user_counts['avail_roles'][ Roles::DOCTOR_ROLE ] ) ? (int) $user_counts['avail_roles'][ Roles::DOCTOR_ROLE ] : 0,
-			'total_patients'     => isset( $user_counts['avail_roles'][ Roles::PATIENT_ROLE ] ) ? (int) $user_counts['avail_roles'][ Roles::PATIENT_ROLE ] : 0,
-			'total_clinics'      => Clinics::total_count(),
-			'total_appointments' => Appointments::total_count(),
-			'total_revenue'      => Appointments::revenue_summary()['total'],
+			'total_doctors'        => isset( $user_counts['avail_roles'][ Roles::DOCTOR_ROLE ] ) ? (int) $user_counts['avail_roles'][ Roles::DOCTOR_ROLE ] : 0,
+			'total_patients'       => isset( $user_counts['avail_roles'][ Roles::PATIENT_ROLE ] ) ? (int) $user_counts['avail_roles'][ Roles::PATIENT_ROLE ] : 0,
+			'total_clinics'        => Clinics::total_count(),
+			'total_appointments'   => Appointments::total_count(),
+			'appointments_today'   => count( Appointments::all_for_admin( array( 'date' => $today ) ) ),
+			'total_revenue'        => Appointments::revenue_summary()['total'],
+			'revenue_this_month'   => Appointments::revenue_summary()['this_month'],
+			'pending_doctors_count' => self::pending_doctors_count(),
+			'pending_doctors'      => array_slice( $this->pending_doctors(), 0, 3 ),
+			'latest_appointments'  => $latest_appointments,
+			'clinic_name'          => get_option( Site_Footer::OPTION_CLINIC_NAME, 'Main Clinic' ),
+			'clinic_address'       => get_option( Site_Footer::OPTION_CLINIC_ADDRESS, '' ),
+			'appointments_url'     => $dashboard_url ? add_query_arg( 'section', 'appointments', $dashboard_url ) : '',
+			'doctor_requests_url'  => $dashboard_url ? add_query_arg( 'section', 'doctor-requests', $dashboard_url ) : '',
 		);
 	}
 

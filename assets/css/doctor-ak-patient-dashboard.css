@@ -189,9 +189,9 @@
 	height: 1.3rem !important;
 }
 
-.dak-patient-stat-icon.is-green { background: #e3f6e8 !important; color: #157a3c !important; }
-.dak-patient-stat-icon.is-purple { background: #ede4fb !important; color: #6c3fc5 !important; }
-.dak-patient-stat-icon.is-blue { background: #e2eefd !important; color: #1c5fd6 !important; }
+.dak-patient-stat-icon.is-green { background: var( --dak-tint-success ) !important; color: var( --dak-tint-success-text ) !important; }
+.dak-patient-stat-icon.is-purple { background: var( --dak-tint-purple ) !important; color: var( --dak-tint-purple-text ) !important; }
+.dak-patient-stat-icon.is-blue { background: var( --dak-tint-info ) !important; color: var( --dak-tint-info-text ) !important; }
 
 .dak-patient-stat-body {
 	display: flex !important;
@@ -270,16 +270,30 @@
 }
 
 .dak-patient-appt-row {
+	position: relative !important;
 	display: flex !important;
 	flex-direction: column !important;
 	gap: 0.6rem !important;
-	padding: 0.85rem 0 !important;
-	border-bottom: 1px solid var( --dak-border ) !important;
+	padding: 0.85rem 1rem 0.85rem 1.15rem !important;
+	margin-bottom: 0.6rem !important;
+	background: var( --dak-bg-card ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+}
+
+.dak-patient-appt-row::before {
+	content: '' !important;
+	position: absolute !important;
+	top: 0.6rem !important;
+	bottom: 0.6rem !important;
+	left: 0 !important;
+	width: 4px !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary ) !important;
 }
 
 .dak-patient-appt-group .dak-patient-appt-row:last-child {
-	border-bottom: 0 !important;
-	padding-bottom: 0 !important;
+	margin-bottom: 0 !important;
 }
 
 .dak-patient-appt-row-top {
@@ -406,12 +420,12 @@
 }
 
 .dak-patient-appt-row-actions .dak-icon-button-danger {
-	background: #fbeaea !important;
-	color: #b42323 !important;
+	background: var( --dak-tint-danger ) !important;
+	color: var( --dak-tint-danger-text ) !important;
 }
 
 .dak-patient-appt-row-actions .dak-icon-button-danger:hover {
-	background: #f5d3d3 !important;
+	filter: brightness( 0.92 ) !important;
 }
 
 .dak-patient-appt-video-hint {
@@ -468,7 +482,7 @@
 }
 
 .dak-patient-appt-kebab-item.is-danger {
-	color: #b42323 !important;
+	color: var( --dak-tint-danger-text ) !important;
 }
 
 .dak-patient-appt-kebab-item:hover {
@@ -496,23 +510,23 @@
 }
 
 .dak-status-pill-outline.dak-status-pill-is-active {
-	border-color: #a7e0b6 !important;
-	color: #157a3c !important;
+	border-color: var( --dak-tint-success-text ) !important;
+	color: var( --dak-tint-success-text ) !important;
 }
 
 .dak-status-pill-outline.dak-status-pill-is-pending {
-	border-color: #f0d9a0 !important;
-	color: #b45f06 !important;
+	border-color: var( --dak-tint-amber-text ) !important;
+	color: var( --dak-tint-amber-text ) !important;
 }
 
 .dak-status-pill-outline.dak-status-pill-is-disabled {
-	border-color: #f0b8b8 !important;
-	color: #b42323 !important;
+	border-color: var( --dak-tint-danger-text ) !important;
+	color: var( --dak-tint-danger-text ) !important;
 }
 
 .dak-status-pill-outline.dak-status-pill-is-rescheduled {
-	border-color: #a9c8f5 !important;
-	color: #1d5fc2 !important;
+	border-color: var( --dak-tint-info-text ) !important;
+	color: var( --dak-tint-info-text ) !important;
 }
 
 .dak-status-pill-disabled {
@@ -705,9 +719,9 @@
 	height: 0.85rem !important;
 }
 
-.dak-patient-activity-icon.is-paid { background: #e3f6e8 !important; color: #157a3c !important; }
-.dak-patient-activity-icon.is-booked { background: #e2eefd !important; color: #1c5fd6 !important; }
-.dak-patient-activity-icon.is-cancelled { background: #fbeaea !important; color: #b42323 !important; }
+.dak-patient-activity-icon.is-paid { background: var( --dak-tint-success ) !important; color: var( --dak-tint-success-text ) !important; }
+.dak-patient-activity-icon.is-booked { background: var( --dak-tint-info ) !important; color: var( --dak-tint-info-text ) !important; }
+.dak-patient-activity-icon.is-cancelled { background: var( --dak-tint-danger ) !important; color: var( --dak-tint-danger-text ) !important; }
 
 .dak-patient-activity-text {
 	display: flex !important;
