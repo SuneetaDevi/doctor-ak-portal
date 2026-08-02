@@ -633,7 +633,8 @@ class Appointments {
 	 * @return array List of `array( 'id', 'name', 'email', 'phone', 'clinic_name', 'last_visit' )`, 'last_visit' '' if none yet.
 	 */
 	public static function patients_for_doctor( $doctor_id ) {
-		$last_visit = array();
+		$last_visit  = array();
+		$visit_count = array();
 
 		foreach ( self::for_doctor( $doctor_id ) as $appointment ) {
 			if ( $appointment['patient_id'] <= 0 ) {
@@ -645,6 +646,8 @@ class Appointments {
 			if ( ! isset( $last_visit[ $patient_id ] ) || $appointment['date'] > $last_visit[ $patient_id ] ) {
 				$last_visit[ $patient_id ] = $appointment['date'];
 			}
+
+			$visit_count[ $patient_id ] = isset( $visit_count[ $patient_id ] ) ? $visit_count[ $patient_id ] + 1 : 1;
 		}
 
 		$added_query = new \WP_User_Query(
@@ -683,6 +686,9 @@ class Appointments {
 				'phone'       => get_user_meta( $patient_id, 'doctor_ak_phone_number', true ),
 				'clinic_name' => $clinic_name,
 				'last_visit'  => isset( $last_visit[ $patient_id ] ) ? $last_visit[ $patient_id ] : '',
+				'visit_count' => isset( $visit_count[ $patient_id ] ) ? $visit_count[ $patient_id ] : 0,
+				'avatar_url'  => self::avatar_url_for_user( $patient_id ),
+				'registered_date' => mysql2date( get_option( 'date_format' ), $patient->user_registered ),
 			);
 		}
 
@@ -1262,16 +1268,46 @@ class Appointments {
 			return false;
 		}
 
+		return self::perform_cancel( $appointment );
+	}
+
+	/**
+	 * Cancels an appointment on the treating doctor's behalf — same effect
+	 * as cancel() above, just ownership-checked against doctor_id instead of
+	 * patient_id (used by the doctor dashboard's own "Cancel" action).
+	 *
+	 * @param int $appointment_id Appointment post ID.
+	 * @param int $doctor_id      Doctor's user ID, must match the appointment's doctor.
+	 * @return array|false `array( 'refund_eligible' => bool )` on success, false if not found/not owned.
+	 */
+	public static function cancel_by_doctor( $appointment_id, $doctor_id ) {
+		$appointment = self::get( $appointment_id );
+
+		if ( empty( $appointment ) || (int) $appointment['doctor_id'] !== (int) $doctor_id ) {
+			return false;
+		}
+
+		return self::perform_cancel( $appointment );
+	}
+
+	/**
+	 * Shared cancellation logic for cancel()/cancel_by_doctor() — the
+	 * caller is responsible for the ownership check.
+	 *
+	 * @param array $appointment Decoded appointment array (see get()).
+	 * @return array `array( 'refund_eligible' => bool )`.
+	 */
+	private static function perform_cancel( array $appointment ) {
 		$refund_eligible = Video_Pricing::is_cancellation_refund_eligible( $appointment['doctor_id'], $appointment['date'], $appointment['time'] );
 
-		update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_CANCELLED );
+		update_post_meta( $appointment['id'], 'doctor_ak_appointment_status', self::STATUS_CANCELLED );
 
 		/**
 		 * Fires after an appointment is cancelled.
 		 *
 		 * @param int $appointment_id Cancelled appointment's post ID.
 		 */
-		do_action( 'doctor_ak_appointment_cancelled', $appointment_id );
+		do_action( 'doctor_ak_appointment_cancelled', $appointment['id'] );
 
 		return array( 'refund_eligible' => $refund_eligible );
 	}
@@ -1530,6 +1566,28 @@ class Appointments {
 	 */
 	public static function mark_reminder_sent( $appointment_id ) {
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_reminder_sent', 1 );
+	}
+
+	/**
+	 * Saves the admin's clinical note for a completed appointment — the
+	 * "Encounters" section's visit log (see Admin_Dashboard's 'encounters'
+	 * section). Deliberately just a plain text note, not a full clinical
+	 * record (no diagnosis/prescription/vitals fields).
+	 *
+	 * @param int    $appointment_id Appointment post ID.
+	 * @param string $note           Already-sanitized note text.
+	 * @return true|\WP_Error
+	 */
+	public static function save_encounter_note( $appointment_id, $note ) {
+		$post = get_post( $appointment_id );
+
+		if ( ! $post || self::POST_TYPE !== $post->post_type ) {
+			return new \WP_Error( 'doctor_ak_invalid_appointment', __( 'That appointment no longer exists.', 'doctor-ak-portal' ) );
+		}
+
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_encounter_notes', $note );
+
+		return true;
 	}
 
 	/**
@@ -1973,6 +2031,7 @@ class Appointments {
 			'base_charge'       => $appointment['base_charge'],
 			'discount_percent'  => $appointment['discount_percent'],
 			'notes'             => $appointment['notes'],
+			'encounter_notes'   => $appointment['encounter_notes'],
 			'is_instant'        => $appointment['is_instant'],
 			'surcharge'         => $appointment['surcharge'],
 			'video_call'        => self::video_call_info( $appointment ),
@@ -2280,6 +2339,7 @@ class Appointments {
 			'status'         => get_post_meta( $post->ID, 'doctor_ak_appointment_status', true ),
 			'payment_status' => get_post_meta( $post->ID, 'doctor_ak_appointment_payment_status', true ),
 			'notes'          => get_post_meta( $post->ID, 'doctor_ak_appointment_notes', true ),
+			'encounter_notes' => get_post_meta( $post->ID, 'doctor_ak_appointment_encounter_notes', true ),
 			'service_id'     => (int) get_post_meta( $post->ID, 'doctor_ak_appointment_service_id', true ),
 			'service_name'   => get_post_meta( $post->ID, 'doctor_ak_appointment_service_name', true ),
 			'charge'            => (float) get_post_meta( $post->ID, 'doctor_ak_appointment_charge', true ),

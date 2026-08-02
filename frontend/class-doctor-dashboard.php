@@ -123,10 +123,11 @@ class Doctor_Dashboard {
 			'doctor-ak-portal-doctor-appointments',
 			'dakDoctorAppointments',
 			array(
-				'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
-				'nonce'         => wp_create_nonce( Doctor_Appointment_Handler::NONCE_ACTION ),
-				'confirmMessage' => __( 'Mark this appointment as completed?', 'doctor-ak-portal' ),
-				'genericError'  => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
+				'ajaxUrl'              => admin_url( 'admin-ajax.php' ),
+				'nonce'                => wp_create_nonce( Doctor_Appointment_Handler::NONCE_ACTION ),
+				'confirmMessage'       => __( 'Mark this appointment as completed?', 'doctor-ak-portal' ),
+				'confirmCancelMessage' => __( 'Cancel this appointment? This cannot be undone.', 'doctor-ak-portal' ),
+				'genericError'         => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
 			)
 		);
 
@@ -303,18 +304,26 @@ class Doctor_Dashboard {
 	}
 
 	/**
-	 * Reads the current 'status' query var for the Appointments tab's filter.
+	 * Reads the current 'date_from'/'date_to'/'payment_status' query vars for
+	 * the Appointments tab's filter form.
 	 *
-	 * @return string
+	 * @return array { date_from: string, date_to: string, payment_status: string }
 	 */
-	private static function requested_appointments_status() {
-		if ( ! isset( $_GET['status'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
-			return '';
-		}
+	private static function requested_appointments_filters() {
+		$date_from      = isset( $_GET['date_from'] ) ? sanitize_text_field( wp_unslash( $_GET['date_from'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		$date_to        = isset( $_GET['date_to'] ) ? sanitize_text_field( wp_unslash( $_GET['date_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		$payment_status = isset( $_GET['payment_status'] ) ? sanitize_key( wp_unslash( $_GET['payment_status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 
-		$status = sanitize_key( wp_unslash( $_GET['status'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		$payment_status_options = array(
+			Appointments::PAYMENT_STATUS_PENDING => __( 'Pending', 'doctor-ak-portal' ),
+			Appointments::PAYMENT_STATUS_PAID    => __( 'Paid', 'doctor-ak-portal' ),
+		);
 
-		return array_key_exists( $status, Appointments::status_options() ) ? $status : '';
+		return array(
+			'date_from'      => $date_from,
+			'date_to'        => $date_to,
+			'payment_status' => array_key_exists( $payment_status, $payment_status_options ) ? $payment_status : '',
+		);
 	}
 
 	/**
@@ -332,28 +341,24 @@ class Doctor_Dashboard {
 
 	/**
 	 * Renders the Appointments tab: every appointment this doctor has ever
-	 * had, filterable by date and status.
+	 * had, filterable by date range and payment status.
 	 *
 	 * @param \WP_User $user Currently logged-in doctor.
 	 * @return string
 	 */
 	private function render_appointments_tab( \WP_User $user ) {
-		$date   = self::requested_appointments_date();
-		$status = self::requested_appointments_status();
+		$filters           = self::requested_appointments_filters();
+		$dashboard_url     = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+		$appointments_url  = self::tab_url( $dashboard_url, 'appointments' );
 
 		return $this->template_loader->get_template(
 			'dashboard/partials/doctor-appointments-list.php',
 			array(
-				'rows'           => Appointments::all_for_admin(
-					array(
-						'doctor_id' => $user->ID,
-						'date'      => $date,
-						'status'    => $status,
-					)
+				'rows' => Appointments::all_for_admin(
+					array_merge( array( 'doctor_id' => $user->ID ), $filters )
 				),
-				'status_options' => Appointments::status_options(),
-				'selected_date'  => $date,
-				'selected_status' => $status,
+				'appointments_url' => $appointments_url,
+				'filters'          => $filters,
 			)
 		);
 	}

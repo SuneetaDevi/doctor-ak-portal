@@ -437,6 +437,18 @@
 	filter: brightness( 0.92 ) !important;
 }
 
+.dak-patient-appt-row-actions-buttons {
+	flex-wrap: wrap !important;
+	justify-content: flex-end !important;
+}
+
+.dak-patient-appt-row-amount {
+	flex-shrink: 0 !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	white-space: nowrap !important;
+}
+
 .dak-patient-appt-video-hint {
 	margin: -0.2rem 0 0 !important;
 	padding: 0 0 0.6rem !important;

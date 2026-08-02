@@ -204,4 +204,39 @@
 			}
 		}
 	} );
+
+	/**
+	 * Filters the Patients tab's list client-side as the doctor types in
+	 * the "Search patients" box — no AJAX round-trip needed since the whole
+	 * list is already on the page.
+	 */
+	document.addEventListener( 'DOMContentLoaded', function () {
+		var search = document.getElementById( 'dak-patient-list-search' );
+		var list = document.getElementById( 'dak-patient-list' );
+
+		if ( ! search || ! list ) {
+			return;
+		}
+
+		var rows = list.querySelectorAll( '[data-patient-search-row]' );
+		var noResults = document.getElementById( 'dak-patient-list-no-results' );
+
+		search.addEventListener( 'input', function () {
+			var query = search.value.trim().toLowerCase();
+			var visibleCount = 0;
+
+			rows.forEach( function ( row ) {
+				var matches = '' === query || row.getAttribute( 'data-patient-search-text' ).indexOf( query ) !== -1;
+				row.classList.toggle( 'dak-hidden', ! matches );
+
+				if ( matches ) {
+					visibleCount++;
+				}
+			} );
+
+			if ( noResults ) {
+				noResults.classList.toggle( 'dak-hidden', visibleCount > 0 );
+			}
+		} );
+	} );
 } )();

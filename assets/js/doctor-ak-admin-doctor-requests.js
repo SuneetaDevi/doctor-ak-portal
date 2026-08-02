@@ -20,7 +20,55 @@
 		wireAction( '[data-doctor-request-reject]', 'doctor_ak_admin_reject_doctor', function () {
 			return window.dakAdminDoctorRequests.confirmReject;
 		} );
+
+		wireViewProfile();
 	} );
+
+	/**
+	 * "View Profile" clones that doctor's pre-rendered <template> into the
+	 * shared modal and opens it.
+	 */
+	function wireViewProfile() {
+		var modal = document.getElementById( 'dak-doctor-view-modal' );
+		var body = document.getElementById( 'dak-doctor-view-modal-body' );
+
+		if ( ! modal || ! body ) {
+			return;
+		}
+
+		document.addEventListener( 'click', function ( event ) {
+			var openTrigger = event.target.closest( '[data-doctor-view-open]' );
+
+			if ( openTrigger ) {
+				var userId = openTrigger.getAttribute( 'data-user-id' );
+				var template = document.querySelector( '[data-doctor-profile-template][data-user-id="' + userId + '"]' );
+
+				if ( template ) {
+					body.innerHTML = '';
+					body.appendChild( template.content.cloneNode( true ) );
+					modal.classList.add( 'is-open' );
+					modal.setAttribute( 'aria-hidden', 'false' );
+					document.body.classList.add( 'dak-modal-open' );
+				}
+
+				return;
+			}
+
+			if ( event.target.closest( '[data-doctor-view-close]' ) ) {
+				modal.classList.remove( 'is-open' );
+				modal.setAttribute( 'aria-hidden', 'true' );
+				document.body.classList.remove( 'dak-modal-open' );
+			}
+		} );
+
+		document.addEventListener( 'keydown', function ( event ) {
+			if ( 'Escape' === event.key && modal.classList.contains( 'is-open' ) ) {
+				modal.classList.remove( 'is-open' );
+				modal.setAttribute( 'aria-hidden', 'true' );
+				document.body.classList.remove( 'dak-modal-open' );
+			}
+		} );
+	}
 
 	function wireAction( selector, action, confirmMessage ) {
 		document.addEventListener( 'click', function ( event ) {

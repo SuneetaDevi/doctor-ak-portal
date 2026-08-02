@@ -126,6 +126,33 @@ class Appointment_Handler {
 	}
 
 	/**
+	 * AJAX handler: admin saves a completed appointment's clinical visit
+	 * note (the "Encounters" section's log).
+	 *
+	 * @return void
+	 */
+	public function handle_admin_save_encounter_note() {
+		if ( ! check_ajax_referer( Admin_Dashboard::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$appointment_id = isset( $_POST['appointment_id'] ) ? absint( wp_unslash( $_POST['appointment_id'] ) ) : 0;
+		$note           = isset( $_POST['note'] ) ? sanitize_textarea_field( wp_unslash( $_POST['note'] ) ) : '';
+
+		$result = Appointments::save_encounter_note( $appointment_id, $note );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		wp_send_json_success( array( 'message' => __( 'Note saved.', 'doctor-ak-portal' ) ) );
+	}
+
+	/**
 	 * AJAX handler: admin processes a patient's refund request — calls
 	 * Swich's refund API for the real transaction (POST
 	 * /gateway/payin/v2.0/purchase/refund) and, only if that succeeds,

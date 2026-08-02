@@ -407,123 +407,10 @@
 	}
 }
 
-/* Accent-bar record row — used by the Appointments and Patients sections
-   instead of a plain table, matching the cards used everywhere else in the
-   dashboard (Latest appointments, Pending doctor approvals, etc.). */
-.dak-admin-record-row {
-	position: relative !important;
-	background: var( --dak-bg-card ) !important;
-	border-radius: var( --dak-radius-md ) !important;
-	box-shadow: var( --dak-shadow ) !important;
-	padding: 1rem 1.1rem 1rem 1.4rem !important;
-	margin-bottom: 0.75rem !important;
-	scroll-margin-top: 1rem !important;
-	transition: background-color 0.3s ease !important;
-}
-
-.dak-admin-record-row:last-child {
-	margin-bottom: 0 !important;
-}
-
-.dak-admin-record-row::before {
-	content: '' !important;
-	position: absolute !important;
-	top: 0.7rem !important;
-	bottom: 0.7rem !important;
-	left: 0 !important;
-	width: 4px !important;
-	border-radius: 999px !important;
-	background: var( --dak-primary ) !important;
-}
-
-/* Landed on from a notification link (e.g. "#dak-appointment-123") — briefly
-   emphasized so it's obvious which row it's pointing at. */
-.dak-admin-record-row:target {
-	background: var( --dak-primary-tint ) !important;
-}
-
-.dak-admin-record-row-main {
-	display: flex !important;
-	align-items: center !important;
-	flex-wrap: wrap !important;
-	gap: 1rem !important;
-}
-
-.dak-admin-record-row-info {
-	display: flex !important;
-	flex-direction: column !important;
-	flex: 1 1 170px !important;
-	min-width: 0 !important;
-}
-
-.dak-admin-record-row-info strong {
-	color: var( --dak-text ) !important;
-	font-size: 0.92rem !important;
-}
-
-.dak-admin-record-row-id {
-	font-size: 0.76rem !important;
-	color: var( --dak-muted ) !important;
-}
-
-.dak-admin-record-row-meta {
-	flex: 1 1 200px !important;
-	font-size: 0.85rem !important;
-	color: var( --dak-text ) !important;
-}
-
-.dak-admin-record-row-tags {
-	display: flex !important;
-	flex-wrap: wrap !important;
-	gap: 0.4rem !important;
-	flex: 1 1 220px !important;
-}
-
-.dak-admin-record-row-amount {
-	flex: 0 0 auto !important;
-	font-weight: 700 !important;
-	color: var( --dak-text ) !important;
-	white-space: nowrap !important;
-}
-
-.dak-admin-record-row-actions {
-	display: flex !important;
-	align-items: center !important;
-	gap: 0.4rem !important;
-	flex: 0 0 auto !important;
-	margin-left: auto !important;
-}
-
-/* Video Consultation pricing row's price pair (original struck-through +
-   discounted, or just the base price when there's no active discount). */
-.dak-video-pricing-amounts {
-	display: flex !important;
-	align-items: baseline !important;
-	gap: 0.5rem !important;
-	flex: 0 0 auto !important;
-	white-space: nowrap !important;
-}
-
-.dak-price-original {
-	color: var( --dak-muted ) !important;
-	font-size: 0.85rem !important;
-}
-
-.dak-price-sale {
-	color: var( --dak-primary-dark ) !important;
-	font-size: 0.95rem !important;
-}
-
-@media ( max-width: 600px ) {
-	.dak-admin-record-row-main {
-		align-items: flex-start !important;
-	}
-
-	.dak-admin-record-row-amount,
-	.dak-admin-record-row-actions {
-		margin-left: 0 !important;
-	}
-}
+/* Accent-bar record row (.dak-admin-record-row) and the Video Consultation
+   pricing amounts (.dak-video-pricing-amounts etc.) moved to the shared
+   doctor-ak-dashboard.css — reused by the doctor dashboard's own Patients
+   and Video Consultation tabs, not just the admin dashboard. */
 
 /* Clinic branding card (Settings section) */
 
@@ -636,4 +523,155 @@
 	color: var( --dak-muted ) !important;
 	font-size: 0.76rem !important;
 	font-weight: 600 !important;
+}
+
+/* Doctor Requests — "View Profile" modal */
+
+.dak-doctor-profile-dialog {
+	max-width: 640px !important;
+	max-height: 85vh !important;
+	overflow-y: auto !important;
+}
+
+.dak-doctor-profile-header {
+	display: flex !important;
+	align-items: center !important;
+	gap: 1rem !important;
+	margin-bottom: 1.25rem !important;
+}
+
+.dak-doctor-profile-header-info {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.2rem !important;
+}
+
+.dak-doctor-profile-header-info strong {
+	font-size: 1.1rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-doctor-profile-header-info span {
+	font-size: 0.85rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-doctor-profile-grid {
+	display: grid !important;
+	grid-template-columns: repeat( 2, 1fr ) !important;
+	gap: 1rem !important;
+	margin-bottom: 1rem !important;
+}
+
+.dak-doctor-profile-section {
+	margin-bottom: 1rem !important;
+}
+
+.dak-doctor-profile-grid .dak-doctor-profile-section {
+	margin-bottom: 0 !important;
+}
+
+.dak-doctor-profile-label {
+	display: block !important;
+	font-size: 0.7rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.04em !important;
+	color: var( --dak-muted ) !important;
+	margin-bottom: 0.3rem !important;
+}
+
+.dak-doctor-profile-section p {
+	margin: 0 !important;
+	font-size: 0.9rem !important;
+	color: var( --dak-text ) !important;
+	line-height: 1.5 !important;
+}
+
+.dak-doctor-profile-awards {
+	list-style: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.4rem !important;
+}
+
+.dak-doctor-profile-awards li {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 0.75rem !important;
+	padding: 0.5rem 0.75rem !important;
+	background: var( --dak-bg-subtle ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	font-size: 0.88rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-doctor-profile-awards li span {
+	flex-shrink: 0 !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.8rem !important;
+}
+
+@media ( max-width: 480px ) {
+	.dak-doctor-profile-grid {
+		grid-template-columns: 1fr !important;
+	}
+}
+
+/* Encounters — completed-visit log with an inline note per row */
+
+.dak-encounter-row {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.85rem !important;
+}
+
+.dak-encounter-note {
+	padding-top: 0.85rem !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+.dak-encounter-note .dak-field-label {
+	display: block !important;
+	font-size: 0.7rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.04em !important;
+	color: var( --dak-muted ) !important;
+	margin-bottom: 0.4rem !important;
+}
+
+.dak-encounter-note-input {
+	width: 100% !important;
+	box-sizing: border-box !important;
+	resize: vertical !important;
+	padding: 0.6rem 0.75rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-page ) !important;
+	color: var( --dak-text ) !important;
+	font-family: inherit !important;
+	font-size: 0.88rem !important;
+}
+
+.dak-encounter-note-input:focus {
+	outline: none !important;
+	border-color: var( --dak-primary ) !important;
+	box-shadow: 0 0 0 3px var( --dak-primary-tint ) !important;
+}
+
+.dak-encounter-note-actions {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: flex-end !important;
+	gap: 0.75rem !important;
+	margin-top: 0.6rem !important;
+}
+
+.dak-encounter-note-status {
+	font-size: 0.8rem !important;
+	color: var( --dak-tint-success-text ) !important;
 }

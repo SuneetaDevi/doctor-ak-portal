@@ -494,6 +494,25 @@ class Admin_Dashboard {
 				)
 			);
 		}
+
+		if ( 'encounters' === self::requested_section() ) {
+			wp_enqueue_script(
+				'doctor-ak-portal-admin-encounters',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-encounters.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-admin-encounters.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-admin-encounters',
+				'dakAdminEncounters',
+				array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+				)
+			);
+		}
 	}
 
 	/**
@@ -797,6 +816,44 @@ class Admin_Dashboard {
 						'date_to'        => $date_to,
 						'doctor_id'      => $doctor_id,
 						'payment_status' => $payment_status,
+					),
+				)
+			);
+		}
+
+		if ( 'encounters' === $section ) {
+			$date_from = isset( $_GET['date_from'] ) ? sanitize_text_field( wp_unslash( $_GET['date_from'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$date_to   = isset( $_GET['date_to'] ) ? sanitize_text_field( wp_unslash( $_GET['date_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$doctor_id = isset( $_GET['doctor_id'] ) ? absint( wp_unslash( $_GET['doctor_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+
+			$dashboard_url  = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+			$encounters_url = $dashboard_url ? add_query_arg( 'section', 'encounters', $dashboard_url ) : '';
+
+			$doctors = get_users(
+				array(
+					'role'    => Roles::DOCTOR_ROLE,
+					'orderby' => 'display_name',
+					'fields'  => array( 'ID', 'display_name' ),
+				)
+			);
+
+			return $this->template_loader->get_template(
+				'dashboard/partials/admin-encounters.php',
+				array(
+					'encounters'     => Appointments::all_for_admin(
+						array(
+							'status'    => Appointments::STATUS_COMPLETED,
+							'date_from' => $date_from,
+							'date_to'   => $date_to,
+							'doctor_id' => $doctor_id,
+						)
+					),
+					'encounters_url' => $encounters_url,
+					'doctors'        => $doctors,
+					'filters'        => array(
+						'date_from' => $date_from,
+						'date_to'   => $date_to,
+						'doctor_id' => $doctor_id,
 					),
 				)
 			);

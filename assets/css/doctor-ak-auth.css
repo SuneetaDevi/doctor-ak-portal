@@ -442,6 +442,22 @@ button.dak-link-button {
 	border-color: var( --dak-primary ) !important;
 }
 
+.dak-button-danger-outline {
+	background: var( --dak-bg-card ) !important;
+	border-color: var( --dak-danger ) !important;
+	color: var( --dak-danger ) !important;
+}
+
+.dak-button-danger-outline:hover {
+	background: var( --dak-tint-danger ) !important;
+}
+
+.dak-button:disabled {
+	opacity: 0.5 !important;
+	cursor: not-allowed !important;
+	pointer-events: none !important;
+}
+
 .dak-button-block {
 	display: flex !important;
 	width: 100% !important;

@@ -98,4 +98,32 @@ class Doctor_Appointment_Handler {
 
 		wp_send_json_success( array( 'message' => __( 'Appointment rescheduled.', 'doctor-ak-portal' ) ) );
 	}
+
+	/**
+	 * AJAX handler: cancels an appointment belonging to the logged-in doctor.
+	 *
+	 * @return void
+	 */
+	public function handle_cancel_appointment() {
+		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! is_user_logged_in() || ! in_array( Roles::DOCTOR_ROLE, (array) wp_get_current_user()->roles, true ) ) {
+			wp_send_json_error( array( 'message' => __( 'You must be logged in as a doctor.', 'doctor-ak-portal' ) ), 401 );
+		}
+
+		if ( ! Role_Permissions::is_tab_allowed( Roles::DOCTOR_ROLE, 'appointments' ) ) {
+			wp_send_json_error( array( 'message' => __( 'An administrator has turned off the Appointments page for your account.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$appointment_id = isset( $_POST['appointment_id'] ) ? absint( wp_unslash( $_POST['appointment_id'] ) ) : 0;
+		$result         = Appointments::cancel_by_doctor( $appointment_id, get_current_user_id() );
+
+		if ( ! $result ) {
+			wp_send_json_error( array( 'message' => __( 'That appointment could not be found or cancelled.', 'doctor-ak-portal' ) ) );
+		}
+
+		wp_send_json_success( array( 'message' => __( 'Appointment cancelled.', 'doctor-ak-portal' ) ) );
+	}
 }

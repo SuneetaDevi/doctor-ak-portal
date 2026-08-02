@@ -292,6 +292,7 @@ class Plugin {
 		$appointment_handler = new Appointment_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointment_save', $appointment_handler, 'handle_admin_save_appointment' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointment_delete', $appointment_handler, 'handle_admin_delete_appointment' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_encounter_note_save', $appointment_handler, 'handle_admin_save_encounter_note' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointment_print', $appointment_handler, 'handle_print' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_invoice_download', $appointment_handler, 'handle_download_invoice' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_process_refund', $appointment_handler, 'handle_admin_process_refund' );
@@ -305,6 +306,7 @@ class Plugin {
 		$doctor_appointment_handler = new Doctor_Appointment_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_mark_completed', $doctor_appointment_handler, 'handle_mark_completed' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_reschedule_appointment', $doctor_appointment_handler, 'handle_reschedule' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_cancel_appointment', $doctor_appointment_handler, 'handle_cancel_appointment' );
 
 		$role_permissions_handler = new Role_Permissions_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_role_permissions_save', $role_permissions_handler, 'handle_save' );

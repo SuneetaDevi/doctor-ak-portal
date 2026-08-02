@@ -66,12 +66,30 @@ $dak_admin_section_icons = array(
 	</button>
 
 	<aside class="dak-dashboard-sidebar" id="dak-dashboard-sidebar">
+		<div class="dak-sidebar-brand">
+			<span class="dak-sidebar-brand-logo">
+				<?php
+				$dak_brand_logo_url = \DoctorAKPortal\Frontend\Site_Footer::bundled_logo_url();
+				$dak_brand_initials = mb_strtoupper( mb_substr( get_bloginfo( 'name' ), 0, 2 ) );
+				?>
+				<?php if ( '' !== $dak_brand_logo_url ) : ?>
+					<img src="<?php echo esc_url( $dak_brand_logo_url ); ?>" alt="">
+				<?php else : ?>
+					<?php echo esc_html( '' !== $dak_brand_initials ? $dak_brand_initials : 'AK' ); ?>
+				<?php endif; ?>
+			</span>
+			<span class="dak-sidebar-brand-text">
+				<strong><?php esc_html_e( 'Doctor AK Portal', 'doctor-ak-portal' ); ?></strong>
+				<span><?php esc_html_e( 'Admin portal', 'doctor-ak-portal' ); ?></span>
+			</span>
+		</div>
+
 		<div class="dak-sidebar-doctor-card">
 			<span class="dak-avatar dak-avatar-md">
 				<?php echo $dak_admin_icons['person']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 			</span>
 			<span class="dak-sidebar-doctor-name"><?php echo esc_html( $current_user->display_name ); ?></span>
-			<span class="dak-sidebar-doctor-tagline"><?php esc_html_e( 'Administrator', 'doctor-ak-portal' ); ?></span>
+			<span class="dak-specialty-tag dak-sidebar-doctor-tagline"><?php esc_html_e( 'Clinic Admin', 'doctor-ak-portal' ); ?></span>
 		</div>
 
 		<nav class="dak-dashboard-nav">

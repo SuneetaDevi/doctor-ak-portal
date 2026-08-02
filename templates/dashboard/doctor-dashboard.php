@@ -73,6 +73,24 @@ $dak_dash_icons = array(
 	</button>
 
 	<aside class="dak-dashboard-sidebar" id="dak-dashboard-sidebar">
+		<div class="dak-sidebar-brand">
+			<span class="dak-sidebar-brand-logo">
+				<?php
+				$dak_brand_logo_url = \DoctorAKPortal\Frontend\Site_Footer::bundled_logo_url();
+				$dak_brand_initials = mb_strtoupper( mb_substr( get_bloginfo( 'name' ), 0, 2 ) );
+				?>
+				<?php if ( '' !== $dak_brand_logo_url ) : ?>
+					<img src="<?php echo esc_url( $dak_brand_logo_url ); ?>" alt="">
+				<?php else : ?>
+					<?php echo esc_html( '' !== $dak_brand_initials ? $dak_brand_initials : 'AK' ); ?>
+				<?php endif; ?>
+			</span>
+			<span class="dak-sidebar-brand-text">
+				<strong><?php esc_html_e( 'Doctor AK Portal', 'doctor-ak-portal' ); ?></strong>
+				<span><?php esc_html_e( 'Doctor portal', 'doctor-ak-portal' ); ?></span>
+			</span>
+		</div>
+
 		<div class="dak-sidebar-doctor-card">
 			<span class="dak-avatar dak-avatar-md">
 				<?php if ( $avatar_url ) : ?>
@@ -83,26 +101,6 @@ $dak_dash_icons = array(
 			</span>
 			<span class="dak-sidebar-doctor-name"><?php echo esc_html( sprintf( 'Dr. %s', $display_name ) ); ?></span>
 
-			<?php if ( ! empty( $specialization_labels ) ) : ?>
-				<div class="dak-sidebar-doctor-block">
-					<span class="dak-sidebar-doctor-block-label"><?php esc_html_e( 'Specialization', 'doctor-ak-portal' ); ?></span>
-					<div class="dak-specialty-tags" data-specialty-tags>
-						<?php foreach ( $specialization_labels as $dak_spec_index => $specialization_label ) : ?>
-							<span class="dak-specialty-tag<?php echo $dak_spec_index >= 2 ? ' dak-specialty-tag-extra dak-hidden' : ''; ?>"><?php echo esc_html( $specialization_label ); ?></span>
-						<?php endforeach; ?>
-						<?php if ( count( $specialization_labels ) > 2 ) : ?>
-							<button
-								type="button"
-								class="dak-specialty-tag dak-specialty-tag-more"
-								data-specialty-toggle
-								data-more-label="<?php echo esc_attr( sprintf( '+%d', count( $specialization_labels ) - 2 ) ); ?>"
-								data-less-label="<?php esc_attr_e( 'Show less', 'doctor-ak-portal' ); ?>"
-							><?php echo esc_html( sprintf( '+%d', count( $specialization_labels ) - 2 ) ); ?></button>
-						<?php endif; ?>
-					</div>
-				</div>
-			<?php endif; ?>
-
 			<?php if ( $clinic_location ) : ?>
 				<div class="dak-sidebar-doctor-location">
 					<span class="dak-location-icon" aria-hidden="true"><?php echo $dak_dash_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
@@ -110,22 +108,41 @@ $dak_dash_icons = array(
 				</div>
 			<?php endif; ?>
 
-			<span class="dak-sidebar-doctor-tagline"><?php esc_html_e( 'Clinics', 'doctor-ak-portal' ); ?></span>
-			<?php if ( $review_count > 0 && null !== $rating ) : ?>
-				<span class="dak-sidebar-doctor-rating">
-					<span class="dak-rating-icon" aria-hidden="true"><?php echo $dak_dash_icons['star']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-					<?php
-					echo esc_html(
-						sprintf(
-							/* translators: 1: average rating, 2: review count. */
-							_n( '%1$s · %2$s review', '%1$s · %2$s reviews', $review_count, 'doctor-ak-portal' ),
-							number_format_i18n( $rating, 1 ),
-							number_format_i18n( $review_count )
-						)
-					);
-					?>
-				</span>
+			<?php if ( ! empty( $specialization_labels ) ) : ?>
+				<div class="dak-specialty-tags dak-sidebar-doctor-tags" data-specialty-tags>
+					<?php foreach ( $specialization_labels as $dak_spec_index => $specialization_label ) : ?>
+						<span class="dak-specialty-tag<?php echo $dak_spec_index >= 2 ? ' dak-specialty-tag-extra dak-hidden' : ''; ?>"><?php echo esc_html( $specialization_label ); ?></span>
+					<?php endforeach; ?>
+					<?php if ( count( $specialization_labels ) > 2 ) : ?>
+						<button
+							type="button"
+							class="dak-specialty-tag dak-specialty-tag-more"
+							data-specialty-toggle
+							data-more-label="<?php echo esc_attr( sprintf( '+%d', count( $specialization_labels ) - 2 ) ); ?>"
+							data-less-label="<?php esc_attr_e( 'Show less', 'doctor-ak-portal' ); ?>"
+						><?php echo esc_html( sprintf( '+%d', count( $specialization_labels ) - 2 ) ); ?></button>
+					<?php endif; ?>
+				</div>
 			<?php endif; ?>
+
+			<div class="dak-sidebar-doctor-status-row">
+				<?php if ( $review_count > 0 && null !== $rating ) : ?>
+					<span class="dak-sidebar-doctor-rating">
+						<span class="dak-rating-icon" aria-hidden="true"><?php echo $dak_dash_icons['star']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<?php
+						echo esc_html(
+							sprintf(
+								/* translators: 1: average rating, 2: review count. */
+								_n( '%1$s (%2$s review)', '%1$s (%2$s reviews)', $review_count, 'doctor-ak-portal' ),
+								number_format_i18n( $rating, 1 ),
+								number_format_i18n( $review_count )
+							)
+						);
+						?>
+					</span>
+				<?php endif; ?>
+				<span class="dak-specialty-tag dak-sidebar-doctor-status"><?php esc_html_e( 'Active', 'doctor-ak-portal' ); ?></span>
+			</div>
 		</div>
 
 		<nav class="dak-dashboard-nav">
@@ -196,11 +213,11 @@ $dak_dash_icons = array(
 
 		<?php elseif ( 'patients' === $active_tab ) : ?>
 
-			<div class="dak-dashboard-greeting">
-				<h1><?php esc_html_e( 'Patients', 'doctor-ak-portal' ); ?></h1>
-			</div>
+			<?php echo $patients_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-patients-tab.php template, which escapes its own output (including its own page header). ?>
 
-			<?php echo $patients_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-patients-tab.php template, which escapes its own output. ?>
+		<?php elseif ( 'video-consultation' === $active_tab ) : ?>
+
+			<?php echo $video_consultation_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-video-consultation-tab.php template, which escapes its own output (including its own page header). ?>
 
 		<?php elseif ( 'dashboard' !== $active_tab ) : ?>
 
@@ -211,8 +228,6 @@ $dak_dash_icons = array(
 						esc_html_e( 'Clinics', 'doctor-ak-portal' );
 					} elseif ( 'services' === $active_tab ) {
 						esc_html_e( 'Services', 'doctor-ak-portal' );
-					} elseif ( 'video-consultation' === $active_tab ) {
-						esc_html_e( 'Video Consultation', 'doctor-ak-portal' );
 					} elseif ( 'settings' === $active_tab ) {
 						esc_html_e( 'Settings', 'doctor-ak-portal' );
 					} else {
@@ -227,8 +242,6 @@ $dak_dash_icons = array(
 					<?php echo $clinics_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-clinics-tab.php template, which escapes its own output. ?>
 				<?php elseif ( 'services' === $active_tab ) : ?>
 					<?php echo $services_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-services-tab.php template, which escapes its own output. ?>
-				<?php elseif ( 'video-consultation' === $active_tab ) : ?>
-					<?php echo $video_consultation_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-video-consultation-tab.php template, which escapes its own output. ?>
 				<?php elseif ( 'settings' === $active_tab ) : ?>
 					<?php echo $settings_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own dashboard-settings-tab.php template, which escapes its own output. ?>
 				<?php else : ?>
