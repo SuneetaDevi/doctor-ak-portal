@@ -81,9 +81,9 @@ function dak_render_clinic_card( $clinic, array $session_days, array $icons ) {
 						<option value="video" <?php selected( 'video' === $type ); ?>><?php esc_html_e( 'Video Consultation', 'doctor-ak-portal' ); ?></option>
 					</select>
 				</div>
-				<div class="dak-field dak-clinic-video-name-field<?php echo $is_blank || 'video' !== $clinic['type'] ? ' dak-hidden' : ''; ?>">
+				<div class="dak-field">
 					<label><?php esc_html_e( 'Clinic Name', 'doctor-ak-portal' ); ?></label>
-					<input type="text" class="dak-clinic-name-input" value="<?php echo esc_attr( $is_blank ? '' : $clinic['name'] ); ?>" placeholder="<?php esc_attr_e( 'e.g. Video Consultation', 'doctor-ak-portal' ); ?>">
+					<input type="text" class="dak-clinic-name-input" value="<?php echo esc_attr( $is_blank ? '' : $clinic['name'] ); ?>" placeholder="<?php esc_attr_e( 'e.g. Heartcare Clinic', 'doctor-ak-portal' ); ?>">
 					<span class="dak-field-error" data-field="name"></span>
 				</div>
 			</div>

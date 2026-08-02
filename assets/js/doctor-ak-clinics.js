@@ -163,10 +163,6 @@
 			card.querySelectorAll( '.dak-clinic-address-field' ).forEach( function ( field ) {
 				field.classList.toggle( 'dak-hidden', isVideo );
 			} );
-
-			card.querySelectorAll( '.dak-clinic-video-name-field' ).forEach( function ( field ) {
-				field.classList.toggle( 'dak-hidden', ! isVideo );
-			} );
 		} );
 	}
 

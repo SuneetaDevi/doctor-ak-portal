@@ -28,64 +28,56 @@ $dak_clinic_location_icons = array(
 	<button type="button" class="dak-button dak-button-primary" id="dak-admin-clinic-location-add"><?php esc_html_e( '+ Add Clinic', 'doctor-ak-portal' ); ?></button>
 </div>
 
-<section class="dak-dashboard-card dak-admin-users-card">
-<?php if ( empty( $clinic_locations ) ) : ?>
-	<p class="dak-empty-state"><?php esc_html_e( 'No clinics added yet.', 'doctor-ak-portal' ); ?></p>
-<?php else : ?>
-	<div class="dak-table-scroll">
-		<table class="dak-admin-users-table dak-admin-sessions-table">
-			<thead>
-				<tr>
-					<th><?php esc_html_e( 'Clinic Name', 'doctor-ak-portal' ); ?></th>
-					<th><?php esc_html_e( 'Country', 'doctor-ak-portal' ); ?></th>
-					<th><?php esc_html_e( 'City', 'doctor-ak-portal' ); ?></th>
-					<th><?php esc_html_e( 'Area', 'doctor-ak-portal' ); ?></th>
-					<th><?php esc_html_e( 'Address', 'doctor-ak-portal' ); ?></th>
-					<th class="dak-admin-users-actions-col"><?php esc_html_e( 'Action', 'doctor-ak-portal' ); ?></th>
-				</tr>
-			</thead>
-			<tbody>
-				<?php foreach ( $clinic_locations as $clinic_location ) : ?>
-					<tr data-clinic-location-row="<?php echo esc_attr( $clinic_location['id'] ); ?>">
-						<td data-label="<?php esc_attr_e( 'Clinic Name', 'doctor-ak-portal' ); ?>">
-							<span class="dak-clinic-card-icon" aria-hidden="true"><?php echo $dak_clinic_location_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-							<?php echo esc_html( $clinic_location['name'] ); ?>
-						</td>
-						<td data-label="<?php esc_attr_e( 'Country', 'doctor-ak-portal' ); ?>"><?php echo esc_html( $clinic_location['country_label'] ); ?></td>
-						<td data-label="<?php esc_attr_e( 'City', 'doctor-ak-portal' ); ?>"><?php echo esc_html( $clinic_location['city_label'] ); ?></td>
-						<td data-label="<?php esc_attr_e( 'Area', 'doctor-ak-portal' ); ?>"><?php echo esc_html( $clinic_location['area_label'] ); ?></td>
-						<td data-label="<?php esc_attr_e( 'Address', 'doctor-ak-portal' ); ?>"><?php echo esc_html( '' !== $clinic_location['address'] ? $clinic_location['address'] : '—' ); ?></td>
-						<td class="dak-admin-users-actions-col">
-							<div class="dak-admin-users-actions">
-								<button
-									type="button"
-									class="dak-icon-button"
-									data-admin-clinic-location-edit
-									data-id="<?php echo esc_attr( $clinic_location['id'] ); ?>"
-									data-name="<?php echo esc_attr( $clinic_location['name'] ); ?>"
-									data-address="<?php echo esc_attr( $clinic_location['address'] ); ?>"
-									data-country="<?php echo esc_attr( $clinic_location['country'] ); ?>"
-									data-city="<?php echo esc_attr( $clinic_location['city'] ); ?>"
-									data-area="<?php echo esc_attr( $clinic_location['area'] ); ?>"
-									data-phone="<?php echo esc_attr( $clinic_location['phone'] ); ?>"
-									data-contact-email="<?php echo esc_attr( $clinic_location['contact_email'] ); ?>"
-									title="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
-									aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
-								><?php echo $dak_clinic_location_icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
-								<button
-									type="button"
-									class="dak-icon-button dak-icon-button-danger"
-									data-admin-clinic-location-delete
-									data-id="<?php echo esc_attr( $clinic_location['id'] ); ?>"
-									title="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
-									aria-label="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
-								><?php echo $dak_clinic_location_icons['delete']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
-							</div>
-						</td>
-					</tr>
-				<?php endforeach; ?>
-			</tbody>
-		</table>
+<section class="dak-dashboard-card">
+	<div class="dak-dashboard-card-header">
+		<h2><?php esc_html_e( 'Clinic directory', 'doctor-ak-portal' ); ?></h2>
 	</div>
-<?php endif; ?>
+
+	<?php if ( empty( $clinic_locations ) ) : ?>
+		<p class="dak-empty-state"><?php esc_html_e( 'No clinics added yet.', 'doctor-ak-portal' ); ?></p>
+	<?php else : ?>
+		<?php foreach ( $clinic_locations as $clinic_location ) : ?>
+			<div class="dak-admin-record-row" data-clinic-location-row="<?php echo esc_attr( $clinic_location['id'] ); ?>">
+				<div class="dak-admin-record-row-main">
+					<span class="dak-avatar dak-avatar-sm" aria-hidden="true"><?php echo $dak_clinic_location_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+					<span class="dak-admin-record-row-info">
+						<strong><?php echo esc_html( $clinic_location['name'] ); ?></strong>
+						<span class="dak-admin-record-row-id"><?php echo esc_html( '' !== $clinic_location['address'] ? $clinic_location['address'] : '—' ); ?></span>
+					</span>
+
+					<span class="dak-admin-record-row-tags">
+						<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( $clinic_location['area_label'] ); ?></span>
+						<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( $clinic_location['city_label'] ); ?></span>
+						<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( $clinic_location['country_label'] ); ?></span>
+					</span>
+
+					<span class="dak-admin-record-row-actions">
+						<button
+							type="button"
+							class="dak-icon-button"
+							data-admin-clinic-location-edit
+							data-id="<?php echo esc_attr( $clinic_location['id'] ); ?>"
+							data-name="<?php echo esc_attr( $clinic_location['name'] ); ?>"
+							data-address="<?php echo esc_attr( $clinic_location['address'] ); ?>"
+							data-country="<?php echo esc_attr( $clinic_location['country'] ); ?>"
+							data-city="<?php echo esc_attr( $clinic_location['city'] ); ?>"
+							data-area="<?php echo esc_attr( $clinic_location['area'] ); ?>"
+							data-phone="<?php echo esc_attr( $clinic_location['phone'] ); ?>"
+							data-contact-email="<?php echo esc_attr( $clinic_location['contact_email'] ); ?>"
+							title="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
+							aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
+						><?php echo $dak_clinic_location_icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
+						<button
+							type="button"
+							class="dak-icon-button dak-icon-button-danger"
+							data-admin-clinic-location-delete
+							data-id="<?php echo esc_attr( $clinic_location['id'] ); ?>"
+							title="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
+							aria-label="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
+						><?php echo $dak_clinic_location_icons['delete']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
+					</span>
+				</div>
+			</div>
+		<?php endforeach; ?>
+	<?php endif; ?>
 </section>

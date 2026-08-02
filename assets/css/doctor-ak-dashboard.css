@@ -532,16 +532,23 @@
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: center !important;
+	flex-shrink: 0 !important;
 	width: 38px !important;
 	height: 38px !important;
+	padding: 0 !important;
+	border: none !important;
 	border-radius: 50% !important;
 	background: var( --dak-bg-subtle ) !important;
 	color: var( --dak-muted ) !important;
+	cursor: pointer !important;
+	line-height: 0 !important;
 }
 
 .dak-icon-button svg {
+	display: block !important;
 	width: 18px !important;
 	height: 18px !important;
+	flex-shrink: 0 !important;
 }
 
 .dak-icon-button:hover {
@@ -1558,4 +1565,37 @@ a.dak-notification-row-link:hover {
 	font-size: 0.85rem !important;
 	color: var( --dak-text ) !important;
 	line-height: 1.4 !important;
+}
+
+/* Second line inside an accent-bar row (e.g. Doctors directory's "Clinics"
+   tags, below the main name/specialization/status/actions line). */
+.dak-admin-record-row-secondary {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 0.5rem !important;
+	margin-top: 0.75rem !important;
+	padding-top: 0.75rem !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+.dak-admin-record-row-secondary-label {
+	flex-shrink: 0 !important;
+	font-size: 0.72rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.04em !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-admin-record-row-secondary-empty {
+	font-size: 0.85rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+/* Bold price shown next to a service's name in the doctor "Services" tab. */
+.dak-service-row-price {
+	font-weight: 700 !important;
+	color: var( --dak-primary ) !important;
+	font-size: 0.9rem !important;
 }

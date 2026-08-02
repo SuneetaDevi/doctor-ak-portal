@@ -16,83 +16,93 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $dak_service_icons = array(
-	'pin'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18s6-5.2 6-9.8A6 6 0 0 0 4 8.2C4 12.8 10 18 10 18z"/><circle cx="10" cy="8" r="2"/></svg>',
 	'edit'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 3.5a1.7 1.7 0 0 1 2.4 2.4L6.5 15.3l-3 .7.7-3 9.3-9.3z"/></svg>',
 	'delete' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h12M8 6V4.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V6M6 6l.6 9a1.5 1.5 0 0 0 1.5 1.4h3.8a1.5 1.5 0 0 0 1.5-1.4L14 6"/></svg>',
 );
 ?>
-<div class="dak-alert dak-alert-success dak-hidden" id="dak-services-success" role="status"></div>
-<div class="dak-alert dak-alert-error dak-hidden" id="dak-services-general-error" role="alert"></div>
-
-<?php if ( empty( $services ) ) : ?>
-	<p class="dak-empty-state"><?php esc_html_e( "You haven't added any services yet. Add one below.", 'doctor-ak-portal' ); ?></p>
-<?php else : ?>
-	<div class="dak-table-scroll">
-		<table class="dak-admin-users-table">
-			<thead>
-				<tr>
-					<th><?php esc_html_e( 'Service', 'doctor-ak-portal' ); ?></th>
-					<th><?php esc_html_e( 'Charges', 'doctor-ak-portal' ); ?></th>
-					<th><?php esc_html_e( 'Duration', 'doctor-ak-portal' ); ?></th>
-					<th><?php esc_html_e( 'Category', 'doctor-ak-portal' ); ?></th>
-					<th><?php esc_html_e( 'Status', 'doctor-ak-portal' ); ?></th>
-					<th class="dak-admin-users-actions-col"><?php esc_html_e( 'Action', 'doctor-ak-portal' ); ?></th>
-				</tr>
-			</thead>
-			<tbody>
-				<?php foreach ( $services as $service ) : ?>
-					<tr>
-						<td data-label="<?php esc_attr_e( 'Service', 'doctor-ak-portal' ); ?>">
-							<span class="dak-clinic-card-icon" aria-hidden="true"><?php echo $dak_service_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-							<?php echo esc_html( $service['name'] ); ?>
-						</td>
-						<td data-label="<?php esc_attr_e( 'Charges', 'doctor-ak-portal' ); ?>">
-							<?php echo $service['charge'] > 0 ? esc_html( 'PKR' . number_format( $service['charge'], 0 ) . '/-' ) : esc_html__( 'Free', 'doctor-ak-portal' ); ?>
-						</td>
-						<td data-label="<?php esc_attr_e( 'Duration', 'doctor-ak-portal' ); ?>">
-							<?php echo $service['duration_minutes'] > 0 ? esc_html( sprintf( /* translators: %d: minutes. */ __( '%d min', 'doctor-ak-portal' ), $service['duration_minutes'] ) ) : '—'; ?>
-						</td>
-						<td data-label="<?php esc_attr_e( 'Category', 'doctor-ak-portal' ); ?>"><?php echo esc_html( '' !== $service['category_label'] ? $service['category_label'] : '—' ); ?></td>
-						<td data-label="<?php esc_attr_e( 'Status', 'doctor-ak-portal' ); ?>">
-							<span class="dak-status-badge <?php echo $service['active'] ? 'is-active' : 'is-disabled'; ?>">
-								<?php echo $service['active'] ? esc_html__( 'Active', 'doctor-ak-portal' ) : esc_html__( 'Inactive', 'doctor-ak-portal' ); ?>
-							</span>
-						</td>
-						<td class="dak-admin-users-actions-col">
-							<div class="dak-admin-users-actions">
-								<button
-									type="button"
-									class="dak-icon-button"
-									data-service-edit
-									data-service-id="<?php echo esc_attr( $service['id'] ); ?>"
-									data-name="<?php echo esc_attr( $service['name'] ); ?>"
-									data-category="<?php echo esc_attr( $service['category'] ); ?>"
-									data-charge="<?php echo esc_attr( $service['charge'] ); ?>"
-									data-duration-minutes="<?php echo esc_attr( $service['duration_minutes'] ); ?>"
-									data-active="<?php echo $service['active'] ? '1' : '0'; ?>"
-									title="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
-									aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
-								><?php echo $dak_service_icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
-								<button
-									type="button"
-									class="dak-icon-button dak-icon-button-danger"
-									data-service-delete
-									data-service-id="<?php echo esc_attr( $service['id'] ); ?>"
-									title="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
-									aria-label="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
-								><?php echo $dak_service_icons['delete']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
-							</div>
-						</td>
-					</tr>
-				<?php endforeach; ?>
-			</tbody>
-		</table>
+<div class="dak-dashboard-greeting dak-admin-users-header">
+	<div>
+		<h1><?php esc_html_e( 'Services', 'doctor-ak-portal' ); ?></h1>
+		<p><?php esc_html_e( 'Billable services offered at your clinics', 'doctor-ak-portal' ); ?></p>
 	</div>
-<?php endif; ?>
+	<button type="button" class="dak-button dak-button-primary" id="dak-service-add"><?php esc_html_e( '+ Add Service', 'doctor-ak-portal' ); ?></button>
+</div>
 
-<button type="button" class="dak-button dak-button-secondary" id="dak-service-add">
-	<?php esc_html_e( '+ Add Service', 'doctor-ak-portal' ); ?>
-</button>
+<section class="dak-dashboard-card">
+	<div class="dak-dashboard-card-header">
+		<div>
+			<h2><?php esc_html_e( 'All services', 'doctor-ak-portal' ); ?></h2>
+			<p class="dak-notifications-card-subtitle">
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: %d: number of services. */
+						_n( '%d service', '%d services', count( $services ), 'doctor-ak-portal' ),
+						count( $services )
+					)
+				);
+				?>
+			</p>
+		</div>
+	</div>
+
+	<div class="dak-alert dak-alert-success dak-hidden" id="dak-services-success" role="status"></div>
+	<div class="dak-alert dak-alert-error dak-hidden" id="dak-services-general-error" role="alert"></div>
+
+	<?php if ( empty( $services ) ) : ?>
+		<p class="dak-empty-state"><?php esc_html_e( "You haven't added any services yet. Add one above.", 'doctor-ak-portal' ); ?></p>
+	<?php else : ?>
+		<?php foreach ( $services as $service ) : ?>
+			<div class="dak-admin-record-row">
+				<div class="dak-admin-record-row-main">
+					<span class="dak-admin-record-row-info">
+						<strong><?php echo esc_html( $service['name'] ); ?></strong>
+						<span class="dak-service-row-price">
+							<?php echo $service['charge'] > 0 ? esc_html( 'PKR ' . number_format( $service['charge'], 0 ) ) : esc_html__( 'Free', 'doctor-ak-portal' ); ?>
+						</span>
+					</span>
+
+					<span class="dak-admin-record-row-tags">
+						<?php if ( '' !== $service['category_label'] ) : ?>
+							<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( $service['category_label'] ); ?></span>
+						<?php endif; ?>
+						<?php if ( $service['duration_minutes'] > 0 ) : ?>
+							<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( sprintf( /* translators: %d: minutes. */ __( '%d min', 'doctor-ak-portal' ), $service['duration_minutes'] ) ); ?></span>
+						<?php endif; ?>
+					</span>
+
+					<span class="dak-status-pill dak-status-pill-outline <?php echo $service['active'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-disabled'; ?>">
+						<?php echo $service['active'] ? esc_html__( 'Active', 'doctor-ak-portal' ) : esc_html__( 'Inactive', 'doctor-ak-portal' ); ?>
+					</span>
+
+					<span class="dak-admin-record-row-actions">
+						<button
+							type="button"
+							class="dak-icon-button"
+							data-service-edit
+							data-service-id="<?php echo esc_attr( $service['id'] ); ?>"
+							data-name="<?php echo esc_attr( $service['name'] ); ?>"
+							data-category="<?php echo esc_attr( $service['category'] ); ?>"
+							data-charge="<?php echo esc_attr( $service['charge'] ); ?>"
+							data-duration-minutes="<?php echo esc_attr( $service['duration_minutes'] ); ?>"
+							data-active="<?php echo $service['active'] ? '1' : '0'; ?>"
+							title="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
+							aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
+						><?php echo $dak_service_icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
+						<button
+							type="button"
+							class="dak-icon-button dak-icon-button-danger"
+							data-service-delete
+							data-service-id="<?php echo esc_attr( $service['id'] ); ?>"
+							title="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
+							aria-label="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
+						><?php echo $dak_service_icons['delete']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
+					</span>
+				</div>
+			</div>
+		<?php endforeach; ?>
+	<?php endif; ?>
+</section>
 
 <div class="dak-portal dak-modal" id="dak-service-modal" aria-hidden="true">
 	<div class="dak-modal-overlay" data-dak-service-modal-close></div>

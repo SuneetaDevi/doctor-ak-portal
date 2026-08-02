@@ -219,16 +219,20 @@ $dak_dash_icons = array(
 
 			<?php echo $video_consultation_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-video-consultation-tab.php template, which escapes its own output (including its own page header). ?>
 
+		<?php elseif ( 'clinics' === $active_tab ) : ?>
+
+			<?php echo $clinics_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-clinics-tab.php template, which escapes its own output (including its own page header). ?>
+
+		<?php elseif ( 'services' === $active_tab ) : ?>
+
+			<?php echo $services_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-services-tab.php template, which escapes its own output (including its own page header). ?>
+
 		<?php elseif ( 'dashboard' !== $active_tab ) : ?>
 
 			<div class="dak-dashboard-greeting">
 				<h1>
 					<?php
-					if ( 'clinics' === $active_tab ) {
-						esc_html_e( 'Clinics', 'doctor-ak-portal' );
-					} elseif ( 'services' === $active_tab ) {
-						esc_html_e( 'Services', 'doctor-ak-portal' );
-					} elseif ( 'settings' === $active_tab ) {
+					if ( 'settings' === $active_tab ) {
 						esc_html_e( 'Settings', 'doctor-ak-portal' );
 					} else {
 						esc_html_e( 'Edit Profile', 'doctor-ak-portal' );
@@ -238,11 +242,7 @@ $dak_dash_icons = array(
 			</div>
 
 			<div class="dak-dashboard-card dak-dashboard-profile-form">
-				<?php if ( 'clinics' === $active_tab ) : ?>
-					<?php echo $clinics_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-clinics-tab.php template, which escapes its own output. ?>
-				<?php elseif ( 'services' === $active_tab ) : ?>
-					<?php echo $services_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-services-tab.php template, which escapes its own output. ?>
-				<?php elseif ( 'settings' === $active_tab ) : ?>
+				<?php if ( 'settings' === $active_tab ) : ?>
 					<?php echo $settings_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own dashboard-settings-tab.php template, which escapes its own output. ?>
 				<?php else : ?>
 					<?php echo $profile_form_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own profile-form.php template, which escapes its own output. ?>

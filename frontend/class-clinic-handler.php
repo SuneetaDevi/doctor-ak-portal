@@ -224,7 +224,6 @@ class Clinic_Handler {
 				wp_send_json_error( array( 'errors' => array( 'clinic_location_id' => __( 'Please choose a valid clinic.', 'doctor-ak-portal' ) ) ) );
 			}
 
-			$_POST['name']    = $clinic_location['name'];
 			$_POST['address'] = $clinic_location['address'];
 			$_POST['country'] = $clinic_location['country'];
 			$_POST['city']    = $clinic_location['city'];
@@ -233,9 +232,8 @@ class Clinic_Handler {
 			if ( $clinic_id > 0 && isset( $existing ) && $existing ) {
 				// Editing a clinic that predates this feature (never aligned
 				// to a master Clinic_Locations record) — keep its own
-				// already-saved name/address/location instead of forcing the
+				// already-saved address/location instead of forcing the
 				// admin to pick one just to change, say, its weekly hours.
-				$_POST['name']    = $existing['name'];
 				$_POST['address'] = $existing['address'];
 				$_POST['country'] = $existing['country'];
 				$_POST['city']    = $existing['city'];
