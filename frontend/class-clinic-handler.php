@@ -97,9 +97,10 @@ class Clinic_Handler {
 			'doctor-ak-portal-clinics',
 			'dakClinics',
 			array(
-				'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
-				'nonce'     => wp_create_nonce( self::NONCE_ACTION ),
-				'locations' => Locations::get_all(),
+				'ajaxUrl'         => admin_url( 'admin-ajax.php' ),
+				'nonce'           => wp_create_nonce( self::NONCE_ACTION ),
+				'locations'       => Locations::get_all(),
+				'clinicLocations' => Clinic_Locations::get_all(),
 			)
 		);
 	}
@@ -122,7 +123,7 @@ class Clinic_Handler {
 			wp_send_json_error( array( 'message' => __( 'An administrator has turned off the Clinics page for your account.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		$this->process_save( get_current_user_id(), get_current_user_id() );
+		$this->process_save( get_current_user_id(), get_current_user_id(), true );
 	}
 
 	/**
@@ -193,7 +194,7 @@ class Clinic_Handler {
 	 *
 	 * @param int      $owner_doctor_id      Doctor ID the clinic is created under (for new clinics).
 	 * @param int|null $ownership_check      Doctor ID an existing clinic must belong to, or null to skip the check (admin context).
-	 * @param bool     $requires_clinic_location Whether a physical clinic must be aligned to a Clinic_Locations master record — true only from the admin "Doctor Sessions" form, whose picker replaces free-typed name/address/location. The doctor's own self-service Clinics tab keeps typing these directly.
+	 * @param bool     $requires_clinic_location Whether a new physical clinic must be aligned to a Clinic_Locations master record instead of free-typed name/address/location — true from both the admin "Doctor Sessions" form and the doctor's own "Clinics" tab, so every physical clinic (new or already saved) is always one of the admin-managed locations, never a one-off free-typed entry.
 	 * @return void
 	 */
 	private function process_save( $owner_doctor_id, $ownership_check, $requires_clinic_location = false ) {
@@ -208,12 +209,12 @@ class Clinic_Handler {
 			}
 		}
 
-		// The admin "Doctor Sessions" form aligns a doctor to one of the
-		// admin-managed master clinics (Clinic_Locations) instead of typing
-		// a name/address/location freehand — its posted clinic_location_id's
-		// fields override whatever was (or wasn't) typed before validating
-		// below. The doctor's own self-service Clinics tab never posts this,
-		// so it keeps working exactly as before.
+		// Both the admin "Doctor Sessions" form and the doctor's own
+		// "Clinics" tab align a physical clinic to one of the admin-managed
+		// master clinics (Clinic_Locations) instead of typing a
+		// name/address/location freehand — the posted clinic_location_id's
+		// fields override whatever was (or wasn't) posted, before validating
+		// below.
 		$clinic_location_id = isset( $_POST['clinic_location_id'] ) ? absint( wp_unslash( $_POST['clinic_location_id'] ) ) : 0;
 
 		if ( Clinics::TYPE_PHYSICAL === $type && $clinic_location_id > 0 ) {

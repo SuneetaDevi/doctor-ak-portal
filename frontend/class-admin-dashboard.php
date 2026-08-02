@@ -14,6 +14,7 @@ use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Doctor_Awards;
 use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Notification_Center;
+use DoctorAKPortal\Includes\Notifications;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
@@ -350,6 +351,25 @@ class Admin_Dashboard {
 					'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
 					'nonce'            => wp_create_nonce( Locations_Handler::NONCE_ACTION ),
 					'defaultCountries' => Locations::default_seed_data(),
+				)
+			);
+		}
+
+		if ( 'settings' === self::requested_section() ) {
+			wp_enqueue_script(
+				'doctor-ak-portal-admin-clinic-branding',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-clinic-branding.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-admin-clinic-branding.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-admin-clinic-branding',
+				'dakClinicBranding',
+				array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( Clinic_Branding_Handler::NONCE_ACTION ),
 				)
 			);
 		}
@@ -696,6 +716,7 @@ class Admin_Dashboard {
 		if ( 'notifications' === $section ) {
 			$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
 			$selected_date = isset( $_GET['date'] ) ? sanitize_text_field( wp_unslash( $_GET['date'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$unread_count  = Notification_Center::unread_count( get_current_user_id() );
 
 			return $this->template_loader->get_template(
 				'dashboard/partials/notifications-list.php',
@@ -705,6 +726,12 @@ class Admin_Dashboard {
 					'selected_date'       => $selected_date,
 					'filter_field_name'   => 'section',
 					'filter_field_value'  => 'notifications',
+					'page_title'          => __( 'Notifications', 'doctor-ak-portal' ),
+					'page_subtitle'       => sprintf(
+						/* translators: %d: unread notification count. */
+						_n( '%d unread · Clinic-wide activity', '%d unread · Clinic-wide activity', $unread_count, 'doctor-ak-portal' ),
+						$unread_count
+					),
 				)
 			);
 		}
@@ -718,12 +745,16 @@ class Admin_Dashboard {
 
 		if ( 'appointments' === $section ) {
 			$patient_id = isset( $_GET['patient_id'] ) ? absint( wp_unslash( $_GET['patient_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
-			$date       = isset( $_GET['date'] ) ? sanitize_text_field( wp_unslash( $_GET['date'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
-			$status     = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
-			$payment_mode = isset( $_GET['payment_mode'] ) ? sanitize_key( wp_unslash( $_GET['payment_mode'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$date_from  = isset( $_GET['date_from'] ) ? sanitize_text_field( wp_unslash( $_GET['date_from'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$date_to    = isset( $_GET['date_to'] ) ? sanitize_text_field( wp_unslash( $_GET['date_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$doctor_id  = isset( $_GET['doctor_id'] ) ? absint( wp_unslash( $_GET['doctor_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$payment_status = isset( $_GET['payment_status'] ) ? sanitize_key( wp_unslash( $_GET['payment_status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 
-			$status       = array_key_exists( $status, Appointments::status_options() ) ? $status : '';
-			$payment_mode = array_key_exists( $payment_mode, Appointments::payment_mode_options() ) ? $payment_mode : '';
+			$payment_status_options = array(
+				Appointments::PAYMENT_STATUS_PENDING => __( 'Pending', 'doctor-ak-portal' ),
+				Appointments::PAYMENT_STATUS_PAID    => __( 'Paid', 'doctor-ak-portal' ),
+			);
+			$payment_status = array_key_exists( $payment_status, $payment_status_options ) ? $payment_status : '';
 
 			$patient      = $patient_id > 0 ? get_userdata( $patient_id ) : false;
 			$patient_name = '';
@@ -736,26 +767,36 @@ class Admin_Dashboard {
 			$dashboard_url     = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
 			$appointments_url  = $dashboard_url ? add_query_arg( 'section', 'appointments', $dashboard_url ) : '';
 
+			$doctors = get_users(
+				array(
+					'role'    => Roles::DOCTOR_ROLE,
+					'orderby' => 'display_name',
+					'fields'  => array( 'ID', 'display_name' ),
+				)
+			);
+
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-appointments.php',
 				array(
 					'appointments'      => Appointments::all_for_admin(
 						array(
-							'patient_id'   => $patient_id,
-							'date'         => $date,
-							'status'       => $status,
-							'payment_mode' => $payment_mode,
+							'patient_id'     => $patient_id,
+							'date_from'      => $date_from,
+							'date_to'        => $date_to,
+							'doctor_id'      => $doctor_id,
+							'payment_status' => $payment_status,
 						)
 					),
 					'filtered_patient'  => $patient_name,
 					'appointments_url'  => $appointments_url,
-					'status_options'    => Appointments::status_options(),
-					'payment_mode_options' => Appointments::payment_mode_options(),
+					'doctors'                => $doctors,
+					'payment_status_options' => $payment_status_options,
 					'filters'           => array(
-						'patient_id'   => $patient_id,
-						'date'         => $date,
-						'status'       => $status,
-						'payment_mode' => $payment_mode,
+						'patient_id'     => $patient_id,
+						'date_from'      => $date_from,
+						'date_to'        => $date_to,
+						'doctor_id'      => $doctor_id,
+						'payment_status' => $payment_status,
 					),
 				)
 			);
@@ -826,7 +867,16 @@ class Admin_Dashboard {
 		if ( 'settings' === $section ) {
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-settings-section.php',
-				array( 'settings_tab_html' => $this->template_loader->get_template( 'dashboard/partials/dashboard-settings-tab.php' ) )
+				array(
+					'settings_tab_html' => $this->template_loader->get_template( 'dashboard/partials/dashboard-settings-tab.php' ),
+					'clinic_name'       => get_option( Site_Footer::OPTION_CLINIC_NAME, '' ),
+					'clinic_phone'      => get_option( Site_Footer::OPTION_CLINIC_PHONE, '' ),
+					'clinic_address'    => get_option( Site_Footer::OPTION_CLINIC_ADDRESS, '' ),
+					'clinic_logo_url'   => Site_Footer::bundled_logo_url(),
+					'notify_booking'    => Notifications::is_enabled( 'booking' ),
+					'notify_paid'       => Notifications::is_enabled( 'paid' ),
+					'notify_cancelled'  => Notifications::is_enabled( 'cancelled' ),
+				)
 			);
 		}
 

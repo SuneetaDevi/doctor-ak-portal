@@ -238,7 +238,7 @@ $dak_dash_icons = array(
 
 		<?php else : ?>
 
-		<div class="dak-dashboard-greeting">
+		<div class="dak-dashboard-greeting dak-hero-banner">
 			<h1>
 				<?php
 				echo esc_html(

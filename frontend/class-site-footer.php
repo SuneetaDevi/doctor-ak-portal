@@ -42,6 +42,8 @@ class Site_Footer {
 	const OPTION_CLINIC_ADDRESS  = 'doctor_ak_footer_clinic_address';
 	const OPTION_CLINIC_PHONE    = 'doctor_ak_footer_clinic_phone';
 	const OPTION_COPYRIGHT_NAME  = 'doctor_ak_footer_copyright_name';
+	const OPTION_CLINIC_LOGO_URL  = 'doctor_ak_footer_clinic_logo_url';
+	const OPTION_CLINIC_LOGO_PATH = 'doctor_ak_footer_clinic_logo_path';
 
 	/**
 	 * Template loader.
@@ -141,6 +143,12 @@ class Site_Footer {
 	 * @return string Logo URL, or '' if no bundled logo file exists.
 	 */
 	public static function bundled_logo_url() {
+		$uploaded_url = get_option( self::OPTION_CLINIC_LOGO_URL, '' );
+
+		if ( '' !== $uploaded_url ) {
+			return $uploaded_url;
+		}
+
 		$relative_path = self::bundled_logo_relative_path();
 
 		return '' !== $relative_path ? DOCTOR_AK_PORTAL_URL . $relative_path : '';
@@ -154,6 +162,12 @@ class Site_Footer {
 	 * @return string Absolute path, or '' if no bundled logo file exists.
 	 */
 	public static function bundled_logo_path() {
+		$uploaded_path = get_option( self::OPTION_CLINIC_LOGO_PATH, '' );
+
+		if ( '' !== $uploaded_path && file_exists( $uploaded_path ) ) {
+			return $uploaded_path;
+		}
+
 		$relative_path = self::bundled_logo_relative_path();
 
 		return '' !== $relative_path ? DOCTOR_AK_PORTAL_PATH . $relative_path : '';

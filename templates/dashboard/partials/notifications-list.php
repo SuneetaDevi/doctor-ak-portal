@@ -13,7 +13,12 @@
  * @var string $selected_date       'YYYY-MM-DD', or '' if unfiltered.
  * @var string $filter_field_name   Hidden field name the filter form must resubmit to stay on this tab/section — 'tab' (doctor/patient) or 'section' (admin).
  * @var string $filter_field_value  Hidden field value — always 'notifications'.
+ * @var string $page_title          Optional heading to render above the filter bar. Doctor/patient dashboards render their own external heading instead and leave this empty; the admin dashboard (which has no such wrapper) passes one.
+ * @var string $page_subtitle       Optional subtitle under $page_title.
  */
+
+$page_title    = isset( $page_title ) ? $page_title : '';
+$page_subtitle = isset( $page_subtitle ) ? $page_subtitle : '';
 
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -67,6 +72,9 @@ if ( ! function_exists( 'dak_render_notification_row' ) ) :
 				<?php if ( ! $notification['is_read'] ) : ?>
 					<span class="dak-notification-dot" aria-hidden="true"></span>
 				<?php endif; ?>
+				<?php if ( '' !== $target ) : ?>
+					<span class="dak-notification-chevron" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 4.5 13 10l-5.5 5.5"/></svg></span>
+				<?php endif; ?>
 			</<?php echo esc_html( $tag ); ?>>
 		</li>
 		<?php
@@ -92,26 +100,36 @@ foreach ( $notification_groups as $dak_group_rows ) {
 	}
 }
 ?>
-<section class="dak-dashboard-card dak-appt-filters-card">
-	<form method="get" class="dak-appt-filters-form">
-		<input type="hidden" name="<?php echo esc_attr( $filter_field_name ); ?>" value="<?php echo esc_attr( $filter_field_value ); ?>">
-		<div class="dak-field">
-			<label for="dak-notifications-filter-date"><?php esc_html_e( 'Date', 'doctor-ak-portal' ); ?></label>
-			<input type="date" id="dak-notifications-filter-date" name="date" value="<?php echo esc_attr( $selected_date ); ?>">
-		</div>
-		<button type="submit" class="dak-button dak-button-primary"><?php esc_html_e( 'Filter', 'doctor-ak-portal' ); ?></button>
-		<?php if ( '' !== $selected_date ) : ?>
-			<a class="dak-link" href="?<?php echo esc_attr( $filter_field_name ); ?>=<?php echo esc_attr( $filter_field_value ); ?>"><?php esc_html_e( 'Clear filter', 'doctor-ak-portal' ); ?></a>
+<?php if ( '' !== $page_title ) : ?>
+	<div class="dak-dashboard-greeting">
+		<h1><?php echo esc_html( $page_title ); ?></h1>
+		<?php if ( '' !== $page_subtitle ) : ?>
+			<p><?php echo esc_html( $page_subtitle ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- esc_html() applied; the &middot; entity is deliberately not double-escaped by esc_html() so it still renders as a middle dot. ?></p>
 		<?php endif; ?>
-	</form>
-</section>
+	</div>
+<?php endif; ?>
 
 <section class="dak-dashboard-card dak-notifications-card">
 	<div class="dak-dashboard-card-header">
-		<h2><?php esc_html_e( 'Notifications', 'doctor-ak-portal' ); ?></h2>
-		<?php if ( $dak_has_unread ) : ?>
-			<button type="button" class="dak-link-button" id="dak-notifications-mark-all-read"><?php esc_html_e( 'Mark all as read', 'doctor-ak-portal' ); ?></button>
-		<?php endif; ?>
+		<div>
+			<h2><?php esc_html_e( 'Activity', 'doctor-ak-portal' ); ?></h2>
+			<p class="dak-notifications-card-subtitle"><?php esc_html_e( 'Newest first', 'doctor-ak-portal' ); ?></p>
+		</div>
+		<div class="dak-notifications-card-actions">
+			<?php if ( $dak_has_unread ) : ?>
+				<button type="button" class="dak-link-button" id="dak-notifications-mark-all-read"><?php esc_html_e( 'Mark all as read', 'doctor-ak-portal' ); ?></button>
+			<?php endif; ?>
+			<form method="get" class="dak-appt-filters-form dak-notifications-filter-form">
+				<input type="hidden" name="<?php echo esc_attr( $filter_field_name ); ?>" value="<?php echo esc_attr( $filter_field_value ); ?>">
+				<div class="dak-field">
+					<label for="dak-notifications-filter-date" class="dak-visually-hidden"><?php esc_html_e( 'Date', 'doctor-ak-portal' ); ?></label>
+					<input type="date" id="dak-notifications-filter-date" name="date" value="<?php echo esc_attr( $selected_date ); ?>" onchange="this.form.submit()">
+				</div>
+				<?php if ( '' !== $selected_date ) : ?>
+					<a class="dak-link" href="?<?php echo esc_attr( $filter_field_name ); ?>=<?php echo esc_attr( $filter_field_value ); ?>"><?php esc_html_e( 'Clear', 'doctor-ak-portal' ); ?></a>
+				<?php endif; ?>
+			</form>
+		</div>
 	</div>
 
 	<?php if ( 0 === $dak_total_count ) : ?>

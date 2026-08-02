@@ -6,8 +6,9 @@
  *
  * @package DoctorAKPortal\Templates
  *
- * @var array $clinics      Doctor's clinics, see Clinics::get_for_doctor().
- * @var array $session_days Day slug => label, see Clinics::session_days().
+ * @var array $clinics         Doctor's clinics, see Clinics::get_for_doctor().
+ * @var array $session_days    Day slug => label, see Clinics::session_days().
+ * @var array $clinic_locations Master clinic list, see Clinic_Locations::get_all() — used by the "Clinic" picker below instead of free-typing a name/address.
  */
 
 // Prevent direct file access.
@@ -80,35 +81,33 @@ function dak_render_clinic_card( $clinic, array $session_days, array $icons ) {
 						<option value="video" <?php selected( 'video' === $type ); ?>><?php esc_html_e( 'Video Consultation', 'doctor-ak-portal' ); ?></option>
 					</select>
 				</div>
-				<div class="dak-field">
+				<div class="dak-field dak-clinic-video-name-field<?php echo $is_blank || 'video' !== $clinic['type'] ? ' dak-hidden' : ''; ?>">
 					<label><?php esc_html_e( 'Clinic Name', 'doctor-ak-portal' ); ?></label>
-					<input type="text" class="dak-clinic-name-input" value="<?php echo esc_attr( $is_blank ? '' : $clinic['name'] ); ?>" placeholder="<?php esc_attr_e( 'e.g. AK-Lohana Clinic', 'doctor-ak-portal' ); ?>">
+					<input type="text" class="dak-clinic-name-input" value="<?php echo esc_attr( $is_blank ? '' : $clinic['name'] ); ?>" placeholder="<?php esc_attr_e( 'e.g. Video Consultation', 'doctor-ak-portal' ); ?>">
 					<span class="dak-field-error" data-field="name"></span>
 				</div>
-			</div>
-
-			<div class="dak-field dak-clinic-address-field<?php echo ! $is_blank && 'video' === $clinic['type'] ? ' dak-hidden' : ''; ?>">
-				<label><?php esc_html_e( 'Address', 'doctor-ak-portal' ); ?></label>
-				<input type="text" class="dak-clinic-address-input" value="<?php echo esc_attr( $is_blank ? '' : $clinic['address'] ); ?>">
-				<span class="dak-field-error" data-field="address"></span>
 			</div>
 
 			<div class="dak-field-row dak-clinic-address-field<?php echo ! $is_blank && 'video' === $clinic['type'] ? ' dak-hidden' : ''; ?>">
 				<div class="dak-field">
 					<label><?php esc_html_e( 'Country', 'doctor-ak-portal' ); ?></label>
 					<select class="dak-clinic-country-select" data-clinic-country="<?php echo esc_attr( $is_blank ? '' : $clinic['country'] ); ?>"></select>
-					<span class="dak-field-error" data-field="country"></span>
 				</div>
 				<div class="dak-field">
 					<label><?php esc_html_e( 'City', 'doctor-ak-portal' ); ?></label>
 					<select class="dak-clinic-city-select" data-clinic-city="<?php echo esc_attr( $is_blank ? '' : $clinic['city'] ); ?>"></select>
-					<span class="dak-field-error" data-field="city"></span>
 				</div>
 				<div class="dak-field">
 					<label><?php esc_html_e( 'Area', 'doctor-ak-portal' ); ?></label>
 					<select class="dak-clinic-area-select" data-clinic-area="<?php echo esc_attr( $is_blank ? '' : $clinic['area'] ); ?>"></select>
-					<span class="dak-field-error" data-field="area"></span>
 				</div>
+			</div>
+
+			<div class="dak-field dak-clinic-address-field<?php echo ! $is_blank && 'video' === $clinic['type'] ? ' dak-hidden' : ''; ?>">
+				<label><?php esc_html_e( 'Clinic', 'doctor-ak-portal' ); ?></label>
+				<select class="dak-clinic-location-select" data-clinic-location="<?php echo esc_attr( $is_blank ? '' : $clinic['clinic_location_id'] ); ?>"></select>
+				<span class="dak-field-error" data-field="clinic_location_id"></span>
+				<p class="dak-field-hint"><?php esc_html_e( 'No clinic for this area yet? Ask an admin to add it first from the "Clinic" section, then come back here to align yourself to it.', 'doctor-ak-portal' ); ?></p>
 			</div>
 
 			<div class="dak-field-row">

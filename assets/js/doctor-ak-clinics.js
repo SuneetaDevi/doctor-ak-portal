@@ -31,7 +31,8 @@
 	/**
 	 * Wires every Country/City/Area select trio inside a container (the
 	 * whole list on page load, or a single freshly cloned card) via the
-	 * shared window.dakCityArea helper.
+	 * shared window.dakCityArea helper, plus the Clinic picker each trio
+	 * filters (mirrors the admin "Doctor Sessions" form's picker).
 	 *
 	 * @param {HTMLElement} container Element to search within.
 	 */
@@ -44,6 +45,7 @@
 			var countrySelect = card.querySelector( '.dak-clinic-country-select' );
 			var citySelect = card.querySelector( '.dak-clinic-city-select' );
 			var areaSelect = card.querySelector( '.dak-clinic-area-select' );
+			var clinicLocationSelect = card.querySelector( '.dak-clinic-location-select' );
 
 			if ( ! countrySelect || ! citySelect || ! areaSelect || countrySelect.getAttribute( 'data-wired' ) ) {
 				return;
@@ -60,6 +62,61 @@
 				citySelect.getAttribute( 'data-clinic-city' ) || '',
 				areaSelect.getAttribute( 'data-clinic-area' ) || ''
 			);
+
+			if ( clinicLocationSelect ) {
+				var preselectClinicLocationId = clinicLocationSelect.getAttribute( 'data-clinic-location' ) || '';
+
+				renderClinicLocationOptions( clinicLocationSelect, countrySelect, citySelect, areaSelect, preselectClinicLocationId );
+
+				[ countrySelect, citySelect, areaSelect ].forEach( function ( select ) {
+					select.addEventListener( 'change', function () {
+						renderClinicLocationOptions( clinicLocationSelect, countrySelect, citySelect, areaSelect, '' );
+					} );
+				} );
+			}
+		} );
+	}
+
+	/**
+	 * Fills a card's Clinic <select> from window.dakClinics.clinicLocations,
+	 * filtered to whichever Country/City/Area are currently selected in that
+	 * same card — narrowing as the doctor picks a more specific location.
+	 *
+	 * @param {HTMLSelectElement} clinicLocationSelect The Clinic <select>.
+	 * @param {HTMLSelectElement} countrySelect        The Country <select>.
+	 * @param {HTMLSelectElement} citySelect           The City <select>.
+	 * @param {HTMLSelectElement} areaSelect            The Area <select>.
+	 * @param {string}            preselectId           Clinic-location ID to pre-select, if any.
+	 */
+	function renderClinicLocationOptions( clinicLocationSelect, countrySelect, citySelect, areaSelect, preselectId ) {
+		var allClinicLocations = ( window.dakClinics && window.dakClinics.clinicLocations ) || [];
+		var country = countrySelect ? countrySelect.value : '';
+		var city = citySelect ? citySelect.value : '';
+		var area = areaSelect ? areaSelect.value : '';
+
+		var filtered = allClinicLocations.filter( function ( clinicLocation ) {
+			return ( ! country || clinicLocation.country === country )
+				&& ( ! city || clinicLocation.city === city )
+				&& ( ! area || clinicLocation.area === area );
+		} );
+
+		clinicLocationSelect.innerHTML = '';
+
+		var placeholderOption = document.createElement( 'option' );
+		placeholderOption.value = '';
+		placeholderOption.textContent = filtered.length ? 'Select a clinic…' : 'No clinics for this area yet';
+		clinicLocationSelect.appendChild( placeholderOption );
+
+		filtered.forEach( function ( clinicLocation ) {
+			var option = document.createElement( 'option' );
+			option.value = String( clinicLocation.id );
+			option.textContent = clinicLocation.name + ' — ' + clinicLocation.area_label + ', ' + clinicLocation.city_label;
+
+			if ( String( clinicLocation.id ) === String( preselectId ) ) {
+				option.selected = true;
+			}
+
+			clinicLocationSelect.appendChild( option );
 		} );
 	}
 
@@ -101,8 +158,14 @@
 				return;
 			}
 
+			var isVideo = 'video' === event.target.value;
+
 			card.querySelectorAll( '.dak-clinic-address-field' ).forEach( function ( field ) {
-				field.classList.toggle( 'dak-hidden', 'video' === event.target.value );
+				field.classList.toggle( 'dak-hidden', isVideo );
+			} );
+
+			card.querySelectorAll( '.dak-clinic-video-name-field' ).forEach( function ( field ) {
+				field.classList.toggle( 'dak-hidden', ! isVideo );
 			} );
 		} );
 	}
@@ -213,14 +276,13 @@
 			} );
 		} );
 
+		var clinicLocationSelect = card.querySelector( '.dak-clinic-location-select' );
+
 		return {
 			clinic_id: card.getAttribute( 'data-clinic-id' ) || '0',
 			type: card.querySelector( '.dak-clinic-type-select' ).value,
 			name: card.querySelector( '.dak-clinic-name-input' ).value,
-			address: card.querySelector( '.dak-clinic-address-input' ).value,
-			country: card.querySelector( '.dak-clinic-country-select' ).value,
-			city: card.querySelector( '.dak-clinic-city-select' ).value,
-			area: card.querySelector( '.dak-clinic-area-select' ).value,
+			clinic_location_id: clinicLocationSelect ? clinicLocationSelect.value : '',
 			phone: card.querySelector( '.dak-clinic-phone-input' ).value,
 			contact_email: card.querySelector( '.dak-clinic-email-input' ).value,
 			sessions: sessions,
@@ -254,10 +316,7 @@
 			formData.append( 'clinic_id', payload.clinic_id );
 			formData.append( 'type', payload.type );
 			formData.append( 'name', payload.name );
-			formData.append( 'address', payload.address );
-			formData.append( 'country', payload.country );
-			formData.append( 'city', payload.city );
-			formData.append( 'area', payload.area );
+			formData.append( 'clinic_location_id', payload.clinic_location_id );
 			formData.append( 'phone', payload.phone );
 			formData.append( 'contact_email', payload.contact_email );
 

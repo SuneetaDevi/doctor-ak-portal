@@ -222,6 +222,20 @@
 	height: 16px !important;
 }
 
+.dak-avatar-lg {
+	width: 64px !important;
+	height: 64px !important;
+	font-size: 1.1rem !important;
+	font-weight: 700 !important;
+	color: #fff !important;
+	background: var( --dak-primary ) !important;
+}
+
+.dak-avatar-lg svg {
+	width: 30px !important;
+	height: 30px !important;
+}
+
 .dak-dashboard-nav {
 	flex: 1 1 auto !important;
 }
@@ -508,20 +522,10 @@
 	line-height: 1 !important;
 }
 
-/* Hero greeting banner — brand-gradient card (same green used everywhere
-   else in the portal), replacing the plain heading on every dashboard
-   section header. .dak-admin-users-header (Doctors/Patients list headers)
-   keeps its own layout (title + "+ Add" button) via the row rules below. */
+/* Plain section header (title + subtitle) — used by every section EXCEPT
+   each portal's own "Dashboard" home, which gets .dak-hero-banner below. */
 .dak-dashboard-greeting {
-	background: linear-gradient( 135deg, var( --dak-primary ) 0%, var( --dak-primary-dark ) 100% ) !important;
-	background-image:
-		radial-gradient( circle at 94% 10%, rgba( 255, 255, 255, 0.14 ) 0, transparent 45% ),
-		radial-gradient( circle at 4% 94%, rgba( 255, 255, 255, 0.1 ) 0, transparent 40% ),
-		linear-gradient( 135deg, var( --dak-primary ) 0%, var( --dak-primary-dark ) 100% ) !important;
-	border-radius: var( --dak-radius-lg ) !important;
-	padding: 1.5rem 1.75rem !important;
 	margin-bottom: 1.75rem !important;
-	box-shadow: 0 10px 24px rgba( 127, 181, 45, 0.25 ) !important;
 }
 
 .dak-dashboard-greeting h1,
@@ -529,37 +533,52 @@
 	font-size: 1.5rem !important;
 	font-weight: 700 !important;
 	margin: 0 0 0.35rem !important;
-	color: #fff !important;
+	color: var( --dak-text ) !important;
 }
 
 .dak-dashboard-greeting p {
 	margin: 0 !important;
-	color: rgba( 255, 255, 255, 0.85 ) !important;
+	color: var( --dak-muted ) !important;
 	font-size: 0.92rem !important;
 }
 
-.dak-dashboard-greeting .dak-link {
+/* Hero greeting banner — brand-gradient card (same green used everywhere
+   else in the portal), used only by each portal's "Dashboard" home
+   (admin's "Clinic overview", doctor's "Welcome back…", patient's
+   "Hello…") — every other section keeps the plain header above. */
+.dak-hero-banner {
+	background: linear-gradient( 135deg, var( --dak-primary ) 0%, var( --dak-primary-dark ) 100% ) !important;
+	background-image:
+		radial-gradient( circle at 94% 10%, rgba( 255, 255, 255, 0.14 ) 0, transparent 45% ),
+		radial-gradient( circle at 4% 94%, rgba( 255, 255, 255, 0.1 ) 0, transparent 40% ),
+		linear-gradient( 135deg, var( --dak-primary ) 0%, var( --dak-primary-dark ) 100% ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	padding: 1.5rem 1.75rem !important;
+	box-shadow: 0 10px 24px rgba( 127, 181, 45, 0.25 ) !important;
+}
+
+.dak-hero-banner h1,
+.dak-hero-banner h1 span {
+	color: #fff !important;
+}
+
+.dak-hero-banner p {
+	color: rgba( 255, 255, 255, 0.85 ) !important;
+}
+
+.dak-hero-banner .dak-link {
 	color: #fff !important;
 	text-decoration: underline !important;
 }
 
-/* Doctors/Patients list header ("+ Add Doctor/Patient") sits inline with
-   the gradient banner instead of stacking below it. */
+/* Section list headers ("+ Add Doctor/Patient/Appointment") — title +
+   subtitle on the left, primary action button on the right. */
 .dak-admin-users-header {
 	display: flex !important;
 	align-items: center !important;
 	justify-content: space-between !important;
 	gap: 1rem !important;
 	flex-wrap: wrap !important;
-}
-
-.dak-admin-users-header .dak-button-primary {
-	background: #fff !important;
-	color: var( --dak-primary-dark ) !important;
-}
-
-.dak-admin-users-header .dak-button-primary:hover {
-	background: rgba( 255, 255, 255, 0.9 ) !important;
 }
 
 /* Stat cards */
@@ -983,12 +1002,15 @@
 	}
 
 	.dak-dashboard-greeting {
-		padding: 1.25rem 1.35rem !important;
-		margin: 0 0 1.25rem !important;
+		margin-bottom: 1.25rem !important;
 	}
 
 	.dak-dashboard-greeting h1 {
 		font-size: 1.3rem !important;
+	}
+
+	.dak-hero-banner {
+		padding: 1.25rem 1.35rem !important;
 	}
 
 	/* 2-column stat cards, each tinted a shade of the existing palette
@@ -1084,15 +1106,17 @@
 	padding: 0 !important;
 	display: flex !important;
 	flex-direction: column !important;
-	gap: 0.4rem !important;
+	gap: 0.65rem !important;
 }
 
 .dak-notification-row {
 	display: flex !important;
 	align-items: flex-start !important;
 	padding: 0 !important;
+	background: var( --dak-bg-card ) !important;
 	border-radius: var( --dak-radius-md ) !important;
 	border: 1px solid transparent !important;
+	box-shadow: var( --dak-shadow ) !important;
 	overflow: hidden !important;
 }
 
@@ -1167,6 +1191,44 @@ a.dak-notification-row-link:hover {
 	margin-top: 0.4rem !important;
 	border-radius: 999px !important;
 	background: var( --dak-primary ) !important;
+}
+
+.dak-notification-chevron {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	width: 1rem !important;
+	height: 1rem !important;
+	margin-top: 0.3rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-notification-chevron svg {
+	width: 100% !important;
+	height: 100% !important;
+}
+
+.dak-notifications-card-subtitle {
+	margin: 0.15rem 0 0 !important;
+	font-size: 0.78rem !important;
+	color: var( --dak-muted ) !important;
+	font-weight: 400 !important;
+}
+
+.dak-notifications-card-actions {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.75rem !important;
+	flex-wrap: wrap !important;
+}
+
+.dak-notifications-filter-form {
+	gap: 0.5rem !important;
+}
+
+.dak-notifications-filter-form .dak-field {
+	margin-bottom: 0 !important;
+	min-width: 0 !important;
 }
 
 .dak-notifications-group {

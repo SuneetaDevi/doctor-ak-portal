@@ -248,11 +248,12 @@ class Clinics {
 			return new \WP_Error( 'doctor_ak_clinic_email_invalid', __( 'Please provide a valid contact email address.', 'doctor-ak-portal' ) );
 		}
 
-		// Set by Clinic_Handler::process_save() when the admin "Doctor
-		// Sessions" form aligned this clinic to a Clinic_Locations master
-		// record (which also already overwrote name/address/country/city/area
-		// above with that record's own values) — carried through so the
-		// association itself is stored, not just a name/address snapshot.
+		// Set by Clinic_Handler::process_save() when this physical clinic was
+		// aligned to a Clinic_Locations master record — from either the admin
+		// "Doctor Sessions" form or the doctor's own "Clinics" tab (which
+		// also already overwrote name/address/country/city/area above with
+		// that record's own values) — carried through so the association
+		// itself is stored, not just a name/address snapshot.
 		$clinic_location_id = isset( $posted['clinic_location_id'] ) ? absint( wp_unslash( $posted['clinic_location_id'] ) ) : 0;
 
 		return array(

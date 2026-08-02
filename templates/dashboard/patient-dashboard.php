@@ -215,7 +215,7 @@ $appointment_group_labels = array(
 
 		<?php else : ?>
 
-		<header class="dak-dashboard-header dak-patient-dashboard-header">
+		<header class="dak-dashboard-header dak-patient-dashboard-header dak-hero-banner">
 			<div>
 				<h1><?php echo esc_html( sprintf( /* translators: %s: patient's first name or display name. */ __( 'Welcome back, %s', 'doctor-ak-portal' ), $first_name ) ); ?> <span aria-hidden="true">&#128075;</span></h1>
 				<p><?php esc_html_e( "Here's what's happening with your health today.", 'doctor-ak-portal' ); ?></p>

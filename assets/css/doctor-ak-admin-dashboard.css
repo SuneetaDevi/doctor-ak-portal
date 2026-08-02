@@ -49,6 +49,19 @@
 	overflow: hidden !important;
 }
 
+/* Card-style content (the Patients directory's accent-bar rows, the
+   "Permission matrix"/"Locations" forms, etc.) needs real padding around
+   its heading and rows — only a literal <table> layout (the Doctors list)
+   stays edge-to-edge, since its th/td cells already carry their own
+   padding. :has() lets one card-wrapper class serve both layouts. */
+.dak-admin-users-card:has( > .dak-dashboard-card-header ) {
+	padding: 1.5rem !important;
+}
+
+.dak-admin-users-card:has( > .dak-dashboard-card-header ) > .dak-dashboard-card-header {
+	margin-bottom: 1.25rem !important;
+}
+
 #dak-role-permissions-form,
 #dak-locations-form {
 	padding: 24px !important;
@@ -242,6 +255,29 @@
 	border-bottom: 0 !important;
 }
 
+.dak-permission-matrix th:not( :first-child ),
+.dak-permission-matrix td:not( :first-child ) {
+	text-align: center !important;
+}
+
+.dak-permission-matrix th {
+	text-transform: uppercase !important;
+	font-size: 0.72rem !important;
+	letter-spacing: 0.04em !important;
+}
+
+.dak-permission-matrix input[type='checkbox'] {
+	width: 18px !important;
+	height: 18px !important;
+	accent-color: var( --dak-primary ) !important;
+	cursor: pointer !important;
+}
+
+.dak-permission-matrix input[type='checkbox']:disabled {
+	cursor: not-allowed !important;
+	opacity: 0.7 !important;
+}
+
 .dak-status-badge {
 	display: inline-flex !important;
 	align-items: center !important;
@@ -369,4 +405,235 @@
 	.dak-admin-users-actions {
 		white-space: nowrap !important;
 	}
+}
+
+/* Accent-bar record row — used by the Appointments and Patients sections
+   instead of a plain table, matching the cards used everywhere else in the
+   dashboard (Latest appointments, Pending doctor approvals, etc.). */
+.dak-admin-record-row {
+	position: relative !important;
+	background: var( --dak-bg-card ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	padding: 1rem 1.1rem 1rem 1.4rem !important;
+	margin-bottom: 0.75rem !important;
+	scroll-margin-top: 1rem !important;
+	transition: background-color 0.3s ease !important;
+}
+
+.dak-admin-record-row:last-child {
+	margin-bottom: 0 !important;
+}
+
+.dak-admin-record-row::before {
+	content: '' !important;
+	position: absolute !important;
+	top: 0.7rem !important;
+	bottom: 0.7rem !important;
+	left: 0 !important;
+	width: 4px !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary ) !important;
+}
+
+/* Landed on from a notification link (e.g. "#dak-appointment-123") — briefly
+   emphasized so it's obvious which row it's pointing at. */
+.dak-admin-record-row:target {
+	background: var( --dak-primary-tint ) !important;
+}
+
+.dak-admin-record-row-main {
+	display: flex !important;
+	align-items: center !important;
+	flex-wrap: wrap !important;
+	gap: 1rem !important;
+}
+
+.dak-admin-record-row-info {
+	display: flex !important;
+	flex-direction: column !important;
+	flex: 1 1 170px !important;
+	min-width: 0 !important;
+}
+
+.dak-admin-record-row-info strong {
+	color: var( --dak-text ) !important;
+	font-size: 0.92rem !important;
+}
+
+.dak-admin-record-row-id {
+	font-size: 0.76rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-admin-record-row-meta {
+	flex: 1 1 200px !important;
+	font-size: 0.85rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-admin-record-row-tags {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0.4rem !important;
+	flex: 1 1 220px !important;
+}
+
+.dak-admin-record-row-amount {
+	flex: 0 0 auto !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	white-space: nowrap !important;
+}
+
+.dak-admin-record-row-actions {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+	flex: 0 0 auto !important;
+	margin-left: auto !important;
+}
+
+/* Video Consultation pricing row's price pair (original struck-through +
+   discounted, or just the base price when there's no active discount). */
+.dak-video-pricing-amounts {
+	display: flex !important;
+	align-items: baseline !important;
+	gap: 0.5rem !important;
+	flex: 0 0 auto !important;
+	white-space: nowrap !important;
+}
+
+.dak-price-original {
+	color: var( --dak-muted ) !important;
+	font-size: 0.85rem !important;
+}
+
+.dak-price-sale {
+	color: var( --dak-primary-dark ) !important;
+	font-size: 0.95rem !important;
+}
+
+@media ( max-width: 600px ) {
+	.dak-admin-record-row-main {
+		align-items: flex-start !important;
+	}
+
+	.dak-admin-record-row-amount,
+	.dak-admin-record-row-actions {
+		margin-left: 0 !important;
+	}
+}
+
+/* Clinic branding card (Settings section) */
+
+.dak-clinic-branding-logo-row {
+	display: flex !important;
+	align-items: center !important;
+	gap: 1rem !important;
+	margin-bottom: 1.25rem !important;
+}
+
+.dak-clinic-branding-logo-row .dak-button .dak-nav-icon {
+	width: 16px !important;
+	height: 16px !important;
+}
+
+/* Notification preferences toggle switch */
+
+.dak-toggle-switch {
+	position: relative !important;
+	display: inline-flex !important;
+	flex-shrink: 0 !important;
+	width: 2.6rem !important;
+	height: 1.5rem !important;
+	cursor: pointer !important;
+}
+
+.dak-toggle-switch input {
+	position: absolute !important;
+	opacity: 0 !important;
+	width: 100% !important;
+	height: 100% !important;
+	margin: 0 !important;
+	cursor: pointer !important;
+}
+
+.dak-toggle-switch span {
+	position: absolute !important;
+	inset: 0 !important;
+	border-radius: 999px !important;
+	background: var( --dak-border ) !important;
+	transition: background-color 0.15s ease !important;
+}
+
+.dak-toggle-switch span::before {
+	content: '' !important;
+	position: absolute !important;
+	top: 0.15rem !important;
+	left: 0.15rem !important;
+	width: 1.2rem !important;
+	height: 1.2rem !important;
+	border-radius: 50% !important;
+	background: #fff !important;
+	box-shadow: 0 1px 3px rgba( 15, 23, 42, 0.25 ) !important;
+	transition: transform 0.15s ease !important;
+}
+
+.dak-toggle-switch input:checked + span {
+	background: var( --dak-primary ) !important;
+}
+
+.dak-toggle-switch input:checked + span::before {
+	transform: translateX( 1.1rem ) !important;
+}
+
+.dak-toggle-switch input:focus-visible + span {
+	box-shadow: 0 0 0 3px var( --dak-primary-tint ) !important;
+}
+
+/* Patients directory card row — simpler than the appointment row (no tags,
+   no amount): avatar/name/ID, email, phone, a "Since ..." pill, and Edit. */
+.dak-admin-patient-row {
+	display: flex !important;
+	align-items: center !important;
+	flex-wrap: wrap !important;
+	gap: 1rem !important;
+}
+
+.dak-admin-patient-row-info {
+	display: flex !important;
+	flex-direction: column !important;
+	flex: 1 1 170px !important;
+	min-width: 0 !important;
+}
+
+.dak-admin-patient-row-info strong {
+	color: var( --dak-text ) !important;
+	font-size: 0.92rem !important;
+}
+
+.dak-admin-patient-row-id {
+	font-size: 0.76rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-admin-patient-row-email,
+.dak-admin-patient-row-phone {
+	flex: 1 1 190px !important;
+	font-size: 0.86rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-admin-patient-row-since {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	white-space: nowrap !important;
+	padding: 0.25rem 0.7rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.76rem !important;
+	font-weight: 600 !important;
 }

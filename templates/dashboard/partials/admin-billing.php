@@ -35,27 +35,31 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'];
 <section class="dak-dashboard-statistics">
 	<div class="dak-stat-card">
 		<span class="dak-stat-icon dak-stat-icon-green" aria-hidden="true"><?php echo $dak_billing_icons['money']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-		<span class="dak-stat-value">PKR <?php echo esc_html( number_format_i18n( $revenue['total'] ) ); ?></span>
-		<span class="dak-stat-label"><?php esc_html_e( 'Total Revenue', 'doctor-ak-portal' ); ?></span>
+		<span class="dak-stat-value">PKR <?php echo esc_html( number_format_i18n( $revenue['today'] ) ); ?></span>
+		<span class="dak-stat-label"><?php esc_html_e( 'Revenue today', 'doctor-ak-portal' ); ?></span>
 	</div>
 	<div class="dak-stat-card">
 		<span class="dak-stat-icon dak-stat-icon-green" aria-hidden="true"><?php echo $dak_billing_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 		<span class="dak-stat-value">PKR <?php echo esc_html( number_format_i18n( $revenue['this_month'] ) ); ?></span>
-		<span class="dak-stat-label"><?php esc_html_e( 'This Month', 'doctor-ak-portal' ); ?></span>
+		<span class="dak-stat-label"><?php esc_html_e( 'This month', 'doctor-ak-portal' ); ?></span>
 	</div>
 	<div class="dak-stat-card">
 		<span class="dak-stat-icon dak-stat-icon-green" aria-hidden="true"><?php echo $dak_billing_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-		<span class="dak-stat-value">PKR <?php echo esc_html( number_format_i18n( $revenue['today'] ) ); ?></span>
-		<span class="dak-stat-label"><?php esc_html_e( 'Today', 'doctor-ak-portal' ); ?></span>
+		<span class="dak-stat-value">PKR <?php echo esc_html( number_format_i18n( $revenue['total'] ) ); ?></span>
+		<span class="dak-stat-label"><?php esc_html_e( 'All-time', 'doctor-ak-portal' ); ?></span>
 	</div>
 	<div class="dak-stat-card">
-		<span class="dak-stat-icon dak-stat-icon-green" aria-hidden="true"><?php echo $dak_billing_icons['receipt']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+		<span class="dak-stat-icon dak-stat-icon-green" aria-hidden="true"><?php echo $dak_billing_icons['download']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 		<span class="dak-stat-value"><?php echo esc_html( number_format_i18n( $revenue['invoice_count'] ) ); ?></span>
-		<span class="dak-stat-label"><?php esc_html_e( 'Total Invoices', 'doctor-ak-portal' ); ?></span>
+		<span class="dak-stat-label"><?php esc_html_e( 'Invoices issued', 'doctor-ak-portal' ); ?></span>
 	</div>
 </section>
 
 <section class="dak-dashboard-card">
+	<div class="dak-dashboard-card-header">
+		<h2><?php esc_html_e( 'Filters', 'doctor-ak-portal' ); ?></h2>
+	</div>
+
 	<form method="get" action="<?php echo esc_url( $billing_url ); ?>" class="dak-field-row">
 		<input type="hidden" name="section" value="billing">
 
@@ -70,7 +74,7 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'];
 		</div>
 
 		<div class="dak-admin-filter-actions">
-			<button type="submit" class="dak-button dak-button-primary"><?php esc_html_e( 'Filter', 'doctor-ak-portal' ); ?></button>
+			<button type="submit" class="dak-button dak-button-primary"><?php esc_html_e( 'Apply', 'doctor-ak-portal' ); ?></button>
 			<?php if ( $dak_has_filters ) : ?>
 				<a class="dak-button dak-button-secondary" href="<?php echo esc_url( $billing_url ); ?>"><?php esc_html_e( 'Clear', 'doctor-ak-portal' ); ?></a>
 			<?php endif; ?>
@@ -78,46 +82,43 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'];
 	</form>
 </section>
 
-<section class="dak-dashboard-card dak-admin-users-card">
-<?php if ( empty( $invoices ) ) : ?>
-	<p class="dak-empty-state"><?php esc_html_e( 'No paid appointments match these filters.', 'doctor-ak-portal' ); ?></p>
-<?php else : ?>
-	<div class="dak-table-scroll">
-		<table class="dak-admin-users-table">
-			<thead>
-				<tr>
-					<th><?php esc_html_e( 'Invoice', 'doctor-ak-portal' ); ?></th>
-					<th><?php esc_html_e( 'Patient', 'doctor-ak-portal' ); ?></th>
-					<th><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></th>
-					<th><?php esc_html_e( 'Date', 'doctor-ak-portal' ); ?></th>
-					<th><?php esc_html_e( 'Payment Mode', 'doctor-ak-portal' ); ?></th>
-					<th><?php esc_html_e( 'Amount', 'doctor-ak-portal' ); ?></th>
-					<th class="dak-admin-users-actions-col"><?php esc_html_e( 'Action', 'doctor-ak-portal' ); ?></th>
-				</tr>
-			</thead>
-			<tbody>
-				<?php foreach ( $invoices as $row ) : ?>
-					<tr>
-						<td data-label="<?php esc_attr_e( 'Invoice', 'doctor-ak-portal' ); ?>"><?php echo esc_html( sprintf( 'INV-%05d', $row['id'] ) ); ?></td>
-						<td data-label="<?php esc_attr_e( 'Patient', 'doctor-ak-portal' ); ?>"><?php echo esc_html( $row['patient_name'] ); ?></td>
-						<td data-label="<?php esc_attr_e( 'Doctor', 'doctor-ak-portal' ); ?>"><?php echo esc_html( sprintf( 'Dr. %s', $row['doctor_name'] ) ); ?></td>
-						<td data-label="<?php esc_attr_e( 'Date', 'doctor-ak-portal' ); ?>"><?php echo esc_html( $row['date'] . ' ' . $row['time'] ); ?></td>
-						<td data-label="<?php esc_attr_e( 'Payment Mode', 'doctor-ak-portal' ); ?>">
-							<?php echo esc_html( 'online' === $row['payment_mode'] ? __( 'Online', 'doctor-ak-portal' ) : __( 'Manual', 'doctor-ak-portal' ) ); ?>
-						</td>
-						<td data-label="<?php esc_attr_e( 'Amount', 'doctor-ak-portal' ); ?>"><?php echo esc_html( 'PKR' . number_format( (float) $row['charge'], 0 ) . '/-' ); ?></td>
-						<td class="dak-admin-users-actions-col">
-							<a
-								class="dak-icon-button"
-								href="<?php echo esc_url( \DoctorAKPortal\Frontend\Appointment_Handler::invoice_download_url( $row['id'] ) ); ?>"
-								title="<?php esc_attr_e( 'Download Invoice', 'doctor-ak-portal' ); ?>"
-								aria-label="<?php esc_attr_e( 'Download Invoice', 'doctor-ak-portal' ); ?>"
-							><?php echo $dak_billing_icons['download']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
-						</td>
-					</tr>
-				<?php endforeach; ?>
-			</tbody>
-		</table>
+<section class="dak-dashboard-card">
+	<div class="dak-dashboard-card-header">
+		<h2><?php esc_html_e( 'Paid appointments', 'doctor-ak-portal' ); ?></h2>
 	</div>
-<?php endif; ?>
+
+	<?php if ( empty( $invoices ) ) : ?>
+		<p class="dak-empty-state"><?php esc_html_e( 'No paid appointments match these filters.', 'doctor-ak-portal' ); ?></p>
+	<?php else : ?>
+		<?php foreach ( $invoices as $row ) : ?>
+			<div class="dak-admin-record-row">
+				<div class="dak-admin-record-row-main">
+					<span class="dak-admin-record-row-info">
+						<strong><?php echo esc_html( sprintf( 'INV-%05d', $row['id'] ) . ' &middot; ' . ( '' !== $row['service_name'] ? $row['service_name'] : $row['type_label'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- esc_html() already applied to both pieces before concatenation. ?></strong>
+						<span class="dak-admin-record-row-id"><?php echo esc_html( sprintf( 'Dr. %1$s &middot; %2$s', $row['doctor_name'], $row['date'] ) ); ?></span>
+					</span>
+
+					<span class="dak-admin-record-row-tags">
+						<?php if ( 'processed' === $row['refund_status'] ) : ?>
+							<span class="dak-status-pill dak-status-pill-outline"><?php esc_html_e( 'Refunded', 'doctor-ak-portal' ); ?></span>
+						<?php else : ?>
+							<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-active"><?php esc_html_e( 'Paid', 'doctor-ak-portal' ); ?></span>
+						<?php endif; ?>
+					</span>
+
+					<span class="dak-admin-record-row-amount"><?php echo esc_html( 'PKR ' . number_format( (float) $row['charge'], 0 ) ); ?></span>
+
+					<span class="dak-admin-record-row-actions">
+						<a
+							class="dak-button dak-button-secondary dak-button-sm"
+							href="<?php echo esc_url( \DoctorAKPortal\Frontend\Appointment_Handler::invoice_download_url( $row['id'] ) ); ?>"
+						>
+							<span class="dak-nav-icon"><?php echo $dak_billing_icons['download']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<?php esc_html_e( 'Download Invoice', 'doctor-ak-portal' ); ?>
+						</a>
+					</span>
+				</div>
+			</div>
+		<?php endforeach; ?>
+	<?php endif; ?>
 </section>

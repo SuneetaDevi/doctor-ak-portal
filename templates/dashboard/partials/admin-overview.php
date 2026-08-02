@@ -55,7 +55,7 @@ if ( ! function_exists( 'dak_admin_overview_initials' ) ) :
 	}
 endif;
 ?>
-<div class="dak-dashboard-greeting">
+<div class="dak-dashboard-greeting dak-hero-banner">
 	<h1><?php esc_html_e( 'Clinic overview', 'doctor-ak-portal' ); ?></h1>
 	<p>
 		<?php

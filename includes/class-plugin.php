@@ -20,6 +20,7 @@ use DoctorAKPortal\Frontend\Booking_Page;
 use DoctorAKPortal\Frontend\Booking_Trigger;
 use DoctorAKPortal\Frontend\Clinic_Handler;
 use DoctorAKPortal\Frontend\Doctor_Appointment_Handler;
+use DoctorAKPortal\Frontend\Clinic_Branding_Handler;
 use DoctorAKPortal\Frontend\Locations_Handler;
 use DoctorAKPortal\Frontend\Role_Permissions_Handler;
 use DoctorAKPortal\Frontend\Doctor_Patient_Handler;
@@ -309,6 +310,11 @@ class Plugin {
 
 		$locations_handler = new Locations_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_locations_save', $locations_handler, 'handle_save' );
+
+		$clinic_branding_handler = new Clinic_Branding_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_clinic_branding_save', $clinic_branding_handler, 'handle_save' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_clinic_branding_upload_logo', $clinic_branding_handler, 'handle_upload_logo' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_notification_preferences_save', $clinic_branding_handler, 'handle_save_notification_preferences' );
 
 		$doctor_patient_handler = new Doctor_Patient_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_add_patient', $doctor_patient_handler, 'handle_add_patient' );
