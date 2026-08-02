@@ -440,6 +440,32 @@ class Notifications {
 	}
 
 	/**
+	 * Hook callback: a doctor just self-registered and is awaiting admin
+	 * approval — confirms receipt directly to the doctor (separate from
+	 * notify_doctor_registered() above, which alerts admins instead; this
+	 * one is a transactional confirmation to the registrant themselves, so
+	 * it isn't gated by the admin's "New Doctor Registration" notification
+	 * preference).
+	 *
+	 * @param int $doctor_id Newly registered doctor's user ID.
+	 * @return void
+	 */
+	public function notify_doctor_registration_received( $doctor_id ) {
+		$doctor = get_userdata( $doctor_id );
+
+		if ( ! $doctor ) {
+			return;
+		}
+
+		$this->send_simple(
+			$doctor->user_email,
+			__( 'Your Account Is Pending Approval', 'doctor-ak-portal' ),
+			__( 'Registration Received', 'doctor-ak-portal' ),
+			__( 'Thanks for registering. Your account has been created and is now awaiting admin approval. We will email you as soon as it has been approved.', 'doctor-ak-portal' )
+		);
+	}
+
+	/**
 	 * Hook callback: a pending doctor account was approved by an admin —
 	 * emails the doctor.
 	 *

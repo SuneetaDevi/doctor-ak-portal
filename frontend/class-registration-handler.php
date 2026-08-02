@@ -86,6 +86,13 @@ class Registration_Handler {
 			Assets::version( 'assets/css/doctor-ak-registration.css' )
 		);
 
+		wp_enqueue_style(
+			'doctor-ak-portal-booking-modal',
+			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-booking-modal.css',
+			array( 'doctor-ak-portal-auth' ),
+			Assets::version( 'assets/css/doctor-ak-booking-modal.css' )
+		);
+
 		wp_enqueue_script(
 			'doctor-ak-portal-password-toggle',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-password-toggle.js',
@@ -218,6 +225,12 @@ class Registration_Handler {
 			$errors['password'] = __( 'Password must be at least 8 characters long.', 'doctor-ak-portal' );
 		} elseif ( $password !== $confirm ) {
 			$errors['confirm_password'] = __( 'Passwords do not match.', 'doctor-ak-portal' );
+		}
+
+		$terms_accepted = isset( $_POST['terms_accepted'] ) && '1' === $_POST['terms_accepted'];
+
+		if ( ! $terms_accepted ) {
+			$errors['terms_accepted'] = __( 'Please accept the Terms & Conditions to continue.', 'doctor-ak-portal' );
 		}
 
 		$meta = Roles::DOCTOR_ROLE === $register_as

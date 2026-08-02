@@ -16,6 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $specializations = \DoctorAKPortal\Includes\Specializations::get_all();
 $login_url       = \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( 'doctor_login' );
+$home_url        = home_url( '/' );
 
 // Small, hand-drawn line icons (no external icon library dependency).
 $dak_icons = array(
@@ -43,7 +44,6 @@ $dak_icons = array(
 			<p><?php esc_html_e( 'Register as a doctor to reach more patients, or as a patient to book consultations with our specialists.', 'doctor-ak-portal' ); ?></p>
 		</div>
 
-		<div class="dak-alert dak-alert-success dak-hidden" id="dak-register-success" role="status"></div>
 		<div class="dak-alert dak-alert-error dak-hidden" id="dak-register-general-error" role="alert"></div>
 
 		<form id="dak-registration-form" novalidate>
@@ -252,9 +252,16 @@ $dak_icons = array(
 				<p class="dak-field-hint"><?php esc_html_e( 'Use your email along with this password to sign in later.', 'doctor-ak-portal' ); ?></p>
 			</div>
 
-			<p class="dak-terms-hint">
-				<?php esc_html_e( 'By registering you agree to our Terms & Privacy Policy.', 'doctor-ak-portal' ); ?>
-			</p>
+			<div class="dak-field dak-terms-field">
+				<label class="dak-checkbox">
+					<input type="checkbox" id="dak-terms-accepted" name="terms_accepted" value="1" required>
+					<span>
+						<?php esc_html_e( 'I have read and agree to the', 'doctor-ak-portal' ); ?>
+						<button type="button" id="dak-terms-view-link" class="dak-link-button"><?php esc_html_e( 'Terms & Conditions', 'doctor-ak-portal' ); ?></button>.
+					</span>
+				</label>
+				<span class="dak-field-error" data-field="terms_accepted"></span>
+			</div>
 
 			<button type="submit" class="dak-button dak-button-primary dak-button-block" id="dak-register-submit">
 				<span class="dak-button-label" data-doctor-label="<?php esc_attr_e( 'Create Doctor Account', 'doctor-ak-portal' ); ?>" data-patient-label="<?php esc_attr_e( 'Create Patient Account', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Create Doctor Account', 'doctor-ak-portal' ); ?></span>
@@ -267,5 +274,45 @@ $dak_icons = array(
 				</p>
 			<?php endif; ?>
 		</form>
+	</div>
+</div>
+
+<div class="dak-portal dak-modal" id="dak-terms-modal" aria-hidden="true">
+	<div class="dak-modal-overlay" data-dak-terms-close></div>
+
+	<div class="dak-modal-dialog dak-terms-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="dak-terms-modal-title">
+		<button type="button" class="dak-modal-close" data-dak-terms-close aria-label="<?php esc_attr_e( 'Close', 'doctor-ak-portal' ); ?>">&times;</button>
+
+		<div class="dak-modal-header">
+			<h2 id="dak-terms-modal-title"><?php esc_html_e( 'Terms & Conditions', 'doctor-ak-portal' ); ?></h2>
+		</div>
+
+		<div class="dak-terms-modal-body">
+			<div id="dak-doctor-terms-content">
+				<?php echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( 'auth/partials/doctor-terms-content.php' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-terms-content.php template, which escapes its own output. ?>
+			</div>
+			<div id="dak-patient-terms-content" class="dak-hidden">
+				<?php echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( 'auth/partials/patient-terms-content.php' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own patient-terms-content.php template, which escapes its own output. ?>
+			</div>
+		</div>
+
+		<div class="dak-terms-modal-footer">
+			<button type="button" class="dak-button dak-button-primary" id="dak-terms-accept-close" data-dak-terms-close><?php esc_html_e( 'I Understand', 'doctor-ak-portal' ); ?></button>
+		</div>
+	</div>
+</div>
+
+<div class="dak-portal dak-modal" id="dak-register-success-modal" aria-hidden="true" data-redirect-url="<?php echo esc_url( $home_url ); ?>">
+	<div class="dak-modal-overlay"></div>
+
+	<div class="dak-modal-dialog dak-register-success-dialog" role="dialog" aria-modal="true" aria-labelledby="dak-register-success-modal-title">
+		<div class="dak-register-success-icon" aria-hidden="true">
+			<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="8"/><path d="M6.5 10.2l2.3 2.3 4.7-5"/></svg>
+		</div>
+
+		<h2 id="dak-register-success-modal-title"><?php esc_html_e( 'Account Created', 'doctor-ak-portal' ); ?></h2>
+		<p id="dak-register-success-modal-message"></p>
+
+		<button type="button" class="dak-button dak-button-primary dak-button-block" id="dak-register-success-ok"><?php esc_html_e( 'OK', 'doctor-ak-portal' ); ?></button>
 	</div>
 </div>

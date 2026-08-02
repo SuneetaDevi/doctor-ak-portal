@@ -69,9 +69,11 @@ $time_label     = $time_timestamp ? date_i18n( 'g:i A', $time_timestamp ) : $app
 	<div class="dak-patient-appt-row-bottom">
 		<div class="dak-patient-appt-row-tags">
 			<span class="dak-status-pill dak-status-pill-outline dak-status-pill-<?php echo esc_attr( $appointment['status_badge_class'] ); ?>"><?php echo esc_html( $appointment['status_label'] ); ?></span>
-			<span class="dak-status-pill dak-status-pill-outline <?php echo $appointment['is_paid'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-pending'; ?>">
-				<?php echo $appointment['is_paid'] ? esc_html__( 'Paid', 'doctor-ak-portal' ) : esc_html__( 'Payment Pending', 'doctor-ak-portal' ); ?>
-			</span>
+			<?php if ( ! in_array( $appointment['status'], array( 'pending_payment', 'paid' ), true ) ) : ?>
+				<span class="dak-status-pill dak-status-pill-outline <?php echo $appointment['is_paid'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-pending'; ?>">
+					<?php echo $appointment['is_paid'] ? esc_html__( 'Paid', 'doctor-ak-portal' ) : esc_html__( 'Payment Pending', 'doctor-ak-portal' ); ?>
+				</span>
+			<?php endif; ?>
 			<?php if ( '' !== $appointment['service_name'] ) : ?>
 				<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( $appointment['service_name'] ); ?></span>
 			<?php endif; ?>

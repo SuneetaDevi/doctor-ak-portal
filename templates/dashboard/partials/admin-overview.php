@@ -152,9 +152,11 @@ endif;
 					<div class="dak-patient-appt-row-bottom">
 						<div class="dak-patient-appt-row-tags">
 							<span class="dak-status-pill dak-status-pill-outline dak-status-pill-<?php echo esc_attr( $dak_row['status_badge_class'] ); ?>"><?php echo esc_html( $dak_row['status_label'] ); ?></span>
-							<span class="dak-status-pill dak-status-pill-outline <?php echo $dak_row['is_paid'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-pending'; ?>">
-								<?php echo $dak_row['is_paid'] ? esc_html__( 'Paid', 'doctor-ak-portal' ) : esc_html__( 'Payment Pending', 'doctor-ak-portal' ); ?>
-							</span>
+							<?php if ( ! in_array( $dak_row['status'], array( 'pending_payment', 'paid' ), true ) ) : ?>
+								<span class="dak-status-pill dak-status-pill-outline <?php echo $dak_row['is_paid'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-pending'; ?>">
+									<?php echo $dak_row['is_paid'] ? esc_html__( 'Paid', 'doctor-ak-portal' ) : esc_html__( 'Payment Pending', 'doctor-ak-portal' ); ?>
+								</span>
+							<?php endif; ?>
 						</div>
 					</div>
 				</div>

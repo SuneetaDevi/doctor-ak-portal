@@ -138,9 +138,11 @@ $dak_appt_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to
 					<span class="dak-admin-record-row-tags">
 						<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( $row['type_label'] ); ?></span>
 						<span class="dak-status-pill dak-status-pill-outline dak-status-pill-<?php echo esc_attr( $row['status_badge_class'] ); ?>"><?php echo esc_html( $row['status_label'] ); ?></span>
-						<span class="dak-status-pill dak-status-pill-outline <?php echo $row['is_paid'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-pending'; ?>">
-							<?php echo $row['is_paid'] ? esc_html__( 'Paid', 'doctor-ak-portal' ) : esc_html__( 'Payment Pending', 'doctor-ak-portal' ); ?>
-						</span>
+						<?php if ( ! in_array( $row['status'], array( 'pending_payment', 'paid' ), true ) ) : ?>
+							<span class="dak-status-pill dak-status-pill-outline <?php echo $row['is_paid'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-pending'; ?>">
+								<?php echo $row['is_paid'] ? esc_html__( 'Paid', 'doctor-ak-portal' ) : esc_html__( 'Payment Pending', 'doctor-ak-portal' ); ?>
+							</span>
+						<?php endif; ?>
 						<?php if ( 'requested' === $row['refund_status'] ) : ?>
 							<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-pending"><?php esc_html_e( 'Refund Requested', 'doctor-ak-portal' ); ?></span>
 						<?php elseif ( 'processed' === $row['refund_status'] ) : ?>

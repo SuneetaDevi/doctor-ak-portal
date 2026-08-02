@@ -229,6 +229,7 @@ class Plugin {
 		$this->loader->add_action( 'doctor_ak_appointment_refund_requested', $notifications, 'notify_refund_requested' );
 		$this->loader->add_action( 'doctor_ak_appointment_refund_processed', $notifications, 'notify_refund_processed' );
 		$this->loader->add_action( 'doctor_ak_doctor_registered', $notifications, 'notify_doctor_registered' );
+		$this->loader->add_action( 'doctor_ak_doctor_registered', $notifications, 'notify_doctor_registration_received' );
 		$this->loader->add_action( 'doctor_ak_doctor_approved', $notifications, 'notify_doctor_approved' );
 		$this->loader->add_action( 'doctor_ak_patient_added', $notifications, 'notify_patient_added' );
 		$this->loader->add_action( Notifications::CRON_HOOK, $notifications, 'send_reminders' );

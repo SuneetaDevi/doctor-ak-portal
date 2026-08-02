@@ -500,12 +500,116 @@
 	}
 }
 
-.dak-terms-hint {
-	font-size: 0.78rem !important;
-	color: var( --dak-muted ) !important;
-	margin-bottom: 1rem !important;
+.dak-terms-field {
+	margin-bottom: 1.25rem !important;
 }
 
+.dak-terms-field .dak-checkbox {
+	align-items: flex-start !important;
+	font-size: 0.85rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-terms-field .dak-link-button {
+	font-size: inherit !important;
+	font-weight: 700 !important;
+	text-decoration: underline !important;
+}
+
+/* Terms & Conditions modal (doctor/patient onboarding agreement) */
+
+.dak-terms-modal-dialog {
+	max-width: 720px !important;
+	max-height: 85vh !important;
+	display: flex !important;
+	flex-direction: column !important;
+}
+
+.dak-terms-modal-body {
+	overflow-y: auto !important;
+	padding-right: 0.5rem !important;
+	margin-bottom: 1.25rem !important;
+}
+
+.dak-terms-modal-body h3 {
+	font-size: 1rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	margin: 1.25rem 0 0.5rem !important;
+}
+
+.dak-terms-modal-body h3:first-child {
+	margin-top: 0 !important;
+}
+
+.dak-terms-modal-body p {
+	font-size: 0.9rem !important;
+	color: var( --dak-text ) !important;
+	line-height: 1.6 !important;
+	margin: 0 0 0.75rem !important;
+}
+
+.dak-terms-modal-body ul {
+	margin: 0 0 0.75rem !important;
+	padding-left: 1.25rem !important;
+}
+
+.dak-terms-modal-body li {
+	font-size: 0.9rem !important;
+	color: var( --dak-text ) !important;
+	line-height: 1.6 !important;
+	margin-bottom: 0.5rem !important;
+}
+
+.dak-terms-italic {
+	font-style: italic !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.85rem !important;
+}
+
+.dak-terms-modal-footer {
+	flex-shrink: 0 !important;
+	display: flex !important;
+	justify-content: flex-end !important;
+}
+
+/* Post-registration success modal */
+
+.dak-register-success-dialog {
+	max-width: 440px !important;
+	text-align: center !important;
+}
+
+.dak-register-success-icon {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 56px !important;
+	height: 56px !important;
+	margin: 0 auto 1rem !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-register-success-icon svg {
+	width: 28px !important;
+	height: 28px !important;
+}
+
+.dak-register-success-dialog h2 {
+	font-size: 1.25rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	margin: 0 0 0.6rem !important;
+}
+
+.dak-register-success-dialog p {
+	font-size: 0.92rem !important;
+	color: var( --dak-muted ) !important;
+	line-height: 1.6 !important;
+	margin: 0 0 1.5rem !important;
+}
 
 @media ( max-width: 600px ) {
 	.dak-role-cards {

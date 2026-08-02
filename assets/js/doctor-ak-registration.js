@@ -14,6 +14,7 @@
 		initCheckCards();
 		initProfilePictureUpload();
 		initMultiSelect( document.getElementById( 'dak-specializations' ) );
+		initTermsModal();
 		initRegistrationForm();
 
 		if ( window.dakCityArea && window.dakRegister ) {
@@ -53,6 +54,14 @@
 
 			doctorFields.classList.toggle( 'dak-hidden', 'doctor' !== value );
 			patientFields.classList.toggle( 'dak-hidden', 'patient' !== value );
+
+			var doctorTerms = document.getElementById( 'dak-doctor-terms-content' );
+			var patientTerms = document.getElementById( 'dak-patient-terms-content' );
+
+			if ( doctorTerms && patientTerms ) {
+				doctorTerms.classList.toggle( 'dak-hidden', 'doctor' !== value );
+				patientTerms.classList.toggle( 'dak-hidden', 'patient' !== value );
+			}
 
 			// Hidden role fields share input names ("first_name", "email", etc.)
 			// with the visible ones; disabling them keeps FormData from picking
@@ -190,6 +199,69 @@
 					status.textContent = 'Upload failed. Please try again.';
 				} );
 		} );
+	}
+
+	/**
+	 * Wires the "Terms & Conditions" link (inside the mandatory acceptance
+	 * checkbox's label) to open a modal showing the doctor or patient terms
+	 * — whichever role is currently selected — and its close controls.
+	 */
+	function initTermsModal() {
+		var modal = document.getElementById( 'dak-terms-modal' );
+		var openLink = document.getElementById( 'dak-terms-view-link' );
+
+		if ( ! modal || ! openLink ) {
+			return;
+		}
+
+		openLink.addEventListener( 'click', function () {
+			modal.classList.add( 'is-open' );
+			modal.setAttribute( 'aria-hidden', 'false' );
+			document.body.classList.add( 'dak-modal-open' );
+		} );
+
+		document.addEventListener( 'click', function ( event ) {
+			if ( event.target.closest( '[data-dak-terms-close]' ) ) {
+				modal.classList.remove( 'is-open' );
+				modal.setAttribute( 'aria-hidden', 'true' );
+				document.body.classList.remove( 'dak-modal-open' );
+			}
+		} );
+
+		document.addEventListener( 'keydown', function ( event ) {
+			if ( 'Escape' === event.key && modal.classList.contains( 'is-open' ) ) {
+				modal.classList.remove( 'is-open' );
+				modal.setAttribute( 'aria-hidden', 'true' );
+				document.body.classList.remove( 'dak-modal-open' );
+			}
+		} );
+	}
+
+	/**
+	 * Shows the post-registration success modal with the server's message
+	 * (worded differently for a doctor awaiting approval vs. a patient who
+	 * can log in right away) — its only way out is the "OK" button, which
+	 * navigates to the site's home page.
+	 *
+	 * @param {string} message Message from the AJAX response.
+	 */
+	function showSuccessModal( message ) {
+		var modal = document.getElementById( 'dak-register-success-modal' );
+		var messageEl = document.getElementById( 'dak-register-success-modal-message' );
+		var okButton = document.getElementById( 'dak-register-success-ok' );
+
+		if ( ! modal || ! messageEl || ! okButton ) {
+			return;
+		}
+
+		messageEl.textContent = message;
+		modal.classList.add( 'is-open' );
+		modal.setAttribute( 'aria-hidden', 'false' );
+		document.body.classList.add( 'dak-modal-open' );
+
+		okButton.addEventListener( 'click', function () {
+			window.location.href = modal.getAttribute( 'data-redirect-url' ) || '/';
+		}, { once: true } );
 	}
 
 	/**
@@ -428,14 +500,12 @@
 		}
 
 		var submitBtn = document.getElementById( 'dak-register-submit' );
-		var successAlert = document.getElementById( 'dak-register-success' );
 		var errorAlert = document.getElementById( 'dak-register-general-error' );
 
 		form.addEventListener( 'submit', function ( event ) {
 			event.preventDefault();
 
 			clearFieldErrors( form );
-			successAlert.classList.add( 'dak-hidden' );
 			errorAlert.classList.add( 'dak-hidden' );
 
 			var password = form.querySelector( '[name="password"]' ).value;
@@ -443,6 +513,13 @@
 
 			if ( password !== confirmPassword ) {
 				showFieldError( form, 'confirm_password', 'Passwords do not match.' );
+				return;
+			}
+
+			var termsCheckbox = document.getElementById( 'dak-terms-accepted' );
+
+			if ( termsCheckbox && ! termsCheckbox.checked ) {
+				showFieldError( form, 'terms_accepted', 'Please accept the Terms & Conditions to continue.' );
 				return;
 			}
 
@@ -460,8 +537,6 @@
 					submitBtn.classList.remove( 'is-loading' );
 
 					if ( result.success ) {
-						successAlert.textContent = result.data.message;
-						successAlert.classList.remove( 'dak-hidden' );
 						form.reset();
 
 						// form.reset() clears checkbox/radio state natively, but
@@ -475,6 +550,8 @@
 						document.getElementById( 'dak-profile-picture-id' ).value = '';
 						document.getElementById( 'dak-profile-picture-preview' ).innerHTML =
 							document.getElementById( 'dak-profile-picture-preview' ).getAttribute( 'data-empty-html' ) || '';
+
+						showSuccessModal( result.data.message );
 					} else if ( result.data && result.data.errors ) {
 						Object.keys( result.data.errors ).forEach( function ( field ) {
 							showFieldError( form, field, result.data.errors[ field ] );
