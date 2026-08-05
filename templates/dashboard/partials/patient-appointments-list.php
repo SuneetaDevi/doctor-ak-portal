@@ -1,7 +1,9 @@
 <?php
 /**
  * Template: Patient dashboard "Appointments" tab — every appointment this
- * patient has ever booked, filterable by date and status.
+ * patient has ever booked, filterable by date and status. Styled the same
+ * as the admin portal's appointment rows (accent-bar card, avatar + info +
+ * meta + tags + amount + actions).
  *
  * @package DoctorAKPortal\Templates
  *
@@ -43,10 +45,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<?php if ( empty( $rows ) ) : ?>
 		<p class="dak-empty-state"><?php esc_html_e( 'No appointments match these filters.', 'doctor-ak-portal' ); ?></p>
 	<?php else : ?>
-		<ul class="dak-patient-payments-list">
-			<?php foreach ( $rows as $row ) : ?>
-				<li id="dak-appointment-<?php echo esc_attr( $row['id'] ); ?>" class="dak-patient-payment-row">
-					<span class="dak-patient-appt-avatar">
+		<?php foreach ( $rows as $row ) : ?>
+			<div id="dak-appointment-<?php echo esc_attr( $row['id'] ); ?>" class="dak-admin-record-row" data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>">
+				<div class="dak-admin-record-row-main">
+					<span class="dak-avatar dak-avatar-sm" aria-hidden="true">
 						<?php if ( $row['doctor_avatar_url'] ) : ?>
 							<img src="<?php echo esc_url( $row['doctor_avatar_url'] ); ?>" alt="">
 						<?php else : ?>
@@ -54,56 +56,66 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<?php endif; ?>
 					</span>
 
-					<div class="dak-patient-payment-info">
+					<span class="dak-admin-record-row-info">
 						<strong><?php echo esc_html( sprintf( 'Dr. %s', $row['doctor_name'] ) ); ?></strong>
-						<span class="dak-patient-payment-meta">
-							<?php
-							$row_date_timestamp = strtotime( $row['date'] );
-							$row_time_timestamp = strtotime( $row['date'] . ' ' . $row['time'] );
-							echo esc_html( $row_date_timestamp ? date_i18n( 'D, M j, Y', $row_date_timestamp ) : $row['date'] );
-							echo ' &middot; ';
-							echo esc_html( $row_time_timestamp ? date_i18n( 'g:i A', $row_time_timestamp ) : $row['time'] );
-							echo ' &middot; ';
-							echo esc_html( '' !== $row['service_name'] ? $row['service_name'] : $row['type_label'] );
-							?>
-						</span>
-					</div>
+						<span class="dak-admin-record-row-id"><?php echo esc_html( '' !== $row['service_name'] ? $row['service_name'] : $row['type_label'] ); ?></span>
+					</span>
 
-					<div class="dak-patient-payment-amount-wrap">
+					<span class="dak-admin-record-row-meta">
+						<?php
+						$row_date_timestamp = strtotime( $row['date'] );
+						$row_time_timestamp = strtotime( $row['date'] . ' ' . $row['time'] );
+						echo esc_html( $row_date_timestamp ? date_i18n( 'D, M j, Y', $row_date_timestamp ) : $row['date'] );
+						echo ' &middot; ';
+						echo esc_html( $row_time_timestamp ? date_i18n( 'g:i A', $row_time_timestamp ) : $row['time'] );
+						?>
+					</span>
+
+					<span class="dak-admin-record-row-tags">
 						<span class="dak-status-pill dak-status-pill-outline dak-status-pill-<?php echo esc_attr( $row['status_badge_class'] ); ?>"><?php echo esc_html( $row['status_label'] ); ?></span>
 						<?php if ( ! in_array( $row['status'], array( 'pending_payment', 'paid' ), true ) ) : ?>
 							<span class="dak-status-pill dak-status-pill-outline <?php echo $row['is_paid'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-pending'; ?>">
 								<?php echo $row['is_paid'] ? esc_html__( 'Paid', 'doctor-ak-portal' ) : esc_html__( 'Payment Pending', 'doctor-ak-portal' ); ?>
 							</span>
 						<?php endif; ?>
+						<?php if ( 'requested' === $row['refund_status'] ) : ?>
+							<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-pending"><?php esc_html_e( 'Refund Requested', 'doctor-ak-portal' ); ?></span>
+						<?php elseif ( 'processed' === $row['refund_status'] ) : ?>
+							<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-active"><?php esc_html_e( 'Refund Processed', 'doctor-ak-portal' ); ?></span>
+						<?php endif; ?>
+					</span>
+
+					<span class="dak-admin-record-row-amount">
+						<?php echo $row['charge'] > 0 ? esc_html( 'PKR ' . number_format( (float) $row['charge'], 0 ) ) : esc_html__( 'Free', 'doctor-ak-portal' ); ?>
+					</span>
+
+					<span class="dak-admin-record-row-actions">
+						<?php if ( ! empty( $row['video_call']['can_join'] ) ) : ?>
+							<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $row['video_call']['room_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></a>
+						<?php endif; ?>
 						<?php if ( ! $row['is_paid'] && (float) $row['charge'] > 0 && ! in_array( $row['status'], array( 'cancelled', 'completed' ), true ) ) : ?>
 							<button type="button" class="dak-status-pill dak-status-pill-action" data-pay-now data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>">
 								<?php echo esc_html( sprintf( /* translators: %s: amount. */ __( 'Pay PKR%s', 'doctor-ak-portal' ), number_format( (float) $row['charge'], 0 ) ) ); ?>
 							</button>
 						<?php endif; ?>
-						<?php if ( ! empty( $row['video_call']['can_join'] ) ) : ?>
-							<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $row['video_call']['room_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></a>
+						<?php if ( 'cancelled' === $row['status'] && $row['is_paid'] && 'online' === $row['payment_mode'] && '' === $row['refund_status'] ) : ?>
+							<button type="button" class="dak-status-pill dak-status-pill-action" data-request-refund data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"><?php esc_html_e( 'Request Refund', 'doctor-ak-portal' ); ?></button>
 						<?php endif; ?>
 						<?php if ( ! empty( $row['reschedulable'] ) ) : ?>
 							<button
 								type="button"
-								class="dak-status-pill dak-status-pill-action"
+								class="dak-icon-button"
 								data-reschedule-appointment
 								data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"
 								data-date="<?php echo esc_attr( $row['date'] ); ?>"
 								data-time="<?php echo esc_attr( $row['time'] ); ?>"
-							><?php esc_html_e( 'Reschedule', 'doctor-ak-portal' ); ?></button>
+								title="<?php esc_attr_e( 'Reschedule', 'doctor-ak-portal' ); ?>"
+								aria-label="<?php esc_attr_e( 'Reschedule', 'doctor-ak-portal' ); ?>"
+							><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10a6 6 0 1 1 1.8 4.3"/><path d="M4 14v-3.5H7.5"/><path d="M10 6.5v4l2.5 1.5"/></svg></button>
 						<?php endif; ?>
-						<?php if ( 'cancelled' === $row['status'] && $row['is_paid'] && 'online' === $row['payment_mode'] && '' === $row['refund_status'] ) : ?>
-							<button type="button" class="dak-status-pill dak-status-pill-action" data-request-refund data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"><?php esc_html_e( 'Request Refund', 'doctor-ak-portal' ); ?></button>
-						<?php elseif ( 'requested' === $row['refund_status'] ) : ?>
-							<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-pending"><?php esc_html_e( 'Refund Requested', 'doctor-ak-portal' ); ?></span>
-						<?php elseif ( 'processed' === $row['refund_status'] ) : ?>
-							<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-active"><?php esc_html_e( 'Refund Processed', 'doctor-ak-portal' ); ?></span>
-						<?php endif; ?>
-					</div>
-				</li>
-			<?php endforeach; ?>
-		</ul>
+					</span>
+				</div>
+			</div>
+		<?php endforeach; ?>
 	<?php endif; ?>
 </section>

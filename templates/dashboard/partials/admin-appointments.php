@@ -26,7 +26,6 @@ $dak_appt_icons = array(
 	'print'  => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 7V3h9v4"/><rect x="3.5" y="7" width="13" height="6.5" rx="1"/><path d="M5.5 12.5h9V17h-9v-4.5z"/></svg>',
 	'delete' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h12M8 6V4.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V6M6 6l.6 9a1.5 1.5 0 0 0 1.5 1.4h3.8a1.5 1.5 0 0 0 1.5-1.4L14 6"/></svg>',
 	'refund' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a6 6 0 1 1 1.8 4.3"/><path d="M4 14v-3.5H7.5"/><path d="M10 6.5v4l2.5 1.5"/></svg>',
-	'paid'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l3.5 3.5L16 6"/></svg>',
 );
 
 $dak_appt_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] || $filters['doctor_id'] > 0 || '' !== $filters['payment_status'];
@@ -182,15 +181,17 @@ $dak_appt_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to
 								aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
 							><?php echo $dak_appt_icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
 						<?php endif; ?>
+						<?php if ( ! empty( $row['video_call']['can_join'] ) ) : ?>
+							<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $row['video_call']['room_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></a>
+						<?php endif; ?>
 						<?php if ( ! $row['is_paid'] ) : ?>
 							<button
 								type="button"
-								class="dak-icon-button dak-icon-button-success"
+								class="dak-status-pill dak-status-pill-action"
 								data-admin-appointment-mark-paid
 								data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"
-								title="<?php esc_attr_e( 'Mark Paid', 'doctor-ak-portal' ); ?>"
-								aria-label="<?php esc_attr_e( 'Mark Paid', 'doctor-ak-portal' ); ?>"
-							><?php echo $dak_appt_icons['paid']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
+								title="<?php esc_attr_e( 'Mark this appointment as paid', 'doctor-ak-portal' ); ?>"
+							><?php esc_html_e( 'Mark Paid', 'doctor-ak-portal' ); ?></button>
 						<?php endif; ?>
 						<button
 							type="button"
