@@ -12,9 +12,10 @@
  * @var \WP_User  $current_user     Currently logged-in administrator.
  * @var string    $content_html      Pre-rendered main-column content for the active section.
  * @var string    $modal_html        Pre-rendered Add/Edit modal (Doctor Sessions/Services/Video Consultation/Appointments sections only).
- * @var string    $role              Roles::DOCTOR_ROLE or Roles::PATIENT_ROLE (only for the Doctors/Patients sections).
- * @var bool      $is_users_section  Whether the active section is 'doctors' or 'patients'.
+ * @var string    $role              Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE, or Roles::RECEPTIONIST_ROLE (only for the Users sections).
+ * @var bool      $is_users_section  Whether the active section is 'doctors', 'patients', or 'receptionist'.
  * @var bool      $is_user_form_view Whether `?view=form` is active (full-screen Add/Edit form instead of the table).
+ * @var bool      $is_receptionist   Whether the logged-in viewer is a Receptionist (vs. a full Administrator) — gets a cut-down, mostly read-only view of this same dashboard.
  * @var string    $theme             'light' or 'dark' — the admin's saved dashboard theme preference.
  */
 
@@ -23,8 +24,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$add_button_label = 'doctors' === $section ? __( '+ Add Doctor', 'doctor-ak-portal' ) : __( '+ Add Patient', 'doctor-ak-portal' );
+$dak_add_button_labels = array(
+	'doctors'      => __( '+ Add Doctor', 'doctor-ak-portal' ),
+	'patients'     => __( '+ Add Patient', 'doctor-ak-portal' ),
+	'receptionist' => __( '+ Add Receptionist', 'doctor-ak-portal' ),
+);
+$add_button_label = isset( $dak_add_button_labels[ $section ] ) ? $dak_add_button_labels[ $section ] : __( '+ Add', 'doctor-ak-portal' );
 $dak_add_user_url  = $dashboard_url ? add_query_arg( array( 'section' => $section, 'view' => 'form' ), $dashboard_url ) : '';
+// A receptionist only ever has read access to the Doctors/Patients tables
+// (they can never reach the 'receptionist' staff-account tab itself, see
+// Admin_Dashboard::RECEPTIONIST_ALLOWED_SECTIONS) — so hide the Add button.
+$dak_show_add_button = $is_users_section && ! $is_receptionist;
 
 $dak_admin_icons = array(
 	'dashboard'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="6.5" height="6.5" rx="1.2"/><rect x="11" y="2.5" width="6.5" height="6.5" rx="1.2"/><rect x="2.5" y="11" width="6.5" height="6.5" rx="1.2"/><rect x="11" y="11" width="6.5" height="6.5" rx="1.2"/></svg>',
@@ -60,7 +70,7 @@ $dak_admin_section_icons = array(
 	'settings'         => 'settings',
 );
 ?>
-<div class="dak-portal dak-dashboard dak-admin-dashboard" data-role="administrator" data-theme="<?php echo esc_attr( $theme ); ?>">
+<div class="dak-portal dak-dashboard dak-admin-dashboard" data-role="<?php echo esc_attr( $is_receptionist ? 'receptionist' : 'administrator' ); ?>" data-theme="<?php echo esc_attr( $theme ); ?>">
 	<button type="button" class="dak-dashboard-sidebar-toggle" id="dak-sidebar-toggle" aria-label="<?php esc_attr_e( 'Toggle navigation', 'doctor-ak-portal' ); ?>" aria-expanded="false" aria-controls="dak-dashboard-sidebar">
 		<span></span><span></span><span></span>
 	</button>
@@ -89,7 +99,7 @@ $dak_admin_section_icons = array(
 				<?php echo $dak_admin_icons['person']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 			</span>
 			<span class="dak-sidebar-doctor-name"><?php echo esc_html( $current_user->display_name ); ?></span>
-			<span class="dak-specialty-tag dak-sidebar-doctor-tagline"><?php esc_html_e( 'Clinic Admin', 'doctor-ak-portal' ); ?></span>
+			<span class="dak-specialty-tag dak-sidebar-doctor-tagline"><?php echo esc_html( $is_receptionist ? __( 'Receptionist', 'doctor-ak-portal' ) : __( 'Clinic Admin', 'doctor-ak-portal' ) ); ?></span>
 		</div>
 
 		<nav class="dak-dashboard-nav">
@@ -138,9 +148,19 @@ $dak_admin_section_icons = array(
 			<div class="dak-dashboard-greeting dak-admin-users-header">
 				<div>
 					<h1><?php echo esc_html( $section_label ); ?></h1>
-					<p><?php esc_html_e( 'Add, edit, deactivate or delete accounts.', 'doctor-ak-portal' ); ?></p>
+					<p>
+						<?php
+						echo esc_html(
+							$dak_show_add_button
+								? __( 'Add, edit, deactivate or delete accounts.', 'doctor-ak-portal' )
+								: __( 'Read-only directory.', 'doctor-ak-portal' )
+						);
+						?>
+					</p>
 				</div>
-				<a class="dak-button dak-button-primary" href="<?php echo esc_url( $dak_add_user_url ); ?>"><?php echo esc_html( $add_button_label ); ?></a>
+				<?php if ( $dak_show_add_button ) : ?>
+					<a class="dak-button dak-button-primary" href="<?php echo esc_url( $dak_add_user_url ); ?>"><?php echo esc_html( $add_button_label ); ?></a>
+				<?php endif; ?>
 			</div>
 
 			<section class="dak-dashboard-card dak-admin-users-card">

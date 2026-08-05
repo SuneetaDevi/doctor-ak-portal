@@ -283,11 +283,18 @@
 	display: flex !important;
 	flex-direction: column !important;
 	gap: 0.6rem !important;
-	padding: 0.85rem 1rem 0.85rem 1.15rem !important;
-	margin-bottom: 0.6rem !important;
+	padding: 0.95rem 1.1rem 0.95rem 1.3rem !important;
+	margin-bottom: 0.7rem !important;
 	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
 	border-radius: var( --dak-radius-md ) !important;
 	box-shadow: var( --dak-shadow ) !important;
+	transition: box-shadow 0.15s ease, border-color 0.15s ease !important;
+}
+
+.dak-patient-appt-row:hover {
+	box-shadow: var( --dak-shadow-hover ) !important;
+	border-color: var( --dak-primary-tint ) !important;
 }
 
 .dak-patient-appt-row::before {
@@ -517,9 +524,10 @@
 	display: inline-flex !important;
 	align-items: center !important;
 	white-space: nowrap !important;
-	font-size: 0.72rem !important;
+	font-size: 0.75rem !important;
 	font-weight: 700 !important;
-	padding: 0.2rem 0.6rem !important;
+	line-height: 1.4 !important;
+	padding: 0.22rem 0.7rem !important;
 	border-radius: 999px !important;
 	text-decoration: none !important;
 }
@@ -904,12 +912,17 @@
 .dak-patient-payment-row {
 	display: flex !important;
 	align-items: center !important;
-	gap: 0.75rem !important;
-	padding: 0.85rem !important;
+	gap: 0.85rem !important;
+	padding: 0.9rem 1rem !important;
 	border: 1px solid var( --dak-border ) !important;
 	border-radius: var( --dak-radius-md ) !important;
 	scroll-margin-top: 1rem !important;
-	transition: background-color 0.3s ease, border-color 0.3s ease !important;
+	transition: background-color 0.3s ease, border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.dak-patient-payment-row:hover {
+	border-color: var( --dak-primary-tint ) !important;
+	box-shadow: var( --dak-shadow ) !important;
 }
 
 /* Landed on from a notification link (e.g. "#dak-appointment-123") — briefly

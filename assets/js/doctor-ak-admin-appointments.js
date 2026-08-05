@@ -35,6 +35,7 @@
 		wireView( viewModal );
 		wireSave( modal );
 		wireDelete();
+		wireMarkPaid();
 
 		if ( refundModal ) {
 			wireModalClose( refundModal, 'dak-admin-process-refund-modal-close' );
@@ -421,6 +422,43 @@
 					window.alert( ( result.data && result.data.message ) || 'Something went wrong. Please try again.' );
 				} )
 				.catch( function () {
+					window.alert( 'Something went wrong. Please try again.' );
+				} );
+		} );
+	}
+
+	function wireMarkPaid() {
+		document.addEventListener( 'click', function ( event ) {
+			var trigger = event.target.closest( '[data-admin-appointment-mark-paid]' );
+
+			if ( ! trigger ) {
+				return;
+			}
+
+			if ( ! window.confirm( 'Mark this appointment as paid?' ) ) {
+				return;
+			}
+
+			trigger.disabled = true;
+
+			var formData = new FormData();
+			formData.append( 'action', 'doctor_ak_admin_appointment_mark_paid' );
+			formData.append( 'nonce', window.dakAdminAppointments.nonce );
+			formData.append( 'appointment_id', trigger.getAttribute( 'data-appointment-id' ) );
+
+			fetch( window.dakAdminAppointments.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
+				.then( function ( response ) { return response.json(); } )
+				.then( function ( result ) {
+					if ( result.success ) {
+						window.location.reload();
+						return;
+					}
+
+					trigger.disabled = false;
+					window.alert( ( result.data && result.data.message ) || 'Something went wrong. Please try again.' );
+				} )
+				.catch( function () {
+					trigger.disabled = false;
 					window.alert( 'Something went wrong. Please try again.' );
 				} );
 		} );

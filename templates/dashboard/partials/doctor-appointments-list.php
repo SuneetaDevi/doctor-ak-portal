@@ -74,6 +74,8 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] ||
 		</div>
 	</div>
 
+	<div class="dak-alert dak-alert-error dak-hidden" id="dak-doctor-encounters-general-error" role="alert"></div>
+
 	<?php if ( empty( $rows ) ) : ?>
 		<p class="dak-empty-state"><?php esc_html_e( 'No appointments match these filters.', 'doctor-ak-portal' ); ?></p>
 	<?php else : ?>
@@ -138,6 +140,17 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] ||
 					</div>
 					<span class="dak-patient-appt-row-amount"><?php echo esc_html( $row['charge'] > 0 ? 'PKR ' . number_format( (float) $row['charge'], 0 ) : __( 'Free', 'doctor-ak-portal' ) ); ?></span>
 				</div>
+
+				<?php if ( 'completed' === $row['status'] ) : ?>
+					<div class="dak-encounter-note" data-encounter-row="<?php echo esc_attr( $row['id'] ); ?>">
+						<label for="dak-encounter-note-<?php echo esc_attr( $row['id'] ); ?>" class="dak-field-label"><?php esc_html_e( 'Visit note', 'doctor-ak-portal' ); ?></label>
+						<textarea id="dak-encounter-note-<?php echo esc_attr( $row['id'] ); ?>" class="dak-encounter-note-input" rows="2" placeholder="<?php esc_attr_e( 'Add a short note about this visit — visible to the patient in their Medical History.', 'doctor-ak-portal' ); ?>"><?php echo esc_textarea( $row['encounter_notes'] ); ?></textarea>
+						<div class="dak-encounter-note-actions">
+							<span class="dak-encounter-note-status" id="dak-encounter-note-status-<?php echo esc_attr( $row['id'] ); ?>"></span>
+							<button type="button" class="dak-button dak-button-secondary dak-button-sm" data-encounter-save data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"><?php esc_html_e( 'Save Note', 'doctor-ak-portal' ); ?></button>
+						</div>
+					</div>
+				<?php endif; ?>
 			</div>
 		<?php endforeach; ?>
 	<?php endif; ?>

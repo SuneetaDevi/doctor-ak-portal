@@ -99,6 +99,40 @@ class Appointment_Handler {
 	}
 
 	/**
+	 * AJAX handler: marks an appointment's payment as received — a narrow
+	 * "front-desk" action (unlike handle_admin_save_appointment(), it can't
+	 * re-target the doctor/patient/date or touch anything except payment
+	 * status), so it's also allowed for a Receptionist, not just a full
+	 * Administrator.
+	 *
+	 * @return void
+	 */
+	public function handle_mark_paid() {
+		if ( ! check_ajax_referer( Admin_Dashboard::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'doctor_ak_manage_payments' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$appointment_id = isset( $_POST['appointment_id'] ) ? absint( wp_unslash( $_POST['appointment_id'] ) ) : 0;
+		$appointment    = $appointment_id > 0 ? Appointments::find( $appointment_id ) : null;
+
+		if ( empty( $appointment ) ) {
+			wp_send_json_error( array( 'message' => __( 'That appointment no longer exists.', 'doctor-ak-portal' ) ) );
+		}
+
+		if ( Appointments::PAYMENT_STATUS_PAID === $appointment['payment_status'] ) {
+			wp_send_json_error( array( 'message' => __( 'This appointment is already marked paid.', 'doctor-ak-portal' ) ) );
+		}
+
+		Appointments::mark_paid( $appointment_id );
+
+		wp_send_json_success( array( 'message' => __( 'Payment marked as received.', 'doctor-ak-portal' ) ) );
+	}
+
+	/**
 	 * AJAX handler: admin deletes an appointment.
 	 *
 	 * @return void
@@ -288,7 +322,7 @@ class Appointment_Handler {
 	 * @return void
 	 */
 	public function handle_download_invoice() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'doctor_ak_manage_payments' ) ) {
 			wp_die( esc_html__( 'You do not have permission to do this.', 'doctor-ak-portal' ) );
 		}
 

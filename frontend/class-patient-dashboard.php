@@ -484,12 +484,30 @@ class Patient_Dashboard {
 			'payments_tab_html'     => 'payments' === $active_tab ? $this->render_payments_tab( $user ) : '',
 			'appointments_tab_html' => 'appointments' === $active_tab ? $this->render_appointments_tab( $user ) : '',
 			'notifications_tab_html' => 'notifications' === $active_tab ? $this->render_notifications_tab( $user ) : '',
-			'coming_soon_html'      => 'medical-history' === $active_tab
-				? $this->template_loader->get_template(
-					'dashboard/partials/admin-placeholder.php',
-					array( 'section_label' => __( 'Medical History', 'doctor-ak-portal' ) )
-				)
-				: '',
+			'medical_history_tab_html' => 'medical-history' === $active_tab ? $this->render_medical_history_tab( $user ) : '',
+		);
+	}
+
+	/**
+	 * Renders the Medical History tab: every completed visit this patient
+	 * has had, with whichever doctor added a clinical note for it (see
+	 * Appointments::save_encounter_note_by_doctor()) — a visit with no note
+	 * on file is shown honestly as such, never a fabricated summary.
+	 *
+	 * @param \WP_User $user Currently logged-in patient.
+	 * @return string
+	 */
+	private function render_medical_history_tab( \WP_User $user ) {
+		return $this->template_loader->get_template(
+			'dashboard/partials/patient-medical-history.php',
+			array(
+				'visits' => Appointments::all_for_admin(
+					array(
+						'patient_id' => $user->ID,
+						'status'     => 'completed',
+					)
+				),
+			)
 		);
 	}
 

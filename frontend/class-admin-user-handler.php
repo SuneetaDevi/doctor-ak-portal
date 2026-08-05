@@ -122,12 +122,23 @@ class Admin_User_Handler {
 			wp_send_json_error( array( 'message' => __( 'That account no longer exists.', 'doctor-ak-portal' ) ) );
 		}
 
-		// Patients have no specialization field at all — only require/save it
-		// for doctors (existing doctor being edited, or a brand-new account
-		// whose role was explicitly posted as 'doctor').
-		$target_role  = $existing_user
-			? ( in_array( Roles::DOCTOR_ROLE, (array) $existing_user->roles, true ) ? Roles::DOCTOR_ROLE : Roles::PATIENT_ROLE )
-			: ( isset( $_POST['role'] ) ? sanitize_key( wp_unslash( $_POST['role'] ) ) : '' );
+		// Patients/receptionists have no specialization field at all — only
+		// require/save it for doctors (existing doctor being edited, or a
+		// brand-new account whose role was explicitly posted as 'doctor').
+		if ( $existing_user ) {
+			$existing_roles = (array) $existing_user->roles;
+
+			if ( in_array( Roles::DOCTOR_ROLE, $existing_roles, true ) ) {
+				$target_role = Roles::DOCTOR_ROLE;
+			} elseif ( in_array( Roles::RECEPTIONIST_ROLE, $existing_roles, true ) ) {
+				$target_role = Roles::RECEPTIONIST_ROLE;
+			} else {
+				$target_role = Roles::PATIENT_ROLE;
+			}
+		} else {
+			$target_role = isset( $_POST['role'] ) ? sanitize_key( wp_unslash( $_POST['role'] ) ) : '';
+		}
+
 		$is_for_doctor = Roles::DOCTOR_ROLE === $target_role;
 
 		$qualification              = '';
@@ -268,8 +279,8 @@ class Admin_User_Handler {
 		if ( ! $existing_user ) {
 			$role = isset( $_POST['role'] ) ? sanitize_key( wp_unslash( $_POST['role'] ) ) : '';
 
-			if ( ! in_array( $role, array( Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE ), true ) ) {
-				$errors['role'] = __( 'Please choose whether this account is a Doctor or a Patient.', 'doctor-ak-portal' );
+			if ( ! in_array( $role, array( Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE, Roles::RECEPTIONIST_ROLE ), true ) ) {
+				$errors['role'] = __( 'Please choose whether this account is a Doctor, a Patient, or a Receptionist.', 'doctor-ak-portal' );
 			}
 
 			if ( '' !== $password && strlen( $password ) < 8 ) {
@@ -392,7 +403,7 @@ class Admin_User_Handler {
 		$user_id = isset( $_POST['user_id'] ) ? absint( wp_unslash( $_POST['user_id'] ) ) : 0;
 		$user    = $user_id > 0 ? get_user_by( 'id', $user_id ) : false;
 
-		if ( ! $user || ! array_intersect( array( Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE ), (array) $user->roles ) ) {
+		if ( ! $user || ! array_intersect( array( Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE, Roles::RECEPTIONIST_ROLE ), (array) $user->roles ) ) {
 			wp_send_json_error( array( 'message' => __( 'That account no longer exists.', 'doctor-ak-portal' ) ) );
 		}
 
@@ -423,7 +434,7 @@ class Admin_User_Handler {
 		$user_id = isset( $_POST['user_id'] ) ? absint( wp_unslash( $_POST['user_id'] ) ) : 0;
 		$user    = $user_id > 0 ? get_user_by( 'id', $user_id ) : false;
 
-		if ( ! $user || ! array_intersect( array( Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE ), (array) $user->roles ) ) {
+		if ( ! $user || ! array_intersect( array( Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE, Roles::RECEPTIONIST_ROLE ), (array) $user->roles ) ) {
 			wp_send_json_error( array( 'message' => __( 'That account no longer exists.', 'doctor-ak-portal' ) ) );
 		}
 

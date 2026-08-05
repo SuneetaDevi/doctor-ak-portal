@@ -148,6 +148,13 @@ class Login_Handler {
 			return Page_Finder::url_for_shortcode( 'admin_dashboard' );
 		}
 
+		if ( in_array( Roles::RECEPTIONIST_ROLE, (array) $user->roles, true ) ) {
+			// Receptionists share the same [admin_dashboard] page as full
+			// Administrators — just with a cut-down, mostly read-only view
+			// (see Admin_Dashboard::RECEPTIONIST_ALLOWED_SECTIONS).
+			return Page_Finder::url_for_shortcode( 'admin_dashboard' );
+		}
+
 		if ( in_array( Roles::DOCTOR_ROLE, (array) $user->roles, true ) ) {
 			return Page_Finder::url_for_shortcode( 'doctor_dashboard' );
 		}

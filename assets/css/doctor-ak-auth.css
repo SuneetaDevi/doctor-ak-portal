@@ -39,6 +39,7 @@
 	--dak-radius-md: 10px;
 	--dak-radius-sm: 8px;
 	--dak-shadow: 0 4px 20px rgba( 20, 30, 40, 0.06 );
+	--dak-shadow-hover: 0 8px 24px rgba( 20, 30, 40, 0.1 );
 	--dak-tint-teal: #e6f7f5;
 	--dak-tint-amber: #fef3c7;
 	--dak-tint-amber-text: #b45309;
@@ -70,6 +71,7 @@
 	--dak-bg-card: #0d0e10;
 	--dak-bg-subtle: #17181b;
 	--dak-shadow: 0 4px 20px rgba( 0, 0, 0, 0.6 );
+	--dak-shadow-hover: 0 8px 26px rgba( 0, 0, 0, 0.75 );
 	--dak-tint-teal: #0f2422;
 	--dak-tint-amber: #2a2110;
 	--dak-tint-amber-text: #f2b84b;

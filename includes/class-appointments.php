@@ -1591,6 +1591,33 @@ class Appointments {
 	}
 
 	/**
+	 * Saves a doctor's own clinical note for one of their own completed
+	 * appointments — the doctor dashboard's equivalent of
+	 * save_encounter_note(), ownership- and status-checked so a doctor can
+	 * only annotate visits that were actually theirs and actually happened
+	 * (mirrors mark_completed()'s status list, since a note only makes sense
+	 * once the visit is done).
+	 *
+	 * @param int    $appointment_id Appointment post ID.
+	 * @param int    $doctor_id      Doctor's user ID, must match the appointment's doctor.
+	 * @param string $note           Already-sanitized note text.
+	 * @return true|\WP_Error
+	 */
+	public static function save_encounter_note_by_doctor( $appointment_id, $doctor_id, $note ) {
+		$appointment = self::get( $appointment_id );
+
+		if ( empty( $appointment ) || (int) $appointment['doctor_id'] !== (int) $doctor_id ) {
+			return new \WP_Error( 'doctor_ak_invalid_appointment', __( 'That appointment no longer exists.', 'doctor-ak-portal' ) );
+		}
+
+		if ( self::STATUS_COMPLETED !== $appointment['status'] ) {
+			return new \WP_Error( 'doctor_ak_appointment_not_completed', __( 'You can only add a visit note once the appointment is marked completed.', 'doctor-ak-portal' ) );
+		}
+
+		return self::save_encounter_note( $appointment_id, $note );
+	}
+
+	/**
 	 * Paid, upcoming video appointments whose join window (see
 	 * VIDEO_JOIN_WINDOW_BEFORE_MINUTES) has just opened but haven't had
 	 * their "your video link is ready" email sent yet — for the video-link

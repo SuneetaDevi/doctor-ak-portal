@@ -10,9 +10,9 @@
  *
  * @package DoctorAKPortal\Templates
  *
- * @var string     $role            Roles::DOCTOR_ROLE or Roles::PATIENT_ROLE for the active section.
+ * @var string     $role            Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE, or Roles::RECEPTIONIST_ROLE for the active section.
  * @var array      $specializations All specialization slug => label.
- * @var string     $section         'doctors' or 'patients'.
+ * @var string     $section         'doctors', 'patients', or 'receptionist'.
  * @var string     $list_url        Back-to-list URL (the table view of this same section).
  * @var array|null $editing_user    Row view-model (see Admin_Dashboard::row_data()) when editing, null when adding.
  * @var array      $clinic_locations Master clinic list, see Clinic_Locations::get_all().
@@ -25,7 +25,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $dak_is_doctor_form = \DoctorAKPortal\Includes\Roles::DOCTOR_ROLE === $role;
 $dak_is_editing      = null !== $editing_user;
-$dak_noun            = $dak_is_doctor_form ? __( 'Doctor', 'doctor-ak-portal' ) : __( 'Patient', 'doctor-ak-portal' );
+$dak_nouns           = array(
+	'doctors'      => __( 'Doctor', 'doctor-ak-portal' ),
+	'patients'     => __( 'Patient', 'doctor-ak-portal' ),
+	'receptionist' => __( 'Receptionist', 'doctor-ak-portal' ),
+);
+$dak_noun            = isset( $dak_nouns[ $section ] ) ? $dak_nouns[ $section ] : __( 'Doctor', 'doctor-ak-portal' );
+$dak_list_nouns      = array(
+	'doctors'      => __( 'Doctors', 'doctor-ak-portal' ),
+	'patients'     => __( 'Patients', 'doctor-ak-portal' ),
+	'receptionist' => __( 'Receptionists', 'doctor-ak-portal' ),
+);
+$dak_list_noun       = isset( $dak_list_nouns[ $section ] ) ? $dak_list_nouns[ $section ] : __( 'Doctors', 'doctor-ak-portal' );
 ?>
 <div class="dak-dashboard-greeting dak-admin-users-header">
 	<div>
@@ -34,9 +45,9 @@ $dak_noun            = $dak_is_doctor_form ? __( 'Doctor', 'doctor-ak-portal' ) 
 			<?php
 			echo esc_html(
 				sprintf(
-					/* translators: %s: "Doctors" or "Patients". */
+					/* translators: %s: "Doctors", "Patients", or "Receptionists". */
 					__( 'Back to %s', 'doctor-ak-portal' ),
-					'patients' === $section ? __( 'Patients', 'doctor-ak-portal' ) : __( 'Doctors', 'doctor-ak-portal' )
+					$dak_list_noun
 				)
 			);
 			?>

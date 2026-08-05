@@ -32,14 +32,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class Admin_Dashboard
  *
- * Gates access to WordPress users who can 'manage_options' (the built-in
- * Administrator role). The sidebar mirrors the full clinic-management menu
- * (Dashboard/Appointments/Encounters, Doctor Requests/Patients/Doctors/
- * Receptionist, Clinic/Services/Doctor Sessions) so the shape is in place
- * end to end, but only the Doctor Requests, Doctors, Patients, and
- * Appointments sections are backed by real data today — every other
- * section renders an honest "coming soon" placeholder instead of
- * fabricated numbers or forms.
+ * Gates access to WordPress Administrators ('manage_options') and, with a
+ * cut-down read-mostly view, the Receptionist role (see is_receptionist(),
+ * RECEPTIONIST_ALLOWED_SECTIONS): read-only Doctors/Patients directories,
+ * marking appointment payments received, and managing doctors' clinic
+ * locations/session hours. Everything else (Doctor Requests, Receptionist
+ * staff-account management, Encounters, Services, Video Consultation
+ * pricing, Roles & Permissions, Locations, Settings) stays Administrator-only.
  */
 class Admin_Dashboard {
 
@@ -90,6 +89,19 @@ class Admin_Dashboard {
 			'settings'         => 'Settings',
 		),
 	);
+
+	/**
+	 * Section slugs a logged-in Receptionist is allowed to reach — everything
+	 * else (Doctor Requests, the Receptionist staff-account tab itself,
+	 * Encounters, Services, Video Consultation pricing, Roles & Permissions,
+	 * Locations, Settings) stays administrator-only. Enforced server-side in
+	 * requested_section() so a receptionist can't reach a disallowed section
+	 * just by typing the URL — the sidebar only ever links to allowed ones,
+	 * but that alone isn't a security boundary.
+	 *
+	 * @var array
+	 */
+	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'billing', 'patients', 'doctors', 'clinic', 'doctor-sessions' );
 
 	/**
 	 * Template loader.
@@ -523,12 +535,31 @@ class Admin_Dashboard {
 	 */
 	public static function requested_section() {
 		if ( ! isset( $_GET['section'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$section = 'dashboard';
+		} else {
+			$section = sanitize_key( wp_unslash( $_GET['section'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$section = array_key_exists( $section, self::all_sections() ) ? $section : 'dashboard';
+		}
+
+		if ( self::is_receptionist() && ! in_array( $section, self::RECEPTIONIST_ALLOWED_SECTIONS, true ) ) {
 			return 'dashboard';
 		}
 
-		$section = sanitize_key( wp_unslash( $_GET['section'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		return $section;
+	}
 
-		return array_key_exists( $section, self::all_sections() ) ? $section : 'dashboard';
+	/**
+	 * Whether the current user is logged in as a Receptionist (and not also
+	 * a full Administrator — `manage_options` always wins/sees everything).
+	 *
+	 * @return bool
+	 */
+	private static function is_receptionist() {
+		if ( current_user_can( 'manage_options' ) ) {
+			return false;
+		}
+
+		return in_array( Roles::RECEPTIONIST_ROLE, (array) wp_get_current_user()->roles, true );
 	}
 
 	/**
@@ -556,8 +587,10 @@ class Admin_Dashboard {
 			);
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
-			$user               = wp_get_current_user();
+		$user             = wp_get_current_user();
+		$is_receptionist  = in_array( Roles::RECEPTIONIST_ROLE, (array) $user->roles, true );
+
+		if ( ! current_user_can( 'manage_options' ) && ! $is_receptionist ) {
 			$fallback_shortcode = in_array( Roles::DOCTOR_ROLE, (array) $user->roles, true ) ? 'doctor_dashboard' : 'patient_dashboard';
 
 			return $this->template_loader->get_template(
@@ -585,6 +618,7 @@ class Admin_Dashboard {
 
 		$unread_notifications_count = Notification_Center::unread_count( get_current_user_id() );
 		$pending_doctors_count      = self::pending_doctors_count();
+		$is_receptionist            = self::is_receptionist();
 
 		$nav_groups = array();
 
@@ -592,6 +626,10 @@ class Admin_Dashboard {
 			$group_items = array();
 
 			foreach ( $items as $slug => $label ) {
+				if ( $is_receptionist && ! in_array( $slug, self::RECEPTIONIST_ALLOWED_SECTIONS, true ) ) {
+					continue;
+				}
+
 				$badge = 0;
 
 				if ( 'notifications' === $slug ) {
@@ -609,14 +647,21 @@ class Admin_Dashboard {
 				);
 			}
 
+			if ( empty( $group_items ) ) {
+				continue;
+			}
+
 			$nav_groups[] = array(
 				'label' => $group_label,
 				'items' => $group_items,
 			);
 		}
 
-		$is_users_section  = in_array( $section, array( 'doctors', 'patients' ), true );
-		$is_user_form_view = $is_users_section && self::is_user_form_view();
+		$is_users_section  = in_array( $section, array( 'doctors', 'patients', 'receptionist' ), true );
+		// Receptionists get read-only access to the Doctors/Patients tables
+		// (see RECEPTIONIST_ALLOWED_SECTIONS) — never the Add/Edit form, even
+		// if they add `&view=form` to the URL by hand.
+		$is_user_form_view = $is_users_section && self::is_user_form_view() && ! $is_receptionist;
 
 		$modal_html = '';
 
@@ -650,6 +695,7 @@ class Admin_Dashboard {
 			'role'              => $is_users_section ? $this->role_for_section( $section ) : '',
 			'is_users_section'  => $is_users_section,
 			'is_user_form_view' => $is_user_form_view,
+			'is_receptionist'   => $is_receptionist,
 			'theme'             => Theme_Preference::get( get_current_user_id() ),
 			'unread_notifications_count' => $unread_notifications_count,
 			'notifications_url'          => $dashboard_url ? add_query_arg( 'section', 'notifications', $dashboard_url ) : '',
@@ -712,11 +758,19 @@ class Admin_Dashboard {
 	/**
 	 * Maps a Users section slug to the WordPress role it manages.
 	 *
-	 * @param string $section 'doctors' or 'patients'.
+	 * @param string $section 'doctors', 'patients', or 'receptionist'.
 	 * @return string
 	 */
 	private function role_for_section( $section ) {
-		return 'patients' === $section ? Roles::PATIENT_ROLE : Roles::DOCTOR_ROLE;
+		if ( 'patients' === $section ) {
+			return Roles::PATIENT_ROLE;
+		}
+
+		if ( 'receptionist' === $section ) {
+			return Roles::RECEPTIONIST_ROLE;
+		}
+
+		return Roles::DOCTOR_ROLE;
 	}
 
 	/**
@@ -810,6 +864,7 @@ class Admin_Dashboard {
 					'appointments_url'  => $appointments_url,
 					'doctors'                => $doctors,
 					'payment_status_options' => $payment_status_options,
+					'is_receptionist'        => self::is_receptionist(),
 					'filters'           => array(
 						'patient_id'     => $patient_id,
 						'date_from'      => $date_from,
@@ -1266,6 +1321,12 @@ class Admin_Dashboard {
 					'status'         => $status,
 					'specialization' => $specialization,
 				),
+				// A receptionist can view the Doctors/Patients tables (read
+				// access to the directory) but never mutate accounts — only
+				// a real administrator reaches the 'receptionist' section at
+				// all (see RECEPTIONIST_ALLOWED_SECTIONS), so this is only
+				// ever true here for the doctors/patients tables.
+				'read_only'          => self::is_receptionist(),
 			)
 		);
 	}

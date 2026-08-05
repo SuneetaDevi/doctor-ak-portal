@@ -132,6 +132,23 @@ class Doctor_Dashboard {
 		);
 
 		wp_enqueue_script(
+			'doctor-ak-portal-doctor-encounters',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-doctor-encounters.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-doctor-encounters.js' ),
+			true
+		);
+
+		wp_localize_script(
+			'doctor-ak-portal-doctor-encounters',
+			'dakDoctorEncounters',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( Doctor_Appointment_Handler::NONCE_ACTION ),
+			)
+		);
+
+		wp_enqueue_script(
 			'doctor-ak-portal-appointment-reschedule',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-appointment-reschedule.js',
 			array(),

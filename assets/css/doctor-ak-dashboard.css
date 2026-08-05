@@ -281,8 +281,12 @@
 }
 
 .dak-avatar-sm {
-	width: 32px !important;
-	height: 32px !important;
+	width: 36px !important;
+	height: 36px !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+	font-size: 0.8rem !important;
+	font-weight: 700 !important;
 }
 
 .dak-avatar-sm svg {
@@ -794,7 +798,7 @@
 .dak-dashboard-card {
 	min-width: 0 !important;
 	background: var( --dak-bg-card ) !important;
-	border: 0 !important;
+	border: 1px solid var( --dak-border ) !important;
 	border-radius: var( --dak-radius-md ) !important;
 	padding: 1.25rem !important;
 	box-sizing: border-box !important;
@@ -1355,12 +1359,18 @@ a.dak-notification-row-link:hover {
 .dak-admin-record-row {
 	position: relative !important;
 	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
 	border-radius: var( --dak-radius-md ) !important;
 	box-shadow: var( --dak-shadow ) !important;
-	padding: 1rem 1.1rem 1rem 1.4rem !important;
-	margin-bottom: 0.75rem !important;
+	padding: 1.1rem 1.25rem 1.1rem 1.5rem !important;
+	margin-bottom: 0.85rem !important;
 	scroll-margin-top: 1rem !important;
-	transition: background-color 0.3s ease !important;
+	transition: background-color 0.3s ease, box-shadow 0.15s ease, border-color 0.15s ease !important;
+}
+
+.dak-admin-record-row:hover {
+	box-shadow: var( --dak-shadow-hover ) !important;
+	border-color: var( --dak-primary-tint ) !important;
 }
 
 .dak-admin-record-row:last-child {
@@ -1388,19 +1398,25 @@ a.dak-notification-row-link:hover {
 	display: flex !important;
 	align-items: center !important;
 	flex-wrap: wrap !important;
-	gap: 1rem !important;
+	row-gap: 0.85rem !important;
+	column-gap: 1.25rem !important;
 }
 
 .dak-admin-record-row-info {
 	display: flex !important;
 	flex-direction: column !important;
+	gap: 0.15rem !important;
 	flex: 1 1 170px !important;
 	min-width: 0 !important;
 }
 
 .dak-admin-record-row-info strong {
 	color: var( --dak-text ) !important;
-	font-size: 0.92rem !important;
+	font-size: 0.94rem !important;
+	font-weight: 700 !important;
+	line-height: 1.3 !important;
+	overflow: hidden !important;
+	text-overflow: ellipsis !important;
 }
 
 .dak-admin-record-row-id {
@@ -1412,11 +1428,13 @@ a.dak-notification-row-link:hover {
 	flex: 1 1 200px !important;
 	font-size: 0.85rem !important;
 	color: var( --dak-text ) !important;
+	line-height: 1.45 !important;
 }
 
 .dak-admin-record-row-tags {
 	display: flex !important;
 	flex-wrap: wrap !important;
+	align-items: center !important;
 	gap: 0.4rem !important;
 	flex: 1 1 220px !important;
 }
@@ -1424,6 +1442,7 @@ a.dak-notification-row-link:hover {
 .dak-admin-record-row-amount {
 	flex: 0 0 auto !important;
 	font-weight: 700 !important;
+	font-size: 0.95rem !important;
 	color: var( --dak-text ) !important;
 	white-space: nowrap !important;
 }
@@ -1431,9 +1450,11 @@ a.dak-notification-row-link:hover {
 .dak-admin-record-row-actions {
 	display: flex !important;
 	align-items: center !important;
-	gap: 0.4rem !important;
+	gap: 0.35rem !important;
 	flex: 0 0 auto !important;
 	margin-left: auto !important;
+	padding-left: 0.85rem !important;
+	border-left: 1px solid var( --dak-border ) !important;
 }
 
 /* Video Consultation pricing row's price pair (original struck-through +
@@ -1456,14 +1477,34 @@ a.dak-notification-row-link:hover {
 	font-size: 0.95rem !important;
 }
 
-@media ( max-width: 600px ) {
+@media ( max-width: 680px ) {
+	.dak-admin-record-row {
+		padding: 1rem !important;
+	}
+
 	.dak-admin-record-row-main {
 		align-items: flex-start !important;
+	}
+
+	.dak-admin-record-row-info,
+	.dak-admin-record-row-meta,
+	.dak-admin-record-row-tags {
+		flex-basis: 100% !important;
 	}
 
 	.dak-admin-record-row-amount,
 	.dak-admin-record-row-actions {
 		margin-left: 0 !important;
+	}
+
+	.dak-admin-record-row-actions {
+		flex-basis: 100% !important;
+		justify-content: flex-start !important;
+		flex-wrap: wrap !important;
+		padding-left: 0 !important;
+		padding-top: 0.6rem !important;
+		border-left: 0 !important;
+		border-top: 1px solid var( --dak-border ) !important;
 	}
 }
 
@@ -1598,4 +1639,90 @@ a.dak-notification-row-link:hover {
 	font-weight: 700 !important;
 	color: var( --dak-primary ) !important;
 	font-size: 0.9rem !important;
+}
+
+/* Visit-note editor (doctor dashboard's completed appointments) and its
+   read-only counterpart on the patient dashboard's Medical History tab —
+   duplicated from doctor-ak-admin-dashboard.css (the admin Encounters
+   section's original version) since that stylesheet isn't loaded here. */
+.dak-encounter-note {
+	padding-top: 0.85rem !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+.dak-encounter-note .dak-field-label {
+	display: block !important;
+	font-size: 0.7rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.04em !important;
+	color: var( --dak-muted ) !important;
+	margin-bottom: 0.4rem !important;
+}
+
+.dak-encounter-note-input {
+	width: 100% !important;
+	box-sizing: border-box !important;
+	resize: vertical !important;
+	padding: 0.6rem 0.75rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-page ) !important;
+	color: var( --dak-text ) !important;
+	font-family: inherit !important;
+	font-size: 0.88rem !important;
+}
+
+.dak-encounter-note-input:focus {
+	outline: none !important;
+	border-color: var( --dak-primary ) !important;
+	box-shadow: 0 0 0 3px var( --dak-primary-tint ) !important;
+}
+
+.dak-encounter-note-actions {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: flex-end !important;
+	gap: 0.75rem !important;
+	margin-top: 0.6rem !important;
+}
+
+.dak-encounter-note-status {
+	font-size: 0.8rem !important;
+	color: var( --dak-tint-success-text ) !important;
+}
+
+.dak-medical-history-note {
+	padding-top: 0.85rem !important;
+	margin-top: 0.75rem !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+.dak-medical-history-note .dak-field-label {
+	display: block !important;
+	font-size: 0.7rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.04em !important;
+	color: var( --dak-muted ) !important;
+	margin-bottom: 0.4rem !important;
+}
+
+.dak-medical-history-note p {
+	margin: 0 !important;
+	padding: 0.65rem 0.85rem !important;
+	background: var( --dak-bg-subtle ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	font-size: 0.88rem !important;
+	line-height: 1.5 !important;
+	color: var( --dak-text ) !important;
+	white-space: pre-line !important;
+}
+
+.dak-medical-history-note-empty {
+	background: transparent !important;
+	border: 1px dashed var( --dak-border ) !important;
+	font-size: 0.85rem !important;
+	color: var( --dak-muted ) !important;
+	font-style: italic !important;
 }

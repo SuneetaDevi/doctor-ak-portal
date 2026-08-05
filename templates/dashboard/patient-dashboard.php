@@ -35,7 +35,7 @@
  * @var string   $notifications_url     Same-page URL for the Notifications tab.
  * @var string   $notifications_tab_html Pre-rendered notifications-list.php output when $active_tab is 'notifications'.
  * @var int      $unread_notifications_count Unread notification count, for the sidebar badge.
- * @var string   $coming_soon_html      Pre-rendered admin-placeholder.php output when $active_tab is 'medical-history'.
+ * @var string   $medical_history_tab_html Pre-rendered patient-medical-history.php output when $active_tab is 'medical-history'.
  */
 
 // Prevent direct file access.
@@ -211,7 +211,12 @@ $appointment_group_labels = array(
 
 		<?php elseif ( 'medical-history' === $active_tab ) : ?>
 
-			<?php echo $coming_soon_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own admin-placeholder.php template, which escapes its own output. ?>
+			<div class="dak-dashboard-greeting">
+				<h1><?php esc_html_e( 'Medical History', 'doctor-ak-portal' ); ?></h1>
+				<p><?php esc_html_e( 'Visit notes your doctors have added after completed appointments.', 'doctor-ak-portal' ); ?></p>
+			</div>
+
+			<?php echo $medical_history_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own patient-medical-history.php template, which escapes its own output. ?>
 
 		<?php else : ?>
 
