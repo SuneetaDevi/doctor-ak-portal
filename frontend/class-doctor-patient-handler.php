@@ -10,6 +10,7 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Authentication;
+use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Phone;
 use DoctorAKPortal\Includes\Role_Permissions;
@@ -69,6 +70,8 @@ class Doctor_Patient_Handler {
 		$email      = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
 		$clinic_id  = isset( $_POST['clinic_id'] ) ? absint( wp_unslash( $_POST['clinic_id'] ) ) : 0;
 
+		$clinic_location_id = isset( $_POST['clinic_location_id'] ) ? absint( wp_unslash( $_POST['clinic_location_id'] ) ) : 0;
+
 		$phone = Phone::sanitize_from_request(
 			isset( $_POST['phone_country_code'] ) ? wp_unslash( $_POST['phone_country_code'] ) : '',
 			isset( $_POST['phone_number'] ) ? wp_unslash( $_POST['phone_number'] ) : ''
@@ -92,6 +95,10 @@ class Doctor_Patient_Handler {
 		// clinics (never trust a posted ID blindly).
 		if ( $clinic_id > 0 && '' === Clinics::clinic_name_for_doctor( $doctor_id, $clinic_id ) ) {
 			$errors['clinic_id'] = __( 'Please choose one of your own clinics.', 'doctor-ak-portal' );
+		}
+
+		if ( $clinic_location_id <= 0 || ! Clinic_Locations::find( $clinic_location_id ) ) {
+			$errors['clinic_location_id'] = __( "Please select the patient's home clinic.", 'doctor-ak-portal' );
 		}
 
 		if ( ! empty( $errors ) ) {
@@ -120,6 +127,7 @@ class Doctor_Patient_Handler {
 
 		update_user_meta( $patient_id, 'doctor_ak_phone_number', $phone );
 		update_user_meta( $patient_id, 'doctor_ak_added_by_doctor', $doctor_id );
+		update_user_meta( $patient_id, Clinic_Locations::PATIENT_META_KEY, $clinic_location_id );
 
 		if ( $clinic_id > 0 ) {
 			update_user_meta( $patient_id, 'doctor_ak_added_by_clinic', $clinic_id );
@@ -169,6 +177,8 @@ class Doctor_Patient_Handler {
 		$last_name  = isset( $_POST['last_name'] ) ? sanitize_text_field( wp_unslash( $_POST['last_name'] ) ) : '';
 		$email      = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
 
+		$clinic_location_id = isset( $_POST['clinic_location_id'] ) ? absint( wp_unslash( $_POST['clinic_location_id'] ) ) : 0;
+
 		$phone = Phone::sanitize_from_request(
 			isset( $_POST['phone_country_code'] ) ? wp_unslash( $_POST['phone_country_code'] ) : '',
 			isset( $_POST['phone_number'] ) ? wp_unslash( $_POST['phone_number'] ) : ''
@@ -186,6 +196,10 @@ class Doctor_Patient_Handler {
 
 		if ( is_wp_error( $phone ) ) {
 			$errors['phone_number'] = $phone->get_error_message();
+		}
+
+		if ( $clinic_location_id <= 0 || ! Clinic_Locations::find( $clinic_location_id ) ) {
+			$errors['clinic_location_id'] = __( "Please select the patient's home clinic.", 'doctor-ak-portal' );
 		}
 
 		if ( ! empty( $errors ) ) {
@@ -207,6 +221,7 @@ class Doctor_Patient_Handler {
 		}
 
 		update_user_meta( $patient_id, 'doctor_ak_phone_number', $phone );
+		update_user_meta( $patient_id, Clinic_Locations::PATIENT_META_KEY, $clinic_location_id );
 
 		wp_send_json_success( array( 'message' => __( 'Patient updated successfully.', 'doctor-ak-portal' ) ) );
 	}

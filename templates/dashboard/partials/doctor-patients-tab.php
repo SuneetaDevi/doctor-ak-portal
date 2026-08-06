@@ -96,6 +96,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<?php $dak_edit_patient_phone_parts = \DoctorAKPortal\Includes\Phone::split( $patient['phone'] ); ?>
 								data-phone-code="<?php echo esc_attr( $dak_edit_patient_phone_parts['dial_code'] ); ?>"
 								data-phone-number="<?php echo esc_attr( $dak_edit_patient_phone_parts['number'] ); ?>"
+								data-clinic-location-id="<?php echo esc_attr( $patient['clinic_location_id'] ); ?>"
 								title="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
 								aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
 							><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 3.5a1.7 1.7 0 0 1 2.4 2.4L6.5 15.3l-3 .7.7-3 9.3-9.3z"/></svg></button>

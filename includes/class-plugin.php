@@ -33,6 +33,7 @@ use DoctorAKPortal\Frontend\Forgot_Password_Handler;
 use DoctorAKPortal\Frontend\Login_Handler;
 use DoctorAKPortal\Frontend\Notification_Handler;
 use DoctorAKPortal\Frontend\Patient_Appointment_Handler;
+use DoctorAKPortal\Frontend\Patient_Clinic_Handler;
 use DoctorAKPortal\Frontend\Patient_Dashboard;
 use DoctorAKPortal\Frontend\Profile_Handler;
 use DoctorAKPortal\Frontend\Registration_Handler;
@@ -169,6 +170,9 @@ class Plugin {
 		$patient_dashboard = new Patient_Dashboard( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $doctor_dashboard, 'enqueue_assets' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $patient_dashboard, 'enqueue_assets' );
+
+		$patient_clinic_handler = new Patient_Clinic_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_select_clinic', $patient_clinic_handler, 'handle_select_clinic' );
 
 		$profile_handler = new Profile_Handler( new Template_Loader(), new Profile_Picture_Uploader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $profile_handler, 'enqueue_assets' );

@@ -9,6 +9,8 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
+use DoctorAKPortal\Includes\Clinic_Locations;
+use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Role_Permissions;
@@ -181,6 +183,36 @@ class Patient_Dashboard {
 				'nonce'   => wp_create_nonce( Notification_Handler::NONCE_ACTION ),
 			)
 		);
+
+		if ( self::needs_clinic_selection() ) {
+			wp_enqueue_script(
+				'doctor-ak-portal-city-area-select',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-city-area-select.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-city-area-select.js' ),
+				true
+			);
+
+			wp_enqueue_script(
+				'doctor-ak-portal-patient-select-clinic',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-patient-select-clinic.js',
+				array( 'doctor-ak-portal-city-area-select' ),
+				Assets::version( 'assets/js/doctor-ak-patient-select-clinic.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-patient-select-clinic',
+				'dakSelectClinic',
+				array(
+					'ajaxUrl'         => admin_url( 'admin-ajax.php' ),
+					'nonce'           => wp_create_nonce( Patient_Clinic_Handler::NONCE_ACTION ),
+					'locations'       => Locations::get_all(),
+					'clinicLocations' => Clinic_Locations::get_all(),
+					'genericError'    => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
+				)
+			);
+		}
 
 		// The Profile tab renders the same form as the standalone
 		// [doctor_profile] page (see Profile_Handler), so it needs its
@@ -391,7 +423,37 @@ class Patient_Dashboard {
 			);
 		}
 
+		if ( self::needs_clinic_selection() ) {
+			return $this->template_loader->get_template(
+				'dashboard/select-clinic.php',
+				array( 'clinic_locations' => Clinic_Locations::get_all() )
+			);
+		}
+
 		return $this->template_loader->get_template( 'dashboard/patient-dashboard.php', $this->prepare_data( $user ) );
+	}
+
+	/**
+	 * Whether the logged-in user is a patient with no home clinic set yet —
+	 * gates render() to the mandatory clinic-selection screen instead of the
+	 * normal dashboard, and enqueue_assets() to that screen's extra scripts.
+	 * Always false for anyone but a patient (video consultations, doctors,
+	 * and admins are never affected by this).
+	 *
+	 * @return bool
+	 */
+	private static function needs_clinic_selection() {
+		if ( ! is_user_logged_in() ) {
+			return false;
+		}
+
+		$user = wp_get_current_user();
+
+		if ( ! in_array( Roles::PATIENT_ROLE, (array) $user->roles, true ) ) {
+			return false;
+		}
+
+		return (int) get_user_meta( $user->ID, Clinic_Locations::PATIENT_META_KEY, true ) <= 0;
 	}
 
 	/**

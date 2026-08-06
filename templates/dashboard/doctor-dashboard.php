@@ -430,7 +430,7 @@ $dak_dash_icons = array(
 				</div>
 
 				<div class="dak-field">
-					<label for="dak-doctor-add-patient-phone-code"><?php esc_html_e( 'Phone Number', 'doctor-ak-portal' ); ?></label>
+					<label for="dak-doctor-add-patient-phone-code"><?php esc_html_e( 'Phone Number', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
 					<?php
 					echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- template escapes its own output.
 						'partials/phone-field.php',
@@ -438,7 +438,7 @@ $dak_dash_icons = array(
 							'id_prefix' => 'dak-doctor-add-patient-phone',
 							'dial_code' => \DoctorAKPortal\Includes\Phone::DEFAULT_DIAL_CODE,
 							'number'    => '',
-							'required'  => false,
+							'required'  => true,
 						)
 					);
 					?>
@@ -457,6 +457,20 @@ $dak_dash_icons = array(
 						<span class="dak-field-error" data-field="clinic_id"></span>
 					</div>
 				<?php endif; ?>
+
+				<div class="dak-field" id="dak-doctor-add-patient-home-clinic-field">
+					<label for="dak-doctor-add-patient-home-clinic"><?php esc_html_e( 'Home Clinic', 'doctor-ak-portal' ); ?></label>
+					<select id="dak-doctor-add-patient-home-clinic">
+						<option value=""><?php esc_html_e( 'Select a clinic…', 'doctor-ak-portal' ); ?></option>
+						<?php foreach ( $clinic_locations as $dak_add_patient_clinic_location ) : ?>
+							<option value="<?php echo esc_attr( $dak_add_patient_clinic_location['id'] ); ?>">
+								<?php echo esc_html( sprintf( '%1$s — %2$s, %3$s', $dak_add_patient_clinic_location['name'], $dak_add_patient_clinic_location['area_label'], $dak_add_patient_clinic_location['city_label'] ) ); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+					<p class="dak-field-hint"><?php esc_html_e( 'The clinic this patient is registered under. Does not apply to video consultations.', 'doctor-ak-portal' ); ?></p>
+					<span class="dak-field-error" data-field="clinic_location_id"></span>
+				</div>
 
 				<p class="dak-field-hint" id="dak-doctor-add-patient-hint"><?php esc_html_e( 'A password will be generated automatically and the patient will get an email to set their own.', 'doctor-ak-portal' ); ?></p>
 

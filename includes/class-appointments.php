@@ -689,6 +689,7 @@ class Appointments {
 				'visit_count' => isset( $visit_count[ $patient_id ] ) ? $visit_count[ $patient_id ] : 0,
 				'avatar_url'  => self::avatar_url_for_user( $patient_id ),
 				'registered_date' => mysql2date( get_option( 'date_format' ), $patient->user_registered ),
+				'clinic_location_id' => (int) get_user_meta( $patient_id, Clinic_Locations::PATIENT_META_KEY, true ),
 			);
 		}
 

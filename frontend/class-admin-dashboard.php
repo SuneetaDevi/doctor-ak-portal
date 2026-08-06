@@ -1380,8 +1380,22 @@ class Admin_Dashboard {
 		$display_name = trim( $user->first_name . ' ' . $user->last_name );
 		$display_name = '' !== $display_name ? $display_name : $user->display_name;
 
-		$location      = '';
-		$clinic_labels = array();
+		$location            = '';
+		$clinic_labels       = array();
+		$clinic_location_id  = 0;
+		$clinic_location_label = '';
+
+		if ( in_array( Roles::PATIENT_ROLE, (array) $user->roles, true ) ) {
+			$clinic_location_id = (int) get_user_meta( $user->ID, Clinic_Locations::PATIENT_META_KEY, true );
+
+			if ( $clinic_location_id > 0 ) {
+				$clinic_location = Clinic_Locations::find( $clinic_location_id );
+
+				if ( $clinic_location ) {
+					$clinic_location_label = sprintf( '%1$s — %2$s, %3$s', $clinic_location['name'], $clinic_location['area_label'], $clinic_location['city_label'] );
+				}
+			}
+		}
 
 		if ( in_array( Roles::DOCTOR_ROLE, (array) $user->roles, true ) ) {
 			$doctor_clinics = null !== $clinics_by_doctor
@@ -1418,6 +1432,8 @@ class Admin_Dashboard {
 			'specialization_label'        => implode( ', ', $specialization_labels ),
 			'specialization_labels'       => $specialization_labels,
 			'clinic_labels'               => $clinic_labels,
+			'clinic_location_id'          => $clinic_location_id,
+			'clinic_location_label'       => $clinic_location_label,
 			'is_disabled'                 => 'yes' === get_user_meta( $user->ID, 'doctor_ak_account_disabled', true ),
 			'years_experience'            => get_user_meta( $user->ID, 'doctor_ak_years_experience', true ),
 			'qualification'               => get_user_meta( $user->ID, 'doctor_ak_qualification', true ),

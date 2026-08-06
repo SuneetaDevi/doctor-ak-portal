@@ -218,7 +218,7 @@ $dak_list_noun       = isset( $dak_list_nouns[ $section ] ) ? $dak_list_nouns[ $
 		<?php else : ?>
 
 			<div class="dak-field">
-				<label for="dak-admin-user-phone-code"><?php esc_html_e( 'Phone Number', 'doctor-ak-portal' ); ?></label>
+				<label for="dak-admin-user-phone-code"><?php esc_html_e( 'Phone Number', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
 				<?php
 				$dak_admin_phone_parts = \DoctorAKPortal\Includes\Phone::split( $dak_is_editing ? $editing_user['phone'] : '' );
 				echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- template escapes its own output.
@@ -233,6 +233,25 @@ $dak_list_noun       = isset( $dak_list_nouns[ $section ] ) ? $dak_list_nouns[ $
 				?>
 				<span class="dak-field-error" data-field="phone_number"></span>
 			</div>
+
+			<?php if ( 'patients' === $section ) : ?>
+				<div class="dak-field">
+					<label for="dak-admin-user-clinic-location"><?php esc_html_e( 'Home Clinic', 'doctor-ak-portal' ); ?></label>
+					<select id="dak-admin-user-clinic-location" name="clinic_location_id" required>
+						<option value=""><?php esc_html_e( 'Select a clinic…', 'doctor-ak-portal' ); ?></option>
+						<?php foreach ( $clinic_locations as $clinic_location ) : ?>
+							<option value="<?php echo esc_attr( $clinic_location['id'] ); ?>" <?php selected( $dak_is_editing ? (int) $editing_user['clinic_location_id'] : 0, $clinic_location['id'] ); ?>>
+								<?php echo esc_html( sprintf( '%1$s — %2$s, %3$s', $clinic_location['name'], $clinic_location['area_label'], $clinic_location['city_label'] ) ); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+					<p class="dak-field-hint"><?php esc_html_e( 'The clinic this patient is registered under. Does not apply to video consultations.', 'doctor-ak-portal' ); ?></p>
+					<span class="dak-field-error" data-field="clinic_location_id"></span>
+					<?php if ( empty( $clinic_locations ) ) : ?>
+						<p class="dak-field-hint"><?php esc_html_e( 'No clinics added yet — add one first from the admin "Clinic" section.', 'doctor-ak-portal' ); ?></p>
+					<?php endif; ?>
+				</div>
+			<?php endif; ?>
 
 		<?php endif; ?>
 

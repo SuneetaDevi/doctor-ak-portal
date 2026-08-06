@@ -268,6 +268,19 @@ class Admin_User_Handler {
 			}
 		}
 
+		// Patients (not receptionists) are registered under exactly one
+		// clinic from the master Clinic_Locations directory — never
+		// required for/consulted by the video consultation flow.
+		$patient_clinic_location_id = 0;
+
+		if ( Roles::PATIENT_ROLE === $target_role ) {
+			$patient_clinic_location_id = isset( $_POST['clinic_location_id'] ) ? absint( wp_unslash( $_POST['clinic_location_id'] ) ) : 0;
+
+			if ( $patient_clinic_location_id <= 0 || ! Clinic_Locations::find( $patient_clinic_location_id ) ) {
+				$errors['clinic_location_id'] = __( "Please select the patient's home clinic.", 'doctor-ak-portal' );
+			}
+		}
+
 		$profile_picture_id = isset( $_POST['profile_picture_id'] ) ? absint( wp_unslash( $_POST['profile_picture_id'] ) ) : 0;
 
 		if ( $existing_user && strtolower( $email ) !== strtolower( $existing_user->user_email ) && email_exists( $email ) ) {
@@ -362,6 +375,10 @@ class Admin_User_Handler {
 			}
 		} else {
 			update_user_meta( $saved_user_id, 'doctor_ak_phone_number', $phone_number );
+
+			if ( Roles::PATIENT_ROLE === $target_role ) {
+				update_user_meta( $saved_user_id, Clinic_Locations::PATIENT_META_KEY, $patient_clinic_location_id );
+			}
 		}
 
 		if ( $profile_picture_id > 0 ) {

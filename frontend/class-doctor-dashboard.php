@@ -9,6 +9,7 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
+use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Page_Finder;
@@ -598,6 +599,7 @@ class Doctor_Dashboard {
 			'logout_url'            => wp_logout_url( Page_Finder::url_for_shortcode( 'doctor_login' ) ),
 			'total_patients'        => Appointments::unique_patient_count_for_doctor( $user->ID, $doctor_appointments ),
 			'doctor_clinics'        => $clinics,
+			'clinic_locations'      => Clinic_Locations::get_all(),
 			/**
 			 * Filters the doctor dashboard's "Today's Appointments" stat.
 			 *

@@ -66,6 +66,12 @@
 			formData.append( 'phone_country_code', document.getElementById( 'dak-doctor-add-patient-phone-code' ).value );
 			formData.append( 'phone_number', document.getElementById( 'dak-doctor-add-patient-phone-number' ).value );
 
+			var homeClinicSelect = document.getElementById( 'dak-doctor-add-patient-home-clinic' );
+
+			if ( homeClinicSelect ) {
+				formData.append( 'clinic_location_id', homeClinicSelect.value );
+			}
+
 			if ( isEdit ) {
 				formData.append( 'patient_id', patientId );
 			} else {
@@ -129,6 +135,12 @@
 				clinicSelect.value = '0';
 			}
 
+			var homeClinicSelect = document.getElementById( 'dak-doctor-add-patient-home-clinic' );
+
+			if ( homeClinicSelect ) {
+				homeClinicSelect.value = '';
+			}
+
 			if ( titleText ) {
 				titleText.textContent = 'Add Patient';
 			}
@@ -156,6 +168,12 @@
 			document.getElementById( 'dak-doctor-add-patient-email' ).value = editButton.getAttribute( 'data-email' ) || '';
 			document.getElementById( 'dak-doctor-add-patient-phone-code' ).value = editButton.getAttribute( 'data-phone-code' ) || '92';
 			document.getElementById( 'dak-doctor-add-patient-phone-number' ).value = editButton.getAttribute( 'data-phone-number' ) || '';
+
+			var homeClinicSelect = document.getElementById( 'dak-doctor-add-patient-home-clinic' );
+
+			if ( homeClinicSelect ) {
+				homeClinicSelect.value = editButton.getAttribute( 'data-clinic-location-id' ) || '';
+			}
 
 			if ( titleText ) {
 				titleText.textContent = 'Edit Patient';

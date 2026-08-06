@@ -33,6 +33,18 @@ class Clinic_Locations {
 	const TABLE = 'dak_clinic_locations';
 
 	/**
+	 * User meta key storing a patient's single "home clinic" — the one
+	 * Clinic_Locations row they're registered under, chosen by an admin/
+	 * doctor when adding them or by the patient themselves via the
+	 * post-registration clinic-selection screen. Never set for doctors
+	 * (who instead have their own possibly-multiple `dak_clinics` rows) and
+	 * never required for/read by the video consultation flow.
+	 *
+	 * @var string
+	 */
+	const PATIENT_META_KEY = 'doctor_ak_patient_clinic_location_id';
+
+	/**
 	 * Returns the fully prefixed table name.
 	 *
 	 * @return string
