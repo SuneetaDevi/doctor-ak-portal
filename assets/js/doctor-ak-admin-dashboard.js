@@ -216,14 +216,54 @@
 	function initRowActions() {
 		document.addEventListener( 'click', function ( event ) {
 			var toggleTrigger = event.target.closest( '[data-admin-toggle-status]' );
+			var dischargeTrigger = event.target.closest( '[data-admin-toggle-discharge]' );
 			var deleteTrigger = event.target.closest( '[data-admin-delete-user]' );
 
 			if ( toggleTrigger ) {
 				handleToggleStatus( toggleTrigger );
+			} else if ( dischargeTrigger ) {
+				handleToggleDischarge( dischargeTrigger );
 			} else if ( deleteTrigger ) {
 				handleDelete( deleteTrigger );
 			}
 		} );
+	}
+
+	/**
+	 * Toggles a patient between discharged/readmitted — a simple one-step
+	 * confirm-then-toggle, unlike handleToggleStatus()'s doctor-appointment-
+	 * cancellation dance (discharge has no such side effects to weigh).
+	 *
+	 * @param {HTMLElement} trigger The row's Discharge/Readmit button.
+	 */
+	function handleToggleDischarge( trigger ) {
+		var isDischarged = '1' === trigger.getAttribute( 'data-is-discharged' );
+		var confirmMessage = isDischarged
+			? 'Readmit this patient? They will no longer be marked as discharged.'
+			: 'Discharge this patient? This just marks their course of treatment as finished — it does not affect their account access.';
+
+		if ( ! window.confirm( confirmMessage ) ) {
+			return;
+		}
+
+		var formData = new FormData();
+		formData.append( 'action', 'doctor_ak_admin_toggle_discharge' );
+		formData.append( 'nonce', dakAdminUsers.nonce );
+		formData.append( 'user_id', trigger.getAttribute( 'data-user-id' ) );
+
+		fetch( dakAdminUsers.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
+			.then( function ( response ) { return response.json(); } )
+			.then( function ( result ) {
+				if ( result.success ) {
+					window.location.reload();
+					return;
+				}
+
+				window.alert( ( result.data && result.data.message ) || dakAdminUsers.genericError );
+			} )
+			.catch( function () {
+				window.alert( dakAdminUsers.genericError );
+			} );
 	}
 
 	function handleToggleStatus( trigger ) {

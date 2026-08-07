@@ -1144,12 +1144,14 @@ class Admin_Dashboard {
 		}
 
 		if ( 'encounters' === $section ) {
-			$date_from = isset( $_GET['date_from'] ) ? sanitize_text_field( wp_unslash( $_GET['date_from'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
-			$date_to   = isset( $_GET['date_to'] ) ? sanitize_text_field( wp_unslash( $_GET['date_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
-			$doctor_id = isset( $_GET['doctor_id'] ) ? absint( wp_unslash( $_GET['doctor_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$date_from  = isset( $_GET['date_from'] ) ? sanitize_text_field( wp_unslash( $_GET['date_from'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$date_to    = isset( $_GET['date_to'] ) ? sanitize_text_field( wp_unslash( $_GET['date_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$doctor_id  = isset( $_GET['doctor_id'] ) ? absint( wp_unslash( $_GET['doctor_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$patient_id = isset( $_GET['patient_id'] ) ? absint( wp_unslash( $_GET['patient_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 
-			$dashboard_url  = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
-			$encounters_url = $dashboard_url ? add_query_arg( 'section', 'encounters', $dashboard_url ) : '';
+			$dashboard_url    = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+			$encounters_url   = $dashboard_url ? add_query_arg( 'section', 'encounters', $dashboard_url ) : '';
+			$filtered_patient = $patient_id > 0 ? get_userdata( $patient_id ) : false;
 
 			$doctors = get_users(
 				array(
@@ -1162,20 +1164,23 @@ class Admin_Dashboard {
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-encounters.php',
 				array(
-					'encounters'     => Appointments::all_for_admin(
+					'encounters'       => Appointments::all_for_admin(
 						array(
-							'status'    => Appointments::STATUS_COMPLETED,
-							'date_from' => $date_from,
-							'date_to'   => $date_to,
-							'doctor_id' => $doctor_id,
+							'status'     => Appointments::STATUS_COMPLETED,
+							'date_from'  => $date_from,
+							'date_to'    => $date_to,
+							'doctor_id'  => $doctor_id,
+							'patient_id' => $patient_id,
 						)
 					),
-					'encounters_url' => $encounters_url,
-					'doctors'        => $doctors,
-					'filters'        => array(
-						'date_from' => $date_from,
-						'date_to'   => $date_to,
-						'doctor_id' => $doctor_id,
+					'encounters_url'   => $encounters_url,
+					'doctors'          => $doctors,
+					'filtered_patient' => $filtered_patient ? self::display_name( $filtered_patient ) : '',
+					'filters'          => array(
+						'date_from'  => $date_from,
+						'date_to'    => $date_to,
+						'doctor_id'  => $doctor_id,
+						'patient_id' => $patient_id,
 					),
 				)
 			);
@@ -1625,6 +1630,12 @@ class Admin_Dashboard {
 				'users'              => $users,
 				'section'            => $section,
 				'appointments_url'   => $dashboard_url ? add_query_arg( 'section', 'appointments', $dashboard_url ) : '',
+				// Encounters is administrator-only (not in
+				// RECEPTIONIST_ALLOWED_SECTIONS), so this stays empty for a
+				// receptionist viewing the read-only Patients table — same
+				// as how the template already hides admin-only actions for
+				// them via $read_only.
+				'encounters_url'     => ( $dashboard_url && current_user_can( 'manage_options' ) ) ? add_query_arg( 'section', 'encounters', $dashboard_url ) : '',
 				'services_url'       => $dashboard_url ? add_query_arg( 'section', 'services', $dashboard_url ) : '',
 				'doctor_sessions_url' => $dashboard_url ? add_query_arg( 'section', 'doctor-sessions', $dashboard_url ) : '',
 				'section_url'        => $section_url,
@@ -1747,6 +1758,7 @@ class Admin_Dashboard {
 			'clinic_location_id'          => $clinic_location_id,
 			'clinic_location_label'       => $clinic_location_label,
 			'is_disabled'                 => 'yes' === get_user_meta( $user->ID, 'doctor_ak_account_disabled', true ),
+			'is_discharged'               => 'yes' === get_user_meta( $user->ID, 'doctor_ak_patient_discharged', true ),
 			'years_experience'            => get_user_meta( $user->ID, 'doctor_ak_years_experience', true ),
 			'qualification'               => get_user_meta( $user->ID, 'doctor_ak_qualification', true ),
 			'country'                     => get_user_meta( $user->ID, 'doctor_ak_country', true ),

@@ -7,6 +7,7 @@
  * @var array  $users            Row view-models, see Admin_Dashboard::row_data().
  * @var string $section          'doctors', 'patients', or 'receptionist'.
  * @var string $appointments_url    Base URL of the admin Appointments section, for the "View Appointments" action.
+ * @var string $encounters_url      Base URL of the admin Encounters section, for the Patients table's "Encounter" action. Empty for a Receptionist (Encounters is administrator-only).
  * @var string $services_url        Base URL of the admin Services section, for the Doctors table's "View Services" action.
  * @var string $doctor_sessions_url Base URL of the admin Doctor Sessions section, for the Doctors table's "View Sessions" action.
  * @var string $section_url      This section's own URL (no filters), for the filter form and "Clear" link.
@@ -112,6 +113,9 @@ $dak_read_only         = ! empty( $read_only );
 						<span class="dak-admin-patient-row-info">
 							<strong><?php echo esc_html( $row['name'] ); ?></strong>
 							<span class="dak-admin-patient-row-id"><?php echo esc_html( sprintf( 'P-%03d', $row['id'] ) ); ?></span>
+							<?php if ( $row['is_discharged'] ) : ?>
+								<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-disabled"><?php esc_html_e( 'Discharged', 'doctor-ak-portal' ); ?></span>
+							<?php endif; ?>
 						</span>
 						<span class="dak-admin-patient-row-email"><?php echo esc_html( $row['email'] ); ?></span>
 						<span class="dak-admin-patient-row-phone"><?php echo esc_html( '' !== $row['phone'] ? $row['phone'] : '—' ); ?></span>
@@ -126,6 +130,14 @@ $dak_read_only         = ! empty( $read_only );
 									title="<?php esc_attr_e( 'View Appointments', 'doctor-ak-portal' ); ?>"
 									aria-label="<?php esc_attr_e( 'View Appointments', 'doctor-ak-portal' ); ?>"
 								><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="4" width="15" height="13" rx="1.5"/><path d="M2.5 8h15"/><path d="M6 2.5v3M14 2.5v3"/></svg></a>
+							<?php endif; ?>
+							<?php if ( $encounters_url ) : ?>
+								<a
+									class="dak-icon-button"
+									href="<?php echo esc_url( add_query_arg( 'patient_id', $row['id'], $encounters_url ) ); ?>"
+									title="<?php esc_attr_e( 'Encounter', 'doctor-ak-portal' ); ?>"
+									aria-label="<?php esc_attr_e( 'Encounter', 'doctor-ak-portal' ); ?>"
+								><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3.5h6a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M8 2.5h4v2H8z"/><path d="M7.5 9h5M7.5 12h5M7.5 15h3"/></svg></a>
 							<?php endif; ?>
 							<?php if ( ! $dak_read_only ) : ?>
 								<a
@@ -143,6 +155,15 @@ $dak_read_only         = ! empty( $read_only );
 									title="<?php echo $row['is_disabled'] ? esc_attr__( 'Activate', 'doctor-ak-portal' ) : esc_attr__( 'Deactivate', 'doctor-ak-portal' ); ?>"
 									aria-label="<?php echo $row['is_disabled'] ? esc_attr__( 'Activate', 'doctor-ak-portal' ) : esc_attr__( 'Deactivate', 'doctor-ak-portal' ); ?>"
 								><?php if ( $row['is_disabled'] ) : ?><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2.5v6"/><path d="M5.5 5.2a6.5 6.5 0 1 0 9 0"/></svg><?php else : ?><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M7.5 7.5v5M12.5 7.5v5"/></svg><?php endif; ?></button>
+								<button
+									type="button"
+									class="dak-icon-button<?php echo $row['is_discharged'] ? ' dak-icon-button-success' : ' dak-icon-button-warning'; ?>"
+									data-admin-toggle-discharge
+									data-user-id="<?php echo esc_attr( $row['id'] ); ?>"
+									data-is-discharged="<?php echo $row['is_discharged'] ? '1' : '0'; ?>"
+									title="<?php echo $row['is_discharged'] ? esc_attr__( 'Readmit', 'doctor-ak-portal' ) : esc_attr__( 'Discharge', 'doctor-ak-portal' ); ?>"
+									aria-label="<?php echo $row['is_discharged'] ? esc_attr__( 'Readmit', 'doctor-ak-portal' ) : esc_attr__( 'Discharge', 'doctor-ak-portal' ); ?>"
+								><?php if ( $row['is_discharged'] ) : ?><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 4v-.5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V16"/><path d="M8 10h9M17 10l-2.5-2.5M17 10l-2.5 2.5"/></svg><?php else : ?><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v-.5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V16"/><path d="M17 10H8M8 10l2.5-2.5M8 10l2.5 2.5"/></svg><?php endif; ?></button>
 								<button
 									type="button"
 									class="dak-icon-button dak-icon-button-danger"

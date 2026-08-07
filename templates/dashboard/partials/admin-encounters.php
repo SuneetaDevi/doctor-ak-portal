@@ -7,10 +7,11 @@
  *
  * @package DoctorAKPortal\Templates
  *
- * @var array  $encounters     Rows from Appointments::all_for_admin( [ 'status' => 'completed', ... ] ).
- * @var string $encounters_url Unfiltered URL of this section, for the filter form and "Clear" link.
- * @var array  $doctors        Doctor users { ID, display_name }, for the filter's Doctor select.
- * @var array  $filters        Active filter values: date_from, date_to, doctor_id.
+ * @var array  $encounters       Rows from Appointments::all_for_admin( [ 'status' => 'completed', ... ] ).
+ * @var string $encounters_url   Unfiltered URL of this section, for the filter form and "Clear" link.
+ * @var array  $doctors          Doctor users { ID, display_name }, for the filter's Doctor select.
+ * @var string $filtered_patient Name of the patient being filtered to (via the Patient directory's "Encounter" action), or '' if unfiltered.
+ * @var array  $filters          Active filter values: date_from, date_to, doctor_id, patient_id.
  */
 
 // Prevent direct file access.
@@ -35,6 +36,21 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] ||
 	</p>
 </div>
 
+<?php if ( '' !== $filtered_patient ) : ?>
+	<div class="dak-alert dak-alert-success">
+		<?php
+		echo esc_html(
+			sprintf(
+				/* translators: %s: patient's name. */
+				__( 'Showing encounters for %s.', 'doctor-ak-portal' ),
+				$filtered_patient
+			)
+		);
+		?>
+		<a class="dak-link" href="<?php echo esc_url( $encounters_url ); ?>"><?php esc_html_e( 'Clear filter', 'doctor-ak-portal' ); ?></a>
+	</div>
+<?php endif; ?>
+
 <section class="dak-dashboard-card dak-appt-filters-card">
 	<div class="dak-dashboard-card-header">
 		<h2><?php esc_html_e( 'Filters', 'doctor-ak-portal' ); ?></h2>
@@ -42,6 +58,9 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] ||
 
 	<form method="get" action="<?php echo esc_url( $encounters_url ); ?>" class="dak-appt-filters-form">
 		<input type="hidden" name="section" value="encounters">
+		<?php if ( $filters['patient_id'] > 0 ) : ?>
+			<input type="hidden" name="patient_id" value="<?php echo esc_attr( $filters['patient_id'] ); ?>">
+		<?php endif; ?>
 
 		<div class="dak-field">
 			<label for="dak-admin-encounters-date-from"><?php esc_html_e( 'From', 'doctor-ak-portal' ); ?></label>

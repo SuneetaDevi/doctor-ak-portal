@@ -281,6 +281,7 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_save_user', $admin_user_handler, 'handle_save_user' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_delete_user', $admin_user_handler, 'handle_delete_user' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_toggle_status', $admin_user_handler, 'handle_toggle_status' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_toggle_discharge', $admin_user_handler, 'handle_toggle_discharge' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_upload_profile_picture', $admin_user_handler, 'handle_upload_profile_picture' );
 
 		$doctor_requests_handler = new Doctor_Requests_Handler();

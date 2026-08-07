@@ -496,6 +496,45 @@ class Admin_User_Handler {
 	}
 
 	/**
+	 * AJAX handler: toggles a patient's "discharged" status — a clinical/
+	 * administrative marker ("this patient's course of treatment is
+	 * finished") independent of account deactivation, which instead blocks
+	 * login. A discharged patient keeps full portal access; this is purely
+	 * informational for the admin's Patient directory.
+	 *
+	 * @return void
+	 */
+	public function handle_toggle_discharge() {
+		if ( ! check_ajax_referer( Admin_Dashboard::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$user_id = isset( $_POST['user_id'] ) ? absint( wp_unslash( $_POST['user_id'] ) ) : 0;
+		$user    = $user_id > 0 ? get_user_by( 'id', $user_id ) : false;
+
+		if ( ! $user || ! in_array( Roles::PATIENT_ROLE, (array) $user->roles, true ) ) {
+			wp_send_json_error( array( 'message' => __( 'That patient no longer exists.', 'doctor-ak-portal' ) ) );
+		}
+
+		$is_discharging = 'yes' !== get_user_meta( $user_id, 'doctor_ak_patient_discharged', true );
+
+		update_user_meta( $user_id, 'doctor_ak_patient_discharged', $is_discharging ? 'yes' : 'no' );
+
+		wp_send_json_success(
+			array(
+				'is_discharged' => $is_discharging,
+				'message'       => $is_discharging
+					? __( 'Patient discharged.', 'doctor-ak-portal' )
+					: __( 'Patient readmitted.', 'doctor-ak-portal' ),
+			)
+		);
+	}
+
+	/**
 	 * Cancels every appointment in $upcoming (a deactivated doctor's
 	 * upcoming/unresolved appointments, see Appointments::upcoming_for_doctor())
 	 * — each cancellation fires the same 'doctor_ak_appointment_cancelled'

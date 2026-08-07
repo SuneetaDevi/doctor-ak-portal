@@ -205,6 +205,16 @@ class Appointments {
 			$status         = isset( $data['status'] ) && array_key_exists( $data['status'], $status_options ) ? $data['status'] : self::STATUS_CONFIRMED;
 			$payment_status = isset( $data['payment_status'] ) && self::PAYMENT_STATUS_PAID === $data['payment_status'] ? self::PAYMENT_STATUS_PAID : self::PAYMENT_STATUS_PENDING;
 			$payment_mode   = isset( $data['payment_mode'] ) && self::PAYMENT_MODE_ONLINE === $data['payment_mode'] ? self::PAYMENT_MODE_ONLINE : self::PAYMENT_MODE_MANUAL;
+
+			// Same rule Appointments::update() enforces when editing an
+			// existing appointment (see its own copy of this check below) —
+			// "completed" is meant to imply the visit happened and was paid
+			// for, so an admin can't create a brand-new appointment that's
+			// already both Completed and Payment Pending either. A free ($0)
+			// appointment has nothing to collect, so it's exempt.
+			if ( self::STATUS_COMPLETED === $status && $charge > 0 && self::PAYMENT_STATUS_PAID !== $payment_status ) {
+				return new \WP_Error( 'doctor_ak_appointment_payment_pending', __( 'This appointment still has a pending payment — mark it paid before completing it.', 'doctor-ak-portal' ) );
+			}
 		} else {
 			$requires_payment = apply_filters( 'doctor_ak_appointment_requires_payment', false, $data );
 			$status           = $requires_payment ? self::STATUS_PENDING_PAYMENT : self::STATUS_CONFIRMED;
