@@ -80,11 +80,17 @@ $dak_session_icons = array(
 
 					<span class="dak-admin-record-row-meta"><?php echo esc_html( $slot_label ); ?></span>
 
-					<span class="dak-admin-record-row-tags">
-						<?php foreach ( $clinic['enabled_days'] as $label ) : ?>
-							<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( mb_substr( $label, 0, 3 ) ); ?></span>
-						<?php endforeach; ?>
+					<span class="dak-status-pill dak-status-pill-outline <?php echo empty( $clinic['enabled_days'] ) ? 'dak-status-pill-is-disabled' : 'dak-status-pill-is-active'; ?>">
+						<?php echo empty( $clinic['enabled_days'] ) ? esc_html__( 'Not available', 'doctor-ak-portal' ) : esc_html__( 'Available', 'doctor-ak-portal' ); ?>
 					</span>
+
+					<?php if ( ! empty( $clinic['enabled_days'] ) ) : ?>
+						<span class="dak-admin-record-row-tags">
+							<?php foreach ( $clinic['enabled_days'] as $label ) : ?>
+								<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( mb_substr( $label, 0, 3 ) ); ?></span>
+							<?php endforeach; ?>
+						</span>
+					<?php endif; ?>
 
 					<span class="dak-admin-record-row-actions">
 						<a

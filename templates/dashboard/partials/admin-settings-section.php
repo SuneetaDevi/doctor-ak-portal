@@ -62,10 +62,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<label for="dak-clinic-branding-address"><?php esc_html_e( 'Address', 'doctor-ak-portal' ); ?></label>
 		<textarea id="dak-clinic-branding-address" rows="3"><?php echo esc_textarea( $clinic_address ); ?></textarea>
 	</div>
-
-	<button type="button" class="dak-button dak-button-primary" id="dak-clinic-branding-save">
-		<span class="dak-button-label"><?php esc_html_e( 'Save branding', 'doctor-ak-portal' ); ?></span>
-	</button>
 </section>
 
 <div class="dak-dashboard-greeting">
@@ -74,5 +70,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 </div>
 
 <section class="dak-dashboard-card dak-dashboard-profile-form">
-	<?php echo $settings_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own dashboard-settings-tab.php template, which escapes its own output — it renders its own "Appearance" and "Notifications" sections (shared with the Doctor/Patient/Receptionist dashboards' Settings tab). ?>
+	<?php echo $settings_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own dashboard-settings-tab.php template, which escapes its own output — it renders its own "Appearance" and "Notifications" sections (shared with the Doctor/Patient/Receptionist dashboards' Settings tab), with its own "Save preferences" button suppressed here (show_save_button => false) in favor of the single button below. ?>
 </section>
+
+<div class="dak-alert dak-alert-error dak-hidden" id="dak-admin-settings-error" role="alert"></div>
+<div class="dak-alert dak-alert-success dak-hidden" id="dak-admin-settings-success" role="status"></div>
+
+<button type="button" class="dak-button dak-button-primary" id="dak-admin-settings-save">
+	<span class="dak-button-label"><?php esc_html_e( 'Save Settings', 'doctor-ak-portal' ); ?></span>
+</button>

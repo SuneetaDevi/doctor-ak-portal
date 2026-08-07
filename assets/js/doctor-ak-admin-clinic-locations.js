@@ -30,6 +30,27 @@
 				return;
 			}
 
+			// This one modal is reused for every Add/Edit click (its <select>
+			// elements are never recreated), but window.dakCityArea.wire()
+			// attaches fresh 'change' listeners every time it's called — so
+			// re-wiring on each open stacked up duplicate listeners, and
+			// picking a Country after opening the modal a few times would
+			// re-render its City/Area options multiple times over instead of
+			// once, occasionally leaving stale options in place. Cloning each
+			// select strips any previously-attached listeners before wiring
+			// fresh ones, so exactly one set is ever active.
+			var freshCountry = countrySelect.cloneNode( true );
+			countrySelect.parentNode.replaceChild( freshCountry, countrySelect );
+			countrySelect = freshCountry;
+
+			var freshCity = citySelect.cloneNode( true );
+			citySelect.parentNode.replaceChild( freshCity, citySelect );
+			citySelect = freshCity;
+
+			var freshArea = areaSelect.cloneNode( true );
+			areaSelect.parentNode.replaceChild( freshArea, areaSelect );
+			areaSelect = freshArea;
+
 			window.dakCityArea.wire(
 				countrySelect,
 				citySelect,

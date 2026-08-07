@@ -12,6 +12,7 @@
  * @var bool $notify_booking   Whether the current account receives "appointment booked" emails. Defaults true if unset.
  * @var bool $notify_paid      Whether the current account receives "payment received" emails. Defaults true if unset.
  * @var bool $notify_cancelled Whether the current account receives "cancellation" emails. Defaults true if unset.
+ * @var bool $show_save_button Whether to render this section's own "Save preferences" button. Defaults true; the admin dashboard's Settings page passes false and saves this alongside Clinic Branding via its own single "Save Settings" button instead (see admin-settings-section.php).
  */
 
 // Prevent direct file access.
@@ -22,6 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 $notify_booking   = isset( $notify_booking ) ? $notify_booking : true;
 $notify_paid      = isset( $notify_paid ) ? $notify_paid : true;
 $notify_cancelled = isset( $notify_cancelled ) ? $notify_cancelled : true;
+$show_save_button = ! isset( $show_save_button ) || $show_save_button;
 ?>
 <div class="dak-settings-section">
 	<h2><?php esc_html_e( 'Appearance', 'doctor-ak-portal' ); ?></h2>
@@ -74,7 +76,9 @@ $notify_cancelled = isset( $notify_cancelled ) ? $notify_cancelled : true;
 		</label>
 	</div>
 
-	<button type="button" class="dak-button dak-button-primary" id="dak-notification-preferences-save">
-		<span class="dak-button-label"><?php esc_html_e( 'Save preferences', 'doctor-ak-portal' ); ?></span>
-	</button>
+	<?php if ( $show_save_button ) : ?>
+		<button type="button" class="dak-button dak-button-primary" id="dak-notification-preferences-save">
+			<span class="dak-button-label"><?php esc_html_e( 'Save preferences', 'doctor-ak-portal' ); ?></span>
+		</button>
+	<?php endif; ?>
 </div>

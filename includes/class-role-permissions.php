@@ -71,6 +71,29 @@ class Role_Permissions {
 	}
 
 	/**
+	 * Receptionist's toggle-able admin dashboard sections, slug => label.
+	 * Matches Admin_Dashboard::RECEPTIONIST_ALLOWED_SECTIONS (minus
+	 * 'dashboard', which — like every role's Dashboard tab — is never
+	 * toggle-able) — that constant is the hard ceiling of sections a
+	 * receptionist could ever structurally reach; this lets an admin further
+	 * restrict which of those a given install actually wants receptionists
+	 * using.
+	 *
+	 * @return array
+	 */
+	public static function receptionist_tabs() {
+		return array(
+			'appointments'    => __( 'Appointments', 'doctor-ak-portal' ),
+			'billing'         => __( 'Billing', 'doctor-ak-portal' ),
+			'patients'        => __( 'Patients', 'doctor-ak-portal' ),
+			'doctors'         => __( 'Doctors', 'doctor-ak-portal' ),
+			'clinic'          => __( 'Clinic', 'doctor-ak-portal' ),
+			'doctor-sessions' => __( 'Doctor Sessions', 'doctor-ak-portal' ),
+			'settings'        => __( 'Settings', 'doctor-ak-portal' ),
+		);
+	}
+
+	/**
 	 * The saved permissions map: role => tab slug => bool.
 	 *
 	 * @return array
@@ -86,7 +109,7 @@ class Role_Permissions {
 	 * true (allowed) for any tab without an explicit stored value —
 	 * including 'dashboard', which is never stored/toggle-able.
 	 *
-	 * @param string $role Roles::DOCTOR_ROLE or Roles::PATIENT_ROLE.
+	 * @param string $role Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE, or Roles::RECEPTIONIST_ROLE.
 	 * @param string $tab  Tab slug.
 	 * @return bool
 	 */
@@ -116,8 +139,9 @@ class Role_Permissions {
 	 */
 	public static function sanitize_from_request( array $posted ) {
 		$roles = array(
-			Roles::DOCTOR_ROLE  => self::doctor_tabs(),
-			Roles::PATIENT_ROLE => self::patient_tabs(),
+			Roles::DOCTOR_ROLE       => self::doctor_tabs(),
+			Roles::PATIENT_ROLE      => self::patient_tabs(),
+			Roles::RECEPTIONIST_ROLE => self::receptionist_tabs(),
 		);
 
 		$sanitized = array();

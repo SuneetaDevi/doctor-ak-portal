@@ -91,10 +91,14 @@ class Admin_Dashboard {
 	);
 
 	/**
-	 * Section slugs a logged-in Receptionist is allowed to reach — everything
-	 * else (Doctor Requests, the Receptionist staff-account tab itself,
-	 * Encounters, Services, Video Consultation pricing, Roles & Permissions,
-	 * Locations, Settings) stays administrator-only. Enforced server-side in
+	 * Section slugs a logged-in Receptionist could ever structurally reach —
+	 * the hard ceiling; everything else (Doctor Requests, the Receptionist
+	 * staff-account tab itself, Encounters, Services, Video Consultation
+	 * pricing, Roles & Permissions, Locations) stays administrator-only no
+	 * matter what. Within this ceiling, Settings → Roles & Permissions lets
+	 * an admin further switch individual sections off per-install (see
+	 * receptionist_can_access(), which ANDs this list with
+	 * Role_Permissions::is_tab_allowed()). Enforced server-side in
 	 * requested_section() so a receptionist can't reach a disallowed section
 	 * just by typing the URL — the sidebar only ever links to allowed ones,
 	 * but that alone isn't a security boundary.
@@ -102,6 +106,19 @@ class Admin_Dashboard {
 	 * @var array
 	 */
 	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'billing', 'patients', 'doctors', 'clinic', 'doctor-sessions', 'settings' );
+
+	/**
+	 * Whether a logged-in Receptionist may access a given section — must be
+	 * within the hard RECEPTIONIST_ALLOWED_SECTIONS ceiling AND not switched
+	 * off for the Receptionist role via Settings → Roles & Permissions.
+	 *
+	 * @param string $slug Section slug.
+	 * @return bool
+	 */
+	private static function receptionist_can_access( $slug ) {
+		return in_array( $slug, self::RECEPTIONIST_ALLOWED_SECTIONS, true )
+			&& Role_Permissions::is_tab_allowed( Roles::RECEPTIONIST_ROLE, $slug );
+	}
 
 	/**
 	 * Template loader.
@@ -408,6 +425,21 @@ class Admin_Dashboard {
 					'nonce'   => wp_create_nonce( Clinic_Branding_Handler::NONCE_ACTION ),
 				)
 			);
+
+			// Only a full admin gets the combined "Save Settings" button
+			// (Clinic Branding + Notification Preferences) — a receptionist
+			// has no Clinic Branding section on their cut-down Settings view
+			// (see prepare_data()'s 'settings' branch), so keeps the
+			// Notification Preferences card's own standalone save button.
+			if ( ! self::is_receptionist() ) {
+				wp_enqueue_script(
+					'doctor-ak-portal-admin-settings-save',
+					DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-settings-save.js',
+					array( 'doctor-ak-portal-admin-clinic-branding', 'doctor-ak-portal-notification-preferences' ),
+					Assets::version( 'assets/js/doctor-ak-admin-settings-save.js' ),
+					true
+				);
+			}
 		}
 
 		if ( 'services' === self::requested_section() ) {
@@ -588,7 +620,7 @@ class Admin_Dashboard {
 			$section = array_key_exists( $section, self::all_sections() ) ? $section : 'dashboard';
 		}
 
-		if ( self::is_receptionist() && ! in_array( $section, self::RECEPTIONIST_ALLOWED_SECTIONS, true ) ) {
+		if ( self::is_receptionist() && ! self::receptionist_can_access( $section ) ) {
 			return 'dashboard';
 		}
 
@@ -815,7 +847,7 @@ class Admin_Dashboard {
 
 		$is_receptionist = self::is_receptionist();
 
-		if ( ! current_user_can( 'manage_options' ) && ! ( $is_receptionist && in_array( $section, self::RECEPTIONIST_ALLOWED_SECTIONS, true ) ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! ( $is_receptionist && self::receptionist_can_access( $section ) ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
@@ -847,7 +879,7 @@ class Admin_Dashboard {
 			$group_items = array();
 
 			foreach ( $items as $slug => $label ) {
-				if ( $is_receptionist && ! in_array( $slug, self::RECEPTIONIST_ALLOWED_SECTIONS, true ) ) {
+				if ( $is_receptionist && ! self::receptionist_can_access( $slug ) ) {
 					continue;
 				}
 
@@ -1230,6 +1262,12 @@ class Admin_Dashboard {
 					'notify_booking'   => $notify_preferences['booking'],
 					'notify_paid'      => $notify_preferences['paid'],
 					'notify_cancelled' => $notify_preferences['cancelled'],
+					// A full admin gets one combined "Save Settings" button
+					// covering this plus Clinic Branding (see
+					// admin-settings-section.php) instead of this section's
+					// own button; a receptionist has no Clinic Branding
+					// section to combine with, so keeps its own button.
+					'show_save_button' => self::is_receptionist(),
 				)
 			);
 
@@ -1258,9 +1296,10 @@ class Admin_Dashboard {
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-role-permissions.php',
 				array(
-					'doctor_tabs'  => Role_Permissions::doctor_tabs(),
-					'patient_tabs' => Role_Permissions::patient_tabs(),
-					'saved'        => Role_Permissions::get_all(),
+					'doctor_tabs'       => Role_Permissions::doctor_tabs(),
+					'patient_tabs'      => Role_Permissions::patient_tabs(),
+					'receptionist_tabs' => Role_Permissions::receptionist_tabs(),
+					'saved'             => Role_Permissions::get_all(),
 				)
 			);
 		}
