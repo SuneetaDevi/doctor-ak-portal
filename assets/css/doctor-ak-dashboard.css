@@ -1444,6 +1444,47 @@ a.dak-notification-row-link:hover {
 	white-space: nowrap !important;
 }
 
+/* Compact sizing for every filter bar (previously several admin/doctor
+   pages still used the full-size registration-form field styling for a
+   simple 2-4 field filter bar, making it look as tall/heavy as a whole
+   signup form). */
+.dak-appt-filters-card {
+	padding: 0.9rem 1.1rem !important;
+}
+
+.dak-appt-filters-card .dak-dashboard-card-header {
+	margin-bottom: 0.65rem !important;
+}
+
+.dak-appt-filters-card .dak-dashboard-card-header h2 {
+	font-size: 0.78rem !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.03em !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-appt-filters-form .dak-field label {
+	font-size: 0.78rem !important;
+	margin-bottom: 0.25rem !important;
+}
+
+.dak-appt-filters-form .dak-field input,
+.dak-appt-filters-form .dak-field select {
+	padding: 0.45rem 0.65rem !important;
+	font-size: 0.85rem !important;
+}
+
+.dak-appt-filters-form .dak-button {
+	padding-top: 0.5rem !important;
+	padding-bottom: 0.5rem !important;
+	font-size: 0.85rem !important;
+}
+
+.dak-appt-filters-form .dak-admin-filter-actions {
+	margin-bottom: 0 !important;
+	gap: 0.5rem !important;
+}
+
 /* Accent-bar record row — used wherever a plain table would otherwise be
    used (admin Appointments/Patients/Billing/Video Consultation, doctor
    Patients tab, etc.), matching the cards used everywhere else in the

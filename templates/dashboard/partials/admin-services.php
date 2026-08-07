@@ -6,7 +6,9 @@
  *
  * @package DoctorAKPortal\Templates
  *
- * @var array $services Rows from Services::all_flat_for_admin(), each with an added 'doctor' sub-array.
+ * @var array  $services        Rows from Services::all_flat_for_admin(), each with an added 'doctor' sub-array.
+ * @var string $section_url     This section's own URL (?section=services), for the "Clear filter" link.
+ * @var string $filtered_doctor Name of the doctor being filtered to (via the Doctors directory's "View Services" action), or '' if unfiltered.
  */
 
 // Prevent direct file access.
@@ -27,6 +29,21 @@ $dak_service_icons = array(
 	</div>
 	<button type="button" class="dak-button dak-button-primary" id="dak-admin-service-add"><?php esc_html_e( '+ Add Service', 'doctor-ak-portal' ); ?></button>
 </div>
+
+<?php if ( '' !== $filtered_doctor ) : ?>
+	<div class="dak-alert dak-alert-success">
+		<?php
+		echo esc_html(
+			sprintf(
+				/* translators: %s: doctor's name. */
+				__( 'Showing services for Dr. %s.', 'doctor-ak-portal' ),
+				$filtered_doctor
+			)
+		);
+		?>
+		<a class="dak-link" href="<?php echo esc_url( $section_url ); ?>"><?php esc_html_e( 'Clear filter', 'doctor-ak-portal' ); ?></a>
+	</div>
+<?php endif; ?>
 
 <section class="dak-dashboard-card">
 	<div class="dak-dashboard-card-header">

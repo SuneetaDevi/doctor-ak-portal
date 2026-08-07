@@ -52,7 +52,7 @@ $dak_sessions   = $dak_is_editing ? $editing_clinic['sessions'] : \DoctorAKPorta
 						value="<?php echo esc_attr( $doctor_id ); ?>"
 						<?php selected( $dak_is_editing && (int) $editing_clinic['doctor_id'] === (int) $doctor_id ); ?>
 						<?php disabled( $doctor_option['is_disabled'] ); ?>
-					><?php echo esc_html( sprintf( $doctor_option['is_disabled'] ? __( 'Dr. %s (deactivated)', 'doctor-ak-portal' ) : __( 'Dr. %s', 'doctor-ak-portal' ), $doctor_option['name'] ) ); ?></option>
+					><?php echo esc_html( $doctor_option['is_disabled'] ? sprintf( __( '%s (deactivated)', 'doctor-ak-portal' ), $doctor_option['name'] ) : $doctor_option['name'] ); ?></option>
 				<?php endforeach; ?>
 			</select>
 			<span class="dak-field-error" data-field="doctor_id"></span>

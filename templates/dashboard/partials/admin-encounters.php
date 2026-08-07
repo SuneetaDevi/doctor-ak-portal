@@ -35,12 +35,12 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] ||
 	</p>
 </div>
 
-<section class="dak-dashboard-card">
+<section class="dak-dashboard-card dak-appt-filters-card">
 	<div class="dak-dashboard-card-header">
 		<h2><?php esc_html_e( 'Filters', 'doctor-ak-portal' ); ?></h2>
 	</div>
 
-	<form method="get" action="<?php echo esc_url( $encounters_url ); ?>" class="dak-field-row">
+	<form method="get" action="<?php echo esc_url( $encounters_url ); ?>" class="dak-appt-filters-form">
 		<input type="hidden" name="section" value="encounters">
 
 		<div class="dak-field">
@@ -58,7 +58,7 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] ||
 			<select id="dak-admin-encounters-doctor" name="doctor_id">
 				<option value="0"><?php esc_html_e( 'All doctors', 'doctor-ak-portal' ); ?></option>
 				<?php foreach ( $doctors as $dak_doctor_option ) : ?>
-					<option value="<?php echo esc_attr( $dak_doctor_option->ID ); ?>" <?php selected( $filters['doctor_id'], $dak_doctor_option->ID ); ?>><?php echo esc_html( sprintf( 'Dr. %s', $dak_doctor_option->display_name ) ); ?></option>
+					<option value="<?php echo esc_attr( $dak_doctor_option->ID ); ?>" <?php selected( $filters['doctor_id'], $dak_doctor_option->ID ); ?>><?php echo esc_html( $dak_doctor_option->display_name ); ?></option>
 				<?php endforeach; ?>
 			</select>
 		</div>

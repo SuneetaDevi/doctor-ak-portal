@@ -55,12 +55,12 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'];
 	</div>
 </section>
 
-<section class="dak-dashboard-card">
+<section class="dak-dashboard-card dak-appt-filters-card">
 	<div class="dak-dashboard-card-header">
 		<h2><?php esc_html_e( 'Filters', 'doctor-ak-portal' ); ?></h2>
 	</div>
 
-	<form method="get" action="<?php echo esc_url( $billing_url ); ?>" class="dak-field-row">
+	<form method="get" action="<?php echo esc_url( $billing_url ); ?>" class="dak-appt-filters-form">
 		<input type="hidden" name="section" value="billing">
 
 		<div class="dak-field">

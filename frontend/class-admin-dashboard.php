@@ -924,6 +924,20 @@ class Admin_Dashboard {
 	}
 
 	/**
+	 * A user's display name, preferring first+last name over the WordPress
+	 * display_name (which may just be their username) — same fallback
+	 * row_data() uses for the accounts table.
+	 *
+	 * @param \WP_User $user User.
+	 * @return string
+	 */
+	private static function display_name( \WP_User $user ) {
+		$name = trim( $user->first_name . ' ' . $user->last_name );
+
+		return '' !== $name ? $name : $user->display_name;
+	}
+
+	/**
 	 * Whether the current request wants the full-screen Add/Edit Doctor or
 	 * Patient form instead of the accounts table (`?view=form`, optionally
 	 * with `&user_id=X` to edit; without it, it's the "Add" form).
@@ -1167,11 +1181,15 @@ class Admin_Dashboard {
 				return $this->session_form_screen_html( $section );
 			}
 
+			$doctor_id       = isset( $_GET['doctor_id'] ) ? absint( wp_unslash( $_GET['doctor_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$filtered_doctor = $doctor_id > 0 ? get_user_by( 'id', $doctor_id ) : false;
+
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-doctor-sessions.php',
 				array(
-					'clinics'    => Clinics::all_flat_for_admin(),
-					'section_url' => add_query_arg( 'section', $section, Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ) ),
+					'clinics'          => Clinics::all_flat_for_admin( array( 'doctor_id' => $doctor_id ) ),
+					'section_url'      => add_query_arg( 'section', $section, Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ) ),
+					'filtered_doctor'  => $filtered_doctor ? self::display_name( $filtered_doctor ) : '',
 				)
 			);
 		}
@@ -1184,9 +1202,16 @@ class Admin_Dashboard {
 		}
 
 		if ( 'services' === $section ) {
+			$doctor_id       = isset( $_GET['doctor_id'] ) ? absint( wp_unslash( $_GET['doctor_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$filtered_doctor = $doctor_id > 0 ? get_user_by( 'id', $doctor_id ) : false;
+
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-services.php',
-				array( 'services' => Services::all_flat_for_admin() )
+				array(
+					'services'         => Services::all_flat_for_admin( array( 'doctor_id' => $doctor_id ) ),
+					'section_url'      => add_query_arg( 'section', $section, Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ) ),
+					'filtered_doctor'  => $filtered_doctor ? self::display_name( $filtered_doctor ) : '',
+				)
 			);
 		}
 
@@ -1561,6 +1586,8 @@ class Admin_Dashboard {
 				'users'              => $users,
 				'section'            => $section,
 				'appointments_url'   => $dashboard_url ? add_query_arg( 'section', 'appointments', $dashboard_url ) : '',
+				'services_url'       => $dashboard_url ? add_query_arg( 'section', 'services', $dashboard_url ) : '',
+				'doctor_sessions_url' => $dashboard_url ? add_query_arg( 'section', 'doctor-sessions', $dashboard_url ) : '',
 				'section_url'        => $section_url,
 				'specializations'    => $is_doctors_section ? Specializations::get_all() : array(),
 				'filters'            => array(

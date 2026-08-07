@@ -590,22 +590,28 @@ class Clinics {
 	 * @param array $args {
 	 *     Optional.
 	 *
-	 *     @type int $number Max rows to return. Default 200.
+	 *     @type int $number    Max rows to return. Default 200.
+	 *     @type int $doctor_id Only this doctor's clinics, when > 0. Default 0 (every doctor).
 	 * }
 	 * @return array List of decoded clinic rows, each with an added 'doctor' sub-array (id/name/email).
 	 */
 	public static function all_flat_for_admin( array $args = array() ) {
 		global $wpdb;
 
-		$number = isset( $args['number'] ) ? (int) $args['number'] : 200;
+		$number    = isset( $args['number'] ) ? (int) $args['number'] : 200;
+		$doctor_id = isset( $args['doctor_id'] ) ? (int) $args['doctor_id'] : 0;
+
+		$where  = $doctor_id > 0 ? 'WHERE c.doctor_id = %d' : '';
+		$params = $doctor_id > 0 ? array( $doctor_id, $number ) : array( $number );
 
 		$sql = $wpdb->prepare(
 			"SELECT c.*, u.display_name AS doctor_display_name, u.user_email AS doctor_email
 			FROM " . self::table_name() . " c
 			INNER JOIN {$wpdb->users} u ON u.ID = c.doctor_id
+			$where
 			ORDER BY c.id DESC
 			LIMIT %d",
-			$number
+			$params
 		); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names, not user input.
 
 		$rows = $wpdb->get_results( $sql, ARRAY_A );

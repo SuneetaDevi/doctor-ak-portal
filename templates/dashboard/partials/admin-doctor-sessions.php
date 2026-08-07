@@ -6,8 +6,9 @@
  *
  * @package DoctorAKPortal\Templates
  *
- * @var array  $clinics     Rows from Clinics::all_flat_for_admin(), each with an added 'doctor' sub-array.
- * @var string $section_url This section's own URL (?section=doctor-sessions or ?section=clinic), for building the Add/Edit links.
+ * @var array  $clinics         Rows from Clinics::all_flat_for_admin(), each with an added 'doctor' sub-array.
+ * @var string $section_url     This section's own URL (?section=doctor-sessions or ?section=clinic), for building the Add/Edit links.
+ * @var string $filtered_doctor Name of the doctor being filtered to (via the Doctors directory's "View Sessions" action), or '' if unfiltered.
  */
 
 // Prevent direct file access.
@@ -29,6 +30,21 @@ $dak_session_icons = array(
 	</div>
 	<a class="dak-button dak-button-primary" href="<?php echo esc_url( add_query_arg( 'view', 'form', $section_url ) ); ?>"><?php esc_html_e( '+ Add Session', 'doctor-ak-portal' ); ?></a>
 </div>
+
+<?php if ( '' !== $filtered_doctor ) : ?>
+	<div class="dak-alert dak-alert-success">
+		<?php
+		echo esc_html(
+			sprintf(
+				/* translators: %s: doctor's name. */
+				__( 'Showing sessions for Dr. %s.', 'doctor-ak-portal' ),
+				$filtered_doctor
+			)
+		);
+		?>
+		<a class="dak-link" href="<?php echo esc_url( $section_url ); ?>"><?php esc_html_e( 'Clear filter', 'doctor-ak-portal' ); ?></a>
+	</div>
+<?php endif; ?>
 
 <section class="dak-dashboard-card">
 	<div class="dak-dashboard-card-header">

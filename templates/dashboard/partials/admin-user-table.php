@@ -6,7 +6,9 @@
  *
  * @var array  $users            Row view-models, see Admin_Dashboard::row_data().
  * @var string $section          'doctors', 'patients', or 'receptionist'.
- * @var string $appointments_url Base URL of the admin Appointments section, for the patients table's "View Appointments" action.
+ * @var string $appointments_url    Base URL of the admin Appointments section, for the "View Appointments" action.
+ * @var string $services_url        Base URL of the admin Services section, for the Doctors table's "View Services" action.
+ * @var string $doctor_sessions_url Base URL of the admin Doctor Sessions section, for the Doctors table's "View Sessions" action.
  * @var string $section_url      This section's own URL (no filters), for the filter form and "Clear" link.
  * @var array  $specializations  Specialization slug => label, see Specializations::get_all(). Empty outside the doctors table.
  * @var array  $filters          Active filter values: status, specialization.
@@ -48,11 +50,11 @@ $dak_has_filters       = '' !== $filters['status'] || '' !== $filters['specializ
 $dak_read_only         = ! empty( $read_only );
 ?>
 <?php if ( $dak_is_doctors ) : ?>
-	<section class="dak-dashboard-card">
+	<section class="dak-dashboard-card dak-appt-filters-card">
 		<form
 			method="get"
 			action="<?php echo esc_url( $section_url ); ?>"
-			class="dak-field-row"
+			class="dak-appt-filters-form"
 			data-live-filter="doctor_ak_admin_users_filter"
 			data-live-filter-target="#dak-admin-users-tab-content"
 			data-live-filter-nonce="dakAdminUsers"
@@ -249,6 +251,33 @@ $dak_read_only         = ! empty( $read_only );
 
 				<span class="dak-status-pill dak-status-pill-outline <?php echo $row['is_disabled'] ? 'dak-status-pill-is-disabled' : 'dak-status-pill-is-active'; ?>">
 					<?php echo $row['is_disabled'] ? esc_html__( 'Deactivated', 'doctor-ak-portal' ) : esc_html__( 'Active', 'doctor-ak-portal' ); ?>
+				</span>
+
+				<span class="dak-admin-record-row-actions">
+					<?php if ( $appointments_url ) : ?>
+						<a
+							class="dak-icon-button"
+							href="<?php echo esc_url( add_query_arg( 'doctor_id', $row['id'], $appointments_url ) ); ?>"
+							title="<?php esc_attr_e( 'View Appointments', 'doctor-ak-portal' ); ?>"
+							aria-label="<?php esc_attr_e( 'View Appointments', 'doctor-ak-portal' ); ?>"
+						><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="4" width="15" height="13" rx="1.5"/><path d="M2.5 8h15"/><path d="M6 2.5v3M14 2.5v3"/></svg></a>
+					<?php endif; ?>
+					<?php if ( $services_url ) : ?>
+						<a
+							class="dak-icon-button"
+							href="<?php echo esc_url( add_query_arg( 'doctor_id', $row['id'], $services_url ) ); ?>"
+							title="<?php esc_attr_e( 'View Services', 'doctor-ak-portal' ); ?>"
+							aria-label="<?php esc_attr_e( 'View Services', 'doctor-ak-portal' ); ?>"
+						><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 2.5h7l3 3V17a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1z"/><path d="M12 2.5V6h3"/><path d="M6.5 10.5h7M6.5 13.5h5"/></svg></a>
+					<?php endif; ?>
+					<?php if ( $doctor_sessions_url ) : ?>
+						<a
+							class="dak-icon-button"
+							href="<?php echo esc_url( add_query_arg( 'doctor_id', $row['id'], $doctor_sessions_url ) ); ?>"
+							title="<?php esc_attr_e( 'View Sessions', 'doctor-ak-portal' ); ?>"
+							aria-label="<?php esc_attr_e( 'View Sessions', 'doctor-ak-portal' ); ?>"
+						><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10.5" r="7"/><path d="M10 6.5v4l3 2"/><path d="M7.5 2.5h5"/></svg></a>
+					<?php endif; ?>
 				</span>
 
 				<?php if ( ! $dak_read_only ) : ?>

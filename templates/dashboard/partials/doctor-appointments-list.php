@@ -32,7 +32,7 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] ||
 	</p>
 </div>
 
-<section class="dak-dashboard-card">
+<section class="dak-dashboard-card dak-appt-filters-card">
 	<div class="dak-dashboard-card-header">
 		<h2><?php esc_html_e( 'Filters', 'doctor-ak-portal' ); ?></h2>
 	</div>
@@ -40,7 +40,7 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] ||
 	<form
 		method="get"
 		action="<?php echo esc_url( $appointments_url ); ?>"
-		class="dak-field-row"
+		class="dak-appt-filters-form"
 		data-live-filter="doctor_ak_doctor_appointments_filter"
 		data-live-filter-target="#dak-doctor-appointments-tab-content"
 		data-live-filter-nonce="dakDoctorAppointments"
