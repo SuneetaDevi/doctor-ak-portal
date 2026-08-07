@@ -66,7 +66,7 @@ if ( '' !== $pricing['discount_ends_at'] ) {
 			</div>
 			<span class="dak-field-error" data-field="discount_ends_at"></span>
 		</div>
-		<p class="dak-field-hint"><?php esc_html_e( 'Leave the discount at 0% (or clear the end date) to charge the full price.', 'doctor-ak-portal' ); ?></p>
+		<p class="dak-field-hint"><?php esc_html_e( 'Set the discount to 0% to charge the full price. Leave the end date blank to apply the discount indefinitely ("Never ends").', 'doctor-ak-portal' ); ?></p>
 
 		<div class="dak-field-row">
 			<div class="dak-field">

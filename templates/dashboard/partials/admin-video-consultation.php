@@ -82,7 +82,15 @@ endif;
 					</span>
 
 					<span class="dak-admin-record-row-meta">
-						<?php echo esc_html( sprintf( /* translators: %s: discount end date, or an em dash if none. */ __( 'Ends: %s', 'doctor-ak-portal' ), '' !== $row['discount_ends_at'] ? $row['discount_ends_at'] : '—' ) ); ?>
+						<?php
+						if ( '' !== $row['discount_ends_at'] ) {
+							echo esc_html( sprintf( /* translators: %s: discount end date. */ __( 'Ends: %s', 'doctor-ak-portal' ), $row['discount_ends_at'] ) );
+						} elseif ( $row['discount_percent'] > 0 ) {
+							esc_html_e( 'Never ends', 'doctor-ak-portal' );
+						} else {
+							echo esc_html( sprintf( /* translators: %s: em dash, no discount configured. */ __( 'Ends: %s', 'doctor-ak-portal' ), '—' ) );
+						}
+						?>
 					</span>
 
 					<span class="dak-admin-record-row-actions">

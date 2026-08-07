@@ -1322,6 +1322,89 @@ class Appointments {
 	}
 
 	/**
+	 * Admin-initiated cancellation with an immediate refund for a
+	 * paid-online appointment — used when deactivating a doctor with
+	 * upcoming appointments (see Admin_User_Handler::handle_toggle_status()).
+	 * Unlike cancel()/cancel_by_doctor() (which only flag refund-eligibility
+	 * for the patient to separately request), this processes the actual
+	 * gateway refund right away, since the cancellation is the clinic's
+	 * decision, not the patient's — there's no reason to make them ask for
+	 * their money back separately. A manually-paid appointment can't be
+	 * refunded through the gateway at all; the caller is told so it can
+	 * flag it for the admin to handle offline.
+	 *
+	 * @param int $appointment_id Appointment post ID.
+	 * @return array|false `array( 'needs_manual_refund' => bool, 'refund_error' => string )` (both false/'' when there was nothing to refund or the refund succeeded), or false if the appointment doesn't exist or was already resolved (cancelled/completed).
+	 */
+	public static function cancel_by_admin( $appointment_id ) {
+		$appointment = self::get( $appointment_id );
+
+		if ( empty( $appointment ) || in_array( $appointment['status'], array( self::STATUS_CANCELLED, self::STATUS_COMPLETED ), true ) ) {
+			return false;
+		}
+
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_CANCELLED );
+
+		/** This action is documented in perform_cancel() above. */
+		do_action( 'doctor_ak_appointment_cancelled', $appointment_id );
+
+		$result = array(
+			'needs_manual_refund' => false,
+			'refund_error'        => '',
+		);
+
+		if ( self::PAYMENT_STATUS_PAID !== $appointment['payment_status'] ) {
+			return $result;
+		}
+
+		if ( self::PAYMENT_MODE_ONLINE !== $appointment['payment_mode'] ) {
+			$result['needs_manual_refund'] = true;
+			return $result;
+		}
+
+		$order_id       = get_post_meta( $appointment_id, Swich_Payment::META_ORDER_ID, true );
+		$refund_outcome = Swich_Payment::refund( $order_id, __( 'Doctor account deactivated — appointment cancelled by the clinic.', 'doctor-ak-portal' ), $appointment['charge'] );
+
+		if ( is_wp_error( $refund_outcome ) ) {
+			$result['refund_error'] = $refund_outcome->get_error_message();
+			return $result;
+		}
+
+		self::mark_refund_processed( $appointment_id, $appointment['charge'] );
+
+		return $result;
+	}
+
+	/**
+	 * A doctor's upcoming, not-yet-resolved appointments — used to warn an
+	 * admin before deactivating a doctor (see Admin_User_Handler::handle_toggle_status()).
+	 * "Upcoming" means still on the calendar (confirmed, paid, rescheduled,
+	 * or still awaiting payment) and not already in the past; already
+	 * cancelled/completed appointments don't need anyone's attention.
+	 *
+	 * @param int $doctor_id Doctor's user ID.
+	 * @return array Rows from all_for_admin() (admin_row_data() shape).
+	 */
+	public static function upcoming_for_doctor( $doctor_id ) {
+		$now = current_time( 'timestamp' ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- comparing against strtotime() of stored local date/time strings, not doing math that needs UTC.
+
+		return array_values(
+			array_filter(
+				self::all_for_admin( array( 'doctor_id' => $doctor_id ) ),
+				function ( $row ) use ( $now ) {
+					if ( ! in_array( $row['status'], array( self::STATUS_CONFIRMED, self::STATUS_PAID, self::STATUS_RESCHEDULED, self::STATUS_PENDING_PAYMENT ), true ) ) {
+						return false;
+					}
+
+					$start = strtotime( $row['date'] . ' ' . $row['time'] );
+
+					return false !== $start && $start > $now;
+				}
+			)
+		);
+	}
+
+	/**
 	 * Moves an appointment to a new date/time and flags it 'rescheduled' —
 	 * used by the doctor dashboard, patient dashboard, and admin Edit
 	 * modal's Reschedule actions. Ownership is the caller's responsibility
@@ -1844,6 +1927,62 @@ class Appointments {
 		}
 
 		return $options;
+	}
+
+	/**
+	 * User IDs of every doctor whose account isn't deactivated — the
+	 * patient-facing subset of doctor_options()'s full doctor-role list
+	 * (which intentionally still includes deactivated doctors for
+	 * admin-only pickers). Used to build any patient-facing per-doctor data
+	 * map, e.g. Booking_Page's service/pricing/booking-rules lookups, so a
+	 * deactivated doctor's data isn't reachable there either.
+	 *
+	 * @return int[]
+	 */
+	public static function active_doctor_ids() {
+		$query = new \WP_User_Query(
+			array(
+				'role'       => Roles::DOCTOR_ROLE,
+				'fields'     => 'ID',
+				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- no better lookup available; excludes deactivated doctors, same pattern as Booking_Page::doctor_cards_data().
+					'relation' => 'OR',
+					array(
+						'key'     => 'doctor_ak_account_disabled',
+						'compare' => 'NOT EXISTS',
+					),
+					array(
+						'key'     => 'doctor_ak_account_disabled',
+						'value'   => 'yes',
+						'compare' => '!=',
+					),
+				),
+			)
+		);
+
+		return array_map( 'intval', $query->get_results() );
+	}
+
+	/**
+	 * Whether a user is a doctor whose account isn't deactivated — the
+	 * check every booking-related AJAX endpoint should run before acting on
+	 * a client-supplied doctor_id, so a deactivated doctor can't still
+	 * receive new bookings or leak availability/pricing via a direct
+	 * request that bypasses the booking page's own (already-filtered)
+	 * doctor picker.
+	 *
+	 * @param int $doctor_id User ID to check.
+	 * @return bool
+	 */
+	public static function is_active_doctor( $doctor_id ) {
+		if ( $doctor_id <= 0 ) {
+			return false;
+		}
+
+		$doctor = get_userdata( $doctor_id );
+
+		return $doctor
+			&& in_array( Roles::DOCTOR_ROLE, (array) $doctor->roles, true )
+			&& 'yes' !== get_user_meta( $doctor_id, 'doctor_ak_account_disabled', true );
 	}
 
 	/**

@@ -1339,8 +1339,11 @@ class Admin_Dashboard {
 	}
 
 	/**
-	 * Doctor user ID => display name, for the Doctor Sessions "Add Session"
-	 * modal's doctor picker.
+	 * Doctor user ID => { name, is_disabled }, for every admin doctor-picker
+	 * <select> (Add/Edit Session, Service, Video Pricing, Appointment) — a
+	 * deactivated doctor still appears (so existing records referencing them
+	 * stay legible) but is rendered disabled with a "(deactivated)" suffix,
+	 * see e.g. admin-session-form-screen.php.
 	 *
 	 * @return array
 	 */
@@ -1355,8 +1358,12 @@ class Admin_Dashboard {
 		$options = array();
 
 		foreach ( $query->get_results() as $doctor ) {
-			$display_name          = trim( $doctor->first_name . ' ' . $doctor->last_name );
-			$options[ $doctor->ID ] = '' !== $display_name ? $display_name : $doctor->display_name;
+			$display_name = trim( $doctor->first_name . ' ' . $doctor->last_name );
+
+			$options[ $doctor->ID ] = array(
+				'name'        => '' !== $display_name ? $display_name : $doctor->display_name,
+				'is_disabled' => 'yes' === get_user_meta( $doctor->ID, 'doctor_ak_account_disabled', true ),
+			);
 		}
 
 		return $options;

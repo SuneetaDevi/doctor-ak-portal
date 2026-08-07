@@ -209,14 +209,16 @@ class Video_Pricing {
 
 	/**
 	 * Computes a doctor's current effective video-consultation price,
-	 * applying the discount only while it's still within its time window.
+	 * applying the discount only while it's still within its time window —
+	 * or always, for a discount with no end date set at all (an
+	 * intentional, open-ended discount rather than an unset one).
 	 *
 	 * @param int $doctor_id Doctor's user ID.
 	 * @return array {
 	 *     @type float  $base_price       Undiscounted price.
 	 *     @type int    $discount_percent 0-100.
 	 *     @type bool   $discount_active  Whether the discount currently applies.
-	 *     @type string $discount_ends_at 'Y-m-d H:i', or '' if none set.
+	 *     @type string $discount_ends_at 'Y-m-d H:i', or '' if none set (never ends).
 	 *     @type float  $final_price      The price to actually charge.
 	 * }
 	 */
@@ -224,8 +226,10 @@ class Video_Pricing {
 		$settings = self::get_for_doctor( $doctor_id );
 
 		$discount_active = $settings['discount_percent'] > 0
-			&& '' !== $settings['discount_ends_at']
-			&& strtotime( $settings['discount_ends_at'] ) > current_time( 'timestamp' ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- comparing against a stored local-time string, not doing math that needs a real Unix timestamp.
+			&& (
+				'' === $settings['discount_ends_at']
+				|| strtotime( $settings['discount_ends_at'] ) > current_time( 'timestamp' ) // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- comparing against a stored local-time string, not doing math that needs a real Unix timestamp.
+			);
 
 		$final_price = $discount_active
 			? round( $settings['price'] * ( 100 - $settings['discount_percent'] ) / 100, 2 )

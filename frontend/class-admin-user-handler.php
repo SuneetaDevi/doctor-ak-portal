@@ -7,6 +7,7 @@
 
 namespace DoctorAKPortal\Frontend;
 
+use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Authentication;
 use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Clinics;
@@ -455,17 +456,104 @@ class Admin_User_Handler {
 			wp_send_json_error( array( 'message' => __( 'That account no longer exists.', 'doctor-ak-portal' ) ) );
 		}
 
-		$is_disabled = 'yes' === get_user_meta( $user_id, 'doctor_ak_account_disabled', true );
-		update_user_meta( $user_id, 'doctor_ak_account_disabled', $is_disabled ? 'no' : 'yes' );
+		$is_disabled     = 'yes' === get_user_meta( $user_id, 'doctor_ak_account_disabled', true );
+		$is_deactivating = ! $is_disabled;
+		$is_doctor       = in_array( Roles::DOCTOR_ROLE, (array) $user->roles, true );
+		$upcoming        = ( $is_deactivating && $is_doctor ) ? Appointments::upcoming_for_doctor( $user_id ) : array();
+
+		// Deactivating a doctor with upcoming appointments needs a second,
+		// explicit choice from the admin (cancel them, or leave them as-is)
+		// before we actually touch anything — the JS shows a follow-up
+		// confirm() and resubmits with 'cancel_appointments' set to '1' or
+		// '0' once the admin has answered. This first pass makes no choice.
+		if ( ! empty( $upcoming ) && ! isset( $_POST['cancel_appointments'] ) ) {
+			wp_send_json_success(
+				array(
+					'needs_confirmation' => true,
+					'appointment_count'  => count( $upcoming ),
+				)
+			);
+		}
+
+		$should_cancel_appointments = isset( $_POST['cancel_appointments'] ) && '1' === wp_unslash( $_POST['cancel_appointments'] );
+
+		update_user_meta( $user_id, 'doctor_ak_account_disabled', $is_deactivating ? 'yes' : 'no' );
+
+		$message = $is_deactivating
+			? __( 'Account deactivated.', 'doctor-ak-portal' )
+			: __( 'Account reactivated.', 'doctor-ak-portal' );
+
+		if ( $is_deactivating && $should_cancel_appointments && ! empty( $upcoming ) ) {
+			$message .= ' ' . self::cancel_doctors_upcoming_appointments( $upcoming );
+		}
 
 		wp_send_json_success(
 			array(
-				'is_disabled' => ! $is_disabled,
-				'message'     => $is_disabled
-					? __( 'Account reactivated.', 'doctor-ak-portal' )
-					: __( 'Account deactivated.', 'doctor-ak-portal' ),
+				'is_disabled' => $is_deactivating,
+				'message'     => $message,
 			)
 		);
+	}
+
+	/**
+	 * Cancels every appointment in $upcoming (a deactivated doctor's
+	 * upcoming/unresolved appointments, see Appointments::upcoming_for_doctor())
+	 * — each cancellation fires the same 'doctor_ak_appointment_cancelled'
+	 * action a patient/doctor self-cancel does (emails + portal
+	 * notifications to both sides), and a paid-online appointment is
+	 * refunded immediately via Appointments::cancel_by_admin(), since this
+	 * is the clinic's decision, not something the patient should have to
+	 * separately request.
+	 *
+	 * @param array $upcoming Rows from Appointments::upcoming_for_doctor().
+	 * @return string A human-readable summary to append to the toggle's success message.
+	 */
+	private static function cancel_doctors_upcoming_appointments( array $upcoming ) {
+		$cancelled_count     = 0;
+		$manual_refund_count = 0;
+		$refund_error_count  = 0;
+
+		foreach ( $upcoming as $row ) {
+			$result = Appointments::cancel_by_admin( $row['id'] );
+
+			if ( ! $result ) {
+				continue;
+			}
+
+			++$cancelled_count;
+
+			if ( $result['needs_manual_refund'] ) {
+				++$manual_refund_count;
+			}
+
+			if ( '' !== $result['refund_error'] ) {
+				++$refund_error_count;
+			}
+		}
+
+		$message = sprintf(
+			/* translators: %d: number of cancelled appointments. */
+			_n( '%d upcoming appointment was cancelled and the patient/doctor notified by email.', '%d upcoming appointments were cancelled and the patients/doctor notified by email.', $cancelled_count, 'doctor-ak-portal' ),
+			$cancelled_count
+		);
+
+		if ( $manual_refund_count > 0 ) {
+			$message .= ' ' . sprintf(
+				/* translators: %d: number of manually-paid appointments needing a refund. */
+				_n( '%d of them was paid manually and needs a refund handled outside the site.', '%d of them were paid manually and need refunds handled outside the site.', $manual_refund_count, 'doctor-ak-portal' ),
+				$manual_refund_count
+			);
+		}
+
+		if ( $refund_error_count > 0 ) {
+			$message .= ' ' . sprintf(
+				/* translators: %d: number of online refunds that failed. */
+				_n( '%d online refund failed and needs to be processed manually from the Appointments section.', '%d online refunds failed and need to be processed manually from the Appointments section.', $refund_error_count, 'doctor-ak-portal' ),
+				$refund_error_count
+			);
+		}
+
+		return $message;
 	}
 
 	/**

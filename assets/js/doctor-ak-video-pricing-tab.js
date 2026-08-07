@@ -109,7 +109,9 @@
 			var endsAt = combinedDiscountEndsAt();
 			var endsAtTime = endsAt ? new Date( endsAt.replace( ' ', 'T' ) ).getTime() : 0;
 			var now = Date.now();
-			var discountActive = discountPercent > 0 && endsAtTime > now;
+			// No end date set at all means the discount never expires — same
+			// rule as Video_Pricing::effective_price_for_doctor() server-side.
+			var discountActive = discountPercent > 0 && ( '' === endsAt || endsAtTime > now );
 			var finalPrice = discountActive ? Math.round( price * ( 100 - discountPercent ) / 100 ) : price;
 
 			var badge = document.getElementById( 'dak-video-pricing-preview-badge' );
@@ -135,7 +137,7 @@
 				countdown.classList.toggle( 'dak-hidden', ! discountActive );
 
 				if ( discountActive ) {
-					countdown.textContent = 'Discount ends in ' + formatCountdown( endsAtTime - now );
+					countdown.textContent = endsAt ? ( 'Discount ends in ' + formatCountdown( endsAtTime - now ) ) : 'Never ends';
 				}
 			}
 		}

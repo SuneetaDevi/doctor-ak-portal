@@ -282,7 +282,7 @@ class Booking_Page {
 	private function services_by_doctor_and_type() {
 		$map = array();
 
-		foreach ( array_keys( Appointments::doctor_options() ) as $doctor_id ) {
+		foreach ( Appointments::active_doctor_ids() as $doctor_id ) {
 			$services = Services::active_for_doctor( $doctor_id, 'clinic' );
 
 			if ( empty( $services ) ) {
@@ -317,7 +317,7 @@ class Booking_Page {
 	private function video_pricing_by_doctor() {
 		$map = array();
 
-		foreach ( array_keys( Appointments::doctor_options() ) as $doctor_id ) {
+		foreach ( Appointments::active_doctor_ids() as $doctor_id ) {
 			$map[ $doctor_id ] = Video_Pricing::effective_price_for_doctor( $doctor_id );
 		}
 
@@ -334,7 +334,7 @@ class Booking_Page {
 	private function booking_rules_by_doctor() {
 		$map = array();
 
-		foreach ( array_keys( Appointments::doctor_options() ) as $doctor_id ) {
+		foreach ( Appointments::active_doctor_ids() as $doctor_id ) {
 			$settings           = Video_Pricing::get_for_doctor( $doctor_id );
 			$map[ $doctor_id ] = array(
 				'instant_lead_hours'  => $settings['instant_lead_hours'],

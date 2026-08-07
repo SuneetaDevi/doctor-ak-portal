@@ -53,7 +53,7 @@ class Booking_Handler {
 		$type      = ( isset( $_POST['type'] ) && 'video' === $_POST['type'] ) ? 'video' : 'clinic';
 		$date      = isset( $_POST['date'] ) ? sanitize_text_field( wp_unslash( $_POST['date'] ) ) : '';
 
-		if ( $doctor_id <= 0 || ! self::is_valid_date( $date ) ) {
+		if ( $doctor_id <= 0 || ! self::is_valid_date( $date ) || ! Appointments::is_active_doctor( $doctor_id ) ) {
 			wp_send_json_error( array( 'message' => __( 'Please choose a doctor and date.', 'doctor-ak-portal' ) ) );
 		}
 
@@ -78,7 +78,7 @@ class Booking_Handler {
 
 		$doctor_id = isset( $_POST['doctor_id'] ) ? absint( $_POST['doctor_id'] ) : 0;
 
-		if ( $doctor_id <= 0 ) {
+		if ( ! Appointments::is_active_doctor( $doctor_id ) ) {
 			wp_send_json_error( array( 'message' => __( 'Please choose a doctor.', 'doctor-ak-portal' ) ) );
 		}
 
@@ -110,7 +110,7 @@ class Booking_Handler {
 		$year      = isset( $_POST['year'] ) ? absint( $_POST['year'] ) : 0;
 		$month     = isset( $_POST['month'] ) ? absint( $_POST['month'] ) : 0;
 
-		if ( $doctor_id <= 0 || $year < 2000 || $month < 1 || $month > 12 ) {
+		if ( $year < 2000 || $month < 1 || $month > 12 || ! Appointments::is_active_doctor( $doctor_id ) ) {
 			wp_send_json_error( array( 'message' => __( 'Please choose a doctor.', 'doctor-ak-portal' ) ) );
 		}
 
@@ -151,7 +151,7 @@ class Booking_Handler {
 
 		$errors = array();
 
-		if ( $doctor_id <= 0 ) {
+		if ( ! Appointments::is_active_doctor( $doctor_id ) ) {
 			$errors['doctor_id'] = __( 'Please choose a doctor.', 'doctor-ak-portal' );
 		}
 

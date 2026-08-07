@@ -33,8 +33,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<label for="dak-admin-service-doctor"><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></label>
 			<select id="dak-admin-service-doctor">
 				<option value=""><?php esc_html_e( 'Select a doctor…', 'doctor-ak-portal' ); ?></option>
-				<?php foreach ( $doctor_options as $doctor_id => $doctor_name ) : ?>
-					<option value="<?php echo esc_attr( $doctor_id ); ?>"><?php echo esc_html( sprintf( 'Dr. %s', $doctor_name ) ); ?></option>
+				<?php foreach ( $doctor_options as $doctor_id => $doctor_option ) : ?>
+					<option value="<?php echo esc_attr( $doctor_id ); ?>" <?php disabled( $doctor_option['is_disabled'] ); ?>><?php echo esc_html( sprintf( $doctor_option['is_disabled'] ? __( 'Dr. %s (deactivated)', 'doctor-ak-portal' ) : __( 'Dr. %s', 'doctor-ak-portal' ), $doctor_option['name'] ) ); ?></option>
 				<?php endforeach; ?>
 			</select>
 			<span class="dak-field-error" data-field="doctor_id"></span>

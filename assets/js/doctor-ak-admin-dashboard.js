@@ -234,19 +234,55 @@
 			return;
 		}
 
+		submitToggleStatus( trigger, {} );
+	}
+
+	/**
+	 * POSTs the toggle-status request, with an optional `cancel_appointments`
+	 * ('1'/'0') field for the second-step confirmation below. If the doctor
+	 * being deactivated has upcoming appointments and that field wasn't sent
+	 * yet, the server holds off on actually toggling anything and instead
+	 * replies with `needs_confirmation` + a count — we ask the admin whether
+	 * to cancel those appointments (emailing patient + doctor and refunding
+	 * paid ones) and resubmit with their answer.
+	 *
+	 * @param {HTMLElement} trigger     The row's Deactivate/Activate button.
+	 * @param {Object}      extraFields Additional form fields to send.
+	 * @return {void}
+	 */
+	function submitToggleStatus( trigger, extraFields ) {
 		var formData = new FormData();
 		formData.append( 'action', 'doctor_ak_admin_toggle_status' );
 		formData.append( 'nonce', dakAdminUsers.nonce );
 		formData.append( 'user_id', trigger.getAttribute( 'data-user-id' ) );
 
+		Object.keys( extraFields ).forEach( function ( key ) {
+			formData.append( key, extraFields[ key ] );
+		} );
+
 		fetch( dakAdminUsers.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
 			.then( function ( response ) { return response.json(); } )
 			.then( function ( result ) {
-				if ( result.success ) {
-					window.location.reload();
-				} else {
+				if ( ! result.success ) {
 					window.alert( ( result.data && result.data.message ) || dakAdminUsers.genericError );
+					return;
 				}
+
+				if ( result.data && result.data.needs_confirmation ) {
+					var count = result.data.appointment_count;
+					var cancelPrompt = 1 === count
+						? 'This doctor has 1 upcoming appointment. Do you want to cancel it? The patient and doctor will be emailed, and any paid appointment will be refunded.'
+						: 'This doctor has ' + count + ' upcoming appointments. Do you want to cancel them? The patients and doctor will be emailed, and any paid appointments will be refunded.';
+
+					submitToggleStatus( trigger, { cancel_appointments: window.confirm( cancelPrompt ) ? '1' : '0' } );
+					return;
+				}
+
+				if ( '1' === extraFields.cancel_appointments && result.data && result.data.message ) {
+					window.alert( result.data.message );
+				}
+
+				window.location.reload();
 			} )
 			.catch( function () {
 				window.alert( dakAdminUsers.genericError );
