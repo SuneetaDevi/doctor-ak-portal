@@ -46,7 +46,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<?php else : ?>
 		<div id="dak-patient-list">
 			<?php foreach ( $patients as $patient ) : ?>
-				<div class="dak-admin-record-row" data-patient-search-row data-patient-search-text="<?php echo esc_attr( strtolower( $patient['name'] . ' ' . $patient['email'] ) ); ?>">
+				<div id="dak-patient-<?php echo esc_attr( $patient['id'] ); ?>" class="dak-admin-record-row" data-patient-search-row data-patient-search-text="<?php echo esc_attr( strtolower( $patient['name'] . ' ' . $patient['email'] ) ); ?>">
 					<div class="dak-admin-record-row-main">
 						<span class="dak-avatar dak-avatar-sm" aria-hidden="true">
 							<?php if ( $patient['avatar_url'] ) : ?>
@@ -66,7 +66,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</span>
 						<span class="dak-admin-record-row-info">
 							<strong><?php echo esc_html( $patient['name'] ); ?></strong>
-							<span class="dak-admin-record-row-id"><?php echo esc_html( $patient['email'] ); ?></span>
+							<span class="dak-admin-record-row-id">
+								<?php echo esc_html( $patient['email'] ); ?>
+								<?php if ( '' !== $patient['phone'] ) : ?>
+									&middot; <?php echo esc_html( $patient['phone'] ); ?>
+								<?php endif; ?>
+							</span>
 						</span>
 						<span class="dak-admin-record-row-tags">
 							<span class="dak-status-pill dak-status-pill-outline">

@@ -130,7 +130,17 @@ $dak_admin_section_icons = array(
 			<header class="dak-dashboard-topbar">
 				<div class="dak-dashboard-search">
 					<span class="dak-dashboard-search-icon" aria-hidden="true"><?php echo $dak_admin_icons['search']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-					<input type="search" placeholder="<?php esc_attr_e( 'Search doctors, patients, appointments…', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search doctors, patients, appointments…', 'doctor-ak-portal' ); ?>">
+					<input
+						type="search"
+						id="dak-dashboard-topbar-search"
+						data-live-search="doctor_ak_admin_dashboard_search"
+						data-live-search-nonce="dakAdminUsers"
+						data-live-search-groups="doctors,patients,appointments"
+						placeholder="<?php esc_attr_e( 'Search doctors, patients, appointments…', 'doctor-ak-portal' ); ?>"
+						aria-label="<?php esc_attr_e( 'Search doctors, patients, appointments…', 'doctor-ak-portal' ); ?>"
+						autocomplete="off"
+					>
+					<div class="dak-search-results dak-hidden" id="dak-dashboard-topbar-search-results"></div>
 				</div>
 				<?php
 				echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own topbar-actions.php template, which escapes its own output.
@@ -163,13 +173,15 @@ $dak_admin_section_icons = array(
 				<?php endif; ?>
 			</div>
 
-			<section class="dak-dashboard-card dak-admin-users-card">
+			<section class="dak-dashboard-card dak-admin-users-card" id="dak-admin-users-tab-content">
 				<?php echo $content_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own admin-user-table.php template, which escapes its own output. ?>
 			</section>
 		<?php elseif ( $is_user_form_view ) : ?>
 			<?php echo $content_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own admin-user-form-screen.php template, which escapes its own output. ?>
 		<?php else : ?>
-			<?php echo $content_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own admin-overview.php/admin-placeholder.php templates, which escape their own output. ?>
+			<div id="dak-admin-section-content">
+				<?php echo $content_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own admin-overview.php/admin-placeholder.php/admin-appointments.php templates, which escape their own output. ?>
+			</div>
 		<?php endif; ?>
 	</main>
 </div>

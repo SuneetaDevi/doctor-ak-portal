@@ -72,7 +72,14 @@ $dak_appt_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to
 		<h2><?php esc_html_e( 'Filters', 'doctor-ak-portal' ); ?></h2>
 	</div>
 
-	<form method="get" action="<?php echo esc_url( $appointments_url ); ?>" class="dak-field-row">
+	<form
+		method="get"
+		action="<?php echo esc_url( $appointments_url ); ?>"
+		class="dak-field-row"
+		data-live-filter="doctor_ak_admin_appointments_filter"
+		data-live-filter-target="#dak-admin-section-content"
+		data-live-filter-nonce="dakAdminUsers"
+	>
 		<input type="hidden" name="section" value="appointments">
 		<?php if ( $filters['patient_id'] > 0 ) : ?>
 			<input type="hidden" name="patient_id" value="<?php echo esc_attr( $filters['patient_id'] ); ?>">
@@ -111,7 +118,14 @@ $dak_appt_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to
 		<div class="dak-admin-filter-actions">
 			<button type="submit" class="dak-button dak-button-primary"><?php esc_html_e( 'Filter', 'doctor-ak-portal' ); ?></button>
 			<?php if ( $dak_appt_has_filters ) : ?>
-				<a class="dak-button dak-button-secondary" href="<?php echo esc_url( $filters['patient_id'] > 0 ? add_query_arg( 'patient_id', $filters['patient_id'], $appointments_url ) : $appointments_url ); ?>"><?php esc_html_e( 'Clear', 'doctor-ak-portal' ); ?></a>
+				<a
+					class="dak-button dak-button-secondary"
+					href="<?php echo esc_url( $filters['patient_id'] > 0 ? add_query_arg( 'patient_id', $filters['patient_id'], $appointments_url ) : $appointments_url ); ?>"
+					data-live-filter-clear
+					data-live-filter="doctor_ak_admin_appointments_filter"
+					data-live-filter-target="#dak-admin-section-content"
+					data-live-filter-nonce="dakAdminUsers"
+				><?php esc_html_e( 'Clear', 'doctor-ak-portal' ); ?></a>
 			<?php endif; ?>
 		</div>
 	</form>

@@ -525,6 +525,71 @@
 	box-shadow: 0 0 0 3px var( --dak-primary-tint ) !important;
 }
 
+/* Topbar search results dropdown (see assets/js/doctor-ak-dashboard-search.js) */
+
+.dak-search-results {
+	position: absolute !important;
+	top: calc( 100% + 0.4rem ) !important;
+	left: 0 !important;
+	right: 0 !important;
+	z-index: 40 !important;
+	max-height: 60vh !important;
+	overflow-y: auto !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	box-shadow: var( --dak-shadow-hover ) !important;
+	padding: 0.5rem !important;
+}
+
+.dak-search-results-group + .dak-search-results-group {
+	margin-top: 0.5rem !important;
+	padding-top: 0.5rem !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+.dak-search-results-group-label {
+	padding: 0.3rem 0.6rem !important;
+	font-size: 0.7rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.04em !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-search-result-item {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.1rem !important;
+	padding: 0.5rem 0.6rem !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	text-decoration: none !important;
+}
+
+.dak-search-result-item:hover,
+.dak-search-result-item:focus-visible {
+	background: var( --dak-bg-subtle ) !important;
+	outline: none !important;
+}
+
+.dak-search-result-label {
+	font-size: 0.88rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-search-result-sublabel {
+	font-size: 0.78rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-search-results-empty {
+	padding: 0.75rem 0.6rem !important;
+	font-size: 0.85rem !important;
+	color: var( --dak-muted ) !important;
+	text-align: center !important;
+}
+
 .dak-dashboard-topbar-actions {
 	display: flex !important;
 	align-items: center !important;
@@ -826,6 +891,15 @@
 
 .dak-dashboard-profile-form {
 	max-width: 100% !important;
+}
+
+/* Briefly dims a live-filtered list/table while its AJAX refresh is in
+   flight (see assets/js/doctor-ak-live-filters.js) — no spinner, just a
+   quiet visual cue that something is happening. */
+.dak-is-loading {
+	opacity: 0.55 !important;
+	pointer-events: none !important;
+	transition: opacity 0.15s ease !important;
 }
 
 .dak-empty-state {
@@ -1301,8 +1375,14 @@ a.dak-notification-row-link:hover {
 	flex-wrap: wrap !important;
 }
 
-.dak-notifications-filter-form {
+/* Overrides .dak-appt-filters-form's align-items: flex-end — this form's
+   "Clear" link is a bare, unpadded <a> (no button chrome), so bottom-aligning
+   it against the much taller date input made it look sunken/misaligned.
+   The extra class in the selector (vs. a single-class override) guarantees
+   this wins regardless of the two rules' order in the file. */
+.dak-notifications-filter-form.dak-appt-filters-form {
 	gap: 0.5rem !important;
+	align-items: center !important;
 }
 
 .dak-notifications-filter-form .dak-field {

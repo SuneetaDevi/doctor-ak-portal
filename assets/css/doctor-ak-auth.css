@@ -423,6 +423,12 @@ button.dak-link-button {
 	transform: scale( 0.98 ) !important;
 }
 
+.dak-button:disabled {
+	cursor: not-allowed !important;
+	opacity: 0.55 !important;
+	transform: none !important;
+}
+
 .dak-button-primary {
 	background: var( --dak-primary ) !important;
 	border-color: var( --dak-primary ) !important;

@@ -170,6 +170,9 @@ class Plugin {
 		$patient_dashboard = new Patient_Dashboard( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $doctor_dashboard, 'enqueue_assets' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $patient_dashboard, 'enqueue_assets' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_appointments_filter', $doctor_dashboard, 'handle_filter_appointments' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_appointments_filter', $patient_dashboard, 'handle_filter_appointments' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_dashboard_search', $doctor_dashboard, 'handle_search' );
 
 		$patient_clinic_handler = new Patient_Clinic_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_select_clinic', $patient_clinic_handler, 'handle_select_clinic' );
@@ -267,6 +270,9 @@ class Plugin {
 
 		$admin_dashboard = new Admin_Dashboard( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $admin_dashboard, 'enqueue_assets' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointments_filter', $admin_dashboard, 'handle_filter_appointments' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_users_filter', $admin_dashboard, 'handle_filter_users' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_dashboard_search', $admin_dashboard, 'handle_search' );
 
 		$admin_user_handler = new Admin_User_Handler( new Profile_Picture_Uploader() );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_save_user', $admin_user_handler, 'handle_save_user' );

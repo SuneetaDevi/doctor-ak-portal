@@ -19,7 +19,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 ?>
 <section class="dak-dashboard-card dak-appt-filters-card">
-	<form method="get" class="dak-appt-filters-form">
+	<form
+		method="get"
+		class="dak-appt-filters-form"
+		data-live-filter="doctor_ak_patient_appointments_filter"
+		data-live-filter-target="#dak-patient-appointments-tab-content"
+		data-live-filter-nonce="dakPatientDashboard"
+	>
 		<input type="hidden" name="tab" value="appointments">
 		<div class="dak-field">
 			<label for="dak-patient-appt-filter-date"><?php esc_html_e( 'Date', 'doctor-ak-portal' ); ?></label>
@@ -36,7 +42,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 		<button type="submit" class="dak-button dak-button-primary"><?php esc_html_e( 'Filter', 'doctor-ak-portal' ); ?></button>
 		<?php if ( '' !== $selected_date || '' !== $selected_status ) : ?>
-			<a class="dak-link" href="?tab=appointments"><?php esc_html_e( 'Clear filters', 'doctor-ak-portal' ); ?></a>
+			<a
+				class="dak-link"
+				href="?tab=appointments"
+				data-live-filter-clear
+				data-live-filter="doctor_ak_patient_appointments_filter"
+				data-live-filter-target="#dak-patient-appointments-tab-content"
+				data-live-filter-nonce="dakPatientDashboard"
+			><?php esc_html_e( 'Clear filters', 'doctor-ak-portal' ); ?></a>
 		<?php endif; ?>
 	</form>
 </section>

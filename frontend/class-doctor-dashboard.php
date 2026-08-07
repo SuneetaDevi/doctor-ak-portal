@@ -120,6 +120,22 @@ class Doctor_Dashboard {
 			true
 		);
 
+		wp_enqueue_script(
+			'doctor-ak-portal-live-filters',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-live-filters.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-live-filters.js' ),
+			true
+		);
+
+		wp_enqueue_script(
+			'doctor-ak-portal-dashboard-search',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-dashboard-search.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-dashboard-search.js' ),
+			true
+		);
+
 		wp_localize_script(
 			'doctor-ak-portal-doctor-appointments',
 			'dakDoctorAppointments',
@@ -410,6 +426,128 @@ class Doctor_Dashboard {
 		}
 
 		return $this->template_loader->get_template( 'dashboard/doctor-dashboard.php', $this->prepare_data( $user ) );
+	}
+
+	/**
+	 * AJAX: the topbar search box — up to 5 matches each of this doctor's
+	 * own Patients and Appointments whose name contains the query, for a
+	 * click-to-jump dropdown (no "Doctors" category — a doctor only
+	 * searches their own data, never other doctors). Patients link to
+	 * `#dak-patient-{id}` in the Patients tab; Appointments link to
+	 * `#dak-appointment-{id}` in the Appointments tab — both anchors reuse
+	 * the existing `:target` highlight already built for notification
+	 * deep-links.
+	 *
+	 * @return void
+	 */
+	public function handle_search() {
+		if ( ! check_ajax_referer( Doctor_Appointment_Handler::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$user = wp_get_current_user();
+
+		if ( ! in_array( Roles::DOCTOR_ROLE, (array) $user->roles, true ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$query = isset( $_POST['query'] ) ? sanitize_text_field( wp_unslash( $_POST['query'] ) ) : '';
+
+		if ( mb_strlen( $query ) < 2 ) {
+			wp_send_json_success(
+				array(
+					'patients'     => array(),
+					'appointments' => array(),
+				)
+			);
+		}
+
+		$needle            = mb_strtolower( $query );
+		$dashboard_url     = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+		$patients_url      = self::tab_url( $dashboard_url, 'patients' );
+		$appointments_url  = self::tab_url( $dashboard_url, 'appointments' );
+
+		$patient_results = array();
+
+		foreach ( Appointments::patients_for_doctor( $user->ID ) as $patient ) {
+			$haystack = mb_strtolower( $patient['name'] . ' ' . $patient['email'] );
+
+			if ( false === mb_strpos( $haystack, $needle ) ) {
+				continue;
+			}
+
+			$patient_results[] = array(
+				'label'    => $patient['name'],
+				'sublabel' => $patient['email'],
+				'url'      => $patients_url ? esc_url_raw( $patients_url . '#dak-patient-' . $patient['id'] ) : '',
+			);
+
+			if ( count( $patient_results ) >= 5 ) {
+				break;
+			}
+		}
+
+		$appointment_results = array();
+
+		foreach ( Appointments::all_for_admin( array( 'doctor_id' => $user->ID ) ) as $row ) {
+			$haystack = mb_strtolower( $row['patient_name'] . ' ' . $row['guest_name'] );
+
+			if ( false === mb_strpos( $haystack, $needle ) ) {
+				continue;
+			}
+
+			$appointment_results[] = array(
+				'label'    => $row['patient_name'],
+				'sublabel' => $row['date'] . ' · ' . $row['time'],
+				'url'      => $appointments_url ? esc_url_raw( $appointments_url . '#dak-appointment-' . $row['id'] ) : '',
+			);
+
+			if ( count( $appointment_results ) >= 5 ) {
+				break;
+			}
+		}
+
+		wp_send_json_success(
+			array(
+				'patients'     => $patient_results,
+				'appointments' => $appointment_results,
+			)
+		);
+	}
+
+	/**
+	 * AJAX: re-renders the Appointments tab for a new set of filters,
+	 * without a full page reload. Reuses render_appointments_tab() unchanged
+	 * by populating $_GET from the posted filters first, so the returned
+	 * markup is byte-for-byte what a normal page load with the same query
+	 * args would have produced.
+	 *
+	 * @return void
+	 */
+	public function handle_filter_appointments() {
+		if ( ! check_ajax_referer( Doctor_Appointment_Handler::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$user = wp_get_current_user();
+
+		if ( ! in_array( Roles::DOCTOR_ROLE, (array) $user->roles, true ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		foreach ( array( 'date_from', 'date_to', 'payment_status' ) as $key ) {
+			$_GET[ $key ] = isset( $_POST[ $key ] ) ? $_POST[ $key ] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- nonce already verified above; render_appointments_tab() sanitizes each value itself, same as it does for a real $_GET.
+		}
+
+		wp_send_json_success( array( 'html' => $this->render_appointments_tab( $user ) ) );
 	}
 
 	/**

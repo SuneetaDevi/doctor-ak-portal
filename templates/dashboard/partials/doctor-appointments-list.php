@@ -37,7 +37,14 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] ||
 		<h2><?php esc_html_e( 'Filters', 'doctor-ak-portal' ); ?></h2>
 	</div>
 
-	<form method="get" action="<?php echo esc_url( $appointments_url ); ?>" class="dak-field-row">
+	<form
+		method="get"
+		action="<?php echo esc_url( $appointments_url ); ?>"
+		class="dak-field-row"
+		data-live-filter="doctor_ak_doctor_appointments_filter"
+		data-live-filter-target="#dak-doctor-appointments-tab-content"
+		data-live-filter-nonce="dakDoctorAppointments"
+	>
 		<input type="hidden" name="tab" value="appointments">
 
 		<div class="dak-field">
@@ -61,7 +68,14 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] ||
 
 		<div class="dak-admin-filter-actions">
 			<button type="submit" class="dak-button dak-button-primary"><?php esc_html_e( 'Filter', 'doctor-ak-portal' ); ?></button>
-			<a class="dak-button dak-button-secondary" href="<?php echo esc_url( $appointments_url ); ?>"><?php esc_html_e( 'Reset filters', 'doctor-ak-portal' ); ?></a>
+			<a
+				class="dak-button dak-button-secondary"
+				href="<?php echo esc_url( $appointments_url ); ?>"
+				data-live-filter-clear
+				data-live-filter="doctor_ak_doctor_appointments_filter"
+				data-live-filter-target="#dak-doctor-appointments-tab-content"
+				data-live-filter-nonce="dakDoctorAppointments"
+			><?php esc_html_e( 'Reset filters', 'doctor-ak-portal' ); ?></a>
 		</div>
 	</form>
 </section>
@@ -113,6 +127,15 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] ||
 						<?php if ( in_array( $row['status'], array( 'confirmed', 'paid', 'rescheduled' ), true ) ) : ?>
 							<button type="button" class="dak-button dak-button-secondary dak-button-sm" data-mark-completed data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"><?php esc_html_e( 'Mark Completed', 'doctor-ak-portal' ); ?></button>
 						<?php endif; ?>
+						<?php
+						if ( empty( $row['reschedulable'] ) ) {
+							$dak_reschedule_disabled_reason = in_array( $row['status'], array( 'cancelled', 'completed' ), true )
+								? __( 'This appointment can no longer be rescheduled.', 'doctor-ak-portal' )
+								: __( 'Rescheduling closes 30 minutes before the appointment.', 'doctor-ak-portal' );
+						} else {
+							$dak_reschedule_disabled_reason = '';
+						}
+						?>
 						<button
 							type="button"
 							class="dak-button dak-button-secondary dak-button-sm"
@@ -120,6 +143,9 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] ||
 							data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"
 							data-date="<?php echo esc_attr( $row['date'] ); ?>"
 							data-time="<?php echo esc_attr( $row['time'] ); ?>"
+							<?php if ( '' !== $dak_reschedule_disabled_reason ) : ?>
+								title="<?php echo esc_attr( $dak_reschedule_disabled_reason ); ?>"
+							<?php endif; ?>
 							<?php disabled( empty( $row['reschedulable'] ) ); ?>
 						><?php esc_html_e( 'Reschedule', 'doctor-ak-portal' ); ?></button>
 						<?php if ( ! in_array( $row['status'], array( 'cancelled', 'completed' ), true ) ) : ?>

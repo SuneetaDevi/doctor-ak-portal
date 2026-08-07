@@ -49,7 +49,14 @@ $dak_read_only         = ! empty( $read_only );
 ?>
 <?php if ( $dak_is_doctors ) : ?>
 	<section class="dak-dashboard-card">
-		<form method="get" action="<?php echo esc_url( $section_url ); ?>" class="dak-field-row">
+		<form
+			method="get"
+			action="<?php echo esc_url( $section_url ); ?>"
+			class="dak-field-row"
+			data-live-filter="doctor_ak_admin_users_filter"
+			data-live-filter-target="#dak-admin-users-tab-content"
+			data-live-filter-nonce="dakAdminUsers"
+		>
 			<input type="hidden" name="section" value="<?php echo esc_attr( $section ); ?>">
 			<div class="dak-field">
 				<label for="dak-admin-users-filter-specialization"><?php esc_html_e( 'Specialization', 'doctor-ak-portal' ); ?></label>
@@ -73,7 +80,14 @@ $dak_read_only         = ! empty( $read_only );
 			<div class="dak-admin-filter-actions">
 				<button type="submit" class="dak-button dak-button-primary"><?php esc_html_e( 'Filter', 'doctor-ak-portal' ); ?></button>
 				<?php if ( $dak_has_filters ) : ?>
-					<a class="dak-button dak-button-secondary" href="<?php echo esc_url( $section_url ); ?>"><?php esc_html_e( 'Clear', 'doctor-ak-portal' ); ?></a>
+					<a
+						class="dak-button dak-button-secondary"
+						href="<?php echo esc_url( $section_url ); ?>"
+						data-live-filter-clear
+						data-live-filter="doctor_ak_admin_users_filter"
+						data-live-filter-target="#dak-admin-users-tab-content"
+						data-live-filter-nonce="dakAdminUsers"
+					><?php esc_html_e( 'Clear', 'doctor-ak-portal' ); ?></a>
 				<?php endif; ?>
 			</div>
 		</form>
@@ -90,7 +104,7 @@ $dak_read_only         = ! empty( $read_only );
 			<p class="dak-empty-state"><?php esc_html_e( 'No patients have been added yet.', 'doctor-ak-portal' ); ?></p>
 		<?php else : ?>
 			<?php foreach ( $users as $row ) : ?>
-				<div class="dak-admin-record-row" data-user-row="<?php echo esc_attr( $row['id'] ); ?>">
+				<div id="dak-user-<?php echo esc_attr( $row['id'] ); ?>" class="dak-admin-record-row" data-user-row="<?php echo esc_attr( $row['id'] ); ?>">
 					<div class="dak-admin-patient-row">
 						<span class="dak-avatar dak-avatar-sm" aria-hidden="true"><?php echo esc_html( dak_admin_user_table_initials( $row['name'] ) ); ?></span>
 						<span class="dak-admin-patient-row-info">
@@ -152,7 +166,7 @@ $dak_read_only         = ! empty( $read_only );
 		<p class="dak-empty-state"><?php esc_html_e( 'No receptionist accounts have been added yet.', 'doctor-ak-portal' ); ?></p>
 	<?php else : ?>
 		<?php foreach ( $users as $row ) : ?>
-			<div class="dak-admin-record-row" data-user-row="<?php echo esc_attr( $row['id'] ); ?>">
+			<div id="dak-user-<?php echo esc_attr( $row['id'] ); ?>" class="dak-admin-record-row" data-user-row="<?php echo esc_attr( $row['id'] ); ?>">
 				<div class="dak-admin-patient-row">
 					<span class="dak-avatar dak-avatar-sm" aria-hidden="true"><?php echo esc_html( dak_admin_user_table_initials( $row['name'] ) ); ?></span>
 					<span class="dak-admin-patient-row-info">
@@ -204,7 +218,7 @@ $dak_read_only         = ! empty( $read_only );
 	</div>
 
 	<?php foreach ( $users as $row ) : ?>
-		<div class="dak-admin-record-row" data-user-row="<?php echo esc_attr( $row['id'] ); ?>">
+		<div id="dak-user-<?php echo esc_attr( $row['id'] ); ?>" class="dak-admin-record-row" data-user-row="<?php echo esc_attr( $row['id'] ); ?>">
 			<div class="dak-admin-record-row-main">
 				<span class="dak-avatar dak-avatar-sm" aria-hidden="true"><?php echo esc_html( dak_admin_user_table_initials( $row['name'] ) ); ?></span>
 				<span class="dak-admin-record-row-info">

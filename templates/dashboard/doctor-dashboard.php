@@ -182,7 +182,17 @@ $dak_dash_icons = array(
 		<header class="dak-dashboard-topbar">
 			<div class="dak-dashboard-search">
 				<span class="dak-dashboard-search-icon" aria-hidden="true"><?php echo $dak_dash_icons['search']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-				<input type="search" placeholder="<?php esc_attr_e( 'Search patients, appointments…', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search patients, appointments…', 'doctor-ak-portal' ); ?>">
+				<input
+					type="search"
+					id="dak-dashboard-topbar-search"
+					data-live-search="doctor_ak_doctor_dashboard_search"
+					data-live-search-nonce="dakDoctorAppointments"
+					data-live-search-groups="patients,appointments"
+					placeholder="<?php esc_attr_e( 'Search patients, appointments…', 'doctor-ak-portal' ); ?>"
+					aria-label="<?php esc_attr_e( 'Search patients, appointments…', 'doctor-ak-portal' ); ?>"
+					autocomplete="off"
+				>
+				<div class="dak-search-results dak-hidden" id="dak-dashboard-topbar-search-results"></div>
 			</div>
 			<?php
 			echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own topbar-actions.php template, which escapes its own output.
@@ -197,11 +207,9 @@ $dak_dash_icons = array(
 
 		<?php if ( 'appointments' === $active_tab ) : ?>
 
-			<div class="dak-dashboard-greeting">
-				<h1><?php esc_html_e( 'Appointments', 'doctor-ak-portal' ); ?></h1>
+			<div id="dak-doctor-appointments-tab-content">
+				<?php echo $appointments_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-appointments-list.php template, which escapes its own output (including its own page header). ?>
 			</div>
-
-			<?php echo $appointments_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-appointments-list.php template, which escapes its own output. ?>
 
 		<?php elseif ( 'notifications' === $active_tab ) : ?>
 

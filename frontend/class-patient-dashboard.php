@@ -118,6 +118,14 @@ class Patient_Dashboard {
 			true
 		);
 
+		wp_enqueue_script(
+			'doctor-ak-portal-live-filters',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-live-filters.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-live-filters.js' ),
+			true
+		);
+
 		wp_localize_script(
 			'doctor-ak-portal-patient-dashboard',
 			'dakPatientDashboard',
@@ -431,6 +439,37 @@ class Patient_Dashboard {
 		}
 
 		return $this->template_loader->get_template( 'dashboard/patient-dashboard.php', $this->prepare_data( $user ) );
+	}
+
+	/**
+	 * AJAX: re-renders the Appointments tab for a new set of filters,
+	 * without a full page reload. Reuses render_appointments_tab() unchanged
+	 * by populating $_GET from the posted filters first, so the returned
+	 * markup is byte-for-byte what a normal page load with the same query
+	 * args would have produced.
+	 *
+	 * @return void
+	 */
+	public function handle_filter_appointments() {
+		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$user = wp_get_current_user();
+
+		if ( ! in_array( Roles::PATIENT_ROLE, (array) $user->roles, true ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		foreach ( array( 'date', 'status' ) as $key ) {
+			$_GET[ $key ] = isset( $_POST[ $key ] ) ? $_POST[ $key ] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- nonce already verified above; render_appointments_tab() sanitizes each value itself, same as it does for a real $_GET.
+		}
+
+		wp_send_json_success( array( 'html' => $this->render_appointments_tab( $user ) ) );
 	}
 
 	/**

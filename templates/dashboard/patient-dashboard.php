@@ -190,7 +190,9 @@ $appointment_group_labels = array(
 				<h1><?php esc_html_e( 'Appointments', 'doctor-ak-portal' ); ?></h1>
 			</div>
 
-			<?php echo $appointments_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own patient-appointments-list.php template, which escapes its own output. ?>
+			<div id="dak-patient-appointments-tab-content">
+				<?php echo $appointments_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own patient-appointments-list.php template, which escapes its own output. ?>
+			</div>
 
 		<?php elseif ( 'notifications' === $active_tab ) : ?>
 

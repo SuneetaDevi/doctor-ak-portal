@@ -209,6 +209,22 @@ class Admin_Dashboard {
 			true
 		);
 
+		wp_enqueue_script(
+			'doctor-ak-portal-live-filters',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-live-filters.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-live-filters.js' ),
+			true
+		);
+
+		wp_enqueue_script(
+			'doctor-ak-portal-dashboard-search',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-dashboard-search.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-dashboard-search.js' ),
+			true
+		);
+
 		wp_localize_script(
 			'doctor-ak-portal-admin-dashboard',
 			'dakAdminUsers',
@@ -603,6 +619,180 @@ class Admin_Dashboard {
 		}
 
 		return $this->template_loader->get_template( 'dashboard/admin-dashboard.php', $this->prepare_data() );
+	}
+
+	/**
+	 * AJAX: the topbar search box — up to 5 matches each of Doctors,
+	 * Patients, and Appointments whose name/email contains the query, for a
+	 * click-to-jump dropdown. Doctors/Patients link to their row in the
+	 * Users table (`#dak-user-{id}`, see admin-user-table.php); Appointments
+	 * link to their row in the Appointments section (`#dak-appointment-{id}`).
+	 * Both anchors reuse the existing `:target` highlight already built for
+	 * notification deep-links.
+	 *
+	 * @return void
+	 */
+	public function handle_search() {
+		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) && ! self::is_receptionist() ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$query = isset( $_POST['query'] ) ? sanitize_text_field( wp_unslash( $_POST['query'] ) ) : '';
+
+		if ( mb_strlen( $query ) < 2 ) {
+			wp_send_json_success(
+				array(
+					'doctors'      => array(),
+					'patients'     => array(),
+					'appointments' => array(),
+				)
+			);
+		}
+
+		$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+		$doctors_url   = $dashboard_url ? add_query_arg( 'section', 'doctors', $dashboard_url ) : '';
+		$patients_url  = $dashboard_url ? add_query_arg( 'section', 'patients', $dashboard_url ) : '';
+		$appts_url     = $dashboard_url ? add_query_arg( 'section', 'appointments', $dashboard_url ) : '';
+
+		wp_send_json_success(
+			array(
+				'doctors'      => self::search_users_for_dropdown( Roles::DOCTOR_ROLE, $query, $doctors_url ),
+				'patients'     => self::search_users_for_dropdown( Roles::PATIENT_ROLE, $query, $patients_url ),
+				'appointments' => self::search_appointments_for_dropdown( $query, $appts_url ),
+			)
+		);
+	}
+
+	/**
+	 * Up to 5 users of a given role whose name/email match the query, shaped
+	 * for handle_search()'s dropdown response.
+	 *
+	 * @param string $role       WP role slug.
+	 * @param string $query      Search term.
+	 * @param string $section_url Base URL of the section the result links into ('' if unresolvable).
+	 * @return array
+	 */
+	private static function search_users_for_dropdown( $role, $query, $section_url ) {
+		$users = get_users(
+			array(
+				'role'           => $role,
+				'search'         => '*' . $query . '*',
+				'search_columns' => array( 'display_name', 'user_email' ),
+				'number'         => 5,
+				'orderby'        => 'display_name',
+			)
+		);
+
+		return array_map(
+			function ( $user ) use ( $section_url ) {
+				return array(
+					'label'    => $user->display_name,
+					'sublabel' => $user->user_email,
+					'url'      => $section_url ? esc_url_raw( $section_url . '#dak-user-' . $user->ID ) : '',
+				);
+			},
+			$users
+		);
+	}
+
+	/**
+	 * Up to 5 appointments whose patient/doctor/guest name contains the
+	 * query, shaped for handle_search()'s dropdown response. Scans the same
+	 * (already capped-at-200) recent-appointments set the Appointments
+	 * section itself loads, so this stays cheap without a dedicated query.
+	 *
+	 * @param string $query         Search term.
+	 * @param string $appointments_url Base URL of the Appointments section ('' if unresolvable).
+	 * @return array
+	 */
+	private static function search_appointments_for_dropdown( $query, $appointments_url ) {
+		$needle  = mb_strtolower( $query );
+		$results = array();
+
+		foreach ( Appointments::all_for_admin() as $row ) {
+			$haystack = mb_strtolower( $row['patient_name'] . ' ' . $row['doctor_name'] . ' ' . $row['guest_name'] );
+
+			if ( false === mb_strpos( $haystack, $needle ) ) {
+				continue;
+			}
+
+			$results[] = array(
+				'label'    => sprintf(
+					/* translators: 1: patient name, 2: doctor name. */
+					__( '%1$s with Dr. %2$s', 'doctor-ak-portal' ),
+					$row['patient_name'],
+					$row['doctor_name']
+				),
+				'sublabel' => $row['date'] . ' · ' . $row['time'],
+				'url'      => $appointments_url ? esc_url_raw( $appointments_url . '#dak-appointment-' . $row['id'] ) : '',
+			);
+
+			if ( count( $results ) >= 5 ) {
+				break;
+			}
+		}
+
+		return $results;
+	}
+
+	/**
+	 * AJAX: re-renders the Appointments section for a new set of filters,
+	 * without a full page reload. Reuses section_content_html() unchanged by
+	 * populating $_GET from the posted filters first, so the returned markup
+	 * is byte-for-byte what a normal page load with the same query args
+	 * would have produced.
+	 *
+	 * @return void
+	 */
+	public function handle_filter_appointments() {
+		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) && ! self::is_receptionist() ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		foreach ( array( 'patient_id', 'date_from', 'date_to', 'doctor_id', 'payment_status' ) as $key ) {
+			$_GET[ $key ] = isset( $_POST[ $key ] ) ? $_POST[ $key ] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- nonce already verified above; section_content_html() sanitizes each value itself, same as it does for a real $_GET.
+		}
+
+		wp_send_json_success( array( 'html' => $this->section_content_html( 'appointments' ) ) );
+	}
+
+	/**
+	 * AJAX: re-renders the Doctors/Patients/Receptionists table for a new
+	 * set of filters, without a full page reload. Same $_GET-populating
+	 * approach as handle_filter_appointments().
+	 *
+	 * @return void
+	 */
+	public function handle_filter_users() {
+		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$section = isset( $_POST['section'] ) ? sanitize_key( wp_unslash( $_POST['section'] ) ) : '';
+
+		if ( ! in_array( $section, array( 'doctors', 'patients', 'receptionist' ), true ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid section.', 'doctor-ak-portal' ) ), 400 );
+		}
+
+		$is_receptionist = self::is_receptionist();
+
+		if ( ! current_user_can( 'manage_options' ) && ! ( $is_receptionist && in_array( $section, self::RECEPTIONIST_ALLOWED_SECTIONS, true ) ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		foreach ( array( 'status', 'specialization' ) as $key ) {
+			$_GET[ $key ] = isset( $_POST[ $key ] ) ? $_POST[ $key ] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- nonce already verified above; users_section_html() sanitizes each value itself, same as it does for a real $_GET.
+		}
+
+		wp_send_json_success( array( 'html' => $this->users_section_html( $section ) ) );
 	}
 
 	/**
