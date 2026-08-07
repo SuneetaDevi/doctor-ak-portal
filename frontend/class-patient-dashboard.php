@@ -12,6 +12,7 @@ use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Notification_Center;
+use DoctorAKPortal\Includes\Notifications;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
@@ -192,6 +193,14 @@ class Patient_Dashboard {
 			)
 		);
 
+		wp_enqueue_script(
+			'doctor-ak-portal-notification-preferences',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-notification-preferences.js',
+			array( 'doctor-ak-portal-notifications' ),
+			Assets::version( 'assets/js/doctor-ak-notification-preferences.js' ),
+			true
+		);
+
 		if ( self::needs_clinic_selection() ) {
 			wp_enqueue_script(
 				'doctor-ak-portal-city-area-select',
@@ -310,6 +319,26 @@ class Patient_Dashboard {
 		}
 
 		return add_query_arg( 'tab', $tab, $dashboard_url );
+	}
+
+	/**
+	 * Renders the Settings tab: Appearance (theme toggle) plus this
+	 * patient's own notification email preferences.
+	 *
+	 * @param \WP_User $user Currently logged-in patient.
+	 * @return string
+	 */
+	private function render_settings_tab( \WP_User $user ) {
+		$notify_preferences = Notifications::user_preferences( $user->ID );
+
+		return $this->template_loader->get_template(
+			'dashboard/partials/dashboard-settings-tab.php',
+			array(
+				'notify_booking'   => $notify_preferences['booking'],
+				'notify_paid'      => $notify_preferences['paid'],
+				'notify_cancelled' => $notify_preferences['cancelled'],
+			)
+		);
 	}
 
 	/**
@@ -581,7 +610,7 @@ class Patient_Dashboard {
 			'notifications_url'     => self::tab_url( $dashboard_url, 'notifications' ),
 			'unread_notifications_count' => Notification_Center::unread_count( $user->ID ),
 			'profile_tab_html'      => 'profile' === $active_tab ? $this->render_profile_form( $user ) : '',
-			'settings_tab_html'     => 'settings' === $active_tab ? $this->template_loader->get_template( 'dashboard/partials/dashboard-settings-tab.php' ) : '',
+			'settings_tab_html'     => 'settings' === $active_tab ? $this->render_settings_tab( $user ) : '',
 			'payments_tab_html'     => 'payments' === $active_tab ? $this->render_payments_tab( $user ) : '',
 			'appointments_tab_html' => 'appointments' === $active_tab ? $this->render_appointments_tab( $user ) : '',
 			'notifications_tab_html' => 'notifications' === $active_tab ? $this->render_notifications_tab( $user ) : '',

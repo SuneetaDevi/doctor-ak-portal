@@ -12,6 +12,7 @@ use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Notification_Center;
+use DoctorAKPortal\Includes\Notifications;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
@@ -199,6 +200,14 @@ class Doctor_Dashboard {
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( Notification_Handler::NONCE_ACTION ),
 			)
+		);
+
+		wp_enqueue_script(
+			'doctor-ak-portal-notification-preferences',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-notification-preferences.js',
+			array( 'doctor-ak-portal-notifications' ),
+			Assets::version( 'assets/js/doctor-ak-notification-preferences.js' ),
+			true
 		);
 
 		// The Add/Edit Patient modal exists on the overview (default) tab
@@ -638,8 +647,17 @@ class Doctor_Dashboard {
 	 *
 	 * @return string
 	 */
-	private function render_settings_tab() {
-		return $this->template_loader->get_template( 'dashboard/partials/dashboard-settings-tab.php' );
+	private function render_settings_tab( \WP_User $user ) {
+		$notify_preferences = Notifications::user_preferences( $user->ID );
+
+		return $this->template_loader->get_template(
+			'dashboard/partials/dashboard-settings-tab.php',
+			array(
+				'notify_booking'   => $notify_preferences['booking'],
+				'notify_paid'      => $notify_preferences['paid'],
+				'notify_cancelled' => $notify_preferences['cancelled'],
+			)
+		);
 	}
 
 	/**
@@ -724,7 +742,7 @@ class Doctor_Dashboard {
 			'patients_tab_html'     => 'patients' === $active_tab ? $this->render_patients_tab( $user ) : '',
 			'notifications_tab_html' => 'notifications' === $active_tab ? $this->render_notifications_tab( $user ) : '',
 			'unread_notifications_count' => Notification_Center::unread_count( $user->ID ),
-			'settings_tab_html'     => 'settings' === $active_tab ? $this->render_settings_tab() : '',
+			'settings_tab_html'     => 'settings' === $active_tab ? $this->render_settings_tab( $user ) : '',
 			'dashboard_url'         => $dashboard_url,
 			'profile_url'           => self::tab_url( $dashboard_url, 'profile' ),
 			'clinics_url'           => self::tab_url( $dashboard_url, 'clinics' ),

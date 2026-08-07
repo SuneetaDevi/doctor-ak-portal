@@ -2,18 +2,16 @@
 /**
  * Template: Admin dashboard "Settings" section — clinic branding (name,
  * phone, address, logo — used in emails, invoices, and the site footer),
- * plus appearance and notification preferences.
+ * plus (via $settings_tab_html) the shared Appearance/Notifications card
+ * every dashboard's Settings tab renders.
  *
  * @package DoctorAKPortal\Templates
  *
- * @var string $settings_tab_html Pre-rendered dashboard-settings-tab.php output (the shared "Appearance" theme toggle).
+ * @var string $settings_tab_html Pre-rendered dashboard-settings-tab.php output (Appearance + this admin's own Notification preferences).
  * @var string $clinic_name       Clinic name (Settings → Footer Settings / this form).
  * @var string $clinic_phone      Clinic contact phone.
  * @var string $clinic_address    Clinic address.
  * @var string $clinic_logo_url   Current logo URL, or '' if none set.
- * @var bool   $notify_booking    Whether "appointment booked" emails are sent.
- * @var bool   $notify_paid       Whether "payment received" emails are sent.
- * @var bool   $notify_cancelled  Whether "cancellation/refund" emails are sent.
  */
 
 // Prevent direct file access.
@@ -72,55 +70,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 <div class="dak-dashboard-greeting">
 	<h1><?php esc_html_e( 'Settings', 'doctor-ak-portal' ); ?></h1>
-	<p><?php esc_html_e( 'Appearance and notification preferences', 'doctor-ak-portal' ); ?></p>
+	<p><?php esc_html_e( 'Appearance and your own notification preferences', 'doctor-ak-portal' ); ?></p>
 </div>
 
-<section class="dak-dashboard-card">
-	<?php echo $settings_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own dashboard-settings-tab.php template, which escapes its own output — it renders its own "Appearance" heading (shared with the Doctor/Patient dashboards' Settings tab), so this card doesn't add a duplicate one. ?>
-</section>
-
-<section class="dak-dashboard-card" id="dak-notification-preferences-form">
-	<div class="dak-dashboard-card-header">
-		<h2><?php esc_html_e( 'Notifications', 'doctor-ak-portal' ); ?></h2>
-	</div>
-
-	<div class="dak-alert dak-alert-error dak-hidden" id="dak-notification-preferences-error" role="alert"></div>
-	<div class="dak-alert dak-alert-success dak-hidden" id="dak-notification-preferences-success" role="status"></div>
-
-	<div class="dak-settings-row">
-		<div class="dak-settings-row-text">
-			<strong><?php esc_html_e( 'Appointment booked', 'doctor-ak-portal' ); ?></strong>
-			<p><?php esc_html_e( 'Email the clinic when a new appointment is booked.', 'doctor-ak-portal' ); ?></p>
-		</div>
-		<label class="dak-toggle-switch">
-			<input type="checkbox" id="dak-notify-booking" <?php checked( $notify_booking ); ?>>
-			<span></span>
-		</label>
-	</div>
-
-	<div class="dak-settings-row">
-		<div class="dak-settings-row-text">
-			<strong><?php esc_html_e( 'Payment received', 'doctor-ak-portal' ); ?></strong>
-			<p><?php esc_html_e( 'Email the clinic when a patient completes payment.', 'doctor-ak-portal' ); ?></p>
-		</div>
-		<label class="dak-toggle-switch">
-			<input type="checkbox" id="dak-notify-paid" <?php checked( $notify_paid ); ?>>
-			<span></span>
-		</label>
-	</div>
-
-	<div class="dak-settings-row">
-		<div class="dak-settings-row-text">
-			<strong><?php esc_html_e( 'Cancellations & refunds', 'doctor-ak-portal' ); ?></strong>
-			<p><?php esc_html_e( 'Email the clinic about cancellations and refund requests.', 'doctor-ak-portal' ); ?></p>
-		</div>
-		<label class="dak-toggle-switch">
-			<input type="checkbox" id="dak-notify-cancelled" <?php checked( $notify_cancelled ); ?>>
-			<span></span>
-		</label>
-	</div>
-
-	<button type="button" class="dak-button dak-button-primary" id="dak-notification-preferences-save">
-		<span class="dak-button-label"><?php esc_html_e( 'Save preferences', 'doctor-ak-portal' ); ?></span>
-	</button>
+<section class="dak-dashboard-card dak-dashboard-profile-form">
+	<?php echo $settings_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own dashboard-settings-tab.php template, which escapes its own output — it renders its own "Appearance" and "Notifications" sections (shared with the Doctor/Patient/Receptionist dashboards' Settings tab). ?>
 </section>

@@ -28,6 +28,7 @@
 		var cards = grid.querySelectorAll( '[data-doctor-card]' );
 
 		wireLocationCascade( countrySelect, citySelect, areaSelect );
+		wireClinicAreaDependency( areaSelect, clinicSelect );
 
 		function applyFilters() {
 			var query = searchInput.value.trim().toLowerCase();
@@ -146,6 +147,48 @@
 			areaSelect.disabled = ! city || 0 === city.areas.length;
 
 			areaSelect.dispatchEvent( new Event( 'change' ) );
+		} );
+	}
+
+	/**
+	 * Narrows the Clinic filter down to only clinics in the selected Area —
+	 * clinics with no area on file always stay listed (nothing to exclude
+	 * them by). Rebuilds from the server-rendered option list captured once
+	 * at load, since the Clinic <select>'s options (and each one's
+	 * `data-area`) already come from the page's PHP-rendered markup rather
+	 * than window.dakDirectory.locations.
+	 *
+	 * @param {HTMLSelectElement} areaSelect   The Area filter <select>.
+	 * @param {HTMLSelectElement} clinicSelect The Clinic filter <select>.
+	 * @return {void}
+	 */
+	function wireClinicAreaDependency( areaSelect, clinicSelect ) {
+		if ( ! areaSelect || ! clinicSelect ) {
+			return;
+		}
+
+		var allClinics = Array.prototype.slice.call( clinicSelect.options ).map( function ( option ) {
+			return { value: option.value, label: option.textContent, area: option.getAttribute( 'data-area' ) || '' };
+		} );
+
+		areaSelect.addEventListener( 'change', function () {
+			var area = areaSelect.value;
+			var previousValue = clinicSelect.value;
+			var matches = allClinics.filter( function ( clinic ) {
+				return '' === clinic.value || '' === area || clinic.area === area;
+			} );
+
+			clinicSelect.innerHTML = '';
+
+			matches.forEach( function ( clinic ) {
+				var option = document.createElement( 'option' );
+				option.value = clinic.value;
+				option.textContent = clinic.label;
+				clinicSelect.appendChild( option );
+			} );
+
+			clinicSelect.value = matches.some( function ( clinic ) { return clinic.value === previousValue; } ) ? previousValue : '';
+			clinicSelect.dispatchEvent( new Event( 'change' ) );
 		} );
 	}
 } )();

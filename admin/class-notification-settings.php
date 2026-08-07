@@ -44,7 +44,7 @@ class Notification_Settings {
 	 * @return void
 	 */
 	public function register_settings() {
-		foreach ( array( Notifications::OPTION_NOTIFY_BOOKING, Notifications::OPTION_NOTIFY_CANCELLED, Notifications::OPTION_NOTIFY_PAID, Notifications::OPTION_NOTIFY_REMINDER, Notifications::OPTION_NOTIFY_VIDEO_LINK, Notifications::OPTION_NOTIFY_DOCTOR_REGISTRATION, Notifications::OPTION_NOTIFY_REFUND, Notifications::OPTION_NOTIFY_RESCHEDULED, Notifications::OPTION_NOTIFY_PATIENT_WELCOME ) as $option ) {
+		foreach ( array( Notifications::OPTION_NOTIFY_REMINDER, Notifications::OPTION_NOTIFY_VIDEO_LINK, Notifications::OPTION_NOTIFY_DOCTOR_REGISTRATION, Notifications::OPTION_NOTIFY_REFUND, Notifications::OPTION_NOTIFY_RESCHEDULED, Notifications::OPTION_NOTIFY_PATIENT_WELCOME ) as $option ) {
 			register_setting(
 				'doctor_ak_notification_settings',
 				$option,
@@ -80,36 +80,10 @@ class Notification_Settings {
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Email Notification Settings', 'doctor-ak-portal' ); ?></h1>
 			<p><?php esc_html_e( 'Control which appointment emails are sent to patients and doctors.', 'doctor-ak-portal' ); ?></p>
+			<p class="description"><?php esc_html_e( "Booking, payment, and cancellation emails are controlled per-account instead — each admin/doctor/receptionist/patient turns theirs on or off from their own dashboard's Settings tab.", 'doctor-ak-portal' ); ?></p>
 			<form method="post" action="options.php">
 				<?php settings_fields( 'doctor_ak_notification_settings' ); ?>
 				<table class="form-table" role="presentation">
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Booking Confirmed', 'doctor-ak-portal' ); ?></th>
-						<td>
-							<label>
-								<input type="checkbox" name="<?php echo esc_attr( Notifications::OPTION_NOTIFY_BOOKING ); ?>" value="1" <?php checked( '1', get_option( Notifications::OPTION_NOTIFY_BOOKING, '1' ) ); ?>>
-								<?php esc_html_e( 'Email the patient and doctor when a new appointment is booked.', 'doctor-ak-portal' ); ?>
-							</label>
-						</td>
-					</tr>
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Appointment Cancelled', 'doctor-ak-portal' ); ?></th>
-						<td>
-							<label>
-								<input type="checkbox" name="<?php echo esc_attr( Notifications::OPTION_NOTIFY_CANCELLED ); ?>" value="1" <?php checked( '1', get_option( Notifications::OPTION_NOTIFY_CANCELLED, '1' ) ); ?>>
-								<?php esc_html_e( 'Email the patient and doctor when an appointment is cancelled.', 'doctor-ak-portal' ); ?>
-							</label>
-						</td>
-					</tr>
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Payment Received', 'doctor-ak-portal' ); ?></th>
-						<td>
-							<label>
-								<input type="checkbox" name="<?php echo esc_attr( Notifications::OPTION_NOTIFY_PAID ); ?>" value="1" <?php checked( '1', get_option( Notifications::OPTION_NOTIFY_PAID, '1' ) ); ?>>
-								<?php esc_html_e( 'Email the patient (receipt) and doctor once an online payment is confirmed.', 'doctor-ak-portal' ); ?>
-							</label>
-						</td>
-					</tr>
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Reminder', 'doctor-ak-portal' ); ?></th>
 						<td>

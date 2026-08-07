@@ -214,6 +214,8 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_nopriv_doctor_ak_available_slots', $booking_handler, 'handle_get_available_slots' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_month_availability', $booking_handler, 'handle_get_month_availability' );
 		$this->loader->add_action( 'wp_ajax_nopriv_doctor_ak_month_availability', $booking_handler, 'handle_get_month_availability' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_booking_rules', $booking_handler, 'handle_get_booking_rules' );
+		$this->loader->add_action( 'wp_ajax_nopriv_doctor_ak_booking_rules', $booking_handler, 'handle_get_booking_rules' );
 
 		$appointments = new Appointments();
 		$this->loader->add_action( 'init', $appointments, 'register_post_type' );
@@ -267,6 +269,7 @@ class Plugin {
 		$notification_handler = new Notification_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_notification_mark_read', $notification_handler, 'handle_mark_read' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_notification_mark_all_read', $notification_handler, 'handle_mark_all_read' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_notification_preferences_save', $notification_handler, 'handle_save_preferences' );
 
 		$admin_dashboard = new Admin_Dashboard( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $admin_dashboard, 'enqueue_assets' );
@@ -330,7 +333,6 @@ class Plugin {
 		$clinic_branding_handler = new Clinic_Branding_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_clinic_branding_save', $clinic_branding_handler, 'handle_save' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_clinic_branding_upload_logo', $clinic_branding_handler, 'handle_upload_logo' );
-		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_notification_preferences_save', $clinic_branding_handler, 'handle_save_notification_preferences' );
 
 		$doctor_patient_handler = new Doctor_Patient_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_add_patient', $doctor_patient_handler, 'handle_add_patient' );

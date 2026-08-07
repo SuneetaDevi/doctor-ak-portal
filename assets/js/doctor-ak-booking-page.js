@@ -237,6 +237,40 @@
 		updateSteps( 'doctor' );
 		updateSummary();
 		updateServiceStepDoctorSummary();
+		refreshBookingRules( getDoctorId() );
+	}
+
+	/**
+	 * Re-fetches the selected doctor's booking-rule settings (cancellation
+	 * refund window, etc.) over AJAX and re-renders the cancellation note
+	 * once they arrive — rather than trusting only the copy baked into this
+	 * page's initial load, which a full-page cache can serve stale for a
+	 * while after an admin/doctor changes it. Silently keeps the
+	 * already-localized value if the request fails.
+	 *
+	 * @param {string} doctorId Selected doctor's ID.
+	 * @return {void}
+	 */
+	function refreshBookingRules( doctorId ) {
+		if ( ! doctorId || ! window.dakBookingPage ) {
+			return;
+		}
+
+		var formData = new FormData();
+		formData.append( 'action', 'doctor_ak_booking_rules' );
+		formData.append( 'nonce', window.dakBookingPage.nonce );
+		formData.append( 'doctor_id', doctorId );
+
+		fetch( window.dakBookingPage.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
+			.then( function ( response ) { return response.json(); } )
+			.then( function ( result ) {
+				if ( result.success && result.data ) {
+					window.dakBookingPage.bookingRules = window.dakBookingPage.bookingRules || {};
+					window.dakBookingPage.bookingRules[ doctorId ] = result.data;
+					updateCancellationNote( doctorId );
+				}
+			} )
+			.catch( function () {} );
 	}
 
 	/* ---------------------------------------------------------------------

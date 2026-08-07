@@ -1,6 +1,9 @@
 /**
  * Doctor AK Portal — Admin dashboard "Settings" section: Clinic branding
- * (name/phone/address/logo) and Notification preferences forms.
+ * (name/phone/address/logo) form. (Notification preferences live in the
+ * shared assets/js/doctor-ak-notification-preferences.js instead — they're
+ * a per-account setting shared with the Doctor/Patient/Receptionist
+ * dashboards, not admin-only.)
  */
 ( function () {
 	'use strict';
@@ -12,7 +15,6 @@
 
 		wireBrandingForm();
 		wireLogoUpload();
-		wireNotificationPreferences();
 	} );
 
 	function hide( id ) {
@@ -118,44 +120,6 @@
 				.catch( function () {
 					button.disabled = false;
 					show( 'dak-clinic-branding-error', 'Something went wrong. Please try again.' );
-				} );
-		} );
-	}
-
-	function wireNotificationPreferences() {
-		var saveButton = document.getElementById( 'dak-notification-preferences-save' );
-
-		if ( ! saveButton ) {
-			return;
-		}
-
-		saveButton.addEventListener( 'click', function () {
-			hide( 'dak-notification-preferences-error' );
-			hide( 'dak-notification-preferences-success' );
-			saveButton.disabled = true;
-
-			var formData = new FormData();
-			formData.append( 'action', 'doctor_ak_admin_notification_preferences_save' );
-			formData.append( 'nonce', window.dakClinicBranding.nonce );
-			formData.append( 'booking', document.getElementById( 'dak-notify-booking' ).checked ? '1' : '0' );
-			formData.append( 'paid', document.getElementById( 'dak-notify-paid' ).checked ? '1' : '0' );
-			formData.append( 'cancelled', document.getElementById( 'dak-notify-cancelled' ).checked ? '1' : '0' );
-
-			fetch( window.dakClinicBranding.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
-				.then( function ( response ) { return response.json(); } )
-				.then( function ( result ) {
-					saveButton.disabled = false;
-
-					if ( result.success ) {
-						show( 'dak-notification-preferences-success', ( result.data && result.data.message ) || 'Saved.' );
-						return;
-					}
-
-					show( 'dak-notification-preferences-error', ( result.data && result.data.message ) || 'Something went wrong. Please try again.' );
-				} )
-				.catch( function () {
-					saveButton.disabled = false;
-					show( 'dak-notification-preferences-error', 'Something went wrong. Please try again.' );
 				} );
 		} );
 	}

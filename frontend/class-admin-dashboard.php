@@ -101,7 +101,7 @@ class Admin_Dashboard {
 	 *
 	 * @var array
 	 */
-	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'billing', 'patients', 'doctors', 'clinic', 'doctor-sessions' );
+	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'billing', 'patients', 'doctors', 'clinic', 'doctor-sessions', 'settings' );
 
 	/**
 	 * Template loader.
@@ -254,6 +254,14 @@ class Admin_Dashboard {
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( Notification_Handler::NONCE_ACTION ),
 			)
+		);
+
+		wp_enqueue_script(
+			'doctor-ak-portal-notification-preferences',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-notification-preferences.js',
+			array( 'doctor-ak-portal-notifications' ),
+			Assets::version( 'assets/js/doctor-ak-notification-preferences.js' ),
+			true
 		);
 
 		if ( 'doctor-sessions' === self::requested_section() ) {
@@ -1167,17 +1175,33 @@ class Admin_Dashboard {
 		}
 
 		if ( 'settings' === $section ) {
+			$notify_preferences = Notifications::user_preferences( get_current_user_id() );
+			$settings_tab_html  = $this->template_loader->get_template(
+				'dashboard/partials/dashboard-settings-tab.php',
+				array(
+					'notify_booking'   => $notify_preferences['booking'],
+					'notify_paid'      => $notify_preferences['paid'],
+					'notify_cancelled' => $notify_preferences['cancelled'],
+				)
+			);
+
+			// Receptionists get the same cut-down Settings view as the
+			// Doctor/Patient dashboards (Appearance + their own Notification
+			// preferences) — Clinic Branding is global site config and stays
+			// Administrator-only, same as everything else RECEPTIONIST_ALLOWED_SECTIONS
+			// doesn't carve an exception for.
+			if ( self::is_receptionist() ) {
+				return '<div class="dak-dashboard-greeting"><h1>' . esc_html__( 'Settings', 'doctor-ak-portal' ) . '</h1><p>' . esc_html__( 'Appearance and your own notification preferences', 'doctor-ak-portal' ) . '</p></div><section class="dak-dashboard-card dak-dashboard-profile-form">' . $settings_tab_html . '</section>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- $settings_tab_html is dashboard-settings-tab.php output, which escapes its own output; the surrounding markup is static/escaped inline.
+			}
+
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-settings-section.php',
 				array(
-					'settings_tab_html' => $this->template_loader->get_template( 'dashboard/partials/dashboard-settings-tab.php' ),
+					'settings_tab_html' => $settings_tab_html,
 					'clinic_name'       => get_option( Site_Footer::OPTION_CLINIC_NAME, '' ),
 					'clinic_phone'      => get_option( Site_Footer::OPTION_CLINIC_PHONE, '' ),
 					'clinic_address'    => get_option( Site_Footer::OPTION_CLINIC_ADDRESS, '' ),
 					'clinic_logo_url'   => Site_Footer::bundled_logo_url(),
-					'notify_booking'    => Notifications::is_enabled( 'booking' ),
-					'notify_paid'       => Notifications::is_enabled( 'paid' ),
-					'notify_cancelled'  => Notifications::is_enabled( 'cancelled' ),
 				)
 			);
 		}

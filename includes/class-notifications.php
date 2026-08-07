@@ -106,6 +106,60 @@ class Notifications {
 	}
 
 	/**
+	 * Whether a specific account wants to receive a given notification
+	 * type's emails — a personal, per-account preference (Settings →
+	 * Notifications on the Admin/Doctor/Receptionist/Patient dashboards),
+	 * default on until that account explicitly turns it off. Only covers
+	 * 'booking'/'paid'/'cancelled' — the only three exposed as toggles —
+	 * since those are the only types sent to a specific patient/doctor
+	 * rather than a clinic-wide admin address. Guests (no account, no
+	 * `user_id`) always receive — there's nowhere to store their preference.
+	 *
+	 * @param int    $user_id WP user ID, or 0 for a guest.
+	 * @param string $type    'booking', 'paid', or 'cancelled'.
+	 * @return bool
+	 */
+	public static function user_wants( $user_id, $type ) {
+		if ( $user_id <= 0 ) {
+			return true;
+		}
+
+		$value = get_user_meta( $user_id, 'doctor_ak_notify_' . $type, true );
+
+		return '' === $value || '1' === $value;
+	}
+
+	/**
+	 * Saves an account's own notification preferences.
+	 *
+	 * @param int  $user_id   WP user ID.
+	 * @param bool $booking   Receive "appointment booked" emails.
+	 * @param bool $paid      Receive "payment received" emails.
+	 * @param bool $cancelled Receive "cancellation" emails.
+	 * @return void
+	 */
+	public static function save_user_preferences( $user_id, $booking, $paid, $cancelled ) {
+		update_user_meta( $user_id, 'doctor_ak_notify_booking', $booking ? '1' : '0' );
+		update_user_meta( $user_id, 'doctor_ak_notify_paid', $paid ? '1' : '0' );
+		update_user_meta( $user_id, 'doctor_ak_notify_cancelled', $cancelled ? '1' : '0' );
+	}
+
+	/**
+	 * An account's own notification preferences, for pre-filling the
+	 * Settings → Notifications toggles.
+	 *
+	 * @param int $user_id WP user ID.
+	 * @return array { booking: bool, paid: bool, cancelled: bool }
+	 */
+	public static function user_preferences( $user_id ) {
+		return array(
+			'booking'   => self::user_wants( $user_id, 'booking' ),
+			'paid'      => self::user_wants( $user_id, 'paid' ),
+			'cancelled' => self::user_wants( $user_id, 'cancelled' ),
+		);
+	}
+
+	/**
 	 * AJAX/hook callback: a new appointment was created.
 	 *
 	 * @param int   $appointment_id New appointment's post ID.
@@ -113,10 +167,6 @@ class Notifications {
 	 * @return void
 	 */
 	public function notify_created( $appointment_id, $data ) {
-		if ( ! self::is_enabled( 'booking' ) ) {
-			return;
-		}
-
 		$appt = Appointments::notification_data( $appointment_id );
 
 		if ( empty( $appt ) ) {
@@ -146,13 +196,15 @@ class Notifications {
 				$appt['doctor_name']
 			);
 
-		$this->send(
-			$appt['patient_email'],
-			$subject,
-			$has_pending_charge ? __( 'Your appointment is scheduled — payment pending', 'doctor-ak-portal' ) : __( 'Your appointment is confirmed', 'doctor-ak-portal' ),
-			$patient_intro,
-			$appt
-		);
+		if ( self::user_wants( $appt['patient_id'], 'booking' ) ) {
+			$this->send(
+				$appt['patient_email'],
+				$subject,
+				$has_pending_charge ? __( 'Your appointment is scheduled — payment pending', 'doctor-ak-portal' ) : __( 'Your appointment is confirmed', 'doctor-ak-portal' ),
+				$patient_intro,
+				$appt
+			);
+		}
 
 		$doctor_intro = $has_pending_charge
 			? sprintf(
@@ -166,13 +218,15 @@ class Notifications {
 				$appt['patient_name']
 			);
 
-		$this->send(
-			$appt['doctor_email'],
-			$subject,
-			__( 'New appointment booked', 'doctor-ak-portal' ),
-			$doctor_intro,
-			$appt
-		);
+		if ( self::user_wants( $appt['doctor_id'], 'booking' ) ) {
+			$this->send(
+				$appt['doctor_email'],
+				$subject,
+				__( 'New appointment booked', 'doctor-ak-portal' ),
+				$doctor_intro,
+				$appt
+			);
+		}
 	}
 
 	/**
@@ -182,10 +236,6 @@ class Notifications {
 	 * @return void
 	 */
 	public function notify_cancelled( $appointment_id ) {
-		if ( ! self::is_enabled( 'cancelled' ) ) {
-			return;
-		}
-
 		$appt = Appointments::notification_data( $appointment_id );
 
 		if ( empty( $appt ) ) {
@@ -194,29 +244,33 @@ class Notifications {
 
 		$subject = __( 'Appointment Cancelled', 'doctor-ak-portal' );
 
-		$this->send(
-			$appt['patient_email'],
-			$subject,
-			__( 'Your appointment was cancelled', 'doctor-ak-portal' ),
-			sprintf(
-				/* translators: %s: doctor's display name. */
-				__( 'Your appointment with Dr. %s has been cancelled.', 'doctor-ak-portal' ),
-				$appt['doctor_name']
-			),
-			$appt
-		);
+		if ( self::user_wants( $appt['patient_id'], 'cancelled' ) ) {
+			$this->send(
+				$appt['patient_email'],
+				$subject,
+				__( 'Your appointment was cancelled', 'doctor-ak-portal' ),
+				sprintf(
+					/* translators: %s: doctor's display name. */
+					__( 'Your appointment with Dr. %s has been cancelled.', 'doctor-ak-portal' ),
+					$appt['doctor_name']
+				),
+				$appt
+			);
+		}
 
-		$this->send(
-			$appt['doctor_email'],
-			$subject,
-			__( 'Appointment cancelled', 'doctor-ak-portal' ),
-			sprintf(
-				/* translators: %s: patient's display name. */
-				__( 'Your appointment with %s has been cancelled.', 'doctor-ak-portal' ),
-				$appt['patient_name']
-			),
-			$appt
-		);
+		if ( self::user_wants( $appt['doctor_id'], 'cancelled' ) ) {
+			$this->send(
+				$appt['doctor_email'],
+				$subject,
+				__( 'Appointment cancelled', 'doctor-ak-portal' ),
+				sprintf(
+					/* translators: %s: patient's display name. */
+					__( 'Your appointment with %s has been cancelled.', 'doctor-ak-portal' ),
+					$appt['patient_name']
+				),
+				$appt
+			);
+		}
 	}
 
 	/**
@@ -270,29 +324,29 @@ class Notifications {
 	 * @return void
 	 */
 	public function notify_paid( $appointment_id ) {
-		if ( ! self::is_enabled( 'paid' ) ) {
-			return;
-		}
-
 		$appt = Appointments::notification_data( $appointment_id );
 
 		if ( empty( $appt ) ) {
 			return;
 		}
 
-		$this->send_invoice( $appt['patient_email'], $appt );
+		if ( self::user_wants( $appt['patient_id'], 'paid' ) ) {
+			$this->send_invoice( $appt['patient_email'], $appt );
+		}
 
-		$this->send(
-			$appt['doctor_email'],
-			__( 'Payment Received', 'doctor-ak-portal' ),
-			__( 'Appointment paid', 'doctor-ak-portal' ),
-			sprintf(
-				/* translators: %s: patient's display name. */
-				__( '%s has paid for their appointment.', 'doctor-ak-portal' ),
-				$appt['patient_name']
-			),
-			$appt
-		);
+		if ( self::user_wants( $appt['doctor_id'], 'paid' ) ) {
+			$this->send(
+				$appt['doctor_email'],
+				__( 'Payment Received', 'doctor-ak-portal' ),
+				__( 'Appointment paid', 'doctor-ak-portal' ),
+				sprintf(
+					/* translators: %s: patient's display name. */
+					__( '%s has paid for their appointment.', 'doctor-ak-portal' ),
+					$appt['patient_name']
+				),
+				$appt
+			);
+		}
 	}
 
 	/**

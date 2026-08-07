@@ -10,6 +10,7 @@
 namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Notification_Center;
+use DoctorAKPortal\Includes\Notifications;
 use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
 
@@ -76,6 +77,35 @@ class Notification_Handler {
 		Notification_Center::mark_all_read( get_current_user_id() );
 
 		wp_send_json_success();
+	}
+
+	/**
+	 * AJAX handler: saves the logged-in account's own notification email
+	 * preferences (Settings → Notifications) — whether *they* personally
+	 * receive "appointment booked"/"payment received"/"cancelled" emails
+	 * for appointments involving them. Every account (Admin/Doctor/
+	 * Receptionist/Patient) can only ever change its own preference; see
+	 * Notifications::save_user_preferences().
+	 *
+	 * @return void
+	 */
+	public function handle_save_preferences() {
+		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( array( 'message' => __( 'You must be logged in.', 'doctor-ak-portal' ) ), 401 );
+		}
+
+		Notifications::save_user_preferences(
+			get_current_user_id(),
+			isset( $_POST['booking'] ) && '1' === $_POST['booking'],
+			isset( $_POST['paid'] ) && '1' === $_POST['paid'],
+			isset( $_POST['cancelled'] ) && '1' === $_POST['cancelled']
+		);
+
+		wp_send_json_success( array( 'message' => __( 'Notification preferences saved.', 'doctor-ak-portal' ) ) );
 	}
 
 	/**

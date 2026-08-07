@@ -6,7 +6,7 @@
  *
  * @var string[] $doctors_html    Pre-rendered directory/doctor-card.php output, one per doctor.
  * @var string[] $specializations Specialization slug => label (falls back to the slug itself for custom, non-canonical specializations), only those at least one listed doctor has.
- * @var string[] $clinics         Distinct physical clinic names across every listed doctor.
+ * @var string[] $clinics         Distinct physical clinic name => its area slug (may be '' if unset) — the area slug lets the Clinic filter narrow down to the selected Area, see assets/js/doctor-ak-directory.js.
  */
 
 // Prevent direct file access.
@@ -42,8 +42,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<?php if ( ! empty( $clinics ) ) : ?>
 				<select id="dak-directory-clinic-filter" aria-label="<?php esc_attr_e( 'Filter by clinic', 'doctor-ak-portal' ); ?>">
 					<option value=""><?php esc_html_e( 'All clinics', 'doctor-ak-portal' ); ?></option>
-					<?php foreach ( $clinics as $label ) : ?>
-						<option value="<?php echo esc_attr( mb_strtolower( $label ) ); ?>"><?php echo esc_html( $label ); ?></option>
+					<?php foreach ( $clinics as $label => $area ) : ?>
+						<option value="<?php echo esc_attr( mb_strtolower( $label ) ); ?>" data-area="<?php echo esc_attr( $area ); ?>"><?php echo esc_html( $label ); ?></option>
 					<?php endforeach; ?>
 				</select>
 			<?php endif; ?>

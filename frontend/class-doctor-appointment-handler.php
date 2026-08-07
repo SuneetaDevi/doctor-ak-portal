@@ -54,8 +54,10 @@ class Doctor_Appointment_Handler {
 
 		$appointment_id = isset( $_POST['appointment_id'] ) ? absint( wp_unslash( $_POST['appointment_id'] ) ) : 0;
 
-		if ( ! Appointments::mark_completed( $appointment_id, get_current_user_id() ) ) {
-			wp_send_json_error( array( 'message' => __( 'That appointment could not be found or marked completed.', 'doctor-ak-portal' ) ) );
+		$result = Appointments::mark_completed( $appointment_id, get_current_user_id() );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
 		}
 
 		wp_send_json_success( array( 'message' => __( 'Appointment marked as completed.', 'doctor-ak-portal' ) ) );

@@ -2,16 +2,14 @@
 /**
  * AJAX handlers backing the admin dashboard's "Settings" section — the
  * "Clinic branding" card (front-end equivalent of wp-admin's Settings →
- * Footer Settings) and the "Notifications" preferences card (front-end
- * equivalent of wp-admin's Settings → Notification Settings), for admins who
- * manage the site entirely from the [admin_dashboard] shortcode.
+ * Footer Settings), for admins who manage the site entirely from the
+ * [admin_dashboard] shortcode. (Notification email preferences are a
+ * separate, per-account concern — see Notification_Handler::handle_save_preferences().)
  *
  * @package DoctorAKPortal\Frontend
  */
 
 namespace DoctorAKPortal\Frontend;
-
-use DoctorAKPortal\Includes\Notifications;
 
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -114,32 +112,4 @@ class Clinic_Branding_Handler {
 		);
 	}
 
-	/**
-	 * AJAX handler: saves which notification emails the clinic sends.
-	 * Mirrors wp-admin's Settings → Notification Settings page, but for
-	 * admins working entirely from the front-end dashboard.
-	 *
-	 * @return void
-	 */
-	public function handle_save_notification_preferences() {
-		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
-			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
-		}
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => __( 'You do not have permission to do that.', 'doctor-ak-portal' ) ), 403 );
-		}
-
-		$option_map = array(
-			'booking'   => Notifications::OPTION_NOTIFY_BOOKING,
-			'paid'      => Notifications::OPTION_NOTIFY_PAID,
-			'cancelled' => Notifications::OPTION_NOTIFY_CANCELLED,
-		);
-
-		foreach ( $option_map as $field => $option_name ) {
-			update_option( $option_name, isset( $_POST[ $field ] ) && '1' === $_POST[ $field ] ? '1' : '0' );
-		}
-
-		wp_send_json_success( array( 'message' => __( 'Notification preferences saved.', 'doctor-ak-portal' ) ) );
-	}
 }

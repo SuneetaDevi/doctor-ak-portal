@@ -120,13 +120,15 @@ class Doctors_Directory {
 				$used_specializations[ $slug ] = isset( $all_specializations[ $slug ] ) ? $all_specializations[ $slug ] : $slug;
 			}
 
-			foreach ( $card['clinic_labels'] as $label ) {
-				$used_clinics[ $label ] = $label;
+			foreach ( $card['clinic_areas'] as $label => $area ) {
+				if ( ! isset( $used_clinics[ $label ] ) || '' === $used_clinics[ $label ] ) {
+					$used_clinics[ $label ] = $area;
+				}
 			}
 		}
 
 		asort( $used_specializations );
-		asort( $used_clinics );
+		ksort( $used_clinics );
 
 		// Country/City/Area are rendered as empty <select>s and populated/
 		// cascaded client-side from the full admin-managed Locations list
@@ -205,6 +207,7 @@ class Doctors_Directory {
 		$primary_clinic_location = '';
 		$extra_clinic_count      = 0;
 		$clinic_labels           = array();
+		$clinic_areas            = array();
 		$country_slugs           = array();
 		$city_slugs              = array();
 		$area_slugs              = array();
@@ -222,6 +225,14 @@ class Doctors_Directory {
 
 			if ( '' !== $clinic['name'] ) {
 				$clinic_labels[] = $clinic['name'];
+
+				// Directory filter bar: lets the Clinic <select> narrow down
+				// to only clinics in the selected Area (see doctors-directory.php
+				// / doctor-ak-directory.js). Keeps the first area seen for a
+				// given clinic name if it somehow appears more than once.
+				if ( ! isset( $clinic_areas[ $clinic['name'] ] ) ) {
+					$clinic_areas[ $clinic['name'] ] = $clinic['area'];
+				}
 			}
 
 			if ( '' !== $clinic['country'] ) {
@@ -279,6 +290,7 @@ class Doctors_Directory {
 			'city_slugs'            => $city_slugs,
 			'area_slugs'            => $area_slugs,
 			'clinic_labels'         => $clinic_labels,
+			'clinic_areas'          => $clinic_areas,
 			'is_available'          => $is_available,
 			'video_consultation'    => Clinics::doctor_has_active_video_clinic( $doctor->ID ),
 			'profile_url'           => add_query_arg( 'doctor_id', $doctor->ID, Page_Finder::url_for_shortcode( 'doctor_profile_view' ) ),

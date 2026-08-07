@@ -11,6 +11,7 @@ use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Swich_Payment;
+use DoctorAKPortal\Includes\Video_Pricing;
 
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -57,6 +58,39 @@ class Booking_Handler {
 		}
 
 		wp_send_json_success( array( 'slots' => Appointments::slot_statuses_for_date( $doctor_id, $type, $date ) ) );
+	}
+
+	/**
+	 * AJAX handler: a doctor's current cancellation-refund window (and other
+	 * booking-rule settings), fetched fresh whenever a doctor is selected on
+	 * the booking page — rather than relying only on the copy baked into the
+	 * page's initial `wp_localize_script` output, which a full-page cache
+	 * (common on a public, logged-out-accessible page like this one) can
+	 * easily serve stale for a while after an admin/doctor changes it.
+	 * Public (guests book too).
+	 *
+	 * @return void
+	 */
+	public function handle_get_booking_rules() {
+		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$doctor_id = isset( $_POST['doctor_id'] ) ? absint( $_POST['doctor_id'] ) : 0;
+
+		if ( $doctor_id <= 0 ) {
+			wp_send_json_error( array( 'message' => __( 'Please choose a doctor.', 'doctor-ak-portal' ) ) );
+		}
+
+		$settings = Video_Pricing::get_for_doctor( $doctor_id );
+
+		wp_send_json_success(
+			array(
+				'instant_lead_hours'  => $settings['instant_lead_hours'],
+				'instant_surcharge'   => $settings['instant_surcharge'],
+				'cancel_refund_hours' => $settings['cancel_refund_hours'],
+			)
+		);
 	}
 
 	/**

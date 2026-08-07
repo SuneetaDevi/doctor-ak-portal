@@ -383,6 +383,14 @@ class Appointments {
 		$payment_status = isset( $data['payment_status'] ) && self::PAYMENT_STATUS_PAID === $data['payment_status'] ? self::PAYMENT_STATUS_PAID : self::PAYMENT_STATUS_PENDING;
 		$payment_mode   = isset( $data['payment_mode'] ) && self::PAYMENT_MODE_ONLINE === $data['payment_mode'] ? self::PAYMENT_MODE_ONLINE : self::PAYMENT_MODE_MANUAL;
 
+		// "Completed" is meant to imply the visit happened and was paid for
+		// (see mark_completed()) — an admin can't set both Completed and
+		// Payment Pending at once for a chargeable appointment either. A
+		// free ($0) appointment has nothing to collect, so it's exempt.
+		if ( self::STATUS_COMPLETED === $status && $charge > 0 && self::PAYMENT_STATUS_PAID !== $payment_status ) {
+			return new \WP_Error( 'doctor_ak_appointment_payment_pending', __( 'This appointment still has a pending payment — mark it paid before completing it.', 'doctor-ak-portal' ) );
+		}
+
 		wp_update_post(
 			array(
 				'ID'          => $appointment_id,
@@ -1722,13 +1730,18 @@ class Appointments {
 	 * the doctor dashboard's "Mark as Completed" action. Ownership-checked
 	 * (only the doctor it belongs to can complete it this way; admin
 	 * completion would go through Appointments::update() instead), and only
-	 * allowed from 'confirmed' (booked), 'paid', or 'rescheduled' — a
-	 * pending-payment or already-cancelled appointment was never actually
-	 * seen, so there's nothing to complete.
+	 * allowed from 'confirmed' (booked), 'paid', or 'rescheduled' — an
+	 * already-pending-payment-status or already-cancelled appointment was
+	 * never actually seen, so there's nothing to complete. A chargeable
+	 * appointment whose payment is still pending can't be completed either —
+	 * "completed" is meant to imply the visit happened and was paid for, and
+	 * a doctor accidentally completing (and thus losing track of) an unpaid
+	 * visit was a real gap; a free ($0) appointment has nothing to collect,
+	 * so it's exempt from this check.
 	 *
 	 * @param int $appointment_id Appointment post ID.
 	 * @param int $doctor_id      Doctor's user ID, must match the appointment's doctor.
-	 * @return bool
+	 * @return true|\WP_Error
 	 */
 	public static function mark_completed( $appointment_id, $doctor_id ) {
 		$appointment = self::get( $appointment_id );
@@ -1737,7 +1750,11 @@ class Appointments {
 			|| (int) $appointment['doctor_id'] !== (int) $doctor_id
 			|| ! in_array( $appointment['status'], array( self::STATUS_CONFIRMED, self::STATUS_PAID, self::STATUS_RESCHEDULED ), true )
 		) {
-			return false;
+			return new \WP_Error( 'doctor_ak_appointment_not_completable', __( 'That appointment could not be found or marked completed.', 'doctor-ak-portal' ) );
+		}
+
+		if ( (float) $appointment['charge'] > 0 && self::PAYMENT_STATUS_PAID !== $appointment['payment_status'] ) {
+			return new \WP_Error( 'doctor_ak_appointment_payment_pending', __( 'This appointment still has a pending payment — mark it paid before completing it.', 'doctor-ak-portal' ) );
 		}
 
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_COMPLETED );
@@ -1787,12 +1804,22 @@ class Appointments {
 				continue;
 			}
 
-			if ( $now > $start + self::AUTO_COMPLETE_HOURS_AFTER * HOUR_IN_SECONDS ) {
-				update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_COMPLETED );
-
-				/** This action is documented in mark_completed() above. */
-				do_action( 'doctor_ak_appointment_completed', $appointment_id );
+			if ( $now <= $start + self::AUTO_COMPLETE_HOURS_AFTER * HOUR_IN_SECONDS ) {
+				continue;
 			}
+
+			// Same rule as mark_completed(): a chargeable appointment with a
+			// still-pending payment never auto-completes — it stays
+			// 'confirmed' until the payment clears (or a doctor completes it
+			// manually once it's paid), so "completed" keeps meaning "paid".
+			if ( (float) $appointment['charge'] > 0 && self::PAYMENT_STATUS_PAID !== $appointment['payment_status'] ) {
+				continue;
+			}
+
+			update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_COMPLETED );
+
+			/** This action is documented in mark_completed() above. */
+			do_action( 'doctor_ak_appointment_completed', $appointment_id );
 		}
 	}
 
