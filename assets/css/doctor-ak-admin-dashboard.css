@@ -703,3 +703,115 @@
 		flex-basis: 100% !important;
 	}
 }
+
+/* Dashboard overview — Revenue trend + Appointments-by-status charts
+   (see templates/dashboard/partials/admin-overview.php). Plain inline SVG
+   for the line chart and CSS bars for the status chart — no charting
+   library, so these stay theme-aware (light/dark) for free via the same
+   --dak-* custom properties every other card already uses. */
+
+.dak-dashboard-grid-charts {
+	align-items: start !important;
+}
+
+.dak-chart-svg {
+	display: block !important;
+	width: 100% !important;
+	height: auto !important;
+	overflow: visible !important;
+}
+
+.dak-chart-gridline {
+	stroke: var( --dak-border ) !important;
+	stroke-width: 1 !important;
+	shape-rendering: crispEdges !important;
+}
+
+.dak-chart-axis-label {
+	fill: var( --dak-muted ) !important;
+	font-size: 10px !important;
+	font-family: inherit !important;
+}
+
+.dak-chart-area {
+	fill: var( --dak-primary ) !important;
+	fill-opacity: 0.1 !important;
+	stroke: none !important;
+}
+
+.dak-chart-line {
+	fill: none !important;
+	stroke: var( --dak-primary ) !important;
+	stroke-width: 2 !important;
+	stroke-linejoin: round !important;
+	stroke-linecap: round !important;
+}
+
+.dak-chart-dot {
+	fill: var( --dak-primary ) !important;
+	stroke: var( --dak-bg-card ) !important;
+	stroke-width: 2 !important;
+}
+
+.dak-chart-hit {
+	fill: transparent !important;
+}
+
+.dak-chart-hit:hover + .dak-chart-dot,
+.dak-chart-dot:hover {
+	fill: var( --dak-primary-dark ) !important;
+}
+
+.dak-chart-bars {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.85rem !important;
+}
+
+.dak-chart-bar-row {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.75rem !important;
+}
+
+.dak-chart-bar-label {
+	flex: 0 0 128px !important;
+	font-size: 0.85rem !important;
+	color: var( --dak-text ) !important;
+	white-space: nowrap !important;
+	overflow: hidden !important;
+	text-overflow: ellipsis !important;
+}
+
+.dak-chart-bar-track {
+	flex: 1 1 auto !important;
+	display: block !important;
+	height: 14px !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+	overflow: hidden !important;
+}
+
+.dak-chart-bar-fill {
+	display: block !important;
+	height: 100% !important;
+	min-width: 3px !important;
+	border-radius: 0 4px 4px 0 !important;
+	transition: width 0.3s ease !important;
+}
+
+.dak-chart-bar-value {
+	flex: 0 0 auto !important;
+	width: 2.25rem !important;
+	text-align: right !important;
+	font-weight: 700 !important;
+	font-size: 0.85rem !important;
+	color: var( --dak-text ) !important;
+	font-variant-numeric: tabular-nums !important;
+}
+
+@media ( max-width: 600px ) {
+	.dak-chart-bar-label {
+		flex-basis: 96px !important;
+	}
+}

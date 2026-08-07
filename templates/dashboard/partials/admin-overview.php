@@ -16,6 +16,8 @@
  * @var int    $pending_doctors_count Count of doctor accounts awaiting approval.
  * @var array  $pending_doctors      Up to 3 pending doctor rows, see Admin_Dashboard::row_data().
  * @var array  $latest_appointments  Up to 6 upcoming appointment rows, see Appointments::admin_row_data(), soonest first.
+ * @var array  $revenue_chart        Last 14 days' paid revenue, see Appointments::revenue_by_day().
+ * @var array  $status_chart         Appointment counts by status, see Appointments::status_counts().
  * @var string $clinic_name          Clinic name (Settings → Footer Settings).
  * @var string $clinic_address       Clinic address (Settings → Footer Settings).
  * @var string $appointments_url     URL of the Appointments section ("View all" link).
@@ -103,6 +105,104 @@ endif;
 	</div>
 </section>
 
+<div class="dak-dashboard-grid dak-dashboard-grid-charts">
+	<section class="dak-dashboard-card">
+		<div class="dak-dashboard-card-header">
+			<div>
+				<h2><?php esc_html_e( 'Revenue', 'doctor-ak-portal' ); ?></h2>
+				<p class="dak-notifications-card-subtitle"><?php esc_html_e( 'Last 14 days, paid appointments', 'doctor-ak-portal' ); ?></p>
+			</div>
+		</div>
+		<?php
+		$dak_revenue_totals = wp_list_pluck( $revenue_chart, 'total' );
+		$dak_revenue_max    = max( 1.0, max( $dak_revenue_totals ) );
+		$dak_revenue_scale  = pow( 10, floor( log10( $dak_revenue_max ) ) );
+		$dak_revenue_max    = ceil( $dak_revenue_max / $dak_revenue_scale ) * $dak_revenue_scale;
+
+		$dak_chart_w   = 640;
+		$dak_chart_h   = 200;
+		$dak_pad_left  = 58;
+		$dak_pad_right = 12;
+		$dak_pad_top   = 16;
+		$dak_pad_bot   = 30;
+		$dak_plot_w    = $dak_chart_w - $dak_pad_left - $dak_pad_right;
+		$dak_plot_h    = $dak_chart_h - $dak_pad_top - $dak_pad_bot;
+		$dak_count     = count( $revenue_chart );
+
+		$dak_points = array();
+
+		foreach ( array_values( $revenue_chart ) as $dak_i => $dak_point ) {
+			$dak_points[] = array(
+				'x'     => round( $dak_pad_left + ( $dak_count > 1 ? ( $dak_i / ( $dak_count - 1 ) ) * $dak_plot_w : $dak_plot_w / 2 ), 1 ),
+				'y'     => round( $dak_pad_top + $dak_plot_h - ( $dak_point['total'] / $dak_revenue_max ) * $dak_plot_h, 1 ),
+				'total' => $dak_point['total'],
+				'label' => $dak_point['label'],
+			);
+		}
+
+		$dak_line_d = '';
+
+		foreach ( $dak_points as $dak_i => $dak_p ) {
+			$dak_line_d .= ( 0 === $dak_i ? 'M' : 'L' ) . $dak_p['x'] . ' ' . $dak_p['y'] . ' ';
+		}
+
+		$dak_baseline_y = $dak_pad_top + $dak_plot_h;
+		$dak_area_d     = $dak_line_d . 'L' . end( $dak_points )['x'] . ' ' . $dak_baseline_y . ' L' . $dak_points[0]['x'] . ' ' . $dak_baseline_y . ' Z';
+		?>
+		<svg class="dak-chart-svg" viewBox="0 0 <?php echo esc_attr( $dak_chart_w ); ?> <?php echo esc_attr( $dak_chart_h ); ?>" role="img" aria-label="<?php esc_attr_e( 'Line chart of daily paid revenue over the last 14 days', 'doctor-ak-portal' ); ?>">
+			<?php foreach ( array( 0, 0.5, 1 ) as $dak_fraction ) : ?>
+				<?php $dak_gy = round( $dak_pad_top + $dak_plot_h * ( 1 - $dak_fraction ), 1 ); ?>
+				<line class="dak-chart-gridline" x1="<?php echo esc_attr( $dak_pad_left ); ?>" y1="<?php echo esc_attr( $dak_gy ); ?>" x2="<?php echo esc_attr( $dak_chart_w - $dak_pad_right ); ?>" y2="<?php echo esc_attr( $dak_gy ); ?>"></line>
+				<text class="dak-chart-axis-label" x="<?php echo esc_attr( $dak_pad_left - 8 ); ?>" y="<?php echo esc_attr( $dak_gy + 4 ); ?>" text-anchor="end">PKR <?php echo esc_html( number_format_i18n( $dak_revenue_max * $dak_fraction ) ); ?></text>
+			<?php endforeach; ?>
+
+			<path class="dak-chart-area" d="<?php echo esc_attr( $dak_area_d ); ?>"></path>
+			<path class="dak-chart-line" d="<?php echo esc_attr( trim( $dak_line_d ) ); ?>"></path>
+
+			<?php foreach ( $dak_points as $dak_i => $dak_p ) : ?>
+				<?php $dak_show_label = 0 === $dak_i % 3 || $dak_i === $dak_count - 1; ?>
+				<?php if ( $dak_show_label ) : ?>
+					<text class="dak-chart-axis-label" x="<?php echo esc_attr( $dak_p['x'] ); ?>" y="<?php echo esc_attr( $dak_chart_h - 6 ); ?>" text-anchor="middle"><?php echo esc_html( $dak_p['label'] ); ?></text>
+				<?php endif; ?>
+				<circle class="dak-chart-hit" cx="<?php echo esc_attr( $dak_p['x'] ); ?>" cy="<?php echo esc_attr( $dak_p['y'] ); ?>" r="8"><title><?php echo esc_html( $dak_p['label'] . ': PKR ' . number_format_i18n( $dak_p['total'] ) ); ?></title></circle>
+				<circle class="dak-chart-dot" cx="<?php echo esc_attr( $dak_p['x'] ); ?>" cy="<?php echo esc_attr( $dak_p['y'] ); ?>" r="3"></circle>
+			<?php endforeach; ?>
+		</svg>
+	</section>
+
+	<section class="dak-dashboard-card">
+		<div class="dak-dashboard-card-header">
+			<div>
+				<h2><?php esc_html_e( 'Appointments by status', 'doctor-ak-portal' ); ?></h2>
+				<p class="dak-notifications-card-subtitle"><?php esc_html_e( 'All appointments on file', 'doctor-ak-portal' ); ?></p>
+			</div>
+		</div>
+		<?php
+		$dak_status_color_vars = array(
+			'is-active'      => 'var(--dak-tint-success-text)',
+			'is-pending'     => 'var(--dak-tint-amber-text)',
+			'is-disabled'    => 'var(--dak-tint-danger-text)',
+			'is-rescheduled' => 'var(--dak-tint-info-text)',
+		);
+		$dak_status_max = max( 1, max( wp_list_pluck( $status_chart, 'count' ) ) );
+		?>
+		<div class="dak-chart-bars">
+			<?php foreach ( $status_chart as $dak_status_row ) : ?>
+				<div class="dak-chart-bar-row">
+					<span class="dak-chart-bar-label"><?php echo esc_html( $dak_status_row['label'] ); ?></span>
+					<span class="dak-chart-bar-track">
+						<span
+							class="dak-chart-bar-fill"
+							style="width: <?php echo esc_attr( round( $dak_status_row['count'] / $dak_status_max * 100, 1 ) ); ?>%; background: <?php echo esc_attr( isset( $dak_status_color_vars[ $dak_status_row['badge_class'] ] ) ? $dak_status_color_vars[ $dak_status_row['badge_class'] ] : 'var(--dak-muted)' ); ?>;"
+						></span>
+					</span>
+					<span class="dak-chart-bar-value"><?php echo esc_html( number_format_i18n( $dak_status_row['count'] ) ); ?></span>
+				</div>
+			<?php endforeach; ?>
+		</div>
+	</section>
+</div>
+
 <div class="dak-dashboard-grid dak-dashboard-grid-lists">
 	<section class="dak-dashboard-card">
 		<div class="dak-dashboard-card-header">
@@ -158,6 +258,16 @@ endif;
 								</span>
 							<?php endif; ?>
 						</div>
+						<?php if ( ! $dak_row['is_paid'] || ! empty( $dak_row['video_call']['can_join'] ) ) : ?>
+							<div class="dak-patient-appt-row-actions">
+								<?php if ( ! empty( $dak_row['video_call']['can_join'] ) ) : ?>
+									<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $dak_row['video_call']['room_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></a>
+								<?php endif; ?>
+								<?php if ( ! $dak_row['is_paid'] ) : ?>
+									<button type="button" class="dak-status-pill dak-status-pill-action" data-admin-appointment-mark-paid data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>" title="<?php esc_attr_e( 'Mark this appointment as paid', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Mark Paid', 'doctor-ak-portal' ); ?></button>
+								<?php endif; ?>
+							</div>
+						<?php endif; ?>
 					</div>
 				</div>
 			<?php endforeach; ?>

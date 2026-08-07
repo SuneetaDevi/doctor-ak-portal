@@ -12,11 +12,21 @@
 	var servicesByDoctorAndType = {};
 
 	document.addEventListener( 'DOMContentLoaded', function () {
+		if ( ! window.dakAdminAppointments ) {
+			return;
+		}
+
+		// Mark Paid is a standalone action (no modal involved), so it's
+		// wired up wherever an appointment row/pill appears with this
+		// script loaded — not just the Appointments section's own table,
+		// but also the Dashboard overview's "Latest appointments" widget.
+		wireMarkPaid();
+
 		var modal = document.getElementById( 'dak-admin-appointment-modal' );
 		var viewModal = document.getElementById( 'dak-admin-appointment-view-modal' );
 		var refundModal = document.getElementById( 'dak-admin-process-refund-modal' );
 
-		if ( ! modal || ! viewModal || ! window.dakAdminAppointments ) {
+		if ( ! modal || ! viewModal ) {
 			return;
 		}
 
@@ -35,7 +45,6 @@
 		wireView( viewModal );
 		wireSave( modal );
 		wireDelete();
-		wireMarkPaid();
 
 		if ( refundModal ) {
 			wireModalClose( refundModal, 'dak-admin-process-refund-modal-close' );

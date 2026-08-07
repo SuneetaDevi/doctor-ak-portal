@@ -531,6 +531,29 @@ class Admin_Dashboard {
 			);
 		}
 
+		// Dashboard overview's "Latest appointments" widget only needs the
+		// standalone Mark Paid action (see doctor-ak-admin-appointments.js),
+		// not the full Add/Edit/View/Refund modal machinery the Appointments
+		// section above enqueues its extra CSS for.
+		if ( 'dashboard' === self::requested_section() ) {
+			wp_enqueue_script(
+				'doctor-ak-portal-admin-appointments',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-appointments.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-admin-appointments.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-admin-appointments',
+				'dakAdminAppointments',
+				array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+				)
+			);
+		}
+
 		if ( 'encounters' === self::requested_section() ) {
 			wp_enqueue_script(
 				'doctor-ak-portal-admin-encounters',
@@ -1395,6 +1418,8 @@ class Admin_Dashboard {
 			'pending_doctors_count' => self::pending_doctors_count(),
 			'pending_doctors'      => array_slice( $this->pending_doctors(), 0, 3 ),
 			'latest_appointments'  => $latest_appointments,
+			'revenue_chart'        => Appointments::revenue_by_day( 14 ),
+			'status_chart'         => Appointments::status_counts(),
 			'clinic_name'          => get_option( Site_Footer::OPTION_CLINIC_NAME, 'Main Clinic' ),
 			'clinic_address'       => get_option( Site_Footer::OPTION_CLINIC_ADDRESS, '' ),
 			'appointments_url'     => $dashboard_url ? add_query_arg( 'section', 'appointments', $dashboard_url ) : '',

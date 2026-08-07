@@ -2179,6 +2179,82 @@ class Appointments {
 	}
 
 	/**
+	 * Daily paid revenue for the last $days days (today inclusive) — for the
+	 * admin Dashboard overview's revenue trend chart. Every day in the
+	 * range is present (0 where nothing was paid that day), so the chart
+	 * never has to interpolate a gap.
+	 *
+	 * @param int $days How many days back to include (today counts as one).
+	 * @return array List of `array( 'date', 'label', 'total' )`, oldest first.
+	 */
+	public static function revenue_by_day( $days = 14 ) {
+		$today = current_time( 'Y-m-d' ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- building a local-date range, not doing UTC math.
+		$from  = gmdate( 'Y-m-d', strtotime( $today . " -{$days} days" ) );
+
+		$paid = self::all_for_admin(
+			array(
+				'date_from'      => $from,
+				'date_to'        => $today,
+				'payment_status' => self::PAYMENT_STATUS_PAID,
+			)
+		);
+
+		$totals = array();
+
+		for ( $i = $days - 1; $i >= 0; $i-- ) {
+			$totals[ gmdate( 'Y-m-d', strtotime( $today . " -{$i} days" ) ) ] = 0.0;
+		}
+
+		foreach ( $paid as $row ) {
+			if ( isset( $totals[ $row['date'] ] ) ) {
+				$totals[ $row['date'] ] += (float) $row['charge'];
+			}
+		}
+
+		$rows = array();
+
+		foreach ( $totals as $date => $total ) {
+			$rows[] = array(
+				'date'  => $date,
+				'label' => date_i18n( 'M j', strtotime( $date ) ),
+				'total' => $total,
+			);
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * How many appointments currently sit in each status — for the admin
+	 * Dashboard overview's "Appointments by status" chart. Every status
+	 * appears (0 if unused), in status_options()' order, colored with the
+	 * same badge class already used for that status's pill everywhere else
+	 * in the dashboard (see status_badge_class()) for visual consistency.
+	 *
+	 * @return array List of `array( 'status', 'label', 'count', 'badge_class' )`.
+	 */
+	public static function status_counts() {
+		$counts = array();
+
+		foreach ( self::status_options() as $slug => $label ) {
+			$counts[ $slug ] = array(
+				'status'      => $slug,
+				'label'       => $label,
+				'count'       => 0,
+				'badge_class' => self::status_badge_class( $slug ),
+			);
+		}
+
+		foreach ( self::all_for_admin() as $row ) {
+			if ( isset( $counts[ $row['status'] ] ) ) {
+				++$counts[ $row['status'] ]['count'];
+			}
+		}
+
+		return array_values( $counts );
+	}
+
+	/**
 	 * Builds a single admin table row from an appointment array — resolves
 	 * the doctor's name and adds human-readable labels for type/status.
 	 *
