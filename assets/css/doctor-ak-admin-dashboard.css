@@ -711,7 +711,20 @@
    --dak-* custom properties every other card already uses. */
 
 .dak-dashboard-grid-charts {
-	align-items: start !important;
+	align-items: stretch !important;
+}
+
+.dak-dashboard-grid-charts > .dak-dashboard-card {
+	display: flex !important;
+	flex-direction: column !important;
+}
+
+/* Lets the shorter "Appointments by status" bar list vertically center
+   itself in the extra space once both cards are stretched to equal height,
+   instead of leaving it pinned to the top with a large empty gap below. */
+.dak-dashboard-grid-charts > .dak-dashboard-card > .dak-chart-bars {
+	flex: 1 1 auto !important;
+	justify-content: center !important;
 }
 
 .dak-chart-svg {
