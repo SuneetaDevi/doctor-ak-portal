@@ -44,7 +44,8 @@ class Appointment_Handler {
 	const INVOICE_NONCE_ACTION = 'doctor_ak_admin_invoice_download';
 
 	/**
-	 * AJAX handler: admin creates/updates an appointment.
+	 * AJAX handler: admin (or a Receptionist with doctor_ak_manage_appointments)
+	 * creates/updates an appointment.
 	 *
 	 * @return void
 	 */
@@ -53,7 +54,7 @@ class Appointment_Handler {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'doctor_ak_manage_appointments' ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
@@ -133,7 +134,52 @@ class Appointment_Handler {
 	}
 
 	/**
-	 * AJAX handler: admin deletes an appointment.
+	 * AJAX handler: returns the real Swich payment-gateway URL for an
+	 * online-mode, pending-payment appointment — the same URL a patient
+	 * would use from their own dashboard's "Pay Now" (see
+	 * Patient_Appointment_Handler::handle_pay_now()), for a Receptionist/
+	 * Administrator to complete on the patient's behalf (e.g. over the
+	 * phone, or in person at reception). Allowed for the same narrow
+	 * "front-desk" audience as handle_mark_paid().
+	 *
+	 * @return void
+	 */
+	public function handle_pay_now() {
+		if ( ! check_ajax_referer( Admin_Dashboard::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'doctor_ak_manage_payments' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$appointment_id = isset( $_POST['appointment_id'] ) ? absint( wp_unslash( $_POST['appointment_id'] ) ) : 0;
+		$appointment    = $appointment_id > 0 ? Appointments::find( $appointment_id ) : null;
+
+		if ( empty( $appointment ) ) {
+			wp_send_json_error( array( 'message' => __( 'That appointment no longer exists.', 'doctor-ak-portal' ) ) );
+		}
+
+		if ( Appointments::PAYMENT_STATUS_PAID === $appointment['payment_status'] ) {
+			wp_send_json_error( array( 'message' => __( 'This appointment is already paid.', 'doctor-ak-portal' ) ) );
+		}
+
+		if ( (float) $appointment['charge'] <= 0 ) {
+			wp_send_json_error( array( 'message' => __( 'There is nothing to pay for this appointment.', 'doctor-ak-portal' ) ) );
+		}
+
+		$payment_url = Swich_Payment::build_payment_url( $appointment_id );
+
+		if ( is_wp_error( $payment_url ) ) {
+			wp_send_json_error( array( 'message' => $payment_url->get_error_message() ) );
+		}
+
+		wp_send_json_success( array( 'payment_url' => $payment_url ) );
+	}
+
+	/**
+	 * AJAX handler: admin (or a Receptionist with doctor_ak_manage_appointments)
+	 * deletes an appointment.
 	 *
 	 * @return void
 	 */
@@ -142,7 +188,7 @@ class Appointment_Handler {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'doctor_ak_manage_appointments' ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 

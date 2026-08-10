@@ -16,11 +16,13 @@
 			return;
 		}
 
-		// Mark Paid is a standalone action (no modal involved), so it's
-		// wired up wherever an appointment row/pill appears with this
-		// script loaded — not just the Appointments section's own table,
-		// but also the Dashboard overview's "Latest appointments" widget.
+		// Mark Paid / Pay Now are standalone actions (no modal involved), so
+		// they're wired up wherever an appointment row/pill appears with
+		// this script loaded — not just the Appointments section's own
+		// table, but also the Dashboard overview's "Latest appointments"
+		// widget.
 		wireMarkPaid();
+		wirePayNow();
 
 		var modal = document.getElementById( 'dak-admin-appointment-modal' );
 		var viewModal = document.getElementById( 'dak-admin-appointment-view-modal' );
@@ -460,6 +462,39 @@
 				.then( function ( result ) {
 					if ( result.success ) {
 						window.location.reload();
+						return;
+					}
+
+					trigger.disabled = false;
+					window.alert( ( result.data && result.data.message ) || 'Something went wrong. Please try again.' );
+				} )
+				.catch( function () {
+					trigger.disabled = false;
+					window.alert( 'Something went wrong. Please try again.' );
+				} );
+		} );
+	}
+
+	function wirePayNow() {
+		document.addEventListener( 'click', function ( event ) {
+			var trigger = event.target.closest( '[data-admin-appointment-pay-now]' );
+
+			if ( ! trigger ) {
+				return;
+			}
+
+			trigger.disabled = true;
+
+			var formData = new FormData();
+			formData.append( 'action', 'doctor_ak_admin_appointment_pay_now' );
+			formData.append( 'nonce', window.dakAdminAppointments.nonce );
+			formData.append( 'appointment_id', trigger.getAttribute( 'data-appointment-id' ) );
+
+			fetch( window.dakAdminAppointments.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
+				.then( function ( response ) { return response.json(); } )
+				.then( function ( result ) {
+					if ( result.success && result.data && result.data.payment_url ) {
+						window.location.href = result.data.payment_url;
 						return;
 					}
 

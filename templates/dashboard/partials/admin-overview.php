@@ -263,7 +263,9 @@ endif;
 								<?php if ( ! empty( $dak_row['video_call']['can_join'] ) ) : ?>
 									<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $dak_row['video_call']['room_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></a>
 								<?php endif; ?>
-								<?php if ( ! $dak_row['is_paid'] ) : ?>
+								<?php if ( ! $dak_row['is_paid'] && 'online' === $dak_row['payment_mode'] ) : ?>
+									<button type="button" class="dak-status-pill dak-status-pill-action" data-admin-appointment-pay-now data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>" title="<?php esc_attr_e( 'Pay for this appointment', 'doctor-ak-portal' ); ?>"><?php echo esc_html( sprintf( /* translators: %s: amount. */ __( 'Pay PKR%s', 'doctor-ak-portal' ), number_format( (float) $dak_row['charge'], 0 ) ) ); ?></button>
+								<?php elseif ( ! $dak_row['is_paid'] ) : ?>
 									<button type="button" class="dak-status-pill dak-status-pill-action" data-admin-appointment-mark-paid data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>" title="<?php esc_attr_e( 'Mark this appointment as paid', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Mark Paid', 'doctor-ak-portal' ); ?></button>
 								<?php endif; ?>
 							</div>

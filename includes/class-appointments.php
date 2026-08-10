@@ -2300,6 +2300,85 @@ class Appointments {
 	}
 
 	/**
+	 * Net settlement for a single doctor — "who owes whom" — mirroring how
+	 * a clinic actually reconciles a doctor's account: for a CASH
+	 * appointment (payment_mode = manual) the doctor collected the
+	 * patient's payment directly, so they owe the clinic its share; for an
+	 * ONLINE appointment the clinic collected the payment through the
+	 * gateway, so it owes the doctor their share back. The two
+	 * owe-directions net into one figure rather than settling as two
+	 * separate transfers.
+	 *
+	 * @param int $doctor_id Doctor's user ID.
+	 * @return array {
+	 *     @type float owed_by_doctor Hospital's share of this doctor's PAID, cash-collected (manual) appointments — what the doctor owes the clinic.
+	 *     @type float owed_to_doctor Doctor's share of this doctor's PAID, platform-collected (online) appointments — what the clinic owes the doctor.
+	 *     @type float net            owed_to_doctor minus owed_by_doctor. Negative means the doctor owes the clinic; positive means the clinic owes the doctor.
+	 * }
+	 */
+	public static function net_dues_for_doctor( $doctor_id ) {
+		$paid = self::all_for_admin(
+			array(
+				'doctor_id'      => $doctor_id,
+				'payment_status' => self::PAYMENT_STATUS_PAID,
+			)
+		);
+
+		$owed_by_doctor = 0.0;
+		$owed_to_doctor = 0.0;
+
+		foreach ( $paid as $row ) {
+			$split = Revenue_Split::split( $doctor_id, $row['charge'] );
+
+			if ( self::PAYMENT_MODE_ONLINE === $row['payment_mode'] ) {
+				$owed_to_doctor += $split['doctor_share'];
+			} else {
+				$owed_by_doctor += $split['hospital_share'];
+			}
+		}
+
+		return array(
+			'owed_by_doctor' => $owed_by_doctor,
+			'owed_to_doctor' => $owed_to_doctor,
+			'net'            => $owed_to_doctor - $owed_by_doctor,
+		);
+	}
+
+	/**
+	 * net_dues_for_doctor() for every active doctor — for the admin
+	 * Billing section's settlement table. Sorted so the doctors with the
+	 * largest amount owed (in either direction) surface first.
+	 *
+	 * @return array List of `array( 'doctor_id', 'doctor_name', 'owed_by_doctor', 'owed_to_doctor', 'net' )`.
+	 */
+	public static function net_dues_by_doctor() {
+		$rows = array();
+
+		foreach ( self::active_doctor_ids() as $doctor_id ) {
+			$doctor = get_userdata( $doctor_id );
+			$name   = $doctor ? trim( $doctor->first_name . ' ' . $doctor->last_name ) : '';
+			$name   = '' !== $name ? $name : ( $doctor ? $doctor->display_name : __( 'Unknown Doctor', 'doctor-ak-portal' ) );
+
+			$rows[] = array_merge(
+				array(
+					'doctor_id'   => $doctor_id,
+					'doctor_name' => $name,
+				),
+				self::net_dues_for_doctor( $doctor_id )
+			);
+		}
+
+		usort(
+			$rows,
+			function ( $a, $b ) {
+				return abs( $b['net'] ) <=> abs( $a['net'] );
+			}
+		);
+
+		return $rows;
+	}
+
+	/**
 	 * How many appointments currently sit in each status — for the admin
 	 * Dashboard overview's "Appointments by status" chart. Every status
 	 * appears (0 if unused), in status_options()' order, colored with the

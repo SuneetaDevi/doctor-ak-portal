@@ -8,6 +8,7 @@
  * @package DoctorAKPortal\Templates
  *
  * @var array $earnings Rows from Appointments::doctor_revenue_summary() — { total, this_month, today, invoice_count, current_split }.
+ * @var array $net_dues Rows from Appointments::net_dues_for_doctor() — { owed_by_doctor, owed_to_doctor, net }, what this doctor owes the clinic (cash-collected appointments) netted against what the clinic owes them (online-collected appointments).
  * @var array $invoices This doctor's paid appointments, see Appointments::all_for_admin().
  */
 
@@ -73,6 +74,46 @@ $dak_is_salary = \DoctorAKPortal\Includes\Revenue_Split::MODEL_SALARY === $earni
 		</p>
 	<?php endif; ?>
 </section>
+
+<?php if ( ! $dak_is_salary ) : ?>
+<section class="dak-dashboard-card">
+	<div class="dak-dashboard-card-header">
+		<h2><?php esc_html_e( 'Settlement with the clinic', 'doctor-ak-portal' ); ?></h2>
+	</div>
+	<p class="dak-field-hint"><?php esc_html_e( 'For your clinic (cash-collected) appointments, you already hold the payment and owe the clinic its share. For your online-collected appointments, the clinic already holds the payment and owes you your share. The two net into one figure.', 'doctor-ak-portal' ); ?></p>
+
+	<div class="dak-admin-record-row">
+		<div class="dak-admin-record-row-main">
+			<span class="dak-admin-record-row-info">
+				<span class="dak-admin-record-row-id">
+					<?php
+					echo esc_html(
+						sprintf(
+							/* translators: 1: amount owed to the clinic, 2: amount owed by the clinic. */
+							__( 'You owe clinic: PKR %1$s &middot; Clinic owes you: PKR %2$s', 'doctor-ak-portal' ),
+							number_format( (float) $net_dues['owed_by_doctor'], 0 ),
+							number_format( (float) $net_dues['owed_to_doctor'], 0 )
+						)
+					);
+					?>
+				</span>
+			</span>
+
+			<span class="dak-admin-record-row-tags">
+				<?php if ( $net_dues['net'] > 0.01 ) : ?>
+					<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-active"><?php esc_html_e( 'Clinic owes you', 'doctor-ak-portal' ); ?></span>
+				<?php elseif ( $net_dues['net'] < -0.01 ) : ?>
+					<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-disabled"><?php esc_html_e( 'You owe clinic', 'doctor-ak-portal' ); ?></span>
+				<?php else : ?>
+					<span class="dak-status-pill dak-status-pill-outline"><?php esc_html_e( 'Settled', 'doctor-ak-portal' ); ?></span>
+				<?php endif; ?>
+			</span>
+
+			<span class="dak-admin-record-row-amount">PKR <?php echo esc_html( number_format( abs( (float) $net_dues['net'] ), 0 ) ); ?></span>
+		</div>
+	</div>
+</section>
+<?php endif; ?>
 
 <section class="dak-dashboard-card">
 	<div class="dak-dashboard-card-header">

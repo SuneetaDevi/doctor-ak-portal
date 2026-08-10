@@ -31,10 +31,11 @@ $dak_add_button_labels = array(
 );
 $add_button_label = isset( $dak_add_button_labels[ $section ] ) ? $dak_add_button_labels[ $section ] : __( '+ Add', 'doctor-ak-portal' );
 $dak_add_user_url  = $dashboard_url ? add_query_arg( array( 'section' => $section, 'view' => 'form' ), $dashboard_url ) : '';
-// A receptionist only ever has read access to the Doctors/Patients tables
-// (they can never reach the 'receptionist' staff-account tab itself, see
-// Admin_Dashboard::RECEPTIONIST_ALLOWED_SECTIONS) — so hide the Add button.
-$dak_show_add_button = $is_users_section && ! $is_receptionist;
+// A receptionist has full Add/Edit access to the Doctors/Patients tables,
+// but can never reach the 'receptionist' staff-account tab itself (see
+// Admin_Dashboard::RECEPTIONIST_ALLOWED_SECTIONS) — so hide the Add button
+// there specifically, in case that section is ever reached some other way.
+$dak_show_add_button = $is_users_section && ( ! $is_receptionist || in_array( $section, array( 'doctors', 'patients' ), true ) );
 
 $dak_admin_icons = array(
 	'dashboard'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="6.5" height="6.5" rx="1.2"/><rect x="11" y="2.5" width="6.5" height="6.5" rx="1.2"/><rect x="2.5" y="11" width="6.5" height="6.5" rx="1.2"/><rect x="11" y="11" width="6.5" height="6.5" rx="1.2"/></svg>',

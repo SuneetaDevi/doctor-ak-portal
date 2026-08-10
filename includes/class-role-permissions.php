@@ -85,10 +85,10 @@ class Role_Permissions {
 	public static function receptionist_tabs() {
 		return array(
 			'appointments'    => __( 'Appointments', 'doctor-ak-portal' ),
-			'billing'         => __( 'Billing', 'doctor-ak-portal' ),
 			'patients'        => __( 'Patients', 'doctor-ak-portal' ),
 			'doctors'         => __( 'Doctors', 'doctor-ak-portal' ),
 			'clinic'          => __( 'Clinic', 'doctor-ak-portal' ),
+			'services'        => __( 'Services', 'doctor-ak-portal' ),
 			'doctor-sessions' => __( 'Doctor Sessions', 'doctor-ak-portal' ),
 			'settings'        => __( 'Settings', 'doctor-ak-portal' ),
 		);

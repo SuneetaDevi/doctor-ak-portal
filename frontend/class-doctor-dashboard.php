@@ -145,6 +145,7 @@ class Doctor_Dashboard {
 				'nonce'                => wp_create_nonce( Doctor_Appointment_Handler::NONCE_ACTION ),
 				'confirmMessage'       => __( 'Mark this appointment as completed?', 'doctor-ak-portal' ),
 				'confirmCancelMessage' => __( 'Cancel this appointment? This cannot be undone.', 'doctor-ak-portal' ),
+				'confirmMarkPaidMessage' => __( 'Mark this appointment as paid?', 'doctor-ak-portal' ),
 				'genericError'         => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
 			)
 		);
@@ -620,6 +621,7 @@ class Doctor_Dashboard {
 			'dashboard/partials/doctor-earnings-tab.php',
 			array(
 				'earnings' => Appointments::doctor_revenue_summary( $user->ID ),
+				'net_dues' => Appointments::net_dues_for_doctor( $user->ID ),
 				'invoices' => Appointments::all_for_admin(
 					array(
 						'doctor_id'      => $user->ID,

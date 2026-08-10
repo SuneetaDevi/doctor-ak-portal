@@ -9,6 +9,7 @@
  *
  * @var array  $invoices    Rows from Appointments::all_for_admin( [ 'payment_status' => 'paid', ... ] ).
  * @var array  $revenue     { total, this_month, today, invoice_count, gross_total, doctor_share_total }, see Appointments::revenue_summary() — total/this_month/today are the HOSPITAL's share only.
+ * @var array  $net_dues    Rows from Appointments::net_dues_by_doctor() — per-doctor settlement: what each doctor owes the clinic (cash-collected appointments) netted against what the clinic owes each doctor (online-collected appointments).
  * @var string $billing_url Unfiltered URL of this section, for the filter form and "Clear" link.
  * @var array  $filters     Active filter values: date_from, date_to.
  */
@@ -67,6 +68,54 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'];
 	);
 	?>
 </p>
+
+<section class="dak-dashboard-card">
+	<div class="dak-dashboard-card-header">
+		<h2><?php esc_html_e( 'Doctor settlement — who owes whom', 'doctor-ak-portal' ); ?></h2>
+	</div>
+	<p class="dak-field-hint"><?php esc_html_e( 'For cash-collected (clinic) appointments, the doctor already holds the payment and owes the clinic its share. For online-collected appointments, the clinic already holds the payment and owes the doctor their share. The two net into one figure per doctor.', 'doctor-ak-portal' ); ?></p>
+
+	<?php if ( empty( $net_dues ) ) : ?>
+		<p class="dak-empty-state"><?php esc_html_e( 'No active doctors to settle with yet.', 'doctor-ak-portal' ); ?></p>
+	<?php else : ?>
+		<?php foreach ( $net_dues as $dak_dues_row ) : ?>
+			<?php if ( 0.0 === (float) $dak_dues_row['owed_by_doctor'] && 0.0 === (float) $dak_dues_row['owed_to_doctor'] ) : ?>
+				<?php continue; ?>
+			<?php endif; ?>
+			<div class="dak-admin-record-row">
+				<div class="dak-admin-record-row-main">
+					<span class="dak-admin-record-row-info">
+						<strong><?php echo esc_html( sprintf( /* translators: %s: doctor name. */ __( 'Dr. %s', 'doctor-ak-portal' ), $dak_dues_row['doctor_name'] ) ); ?></strong>
+						<span class="dak-admin-record-row-id">
+							<?php
+							echo esc_html(
+								sprintf(
+									/* translators: 1: amount the doctor owes the clinic, 2: amount the clinic owes the doctor. */
+									__( 'Owes clinic: PKR %1$s &middot; Owed by clinic: PKR %2$s', 'doctor-ak-portal' ),
+									number_format( (float) $dak_dues_row['owed_by_doctor'], 0 ),
+									number_format( (float) $dak_dues_row['owed_to_doctor'], 0 )
+								)
+							);
+							?>
+						</span>
+					</span>
+
+					<span class="dak-admin-record-row-tags">
+						<?php if ( $dak_dues_row['net'] > 0.01 ) : ?>
+							<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-active"><?php esc_html_e( 'Clinic owes doctor', 'doctor-ak-portal' ); ?></span>
+						<?php elseif ( $dak_dues_row['net'] < -0.01 ) : ?>
+							<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-disabled"><?php esc_html_e( 'Doctor owes clinic', 'doctor-ak-portal' ); ?></span>
+						<?php else : ?>
+							<span class="dak-status-pill dak-status-pill-outline"><?php esc_html_e( 'Settled', 'doctor-ak-portal' ); ?></span>
+						<?php endif; ?>
+					</span>
+
+					<span class="dak-admin-record-row-amount">PKR <?php echo esc_html( number_format( abs( (float) $dak_dues_row['net'] ), 0 ) ); ?></span>
+				</div>
+			</div>
+		<?php endforeach; ?>
+	<?php endif; ?>
+</section>
 
 <section class="dak-dashboard-card dak-appt-filters-card">
 	<div class="dak-dashboard-card-header">

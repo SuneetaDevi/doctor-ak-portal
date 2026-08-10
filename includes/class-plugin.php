@@ -312,6 +312,7 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_invoice_download', $appointment_handler, 'handle_download_invoice' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_process_refund', $appointment_handler, 'handle_admin_process_refund' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointment_mark_paid', $appointment_handler, 'handle_mark_paid' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointment_pay_now', $appointment_handler, 'handle_pay_now' );
 
 		$patient_appointment_handler = new Patient_Appointment_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_cancel_appointment', $patient_appointment_handler, 'handle_cancel_appointment' );
@@ -321,6 +322,8 @@ class Plugin {
 
 		$doctor_appointment_handler = new Doctor_Appointment_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_mark_completed', $doctor_appointment_handler, 'handle_mark_completed' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_mark_paid', $doctor_appointment_handler, 'handle_mark_paid' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_pay_now', $doctor_appointment_handler, 'handle_pay_now' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_reschedule_appointment', $doctor_appointment_handler, 'handle_reschedule' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_cancel_appointment', $doctor_appointment_handler, 'handle_cancel_appointment' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_save_encounter_note', $doctor_appointment_handler, 'handle_save_encounter_note' );

@@ -38,11 +38,12 @@ class Roles {
 	/**
 	 * Receptionist role slug — front-desk staff added by an administrator
 	 * (no public self-registration). Logs in like a doctor/patient but is
-	 * routed to a cut-down view of the admin dashboard: read-only Doctors/
-	 * Patients directories, marking appointment payments received, and
-	 * managing doctors' clinic locations/session hours. Everything else
-	 * (Settings, Services, Video Consultation pricing, account management,
-	 * booking/editing/cancelling appointments) stays administrator-only.
+	 * routed to a cut-down view of the admin dashboard: full management of
+	 * Doctor and Patient accounts, Services, Doctor Sessions/clinic
+	 * locations, and Appointments (create/edit/cancel/reschedule/mark
+	 * paid). Billing/Revenue, Encounters, Video Consultation pricing,
+	 * Doctor Requests, Roles & Permissions, Locations, and the Receptionist
+	 * staff-account list itself stay administrator-only.
 	 *
 	 * @var string
 	 */
@@ -63,7 +64,7 @@ class Roles {
 	 *
 	 * @var string
 	 */
-	const ROLES_VERSION = '1.1.0';
+	const ROLES_VERSION = '1.2.0';
 
 	/**
 	 * Registers the plugin roles, or refreshes their capabilities if the
@@ -173,11 +174,14 @@ class Roles {
 	 */
 	public static function receptionist_capabilities() {
 		return array(
-			'read'                       => true,
-			'doctor_ak_view_dashboard'   => true,
-			'doctor_ak_view_directory'   => true,
-			'doctor_ak_manage_payments'  => true,
-			'doctor_ak_manage_clinics'   => true,
+			'read'                        => true,
+			'doctor_ak_view_dashboard'    => true,
+			'doctor_ak_view_directory'    => true,
+			'doctor_ak_manage_payments'   => true,
+			'doctor_ak_manage_clinics'    => true,
+			'doctor_ak_manage_users'      => true,
+			'doctor_ak_manage_services'   => true,
+			'doctor_ak_manage_appointments' => true,
 		);
 	}
 }

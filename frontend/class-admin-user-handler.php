@@ -27,9 +27,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class Admin_User_Handler
  *
- * Every endpoint here re-checks `manage_options` independently of the
+ * Every endpoint here re-checks `manage_options` (or, where granted,
+ * `doctor_ak_manage_users` for a Receptionist) independently of the
  * dashboard page gate in Admin_Dashboard, since AJAX endpoints are
- * reachable directly regardless of which page rendered the form.
+ * reachable directly regardless of which page rendered the form. A
+ * Receptionist caller is additionally restricted to Doctor/Patient target
+ * accounts only — never Receptionist or Administrator accounts — to
+ * prevent privilege escalation via a directly-posted request.
  */
 class Admin_User_Handler {
 
@@ -64,7 +68,7 @@ class Admin_User_Handler {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'doctor_ak_manage_users' ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
@@ -98,7 +102,9 @@ class Admin_User_Handler {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		$is_admin_caller = current_user_can( 'manage_options' );
+
+		if ( ! $is_admin_caller && ! current_user_can( 'doctor_ak_manage_users' ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
@@ -139,6 +145,13 @@ class Admin_User_Handler {
 			}
 		} else {
 			$target_role = isset( $_POST['role'] ) ? sanitize_key( wp_unslash( $_POST['role'] ) ) : '';
+		}
+
+		// A Receptionist (doctor_ak_manage_users, not manage_options) may only
+		// ever create/edit Doctor or Patient accounts — never a Receptionist
+		// or Administrator account, which would be a privilege escalation.
+		if ( ! $is_admin_caller && ! in_array( $target_role, array( Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE ), true ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
 		$is_for_doctor = Roles::DOCTOR_ROLE === $target_role;
@@ -424,14 +437,22 @@ class Admin_User_Handler {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		$is_admin_caller = current_user_can( 'manage_options' );
+
+		if ( ! $is_admin_caller && ! current_user_can( 'doctor_ak_manage_users' ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
 		$user_id = isset( $_POST['user_id'] ) ? absint( wp_unslash( $_POST['user_id'] ) ) : 0;
 		$user    = $user_id > 0 ? get_user_by( 'id', $user_id ) : false;
 
-		if ( ! $user || ! array_intersect( array( Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE, Roles::RECEPTIONIST_ROLE ), (array) $user->roles ) ) {
+		// A Receptionist may only delete Doctor/Patient accounts — never a
+		// Receptionist or Administrator account (privilege escalation).
+		$allowed_target_roles = $is_admin_caller
+			? array( Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE, Roles::RECEPTIONIST_ROLE )
+			: array( Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE );
+
+		if ( ! $user || ! array_intersect( $allowed_target_roles, (array) $user->roles ) ) {
 			wp_send_json_error( array( 'message' => __( 'That account no longer exists.', 'doctor-ak-portal' ) ) );
 		}
 
@@ -455,14 +476,22 @@ class Admin_User_Handler {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		$is_admin_caller = current_user_can( 'manage_options' );
+
+		if ( ! $is_admin_caller && ! current_user_can( 'doctor_ak_manage_users' ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
 		$user_id = isset( $_POST['user_id'] ) ? absint( wp_unslash( $_POST['user_id'] ) ) : 0;
 		$user    = $user_id > 0 ? get_user_by( 'id', $user_id ) : false;
 
-		if ( ! $user || ! array_intersect( array( Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE, Roles::RECEPTIONIST_ROLE ), (array) $user->roles ) ) {
+		// A Receptionist may only deactivate/reactivate Doctor/Patient
+		// accounts — never a Receptionist or Administrator account.
+		$allowed_target_roles = $is_admin_caller
+			? array( Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE, Roles::RECEPTIONIST_ROLE )
+			: array( Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE );
+
+		if ( ! $user || ! array_intersect( $allowed_target_roles, (array) $user->roles ) ) {
 			wp_send_json_error( array( 'message' => __( 'That account no longer exists.', 'doctor-ak-portal' ) ) );
 		}
 
@@ -519,7 +548,7 @@ class Admin_User_Handler {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'doctor_ak_manage_users' ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 

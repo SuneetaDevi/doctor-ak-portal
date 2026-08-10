@@ -34,12 +34,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Class Admin_Dashboard
  *
  * Gates access to WordPress Administrators ('manage_options') and, with a
- * cut-down read-mostly view, the Receptionist role (see is_receptionist(),
- * RECEPTIONIST_ALLOWED_SECTIONS): read-only Doctors/Patients directories,
- * marking appointment payments received, and managing doctors' clinic
- * locations/session hours. Everything else (Doctor Requests, Receptionist
- * staff-account management, Encounters, Services, Video Consultation
- * pricing, Roles & Permissions, Locations, Settings) stays Administrator-only.
+ * cut-down view, the Receptionist role (see is_receptionist(),
+ * RECEPTIONIST_ALLOWED_SECTIONS): full management of Doctor and Patient
+ * accounts, Services, Doctor Sessions/clinic locations, and Appointments
+ * (create/edit/cancel/reschedule/mark paid). Everything else (Doctor
+ * Requests, Receptionist staff-account management, Billing/Revenue,
+ * Encounters, Video Consultation pricing, Roles & Permissions, Locations)
+ * stays Administrator-only.
  */
 class Admin_Dashboard {
 
@@ -94,19 +95,19 @@ class Admin_Dashboard {
 	/**
 	 * Section slugs a logged-in Receptionist could ever structurally reach —
 	 * the hard ceiling; everything else (Doctor Requests, the Receptionist
-	 * staff-account tab itself, Encounters, Services, Video Consultation
-	 * pricing, Roles & Permissions, Locations) stays administrator-only no
-	 * matter what. Within this ceiling, Settings → Roles & Permissions lets
-	 * an admin further switch individual sections off per-install (see
-	 * receptionist_can_access(), which ANDs this list with
-	 * Role_Permissions::is_tab_allowed()). Enforced server-side in
+	 * staff-account tab itself, Billing/Revenue, Encounters, Video
+	 * Consultation pricing, Roles & Permissions, Locations) stays
+	 * administrator-only no matter what. Within this ceiling, Settings →
+	 * Roles & Permissions lets an admin further switch individual sections
+	 * off per-install (see receptionist_can_access(), which ANDs this list
+	 * with Role_Permissions::is_tab_allowed()). Enforced server-side in
 	 * requested_section() so a receptionist can't reach a disallowed section
 	 * just by typing the URL — the sidebar only ever links to allowed ones,
 	 * but that alone isn't a security boundary.
 	 *
 	 * @var array
 	 */
-	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'billing', 'patients', 'doctors', 'clinic', 'doctor-sessions', 'settings' );
+	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'patients', 'doctors', 'clinic', 'services', 'doctor-sessions', 'settings' );
 
 	/**
 	 * Whether a logged-in Receptionist may access a given section — must be
@@ -912,10 +913,15 @@ class Admin_Dashboard {
 		}
 
 		$is_users_section  = in_array( $section, array( 'doctors', 'patients', 'receptionist' ), true );
-		// Receptionists get read-only access to the Doctors/Patients tables
-		// (see RECEPTIONIST_ALLOWED_SECTIONS) — never the Add/Edit form, even
-		// if they add `&view=form` to the URL by hand.
-		$is_user_form_view = $is_users_section && self::is_user_form_view() && ! $is_receptionist;
+		// Receptionists get full Add/Edit access to the Doctors/Patients
+		// tables (see RECEPTIONIST_ALLOWED_SECTIONS) but the 'receptionist'
+		// staff-account tab itself stays administrator-only — it's not in
+		// RECEPTIONIST_ALLOWED_SECTIONS so requested_section() already
+		// redirects a receptionist away from it before this point, but the
+		// explicit check here is defense-in-depth against a form view being
+		// reached some other way.
+		$is_user_form_view = $is_users_section && self::is_user_form_view()
+			&& ( ! $is_receptionist || in_array( $section, array( 'doctors', 'patients' ), true ) );
 
 		$modal_html = '';
 
@@ -1205,6 +1211,7 @@ class Admin_Dashboard {
 						)
 					),
 					'revenue'     => Appointments::revenue_summary(),
+					'net_dues'    => Appointments::net_dues_by_doctor(),
 					'billing_url' => $billing_url,
 					'filters'     => array(
 						'date_from' => $date_from,
@@ -1645,12 +1652,13 @@ class Admin_Dashboard {
 					'status'         => $status,
 					'specialization' => $specialization,
 				),
-				// A receptionist can view the Doctors/Patients tables (read
-				// access to the directory) but never mutate accounts — only
-				// a real administrator reaches the 'receptionist' section at
-				// all (see RECEPTIONIST_ALLOWED_SECTIONS), so this is only
-				// ever true here for the doctors/patients tables.
-				'read_only'          => self::is_receptionist(),
+				// A receptionist has full Add/Edit/Deactivate/Delete access
+				// to the Doctors/Patients tables. Only a real administrator
+				// reaches the 'receptionist' staff-account section at all
+				// (see RECEPTIONIST_ALLOWED_SECTIONS) — the section-slug
+				// check below is defense-in-depth in case that section is
+				// ever reached some other way.
+				'read_only'          => self::is_receptionist() && ! in_array( $section, array( 'doctors', 'patients' ), true ),
 			)
 		);
 	}

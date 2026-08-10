@@ -1,10 +1,13 @@
 <?php
 /**
  * Template: A single upcoming-appointment row on the doctor dashboard —
- * patient avatar/name, a countdown badge, status/payment pills, and a
- * Join Call action for video appointments. Mirrors
- * patient-appointment-row.php but shows the patient (not the doctor) and
- * has no Pay Now / Cancel actions — those belong to the patient.
+ * patient avatar/name, a countdown badge, status/payment pills, a Join Call
+ * action for video appointments, and a Mark Paid action for the doctor's
+ * own pending-payment appointments (e.g. cash collected at the clinic).
+ * Mirrors patient-appointment-row.php but shows the patient (not the
+ * doctor) and has no Cancel action — that belongs to the patient (a doctor
+ * cancels from the full Appointments tab instead, see
+ * doctor-appointments-list.php).
  *
  * @package DoctorAKPortal\Templates
  *
@@ -91,6 +94,15 @@ $time_label     = $time_timestamp ? date_i18n( 'g:i A', $time_timestamp ) : $app
 					rel="noopener"
 					title="<?php esc_attr_e( "You'll be asked to log in with a free account (Google, GitHub, etc.) to start the call — your patient won't need to.", 'doctor-ak-portal' ); ?>"
 				><?php esc_html_e( 'Start Call', 'doctor-ak-portal' ); ?></a>
+			<?php endif; ?>
+			<?php if ( ! $appointment['is_paid'] && (float) $appointment['charge'] > 0 && 'online' === $appointment['payment_mode'] ) : ?>
+				<button type="button" class="dak-status-pill dak-status-pill-action" data-doctor-pay-now data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>">
+					<?php echo esc_html( sprintf( /* translators: %s: amount. */ __( 'Pay PKR%s', 'doctor-ak-portal' ), number_format( (float) $appointment['charge'], 0 ) ) ); ?>
+				</button>
+			<?php elseif ( ! $appointment['is_paid'] && (float) $appointment['charge'] > 0 ) : ?>
+				<button type="button" class="dak-status-pill dak-status-pill-action" data-doctor-mark-paid data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>">
+					<?php echo esc_html( sprintf( /* translators: %s: amount. */ __( 'Mark Paid · PKR%s', 'doctor-ak-portal' ), number_format( (float) $appointment['charge'], 0 ) ) ); ?>
+				</button>
 			<?php endif; ?>
 			<?php if ( in_array( $appointment['status'], array( 'confirmed', 'paid', 'rescheduled' ), true ) ) : ?>
 				<button type="button" class="dak-status-pill dak-status-pill-action" data-mark-completed data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"><?php esc_html_e( 'Mark Completed', 'doctor-ak-portal' ); ?></button>

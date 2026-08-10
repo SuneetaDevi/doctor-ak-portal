@@ -146,7 +146,8 @@ class Service_Handler {
 	}
 
 	/**
-	 * AJAX handler: admin creates/updates a service for any doctor.
+	 * AJAX handler: admin (or a Receptionist with doctor_ak_manage_services)
+	 * creates/updates a service for any doctor.
 	 *
 	 * @return void
 	 */
@@ -155,7 +156,7 @@ class Service_Handler {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'doctor_ak_manage_services' ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
@@ -169,7 +170,8 @@ class Service_Handler {
 	}
 
 	/**
-	 * AJAX handler: admin deletes any doctor's service.
+	 * AJAX handler: admin (or a Receptionist with doctor_ak_manage_services)
+	 * deletes any doctor's service.
 	 *
 	 * @return void
 	 */
@@ -178,7 +180,7 @@ class Service_Handler {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'doctor_ak_manage_services' ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
