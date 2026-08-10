@@ -291,7 +291,7 @@ class Doctor_Dashboard {
 
 		$tab = sanitize_key( wp_unslash( $_GET['tab'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 
-		if ( ! in_array( $tab, array( 'profile', 'clinics', 'services', 'video-consultation', 'appointments', 'patients', 'notifications', 'settings' ), true ) ) {
+		if ( ! in_array( $tab, array( 'profile', 'clinics', 'services', 'video-consultation', 'appointments', 'patients', 'earnings', 'notifications', 'settings' ), true ) ) {
 			return 'dashboard';
 		}
 
@@ -608,6 +608,29 @@ class Doctor_Dashboard {
 	}
 
 	/**
+	 * Renders the Earnings tab: this doctor's own share (see Revenue_Split)
+	 * of every one of their paid appointments — today/this month/all-time
+	 * totals, their current split, and a per-appointment breakdown.
+	 *
+	 * @param \WP_User $user Currently logged-in doctor.
+	 * @return string
+	 */
+	private function render_earnings_tab( \WP_User $user ) {
+		return $this->template_loader->get_template(
+			'dashboard/partials/doctor-earnings-tab.php',
+			array(
+				'earnings' => Appointments::doctor_revenue_summary( $user->ID ),
+				'invoices' => Appointments::all_for_admin(
+					array(
+						'doctor_id'      => $user->ID,
+						'payment_status' => Appointments::PAYMENT_STATUS_PAID,
+					)
+				),
+			)
+		);
+	}
+
+	/**
 	 * Renders the Services tab: a doctor's bookable services (e.g. "OPD
 	 * Consultation"), each with its own category, charge, and duration.
 	 *
@@ -740,6 +763,7 @@ class Doctor_Dashboard {
 			'video_consultation_tab_html' => 'video-consultation' === $active_tab ? $this->render_video_consultation_tab( $user ) : '',
 			'appointments_tab_html' => 'appointments' === $active_tab ? $this->render_appointments_tab( $user ) : '',
 			'patients_tab_html'     => 'patients' === $active_tab ? $this->render_patients_tab( $user ) : '',
+			'earnings_tab_html'     => 'earnings' === $active_tab ? $this->render_earnings_tab( $user ) : '',
 			'notifications_tab_html' => 'notifications' === $active_tab ? $this->render_notifications_tab( $user ) : '',
 			'unread_notifications_count' => Notification_Center::unread_count( $user->ID ),
 			'settings_tab_html'     => 'settings' === $active_tab ? $this->render_settings_tab( $user ) : '',
@@ -750,6 +774,7 @@ class Doctor_Dashboard {
 			'video_consultation_url' => self::tab_url( $dashboard_url, 'video-consultation' ),
 			'appointments_url'      => self::tab_url( $dashboard_url, 'appointments' ),
 			'patients_url'          => self::tab_url( $dashboard_url, 'patients' ),
+			'earnings_url'          => self::tab_url( $dashboard_url, 'earnings' ),
 			'notifications_url'     => self::tab_url( $dashboard_url, 'notifications' ),
 			'settings_url'          => self::tab_url( $dashboard_url, 'settings' ),
 			'logout_url'            => wp_logout_url( Page_Finder::url_for_shortcode( 'doctor_login' ) ),

@@ -53,6 +53,7 @@ $dak_service_icons = array(
 		<p class="dak-empty-state"><?php esc_html_e( "You haven't added any services yet. Add one above.", 'doctor-ak-portal' ); ?></p>
 	<?php else : ?>
 		<?php foreach ( $services as $service ) : ?>
+			<?php $dak_service_split = \DoctorAKPortal\Includes\Revenue_Split::split( $service['doctor_id'], $service['charge'] ); ?>
 			<div class="dak-admin-record-row">
 				<div class="dak-admin-record-row-main">
 					<span class="dak-admin-record-row-info">
@@ -98,6 +99,12 @@ $dak_service_icons = array(
 							aria-label="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
 						><?php echo $dak_service_icons['delete']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
 					</span>
+				</div>
+
+				<div class="dak-admin-record-row-secondary">
+					<span class="dak-admin-record-row-secondary-label"><?php esc_html_e( 'Revenue split:', 'doctor-ak-portal' ); ?></span>
+					<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( sprintf( /* translators: %s: doctor's share amount. */ __( "Your share: PKR %s", 'doctor-ak-portal' ), number_format( $dak_service_split['doctor_share'], 0 ) ) ); ?></span>
+					<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( sprintf( /* translators: %s: hospital's share amount. */ __( "Hospital's share: PKR %s", 'doctor-ak-portal' ), number_format( $dak_service_split['hospital_share'], 0 ) ) ); ?></span>
 				</div>
 			</div>
 		<?php endforeach; ?>

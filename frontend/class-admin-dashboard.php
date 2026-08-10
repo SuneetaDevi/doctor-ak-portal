@@ -16,6 +16,7 @@ use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Notifications;
 use DoctorAKPortal\Includes\Page_Finder;
+use DoctorAKPortal\Includes\Revenue_Split;
 use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
@@ -1770,6 +1771,8 @@ class Admin_Dashboard {
 			'awards'                      => Doctor_Awards::get_for_doctor( $user->ID ),
 			'avatar_url'                  => self::avatar_url( $user->ID ),
 			'registered_date'             => mysql2date( get_option( 'date_format' ), $user->user_registered ),
+			'payment_model'               => Revenue_Split::get_for_doctor( $user->ID )['payment_model'],
+			'doctor_share_percent'        => Revenue_Split::get_for_doctor( $user->ID )['doctor_share_percent'],
 		);
 	}
 

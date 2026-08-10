@@ -21,6 +21,8 @@
  * @var string   $appointments_url      Same-page URL for the Appointments tab.
  * @var string   $patients_tab_html     Pre-rendered doctor-patients-tab.php output when $active_tab is 'patients'.
  * @var string   $patients_url          Same-page URL for the Patients tab.
+ * @var string   $earnings_tab_html     Pre-rendered doctor-earnings-tab.php output when $active_tab is 'earnings'.
+ * @var string   $earnings_url          Same-page URL for the Earnings tab.
  * @var array    $doctor_clinics        Doctor's clinics, see Clinics::get_for_doctor() — populates the Add/Edit Patient modal's clinic dropdown.
  * @var string   $notifications_tab_html Pre-rendered notifications-list.php output when $active_tab is 'notifications'.
  * @var string   $notifications_url      Same-page URL for the Notifications tab.
@@ -65,6 +67,7 @@ $dak_dash_icons = array(
 	'settings'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="2.6"/><path d="M10 2.8v2M10 15.2v2M17.2 10h-2M4.8 10h-2M15.1 4.9l-1.4 1.4M6.3 13.7l-1.4 1.4M15.1 15.1l-1.4-1.4M6.3 6.3 4.9 4.9"/></svg>',
 	'logout'       => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 17H4a1.5 1.5 0 0 1-1.5-1.5v-11A1.5 1.5 0 0 1 4 3h3.5"/><path d="M13 14l4-4-4-4"/><path d="M17 10H7.5"/></svg>',
 	'pin'          => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18s6-5.2 6-9.8A6 6 0 0 0 4 8.2C4 12.8 10 18 10 18z"/><circle cx="10" cy="8" r="2"/></svg>',
+	'money'        => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.2"/><path d="M10 6.2v7.6M12.2 8.1c0-1-1-1.6-2.2-1.6s-2.2.6-2.2 1.5c0 2.2 4.4 1 4.4 3.2 0 .9-1 1.5-2.2 1.5s-2.2-.6-2.2-1.6"/></svg>',
 );
 ?>
 <div class="dak-portal dak-dashboard dak-doctor-dashboard" data-role="doctor" data-theme="<?php echo esc_attr( $theme ); ?>">
@@ -163,6 +166,9 @@ $dak_dash_icons = array(
 				<?php if ( $patients_url ) : ?>
 					<li class="<?php echo 'patients' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $patients_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['users']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Patients', 'doctor-ak-portal' ); ?></a></li>
 				<?php endif; ?>
+				<?php if ( $earnings_url ) : ?>
+					<li class="<?php echo 'earnings' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $earnings_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['money']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Earnings', 'doctor-ak-portal' ); ?></a></li>
+				<?php endif; ?>
 				<?php if ( $notifications_url ) : ?>
 					<li class="<?php echo 'notifications' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $notifications_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['bell']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Notifications', 'doctor-ak-portal' ); ?><?php if ( $unread_notifications_count > 0 ) : ?><span class="dak-nav-badge" id="dak-notifications-badge"><?php echo esc_html( $unread_notifications_count ); ?></span><?php endif; ?></a></li>
 				<?php endif; ?>
@@ -222,6 +228,10 @@ $dak_dash_icons = array(
 		<?php elseif ( 'patients' === $active_tab ) : ?>
 
 			<?php echo $patients_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-patients-tab.php template, which escapes its own output (including its own page header). ?>
+
+		<?php elseif ( 'earnings' === $active_tab ) : ?>
+
+			<?php echo $earnings_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-earnings-tab.php template, which escapes its own output (including its own page header). ?>
 
 		<?php elseif ( 'video-consultation' === $active_tab ) : ?>
 

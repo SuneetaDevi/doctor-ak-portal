@@ -88,11 +88,43 @@
 		var listUrl = form.getAttribute( 'data-list-url' ) || '';
 
 		wirePictureUpload();
+		wireRevenueSplit();
 
 		form.addEventListener( 'submit', function ( event ) {
 			event.preventDefault();
 			submitForm();
 		} );
+
+		/**
+		 * Disables the Doctor's Share field for a Salary-model doctor (their
+		 * share is always 0 — see Revenue_Split), and keeps a live "hospital
+		 * keeps X%" hint in sync with whatever's typed for a Commission doctor.
+		 */
+		function wireRevenueSplit() {
+			var modelSelect = document.getElementById( 'dak-admin-user-payment-model' );
+			var shareInput = document.getElementById( 'dak-admin-user-doctor-share-percent' );
+			var hospitalHint = document.getElementById( 'dak-admin-user-hospital-share-hint' );
+
+			if ( ! modelSelect || ! shareInput ) {
+				return;
+			}
+
+			function update() {
+				var isSalary = 'salary' === modelSelect.value;
+				shareInput.disabled = isSalary;
+
+				if ( ! hospitalHint ) {
+					return;
+				}
+
+				var doctorPercent = isSalary ? 0 : ( parseFloat( shareInput.value ) || 0 );
+				hospitalHint.textContent = 'Hospital keeps ' + ( 100 - doctorPercent ) + '%.';
+			}
+
+			modelSelect.addEventListener( 'change', update );
+			shareInput.addEventListener( 'input', update );
+			update();
+		}
 
 		function wirePictureUpload() {
 			if ( ! pictureInput ) {

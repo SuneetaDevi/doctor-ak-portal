@@ -2150,49 +2150,68 @@ class Appointments {
 	}
 
 	/**
-	 * Revenue stat cards for the admin "Billing" section: all-time, this
-	 * month, and today, each summed from that period's paid appointments'
-	 * charges. A payment counts on the day the *appointment* falls on, not
-	 * the day it was paid — matching how the Billing table itself groups
-	 * invoices by appointment date.
+	 * Revenue stat cards for the admin "Billing" section and Dashboard
+	 * overview: all-time, this month, and today — the CLINIC'S/PLATFORM'S
+	 * own share of each paid appointment (see Revenue_Split), not the full
+	 * amount the patient paid. A commission-based doctor keeps the rest; a
+	 * salary-based doctor's appointments count fully as clinic revenue,
+	 * since they're paid separately from what they collect. A payment
+	 * counts on the day the *appointment* falls on, not the day it was
+	 * paid — matching how the Billing table itself groups invoices by
+	 * appointment date.
 	 *
-	 * @return array { @type float total, @type float this_month, @type float today, @type int invoice_count (all-time) }
+	 * @return array {
+	 *     @type float total              Hospital/platform share, all-time.
+	 *     @type float this_month         Hospital/platform share, this calendar month.
+	 *     @type float today              Hospital/platform share, today.
+	 *     @type int   invoice_count      Paid appointments, all-time.
+	 *     @type float gross_total        Full charge sum (before any split), all-time, for reference.
+	 *     @type float doctor_share_total Sum of every doctor's own share, all-time, for reference.
+	 * }
 	 */
 	public static function revenue_summary() {
 		$all_paid = self::all_for_admin( array( 'payment_status' => self::PAYMENT_STATUS_PAID ) );
 		$today    = current_time( 'Y-m-d' );
 		$month    = gmdate( 'Y-m', strtotime( $today ) );
 
-		$total       = 0.0;
-		$this_month  = 0.0;
-		$today_total = 0.0;
+		$total              = 0.0;
+		$this_month         = 0.0;
+		$today_total        = 0.0;
+		$gross_total        = 0.0;
+		$doctor_share_total = 0.0;
 
 		foreach ( $all_paid as $row ) {
-			$charge = (float) $row['charge'];
-			$total += $charge;
+			$split           = Revenue_Split::split( $row['doctor_id'], $row['charge'] );
+			$hospital_share  = $split['hospital_share'];
+			$gross_total    += (float) $row['charge'];
+			$doctor_share_total += $split['doctor_share'];
+			$total          += $hospital_share;
 
 			if ( 0 === strpos( $row['date'], $month ) ) {
-				$this_month += $charge;
+				$this_month += $hospital_share;
 			}
 
 			if ( $row['date'] === $today ) {
-				$today_total += $charge;
+				$today_total += $hospital_share;
 			}
 		}
 
 		return array(
-			'total'          => $total,
-			'this_month'     => $this_month,
-			'today'          => $today_total,
-			'invoice_count'  => count( $all_paid ),
+			'total'              => $total,
+			'this_month'         => $this_month,
+			'today'              => $today_total,
+			'invoice_count'      => count( $all_paid ),
+			'gross_total'        => $gross_total,
+			'doctor_share_total' => $doctor_share_total,
 		);
 	}
 
 	/**
-	 * Daily paid revenue for the last $days days (today inclusive) — for the
-	 * admin Dashboard overview's revenue trend chart. Every day in the
-	 * range is present (0 where nothing was paid that day), so the chart
-	 * never has to interpolate a gap.
+	 * Daily HOSPITAL/PLATFORM-share revenue (see Revenue_Split, and
+	 * revenue_summary()'s docblock) for the last $days days (today
+	 * inclusive) — for the admin Dashboard overview's revenue trend chart.
+	 * Every day in the range is present (0 where nothing was paid that
+	 * day), so the chart never has to interpolate a gap.
 	 *
 	 * @param int $days How many days back to include (today counts as one).
 	 * @return array List of `array( 'date', 'label', 'total' )`, oldest first.
@@ -2217,7 +2236,7 @@ class Appointments {
 
 		foreach ( $paid as $row ) {
 			if ( isset( $totals[ $row['date'] ] ) ) {
-				$totals[ $row['date'] ] += (float) $row['charge'];
+				$totals[ $row['date'] ] += Revenue_Split::split( $row['doctor_id'], $row['charge'] )['hospital_share'];
 			}
 		}
 
@@ -2232,6 +2251,52 @@ class Appointments {
 		}
 
 		return $rows;
+	}
+
+	/**
+	 * Revenue stat cards for a single doctor's own "Earnings" tab — their
+	 * own share (see Revenue_Split) of every one of their paid
+	 * appointments: all-time, this month, and today. Mirrors
+	 * revenue_summary()'s shape/date logic, scoped to one doctor and
+	 * reporting the doctor's share instead of the hospital's.
+	 *
+	 * @param int $doctor_id Doctor's user ID.
+	 * @return array { @type float total, @type float this_month, @type float today, @type int invoice_count, @type array current_split (see Revenue_Split::get_for_doctor()) }
+	 */
+	public static function doctor_revenue_summary( $doctor_id ) {
+		$all_paid = self::all_for_admin(
+			array(
+				'doctor_id'      => $doctor_id,
+				'payment_status' => self::PAYMENT_STATUS_PAID,
+			)
+		);
+		$today    = current_time( 'Y-m-d' ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- comparing against strtotime() of stored local date/time strings, not doing math that needs UTC.
+		$month    = gmdate( 'Y-m', strtotime( $today ) );
+
+		$total       = 0.0;
+		$this_month  = 0.0;
+		$today_total = 0.0;
+
+		foreach ( $all_paid as $row ) {
+			$doctor_share = Revenue_Split::split( $doctor_id, $row['charge'] )['doctor_share'];
+			$total       += $doctor_share;
+
+			if ( 0 === strpos( $row['date'], $month ) ) {
+				$this_month += $doctor_share;
+			}
+
+			if ( $row['date'] === $today ) {
+				$today_total += $doctor_share;
+			}
+		}
+
+		return array(
+			'total'         => $total,
+			'this_month'    => $this_month,
+			'today'         => $today_total,
+			'invoice_count' => count( $all_paid ),
+			'current_split' => Revenue_Split::get_for_doctor( $doctor_id ),
+		);
 	}
 
 	/**

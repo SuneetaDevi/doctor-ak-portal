@@ -48,6 +48,7 @@ class Role_Permissions {
 			'video-consultation' => __( 'Video Consultation', 'doctor-ak-portal' ),
 			'appointments'       => __( 'Appointments', 'doctor-ak-portal' ),
 			'patients'           => __( 'Patients', 'doctor-ak-portal' ),
+			'earnings'           => __( 'Earnings', 'doctor-ak-portal' ),
 			'notifications'      => __( 'Notifications', 'doctor-ak-portal' ),
 			'settings'           => __( 'Settings', 'doctor-ak-portal' ),
 		);

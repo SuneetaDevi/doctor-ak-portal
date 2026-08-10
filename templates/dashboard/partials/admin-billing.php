@@ -8,7 +8,7 @@
  * @package DoctorAKPortal\Templates
  *
  * @var array  $invoices    Rows from Appointments::all_for_admin( [ 'payment_status' => 'paid', ... ] ).
- * @var array  $revenue     { total, this_month, today, invoice_count }, see Appointments::revenue_summary().
+ * @var array  $revenue     { total, this_month, today, invoice_count, gross_total, doctor_share_total }, see Appointments::revenue_summary() — total/this_month/today are the HOSPITAL's share only.
  * @var string $billing_url Unfiltered URL of this section, for the filter form and "Clear" link.
  * @var array  $filters     Active filter values: date_from, date_to.
  */
@@ -29,24 +29,24 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'];
 ?>
 <div class="dak-dashboard-greeting">
 	<h1><?php esc_html_e( 'Billing', 'doctor-ak-portal' ); ?></h1>
-	<p><?php esc_html_e( 'Revenue from every paid appointment, with a downloadable PDF invoice for each.', 'doctor-ak-portal' ); ?></p>
+	<p><?php esc_html_e( "The clinic's own share of every paid appointment, after each doctor's revenue split — with a downloadable PDF invoice for each.", 'doctor-ak-portal' ); ?></p>
 </div>
 
 <section class="dak-dashboard-statistics">
 	<div class="dak-stat-card">
 		<span class="dak-stat-icon dak-stat-icon-green" aria-hidden="true"><?php echo $dak_billing_icons['money']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 		<span class="dak-stat-value">PKR <?php echo esc_html( number_format_i18n( $revenue['today'] ) ); ?></span>
-		<span class="dak-stat-label"><?php esc_html_e( 'Revenue today', 'doctor-ak-portal' ); ?></span>
+		<span class="dak-stat-label"><?php esc_html_e( 'Hospital revenue today', 'doctor-ak-portal' ); ?></span>
 	</div>
 	<div class="dak-stat-card">
 		<span class="dak-stat-icon dak-stat-icon-green" aria-hidden="true"><?php echo $dak_billing_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 		<span class="dak-stat-value">PKR <?php echo esc_html( number_format_i18n( $revenue['this_month'] ) ); ?></span>
-		<span class="dak-stat-label"><?php esc_html_e( 'This month', 'doctor-ak-portal' ); ?></span>
+		<span class="dak-stat-label"><?php esc_html_e( 'Hospital revenue this month', 'doctor-ak-portal' ); ?></span>
 	</div>
 	<div class="dak-stat-card">
 		<span class="dak-stat-icon dak-stat-icon-green" aria-hidden="true"><?php echo $dak_billing_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 		<span class="dak-stat-value">PKR <?php echo esc_html( number_format_i18n( $revenue['total'] ) ); ?></span>
-		<span class="dak-stat-label"><?php esc_html_e( 'All-time', 'doctor-ak-portal' ); ?></span>
+		<span class="dak-stat-label"><?php esc_html_e( 'Hospital revenue all-time', 'doctor-ak-portal' ); ?></span>
 	</div>
 	<div class="dak-stat-card">
 		<span class="dak-stat-icon dak-stat-icon-green" aria-hidden="true"><?php echo $dak_billing_icons['download']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
@@ -54,6 +54,19 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'];
 		<span class="dak-stat-label"><?php esc_html_e( 'Invoices issued', 'doctor-ak-portal' ); ?></span>
 	</div>
 </section>
+
+<p class="dak-field-hint">
+	<?php
+	echo esc_html(
+		sprintf(
+			/* translators: 1: gross amount collected across every paid appointment, 2: total paid out to doctors as their share. */
+			__( 'For reference: PKR %1$s was collected from patients in total, of which PKR %2$s is doctors\' own share.', 'doctor-ak-portal' ),
+			number_format_i18n( $revenue['gross_total'] ),
+			number_format_i18n( $revenue['doctor_share_total'] )
+		)
+	);
+	?>
+</p>
 
 <section class="dak-dashboard-card dak-appt-filters-card">
 	<div class="dak-dashboard-card-header">
@@ -91,6 +104,7 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'];
 		<p class="dak-empty-state"><?php esc_html_e( 'No paid appointments match these filters.', 'doctor-ak-portal' ); ?></p>
 	<?php else : ?>
 		<?php foreach ( $invoices as $row ) : ?>
+			<?php $dak_invoice_split = \DoctorAKPortal\Includes\Revenue_Split::split( $row['doctor_id'], $row['charge'] ); ?>
 			<div class="dak-admin-record-row">
 				<div class="dak-admin-record-row-main">
 					<span class="dak-admin-record-row-info">
@@ -117,6 +131,12 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'];
 							<?php esc_html_e( 'Download Invoice', 'doctor-ak-portal' ); ?>
 						</a>
 					</span>
+				</div>
+
+				<div class="dak-admin-record-row-secondary">
+					<span class="dak-admin-record-row-secondary-label"><?php esc_html_e( 'Split:', 'doctor-ak-portal' ); ?></span>
+					<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( sprintf( /* translators: %s: doctor's share amount. */ __( "Doctor: PKR %s", 'doctor-ak-portal' ), number_format( $dak_invoice_split['doctor_share'], 0 ) ) ); ?></span>
+					<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( sprintf( /* translators: %s: hospital's share amount. */ __( 'Hospital: PKR %s', 'doctor-ak-portal' ), number_format( $dak_invoice_split['hospital_share'], 0 ) ) ); ?></span>
 				</div>
 			</div>
 		<?php endforeach; ?>

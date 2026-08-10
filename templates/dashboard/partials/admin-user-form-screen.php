@@ -215,6 +215,28 @@ $dak_list_noun       = isset( $dak_list_nouns[ $section ] ) ? $dak_list_nouns[ $
 				<?php endif; ?>
 			</div>
 
+			<?php
+			$dak_payment_model        = $dak_is_editing ? $editing_user['payment_model'] : \DoctorAKPortal\Includes\Revenue_Split::MODEL_COMMISSION;
+			$dak_doctor_share_percent = $dak_is_editing ? $editing_user['doctor_share_percent'] : \DoctorAKPortal\Includes\Revenue_Split::DEFAULT_DOCTOR_SHARE_PERCENT;
+			$dak_is_salary_model      = \DoctorAKPortal\Includes\Revenue_Split::MODEL_SALARY === $dak_payment_model;
+			?>
+			<div class="dak-field-row" id="dak-admin-user-revenue-split">
+				<div class="dak-field">
+					<label for="dak-admin-user-payment-model"><?php esc_html_e( 'Payment Model', 'doctor-ak-portal' ); ?></label>
+					<select id="dak-admin-user-payment-model" name="payment_model">
+						<option value="<?php echo esc_attr( \DoctorAKPortal\Includes\Revenue_Split::MODEL_COMMISSION ); ?>" <?php selected( ! $dak_is_salary_model ); ?>><?php esc_html_e( 'Commission (share of each payment)', 'doctor-ak-portal' ); ?></option>
+						<option value="<?php echo esc_attr( \DoctorAKPortal\Includes\Revenue_Split::MODEL_SALARY ); ?>" <?php selected( $dak_is_salary_model ); ?>><?php esc_html_e( 'Salary (paid outside the platform)', 'doctor-ak-portal' ); ?></option>
+					</select>
+					<p class="dak-field-hint"><?php esc_html_e( 'Salary-based doctors keep no share here — every payment counts fully as clinic revenue.', 'doctor-ak-portal' ); ?></p>
+				</div>
+				<div class="dak-field" id="dak-admin-user-doctor-share-field">
+					<label for="dak-admin-user-doctor-share-percent"><?php esc_html_e( "Doctor's Share (%)", 'doctor-ak-portal' ); ?></label>
+					<input type="number" min="0" max="100" step="0.5" id="dak-admin-user-doctor-share-percent" name="doctor_share_percent" value="<?php echo esc_attr( $dak_doctor_share_percent ); ?>" <?php disabled( $dak_is_salary_model ); ?>>
+					<p class="dak-field-hint" id="dak-admin-user-hospital-share-hint"></p>
+					<span class="dak-field-error" data-field="doctor_share_percent"></span>
+				</div>
+			</div>
+
 		<?php else : ?>
 
 			<div class="dak-field">

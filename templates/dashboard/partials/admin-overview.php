@@ -101,7 +101,7 @@ endif;
 	<div class="dak-stat-card">
 		<span class="dak-stat-icon dak-stat-icon-green" aria-hidden="true"><?php echo $dak_overview_icons['money']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 		<span class="dak-stat-value">PKR <?php echo esc_html( number_format_i18n( $revenue_this_month ) ); ?></span>
-		<span class="dak-stat-label"><?php esc_html_e( 'Revenue this month', 'doctor-ak-portal' ); ?></span>
+		<span class="dak-stat-label"><?php esc_html_e( 'Hospital revenue this month', 'doctor-ak-portal' ); ?></span>
 	</div>
 </section>
 
@@ -109,8 +109,8 @@ endif;
 	<section class="dak-dashboard-card">
 		<div class="dak-dashboard-card-header">
 			<div>
-				<h2><?php esc_html_e( 'Revenue', 'doctor-ak-portal' ); ?></h2>
-				<p class="dak-notifications-card-subtitle"><?php esc_html_e( 'Last 14 days, paid appointments', 'doctor-ak-portal' ); ?></p>
+				<h2><?php esc_html_e( 'Hospital Revenue', 'doctor-ak-portal' ); ?></h2>
+				<p class="dak-notifications-card-subtitle"><?php esc_html_e( "Last 14 days, clinic's own share of paid appointments", 'doctor-ak-portal' ); ?></p>
 			</div>
 		</div>
 		<?php

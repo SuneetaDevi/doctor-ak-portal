@@ -15,6 +15,7 @@ use DoctorAKPortal\Includes\Doctor_Awards;
 use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Phone;
 use DoctorAKPortal\Includes\Profile_Picture_Uploader;
+use DoctorAKPortal\Includes\Revenue_Split;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Specializations;
 
@@ -150,6 +151,7 @@ class Admin_User_Handler {
 		$clinic_fields_list         = array();
 		$specializations            = array();
 		$video_consultation_allowed = true;
+		$revenue_split_fields       = array();
 
 		if ( $is_for_doctor ) {
 			$qualification = isset( $_POST['qualification'] ) ? sanitize_text_field( wp_unslash( $_POST['qualification'] ) ) : '';
@@ -214,6 +216,13 @@ class Admin_User_Handler {
 
 			if ( empty( $specializations ) ) {
 				$errors['specializations'] = __( 'Please select at least one specialization.', 'doctor-ak-portal' );
+			}
+
+			$revenue_split_fields = Revenue_Split::sanitize_fields_from_request( $_POST ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Revenue_Split::sanitize_fields_from_request() unslashes/sanitizes each field itself.
+
+			if ( is_wp_error( $revenue_split_fields ) ) {
+				$errors['doctor_share_percent'] = $revenue_split_fields->get_error_message();
+				$revenue_split_fields           = array();
 			}
 
 			// Optional "align to clinics" — only attempted for whichever
@@ -370,6 +379,7 @@ class Admin_User_Handler {
 			update_user_meta( $saved_user_id, 'doctor_ak_expertise', $expertise );
 			update_user_meta( $saved_user_id, Clinics::VIDEO_CONSULTATION_ALLOWED_META_KEY, $video_consultation_allowed ? '1' : '0' );
 			update_user_meta( $saved_user_id, Doctor_Awards::META_KEY, Doctor_Awards::encode( $awards ) );
+			Revenue_Split::save_for_doctor( $saved_user_id, $revenue_split_fields );
 
 			foreach ( $clinic_fields_list as $clinic_fields ) {
 				Clinics::create( $saved_user_id, $clinic_fields, Clinics::empty_sessions() );
