@@ -290,6 +290,7 @@ endif;
 								<?php endif; ?>
 								<?php if ( ! $dak_row['is_paid'] && (float) $dak_row['charge'] > 0 && 'online' === $dak_row['payment_mode'] ) : ?>
 									<button type="button" class="dak-status-pill dak-status-pill-action" data-admin-appointment-pay-now data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>" title="<?php esc_attr_e( 'Pay for this appointment', 'doctor-ak-portal' ); ?>"><?php echo esc_html( sprintf( /* translators: %s: amount. */ __( 'Pay PKR%s', 'doctor-ak-portal' ), number_format( (float) $dak_row['charge'], 0 ) ) ); ?></button>
+									<button type="button" class="dak-icon-button" data-admin-appointment-mark-paid data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>" title="<?php esc_attr_e( 'Already collected? Mark this appointment as paid manually.', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Mark Paid', 'doctor-ak-portal' ); ?>"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.2"/><path d="M6.8 10.2l2.1 2.1 4.3-4.6"/></svg></button>
 								<?php elseif ( ! $dak_row['is_paid'] && (float) $dak_row['charge'] > 0 ) : ?>
 									<button type="button" class="dak-status-pill dak-status-pill-action" data-admin-appointment-mark-paid data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>" title="<?php esc_attr_e( 'Mark this appointment as paid', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Mark Paid', 'doctor-ak-portal' ); ?></button>
 								<?php endif; ?>
