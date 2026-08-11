@@ -48,6 +48,7 @@
 
 		renderDateStrip();
 		updateServiceCards( getDoctorId(), getType() );
+		updateClinicCards( getDoctorId(), getType() );
 		applyIdentityState();
 		updateSummary();
 		updateServiceStepDoctorSummary();
@@ -231,6 +232,7 @@
 
 		updateVideoAvailability( card.hasAttribute( 'data-video-disabled' ) );
 		updateServiceCards( getDoctorId(), getType() );
+		updateClinicCards( getDoctorId(), getType() );
 		resetDateSelection();
 		monthCache = {};
 		fetchAndRenderDateStrip();
@@ -286,6 +288,7 @@
 
 				setType( segment.getAttribute( 'data-type' ) );
 				updateServiceCards( getDoctorId(), getType() );
+				updateClinicCards( getDoctorId(), getType() );
 				resetDateSelection();
 				monthCache = {};
 
@@ -306,8 +309,6 @@
 			segment.classList.toggle( 'is-active', isActive );
 			segment.setAttribute( 'aria-selected', isActive ? 'true' : 'false' );
 		} );
-
-		document.getElementById( 'dak-booking-clinic-hint' ).classList.toggle( 'dak-hidden', 'clinic' !== type );
 
 		// The video consultation's fixed fee card renders into this same
 		// section (see updateServiceCards()/updateVideoPriceCard()) — it must
@@ -498,6 +499,97 @@
 
 		document.getElementById( 'dak-booking-service-id' ).value = card.getAttribute( 'data-service-id' );
 		clearFieldError( 'service_id' );
+		updateSummary();
+	}
+
+	/**
+	 * Shows a card per physical clinic location the selected doctor
+	 * practices at (name + address), letting the patient pick which one
+	 * they're visiting — only relevant for "Clinic Visit" bookings. Hidden
+	 * entirely for "Online Video", or when the doctor has no clinic
+	 * locations configured (falls back to the generic hint instead).
+	 *
+	 * @param {string} doctorId Selected doctor's ID.
+	 * @param {string} type     'clinic' or 'video'.
+	 * @return {void}
+	 */
+	function updateClinicCards( doctorId, type ) {
+		var section = document.getElementById( 'dak-booking-clinic-section' );
+		var container = document.getElementById( 'dak-booking-clinic-cards' );
+		var hint = document.getElementById( 'dak-booking-clinic-hint' );
+
+		if ( ! section || ! container ) {
+			return;
+		}
+
+		document.getElementById( 'dak-booking-clinic-id' ).value = '';
+		container.innerHTML = '';
+
+		if ( 'clinic' !== type || ! doctorId ) {
+			section.classList.add( 'dak-hidden' );
+
+			if ( hint ) {
+				hint.classList.add( 'dak-hidden' );
+			}
+
+			return;
+		}
+
+		var clinics = window.dakBookingPage.clinics ? window.dakBookingPage.clinics[ doctorId ] : null;
+
+		if ( ! clinics || ! clinics.length ) {
+			section.classList.add( 'dak-hidden' );
+
+			if ( hint ) {
+				hint.classList.remove( 'dak-hidden' );
+			}
+
+			return;
+		}
+
+		if ( hint ) {
+			hint.classList.add( 'dak-hidden' );
+		}
+
+		section.classList.remove( 'dak-hidden' );
+
+		clinics.forEach( function ( clinic, index ) {
+			var card = document.createElement( 'button' );
+			card.type = 'button';
+			card.className = 'dak-booking-service-card';
+			card.setAttribute( 'data-clinic-id', clinic.id );
+			card.setAttribute( 'data-clinic-name', clinic.name );
+			card.setAttribute( 'data-clinic-address', clinic.address || '' );
+
+			var nameEl = document.createElement( 'strong' );
+			nameEl.textContent = clinic.name;
+
+			var metaEl = document.createElement( 'span' );
+			metaEl.textContent = clinic.address || clinic.phone || '';
+
+			card.appendChild( nameEl );
+			card.appendChild( metaEl );
+
+			card.addEventListener( 'click', function () {
+				selectClinic( card );
+			} );
+
+			container.appendChild( card );
+
+			if ( 0 === index ) {
+				selectClinic( card );
+			}
+		} );
+	}
+
+	function selectClinic( card ) {
+		document.querySelectorAll( '#dak-booking-clinic-cards .dak-booking-service-card' ).forEach( function ( el ) {
+			el.classList.remove( 'is-selected' );
+		} );
+		card.classList.add( 'is-selected' );
+
+		document.getElementById( 'dak-booking-clinic-id' ).value = card.getAttribute( 'data-clinic-id' );
+		clearFieldError( 'clinic_id' );
 		updateSummary();
 	}
 
@@ -766,13 +858,10 @@
 			} );
 	}
 
-	var weekdayLabels = [ 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday' ];
-
 	function formatDateLabel( dateStr ) {
 		var parts = dateStr.split( '-' );
-		var date = new Date( parseInt( parts[ 0 ], 10 ), parseInt( parts[ 1 ], 10 ) - 1, parseInt( parts[ 2 ], 10 ) );
 
-		return weekdayLabels[ date.getDay() ] + ', ' + monthLabels[ date.getMonth() ] + ' ' + date.getDate();
+		return parts[ 2 ] + '/' + parts[ 1 ] + '/' + parts[ 0 ];
 	}
 
 	function renderSlotGroups( slots ) {
@@ -893,7 +982,7 @@
 		}
 
 		if ( date && time ) {
-			text.textContent = formatDateLabel( date ) + ', ' + formatTimeLabel( time );
+			text.textContent = formatDateLabel( date ) + ' ' + formatTimeLabel( time );
 			show( bar );
 		} else {
 			hide( bar );
@@ -911,7 +1000,9 @@
 			hours12 = 12;
 		}
 
-		return hours12 + ':' + minutes + ' ' + period;
+		var hours12Padded = hours12 < 10 ? '0' + hours12 : String( hours12 );
+
+		return hours12Padded + ':' + minutes + ' ' + period;
 	}
 
 	/* ---------------------------------------------------------------------
@@ -945,6 +1036,7 @@
 	function updateSummary() {
 		var doctorCard = document.querySelector( '[data-doctor-card].is-selected' );
 		var serviceCard = document.querySelector( '.dak-booking-service-card.is-selected' );
+		var clinicCard = document.querySelector( '#dak-booking-clinic-cards .dak-booking-service-card.is-selected' );
 		var date = document.getElementById( 'dak-booking-date' ).value;
 		var time = document.getElementById( 'dak-booking-time' ).value;
 		var type = getType();
@@ -953,6 +1045,7 @@
 		var rows = {
 			doctor: hasDoctor ? 'Dr. ' + doctorCard.getAttribute( 'data-doctor-name' ) : '',
 			type: hasDoctor ? ( 'video' === type ? 'Online Video' : 'Clinic Visit' ) : '',
+			clinic: ( hasDoctor && 'clinic' === type && clinicCard ) ? clinicCard.getAttribute( 'data-clinic-name' ) + ( clinicCard.getAttribute( 'data-clinic-address' ) ? ' — ' + clinicCard.getAttribute( 'data-clinic-address' ) : '' ) : '',
 			service: ( hasDoctor && serviceCard ) ? serviceCard.getAttribute( 'data-service-name' ) + ( serviceCard.getAttribute( 'data-service-duration' ) > 0 ? ' · ' + serviceCard.getAttribute( 'data-service-duration' ) + ' min' : '' ) : '',
 			date: date ? formatDateLabel( date ) : '',
 			time: time ? formatTimeLabel( time ) : '',
@@ -1166,6 +1259,7 @@
 			formData.append( 'date', document.getElementById( 'dak-booking-date' ).value );
 			formData.append( 'time', document.getElementById( 'dak-booking-time' ).value );
 			formData.append( 'service_id', document.getElementById( 'dak-booking-service-id' ).value );
+			formData.append( 'clinic_id', document.getElementById( 'dak-booking-clinic-id' ).value );
 			formData.append( 'payment_choice', document.getElementById( 'dak-booking-payment-choice' ).value );
 
 			var guestBlockVisible = ! document.getElementById( 'dak-booking-identity-guest' ).classList.contains( 'dak-hidden' );

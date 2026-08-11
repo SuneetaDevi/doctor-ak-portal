@@ -115,7 +115,7 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] ||
 						<strong><?php echo esc_html( $row['patient_name'] ); ?></strong>
 						<span class="dak-admin-record-row-id"><?php echo esc_html( sprintf( /* translators: %s: doctor name. */ __( 'Dr. %s', 'doctor-ak-portal' ), $row['doctor_name'] ) ); ?></span>
 					</span>
-					<span class="dak-admin-record-row-meta"><?php echo esc_html( $row['date'] . ' &middot; ' . $row['time'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- esc_html() already applied before concatenation. ?></span>
+					<span class="dak-admin-record-row-meta"><?php echo esc_html( $row['datetime_label'] ); ?></span>
 					<span class="dak-admin-record-row-tags">
 						<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( '' !== $row['service_name'] ? $row['service_name'] : $row['type_label'] ); ?></span>
 					</span>

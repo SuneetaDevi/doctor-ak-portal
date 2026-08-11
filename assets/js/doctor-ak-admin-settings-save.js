@@ -73,6 +73,7 @@
 			formData.append( 'booking', checkedOf( 'dak-notify-booking' ) );
 			formData.append( 'paid', checkedOf( 'dak-notify-paid' ) );
 			formData.append( 'cancelled', checkedOf( 'dak-notify-cancelled' ) );
+			formData.append( 'announcements', checkedOf( 'dak-notify-announcements' ) );
 
 			return fetch( window.dakNotifications.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
 				.then( function ( response ) { return response.json(); } )

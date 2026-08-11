@@ -108,11 +108,7 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] ||
 							<strong><?php echo esc_html( $row['patient_name'] ); ?></strong>
 							<span class="dak-patient-appt-specialty">
 								<?php
-								$row_date_timestamp = strtotime( $row['date'] );
-								$row_time_timestamp = strtotime( $row['date'] . ' ' . $row['time'] );
-								echo esc_html( $row_date_timestamp ? date_i18n( 'D, M j, Y', $row_date_timestamp ) : $row['date'] );
-								echo ' &middot; ';
-								echo esc_html( $row_time_timestamp ? date_i18n( 'g:i A', $row_time_timestamp ) : $row['time'] );
+								echo esc_html( $row['datetime_label'] );
 								echo ' &middot; ';
 								echo esc_html( $row['type_label'] );
 								?>
@@ -133,7 +129,7 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] ||
 								<?php echo esc_html( sprintf( /* translators: %s: amount. */ __( 'Mark Paid · PKR%s', 'doctor-ak-portal' ), number_format( (float) $row['charge'], 0 ) ) ); ?>
 							</button>
 						<?php endif; ?>
-						<?php if ( in_array( $row['status'], array( 'confirmed', 'paid', 'rescheduled' ), true ) ) : ?>
+						<?php if ( in_array( $row['status'], array( 'confirmed', 'paid', 'rescheduled' ), true ) && ( $row['is_paid'] || (float) $row['charge'] <= 0 ) ) : ?>
 							<button type="button" class="dak-button dak-button-secondary dak-button-sm" data-mark-completed data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"><?php esc_html_e( 'Mark Completed', 'doctor-ak-portal' ); ?></button>
 						<?php endif; ?>
 						<?php

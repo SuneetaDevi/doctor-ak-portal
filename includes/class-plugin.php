@@ -242,6 +242,8 @@ class Plugin {
 		$this->loader->add_action( 'doctor_ak_doctor_registered', $notifications, 'notify_doctor_registration_received' );
 		$this->loader->add_action( 'doctor_ak_doctor_approved', $notifications, 'notify_doctor_approved' );
 		$this->loader->add_action( 'doctor_ak_patient_added', $notifications, 'notify_patient_added' );
+		$this->loader->add_action( 'doctor_ak_service_created', $notifications, 'notify_new_service', 10, 3 );
+		$this->loader->add_action( 'transition_post_status', $notifications, 'notify_new_blog_post', 10, 3 );
 		$this->loader->add_action( Notifications::CRON_HOOK, $notifications, 'send_reminders' );
 		$this->loader->add_filter( 'cron_schedules', 'DoctorAKPortal\\Includes\\Notifications', 'add_cron_interval' );
 		$this->loader->add_action( Notifications::VIDEO_LINK_CRON_HOOK, $notifications, 'send_video_link_emails' );

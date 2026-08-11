@@ -158,7 +158,7 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'];
 				<div class="dak-admin-record-row-main">
 					<span class="dak-admin-record-row-info">
 						<strong><?php echo esc_html( sprintf( 'INV-%05d', $row['id'] ) . ' &middot; ' . ( '' !== $row['service_name'] ? $row['service_name'] : $row['type_label'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- esc_html() already applied to both pieces before concatenation. ?></strong>
-						<span class="dak-admin-record-row-id"><?php echo esc_html( sprintf( 'Dr. %1$s &middot; %2$s', $row['doctor_name'], $row['date'] ) ); ?></span>
+						<span class="dak-admin-record-row-id"><?php echo esc_html( sprintf( 'Dr. %1$s &middot; %2$s', $row['doctor_name'], $row['datetime_label'] ) ); ?></span>
 					</span>
 
 					<span class="dak-admin-record-row-tags">

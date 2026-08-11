@@ -102,6 +102,7 @@ class Appointments {
 	 *     @type string $guest_email Guest's email (ignored when patient_id is set).
 	 *     @type string $guest_phone Guest's phone (ignored when patient_id is set).
 	 *     @type string $type        'clinic' or 'video'.
+	 *     @type int    $clinic_id   For a clinic visit, which of the doctor's physical Clinics rows the patient is visiting (0 if the doctor has none configured, or for a video appointment).
 	 *     @type string $date        'YYYY-MM-DD'.
 	 *     @type string $time        'HH:MM'.
 	 *     @type string $notes       Optional free text.
@@ -120,6 +121,39 @@ class Appointments {
 
 		if ( self::TYPE_VIDEO === $type && ! Clinics::doctor_has_active_video_clinic( $doctor_id ) ) {
 			return new \WP_Error( 'doctor_ak_video_not_offered', __( 'This doctor does not offer online video consultations.', 'doctor-ak-portal' ) );
+		}
+
+		// A clinic visit needs to know WHICH of the doctor's physical clinic
+		// locations the patient is going to when the doctor practices at more
+		// than one — see Booking_Page::clinics_by_doctor(). Doctors with no
+		// physical clinic configured yet (legacy/incomplete profiles) are
+		// exempt, since there's nothing to pick from. Only enforced for the
+		// real patient-facing booking flow — the admin "Add Appointment"
+		// modal has no clinic picker yet, so admin_override bookings simply
+		// accept whatever (or no) clinic_id was posted rather than blocking
+		// the admin on a field their form doesn't offer.
+		$clinic_id = isset( $data['clinic_id'] ) ? (int) $data['clinic_id'] : 0;
+
+		if ( self::TYPE_CLINIC === $type && empty( $data['admin_override'] ) ) {
+			$doctor_physical_clinic_ids = wp_list_pluck(
+				array_filter(
+					Clinics::get_for_doctor( $doctor_id ),
+					function ( $clinic ) {
+						return Clinics::TYPE_PHYSICAL === $clinic['type'];
+					}
+				),
+				'id'
+			);
+
+			if ( ! empty( $doctor_physical_clinic_ids ) && ! in_array( $clinic_id, $doctor_physical_clinic_ids, true ) ) {
+				return new \WP_Error( 'doctor_ak_invalid_clinic', __( "Please choose which of the doctor's clinics you'd like to visit.", 'doctor-ak-portal' ) );
+			}
+
+			if ( empty( $doctor_physical_clinic_ids ) ) {
+				$clinic_id = 0;
+			}
+		} elseif ( self::TYPE_VIDEO === $type ) {
+			$clinic_id = 0;
 		}
 
 		$date = isset( $data['date'] ) ? sanitize_text_field( $data['date'] ) : '';
@@ -254,6 +288,7 @@ class Appointments {
 		update_post_meta( $post_id, 'doctor_ak_appointment_guest_email', $guest_email );
 		update_post_meta( $post_id, 'doctor_ak_appointment_guest_phone', $guest_phone );
 		update_post_meta( $post_id, 'doctor_ak_appointment_type', $type );
+		update_post_meta( $post_id, 'doctor_ak_appointment_clinic_id', $clinic_id );
 		update_post_meta( $post_id, 'doctor_ak_appointment_date', $date );
 		update_post_meta( $post_id, 'doctor_ak_appointment_time', $time );
 		update_post_meta( $post_id, 'doctor_ak_appointment_status', $status );
@@ -1018,6 +1053,7 @@ class Appointments {
 			'type_label'            => self::type_label( $appointment['type'] ),
 			'date'                  => $appointment['date'],
 			'time'                  => $appointment['time'],
+			'datetime_label'        => self::datetime_label( $appointment['date'], $appointment['time'] ),
 			'status'                => $appointment['status'],
 			'status_label'          => self::status_label( $appointment['status'] ),
 			'status_badge_class'    => self::status_badge_class( $appointment['status'] ),
@@ -2410,7 +2446,11 @@ class Appointments {
 
 	/**
 	 * Builds a single admin table row from an appointment array — resolves
-	 * the doctor's name and adds human-readable labels for type/status.
+	 * the doctor's name and adds human-readable labels for type/status, a
+	 * 'd/m/Y h:i A'-formatted 'datetime_label', and 'is_overdue' (the
+	 * appointment's date/time has already passed and it was never resolved
+	 * — i.e. not cancelled or completed) for templates that restrict a
+	 * lapsed appointment's actions to Reschedule only.
 	 *
 	 * @param array $appointment Appointment array from get().
 	 * @return array
@@ -2425,6 +2465,26 @@ class Appointments {
 		}
 
 		$patient_name = self::patient_display_name_for( $appointment );
+
+		$clinic_label = '';
+
+		if ( $appointment['clinic_id'] > 0 ) {
+			$clinic = Clinics::find( $appointment['clinic_id'] );
+
+			if ( $clinic ) {
+				$clinic_label = $clinic['name'];
+				$address_line = implode( ', ', array_filter( array( $clinic['address'], $clinic['area_label'], $clinic['city_label'] ) ) );
+
+				if ( '' !== $address_line ) {
+					$clinic_label .= ' — ' . $address_line;
+				}
+			}
+		}
+
+		$start_timestamp = strtotime( $appointment['date'] . ' ' . $appointment['time'] );
+		$is_overdue       = false !== $start_timestamp
+			&& $start_timestamp < current_time( 'timestamp' ) // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- comparing against strtotime() of a stored local date/time string, not doing math that needs UTC.
+			&& ! in_array( $appointment['status'], array( self::STATUS_CANCELLED, self::STATUS_COMPLETED ), true );
 
 		return array(
 			'id'                => $appointment['id'],
@@ -2441,8 +2501,12 @@ class Appointments {
 			'doctor_avatar_url' => $doctor ? self::avatar_url_for_user( $doctor->ID ) : '',
 			'type'              => $appointment['type'],
 			'type_label'        => self::type_label( $appointment['type'] ),
+			'clinic_id'         => $appointment['clinic_id'],
+			'clinic_label'      => $clinic_label,
 			'date'              => $appointment['date'],
 			'time'              => $appointment['time'],
+			'datetime_label'    => false !== $start_timestamp ? date_i18n( 'd/m/Y h:i A', $start_timestamp ) : trim( $appointment['date'] . ' ' . $appointment['time'] ),
+			'is_overdue'        => $is_overdue,
 			'status'            => $appointment['status'],
 			'status_label'      => self::status_label( $appointment['status'] ),
 			'status_badge_class' => self::status_badge_class( $appointment['status'] ),
@@ -2549,6 +2613,22 @@ class Appointments {
 		}
 
 		return 'is-pending';
+	}
+
+	/**
+	 * An appointment's date+time as a single 'd/m/Y h:i A' string (e.g.
+	 * "10/08/2026 04:20 PM") — the one format used everywhere an
+	 * appointment's date/time is displayed across the admin, doctor, and
+	 * patient dashboards.
+	 *
+	 * @param string $date 'YYYY-MM-DD'.
+	 * @param string $time 'HH:MM'.
+	 * @return string
+	 */
+	private static function datetime_label( $date, $time ) {
+		$timestamp = strtotime( $date . ' ' . $time );
+
+		return false !== $timestamp ? date_i18n( 'd/m/Y h:i A', $timestamp ) : trim( $date . ' ' . $time );
 	}
 
 	/**
@@ -2758,6 +2838,7 @@ class Appointments {
 			'guest_email'    => get_post_meta( $post->ID, 'doctor_ak_appointment_guest_email', true ),
 			'guest_phone'    => get_post_meta( $post->ID, 'doctor_ak_appointment_guest_phone', true ),
 			'type'           => get_post_meta( $post->ID, 'doctor_ak_appointment_type', true ),
+			'clinic_id'      => (int) get_post_meta( $post->ID, 'doctor_ak_appointment_clinic_id', true ),
 			'date'           => get_post_meta( $post->ID, 'doctor_ak_appointment_date', true ),
 			'time'           => get_post_meta( $post->ID, 'doctor_ak_appointment_time', true ),
 			'status'         => get_post_meta( $post->ID, 'doctor_ak_appointment_status', true ),

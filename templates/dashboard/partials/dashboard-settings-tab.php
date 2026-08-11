@@ -9,10 +9,11 @@
  *
  * @package DoctorAKPortal\Templates
  *
- * @var bool $notify_booking   Whether the current account receives "appointment booked" emails. Defaults true if unset.
- * @var bool $notify_paid      Whether the current account receives "payment received" emails. Defaults true if unset.
- * @var bool $notify_cancelled Whether the current account receives "cancellation" emails. Defaults true if unset.
- * @var bool $show_save_button Whether to render this section's own "Save preferences" button. Defaults true; the admin dashboard's Settings page passes false and saves this alongside Clinic Branding via its own single "Save Settings" button instead (see admin-settings-section.php).
+ * @var bool $notify_booking       Whether the current account receives "appointment booked" emails. Defaults true if unset.
+ * @var bool $notify_paid          Whether the current account receives "payment received" emails. Defaults true if unset.
+ * @var bool $notify_cancelled     Whether the current account receives "cancellation" emails. Defaults true if unset.
+ * @var bool $notify_announcements Whether the current account receives "new blog post/service" announcement emails. Defaults true if unset.
+ * @var bool $show_save_button     Whether to render this section's own "Save preferences" button. Defaults true; the admin dashboard's Settings page passes false and saves this alongside Clinic Branding via its own single "Save Settings" button instead (see admin-settings-section.php).
  */
 
 // Prevent direct file access.
@@ -20,10 +21,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$notify_booking   = isset( $notify_booking ) ? $notify_booking : true;
-$notify_paid      = isset( $notify_paid ) ? $notify_paid : true;
-$notify_cancelled = isset( $notify_cancelled ) ? $notify_cancelled : true;
-$show_save_button = ! isset( $show_save_button ) || $show_save_button;
+$notify_booking       = isset( $notify_booking ) ? $notify_booking : true;
+$notify_paid          = isset( $notify_paid ) ? $notify_paid : true;
+$notify_cancelled     = isset( $notify_cancelled ) ? $notify_cancelled : true;
+$notify_announcements = isset( $notify_announcements ) ? $notify_announcements : true;
+$show_save_button     = ! isset( $show_save_button ) || $show_save_button;
 ?>
 <div class="dak-settings-section">
 	<h2><?php esc_html_e( 'Appearance', 'doctor-ak-portal' ); ?></h2>
@@ -72,6 +74,17 @@ $show_save_button = ! isset( $show_save_button ) || $show_save_button;
 		</div>
 		<label class="dak-toggle-switch">
 			<input type="checkbox" id="dak-notify-cancelled" <?php checked( $notify_cancelled ); ?>>
+			<span></span>
+		</label>
+	</div>
+
+	<div class="dak-settings-row">
+		<div class="dak-settings-row-text">
+			<strong><?php esc_html_e( 'Announcements', 'doctor-ak-portal' ); ?></strong>
+			<p><?php esc_html_e( 'Email me when a new blog post or service is added.', 'doctor-ak-portal' ); ?></p>
+		</div>
+		<label class="dak-toggle-switch">
+			<input type="checkbox" id="dak-notify-announcements" <?php checked( $notify_announcements ); ?>>
 			<span></span>
 		</label>
 	</div>

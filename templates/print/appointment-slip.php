@@ -71,7 +71,7 @@ $dak_slip_paid = 'paid' === $appointment['payment_status'];
 		<tr><td><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></td><td><?php echo esc_html( sprintf( 'Dr. %s', $doctor_name ) ); ?></td></tr>
 		<tr><td><?php esc_html_e( 'Type', 'doctor-ak-portal' ); ?></td><td><?php echo esc_html( $dak_slip_type ); ?></td></tr>
 		<tr><td><?php esc_html_e( 'Service', 'doctor-ak-portal' ); ?></td><td><?php echo esc_html( '' !== $appointment['service_name'] ? $appointment['service_name'] : '—' ); ?></td></tr>
-		<tr><td><?php esc_html_e( 'Date & Time', 'doctor-ak-portal' ); ?></td><td><?php echo esc_html( $appointment['date'] . ' ' . $appointment['time'] ); ?></td></tr>
+		<tr><td><?php esc_html_e( 'Date & Time', 'doctor-ak-portal' ); ?></td><td><?php echo esc_html( date_i18n( 'd/m/Y h:i A', strtotime( $appointment['date'] . ' ' . $appointment['time'] ) ) ); ?></td></tr>
 		<tr><td><?php esc_html_e( 'Charges', 'doctor-ak-portal' ); ?></td><td><?php echo $appointment['charge'] > 0 ? esc_html( 'PKR ' . number_format( (float) $appointment['charge'], 0 ) . '/-' ) : esc_html__( 'Free', 'doctor-ak-portal' ); ?></td></tr>
 		<tr><td><?php esc_html_e( 'Payment Mode', 'doctor-ak-portal' ); ?></td><td><?php echo esc_html( 'online' === $appointment['payment_mode'] ? __( 'Online', 'doctor-ak-portal' ) : __( 'Manual', 'doctor-ak-portal' ) ); ?></td></tr>
 		<tr>

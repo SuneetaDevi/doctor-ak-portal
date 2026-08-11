@@ -120,7 +120,24 @@ class Services {
 			array( '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s' )
 		);
 
-		return $inserted ? (int) $wpdb->insert_id : false;
+		if ( ! $inserted ) {
+			return false;
+		}
+
+		$service_id = (int) $wpdb->insert_id;
+
+		/**
+		 * Fires after a new service is created — Notifications listens here
+		 * to email everyone in the directory about it (see
+		 * Notifications::notify_new_service()).
+		 *
+		 * @param int   $service_id Newly created service's ID.
+		 * @param int   $doctor_id  Doctor the service belongs to.
+		 * @param array $fields     Sanitized service fields (see fields()).
+		 */
+		do_action( 'doctor_ak_service_created', $service_id, $doctor_id, $fields );
+
+		return $service_id;
 	}
 
 	/**

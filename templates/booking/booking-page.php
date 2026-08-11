@@ -31,6 +31,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<input type="hidden" name="doctor_id" id="dak-booking-doctor-id" value="<?php echo esc_attr( $selected_doctor_id ); ?>">
 		<input type="hidden" name="type" id="dak-booking-type" value="<?php echo esc_attr( $selected_type ); ?>">
 		<input type="hidden" name="service_id" id="dak-booking-service-id" value="">
+		<input type="hidden" name="clinic_id" id="dak-booking-clinic-id" value="">
 		<input type="hidden" name="date" id="dak-booking-date" value="">
 		<input type="hidden" name="time" id="dak-booking-time" value="">
 		<input type="hidden" name="payment_choice" id="dak-booking-payment-choice" value="later">
@@ -113,8 +114,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<button type="button" class="dak-booking-segment <?php echo 'clinic' === $selected_type ? 'is-active' : ''; ?>" data-type="clinic" role="tab" aria-selected="<?php echo 'clinic' === $selected_type ? 'true' : 'false'; ?>"><?php esc_html_e( 'Clinic Visit', 'doctor-ak-portal' ); ?></button>
 						<button type="button" class="dak-booking-segment <?php echo 'video' === $selected_type ? 'is-active' : ''; ?>" data-type="video" role="tab" aria-selected="<?php echo 'video' === $selected_type ? 'true' : 'false'; ?>" <?php disabled( $video_disabled ); ?>><?php esc_html_e( 'Online Video', 'doctor-ak-portal' ); ?></button>
 					</div>
-					<p class="dak-field-hint" id="dak-booking-clinic-hint"><?php esc_html_e( 'Clinic address shared upon confirmation.', 'doctor-ak-portal' ); ?></p>
+					<p class="dak-field-hint dak-hidden" id="dak-booking-clinic-hint"><?php esc_html_e( 'No specific clinic locations configured — the address will be shared upon confirmation.', 'doctor-ak-portal' ); ?></p>
 					<p class="dak-field-hint dak-hidden" id="dak-booking-video-unavailable"><?php esc_html_e( 'This doctor does not offer online video consultations.', 'doctor-ak-portal' ); ?></p>
+
+					<div id="dak-booking-clinic-section" class="dak-hidden">
+						<div class="dak-booking-field-label"><?php esc_html_e( 'Select clinic', 'doctor-ak-portal' ); ?></div>
+						<div class="dak-booking-service-cards" id="dak-booking-clinic-cards"></div>
+						<span class="dak-field-error" data-field="clinic_id"></span>
+					</div>
 
 					<div id="dak-booking-service-section">
 						<div class="dak-booking-field-label" id="dak-booking-service-label"><?php echo esc_html( 'video' === $selected_type ? __( 'Video Consultation Fee', 'doctor-ak-portal' ) : __( 'Service', 'doctor-ak-portal' ) ); ?></div>
@@ -247,6 +254,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<ul class="dak-booking-summary-list" id="dak-booking-summary-list">
 						<li class="dak-hidden" data-summary-row="doctor"><span class="dak-booking-summary-icon" aria-hidden="true">&#128100;</span><span data-summary-value></span></li>
 						<li class="dak-hidden" data-summary-row="type"><span class="dak-booking-summary-icon" aria-hidden="true">&#128205;</span><span data-summary-value></span></li>
+						<li class="dak-hidden" data-summary-row="clinic"><span class="dak-booking-summary-icon" aria-hidden="true">&#127973;</span><span data-summary-value></span></li>
 						<li class="dak-hidden" data-summary-row="service"><span class="dak-booking-summary-icon" aria-hidden="true">&#128203;</span><span data-summary-value></span></li>
 						<li class="dak-hidden" data-summary-row="date"><span class="dak-booking-summary-icon" aria-hidden="true">&#128197;</span><span data-summary-value></span></li>
 						<li class="dak-hidden" data-summary-row="time"><span class="dak-booking-summary-icon" aria-hidden="true">&#128337;</span><span data-summary-value></span></li>

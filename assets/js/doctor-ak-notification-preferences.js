@@ -28,6 +28,7 @@
 			formData.append( 'booking', document.getElementById( 'dak-notify-booking' ).checked ? '1' : '0' );
 			formData.append( 'paid', document.getElementById( 'dak-notify-paid' ).checked ? '1' : '0' );
 			formData.append( 'cancelled', document.getElementById( 'dak-notify-cancelled' ).checked ? '1' : '0' );
+			formData.append( 'announcements', document.getElementById( 'dak-notify-announcements' ).checked ? '1' : '0' );
 
 			fetch( window.dakNotifications.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
 				.then( function ( response ) { return response.json(); } )

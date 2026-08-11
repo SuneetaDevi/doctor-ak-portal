@@ -678,9 +678,10 @@ class Doctor_Dashboard {
 		return $this->template_loader->get_template(
 			'dashboard/partials/dashboard-settings-tab.php',
 			array(
-				'notify_booking'   => $notify_preferences['booking'],
-				'notify_paid'      => $notify_preferences['paid'],
-				'notify_cancelled' => $notify_preferences['cancelled'],
+				'notify_booking'       => $notify_preferences['booking'],
+				'notify_paid'          => $notify_preferences['paid'],
+				'notify_cancelled'     => $notify_preferences['cancelled'],
+				'notify_announcements' => $notify_preferences['announcements'],
 			)
 		);
 	}

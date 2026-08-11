@@ -240,7 +240,7 @@ $appointment_group_labels = array(
 					<span class="dak-patient-stat-label"><?php esc_html_e( 'Next Appointment', 'doctor-ak-portal' ); ?></span>
 					<?php if ( $next_appointment ) : ?>
 						<span class="dak-patient-stat-value"><?php echo esc_html( $next_appointment['countdown_label'] ); ?></span>
-						<span class="dak-patient-stat-sub"><?php echo esc_html( date_i18n( 'D, M j', strtotime( $next_appointment['date'] ) ) . ' · ' . date_i18n( 'g:i A', strtotime( $next_appointment['time'] ) ) ); ?></span>
+						<span class="dak-patient-stat-sub"><?php echo esc_html( $next_appointment['datetime_label'] ); ?></span>
 						<span class="dak-patient-stat-link"><?php echo esc_html( sprintf( 'Dr. %s', $next_appointment['doctor_name'] ) ); ?></span>
 					<?php else : ?>
 						<span class="dak-patient-stat-value">&mdash;</span>

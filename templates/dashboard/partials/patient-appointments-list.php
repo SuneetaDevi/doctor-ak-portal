@@ -75,13 +75,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</span>
 
 					<span class="dak-admin-record-row-meta">
-						<?php
-						$row_date_timestamp = strtotime( $row['date'] );
-						$row_time_timestamp = strtotime( $row['date'] . ' ' . $row['time'] );
-						echo esc_html( $row_date_timestamp ? date_i18n( 'D, M j, Y', $row_date_timestamp ) : $row['date'] );
-						echo ' &middot; ';
-						echo esc_html( $row_time_timestamp ? date_i18n( 'g:i A', $row_time_timestamp ) : $row['time'] );
-						?>
+						<?php echo esc_html( $row['datetime_label'] ); ?>
 					</span>
 
 					<span class="dak-admin-record-row-tags">

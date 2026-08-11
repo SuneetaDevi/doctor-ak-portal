@@ -55,10 +55,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<div class="dak-patient-payment-info">
 						<strong><?php echo esc_html( sprintf( 'Dr. %s', $row['doctor_name'] ) ); ?></strong>
 						<span class="dak-patient-payment-meta">
-							<?php
-							$date_timestamp = strtotime( $row['date'] );
-							echo esc_html( $date_timestamp ? date_i18n( 'D, M j, Y', $date_timestamp ) : $row['date'] );
-							?>
+							<?php echo esc_html( $row['datetime_label'] ); ?>
 							&middot; <?php echo esc_html( '' !== $row['service_name'] ? $row['service_name'] : $row['type_label'] ); ?>
 						</span>
 						<?php if ( ! empty( $row['is_instant'] ) && (float) $row['surcharge'] > 0 ) : ?>

@@ -42,10 +42,8 @@ $dak_patient_appt_icons = array(
 	'cancel'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5l10 10M15 5L5 15"/></svg>',
 );
 
-$date_timestamp = strtotime( $appointment['date'] );
-$time_timestamp = strtotime( $appointment['time'] );
-$date_label     = $date_timestamp ? date_i18n( 'D, M j', $date_timestamp ) : $appointment['date'];
-$time_label     = $time_timestamp ? date_i18n( 'g:i A', $time_timestamp ) : $appointment['time'];
+$datetime_timestamp = strtotime( $appointment['date'] . ' ' . $appointment['time'] );
+$datetime_label     = $datetime_timestamp ? date_i18n( 'd/m/Y h:i A', $datetime_timestamp ) : trim( $appointment['date'] . ' ' . $appointment['time'] );
 
 $is_cancellable      = ! in_array( $appointment['status'], array( 'cancelled', 'completed' ), true );
 $can_pay_now         = ! $appointment['is_paid'] && (float) $appointment['charge'] > 0;
@@ -68,7 +66,7 @@ $can_request_refund  = 'cancelled' === $appointment['status'] && $appointment['i
 
 		<span class="dak-admin-record-row-meta">
 			<span class="dak-patient-appt-countdown"><?php echo esc_html( $appointment['countdown_label'] ); ?></span><br>
-			<span class="dak-clinic-card-meta"><?php echo esc_html( $date_label ); ?> &middot; <?php echo esc_html( $time_label ); ?></span>
+			<span class="dak-clinic-card-meta"><?php echo esc_html( $datetime_label ); ?></span>
 		</span>
 
 		<span class="dak-admin-record-row-tags">

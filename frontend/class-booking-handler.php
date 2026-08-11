@@ -147,6 +147,7 @@ class Booking_Handler {
 		$time           = isset( $_POST['time'] ) ? sanitize_text_field( wp_unslash( $_POST['time'] ) ) : '';
 		$notes          = isset( $_POST['notes'] ) ? sanitize_textarea_field( wp_unslash( $_POST['notes'] ) ) : '';
 		$service_id     = isset( $_POST['service_id'] ) ? absint( $_POST['service_id'] ) : 0;
+		$clinic_id      = isset( $_POST['clinic_id'] ) ? absint( $_POST['clinic_id'] ) : 0;
 		$payment_choice = ( isset( $_POST['payment_choice'] ) && 'now' === $_POST['payment_choice'] ) ? 'now' : 'later';
 
 		$errors = array();
@@ -227,6 +228,7 @@ class Booking_Handler {
 				'time'        => $time,
 				'notes'       => $notes,
 				'service_id'  => $service_id,
+				'clinic_id'   => $clinic_id,
 				'payment_choice' => $payment_choice,
 			)
 		);

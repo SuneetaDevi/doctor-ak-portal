@@ -129,7 +129,7 @@ $dak_is_salary = \DoctorAKPortal\Includes\Revenue_Split::MODEL_SALARY === $earni
 				<div class="dak-admin-record-row-main">
 					<span class="dak-admin-record-row-info">
 						<strong><?php echo esc_html( '' !== $row['service_name'] ? $row['service_name'] : $row['type_label'] ); ?></strong>
-						<span class="dak-admin-record-row-id"><?php echo esc_html( sprintf( /* translators: 1: patient name, 2: appointment date. */ __( '%1$s &middot; %2$s', 'doctor-ak-portal' ), $row['patient_name'], $row['date'] ) ); ?></span>
+						<span class="dak-admin-record-row-id"><?php echo esc_html( sprintf( /* translators: 1: patient name, 2: appointment date/time. */ __( '%1$s &middot; %2$s', 'doctor-ak-portal' ), $row['patient_name'], $row['datetime_label'] ) ); ?></span>
 					</span>
 
 					<span class="dak-admin-record-row-tags">

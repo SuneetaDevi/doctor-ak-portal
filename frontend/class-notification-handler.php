@@ -83,9 +83,10 @@ class Notification_Handler {
 	 * AJAX handler: saves the logged-in account's own notification email
 	 * preferences (Settings → Notifications) — whether *they* personally
 	 * receive "appointment booked"/"payment received"/"cancelled" emails
-	 * for appointments involving them. Every account (Admin/Doctor/
-	 * Receptionist/Patient) can only ever change its own preference; see
-	 * Notifications::save_user_preferences().
+	 * for appointments involving them, plus "announcements" (new blog
+	 * post/service emails sent to the whole directory). Every account
+	 * (Admin/Doctor/Receptionist/Patient) can only ever change its own
+	 * preference; see Notifications::save_user_preferences().
 	 *
 	 * @return void
 	 */
@@ -102,7 +103,8 @@ class Notification_Handler {
 			get_current_user_id(),
 			isset( $_POST['booking'] ) && '1' === $_POST['booking'],
 			isset( $_POST['paid'] ) && '1' === $_POST['paid'],
-			isset( $_POST['cancelled'] ) && '1' === $_POST['cancelled']
+			isset( $_POST['cancelled'] ) && '1' === $_POST['cancelled'],
+			isset( $_POST['announcements'] ) && '1' === $_POST['announcements']
 		);
 
 		wp_send_json_success( array( 'message' => __( 'Notification preferences saved.', 'doctor-ak-portal' ) ) );

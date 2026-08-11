@@ -1272,9 +1272,10 @@ class Admin_Dashboard {
 			$settings_tab_html  = $this->template_loader->get_template(
 				'dashboard/partials/dashboard-settings-tab.php',
 				array(
-					'notify_booking'   => $notify_preferences['booking'],
-					'notify_paid'      => $notify_preferences['paid'],
-					'notify_cancelled' => $notify_preferences['cancelled'],
+					'notify_booking'       => $notify_preferences['booking'],
+					'notify_paid'          => $notify_preferences['paid'],
+					'notify_cancelled'     => $notify_preferences['cancelled'],
+					'notify_announcements' => $notify_preferences['announcements'],
 					// A full admin gets one combined "Save Settings" button
 					// covering this plus Clinic Branding (see
 					// admin-settings-section.php) instead of this section's

@@ -40,10 +40,8 @@ if ( ! function_exists( 'dak_doctor_appt_initials' ) ) :
 	}
 endif;
 
-$date_timestamp = strtotime( $appointment['date'] );
-$time_timestamp = strtotime( $appointment['time'] );
-$date_label     = $date_timestamp ? date_i18n( 'D, M j', $date_timestamp ) : $appointment['date'];
-$time_label     = $time_timestamp ? date_i18n( 'g:i A', $time_timestamp ) : $appointment['time'];
+$datetime_timestamp = strtotime( $appointment['date'] . ' ' . $appointment['time'] );
+$datetime_label     = $datetime_timestamp ? date_i18n( 'd/m/Y h:i A', $datetime_timestamp ) : trim( $appointment['date'] . ' ' . $appointment['time'] );
 ?>
 <div class="dak-patient-appt-row" data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>">
 	<div class="dak-patient-appt-row-top">
@@ -65,7 +63,7 @@ $time_label     = $time_timestamp ? date_i18n( 'g:i A', $time_timestamp ) : $app
 
 		<div class="dak-patient-appt-row-meta">
 			<span class="dak-patient-appt-countdown"><?php echo esc_html( $appointment['countdown_label'] ); ?></span>
-			<span class="dak-patient-appt-datetime"><?php echo esc_html( $date_label ); ?> &middot; <strong><?php echo esc_html( $time_label ); ?></strong></span>
+			<span class="dak-patient-appt-datetime"><?php echo esc_html( $datetime_label ); ?></span>
 		</div>
 	</div>
 
@@ -104,7 +102,7 @@ $time_label     = $time_timestamp ? date_i18n( 'g:i A', $time_timestamp ) : $app
 					<?php echo esc_html( sprintf( /* translators: %s: amount. */ __( 'Mark Paid · PKR%s', 'doctor-ak-portal' ), number_format( (float) $appointment['charge'], 0 ) ) ); ?>
 				</button>
 			<?php endif; ?>
-			<?php if ( in_array( $appointment['status'], array( 'confirmed', 'paid', 'rescheduled' ), true ) ) : ?>
+			<?php if ( in_array( $appointment['status'], array( 'confirmed', 'paid', 'rescheduled' ), true ) && ( $appointment['is_paid'] || (float) $appointment['charge'] <= 0 ) ) : ?>
 				<button type="button" class="dak-status-pill dak-status-pill-action" data-mark-completed data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"><?php esc_html_e( 'Mark Completed', 'doctor-ak-portal' ); ?></button>
 			<?php endif; ?>
 			<?php if ( ! empty( $appointment['reschedulable'] ) ) : ?>

@@ -32,11 +32,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<strong><?php echo esc_html( sprintf( 'Dr. %s', $visit['doctor_name'] ) ); ?></strong>
 						<span class="dak-patient-payment-meta">
 							<?php
-							$visit_date_timestamp = strtotime( $visit['date'] );
-							$visit_time_timestamp = strtotime( $visit['date'] . ' ' . $visit['time'] );
-							echo esc_html( $visit_date_timestamp ? date_i18n( 'D, M j, Y', $visit_date_timestamp ) : $visit['date'] );
-							echo ' &middot; ';
-							echo esc_html( $visit_time_timestamp ? date_i18n( 'g:i A', $visit_time_timestamp ) : $visit['time'] );
+							echo esc_html( $visit['datetime_label'] );
 							echo ' &middot; ';
 							echo esc_html( '' !== $visit['service_name'] ? $visit['service_name'] : $visit['type_label'] );
 							?>

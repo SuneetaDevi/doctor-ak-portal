@@ -147,7 +147,10 @@ $dak_appt_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to
 					</span>
 					<span class="dak-admin-record-row-meta">
 						<?php echo esc_html( sprintf( /* translators: %s: doctor name. */ __( 'Dr. %s', 'doctor-ak-portal' ), $row['doctor_name'] ) ); ?><br>
-						<span class="dak-clinic-card-meta"><?php echo esc_html( $row['date'] . ' &middot; ' . $row['time'] ); ?></span>
+						<span class="dak-clinic-card-meta"><?php echo esc_html( $row['datetime_label'] ); ?></span>
+						<?php if ( '' !== $row['clinic_label'] ) : ?>
+							<br><span class="dak-clinic-card-meta"><?php echo esc_html( $row['clinic_label'] ); ?></span>
+						<?php endif; ?>
 					</span>
 
 					<span class="dak-admin-record-row-tags">
@@ -163,6 +166,9 @@ $dak_appt_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to
 						<?php elseif ( 'processed' === $row['refund_status'] ) : ?>
 							<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-active"><?php esc_html_e( 'Refund Processed', 'doctor-ak-portal' ); ?></span>
 						<?php endif; ?>
+						<?php if ( $row['is_overdue'] ) : ?>
+							<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-disabled"><?php esc_html_e( 'Time passed', 'doctor-ak-portal' ); ?></span>
+						<?php endif; ?>
 					</span>
 
 					<span class="dak-admin-record-row-amount">
@@ -170,95 +176,120 @@ $dak_appt_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to
 					</span>
 
 					<span class="dak-admin-record-row-actions">
-						<button
-							type="button"
-							class="dak-icon-button"
-							data-admin-appointment-edit
-								data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"
-								data-doctor-id="<?php echo esc_attr( $row['doctor_id'] ); ?>"
-								data-patient-id="<?php echo esc_attr( $row['patient_id'] ); ?>"
-								data-guest-name="<?php echo esc_attr( $row['guest_name'] ); ?>"
-								data-guest-email="<?php echo esc_attr( $row['guest_email'] ); ?>"
-								data-guest-phone="<?php echo esc_attr( $row['guest_phone'] ); ?>"
-								data-type="<?php echo esc_attr( $row['type'] ); ?>"
-								data-service-id="<?php echo esc_attr( $row['service_id'] ); ?>"
-								data-date="<?php echo esc_attr( $row['date'] ); ?>"
-								data-time="<?php echo esc_attr( $row['time'] ); ?>"
-								data-status="<?php echo esc_attr( $row['status'] ); ?>"
-								data-payment-status="<?php echo esc_attr( $row['payment_status'] ); ?>"
-								data-payment-mode="<?php echo esc_attr( $row['payment_mode'] ); ?>"
-								data-notes="<?php echo esc_attr( $row['notes'] ); ?>"
-								title="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
-								aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
-							><?php echo $dak_appt_icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
-						<?php if ( ! empty( $row['video_call']['can_join'] ) ) : ?>
-							<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $row['video_call']['room_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></a>
-						<?php endif; ?>
-						<?php if ( ! $row['is_paid'] && 'online' === $row['payment_mode'] ) : ?>
+						<?php if ( $row['is_overdue'] ) : ?>
 							<button
 								type="button"
 								class="dak-status-pill dak-status-pill-action"
-								data-admin-appointment-pay-now
-								data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"
-								title="<?php esc_attr_e( 'Pay for this appointment', 'doctor-ak-portal' ); ?>"
-							><?php echo esc_html( sprintf( /* translators: %s: amount. */ __( 'Pay PKR%s', 'doctor-ak-portal' ), number_format( (float) $row['charge'], 0 ) ) ); ?></button>
-						<?php elseif ( ! $row['is_paid'] ) : ?>
-							<button
-								type="button"
-								class="dak-status-pill dak-status-pill-action"
-								data-admin-appointment-mark-paid
-								data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"
-								title="<?php esc_attr_e( 'Mark this appointment as paid', 'doctor-ak-portal' ); ?>"
-							><?php esc_html_e( 'Mark Paid', 'doctor-ak-portal' ); ?></button>
-						<?php endif; ?>
-						<button
-							type="button"
-							class="dak-icon-button"
-							data-admin-appointment-view
-							data-patient-name="<?php echo esc_attr( $row['patient_name'] ); ?>"
-							data-doctor-name="<?php echo esc_attr( $row['doctor_name'] ); ?>"
-							data-type-label="<?php echo esc_attr( $row['type_label'] ); ?>"
-							data-service-name="<?php echo esc_attr( '' !== $row['service_name'] ? $row['service_name'] : '—' ); ?>"
-							data-date="<?php echo esc_attr( $row['date'] ); ?>"
-							data-time="<?php echo esc_attr( $row['time'] ); ?>"
-							data-charge="<?php echo esc_attr( $row['charge'] > 0 ? 'PKR' . number_format( $row['charge'], 0 ) . '/-' : __( 'Free', 'doctor-ak-portal' ) ); ?>"
-							data-payment-mode="<?php echo esc_attr( 'online' === $row['payment_mode'] ? __( 'Online', 'doctor-ak-portal' ) : __( 'Manual', 'doctor-ak-portal' ) ); ?>"
-							data-status-label="<?php echo esc_attr( $row['status_label'] ); ?>"
-							data-notes="<?php echo esc_attr( '' !== $row['notes'] ? $row['notes'] : '—' ); ?>"
-							data-print-url="<?php echo esc_url( \DoctorAKPortal\Frontend\Appointment_Handler::print_url( $row['id'] ) ); ?>"
-							title="<?php esc_attr_e( 'View', 'doctor-ak-portal' ); ?>"
-							aria-label="<?php esc_attr_e( 'View', 'doctor-ak-portal' ); ?>"
-						><?php echo $dak_appt_icons['view']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
-						<?php if ( ! $is_receptionist && 'requested' === $row['refund_status'] ) : ?>
+								data-admin-appointment-edit
+									data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"
+									data-doctor-id="<?php echo esc_attr( $row['doctor_id'] ); ?>"
+									data-patient-id="<?php echo esc_attr( $row['patient_id'] ); ?>"
+									data-guest-name="<?php echo esc_attr( $row['guest_name'] ); ?>"
+									data-guest-email="<?php echo esc_attr( $row['guest_email'] ); ?>"
+									data-guest-phone="<?php echo esc_attr( $row['guest_phone'] ); ?>"
+									data-type="<?php echo esc_attr( $row['type'] ); ?>"
+									data-service-id="<?php echo esc_attr( $row['service_id'] ); ?>"
+									data-date="<?php echo esc_attr( $row['date'] ); ?>"
+									data-time="<?php echo esc_attr( $row['time'] ); ?>"
+									data-status="<?php echo esc_attr( $row['status'] ); ?>"
+									data-payment-status="<?php echo esc_attr( $row['payment_status'] ); ?>"
+									data-payment-mode="<?php echo esc_attr( $row['payment_mode'] ); ?>"
+									data-notes="<?php echo esc_attr( $row['notes'] ); ?>"
+									title="<?php esc_attr_e( 'This appointment\'s time has passed — reschedule it to a new date/time.', 'doctor-ak-portal' ); ?>"
+									aria-label="<?php esc_attr_e( 'Reschedule', 'doctor-ak-portal' ); ?>"
+							><?php esc_html_e( 'Reschedule', 'doctor-ak-portal' ); ?></button>
+						<?php else : ?>
 							<button
 								type="button"
 								class="dak-icon-button"
-								data-admin-process-refund
-								data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"
+								data-admin-appointment-edit
+									data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"
+									data-doctor-id="<?php echo esc_attr( $row['doctor_id'] ); ?>"
+									data-patient-id="<?php echo esc_attr( $row['patient_id'] ); ?>"
+									data-guest-name="<?php echo esc_attr( $row['guest_name'] ); ?>"
+									data-guest-email="<?php echo esc_attr( $row['guest_email'] ); ?>"
+									data-guest-phone="<?php echo esc_attr( $row['guest_phone'] ); ?>"
+									data-type="<?php echo esc_attr( $row['type'] ); ?>"
+									data-service-id="<?php echo esc_attr( $row['service_id'] ); ?>"
+									data-date="<?php echo esc_attr( $row['date'] ); ?>"
+									data-time="<?php echo esc_attr( $row['time'] ); ?>"
+									data-status="<?php echo esc_attr( $row['status'] ); ?>"
+									data-payment-status="<?php echo esc_attr( $row['payment_status'] ); ?>"
+									data-payment-mode="<?php echo esc_attr( $row['payment_mode'] ); ?>"
+									data-notes="<?php echo esc_attr( $row['notes'] ); ?>"
+									title="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
+									aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
+								><?php echo $dak_appt_icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
+							<?php if ( ! empty( $row['video_call']['can_join'] ) ) : ?>
+								<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $row['video_call']['room_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></a>
+							<?php endif; ?>
+							<?php if ( ! $row['is_paid'] && (float) $row['charge'] > 0 && 'online' === $row['payment_mode'] ) : ?>
+								<button
+									type="button"
+									class="dak-status-pill dak-status-pill-action"
+									data-admin-appointment-pay-now
+									data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"
+									title="<?php esc_attr_e( 'Pay for this appointment', 'doctor-ak-portal' ); ?>"
+								><?php echo esc_html( sprintf( /* translators: %s: amount. */ __( 'Pay PKR%s', 'doctor-ak-portal' ), number_format( (float) $row['charge'], 0 ) ) ); ?></button>
+							<?php elseif ( ! $row['is_paid'] && (float) $row['charge'] > 0 ) : ?>
+								<button
+									type="button"
+									class="dak-status-pill dak-status-pill-action"
+									data-admin-appointment-mark-paid
+									data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"
+									title="<?php esc_attr_e( 'Mark this appointment as paid', 'doctor-ak-portal' ); ?>"
+								><?php esc_html_e( 'Mark Paid', 'doctor-ak-portal' ); ?></button>
+							<?php endif; ?>
+							<button
+								type="button"
+								class="dak-icon-button"
+								data-admin-appointment-view
 								data-patient-name="<?php echo esc_attr( $row['patient_name'] ); ?>"
-								data-reason="<?php echo esc_attr( $row['refund_reason'] ); ?>"
-								data-charge="<?php echo esc_attr( $row['charge'] ); ?>"
-								data-refund-amount="<?php echo esc_attr( $row['refund_amount'] ); ?>"
-								title="<?php esc_attr_e( 'Process Refund', 'doctor-ak-portal' ); ?>"
-								aria-label="<?php esc_attr_e( 'Process Refund', 'doctor-ak-portal' ); ?>"
-							><?php echo $dak_appt_icons['refund']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
+								data-doctor-name="<?php echo esc_attr( $row['doctor_name'] ); ?>"
+								data-type-label="<?php echo esc_attr( $row['type_label'] ); ?>"
+								data-service-name="<?php echo esc_attr( '' !== $row['service_name'] ? $row['service_name'] : '—' ); ?>"
+								data-date="<?php echo esc_attr( $row['date'] ); ?>"
+								data-time="<?php echo esc_attr( $row['time'] ); ?>"
+								data-datetime-label="<?php echo esc_attr( $row['datetime_label'] ); ?>"
+								data-charge="<?php echo esc_attr( $row['charge'] > 0 ? 'PKR' . number_format( $row['charge'], 0 ) . '/-' : __( 'Free', 'doctor-ak-portal' ) ); ?>"
+								data-payment-mode="<?php echo esc_attr( 'online' === $row['payment_mode'] ? __( 'Online', 'doctor-ak-portal' ) : __( 'Manual', 'doctor-ak-portal' ) ); ?>"
+								data-status-label="<?php echo esc_attr( $row['status_label'] ); ?>"
+								data-notes="<?php echo esc_attr( '' !== $row['notes'] ? $row['notes'] : '—' ); ?>"
+								data-print-url="<?php echo esc_url( \DoctorAKPortal\Frontend\Appointment_Handler::print_url( $row['id'] ) ); ?>"
+								title="<?php esc_attr_e( 'View', 'doctor-ak-portal' ); ?>"
+								aria-label="<?php esc_attr_e( 'View', 'doctor-ak-portal' ); ?>"
+							><?php echo $dak_appt_icons['view']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
+							<?php if ( ! $is_receptionist && 'requested' === $row['refund_status'] ) : ?>
+								<button
+									type="button"
+									class="dak-icon-button"
+									data-admin-process-refund
+									data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"
+									data-patient-name="<?php echo esc_attr( $row['patient_name'] ); ?>"
+									data-reason="<?php echo esc_attr( $row['refund_reason'] ); ?>"
+									data-charge="<?php echo esc_attr( $row['charge'] ); ?>"
+									data-refund-amount="<?php echo esc_attr( $row['refund_amount'] ); ?>"
+									title="<?php esc_attr_e( 'Process Refund', 'doctor-ak-portal' ); ?>"
+									aria-label="<?php esc_attr_e( 'Process Refund', 'doctor-ak-portal' ); ?>"
+								><?php echo $dak_appt_icons['refund']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
+							<?php endif; ?>
+							<a
+								class="dak-icon-button"
+								href="<?php echo esc_url( \DoctorAKPortal\Frontend\Appointment_Handler::print_url( $row['id'] ) ); ?>"
+								target="_blank"
+								rel="noopener noreferrer"
+								title="<?php esc_attr_e( 'Print', 'doctor-ak-portal' ); ?>"
+								aria-label="<?php esc_attr_e( 'Print', 'doctor-ak-portal' ); ?>"
+							><?php echo $dak_appt_icons['print']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
+							<button
+								type="button"
+								class="dak-icon-button dak-icon-button-danger"
+								data-admin-appointment-delete
+								data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"
+								title="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
+								aria-label="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
+							><?php echo $dak_appt_icons['delete']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
 						<?php endif; ?>
-						<a
-							class="dak-icon-button"
-							href="<?php echo esc_url( \DoctorAKPortal\Frontend\Appointment_Handler::print_url( $row['id'] ) ); ?>"
-							target="_blank"
-							rel="noopener noreferrer"
-							title="<?php esc_attr_e( 'Print', 'doctor-ak-portal' ); ?>"
-							aria-label="<?php esc_attr_e( 'Print', 'doctor-ak-portal' ); ?>"
-						><?php echo $dak_appt_icons['print']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
-						<button
-							type="button"
-							class="dak-icon-button dak-icon-button-danger"
-							data-admin-appointment-delete
-							data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"
-							title="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
-							aria-label="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
-						><?php echo $dak_appt_icons['delete']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
 					</span>
 				</div>
 			</div>

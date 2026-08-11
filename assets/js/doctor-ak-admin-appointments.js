@@ -320,7 +320,7 @@
 			setText( 'dak-admin-appointment-view-doctor', 'Dr. ' + ( trigger.getAttribute( 'data-doctor-name' ) || '' ) );
 			setText( 'dak-admin-appointment-view-type', trigger.getAttribute( 'data-type-label' ) );
 			setText( 'dak-admin-appointment-view-service', trigger.getAttribute( 'data-service-name' ) );
-			setText( 'dak-admin-appointment-view-datetime', ( trigger.getAttribute( 'data-date' ) || '' ) + ' ' + ( trigger.getAttribute( 'data-time' ) || '' ) );
+			setText( 'dak-admin-appointment-view-datetime', trigger.getAttribute( 'data-datetime-label' ) || '' );
 			setText( 'dak-admin-appointment-view-charge', trigger.getAttribute( 'data-charge' ) );
 			setText( 'dak-admin-appointment-view-payment-mode', trigger.getAttribute( 'data-payment-mode' ) );
 			setText( 'dak-admin-appointment-view-status', trigger.getAttribute( 'data-status-label' ) );

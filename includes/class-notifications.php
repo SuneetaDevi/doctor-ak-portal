@@ -109,14 +109,16 @@ class Notifications {
 	 * Whether a specific account wants to receive a given notification
 	 * type's emails — a personal, per-account preference (Settings →
 	 * Notifications on the Admin/Doctor/Receptionist/Patient dashboards),
-	 * default on until that account explicitly turns it off. Only covers
-	 * 'booking'/'paid'/'cancelled' — the only three exposed as toggles —
-	 * since those are the only types sent to a specific patient/doctor
-	 * rather than a clinic-wide admin address. Guests (no account, no
-	 * `user_id`) always receive — there's nowhere to store their preference.
+	 * default on until that account explicitly turns it off. Covers
+	 * 'booking'/'paid'/'cancelled' (sent to a specific patient/doctor
+	 * involved in an appointment) and 'announcements' (sent to every
+	 * account in the directory when a new blog post or service is added —
+	 * see notify_new_blog_post()/notify_new_service()). Guests (no
+	 * account, no `user_id`) always receive — there's nowhere to store
+	 * their preference.
 	 *
 	 * @param int    $user_id WP user ID, or 0 for a guest.
-	 * @param string $type    'booking', 'paid', or 'cancelled'.
+	 * @param string $type    'booking', 'paid', 'cancelled', or 'announcements'.
 	 * @return bool
 	 */
 	public static function user_wants( $user_id, $type ) {
@@ -132,16 +134,18 @@ class Notifications {
 	/**
 	 * Saves an account's own notification preferences.
 	 *
-	 * @param int  $user_id   WP user ID.
-	 * @param bool $booking   Receive "appointment booked" emails.
-	 * @param bool $paid      Receive "payment received" emails.
-	 * @param bool $cancelled Receive "cancellation" emails.
+	 * @param int  $user_id      WP user ID.
+	 * @param bool $booking      Receive "appointment booked" emails.
+	 * @param bool $paid         Receive "payment received" emails.
+	 * @param bool $cancelled    Receive "cancellation" emails.
+	 * @param bool $announcements Receive "new blog post/service" announcement emails.
 	 * @return void
 	 */
-	public static function save_user_preferences( $user_id, $booking, $paid, $cancelled ) {
+	public static function save_user_preferences( $user_id, $booking, $paid, $cancelled, $announcements = true ) {
 		update_user_meta( $user_id, 'doctor_ak_notify_booking', $booking ? '1' : '0' );
 		update_user_meta( $user_id, 'doctor_ak_notify_paid', $paid ? '1' : '0' );
 		update_user_meta( $user_id, 'doctor_ak_notify_cancelled', $cancelled ? '1' : '0' );
+		update_user_meta( $user_id, 'doctor_ak_notify_announcements', $announcements ? '1' : '0' );
 	}
 
 	/**
@@ -149,14 +153,125 @@ class Notifications {
 	 * Settings → Notifications toggles.
 	 *
 	 * @param int $user_id WP user ID.
-	 * @return array { booking: bool, paid: bool, cancelled: bool }
+	 * @return array { booking: bool, paid: bool, cancelled: bool, announcements: bool }
 	 */
 	public static function user_preferences( $user_id ) {
 		return array(
-			'booking'   => self::user_wants( $user_id, 'booking' ),
-			'paid'      => self::user_wants( $user_id, 'paid' ),
-			'cancelled' => self::user_wants( $user_id, 'cancelled' ),
+			'booking'       => self::user_wants( $user_id, 'booking' ),
+			'paid'          => self::user_wants( $user_id, 'paid' ),
+			'cancelled'     => self::user_wants( $user_id, 'cancelled' ),
+			'announcements' => self::user_wants( $user_id, 'announcements' ),
 		);
+	}
+
+	/**
+	 * Every account in the directory — Doctor, Patient, Receptionist, and
+	 * Administrator — for the "new blog post/service" announcement emails.
+	 * This is deliberately broader than admin_emails() (administrators
+	 * only, used for operational alerts like a refund request): the whole
+	 * point of an announcement is that everyone using the portal sees it.
+	 *
+	 * @return \WP_User[]
+	 */
+	private static function directory_users() {
+		return get_users(
+			array(
+				'role__in' => array( Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE, Roles::RECEPTIONIST_ROLE, 'administrator' ),
+			)
+		);
+	}
+
+	/**
+	 * Emails every opted-in account in the directory about a newly created
+	 * service. Hooked to 'doctor_ak_service_created' (see
+	 * Services::create()).
+	 *
+	 * @param int   $service_id Newly created service's ID.
+	 * @param int   $doctor_id  Doctor the service belongs to.
+	 * @param array $fields     Sanitized service fields, see Services::fields().
+	 * @return void
+	 */
+	public function notify_new_service( $service_id, $doctor_id, array $fields ) {
+		$doctor      = get_userdata( $doctor_id );
+		$doctor_name = '';
+
+		if ( $doctor ) {
+			$doctor_name = trim( $doctor->first_name . ' ' . $doctor->last_name );
+			$doctor_name = '' !== $doctor_name ? $doctor_name : $doctor->display_name;
+		}
+
+		$charge = isset( $fields['charge'] ) ? (float) $fields['charge'] : 0.0;
+
+		$intro = '' !== $doctor_name
+			? sprintf(
+				/* translators: 1: service name, 2: doctor's display name, 3: price. */
+				__( 'A new service, "%1$s", is now available with Dr. %2$s for PKR%3$s.', 'doctor-ak-portal' ),
+				$fields['name'],
+				$doctor_name,
+				number_format( $charge, 0 )
+			)
+			: sprintf(
+				/* translators: 1: service name, 2: price. */
+				__( 'A new service, "%1$s", is now available for PKR%2$s.', 'doctor-ak-portal' ),
+				$fields['name'],
+				number_format( $charge, 0 )
+			);
+
+		$booking_url = Page_Finder::url_for_shortcode( 'book_appointment' );
+
+		foreach ( self::directory_users() as $user ) {
+			if ( ! is_email( $user->user_email ) || ! self::user_wants( $user->ID, 'announcements' ) ) {
+				continue;
+			}
+
+			$this->send_simple(
+				$user->user_email,
+				__( 'New Service Added', 'doctor-ak-portal' ),
+				__( 'New Service Added', 'doctor-ak-portal' ),
+				$intro,
+				$booking_url ? $booking_url : '',
+				$booking_url ? __( 'Book Now', 'doctor-ak-portal' ) : ''
+			);
+		}
+	}
+
+	/**
+	 * Emails every opted-in account in the directory about a newly
+	 * published blog post. Hooked to 'transition_post_status' rather than
+	 * 'publish_post' so it fires exactly once — on the transition INTO
+	 * publish — instead of re-firing on every subsequent edit of an
+	 * already-published post.
+	 *
+	 * @param string   $new_status New post status.
+	 * @param string   $old_status Previous post status.
+	 * @param \WP_Post $post       The post transitioning status.
+	 * @return void
+	 */
+	public function notify_new_blog_post( $new_status, $old_status, $post ) {
+		if ( 'publish' !== $new_status || 'publish' === $old_status || 'post' !== $post->post_type ) {
+			return;
+		}
+
+		$intro = '' !== $post->post_excerpt
+			? wp_strip_all_tags( $post->post_excerpt )
+			: __( "We've just published a new blog post — take a look.", 'doctor-ak-portal' );
+
+		$permalink = get_permalink( $post );
+
+		foreach ( self::directory_users() as $user ) {
+			if ( ! is_email( $user->user_email ) || ! self::user_wants( $user->ID, 'announcements' ) ) {
+				continue;
+			}
+
+			$this->send_simple(
+				$user->user_email,
+				__( 'New Blog Post', 'doctor-ak-portal' ),
+				$post->post_title,
+				$intro,
+				$permalink ? $permalink : '',
+				$permalink ? __( 'Read More', 'doctor-ak-portal' ) : ''
+			);
+		}
 	}
 
 	/**
@@ -831,13 +946,11 @@ class Notifications {
 
 		$line_items_html = sprintf(
 			'<tr>
-				<td style="padding:10px 12px;border-bottom:1px solid #e3e6ea;">%1$s<br><span style="color:#6b7280;font-size:12px;">%2$s %3$s %4$s with Dr. %5$s</span></td>
-				<td style="padding:10px 12px;border-bottom:1px solid #e3e6ea;text-align:right;white-space:nowrap;">%6$s</td>
+				<td style="padding:10px 12px;border-bottom:1px solid #e3e6ea;">%1$s<br><span style="color:#6b7280;font-size:12px;">%2$s with Dr. %3$s</span></td>
+				<td style="padding:10px 12px;border-bottom:1px solid #e3e6ea;text-align:right;white-space:nowrap;">%4$s</td>
 			</tr>',
 			esc_html( $service_label ),
-			esc_html( $appointment['date'] ),
-			'&middot;',
-			esc_html( $appointment['time'] ),
+			esc_html( date_i18n( 'd/m/Y h:i A', strtotime( $appointment['date'] . ' ' . $appointment['time'] ) ) ),
 			esc_html( $appointment['doctor_name'] ),
 			$amount_cell_html // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built above from esc_html()-wrapped pieces.
 		);
@@ -917,11 +1030,10 @@ class Notifications {
 	 */
 	private static function render_email( $heading, $intro, array $appointment ) {
 		$rows = array(
-			__( 'Doctor', 'doctor-ak-portal' )  => sprintf( 'Dr. %s', $appointment['doctor_name'] ),
-			__( 'Patient', 'doctor-ak-portal' ) => $appointment['patient_name'],
-			__( 'Type', 'doctor-ak-portal' )    => $appointment['type_label'],
-			__( 'Date', 'doctor-ak-portal' )    => $appointment['date'],
-			__( 'Time', 'doctor-ak-portal' )    => $appointment['time'],
+			__( 'Doctor', 'doctor-ak-portal' )      => sprintf( 'Dr. %s', $appointment['doctor_name'] ),
+			__( 'Patient', 'doctor-ak-portal' )     => $appointment['patient_name'],
+			__( 'Type', 'doctor-ak-portal' )        => $appointment['type_label'],
+			__( 'Date & Time', 'doctor-ak-portal' ) => date_i18n( 'd/m/Y h:i A', strtotime( $appointment['date'] . ' ' . $appointment['time'] ) ),
 		);
 
 		if ( '' !== $appointment['service_name'] ) {

@@ -103,8 +103,8 @@ class Invoice_Pdf {
 		$stream .= self::draw_line( $left, $y, $right, $y, 0.6, 0.6, 0.6 );
 		$y      -= 16;
 
-		/* translators: 1: date, 2: time, 3: doctor's display name. */
-		$meta_line = sprintf( __( '%1$s at %2$s with Dr. %3$s', 'doctor-ak-portal' ), $appointment['date'], $appointment['time'], $appointment['doctor_name'] );
+		/* translators: 1: date/time, 2: doctor's display name. */
+		$meta_line = sprintf( __( '%1$s with Dr. %2$s', 'doctor-ak-portal' ), date_i18n( 'd/m/Y h:i A', strtotime( $appointment['date'] . ' ' . $appointment['time'] ) ), $appointment['doctor_name'] );
 
 		$stream .= self::draw_text( $left, $y, 'F1', 10, $service_label );
 

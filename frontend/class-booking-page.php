@@ -113,6 +113,7 @@ class Booking_Page {
 				'services'    => $this->services_by_doctor_and_type(),
 				'videoPricing' => $this->video_pricing_by_doctor(),
 				'bookingRules' => $this->booking_rules_by_doctor(),
+				'clinics'      => $this->clinics_by_doctor(),
 			)
 		);
 	}
@@ -319,6 +320,52 @@ class Booking_Page {
 
 		foreach ( Appointments::active_doctor_ids() as $doctor_id ) {
 			$map[ $doctor_id ] = Video_Pricing::effective_price_for_doctor( $doctor_id );
+		}
+
+		return $map;
+	}
+
+	/**
+	 * Every doctor's physical clinic locations, for the "Clinic Visit" step
+	 * to let the patient pick which one they're visiting when a doctor
+	 * practices at more than one — id, name, a composed address line, and
+	 * phone.
+	 *
+	 * @return array doctor_id => [{id, name, address, phone}, ...].
+	 */
+	private function clinics_by_doctor() {
+		$map = array();
+
+		foreach ( Appointments::active_doctor_ids() as $doctor_id ) {
+			$clinics = array_values(
+				array_filter(
+					Clinics::get_for_doctor( $doctor_id ),
+					function ( $clinic ) {
+						return Clinics::TYPE_PHYSICAL === $clinic['type'];
+					}
+				)
+			);
+
+			if ( empty( $clinics ) ) {
+				continue;
+			}
+
+			$map[ $doctor_id ] = array_map(
+				function ( $clinic ) {
+					$address_line = implode(
+						', ',
+						array_filter( array( $clinic['address'], $clinic['area_label'], $clinic['city_label'] ) )
+					);
+
+					return array(
+						'id'      => $clinic['id'],
+						'name'    => $clinic['name'],
+						'address' => $address_line,
+						'phone'   => $clinic['phone'],
+					);
+				},
+				$clinics
+			);
 		}
 
 		return $map;

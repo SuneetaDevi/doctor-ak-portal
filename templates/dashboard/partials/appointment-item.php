@@ -19,9 +19,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$formatted_date = $date ? date_i18n( get_option( 'date_format' ), strtotime( $date ) ) : '';
-$formatted_time = ( $date && $time ) ? date_i18n( get_option( 'time_format' ), strtotime( $date . ' ' . $time ) ) : '';
-$is_paid        = 'paid' === $payment_status;
+$formatted_datetime = ( $date && $time ) ? date_i18n( 'd/m/Y h:i A', strtotime( $date . ' ' . $time ) ) : trim( $date . ' ' . $time );
+$is_paid            = 'paid' === $payment_status;
 ?>
 <div class="dak-appointment-item">
 	<div class="dak-appointment-item-body">
@@ -41,6 +40,6 @@ $is_paid        = 'paid' === $payment_status;
 		</span>
 	</div>
 	<div class="dak-appointment-item-meta">
-		<span class="dak-appointment-item-time"><?php echo esc_html( trim( $formatted_date . ' · ' . $formatted_time, ' ·' ) ); ?></span>
+		<span class="dak-appointment-item-time"><?php echo esc_html( $formatted_datetime ); ?></span>
 	</div>
 </div>
