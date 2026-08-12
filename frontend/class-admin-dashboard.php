@@ -12,7 +12,9 @@ use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Doctor_Awards;
+use DoctorAKPortal\Includes\Encounters;
 use DoctorAKPortal\Includes\Locations;
+use DoctorAKPortal\Includes\Medicines;
 use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Notifications;
 use DoctorAKPortal\Includes\Page_Finder;
@@ -82,6 +84,7 @@ class Admin_Dashboard {
 		'Clinic'  => array(
 			'clinic'             => 'Clinic',
 			'services'           => 'Services',
+			'medicines'          => 'Medicines',
 			'video-consultation' => 'Video Consultation',
 			'doctor-sessions'    => 'Doctor Sessions',
 		),
@@ -107,7 +110,19 @@ class Admin_Dashboard {
 	 *
 	 * @var array
 	 */
-	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'patients', 'doctors', 'clinic', 'services', 'doctor-sessions', 'settings' );
+	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'patients', 'doctors', 'clinic', 'services', 'medicines', 'doctor-sessions', 'settings', 'encounter' );
+
+	/**
+	 * Section slugs that exist and are reachable, but deliberately have no
+	 * sidebar link — reached only by navigating there directly (e.g. the
+	 * clinical Encounter detail screen, opened via "Open Encounter"/"Check
+	 * In" on an appointment row, not a permanent nav item). Kept separate
+	 * from NAV_GROUPS (which drives the sidebar) but still needs to pass
+	 * requested_section()'s validation.
+	 *
+	 * @var array
+	 */
+	const HIDDEN_SECTIONS = array( 'encounter' );
 
 	/**
 	 * Whether a logged-in Receptionist may access a given section — must be
@@ -477,6 +492,32 @@ class Admin_Dashboard {
 			);
 		}
 
+		if ( 'medicines' === self::requested_section() ) {
+			wp_enqueue_style(
+				'doctor-ak-portal-registration',
+				DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-registration.css',
+				array( 'doctor-ak-portal-auth' ),
+				Assets::version( 'assets/css/doctor-ak-registration.css' )
+			);
+
+			wp_enqueue_script(
+				'doctor-ak-portal-admin-medicines',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-medicines.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-admin-medicines.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-admin-medicines',
+				'dakAdminMedicines',
+				array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+				)
+			);
+		}
+
 		if ( 'video-consultation' === self::requested_section() ) {
 			wp_enqueue_style(
 				'doctor-ak-portal-registration',
@@ -588,6 +629,53 @@ class Admin_Dashboard {
 			);
 		}
 
+		// The "Check In" action appears on both the Appointments table and
+		// the Dashboard overview's "Latest appointments" widget.
+		if ( in_array( self::requested_section(), array( 'appointments', 'dashboard' ), true ) ) {
+			wp_enqueue_script(
+				'doctor-ak-portal-check-in',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-check-in.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-check-in.js' ),
+				true
+			);
+
+			$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+
+			wp_localize_script(
+				'doctor-ak-portal-check-in',
+				'dakCheckIn',
+				array(
+					'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
+					'nonce'          => wp_create_nonce( Encounter_Handler::NONCE_ACTION ),
+					'confirmMessage' => __( 'Check this patient in and open their encounter?', 'doctor-ak-portal' ),
+					'genericError'   => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
+					'encounterUrl'   => $dashboard_url ? add_query_arg( 'section', 'encounter', $dashboard_url ) : '',
+				)
+			);
+		}
+
+		if ( 'encounter' === self::requested_section() ) {
+			wp_enqueue_script(
+				'doctor-ak-portal-encounter',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-encounter.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-encounter.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-encounter',
+				'dakEncounter',
+				array(
+					'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
+					'nonce'        => wp_create_nonce( Encounter_Handler::NONCE_ACTION ),
+					'genericError' => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
+					'confirmCloseMessage' => __( 'Close this encounter and check the patient out? This cannot be undone.', 'doctor-ak-portal' ),
+				)
+			);
+		}
+
 		if ( 'encounters' === self::requested_section() ) {
 			wp_enqueue_script(
 				'doctor-ak-portal-admin-encounters',
@@ -619,7 +707,7 @@ class Admin_Dashboard {
 			$section = 'dashboard';
 		} else {
 			$section = sanitize_key( wp_unslash( $_GET['section'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
-			$section = array_key_exists( $section, self::all_sections() ) ? $section : 'dashboard';
+			$section = ( array_key_exists( $section, self::all_sections() ) || in_array( $section, self::HIDDEN_SECTIONS, true ) ) ? $section : 'dashboard';
 		}
 
 		if ( self::is_receptionist() && ! self::receptionist_can_access( $section ) ) {
@@ -927,6 +1015,8 @@ class Admin_Dashboard {
 
 		if ( 'services' === $section ) {
 			$modal_html = $this->service_modal_html();
+		} elseif ( 'medicines' === $section ) {
+			$modal_html = $this->medicine_modal_html();
 		} elseif ( 'video-consultation' === $section ) {
 			$modal_html = $this->video_pricing_modal_html();
 		} elseif ( 'appointments' === $section ) {
@@ -1260,10 +1350,49 @@ class Admin_Dashboard {
 			);
 		}
 
+		if ( 'medicines' === $section ) {
+			$doctor_id       = isset( $_GET['doctor_id'] ) ? absint( wp_unslash( $_GET['doctor_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$filtered_doctor = $doctor_id > 0 ? get_user_by( 'id', $doctor_id ) : false;
+
+			return $this->template_loader->get_template(
+				'dashboard/partials/admin-medicines.php',
+				array(
+					'medicines'        => Medicines::all_flat_for_admin( array( 'doctor_id' => $doctor_id ) ),
+					'section_url'      => add_query_arg( 'section', $section, Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ) ),
+					'filtered_doctor'  => $filtered_doctor ? self::display_name( $filtered_doctor ) : '',
+				)
+			);
+		}
+
 		if ( 'video-consultation' === $section ) {
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-video-consultation.php',
 				array( 'pricing_rows' => Video_Pricing::all_flat_for_admin() )
+			);
+		}
+
+		if ( 'encounter' === $section ) {
+			$encounter_id = isset( $_GET['encounter_id'] ) ? absint( wp_unslash( $_GET['encounter_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$encounter    = $encounter_id > 0 ? Encounters::find( $encounter_id ) : null;
+
+			if ( empty( $encounter )
+				|| ( self::is_receptionist() && ! current_user_can( 'doctor_ak_manage_appointments' ) )
+			) {
+				$encounter_id = 0;
+			}
+
+			$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+
+			// Reuses the doctor dashboard's own encounter template verbatim —
+			// the screen (and its JS, see Doctor_Dashboard::enqueue_assets())
+			// is identical for both audiences, just reached via a different
+			// dashboard shell/URL scheme ('tab' vs 'section').
+			return $this->template_loader->get_template(
+				'dashboard/partials/doctor-encounter.php',
+				array(
+					'encounter_id'     => $encounter_id,
+					'appointments_url' => $dashboard_url ? add_query_arg( 'section', 'appointments', $dashboard_url ) : '',
+				)
 			);
 		}
 
@@ -1364,6 +1493,21 @@ class Admin_Dashboard {
 			array(
 				'doctor_options' => $this->doctor_options(),
 				'categories'     => Specializations::get_all(),
+			)
+		);
+	}
+
+	/**
+	 * Renders the "Add/Edit Medicine" modal (shared single instance,
+	 * populated client-side from the clicked row's data).
+	 *
+	 * @return string
+	 */
+	private function medicine_modal_html() {
+		return $this->template_loader->get_template(
+			'modal/admin-medicine-modal.php',
+			array(
+				'doctor_options' => $this->doctor_options(),
 			)
 		);
 	}

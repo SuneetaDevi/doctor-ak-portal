@@ -23,6 +23,7 @@
  * @var string   $patients_url          Same-page URL for the Patients tab.
  * @var string   $earnings_tab_html     Pre-rendered doctor-earnings-tab.php output when $active_tab is 'earnings'.
  * @var string   $earnings_url          Same-page URL for the Earnings tab.
+ * @var string   $encounter_tab_html    Pre-rendered doctor-encounter.php output when $active_tab is 'encounter' (not a permanent nav tab — reached via "Open Encounter" on an appointment row).
  * @var array    $doctor_clinics        Doctor's clinics, see Clinics::get_for_doctor() — populates the Add/Edit Patient modal's clinic dropdown.
  * @var string   $notifications_tab_html Pre-rendered notifications-list.php output when $active_tab is 'notifications'.
  * @var string   $notifications_url      Same-page URL for the Notifications tab.
@@ -232,6 +233,10 @@ $dak_dash_icons = array(
 		<?php elseif ( 'earnings' === $active_tab ) : ?>
 
 			<?php echo $earnings_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-earnings-tab.php template, which escapes its own output (including its own page header). ?>
+
+		<?php elseif ( 'encounter' === $active_tab ) : ?>
+
+			<?php echo $encounter_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-encounter.php template, which escapes its own output (including its own page header). ?>
 
 		<?php elseif ( 'video-consultation' === $active_tab ) : ?>
 

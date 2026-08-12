@@ -1,0 +1,422 @@
+/**
+ * Doctor AK Portal — Encounter detail screen (Problems / Prescription /
+ * Bill / Close Encounter). Fetches the full view-model from
+ * Encounter_Handler::handle_get_encounter() on load and after every
+ * add/delete, re-rendering the three lists + bill total in place rather
+ * than reloading the page.
+ */
+( function () {
+	'use strict';
+
+	var root;
+	var encounterId;
+
+	document.addEventListener( 'DOMContentLoaded', function () {
+		root = document.getElementById( 'dak-encounter-root' );
+
+		if ( ! root || ! window.dakEncounter ) {
+			return;
+		}
+
+		encounterId = root.getAttribute( 'data-encounter-id' );
+
+		wireAddForm( 'dak-encounter-add-problem-form', 'doctor_ak_add_encounter_problem', function ( formData ) {
+			formData.append( 'description', document.getElementById( 'dak-encounter-problem-description' ).value );
+			formData.append( 'notes', document.getElementById( 'dak-encounter-problem-notes' ).value );
+		}, function () {
+			document.getElementById( 'dak-encounter-problem-description' ).value = '';
+			document.getElementById( 'dak-encounter-problem-notes' ).value = '';
+		} );
+
+		wireAddForm( 'dak-encounter-add-prescription-form', 'doctor_ak_add_encounter_prescription', function ( formData ) {
+			var medicineSelect = document.getElementById( 'dak-encounter-prescription-medicine' );
+			formData.append( 'medicine_id', medicineSelect.value );
+			formData.append( 'medicine_name', document.getElementById( 'dak-encounter-prescription-medicine-name' ).value );
+			formData.append( 'dosage', document.getElementById( 'dak-encounter-prescription-dosage' ).value );
+			formData.append( 'frequency', document.getElementById( 'dak-encounter-prescription-frequency' ).value );
+			formData.append( 'duration', document.getElementById( 'dak-encounter-prescription-duration' ).value );
+			formData.append( 'instructions', document.getElementById( 'dak-encounter-prescription-instructions' ).value );
+		}, function () {
+			document.getElementById( 'dak-encounter-prescription-medicine' ).value = '0';
+			document.getElementById( 'dak-encounter-prescription-medicine-name' ).value = '';
+			document.getElementById( 'dak-encounter-prescription-dosage' ).value = '';
+			document.getElementById( 'dak-encounter-prescription-frequency' ).value = '';
+			document.getElementById( 'dak-encounter-prescription-duration' ).value = '';
+			document.getElementById( 'dak-encounter-prescription-instructions' ).value = '';
+			toggleMedicineNameField();
+		} );
+
+		wireAddForm( 'dak-encounter-add-bill-item-form', 'doctor_ak_add_encounter_bill_item', function ( formData ) {
+			formData.append( 'description', document.getElementById( 'dak-encounter-bill-description' ).value );
+			formData.append( 'amount', document.getElementById( 'dak-encounter-bill-amount' ).value );
+		}, function () {
+			document.getElementById( 'dak-encounter-bill-description' ).value = '';
+			document.getElementById( 'dak-encounter-bill-amount' ).value = '';
+		} );
+
+		document.addEventListener( 'click', function ( event ) {
+			var deleteTrigger = event.target.closest( '[data-encounter-delete]' );
+
+			if ( deleteTrigger ) {
+				var action = deleteTrigger.getAttribute( 'data-action' );
+				var idField = deleteTrigger.getAttribute( 'data-id-field' );
+				var id = deleteTrigger.getAttribute( 'data-id' );
+
+				var formData = new FormData();
+				formData.append( 'action', action );
+				formData.append( 'nonce', window.dakEncounter.nonce );
+				formData.append( 'encounter_id', encounterId );
+				formData.append( idField, id );
+
+				post( formData );
+				return;
+			}
+
+			var closeTrigger = event.target.closest( '[data-encounter-close]' );
+
+			if ( closeTrigger ) {
+				if ( ! window.confirm( window.dakEncounter.confirmCloseMessage ) ) {
+					return;
+				}
+
+				closeTrigger.disabled = true;
+
+				var closeFormData = new FormData();
+				closeFormData.append( 'action', 'doctor_ak_close_encounter' );
+				closeFormData.append( 'nonce', window.dakEncounter.nonce );
+				closeFormData.append( 'encounter_id', encounterId );
+
+				fetch( window.dakEncounter.ajaxUrl, { method: 'POST', body: closeFormData, credentials: 'same-origin' } )
+					.then( function ( response ) { return response.json(); } )
+					.then( function ( result ) {
+						if ( result.success ) {
+							window.location.reload();
+							return;
+						}
+
+						closeTrigger.disabled = false;
+						showError( ( result.data && result.data.message ) || window.dakEncounter.genericError );
+					} )
+					.catch( function () {
+						closeTrigger.disabled = false;
+						showError( window.dakEncounter.genericError );
+					} );
+			}
+		} );
+
+		var medicineSelect = document.getElementById( 'dak-encounter-prescription-medicine' );
+
+		if ( medicineSelect ) {
+			medicineSelect.addEventListener( 'change', toggleMedicineNameField );
+		}
+
+		refresh();
+	} );
+
+	function toggleMedicineNameField() {
+		var medicineSelect = document.getElementById( 'dak-encounter-prescription-medicine' );
+		var nameField = document.getElementById( 'dak-encounter-prescription-medicine-name-field' );
+
+		if ( ! medicineSelect || ! nameField ) {
+			return;
+		}
+
+		nameField.classList.toggle( 'dak-hidden', '0' !== medicineSelect.value );
+	}
+
+	function wireAddForm( formId, action, appendFields, resetFields ) {
+		var form = document.getElementById( formId );
+
+		if ( ! form ) {
+			return;
+		}
+
+		form.addEventListener( 'submit', function ( event ) {
+			event.preventDefault();
+
+			var formData = new FormData();
+			formData.append( 'action', action );
+			formData.append( 'nonce', window.dakEncounter.nonce );
+			formData.append( 'encounter_id', encounterId );
+			appendFields( formData );
+
+			post( formData, resetFields );
+		} );
+	}
+
+	function post( formData, onSuccess ) {
+		hideError();
+
+		fetch( window.dakEncounter.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
+			.then( function ( response ) { return response.json(); } )
+			.then( function ( result ) {
+				if ( ! result.success ) {
+					showError( ( result.data && result.data.message ) || window.dakEncounter.genericError );
+					return;
+				}
+
+				render( result.data );
+
+				if ( onSuccess ) {
+					onSuccess();
+				}
+			} )
+			.catch( function () {
+				showError( window.dakEncounter.genericError );
+			} );
+	}
+
+	function refresh() {
+		var formData = new FormData();
+		formData.append( 'action', 'doctor_ak_get_encounter' );
+		formData.append( 'nonce', window.dakEncounter.nonce );
+		formData.append( 'encounter_id', encounterId );
+
+		post( formData );
+	}
+
+	function render( data ) {
+		var isOpen = 'open' === data.encounter.status;
+
+		setText( 'dak-encounter-patient-name', data.appointment.patient_name || '' );
+
+		var statusEl = document.getElementById( 'dak-encounter-status' );
+
+		if ( statusEl ) {
+			statusEl.textContent = isOpen ? 'Open' : 'Closed';
+			statusEl.classList.toggle( 'dak-status-pill-is-active', isOpen );
+			statusEl.classList.toggle( 'dak-status-pill-is-disabled', ! isOpen );
+		}
+
+		var metaParts = [];
+
+		if ( data.encounter.clinic_name ) {
+			metaParts.push( data.encounter.clinic_name );
+		}
+
+		if ( data.appointment.doctor_name ) {
+			metaParts.push( 'Dr. ' + data.appointment.doctor_name );
+		}
+
+		setText( 'dak-encounter-meta', metaParts.join( ' · ' ) );
+
+		renderProblems( data.problems, isOpen );
+		renderPrescriptions( data.prescriptions, isOpen );
+		renderMedicineOptions( data.medicines );
+		renderBillItems( data.bill_items, data.bill_total, isOpen );
+
+		var prescriptionLink = document.getElementById( 'dak-encounter-download-prescription' );
+
+		if ( prescriptionLink ) {
+			prescriptionLink.href = data.prescription_pdf_url;
+		}
+
+		var billLink = document.getElementById( 'dak-encounter-download-bill' );
+
+		if ( billLink ) {
+			billLink.href = data.bill_pdf_url;
+		}
+
+		var closeButton = document.getElementById( 'dak-encounter-close' );
+
+		if ( closeButton ) {
+			closeButton.classList.toggle( 'dak-hidden', ! isOpen );
+		}
+
+		toggleFormsVisible( isOpen );
+
+		var closedHint = document.getElementById( 'dak-encounter-closed-hint' );
+
+		if ( closedHint ) {
+			closedHint.classList.toggle( 'dak-hidden', isOpen );
+		}
+	}
+
+	function toggleFormsVisible( isOpen ) {
+		[ 'dak-encounter-add-problem-form', 'dak-encounter-add-prescription-form', 'dak-encounter-add-bill-item-form' ].forEach( function ( id ) {
+			var form = document.getElementById( id );
+
+			if ( form ) {
+				form.classList.toggle( 'dak-hidden', ! isOpen );
+			}
+		} );
+	}
+
+	function renderProblems( problems, isOpen ) {
+		var container = document.getElementById( 'dak-encounter-problems-list' );
+
+		if ( ! container ) {
+			return;
+		}
+
+		if ( ! problems.length ) {
+			container.innerHTML = '<p class="dak-empty-state">No problems recorded yet.</p>';
+			return;
+		}
+
+		container.innerHTML = '';
+
+		problems.forEach( function ( problem ) {
+			var row = document.createElement( 'div' );
+			row.className = 'dak-admin-record-row';
+
+			var main = document.createElement( 'div' );
+			main.className = 'dak-admin-record-row-main';
+
+			var info = document.createElement( 'span' );
+			info.className = 'dak-admin-record-row-info';
+			info.innerHTML = '<strong></strong><span class="dak-admin-record-row-id"></span>';
+			info.querySelector( 'strong' ).textContent = problem.description;
+			info.querySelector( '.dak-admin-record-row-id' ).textContent = problem.notes;
+			main.appendChild( info );
+
+			if ( isOpen ) {
+				main.appendChild( deleteButton( 'doctor_ak_delete_encounter_problem', 'problem_id', problem.id ) );
+			}
+
+			row.appendChild( main );
+			container.appendChild( row );
+		} );
+	}
+
+	function renderPrescriptions( prescriptions, isOpen ) {
+		var container = document.getElementById( 'dak-encounter-prescriptions-list' );
+
+		if ( ! container ) {
+			return;
+		}
+
+		if ( ! prescriptions.length ) {
+			container.innerHTML = '<p class="dak-empty-state">No medicines prescribed yet.</p>';
+			return;
+		}
+
+		container.innerHTML = '';
+
+		prescriptions.forEach( function ( prescription ) {
+			var row = document.createElement( 'div' );
+			row.className = 'dak-admin-record-row';
+
+			var main = document.createElement( 'div' );
+			main.className = 'dak-admin-record-row-main';
+
+			var metaParts = [ prescription.dosage, prescription.frequency, prescription.duration ].filter( function ( part ) { return part; } );
+
+			if ( prescription.instructions ) {
+				metaParts.push( prescription.instructions );
+			}
+
+			var info = document.createElement( 'span' );
+			info.className = 'dak-admin-record-row-info';
+			info.innerHTML = '<strong></strong><span class="dak-admin-record-row-id"></span>';
+			info.querySelector( 'strong' ).textContent = prescription.medicine_name;
+			info.querySelector( '.dak-admin-record-row-id' ).textContent = metaParts.join( ' · ' );
+			main.appendChild( info );
+
+			if ( isOpen ) {
+				main.appendChild( deleteButton( 'doctor_ak_delete_encounter_prescription', 'prescription_id', prescription.id ) );
+			}
+
+			row.appendChild( main );
+			container.appendChild( row );
+		} );
+	}
+
+	function renderBillItems( billItems, billTotal, isOpen ) {
+		var container = document.getElementById( 'dak-encounter-bill-list' );
+
+		if ( container ) {
+			if ( ! billItems.length ) {
+				container.innerHTML = '<p class="dak-empty-state">No extra charges added.</p>';
+			} else {
+				container.innerHTML = '';
+
+				billItems.forEach( function ( item ) {
+					var row = document.createElement( 'div' );
+					row.className = 'dak-admin-record-row';
+
+					var main = document.createElement( 'div' );
+					main.className = 'dak-admin-record-row-main';
+
+					var info = document.createElement( 'span' );
+					info.className = 'dak-admin-record-row-info';
+					info.innerHTML = '<strong></strong>';
+					info.querySelector( 'strong' ).textContent = item.description;
+					main.appendChild( info );
+
+					var amount = document.createElement( 'span' );
+					amount.className = 'dak-admin-record-row-amount';
+					amount.textContent = 'PKR ' + Math.round( item.amount );
+					main.appendChild( amount );
+
+					if ( isOpen ) {
+						main.appendChild( deleteButton( 'doctor_ak_delete_encounter_bill_item', 'item_id', item.id ) );
+					}
+
+					row.appendChild( main );
+					container.appendChild( row );
+				} );
+			}
+		}
+
+		setText( 'dak-encounter-bill-total', 'PKR ' + Math.round( billTotal ) );
+	}
+
+	function renderMedicineOptions( medicines ) {
+		var select = document.getElementById( 'dak-encounter-prescription-medicine' );
+
+		if ( ! select ) {
+			return;
+		}
+
+		var currentValue = select.value;
+		select.innerHTML = '<option value="0">— Type a medicine name instead —</option>';
+
+		medicines.forEach( function ( medicine ) {
+			var option = document.createElement( 'option' );
+			option.value = medicine.id;
+			option.textContent = medicine.name + ( medicine.default_dosage ? ' (' + medicine.default_dosage + ')' : '' );
+			select.appendChild( option );
+		} );
+
+		select.value = currentValue || '0';
+	}
+
+	function deleteButton( action, idField, id ) {
+		var button = document.createElement( 'button' );
+		button.type = 'button';
+		button.className = 'dak-icon-button dak-icon-button-danger';
+		button.setAttribute( 'data-encounter-delete', '' );
+		button.setAttribute( 'data-action', action );
+		button.setAttribute( 'data-id-field', idField );
+		button.setAttribute( 'data-id', id );
+		button.setAttribute( 'aria-label', 'Delete' );
+		button.textContent = '×';
+		return button;
+	}
+
+	function setText( id, text ) {
+		var el = document.getElementById( id );
+
+		if ( el ) {
+			el.textContent = text;
+		}
+	}
+
+	function showError( message ) {
+		var el = document.getElementById( 'dak-encounter-error' );
+
+		if ( el ) {
+			el.textContent = message;
+			el.classList.remove( 'dak-hidden' );
+		}
+	}
+
+	function hideError() {
+		var el = document.getElementById( 'dak-encounter-error' );
+
+		if ( el ) {
+			el.classList.add( 'dak-hidden' );
+		}
+	}
+} )();

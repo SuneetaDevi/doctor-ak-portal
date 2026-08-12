@@ -28,6 +28,8 @@ use DoctorAKPortal\Frontend\Doctor_Dashboard;
 use DoctorAKPortal\Frontend\Doctor_Profile_View;
 use DoctorAKPortal\Frontend\Doctor_Requests_Handler;
 use DoctorAKPortal\Frontend\Doctors_Directory;
+use DoctorAKPortal\Frontend\Encounter_Handler;
+use DoctorAKPortal\Frontend\Medicine_Handler;
 use DoctorAKPortal\Frontend\Featured_Doctors;
 use DoctorAKPortal\Frontend\Forgot_Password_Handler;
 use DoctorAKPortal\Frontend\Login_Handler;
@@ -329,6 +331,25 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_reschedule_appointment', $doctor_appointment_handler, 'handle_reschedule' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_cancel_appointment', $doctor_appointment_handler, 'handle_cancel_appointment' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_save_encounter_note', $doctor_appointment_handler, 'handle_save_encounter_note' );
+
+		$encounter_handler = new Encounter_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_check_in', $encounter_handler, 'handle_check_in' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_close_encounter', $encounter_handler, 'handle_close_encounter' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_get_encounter', $encounter_handler, 'handle_get_encounter' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_add_encounter_problem', $encounter_handler, 'handle_add_problem' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_delete_encounter_problem', $encounter_handler, 'handle_delete_problem' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_add_encounter_prescription', $encounter_handler, 'handle_add_prescription' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_delete_encounter_prescription', $encounter_handler, 'handle_delete_prescription' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_add_encounter_bill_item', $encounter_handler, 'handle_add_bill_item' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_delete_encounter_bill_item', $encounter_handler, 'handle_delete_bill_item' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_prescription_pdf_download', $encounter_handler, 'handle_download_prescription_pdf' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_encounter_bill_pdf_download', $encounter_handler, 'handle_download_bill_pdf' );
+
+		$medicine_handler = new Medicine_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_medicine_save', $medicine_handler, 'handle_save_medicine' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_medicine_delete', $medicine_handler, 'handle_delete_medicine' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_medicine_save', $medicine_handler, 'handle_admin_save_medicine' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_medicine_delete', $medicine_handler, 'handle_admin_delete_medicine' );
 
 		$role_permissions_handler = new Role_Permissions_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_role_permissions_save', $role_permissions_handler, 'handle_save' );

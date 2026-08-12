@@ -36,6 +36,7 @@ class Appointments {
 	const STATUS_CANCELLED       = 'cancelled';
 	const STATUS_COMPLETED       = 'completed';
 	const STATUS_RESCHEDULED     = 'rescheduled';
+	const STATUS_CHECKED_IN      = 'checked_in';
 
 	const TYPE_CLINIC = 'clinic';
 	const TYPE_VIDEO  = 'video';
@@ -941,6 +942,15 @@ class Appointments {
 				'can_join'   => false,
 				'room_url'   => $room_url,
 				'hint'       => __( 'Appointment completed', 'doctor-ak-portal' ),
+			);
+		}
+
+		if ( self::STATUS_CHECKED_IN === $appointment['status'] ) {
+			return array(
+				'applicable' => true,
+				'can_join'   => false,
+				'room_url'   => $room_url,
+				'hint'       => __( 'Patient already checked in', 'doctor-ak-portal' ),
 			);
 		}
 
@@ -1899,6 +1909,76 @@ class Appointments {
 	}
 
 	/**
+	 * Checks a patient in for their appointment — opens a clinical Encounter
+	 * against it (see Encounters::check_in(), which calls this). Callable by
+	 * the treating doctor OR admin/receptionist (authorization is enforced
+	 * by the caller, e.g. Encounter_Handler — this method itself doesn't
+	 * ownership-check, matching mark_paid()'s pattern of trusting the
+	 * caller). Only allowed from the same "booked" states mark_completed()
+	 * accepts ('confirmed'/'paid'/'rescheduled'), only once payment is
+	 * settled (or the appointment is free), and only while the appointment
+	 * hasn't already passed — checking in a patient for a slot that's
+	 * already over doesn't make sense; use Reschedule instead. Once checked
+	 * in, the old "Mark Completed" shortcut stops applying to this
+	 * appointment (its status no longer matches mark_completed()'s allowed
+	 * set) — Close Encounter (see checkout()) becomes the only way to
+	 * finish the visit.
+	 *
+	 * @param int $appointment_id Appointment post ID.
+	 * @param int $clinic_id      Clinic this visit is happening at (0 if none/not applicable — e.g. a video-only doctor). Only backfilled onto the appointment if it didn't already have one.
+	 * @return true|\WP_Error
+	 */
+	public static function check_in( $appointment_id, $clinic_id ) {
+		$appointment = self::get( $appointment_id );
+
+		if ( empty( $appointment ) || ! in_array( $appointment['status'], array( self::STATUS_CONFIRMED, self::STATUS_PAID, self::STATUS_RESCHEDULED ), true ) ) {
+			return new \WP_Error( 'doctor_ak_appointment_not_checkinable', __( 'That appointment could not be found or checked in.', 'doctor-ak-portal' ) );
+		}
+
+		if ( (float) $appointment['charge'] > 0 && self::PAYMENT_STATUS_PAID !== $appointment['payment_status'] ) {
+			return new \WP_Error( 'doctor_ak_appointment_payment_pending', __( 'This appointment still has a pending payment — mark it paid before checking the patient in.', 'doctor-ak-portal' ) );
+		}
+
+		$start = strtotime( $appointment['date'] . ' ' . $appointment['time'] );
+
+		if ( false !== $start && $start < current_time( 'timestamp' ) ) { // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- comparing against strtotime() of a stored local date/time string, not doing math that needs UTC.
+			return new \WP_Error( 'doctor_ak_appointment_overdue', __( "This appointment's time has already passed — reschedule it before checking the patient in.", 'doctor-ak-portal' ) );
+		}
+
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_CHECKED_IN );
+
+		if ( $clinic_id > 0 && 0 === (int) $appointment['clinic_id'] ) {
+			update_post_meta( $appointment_id, 'doctor_ak_appointment_clinic_id', $clinic_id );
+		}
+
+		/**
+		 * Fires after a patient is checked in.
+		 *
+		 * @param int $appointment_id Checked-in appointment's post ID.
+		 */
+		do_action( 'doctor_ak_appointment_checked_in', $appointment_id );
+
+		return true;
+	}
+
+	/**
+	 * Checks a patient out — the counterpart to check_in(), called only from
+	 * Encounters::close() once a doctor closes the clinical encounter. Marks
+	 * the appointment completed via the same status/action as
+	 * mark_completed(), so anything already listening for
+	 * 'doctor_ak_appointment_completed' (e.g. the invoice email) still runs.
+	 *
+	 * @param int $appointment_id Appointment post ID.
+	 * @return void
+	 */
+	public static function checkout( $appointment_id ) {
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_COMPLETED );
+
+		/** This action is documented in mark_completed() above. */
+		do_action( 'doctor_ak_appointment_completed', $appointment_id );
+	}
+
+	/**
 	 * Auto-completes booked (confirmed) appointments once enough time has
 	 * passed since their scheduled start that the visit is assumed over —
 	 * a safety net for doctors who don't manually mark_completed(). Run
@@ -2562,6 +2642,7 @@ class Appointments {
 			self::STATUS_CONFIRMED       => __( 'Booked', 'doctor-ak-portal' ),
 			self::STATUS_PENDING_PAYMENT => __( 'Pending Payment', 'doctor-ak-portal' ),
 			self::STATUS_PAID            => __( 'Paid', 'doctor-ak-portal' ),
+			self::STATUS_CHECKED_IN      => __( 'Checked In', 'doctor-ak-portal' ),
 			self::STATUS_CANCELLED       => __( 'Cancelled', 'doctor-ak-portal' ),
 			self::STATUS_COMPLETED       => __( 'Completed', 'doctor-ak-portal' ),
 			self::STATUS_RESCHEDULED     => __( 'Rescheduled', 'doctor-ak-portal' ),
@@ -2610,6 +2691,10 @@ class Appointments {
 
 		if ( self::STATUS_RESCHEDULED === $status ) {
 			return 'is-rescheduled';
+		}
+
+		if ( self::STATUS_CHECKED_IN === $status ) {
+			return 'is-checked-in';
 		}
 
 		return 'is-pending';

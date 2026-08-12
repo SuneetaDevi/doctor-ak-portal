@@ -558,6 +558,11 @@
 	color: var( --dak-tint-info-text ) !important;
 }
 
+.dak-status-pill-outline.dak-status-pill-is-checked-in {
+	border-color: var( --dak-tint-purple-text ) !important;
+	color: var( --dak-tint-purple-text ) !important;
+}
+
 .dak-status-pill-disabled {
 	background: var( --dak-bg-subtle ) !important;
 	color: var( --dak-muted ) !important;

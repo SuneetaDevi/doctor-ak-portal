@@ -224,6 +224,17 @@ $dak_appt_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to
 							<?php if ( ! empty( $row['video_call']['can_join'] ) ) : ?>
 								<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $row['video_call']['room_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></a>
 							<?php endif; ?>
+							<?php if ( in_array( $row['status'], array( 'confirmed', 'paid', 'rescheduled' ), true ) && ( $row['is_paid'] || (float) $row['charge'] <= 0 ) && ! $row['is_overdue'] ) : ?>
+								<button type="button" class="dak-status-pill dak-status-pill-action" data-check-in data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>" title="<?php esc_attr_e( 'Check the patient in and open their encounter', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Check In', 'doctor-ak-portal' ); ?></button>
+							<?php elseif ( 'checked_in' === $row['status'] ) : ?>
+								<?php
+								$dak_open_encounter = \DoctorAKPortal\Includes\Encounters::find_by_appointment( $row['id'], \DoctorAKPortal\Includes\Encounters::STATUS_OPEN );
+								$dak_encounter_url  = $dak_open_encounter ? add_query_arg( array( 'section' => 'encounter', 'encounter_id' => $dak_open_encounter['id'] ), \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( \DoctorAKPortal\Frontend\Admin_Dashboard::SHORTCODE_TAG ) ) : '';
+								?>
+								<?php if ( '' !== $dak_encounter_url ) : ?>
+									<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $dak_encounter_url ); ?>"><?php esc_html_e( 'Open Encounter', 'doctor-ak-portal' ); ?></a>
+								<?php endif; ?>
+							<?php endif; ?>
 							<?php if ( ! $row['is_paid'] && (float) $row['charge'] > 0 && 'online' === $row['payment_mode'] ) : ?>
 								<button
 									type="button"

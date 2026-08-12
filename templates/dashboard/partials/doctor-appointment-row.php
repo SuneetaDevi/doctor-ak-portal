@@ -103,7 +103,16 @@ $datetime_label     = $datetime_timestamp ? date_i18n( 'd/m/Y h:i A', $datetime_
 				</button>
 			<?php endif; ?>
 			<?php if ( in_array( $appointment['status'], array( 'confirmed', 'paid', 'rescheduled' ), true ) && ( $appointment['is_paid'] || (float) $appointment['charge'] <= 0 ) ) : ?>
+				<button type="button" class="dak-status-pill dak-status-pill-action" data-check-in data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>" title="<?php esc_attr_e( 'Check the patient in and open their encounter', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Check In', 'doctor-ak-portal' ); ?></button>
 				<button type="button" class="dak-status-pill dak-status-pill-action" data-mark-completed data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"><?php esc_html_e( 'Mark Completed', 'doctor-ak-portal' ); ?></button>
+			<?php elseif ( 'checked_in' === $appointment['status'] ) : ?>
+				<?php
+				$dak_open_encounter = \DoctorAKPortal\Includes\Encounters::find_by_appointment( $appointment['id'], \DoctorAKPortal\Includes\Encounters::STATUS_OPEN );
+				$dak_encounter_url  = $dak_open_encounter ? add_query_arg( array( 'tab' => 'encounter', 'encounter_id' => $dak_open_encounter['id'] ), \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( \DoctorAKPortal\Frontend\Doctor_Dashboard::SHORTCODE_TAG ) ) : '';
+				?>
+				<?php if ( '' !== $dak_encounter_url ) : ?>
+					<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $dak_encounter_url ); ?>"><?php esc_html_e( 'Open Encounter', 'doctor-ak-portal' ); ?></a>
+				<?php endif; ?>
 			<?php endif; ?>
 			<?php if ( ! empty( $appointment['reschedulable'] ) ) : ?>
 				<button

@@ -89,6 +89,7 @@ class Role_Permissions {
 			'doctors'         => __( 'Doctors', 'doctor-ak-portal' ),
 			'clinic'          => __( 'Clinic', 'doctor-ak-portal' ),
 			'services'        => __( 'Services', 'doctor-ak-portal' ),
+			'medicines'       => __( 'Medicines', 'doctor-ak-portal' ),
 			'doctor-sessions' => __( 'Doctor Sessions', 'doctor-ak-portal' ),
 			'settings'        => __( 'Settings', 'doctor-ak-portal' ),
 		);

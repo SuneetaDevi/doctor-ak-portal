@@ -11,6 +11,7 @@ use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Clinics;
+use DoctorAKPortal\Includes\Encounters;
 use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Notifications;
 use DoctorAKPortal\Includes\Page_Finder;
@@ -168,6 +169,50 @@ class Doctor_Dashboard {
 		);
 
 		wp_enqueue_script(
+			'doctor-ak-portal-check-in',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-check-in.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-check-in.js' ),
+			true
+		);
+
+		wp_localize_script(
+			'doctor-ak-portal-check-in',
+			'dakCheckIn',
+			array(
+				'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
+				'nonce'         => wp_create_nonce( Encounter_Handler::NONCE_ACTION ),
+				'confirmMessage' => __( 'Check this patient in and open their encounter?', 'doctor-ak-portal' ),
+				'genericError'  => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
+				'encounterUrl'  => self::tab_url( Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ), 'encounter' ),
+			)
+		);
+
+		// The Encounter screen (reached via "Open Encounter", not a
+		// permanent nav item — see requested_tab()) has its own repeatable
+		// Problems/Prescriptions/Bill sections.
+		if ( 'encounter' === self::requested_tab() ) {
+			wp_enqueue_script(
+				'doctor-ak-portal-encounter',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-encounter.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-encounter.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-encounter',
+				'dakEncounter',
+				array(
+					'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
+					'nonce'        => wp_create_nonce( Encounter_Handler::NONCE_ACTION ),
+					'genericError' => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
+					'confirmCloseMessage' => __( 'Close this encounter and check the patient out? This cannot be undone.', 'doctor-ak-portal' ),
+				)
+			);
+		}
+
+		wp_enqueue_script(
 			'doctor-ak-portal-appointment-reschedule',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-appointment-reschedule.js',
 			array(),
@@ -292,7 +337,7 @@ class Doctor_Dashboard {
 
 		$tab = sanitize_key( wp_unslash( $_GET['tab'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 
-		if ( ! in_array( $tab, array( 'profile', 'clinics', 'services', 'video-consultation', 'appointments', 'patients', 'earnings', 'notifications', 'settings' ), true ) ) {
+		if ( ! in_array( $tab, array( 'profile', 'clinics', 'services', 'video-consultation', 'appointments', 'patients', 'earnings', 'encounter', 'notifications', 'settings' ), true ) ) {
 			return 'dashboard';
 		}
 
@@ -633,6 +678,37 @@ class Doctor_Dashboard {
 	}
 
 	/**
+	 * Renders the Encounter detail screen for one checked-in patient — not
+	 * a permanent nav tab (see requested_tab()), reached only by clicking
+	 * "Open Encounter" on an appointment row. The template itself renders
+	 * empty containers; the actual Problems/Prescriptions/Bill lists are
+	 * fetched and rendered client-side (see assets/js/doctor-ak-encounter.js
+	 * and Encounter_Handler::handle_get_encounter()) so add/delete can
+	 * re-render in place without a full page reload.
+	 *
+	 * @param \WP_User $user Currently logged-in doctor.
+	 * @return string
+	 */
+	private function render_encounter_tab( \WP_User $user ) {
+		$encounter_id = isset( $_GET['encounter_id'] ) ? absint( wp_unslash( $_GET['encounter_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		$encounter    = $encounter_id > 0 ? Encounters::find( $encounter_id ) : null;
+
+		if ( empty( $encounter )
+			|| ( (int) $encounter['doctor_id'] !== $user->ID && ! current_user_can( 'manage_options' ) && ! current_user_can( 'doctor_ak_manage_appointments' ) )
+		) {
+			$encounter_id = 0;
+		}
+
+		return $this->template_loader->get_template(
+			'dashboard/partials/doctor-encounter.php',
+			array(
+				'encounter_id'    => $encounter_id,
+				'appointments_url' => self::tab_url( Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ), 'appointments' ),
+			)
+		);
+	}
+
+	/**
 	 * Renders the Services tab: a doctor's bookable services (e.g. "OPD
 	 * Consultation"), each with its own category, charge, and duration.
 	 *
@@ -767,6 +843,7 @@ class Doctor_Dashboard {
 			'appointments_tab_html' => 'appointments' === $active_tab ? $this->render_appointments_tab( $user ) : '',
 			'patients_tab_html'     => 'patients' === $active_tab ? $this->render_patients_tab( $user ) : '',
 			'earnings_tab_html'     => 'earnings' === $active_tab ? $this->render_earnings_tab( $user ) : '',
+			'encounter_tab_html'    => 'encounter' === $active_tab ? $this->render_encounter_tab( $user ) : '',
 			'notifications_tab_html' => 'notifications' === $active_tab ? $this->render_notifications_tab( $user ) : '',
 			'unread_notifications_count' => Notification_Center::unread_count( $user->ID ),
 			'settings_tab_html'     => 'settings' === $active_tab ? $this->render_settings_tab( $user ) : '',

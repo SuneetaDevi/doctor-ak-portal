@@ -83,6 +83,76 @@ class Db_Installer {
 	const CLINIC_LOCATIONS_DB_VERSION = '1.0.0';
 
 	/**
+	 * Option name tracking the installed encounters-table schema version.
+	 *
+	 * @var string
+	 */
+	const ENCOUNTERS_DB_VERSION_OPTION = 'dak_encounters_db_version';
+
+	/**
+	 * Current encounters table schema version.
+	 *
+	 * @var string
+	 */
+	const ENCOUNTERS_DB_VERSION = '1.0.0';
+
+	/**
+	 * Option name tracking the installed medicines-table schema version.
+	 *
+	 * @var string
+	 */
+	const MEDICINES_DB_VERSION_OPTION = 'dak_medicines_db_version';
+
+	/**
+	 * Current medicines table schema version.
+	 *
+	 * @var string
+	 */
+	const MEDICINES_DB_VERSION = '1.0.0';
+
+	/**
+	 * Option name tracking the installed encounter-problems-table schema version.
+	 *
+	 * @var string
+	 */
+	const ENCOUNTER_PROBLEMS_DB_VERSION_OPTION = 'dak_encounter_problems_db_version';
+
+	/**
+	 * Current encounter-problems table schema version.
+	 *
+	 * @var string
+	 */
+	const ENCOUNTER_PROBLEMS_DB_VERSION = '1.0.0';
+
+	/**
+	 * Option name tracking the installed encounter-prescriptions-table schema version.
+	 *
+	 * @var string
+	 */
+	const ENCOUNTER_PRESCRIPTIONS_DB_VERSION_OPTION = 'dak_encounter_prescriptions_db_version';
+
+	/**
+	 * Current encounter-prescriptions table schema version.
+	 *
+	 * @var string
+	 */
+	const ENCOUNTER_PRESCRIPTIONS_DB_VERSION = '1.0.0';
+
+	/**
+	 * Option name tracking the installed encounter-bill-items-table schema version.
+	 *
+	 * @var string
+	 */
+	const ENCOUNTER_BILL_ITEMS_DB_VERSION_OPTION = 'dak_encounter_bill_items_db_version';
+
+	/**
+	 * Current encounter-bill-items table schema version.
+	 *
+	 * @var string
+	 */
+	const ENCOUNTER_BILL_ITEMS_DB_VERSION = '1.0.0';
+
+	/**
 	 * Option name guarding the one-time legacy-data migration so it never
 	 * runs more than once.
 	 *
@@ -111,6 +181,21 @@ class Db_Installer {
 		self::create_clinic_locations_table();
 		update_option( self::CLINIC_LOCATIONS_DB_VERSION_OPTION, self::CLINIC_LOCATIONS_DB_VERSION );
 
+		self::create_encounters_table();
+		update_option( self::ENCOUNTERS_DB_VERSION_OPTION, self::ENCOUNTERS_DB_VERSION );
+
+		self::create_medicines_table();
+		update_option( self::MEDICINES_DB_VERSION_OPTION, self::MEDICINES_DB_VERSION );
+
+		self::create_encounter_problems_table();
+		update_option( self::ENCOUNTER_PROBLEMS_DB_VERSION_OPTION, self::ENCOUNTER_PROBLEMS_DB_VERSION );
+
+		self::create_encounter_prescriptions_table();
+		update_option( self::ENCOUNTER_PRESCRIPTIONS_DB_VERSION_OPTION, self::ENCOUNTER_PRESCRIPTIONS_DB_VERSION );
+
+		self::create_encounter_bill_items_table();
+		update_option( self::ENCOUNTER_BILL_ITEMS_DB_VERSION_OPTION, self::ENCOUNTER_BILL_ITEMS_DB_VERSION );
+
 		if ( ! get_option( self::MIGRATION_OPTION ) ) {
 			self::migrate_legacy_data();
 			update_option( self::MIGRATION_OPTION, 'yes' );
@@ -132,6 +217,11 @@ class Db_Installer {
 			&& self::SERVICES_DB_VERSION === get_option( self::SERVICES_DB_VERSION_OPTION )
 			&& self::NOTIFICATIONS_DB_VERSION === get_option( self::NOTIFICATIONS_DB_VERSION_OPTION )
 			&& self::CLINIC_LOCATIONS_DB_VERSION === get_option( self::CLINIC_LOCATIONS_DB_VERSION_OPTION )
+			&& self::ENCOUNTERS_DB_VERSION === get_option( self::ENCOUNTERS_DB_VERSION_OPTION )
+			&& self::MEDICINES_DB_VERSION === get_option( self::MEDICINES_DB_VERSION_OPTION )
+			&& self::ENCOUNTER_PROBLEMS_DB_VERSION === get_option( self::ENCOUNTER_PROBLEMS_DB_VERSION_OPTION )
+			&& self::ENCOUNTER_PRESCRIPTIONS_DB_VERSION === get_option( self::ENCOUNTER_PRESCRIPTIONS_DB_VERSION_OPTION )
+			&& self::ENCOUNTER_BILL_ITEMS_DB_VERSION === get_option( self::ENCOUNTER_BILL_ITEMS_DB_VERSION_OPTION )
 		) {
 			return;
 		}
@@ -265,6 +355,157 @@ class Db_Installer {
 			created_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),
 			KEY recipient_read (recipient_id, is_read)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Runs dbDelta() against the encounters table schema — one row per
+	 * check-in, see Encounters.
+	 *
+	 * @return void
+	 */
+	private static function create_encounters_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$table_name      = Encounters::table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table_name} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			appointment_id BIGINT UNSIGNED NOT NULL,
+			doctor_id BIGINT UNSIGNED NOT NULL,
+			patient_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			clinic_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			status VARCHAR(20) NOT NULL DEFAULT 'open',
+			legacy_note TEXT NOT NULL,
+			checked_in_at DATETIME NOT NULL,
+			checked_in_by BIGINT UNSIGNED NOT NULL,
+			closed_at DATETIME NULL,
+			closed_by BIGINT UNSIGNED NULL,
+			created_at DATETIME NOT NULL,
+			updated_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY appointment_id (appointment_id),
+			KEY doctor_id (doctor_id),
+			KEY patient_id (patient_id)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Runs dbDelta() against the medicines table schema — a doctor-scoped
+	 * master list, see Medicines.
+	 *
+	 * @return void
+	 */
+	private static function create_medicines_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$table_name      = Medicines::table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table_name} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			doctor_id BIGINT UNSIGNED NOT NULL,
+			name VARCHAR(191) NOT NULL,
+			default_dosage VARCHAR(191) NOT NULL DEFAULT '',
+			active TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+			created_at DATETIME NOT NULL,
+			updated_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY doctor_id (doctor_id)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Runs dbDelta() against the encounter-problems table schema, see
+	 * Encounter_Problems.
+	 *
+	 * @return void
+	 */
+	private static function create_encounter_problems_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$table_name      = Encounter_Problems::table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table_name} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			encounter_id BIGINT UNSIGNED NOT NULL,
+			description VARCHAR(255) NOT NULL,
+			notes TEXT NOT NULL,
+			created_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY encounter_id (encounter_id)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Runs dbDelta() against the encounter-prescriptions table schema, see
+	 * Encounter_Prescriptions.
+	 *
+	 * @return void
+	 */
+	private static function create_encounter_prescriptions_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$table_name      = Encounter_Prescriptions::table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table_name} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			encounter_id BIGINT UNSIGNED NOT NULL,
+			medicine_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			medicine_name VARCHAR(191) NOT NULL,
+			dosage VARCHAR(191) NOT NULL DEFAULT '',
+			frequency VARCHAR(191) NOT NULL DEFAULT '',
+			duration VARCHAR(191) NOT NULL DEFAULT '',
+			instructions VARCHAR(255) NOT NULL DEFAULT '',
+			created_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY encounter_id (encounter_id)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Runs dbDelta() against the encounter-bill-items table schema, see
+	 * Encounter_Bill_Items.
+	 *
+	 * @return void
+	 */
+	private static function create_encounter_bill_items_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$table_name      = Encounter_Bill_Items::table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table_name} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			encounter_id BIGINT UNSIGNED NOT NULL,
+			description VARCHAR(255) NOT NULL,
+			amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			created_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY encounter_id (encounter_id)
 		) {$charset_collate};";
 
 		dbDelta( $sql );
