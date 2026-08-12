@@ -440,7 +440,7 @@ $appointment_group_labels = array(
 			<div class="dak-field-row">
 				<div class="dak-field">
 					<label for="dak-reschedule-appointment-date"><?php esc_html_e( 'New Date', 'doctor-ak-portal' ); ?></label>
-					<input type="date" id="dak-reschedule-appointment-date">
+					<input type="date" id="dak-reschedule-appointment-date" min="<?php echo esc_attr( current_time( 'Y-m-d' ) ); ?>">
 				</div>
 				<div class="dak-field">
 					<label for="dak-reschedule-appointment-time"><?php esc_html_e( 'New Time', 'doctor-ak-portal' ); ?></label>

@@ -1245,9 +1245,12 @@ class Admin_Dashboard {
 			$date_to    = isset( $_GET['date_to'] ) ? sanitize_text_field( wp_unslash( $_GET['date_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			$doctor_id  = isset( $_GET['doctor_id'] ) ? absint( wp_unslash( $_GET['doctor_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			$patient_id = isset( $_GET['patient_id'] ) ? absint( wp_unslash( $_GET['patient_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$status     = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$status     = in_array( $status, array( Encounters::STATUS_OPEN, Encounters::STATUS_CLOSED ), true ) ? $status : '';
 
 			$dashboard_url    = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
 			$encounters_url   = $dashboard_url ? add_query_arg( 'section', 'encounters', $dashboard_url ) : '';
+			$encounter_url    = $dashboard_url ? add_query_arg( 'section', 'encounter', $dashboard_url ) : '';
 			$filtered_patient = $patient_id > 0 ? get_userdata( $patient_id ) : false;
 
 			$doctors = get_users(
@@ -1261,16 +1264,17 @@ class Admin_Dashboard {
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-encounters.php',
 				array(
-					'encounters'       => Appointments::all_for_admin(
+					'encounters'       => Encounters::all_flat_for_admin(
 						array(
-							'status'     => Appointments::STATUS_COMPLETED,
 							'date_from'  => $date_from,
 							'date_to'    => $date_to,
 							'doctor_id'  => $doctor_id,
 							'patient_id' => $patient_id,
+							'status'     => $status,
 						)
 					),
 					'encounters_url'   => $encounters_url,
+					'encounter_url'    => $encounter_url,
 					'doctors'          => $doctors,
 					'filtered_patient' => $filtered_patient ? self::display_name( $filtered_patient ) : '',
 					'filters'          => array(
@@ -1278,6 +1282,7 @@ class Admin_Dashboard {
 						'date_to'    => $date_to,
 						'doctor_id'  => $doctor_id,
 						'patient_id' => $patient_id,
+						'status'     => $status,
 					),
 				)
 			);

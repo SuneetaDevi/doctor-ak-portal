@@ -111,6 +111,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<div id="dak-encounter-bill-list"></div>
 			<form id="dak-encounter-add-bill-item-form" class="dak-encounter-inline-form">
 				<div class="dak-field">
+					<label for="dak-encounter-bill-service"><?php esc_html_e( 'Service', 'doctor-ak-portal' ); ?></label>
+					<select id="dak-encounter-bill-service">
+						<option value="0"><?php esc_html_e( '— Custom charge —', 'doctor-ak-portal' ); ?></option>
+					</select>
+				</div>
+				<div class="dak-field">
 					<label for="dak-encounter-bill-description"><?php esc_html_e( 'Description', 'doctor-ak-portal' ); ?></label>
 					<input type="text" id="dak-encounter-bill-description" placeholder="<?php esc_attr_e( 'e.g. Dressing', 'doctor-ak-portal' ); ?>">
 				</div>
@@ -121,6 +127,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<button type="submit" class="dak-button dak-button-secondary dak-button-sm"><?php esc_html_e( '+ Add Charge', 'doctor-ak-portal' ); ?></button>
 			</form>
 			<p class="dak-encounter-bill-total"><?php esc_html_e( 'Total:', 'doctor-ak-portal' ); ?> <strong id="dak-encounter-bill-total">PKR 0</strong></p>
+		</section>
+
+		<!-- Reports -->
+		<section class="dak-dashboard-card">
+			<div class="dak-dashboard-card-header">
+				<h2><?php esc_html_e( 'Reports', 'doctor-ak-portal' ); ?></h2>
+			</div>
+			<div id="dak-encounter-reports-list"></div>
+			<form id="dak-encounter-upload-report-form" class="dak-encounter-inline-form">
+				<div class="dak-field">
+					<label for="dak-encounter-report-file"><?php esc_html_e( 'Upload report (PDF, JPG, PNG or WebP)', 'doctor-ak-portal' ); ?></label>
+					<input type="file" id="dak-encounter-report-file" accept="application/pdf,image/jpeg,image/png,image/webp">
+				</div>
+				<button type="submit" class="dak-button dak-button-secondary dak-button-sm" id="dak-encounter-report-upload-button"><?php esc_html_e( '+ Add Report', 'doctor-ak-portal' ); ?></button>
+			</form>
 		</section>
 
 		<!-- Actions -->

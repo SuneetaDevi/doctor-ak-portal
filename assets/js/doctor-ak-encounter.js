@@ -47,12 +47,17 @@
 		} );
 
 		wireAddForm( 'dak-encounter-add-bill-item-form', 'doctor_ak_add_encounter_bill_item', function ( formData ) {
+			var serviceSelect = document.getElementById( 'dak-encounter-bill-service' );
+			formData.append( 'service_id', serviceSelect ? serviceSelect.value : '0' );
 			formData.append( 'description', document.getElementById( 'dak-encounter-bill-description' ).value );
 			formData.append( 'amount', document.getElementById( 'dak-encounter-bill-amount' ).value );
 		}, function () {
+			document.getElementById( 'dak-encounter-bill-service' ).value = '0';
 			document.getElementById( 'dak-encounter-bill-description' ).value = '';
 			document.getElementById( 'dak-encounter-bill-amount' ).value = '';
 		} );
+
+		wireUploadReportForm();
 
 		document.addEventListener( 'click', function ( event ) {
 			var deleteTrigger = event.target.closest( '[data-encounter-delete]' );
@@ -110,8 +115,65 @@
 			medicineSelect.addEventListener( 'change', toggleMedicineNameField );
 		}
 
+		var serviceSelect = document.getElementById( 'dak-encounter-bill-service' );
+
+		if ( serviceSelect ) {
+			serviceSelect.addEventListener( 'change', fillBillFieldsFromService );
+		}
+
 		refresh();
 	} );
+
+	/**
+	 * Picking one of the doctor's Services pre-fills the Description/Amount
+	 * fields from that service's name/charge (still editable afterward,
+	 * e.g. to adjust the amount) — "— Custom charge —" (value 0) leaves
+	 * both fields as-is for a free-typed one-off charge.
+	 */
+	function fillBillFieldsFromService() {
+		var select = document.getElementById( 'dak-encounter-bill-service' );
+		var option = select.options[ select.selectedIndex ];
+
+		if ( ! option || '0' === select.value ) {
+			return;
+		}
+
+		document.getElementById( 'dak-encounter-bill-description' ).value = option.getAttribute( 'data-name' ) || '';
+		document.getElementById( 'dak-encounter-bill-amount' ).value = option.getAttribute( 'data-charge' ) || '';
+	}
+
+	/**
+	 * Uploads a report file — a plain multipart POST (not JSON-shaped like
+	 * wireAddForm()'s other forms) since it carries an actual File.
+	 */
+	function wireUploadReportForm() {
+		var form = document.getElementById( 'dak-encounter-upload-report-form' );
+		var fileInput = document.getElementById( 'dak-encounter-report-file' );
+
+		if ( ! form || ! fileInput ) {
+			return;
+		}
+
+		form.addEventListener( 'submit', function ( event ) {
+			event.preventDefault();
+
+			var file = fileInput.files[ 0 ];
+
+			if ( ! file ) {
+				return;
+			}
+
+			var formData = new FormData();
+			formData.append( 'action', 'doctor_ak_upload_encounter_report' );
+			formData.append( 'nonce', window.dakEncounter.nonce );
+			formData.append( 'encounter_id', encounterId );
+			formData.append( 'report', file );
+
+			post( formData, function () {
+				fileInput.value = '';
+			} );
+		} );
+	}
 
 	function toggleMedicineNameField() {
 		var medicineSelect = document.getElementById( 'dak-encounter-prescription-medicine' );
@@ -203,7 +265,9 @@
 		renderProblems( data.problems, isOpen );
 		renderPrescriptions( data.prescriptions, isOpen );
 		renderMedicineOptions( data.medicines );
+		renderServiceOptions( data.services );
 		renderBillItems( data.bill_items, data.bill_total, isOpen );
+		renderReports( data.reports, isOpen );
 
 		var prescriptionLink = document.getElementById( 'dak-encounter-download-prescription' );
 
@@ -233,7 +297,7 @@
 	}
 
 	function toggleFormsVisible( isOpen ) {
-		[ 'dak-encounter-add-problem-form', 'dak-encounter-add-prescription-form', 'dak-encounter-add-bill-item-form' ].forEach( function ( id ) {
+		[ 'dak-encounter-add-problem-form', 'dak-encounter-add-prescription-form', 'dak-encounter-add-bill-item-form', 'dak-encounter-upload-report-form' ].forEach( function ( id ) {
 			var form = document.getElementById( id );
 
 			if ( form ) {
@@ -360,6 +424,67 @@
 		}
 
 		setText( 'dak-encounter-bill-total', 'PKR ' + Math.round( billTotal ) );
+	}
+
+	function renderReports( reports, isOpen ) {
+		var container = document.getElementById( 'dak-encounter-reports-list' );
+
+		if ( ! container ) {
+			return;
+		}
+
+		if ( ! reports.length ) {
+			container.innerHTML = '<p class="dak-empty-state">No reports uploaded yet.</p>';
+			return;
+		}
+
+		container.innerHTML = '';
+
+		reports.forEach( function ( report ) {
+			var row = document.createElement( 'div' );
+			row.className = 'dak-admin-record-row';
+
+			var main = document.createElement( 'div' );
+			main.className = 'dak-admin-record-row-main';
+
+			var link = document.createElement( 'a' );
+			link.className = 'dak-admin-record-row-info';
+			link.href = report.url;
+			link.target = '_blank';
+			link.rel = 'noopener';
+			link.innerHTML = '<strong></strong>';
+			link.querySelector( 'strong' ).textContent = report.file_name;
+			main.appendChild( link );
+
+			if ( isOpen ) {
+				main.appendChild( deleteButton( 'doctor_ak_delete_encounter_report', 'report_id', report.id ) );
+			}
+
+			row.appendChild( main );
+			container.appendChild( row );
+		} );
+	}
+
+	function renderServiceOptions( services ) {
+		var select = document.getElementById( 'dak-encounter-bill-service' );
+
+		if ( ! select ) {
+			return;
+		}
+
+		var currentValue = select.value;
+		select.innerHTML = '<option value="0">— Custom charge —</option>';
+
+		services.forEach( function ( service ) {
+			var option = document.createElement( 'option' );
+			option.value = service.id;
+			option.setAttribute( 'data-name', service.name );
+			option.setAttribute( 'data-charge', service.charge );
+			option.textContent = service.name + ' (PKR ' + Math.round( service.charge ) + ')';
+			select.appendChild( option );
+		} );
+
+		select.value = currentValue || '0';
 	}
 
 	function renderMedicineOptions( medicines ) {

@@ -15,11 +15,14 @@ use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Encounter_Bill_Items;
 use DoctorAKPortal\Includes\Encounter_Bill_Pdf;
+use DoctorAKPortal\Includes\Encounter_Report_Uploader;
+use DoctorAKPortal\Includes\Encounter_Reports;
 use DoctorAKPortal\Includes\Encounter_Prescriptions;
 use DoctorAKPortal\Includes\Encounter_Problems;
 use DoctorAKPortal\Includes\Encounters;
 use DoctorAKPortal\Includes\Medicines;
 use DoctorAKPortal\Includes\Prescription_Pdf;
+use DoctorAKPortal\Includes\Services;
 
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -51,6 +54,22 @@ class Encounter_Handler {
 	 * @var string
 	 */
 	const BILL_PDF_NONCE_ACTION = 'doctor_ak_encounter_bill_pdf_download';
+
+	/**
+	 * Report file upload service.
+	 *
+	 * @var Encounter_Report_Uploader
+	 */
+	private $report_uploader;
+
+	/**
+	 * Sets up collaborators.
+	 *
+	 * @param Encounter_Report_Uploader $report_uploader Upload service.
+	 */
+	public function __construct( Encounter_Report_Uploader $report_uploader ) {
+		$this->report_uploader = $report_uploader;
+	}
 
 	/**
 	 * AJAX handler: checks a patient in — opens (or resumes) an encounter
@@ -261,7 +280,11 @@ class Encounter_Handler {
 	}
 
 	/**
-	 * AJAX handler: adds a Bill item row to an encounter.
+	 * AJAX handler: adds a Bill item row to an encounter — either a charge
+	 * for one of the doctor's own Services (service_id > 0, description/
+	 * amount are taken from the service record itself, same "snapshot"
+	 * pattern handle_add_prescription() uses for a picked medicine) or a
+	 * free-typed one-off charge (service_id = 0).
 	 *
 	 * @return void
 	 */
@@ -273,8 +296,18 @@ class Encounter_Handler {
 		$encounter = self::authorized_encounter_from_request();
 		self::require_open( $encounter );
 
+		$service_id  = isset( $_POST['service_id'] ) ? absint( wp_unslash( $_POST['service_id'] ) ) : 0;
 		$description = isset( $_POST['description'] ) ? sanitize_text_field( wp_unslash( $_POST['description'] ) ) : '';
 		$amount      = isset( $_POST['amount'] ) ? (float) wp_unslash( $_POST['amount'] ) : 0;
+
+		if ( $service_id > 0 ) {
+			$service = Services::find( $service_id );
+
+			if ( $service && (int) $service['doctor_id'] === (int) $encounter['doctor_id'] ) {
+				$description = $service['name'];
+				$amount      = (float) $service['charge'];
+			}
+		}
 
 		if ( '' === $description ) {
 			wp_send_json_error( array( 'message' => __( 'Please describe this charge.', 'doctor-ak-portal' ) ) );
@@ -305,6 +338,55 @@ class Encounter_Handler {
 		$item_id = isset( $_POST['item_id'] ) ? absint( wp_unslash( $_POST['item_id'] ) ) : 0;
 
 		Encounter_Bill_Items::delete( $item_id, $encounter['id'] );
+
+		wp_send_json_success( self::encounter_view_model( $encounter ) );
+	}
+
+	/**
+	 * AJAX handler: uploads a report file (lab result, scan, etc.) and
+	 * attaches it to an encounter.
+	 *
+	 * @return void
+	 */
+	public function handle_upload_report() {
+		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$encounter = self::authorized_encounter_from_request();
+		self::require_open( $encounter );
+
+		if ( empty( $_FILES['report'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'No file was received.', 'doctor-ak-portal' ) ) );
+		}
+
+		$attachment_id = $this->report_uploader->upload( $_FILES['report'], get_current_user_id() );
+
+		if ( is_wp_error( $attachment_id ) ) {
+			wp_send_json_error( array( 'message' => $attachment_id->get_error_message() ) );
+		}
+
+		Encounter_Reports::add( $encounter['id'], $attachment_id, get_current_user_id() );
+
+		wp_send_json_success( self::encounter_view_model( $encounter ) );
+	}
+
+	/**
+	 * AJAX handler: deletes a report file from an encounter.
+	 *
+	 * @return void
+	 */
+	public function handle_delete_report() {
+		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$encounter = self::authorized_encounter_from_request();
+		self::require_open( $encounter );
+
+		$report_id = isset( $_POST['report_id'] ) ? absint( wp_unslash( $_POST['report_id'] ) ) : 0;
+
+		Encounter_Reports::delete( $report_id, $encounter['id'] );
 
 		wp_send_json_success( self::encounter_view_model( $encounter ) );
 	}
@@ -500,6 +582,15 @@ class Encounter_Handler {
 		$bill_items = Encounter_Bill_Items::for_encounter( $encounter['id'] );
 		$bill_total = (float) ( isset( $appointment['charge'] ) ? $appointment['charge'] : 0 ) + Encounter_Bill_Items::total_for_encounter( $encounter['id'] );
 
+		$services = array_values(
+			array_filter(
+				Services::get_for_doctor( $encounter['doctor_id'], null ),
+				function ( $service ) {
+					return ! empty( $service['active'] );
+				}
+			)
+		);
+
 		return array(
 			'encounter'     => array(
 				'id'            => $encounter['id'],
@@ -513,6 +604,8 @@ class Encounter_Handler {
 			'prescriptions' => Encounter_Prescriptions::for_encounter( $encounter['id'] ),
 			'bill_items'    => $bill_items,
 			'bill_total'    => $bill_total,
+			'services'      => $services,
+			'reports'       => Encounter_Reports::for_encounter( $encounter['id'] ),
 			'medicines'     => Medicines::active_for_doctor( $encounter['doctor_id'] ),
 			'prescription_pdf_url' => self::prescription_pdf_download_url( $encounter['id'] ),
 			'bill_pdf_url'          => self::bill_pdf_download_url( $encounter['id'] ),

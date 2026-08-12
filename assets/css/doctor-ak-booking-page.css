@@ -363,7 +363,6 @@
 .dak-booking-service-card.is-selected {
 	border-color: var( --dak-primary ) !important;
 	background: var( --dak-primary-tint ) !important;
-	width: fit-content !important;
 }
 
 .dak-booking-service-card.is-fixed-price {

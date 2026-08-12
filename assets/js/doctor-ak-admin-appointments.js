@@ -151,7 +151,12 @@
 		document.getElementById( 'dak-admin-appointment-guest-name' ).value = '';
 		document.getElementById( 'dak-admin-appointment-guest-email' ).value = '';
 		document.getElementById( 'dak-admin-appointment-guest-phone' ).value = '';
-		document.getElementById( 'dak-admin-appointment-date' ).value = '';
+		var dateField = document.getElementById( 'dak-admin-appointment-date' );
+		dateField.value = '';
+		// Only enforced for a brand-new appointment — openEditModal() clears
+		// this again so editing an appointment that's already in the past
+		// (e.g. logging/adjusting a completed visit) isn't blocked.
+		dateField.min = new Date().toISOString().slice( 0, 10 );
 		document.getElementById( 'dak-admin-appointment-time' ).value = '';
 		document.getElementById( 'dak-admin-appointment-status' ).value = 'confirmed';
 		document.getElementById( 'dak-admin-appointment-payment-status' ).value = 'pending';
@@ -290,7 +295,9 @@
 			document.getElementById( 'dak-admin-appointment-guest-name' ).value = trigger.getAttribute( 'data-guest-name' ) || '';
 			document.getElementById( 'dak-admin-appointment-guest-email' ).value = trigger.getAttribute( 'data-guest-email' ) || '';
 			document.getElementById( 'dak-admin-appointment-guest-phone' ).value = trigger.getAttribute( 'data-guest-phone' ) || '';
-			document.getElementById( 'dak-admin-appointment-date' ).value = trigger.getAttribute( 'data-date' ) || '';
+			var dateField = document.getElementById( 'dak-admin-appointment-date' );
+			dateField.min = ''; // Editing an existing (possibly already-past) appointment isn't restricted to future dates — see resetModalFields().
+			dateField.value = trigger.getAttribute( 'data-date' ) || '';
 			document.getElementById( 'dak-admin-appointment-time' ).value = trigger.getAttribute( 'data-time' ) || '';
 			document.getElementById( 'dak-admin-appointment-status' ).value = trigger.getAttribute( 'data-status' ) || 'confirmed';
 			document.getElementById( 'dak-admin-appointment-payment-status' ).value = trigger.getAttribute( 'data-payment-status' ) || 'pending';

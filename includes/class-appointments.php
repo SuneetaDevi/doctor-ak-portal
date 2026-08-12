@@ -373,6 +373,17 @@ class Appointments {
 			return new \WP_Error( 'doctor_ak_invalid_time', __( 'Please choose a valid appointment time.', 'doctor-ak-portal' ) );
 		}
 
+		// Only enforced for the patient-facing booking flow — an admin
+		// booking on a patient's behalf (admin_override, see below) may
+		// legitimately need to log a walk-in visit that already happened.
+		if ( empty( $data['admin_override'] ) ) {
+			$requested_start = strtotime( $date . ' ' . $time );
+
+			if ( false !== $requested_start && $requested_start < current_time( 'timestamp' ) ) { // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- comparing against strtotime() of a posted local date/time string, not doing math that needs UTC.
+				return new \WP_Error( 'doctor_ak_appointment_in_past', __( 'Please choose a date and time in the future.', 'doctor-ak-portal' ) );
+			}
+		}
+
 		$patient_id  = isset( $data['patient_id'] ) ? (int) $data['patient_id'] : 0;
 		$guest_name  = '';
 		$guest_email = '';
@@ -435,6 +446,22 @@ class Appointments {
 		// free ($0) appointment has nothing to collect, so it's exempt.
 		if ( self::STATUS_COMPLETED === $status && $charge > 0 && self::PAYMENT_STATUS_PAID !== $payment_status ) {
 			return new \WP_Error( 'doctor_ak_appointment_payment_pending', __( 'This appointment still has a pending payment — mark it paid before completing it.', 'doctor-ak-portal' ) );
+		}
+
+		// Once a patient is checked in, the clinical Encounter (see
+		// Encounters class) is the only place that's supposed to move the
+		// appointment off "Checked In" — closing it calls checkout(), which
+		// sets Completed the same way this edit form would. Editing the
+		// appointment directly to any other status while that encounter is
+		// still open would silently orphan it (still open, with nothing
+		// pointing back at its now-changed appointment), so block that here
+		// instead and point the admin at the actual fix.
+		$current_status = get_post_meta( $appointment_id, 'doctor_ak_appointment_status', true );
+
+		if ( self::STATUS_CHECKED_IN === $current_status && $status !== $current_status
+			&& Encounters::find_by_appointment( $appointment_id, Encounters::STATUS_OPEN )
+		) {
+			return new \WP_Error( 'doctor_ak_appointment_encounter_open', __( 'This patient is checked in with an open encounter — close the encounter first.', 'doctor-ak-portal' ) );
 		}
 
 		wp_update_post(
@@ -1505,6 +1532,12 @@ class Appointments {
 			return new \WP_Error( 'doctor_ak_invalid_time', __( 'Please choose a valid appointment time.', 'doctor-ak-portal' ) );
 		}
 
+		$new_start = strtotime( $date . ' ' . $time );
+
+		if ( false !== $new_start && $new_start < current_time( 'timestamp' ) ) { // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- comparing against strtotime() of a posted local date/time string, not doing math that needs UTC.
+			return new \WP_Error( 'doctor_ak_reschedule_in_past', __( 'Please choose a date and time in the future.', 'doctor-ak-portal' ) );
+		}
+
 		if ( self::is_slot_taken( $appointment['doctor_id'], $date, $time, $appointment_id ) ) {
 			return new \WP_Error( 'doctor_ak_slot_taken', __( 'That time slot is already booked. Please choose another time.', 'doctor-ak-portal' ) );
 		}
@@ -1885,10 +1918,15 @@ class Appointments {
 	public static function mark_completed( $appointment_id, $doctor_id ) {
 		$appointment = self::get( $appointment_id );
 
-		if ( empty( $appointment )
-			|| (int) $appointment['doctor_id'] !== (int) $doctor_id
-			|| ! in_array( $appointment['status'], array( self::STATUS_CONFIRMED, self::STATUS_PAID, self::STATUS_RESCHEDULED ), true )
-		) {
+		if ( empty( $appointment ) || (int) $appointment['doctor_id'] !== (int) $doctor_id ) {
+			return new \WP_Error( 'doctor_ak_appointment_not_completable', __( 'That appointment could not be found or marked completed.', 'doctor-ak-portal' ) );
+		}
+
+		if ( self::STATUS_CHECKED_IN === $appointment['status'] ) {
+			return new \WP_Error( 'doctor_ak_appointment_encounter_open', __( 'This patient is checked in with an open encounter — close the encounter first.', 'doctor-ak-portal' ) );
+		}
+
+		if ( ! in_array( $appointment['status'], array( self::STATUS_CONFIRMED, self::STATUS_PAID, self::STATUS_RESCHEDULED ), true ) ) {
 			return new \WP_Error( 'doctor_ak_appointment_not_completable', __( 'That appointment could not be found or marked completed.', 'doctor-ak-portal' ) );
 		}
 

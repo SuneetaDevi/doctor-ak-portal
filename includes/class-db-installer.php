@@ -153,6 +153,20 @@ class Db_Installer {
 	const ENCOUNTER_BILL_ITEMS_DB_VERSION = '1.0.0';
 
 	/**
+	 * Option name tracking the installed encounter-reports-table schema version.
+	 *
+	 * @var string
+	 */
+	const ENCOUNTER_REPORTS_DB_VERSION_OPTION = 'dak_encounter_reports_db_version';
+
+	/**
+	 * Current encounter-reports table schema version.
+	 *
+	 * @var string
+	 */
+	const ENCOUNTER_REPORTS_DB_VERSION = '1.0.0';
+
+	/**
 	 * Option name guarding the one-time legacy-data migration so it never
 	 * runs more than once.
 	 *
@@ -196,6 +210,9 @@ class Db_Installer {
 		self::create_encounter_bill_items_table();
 		update_option( self::ENCOUNTER_BILL_ITEMS_DB_VERSION_OPTION, self::ENCOUNTER_BILL_ITEMS_DB_VERSION );
 
+		self::create_encounter_reports_table();
+		update_option( self::ENCOUNTER_REPORTS_DB_VERSION_OPTION, self::ENCOUNTER_REPORTS_DB_VERSION );
+
 		if ( ! get_option( self::MIGRATION_OPTION ) ) {
 			self::migrate_legacy_data();
 			update_option( self::MIGRATION_OPTION, 'yes' );
@@ -222,6 +239,7 @@ class Db_Installer {
 			&& self::ENCOUNTER_PROBLEMS_DB_VERSION === get_option( self::ENCOUNTER_PROBLEMS_DB_VERSION_OPTION )
 			&& self::ENCOUNTER_PRESCRIPTIONS_DB_VERSION === get_option( self::ENCOUNTER_PRESCRIPTIONS_DB_VERSION_OPTION )
 			&& self::ENCOUNTER_BILL_ITEMS_DB_VERSION === get_option( self::ENCOUNTER_BILL_ITEMS_DB_VERSION_OPTION )
+			&& self::ENCOUNTER_REPORTS_DB_VERSION === get_option( self::ENCOUNTER_REPORTS_DB_VERSION_OPTION )
 		) {
 			return;
 		}
@@ -503,6 +521,34 @@ class Db_Installer {
 			encounter_id BIGINT UNSIGNED NOT NULL,
 			description VARCHAR(255) NOT NULL,
 			amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			created_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY encounter_id (encounter_id)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Runs dbDelta() against the encounter-reports table schema — uploaded
+	 * lab/scan files attached to a clinical encounter (Media Library
+	 * attachment IDs, not raw file storage — see Encounter_Reports).
+	 *
+	 * @return void
+	 */
+	private static function create_encounter_reports_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$table_name      = Encounter_Reports::table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table_name} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			encounter_id BIGINT UNSIGNED NOT NULL,
+			attachment_id BIGINT UNSIGNED NOT NULL,
+			uploaded_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
 			created_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),
 			KEY encounter_id (encounter_id)

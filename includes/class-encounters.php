@@ -215,6 +215,84 @@ class Encounters {
 	}
 
 	/**
+	 * Every encounter across every doctor, most recent first — for the admin
+	 * "Encounters" list (replaces the old completed-appointments visit log).
+	 * Each row is enriched with an 'appointment' sub-array (patient/doctor/
+	 * clinic/date summary — see Appointments::notification_data()) so the
+	 * list template doesn't need a separate lookup per row.
+	 *
+	 * @param array $args {
+	 *     Optional.
+	 *
+	 *     @type int    $doctor_id  Only this doctor's encounters, when > 0. Default 0 (every doctor).
+	 *     @type int    $patient_id Only this patient's encounters, when > 0. Default 0 (every patient).
+	 *     @type string $status     STATUS_OPEN or STATUS_CLOSED, or '' for both. Default ''.
+	 *     @type string $date_from  'YYYY-MM-DD', only encounters checked in on/after this date. Default ''.
+	 *     @type string $date_to    'YYYY-MM-DD', only encounters checked in on/before this date. Default ''.
+	 *     @type int    $number     Max rows to return. Default 200.
+	 * }
+	 * @return array List of decoded encounter rows, each with an added 'appointment' sub-array.
+	 */
+	public static function all_flat_for_admin( array $args = array() ) {
+		global $wpdb;
+
+		$doctor_id  = isset( $args['doctor_id'] ) ? (int) $args['doctor_id'] : 0;
+		$patient_id = isset( $args['patient_id'] ) ? (int) $args['patient_id'] : 0;
+		$status     = isset( $args['status'] ) ? (string) $args['status'] : '';
+		$date_from  = isset( $args['date_from'] ) ? (string) $args['date_from'] : '';
+		$date_to    = isset( $args['date_to'] ) ? (string) $args['date_to'] : '';
+		$number     = isset( $args['number'] ) ? (int) $args['number'] : 200;
+
+		$where  = array();
+		$params = array();
+
+		if ( $doctor_id > 0 ) {
+			$where[]  = 'doctor_id = %d';
+			$params[] = $doctor_id;
+		}
+
+		if ( $patient_id > 0 ) {
+			$where[]  = 'patient_id = %d';
+			$params[] = $patient_id;
+		}
+
+		if ( in_array( $status, array( self::STATUS_OPEN, self::STATUS_CLOSED ), true ) ) {
+			$where[]  = 'status = %s';
+			$params[] = $status;
+		}
+
+		if ( '' !== $date_from ) {
+			$where[]  = 'checked_in_at >= %s';
+			$params[] = $date_from . ' 00:00:00';
+		}
+
+		if ( '' !== $date_to ) {
+			$where[]  = 'checked_in_at <= %s';
+			$params[] = $date_to . ' 23:59:59';
+		}
+
+		$where_sql = ! empty( $where ) ? 'WHERE ' . implode( ' AND ', $where ) : '';
+		$params[]  = $number;
+
+		$sql = $wpdb->prepare(
+			'SELECT * FROM ' . self::table_name() . " $where_sql ORDER BY id DESC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input; $where_sql built entirely from %d/%s placeholders above.
+			$params
+		);
+
+		$rows = $wpdb->get_results( $sql, ARRAY_A );
+
+		return array_map(
+			function ( $row ) {
+				$encounter                = self::decode_row( $row );
+				$encounter['appointment'] = Appointments::notification_data( $encounter['appointment_id'] );
+
+				return $encounter;
+			},
+			$rows
+		);
+	}
+
+	/**
 	 * Whether an encounter is currently open.
 	 *
 	 * @param int $encounter_id Encounter ID.

@@ -1506,6 +1506,16 @@ a.dak-notification-row-link:hover {
 	border-color: var( --dak-primary-tint ) !important;
 }
 
+/* A whole row rendered as an <a> (e.g. the Encounters list, where every row
+   just opens that encounter's detail screen — no per-row action buttons) —
+   <a> is inline by default, so this restores the block layout .dak-admin-
+   record-row's flex children (.dak-admin-record-row-main etc.) expect. */
+.dak-admin-record-row-link {
+	display: block !important;
+	color: inherit !important;
+	text-decoration: none !important;
+}
+
 .dak-admin-record-row:last-child {
 	margin-bottom: 0 !important;
 }
