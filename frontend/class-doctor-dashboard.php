@@ -192,6 +192,13 @@ class Doctor_Dashboard {
 		// permanent nav item — see requested_tab()) has its own repeatable
 		// Problems/Prescriptions/Bill sections.
 		if ( 'encounter' === self::requested_tab() ) {
+			wp_enqueue_style(
+				'doctor-ak-portal-encounter',
+				DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-encounter.css',
+				array( 'doctor-ak-portal-dashboard' ),
+				Assets::version( 'assets/css/doctor-ak-encounter.css' )
+			);
+
 			wp_enqueue_script(
 				'doctor-ak-portal-encounter',
 				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-encounter.js',
@@ -719,6 +726,7 @@ class Doctor_Dashboard {
 			array(
 				'encounter_id'    => $encounter_id,
 				'appointments_url' => self::tab_url( Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ), 'appointments' ),
+				'is_closed'        => $encounter && Encounters::STATUS_CLOSED === $encounter['status'],
 			)
 		);
 	}

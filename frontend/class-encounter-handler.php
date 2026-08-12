@@ -392,6 +392,26 @@ class Encounter_Handler {
 	}
 
 	/**
+	 * AJAX handler: permanently deletes an encounter (admin/Receptionist —
+	 * the encounters list, not the doctor-facing detail screen).
+	 *
+	 * @return void
+	 */
+	public function handle_delete_encounter() {
+		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$encounter = self::authorized_encounter_from_request();
+
+		if ( ! Encounters::delete( $encounter['id'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'The encounter could not be deleted. Please try again.', 'doctor-ak-portal' ) ) );
+		}
+
+		wp_send_json_success( array( 'message' => __( 'Encounter deleted.', 'doctor-ak-portal' ) ) );
+	}
+
+	/**
 	 * Builds the "Download Prescription PDF" URL for one encounter.
 	 *
 	 * @param int $encounter_id Encounter ID.

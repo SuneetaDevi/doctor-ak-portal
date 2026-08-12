@@ -1,6 +1,5 @@
 /**
- * Doctor AK Portal — Admin dashboard "Encounters" section: saves each
- * completed visit's note over AJAX.
+ * Doctor AK Portal — Admin dashboard "Encounters" list: Delete row action.
  */
 ( function () {
 	'use strict';
@@ -11,60 +10,38 @@
 		}
 
 		document.addEventListener( 'click', function ( event ) {
-			var trigger = event.target.closest( '[data-encounter-save]' );
+			var trigger = event.target.closest( '[data-admin-encounter-delete]' );
 
 			if ( ! trigger ) {
 				return;
 			}
 
-			var appointmentId = trigger.getAttribute( 'data-appointment-id' );
-			var row = trigger.closest( '[data-encounter-row]' );
-			var textarea = row ? row.querySelector( '.dak-encounter-note-input' ) : null;
-			var status = document.getElementById( 'dak-encounter-note-status-' + appointmentId );
-
-			if ( ! textarea ) {
+			if ( ! window.confirm( window.dakAdminEncounters.confirmDelete ) ) {
 				return;
 			}
 
 			trigger.disabled = true;
 
-			if ( status ) {
-				status.textContent = '';
-			}
-
 			var formData = new FormData();
-			formData.append( 'action', 'doctor_ak_admin_encounter_note_save' );
+			formData.append( 'action', 'doctor_ak_delete_encounter' );
 			formData.append( 'nonce', window.dakAdminEncounters.nonce );
-			formData.append( 'appointment_id', appointmentId );
-			formData.append( 'note', textarea.value );
+			formData.append( 'encounter_id', trigger.getAttribute( 'data-encounter-id' ) );
 
 			fetch( window.dakAdminEncounters.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
 				.then( function ( response ) { return response.json(); } )
 				.then( function ( result ) {
-					trigger.disabled = false;
-
 					if ( result.success ) {
-						if ( status ) {
-							status.textContent = ( result.data && result.data.message ) || 'Saved.';
-						}
+						window.location.reload();
 						return;
 					}
 
-					showGeneralError( ( result.data && result.data.message ) || 'Something went wrong. Please try again.' );
+					trigger.disabled = false;
+					window.alert( ( result.data && result.data.message ) || window.dakAdminEncounters.genericError );
 				} )
 				.catch( function () {
 					trigger.disabled = false;
-					showGeneralError( 'Something went wrong. Please try again.' );
+					window.alert( window.dakAdminEncounters.genericError );
 				} );
 		} );
 	} );
-
-	function showGeneralError( message ) {
-		var el = document.getElementById( 'dak-encounters-general-error' );
-
-		if ( el ) {
-			el.textContent = message;
-			el.classList.remove( 'dak-hidden' );
-		}
-	}
 } )();

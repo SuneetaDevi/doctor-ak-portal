@@ -10,6 +10,9 @@ namespace DoctorAKPortal\Frontend;
 use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinic_Locations;
+use DoctorAKPortal\Includes\Encounter_Prescriptions;
+use DoctorAKPortal\Includes\Encounter_Problems;
+use DoctorAKPortal\Includes\Encounters;
 use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Notifications;
@@ -124,6 +127,14 @@ class Patient_Dashboard {
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-live-filters.js',
 			array(),
 			Assets::version( 'assets/js/doctor-ak-live-filters.js' ),
+			true
+		);
+
+		wp_enqueue_script(
+			'doctor-ak-portal-dashboard-search',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-dashboard-search.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-dashboard-search.js' ),
 			true
 		);
 
@@ -524,6 +535,101 @@ class Patient_Dashboard {
 	}
 
 	/**
+	 * AJAX: the dashboard topbar's live search box — this patient's own
+	 * doctors (from their appointment history) and appointments matching
+	 * the typed query. Mirrors Doctor_Dashboard::handle_search()'s shape/
+	 * pattern (see assets/js/doctor-ak-dashboard-search.js, which is fully
+	 * generic across all three dashboards).
+	 *
+	 * @return void
+	 */
+	public function handle_search() {
+		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$user = wp_get_current_user();
+
+		if ( ! in_array( Roles::PATIENT_ROLE, (array) $user->roles, true ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$query = isset( $_POST['query'] ) ? sanitize_text_field( wp_unslash( $_POST['query'] ) ) : '';
+
+		if ( mb_strlen( $query ) < 2 ) {
+			wp_send_json_success(
+				array(
+					'doctors'      => array(),
+					'appointments' => array(),
+				)
+			);
+		}
+
+		$needle              = mb_strtolower( $query );
+		$dashboard_url       = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+		$appointments_url    = self::tab_url( $dashboard_url, 'appointments' );
+		$doctor_profile_url  = Page_Finder::url_for_shortcode( 'doctor_profile_view' );
+
+		$appointment_rows = Appointments::all_for_admin( array( 'patient_id' => $user->ID ) );
+
+		$doctor_results  = array();
+		$seen_doctor_ids = array();
+
+		foreach ( $appointment_rows as $row ) {
+			if ( in_array( $row['doctor_id'], $seen_doctor_ids, true ) ) {
+				continue;
+			}
+
+			if ( false === mb_strpos( mb_strtolower( $row['doctor_name'] ), $needle ) ) {
+				continue;
+			}
+
+			$seen_doctor_ids[] = $row['doctor_id'];
+
+			$doctor_results[] = array(
+				'label'    => sprintf( /* translators: %s: doctor name. */ __( 'Dr. %s', 'doctor-ak-portal' ), $row['doctor_name'] ),
+				'sublabel' => $row['clinic_label'],
+				'url'      => $doctor_profile_url ? esc_url_raw( add_query_arg( 'doctor_id', $row['doctor_id'], $doctor_profile_url ) ) : '',
+			);
+
+			if ( count( $doctor_results ) >= 5 ) {
+				break;
+			}
+		}
+
+		$appointment_results = array();
+
+		foreach ( $appointment_rows as $row ) {
+			$haystack = mb_strtolower( $row['doctor_name'] . ' ' . $row['service_name'] );
+
+			if ( false === mb_strpos( $haystack, $needle ) ) {
+				continue;
+			}
+
+			$appointment_results[] = array(
+				'label'    => sprintf( /* translators: %s: doctor name. */ __( 'Dr. %s', 'doctor-ak-portal' ), $row['doctor_name'] ),
+				'sublabel' => $row['date'] . ' · ' . $row['time'],
+				'url'      => $appointments_url ? esc_url_raw( $appointments_url . '#dak-appointment-' . $row['id'] ) : '',
+			);
+
+			if ( count( $appointment_results ) >= 5 ) {
+				break;
+			}
+		}
+
+		wp_send_json_success(
+			array(
+				'doctors'      => $doctor_results,
+				'appointments' => $appointment_results,
+			)
+		);
+	}
+
+	/**
 	 * Whether the logged-in user is a patient with no home clinic set yet —
 	 * gates render() to the mandatory clinic-selection screen instead of the
 	 * normal dashboard, and enqueue_assets() to that screen's extra scripts.
@@ -641,25 +747,42 @@ class Patient_Dashboard {
 	}
 
 	/**
-	 * Renders the Medical History tab: every completed visit this patient
-	 * has had, with whichever doctor added a clinical note for it (see
-	 * Appointments::save_encounter_note_by_doctor()) — a visit with no note
-	 * on file is shown honestly as such, never a fabricated summary.
+	 * Renders the Medical History tab: this patient's own closed clinical
+	 * Encounters (see the Encounters class) — Medical History and
+	 * Encounters are the same record, this is just its read-only,
+	 * patient-facing view. A visit with no problem/prescription on file is
+	 * shown honestly as such, never a fabricated summary.
 	 *
 	 * @param \WP_User $user Currently logged-in patient.
 	 * @return string
 	 */
 	private function render_medical_history_tab( \WP_User $user ) {
+		// Medical History is just the patient-facing, read-only view of
+		// their own closed clinical Encounters (see the Encounters class)
+		// — the same problems/prescriptions a doctor records during the
+		// visit, not a separate record. Only closed encounters show here;
+		// a visit still in progress (checked in, not yet closed) belongs on
+		// the Appointments tab instead.
+		$encounters = array_map(
+			function ( $encounter ) {
+				$encounter['problems']              = Encounter_Problems::for_encounter( $encounter['id'] );
+				$encounter['prescriptions']          = Encounter_Prescriptions::for_encounter( $encounter['id'] );
+				$encounter['prescription_pdf_url']   = Encounter_Handler::prescription_pdf_download_url( $encounter['id'] );
+				$encounter['bill_pdf_url']           = Encounter_Handler::bill_pdf_download_url( $encounter['id'] );
+
+				return $encounter;
+			},
+			Encounters::all_flat_for_admin(
+				array(
+					'patient_id' => $user->ID,
+					'status'     => Encounters::STATUS_CLOSED,
+				)
+			)
+		);
+
 		return $this->template_loader->get_template(
 			'dashboard/partials/patient-medical-history.php',
-			array(
-				'visits' => Appointments::all_for_admin(
-					array(
-						'patient_id' => $user->ID,
-						'status'     => 'completed',
-					)
-				),
-			)
+			array( 'encounters' => $encounters )
 		);
 	}
 

@@ -656,6 +656,13 @@ class Admin_Dashboard {
 		}
 
 		if ( 'encounter' === self::requested_section() ) {
+			wp_enqueue_style(
+				'doctor-ak-portal-encounter',
+				DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-encounter.css',
+				array( 'doctor-ak-portal-dashboard' ),
+				Assets::version( 'assets/css/doctor-ak-encounter.css' )
+			);
+
 			wp_enqueue_script(
 				'doctor-ak-portal-encounter',
 				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-encounter.js',
@@ -689,8 +696,10 @@ class Admin_Dashboard {
 				'doctor-ak-portal-admin-encounters',
 				'dakAdminEncounters',
 				array(
-					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-					'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+					'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
+					'nonce'        => wp_create_nonce( Encounter_Handler::NONCE_ACTION ),
+					'confirmDelete' => __( 'Delete this encounter? This removes its problems, prescriptions, bill items, and reports, and cannot be undone.', 'doctor-ak-portal' ),
+					'genericError' => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
 				)
 			);
 		}
@@ -1273,18 +1282,27 @@ class Admin_Dashboard {
 				)
 			);
 
+			$encounter_rows = array_map(
+				function ( $encounter ) {
+					$encounter['bill_pdf_url'] = Encounter_Handler::bill_pdf_download_url( $encounter['id'] );
+
+					return $encounter;
+				},
+				Encounters::all_flat_for_admin(
+					array(
+						'date_from'  => $date_from,
+						'date_to'    => $date_to,
+						'doctor_id'  => $doctor_id,
+						'patient_id' => $patient_id,
+						'status'     => $status,
+					)
+				)
+			);
+
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-encounters.php',
 				array(
-					'encounters'       => Encounters::all_flat_for_admin(
-						array(
-							'date_from'  => $date_from,
-							'date_to'    => $date_to,
-							'doctor_id'  => $doctor_id,
-							'patient_id' => $patient_id,
-							'status'     => $status,
-						)
-					),
+					'encounters'       => $encounter_rows,
 					'encounters_url'   => $encounters_url,
 					'encounter_url'    => $encounter_url,
 					'doctors'          => $doctors,
@@ -1409,6 +1427,7 @@ class Admin_Dashboard {
 				array(
 					'encounter_id'     => $encounter_id,
 					'appointments_url' => $dashboard_url ? add_query_arg( 'section', 'appointments', $dashboard_url ) : '',
+					'is_closed'        => $encounter && Encounters::STATUS_CLOSED === $encounter['status'],
 				)
 			);
 		}

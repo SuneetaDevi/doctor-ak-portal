@@ -1,0 +1,281 @@
+/**
+ * Doctor AK Portal — Encounter detail screen (Problems / Prescription /
+ * Bill / Reports / Close), shared by the doctor and admin dashboards.
+ */
+
+/* .dak-hidden's own `display: none !important` loses to these two classes'
+   `display: flex !important` when both are on the same element — equal
+   specificity, and .dak-button-block/.dak-encounter-inline-form happen to
+   be declared later in their stylesheets, so source order (not !important)
+   decides the tie. A higher-specificity combined selector wins regardless
+   of load order, which is what actually hides a closed encounter's "Close
+   encounter" button and its add-forms instead of leaving them visible. */
+.dak-button-block.dak-hidden,
+.dak-encounter-inline-form.dak-hidden {
+	display: none !important;
+}
+
+.dak-encounter-back-link {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.35rem !important;
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-muted ) !important;
+	text-decoration: none !important;
+	margin-bottom: 1rem !important;
+}
+
+.dak-encounter-back-link:hover {
+	color: var( --dak-primary ) !important;
+}
+
+/* Banner */
+
+.dak-encounter-banner {
+	display: flex !important;
+	align-items: center !important;
+	flex-wrap: wrap !important;
+	gap: 1rem !important;
+	background: var( --dak-primary-tint ) !important;
+	border-radius: var( --dak-radius-lg, var( --dak-radius-md ) ) !important;
+	padding: 1.25rem 1.5rem !important;
+	margin-bottom: 1.25rem !important;
+}
+
+.dak-encounter-banner-info {
+	flex: 1 1 auto !important;
+	min-width: 200px !important;
+}
+
+.dak-encounter-banner-info h1 {
+	display: flex !important;
+	align-items: center !important;
+	flex-wrap: wrap !important;
+	gap: 0.6rem !important;
+	font-size: 1.3rem !important;
+	margin: 0 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-encounter-banner-info .dak-field-hint {
+	margin: 0.3rem 0 0 !important;
+}
+
+.dak-encounter-banner-actions {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0.6rem !important;
+}
+
+/* Two-column layout */
+
+.dak-encounter-grid {
+	display: grid !important;
+	grid-template-columns: minmax( 0, 1fr ) 300px !important;
+	align-items: start !important;
+	gap: 1.25rem !important;
+}
+
+.dak-encounter-main {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 1.25rem !important;
+	min-width: 0 !important;
+}
+
+.dak-encounter-sidebar {
+	position: sticky !important;
+	top: 1rem !important;
+}
+
+@media ( max-width: 900px ) {
+	.dak-encounter-grid {
+		grid-template-columns: 1fr !important;
+	}
+
+	.dak-encounter-sidebar {
+		position: static !important;
+	}
+}
+
+/* Section header (icon + title/subtitle + count badge) shared by every card. */
+
+.dak-encounter-section-header {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 0.75rem !important;
+	margin-bottom: 1rem !important;
+}
+
+.dak-encounter-section-icon {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 2.25rem !important;
+	height: 2.25rem !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary ) !important;
+}
+
+.dak-encounter-section-icon svg {
+	width: 1.15rem !important;
+	height: 1.15rem !important;
+}
+
+.dak-encounter-section-title {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+}
+
+.dak-encounter-section-title h2 {
+	font-size: 1rem !important;
+	font-weight: 700 !important;
+	margin: 0 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-encounter-section-title p {
+	margin: 0.15rem 0 0 !important;
+	font-size: 0.8rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-encounter-section-count {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	min-width: 1.6rem !important;
+	height: 1.6rem !important;
+	padding: 0 0.4rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.8rem !important;
+	font-weight: 700 !important;
+}
+
+/* Suggestion chips (Problems section quick-fill) */
+
+.dak-encounter-suggestion-chips {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0.5rem !important;
+	margin-top: 0.5rem !important;
+	flex-basis: 100% !important;
+}
+
+.dak-encounter-suggestion-chip {
+	border: 1px solid var( --dak-border ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	border-radius: 999px !important;
+	padding: 0.3rem 0.75rem !important;
+	font-size: 0.78rem !important;
+	cursor: pointer !important;
+}
+
+.dak-encounter-suggestion-chip:hover {
+	border-color: var( --dak-primary ) !important;
+	color: var( --dak-primary ) !important;
+}
+
+/* Bill total row */
+
+.dak-encounter-bill-total {
+	display: flex !important;
+	justify-content: space-between !important;
+	align-items: center !important;
+	padding: 0.75rem 0.85rem !important;
+	background: var( --dak-bg-subtle ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	font-size: 0.9rem !important;
+	color: var( --dak-text ) !important;
+	margin: 0 0 1rem !important;
+}
+
+.dak-encounter-bill-total strong {
+	color: var( --dak-primary ) !important;
+	font-size: 1rem !important;
+}
+
+/* Reports dropzone */
+
+.dak-encounter-upload-dropzone {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 0.35rem !important;
+	text-align: center !important;
+	border: 1.5px dashed var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	padding: 2rem 1rem !important;
+	cursor: pointer !important;
+	color: var( --dak-muted ) !important;
+	transition: border-color 0.15s ease, background-color 0.15s ease !important;
+}
+
+.dak-encounter-upload-dropzone:hover,
+.dak-encounter-upload-dropzone.is-dragover {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary-tint ) !important;
+}
+
+.dak-encounter-upload-dropzone svg {
+	width: 1.75rem !important;
+	height: 1.75rem !important;
+	color: var( --dak-primary ) !important;
+}
+
+.dak-encounter-upload-dropzone strong {
+	color: var( --dak-text ) !important;
+	font-size: 0.9rem !important;
+}
+
+.dak-encounter-upload-dropzone span {
+	font-size: 0.78rem !important;
+}
+
+/* Sidebar "Encounter summary" card */
+
+.dak-encounter-summary-card {
+	position: relative !important;
+}
+
+.dak-encounter-summary-row {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	padding: 0.5rem 0 !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	font-size: 0.88rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-encounter-summary-row strong {
+	color: var( --dak-text ) !important;
+}
+
+.dak-encounter-summary-amount-row {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	padding: 0.9rem 0 !important;
+	font-size: 0.9rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-encounter-summary-amount-row strong {
+	font-size: 1.3rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-encounter-summary-card #dak-encounter-close-hint,
+.dak-encounter-summary-card #dak-encounter-closed-hint {
+	text-align: center !important;
+	margin: 0.6rem 0 0 !important;
+}

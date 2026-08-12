@@ -58,6 +58,7 @@
 		} );
 
 		wireUploadReportForm();
+		wireProblemSuggestions();
 
 		document.addEventListener( 'click', function ( event ) {
 			var deleteTrigger = event.target.closest( '[data-encounter-delete]' );
@@ -144,34 +145,87 @@
 
 	/**
 	 * Uploads a report file — a plain multipart POST (not JSON-shaped like
-	 * wireAddForm()'s other forms) since it carries an actual File.
+	 * wireAddForm()'s other forms) since it carries an actual File. No
+	 * separate "Upload" button — picking a file (via the dropzone's click-
+	 * to-browse or an actual drag-and-drop) uploads it immediately.
 	 */
 	function wireUploadReportForm() {
-		var form = document.getElementById( 'dak-encounter-upload-report-form' );
 		var fileInput = document.getElementById( 'dak-encounter-report-file' );
+		var dropzone = fileInput ? fileInput.closest( '.dak-encounter-upload-dropzone' ) : null;
 
-		if ( ! form || ! fileInput ) {
+		if ( ! fileInput ) {
 			return;
 		}
 
-		form.addEventListener( 'submit', function ( event ) {
-			event.preventDefault();
+		fileInput.addEventListener( 'change', function () {
+			uploadReport( fileInput.files[ 0 ] );
+		} );
 
-			var file = fileInput.files[ 0 ];
+		if ( ! dropzone ) {
+			return;
+		}
 
-			if ( ! file ) {
+		[ 'dragenter', 'dragover' ].forEach( function ( eventName ) {
+			dropzone.addEventListener( eventName, function ( event ) {
+				event.preventDefault();
+				dropzone.classList.add( 'is-dragover' );
+			} );
+		} );
+
+		[ 'dragleave', 'drop' ].forEach( function ( eventName ) {
+			dropzone.addEventListener( eventName, function ( event ) {
+				event.preventDefault();
+				dropzone.classList.remove( 'is-dragover' );
+			} );
+		} );
+
+		dropzone.addEventListener( 'drop', function ( event ) {
+			var file = event.dataTransfer && event.dataTransfer.files ? event.dataTransfer.files[ 0 ] : null;
+			uploadReport( file );
+		} );
+	}
+
+	function uploadReport( file ) {
+		if ( ! file ) {
+			return;
+		}
+
+		var formData = new FormData();
+		formData.append( 'action', 'doctor_ak_upload_encounter_report' );
+		formData.append( 'nonce', window.dakEncounter.nonce );
+		formData.append( 'encounter_id', encounterId );
+		formData.append( 'report', file );
+
+		post( formData, function () {
+			var fileInput = document.getElementById( 'dak-encounter-report-file' );
+
+			if ( fileInput ) {
+				fileInput.value = '';
+			}
+		} );
+	}
+
+	/**
+	 * Clicking a common-problem chip fills the description field (doesn't
+	 * submit — the doctor can still add notes before clicking "+ Add Problem").
+	 */
+	function wireProblemSuggestions() {
+		var container = document.getElementById( 'dak-encounter-problem-suggestions' );
+		var descriptionField = document.getElementById( 'dak-encounter-problem-description' );
+
+		if ( ! container || ! descriptionField ) {
+			return;
+		}
+
+		container.addEventListener( 'click', function ( event ) {
+			var chip = event.target.closest( '[data-suggest-problem]' );
+
+			if ( ! chip ) {
 				return;
 			}
 
-			var formData = new FormData();
-			formData.append( 'action', 'doctor_ak_upload_encounter_report' );
-			formData.append( 'nonce', window.dakEncounter.nonce );
-			formData.append( 'encounter_id', encounterId );
-			formData.append( 'report', file );
-
-			post( formData, function () {
-				fileInput.value = '';
-			} );
+			descriptionField.value = chip.getAttribute( 'data-suggest-problem' ) || '';
+			descriptionField.focus();
 		} );
 	}
 
@@ -242,6 +296,12 @@
 
 		setText( 'dak-encounter-patient-name', data.appointment.patient_name || '' );
 
+		var avatar = document.getElementById( 'dak-encounter-avatar' );
+
+		if ( avatar && data.appointment.patient_avatar_url ) {
+			avatar.innerHTML = '<img src="' + data.appointment.patient_avatar_url + '" alt="">';
+		}
+
 		var statusEl = document.getElementById( 'dak-encounter-status' );
 
 		if ( statusEl ) {
@@ -252,12 +312,20 @@
 
 		var metaParts = [];
 
-		if ( data.encounter.clinic_name ) {
-			metaParts.push( data.encounter.clinic_name );
-		}
-
 		if ( data.appointment.doctor_name ) {
 			metaParts.push( 'Dr. ' + data.appointment.doctor_name );
+		}
+
+		if ( data.encounter.clinic_name ) {
+			metaParts.push( data.encounter.clinic_name );
+		} else if ( data.appointment.type_label ) {
+			// No physical clinic on this encounter means it's a video
+			// consultation — say so instead of just omitting the clinic.
+			metaParts.push( data.appointment.type_label );
+		}
+
+		if ( data.appointment.datetime_label ) {
+			metaParts.push( data.appointment.datetime_label );
 		}
 
 		setText( 'dak-encounter-meta', metaParts.join( ' · ' ) );
@@ -268,6 +336,17 @@
 		renderServiceOptions( data.services );
 		renderBillItems( data.bill_items, data.bill_total, isOpen );
 		renderReports( data.reports, isOpen );
+
+		setText( 'dak-encounter-problems-count', String( data.problems.length ) );
+		setText( 'dak-encounter-prescriptions-count', String( data.prescriptions.length ) );
+		setText( 'dak-encounter-bill-count', String( data.bill_items.length ) );
+		setText( 'dak-encounter-reports-count', String( data.reports.length ) );
+
+		setText( 'dak-encounter-summary-problems', String( data.problems.length ) );
+		setText( 'dak-encounter-summary-medicines', String( data.prescriptions.length ) );
+		setText( 'dak-encounter-summary-charges', String( data.bill_items.length ) );
+		setText( 'dak-encounter-summary-reports', String( data.reports.length ) );
+		setText( 'dak-encounter-summary-amount', 'PKR ' + Math.round( data.bill_total ) );
 
 		var prescriptionLink = document.getElementById( 'dak-encounter-download-prescription' );
 
@@ -288,6 +367,12 @@
 		}
 
 		toggleFormsVisible( isOpen );
+
+		var closeHint = document.getElementById( 'dak-encounter-close-hint' );
+
+		if ( closeHint ) {
+			closeHint.classList.toggle( 'dak-hidden', ! isOpen );
+		}
 
 		var closedHint = document.getElementById( 'dak-encounter-closed-hint' );
 

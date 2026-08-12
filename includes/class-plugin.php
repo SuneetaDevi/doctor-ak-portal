@@ -175,6 +175,7 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_appointments_filter', $doctor_dashboard, 'handle_filter_appointments' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_appointments_filter', $patient_dashboard, 'handle_filter_appointments' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_dashboard_search', $doctor_dashboard, 'handle_search' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_dashboard_search', $patient_dashboard, 'handle_search' );
 
 		$patient_clinic_handler = new Patient_Clinic_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_select_clinic', $patient_clinic_handler, 'handle_select_clinic' );
@@ -344,6 +345,7 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_delete_encounter_bill_item', $encounter_handler, 'handle_delete_bill_item' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_upload_encounter_report', $encounter_handler, 'handle_upload_report' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_delete_encounter_report', $encounter_handler, 'handle_delete_report' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_delete_encounter', $encounter_handler, 'handle_delete_encounter' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_prescription_pdf_download', $encounter_handler, 'handle_download_prescription_pdf' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_encounter_bill_pdf_download', $encounter_handler, 'handle_download_bill_pdf' );
 

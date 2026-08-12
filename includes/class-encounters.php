@@ -156,6 +156,54 @@ class Encounters {
 	}
 
 	/**
+	 * Permanently deletes an encounter and all of its child rows (problems,
+	 * prescriptions, bill items, reports — including their uploaded
+	 * attachments). If the encounter was still open, also reverts its
+	 * appointment's status back to what it was before check-in
+	 * (STATUS_PAID if payment had already settled, STATUS_CONFIRMED
+	 * otherwise) — check_in() only knows how to move an appointment
+	 * forward, never back, so this is the one place that undoes it, for
+	 * the "this check-in was a mistake" admin cleanup case. A CLOSED
+	 * encounter's appointment (already STATUS_COMPLETED) is left
+	 * untouched — the visit did happen.
+	 *
+	 * @param int $encounter_id Encounter ID.
+	 * @return bool
+	 */
+	public static function delete( $encounter_id ) {
+		$encounter = self::find( $encounter_id );
+
+		if ( ! $encounter ) {
+			return false;
+		}
+
+		global $wpdb;
+
+		$wpdb->delete( Encounter_Problems::table_name(), array( 'encounter_id' => $encounter_id ), array( '%d' ) );
+		$wpdb->delete( Encounter_Prescriptions::table_name(), array( 'encounter_id' => $encounter_id ), array( '%d' ) );
+		$wpdb->delete( Encounter_Bill_Items::table_name(), array( 'encounter_id' => $encounter_id ), array( '%d' ) );
+
+		foreach ( Encounter_Reports::for_encounter( $encounter_id ) as $report ) {
+			wp_delete_attachment( $report['attachment_id'], true );
+		}
+
+		$wpdb->delete( Encounter_Reports::table_name(), array( 'encounter_id' => $encounter_id ), array( '%d' ) );
+
+		$deleted = false !== $wpdb->delete( self::table_name(), array( 'id' => $encounter_id ), array( '%d' ) );
+
+		if ( $deleted && self::STATUS_OPEN === $encounter['status'] ) {
+			$appointment = Appointments::get( $encounter['appointment_id'] );
+
+			if ( $appointment ) {
+				$status = Appointments::PAYMENT_STATUS_PAID === $appointment['payment_status'] ? Appointments::STATUS_PAID : Appointments::STATUS_CONFIRMED;
+				update_post_meta( $encounter['appointment_id'], 'doctor_ak_appointment_status', $status );
+			}
+		}
+
+		return $deleted;
+	}
+
+	/**
 	 * Finds a single encounter by ID.
 	 *
 	 * @param int $encounter_id Encounter ID.
@@ -285,6 +333,9 @@ class Encounters {
 			function ( $row ) {
 				$encounter                = self::decode_row( $row );
 				$encounter['appointment'] = Appointments::notification_data( $encounter['appointment_id'] );
+
+				$problems                     = Encounter_Problems::for_encounter( $encounter['id'] );
+				$encounter['problem_summary'] = ! empty( $problems ) ? implode( ', ', wp_list_pluck( $problems, 'description' ) ) : '';
 
 				return $encounter;
 			},
