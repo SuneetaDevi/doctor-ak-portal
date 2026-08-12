@@ -910,7 +910,7 @@ class Admin_Dashboard {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		foreach ( array( 'patient_id', 'date_from', 'date_to', 'doctor_id', 'payment_status' ) as $key ) {
+		foreach ( array( 'patient_id', 'date_from', 'date_to', 'doctor_id', 'payment_status', 'range' ) as $key ) {
 			$_GET[ $key ] = isset( $_POST[ $key ] ) ? $_POST[ $key ] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- nonce already verified above; section_content_html() sanitizes each value itself, same as it does for a real $_GET.
 		}
 
@@ -1186,6 +1186,16 @@ class Admin_Dashboard {
 			$date_to    = isset( $_GET['date_to'] ) ? sanitize_text_field( wp_unslash( $_GET['date_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			$doctor_id  = isset( $_GET['doctor_id'] ) ? absint( wp_unslash( $_GET['doctor_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			$payment_status = isset( $_GET['payment_status'] ) ? sanitize_key( wp_unslash( $_GET['payment_status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			// Defaults to 'upcoming' only on first load (no `range` in the
+			// request at all) — once a range is explicitly submitted
+			// (including '' for "All"), that choice sticks.
+			$range = isset( $_GET['range'] ) ? sanitize_key( wp_unslash( $_GET['range'] ) ) : 'upcoming'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$range = array_key_exists( $range, Appointments::range_options() ) ? $range : 'upcoming';
+
+			// Query bounds only — $date_from/$date_to themselves stay as
+			// whatever the admin actually typed, so the From/To fields don't
+			// appear to have a value the admin never entered.
+			list( $query_date_from, $query_date_to ) = Appointments::apply_range_filter( $range, $date_from, $date_to );
 
 			$payment_status_options = array(
 				Appointments::PAYMENT_STATUS_PENDING => __( 'Pending', 'doctor-ak-portal' ),
@@ -1218,8 +1228,8 @@ class Admin_Dashboard {
 					'appointments'      => Appointments::all_for_admin(
 						array(
 							'patient_id'     => $patient_id,
-							'date_from'      => $date_from,
-							'date_to'        => $date_to,
+							'date_from'      => $query_date_from,
+							'date_to'        => $query_date_to,
 							'doctor_id'      => $doctor_id,
 							'payment_status' => $payment_status,
 						)
@@ -1228,6 +1238,7 @@ class Admin_Dashboard {
 					'appointments_url'  => $appointments_url,
 					'doctors'                => $doctors,
 					'payment_status_options' => $payment_status_options,
+					'range_options'          => Appointments::range_options(),
 					'is_receptionist'        => self::is_receptionist(),
 					'filters'           => array(
 						'patient_id'     => $patient_id,
@@ -1235,6 +1246,7 @@ class Admin_Dashboard {
 						'date_to'        => $date_to,
 						'doctor_id'      => $doctor_id,
 						'payment_status' => $payment_status,
+						'range'          => $range,
 					),
 				)
 			);

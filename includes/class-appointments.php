@@ -2670,6 +2670,56 @@ class Appointments {
 	}
 
 	/**
+	 * Valid "range" quick-filter values for an Appointments list — '' means
+	 * "All", shared by the admin, doctor, and patient dashboards' filter
+	 * forms. 'upcoming' is each list's own default on first load (no
+	 * `range` present in the URL/request at all) — see each dashboard
+	 * controller's own read of $_GET['range'].
+	 *
+	 * @return array slug => label.
+	 */
+	public static function range_options() {
+		return array(
+			''         => __( 'All', 'doctor-ak-portal' ),
+			'upcoming' => __( 'Upcoming', 'doctor-ak-portal' ),
+			'past'     => __( 'Past', 'doctor-ak-portal' ),
+		);
+	}
+
+	/**
+	 * Combines the All/Upcoming/Past quick filter with any manually-entered
+	 * date range: 'upcoming' raises $date_from to today (never lowers an
+	 * already-later manual date_from); 'past' lowers $date_to to yesterday
+	 * (never raises an already-earlier manual date_to); '' (All) leaves
+	 * both untouched. Shared by the admin, doctor, and patient Appointments
+	 * lists so "today" is computed identically everywhere.
+	 *
+	 * @param string $range     '', 'upcoming', or 'past' — see range_options().
+	 * @param string $date_from Manually-entered 'YYYY-MM-DD', or ''.
+	 * @param string $date_to   Manually-entered 'YYYY-MM-DD', or ''.
+	 * @return array `array( $date_from, $date_to )`, either possibly adjusted.
+	 */
+	public static function apply_range_filter( $range, $date_from, $date_to ) {
+		$today_timestamp = current_time( 'timestamp' ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- deriving today's local date for the Upcoming/Past quick filter, not doing UTC math.
+
+		if ( 'upcoming' === $range ) {
+			$today = date_i18n( 'Y-m-d', $today_timestamp );
+
+			if ( '' === $date_from || $date_from < $today ) {
+				$date_from = $today;
+			}
+		} elseif ( 'past' === $range ) {
+			$yesterday = date_i18n( 'Y-m-d', $today_timestamp - DAY_IN_SECONDS );
+
+			if ( '' === $date_to || $date_to > $yesterday ) {
+				$date_to = $yesterday;
+			}
+		}
+
+		return array( $date_from, $date_to );
+	}
+
+	/**
 	 * Every recognised appointment status, slug => label, for the admin
 	 * Edit modal's status <select> and for validating update() input.
 	 *

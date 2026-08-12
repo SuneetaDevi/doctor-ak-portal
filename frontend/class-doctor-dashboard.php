@@ -393,15 +393,19 @@ class Doctor_Dashboard {
 	}
 
 	/**
-	 * Reads the current 'date_from'/'date_to'/'payment_status' query vars for
-	 * the Appointments tab's filter form.
+	 * Reads the current 'date_from'/'date_to'/'payment_status'/'range' query
+	 * vars for the Appointments tab's filter form. 'range' defaults to
+	 * 'upcoming' only on first load (no `range` in the request at all) —
+	 * once explicitly submitted (including '' for "All"), that choice
+	 * sticks.
 	 *
-	 * @return array { date_from: string, date_to: string, payment_status: string }
+	 * @return array { date_from: string, date_to: string, payment_status: string, range: string }
 	 */
 	private static function requested_appointments_filters() {
 		$date_from      = isset( $_GET['date_from'] ) ? sanitize_text_field( wp_unslash( $_GET['date_from'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 		$date_to        = isset( $_GET['date_to'] ) ? sanitize_text_field( wp_unslash( $_GET['date_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 		$payment_status = isset( $_GET['payment_status'] ) ? sanitize_key( wp_unslash( $_GET['payment_status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		$range          = isset( $_GET['range'] ) ? sanitize_key( wp_unslash( $_GET['range'] ) ) : 'upcoming'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 
 		$payment_status_options = array(
 			Appointments::PAYMENT_STATUS_PENDING => __( 'Pending', 'doctor-ak-portal' ),
@@ -412,6 +416,7 @@ class Doctor_Dashboard {
 			'date_from'      => $date_from,
 			'date_to'        => $date_to,
 			'payment_status' => array_key_exists( $payment_status, $payment_status_options ) ? $payment_status : '',
+			'range'          => array_key_exists( $range, Appointments::range_options() ) ? $range : 'upcoming',
 		);
 	}
 
@@ -440,13 +445,23 @@ class Doctor_Dashboard {
 		$dashboard_url     = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
 		$appointments_url  = self::tab_url( $dashboard_url, 'appointments' );
 
+		list( $query_date_from, $query_date_to ) = Appointments::apply_range_filter( $filters['range'], $filters['date_from'], $filters['date_to'] );
+
 		return $this->template_loader->get_template(
 			'dashboard/partials/doctor-appointments-list.php',
 			array(
 				'rows' => Appointments::all_for_admin(
-					array_merge( array( 'doctor_id' => $user->ID ), $filters )
+					array_merge(
+						array( 'doctor_id' => $user->ID ),
+						$filters,
+						array(
+							'date_from' => $query_date_from,
+							'date_to'   => $query_date_to,
+						)
+					)
 				),
 				'appointments_url' => $appointments_url,
+				'range_options'    => Appointments::range_options(),
 				'filters'          => $filters,
 			)
 		);
@@ -598,7 +613,7 @@ class Doctor_Dashboard {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		foreach ( array( 'date_from', 'date_to', 'payment_status' ) as $key ) {
+		foreach ( array( 'date_from', 'date_to', 'payment_status', 'range' ) as $key ) {
 			$_GET[ $key ] = isset( $_POST[ $key ] ) ? $_POST[ $key ] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- nonce already verified above; render_appointments_tab() sanitizes each value itself, same as it does for a real $_GET.
 		}
 

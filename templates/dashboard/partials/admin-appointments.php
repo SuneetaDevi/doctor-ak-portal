@@ -11,7 +11,8 @@
  * @var string $appointments_url        Unfiltered URL of this section, for the filter form and "Clear filter" link.
  * @var array  $doctors                 Doctor users { ID, display_name }, for the filter's Doctor select.
  * @var array  $payment_status_options  Payment status slug => label.
- * @var array  $filters                 Active filter values: patient_id, date_from, date_to, doctor_id, payment_status.
+ * @var array  $range_options           Range slug => label ('', 'upcoming', 'past'), see Appointments::range_options().
+ * @var array  $filters                 Active filter values: patient_id, date_from, date_to, doctor_id, payment_status, range.
  * @var bool   $is_receptionist         Whether the viewer is a Receptionist — full Add/Edit/Delete/Mark Paid access, but no Refund (Billing/Revenue stays administrator-only).
  */
 
@@ -29,7 +30,7 @@ $dak_appt_icons = array(
 	'check'  => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.2"/><path d="M6.8 10.2l2.1 2.1 4.3-4.6"/></svg>',
 );
 
-$dak_appt_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] || $filters['doctor_id'] > 0 || '' !== $filters['payment_status'];
+$dak_appt_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] || $filters['doctor_id'] > 0 || '' !== $filters['payment_status'] || 'upcoming' !== $filters['range'];
 ?>
 <div class="dak-dashboard-greeting dak-admin-users-header">
 	<div>
@@ -83,6 +84,15 @@ $dak_appt_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to
 		<?php if ( $filters['patient_id'] > 0 ) : ?>
 			<input type="hidden" name="patient_id" value="<?php echo esc_attr( $filters['patient_id'] ); ?>">
 		<?php endif; ?>
+
+		<div class="dak-field">
+			<label for="dak-admin-appointments-filter-range"><?php esc_html_e( 'Show', 'doctor-ak-portal' ); ?></label>
+			<select id="dak-admin-appointments-filter-range" name="range">
+				<?php foreach ( $range_options as $dak_range_slug => $dak_range_label ) : ?>
+					<option value="<?php echo esc_attr( $dak_range_slug ); ?>" <?php selected( $filters['range'], $dak_range_slug ); ?>><?php echo esc_html( $dak_range_label ); ?></option>
+				<?php endforeach; ?>
+			</select>
+		</div>
 
 		<div class="dak-field">
 			<label for="dak-admin-appointments-filter-date-from"><?php esc_html_e( 'From', 'doctor-ak-portal' ); ?></label>

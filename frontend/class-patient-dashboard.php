@@ -394,8 +394,22 @@ class Patient_Dashboard {
 	}
 
 	/**
+	 * Reads the current 'range' query var for the Appointments tab's
+	 * All/Upcoming/Past quick filter — defaults to 'upcoming' only on first
+	 * load (no `range` in the request at all); once explicitly submitted
+	 * (including '' for "All"), that choice sticks.
+	 *
+	 * @return string
+	 */
+	private static function requested_appointments_range() {
+		$range = isset( $_GET['range'] ) ? sanitize_key( wp_unslash( $_GET['range'] ) ) : 'upcoming'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+
+		return array_key_exists( $range, Appointments::range_options() ) ? $range : 'upcoming';
+	}
+
+	/**
 	 * Renders the Appointments tab: every appointment this patient has ever
-	 * booked, filterable by date and status.
+	 * booked, filterable by date, status, and range (All/Upcoming/Past).
 	 *
 	 * @param \WP_User $user Currently logged-in patient.
 	 * @return string
@@ -403,6 +417,9 @@ class Patient_Dashboard {
 	private function render_appointments_tab( \WP_User $user ) {
 		$date   = self::requested_appointments_date();
 		$status = self::requested_appointments_status();
+		$range  = self::requested_appointments_range();
+
+		list( $query_date_from, $query_date_to ) = Appointments::apply_range_filter( $range, '', '' );
 
 		return $this->template_loader->get_template(
 			'dashboard/partials/patient-appointments-list.php',
@@ -412,11 +429,15 @@ class Patient_Dashboard {
 						'patient_id' => $user->ID,
 						'date'       => $date,
 						'status'     => $status,
+						'date_from'  => $query_date_from,
+						'date_to'    => $query_date_to,
 					)
 				),
 				'status_options'  => Appointments::status_options(),
+				'range_options'   => Appointments::range_options(),
 				'selected_date'   => $date,
 				'selected_status' => $status,
+				'selected_range'  => $range,
 			)
 		);
 	}
@@ -495,7 +516,7 @@ class Patient_Dashboard {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		foreach ( array( 'date', 'status' ) as $key ) {
+		foreach ( array( 'date', 'status', 'range' ) as $key ) {
 			$_GET[ $key ] = isset( $_POST[ $key ] ) ? $_POST[ $key ] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- nonce already verified above; render_appointments_tab() sanitizes each value itself, same as it does for a real $_GET.
 		}
 

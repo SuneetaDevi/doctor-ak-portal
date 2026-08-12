@@ -9,8 +9,10 @@
  *
  * @var array  $rows            Rows from Appointments::all_for_admin( [ 'patient_id' => ... ] ).
  * @var array  $status_options  Status slug => label, see Appointments::status_options().
+ * @var array  $range_options   Range slug => label ('', 'upcoming', 'past'), see Appointments::range_options().
  * @var string $selected_date   'YYYY-MM-DD', or '' if unfiltered.
  * @var string $selected_status Status slug, or '' if unfiltered.
+ * @var string $selected_range  Range slug ('', 'upcoming', 'past').
  */
 
 // Prevent direct file access.
@@ -28,6 +30,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	>
 		<input type="hidden" name="tab" value="appointments">
 		<div class="dak-field">
+			<label for="dak-patient-appt-filter-range"><?php esc_html_e( 'Show', 'doctor-ak-portal' ); ?></label>
+			<select id="dak-patient-appt-filter-range" name="range">
+				<?php foreach ( $range_options as $range_slug => $range_label ) : ?>
+					<option value="<?php echo esc_attr( $range_slug ); ?>" <?php selected( $selected_range, $range_slug ); ?>><?php echo esc_html( $range_label ); ?></option>
+				<?php endforeach; ?>
+			</select>
+		</div>
+		<div class="dak-field">
 			<label for="dak-patient-appt-filter-date"><?php esc_html_e( 'Date', 'doctor-ak-portal' ); ?></label>
 			<input type="date" id="dak-patient-appt-filter-date" name="date" value="<?php echo esc_attr( $selected_date ); ?>">
 		</div>
@@ -41,7 +51,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</select>
 		</div>
 		<button type="submit" class="dak-button dak-button-primary"><?php esc_html_e( 'Filter', 'doctor-ak-portal' ); ?></button>
-		<?php if ( '' !== $selected_date || '' !== $selected_status ) : ?>
+		<?php if ( '' !== $selected_date || '' !== $selected_status || 'upcoming' !== $selected_range ) : ?>
 			<a
 				class="dak-link"
 				href="?tab=appointments"
