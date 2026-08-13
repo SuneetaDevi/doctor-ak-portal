@@ -98,6 +98,13 @@ $dak_sessions   = $dak_is_editing ? $editing_clinic['sessions'] : \DoctorAKPorta
 			<p class="dak-field-hint"><?php esc_html_e( 'No clinic for this area yet? Add it first from the admin "Clinic" section, then come back here to align this doctor to it.', 'doctor-ak-portal' ); ?></p>
 		</div>
 
+		<div class="dak-field dak-admin-session-address-field<?php echo $dak_is_editing && 'video' === $dak_type ? ' dak-hidden' : ''; ?>">
+			<label for="dak-admin-session-share-percent"><?php esc_html_e( "Doctor's share override at this clinic (%, optional)", 'doctor-ak-portal' ); ?></label>
+			<input type="number" min="0" max="100" step="0.01" id="dak-admin-session-share-percent" name="doctor_share_percent" value="<?php echo esc_attr( $dak_is_editing && null !== $editing_clinic['doctor_share_percent'] ? $editing_clinic['doctor_share_percent'] : '' ); ?>">
+			<span class="dak-field-error" data-field="doctor_share_percent"></span>
+			<p class="dak-field-hint"><?php esc_html_e( "Leave blank to use this doctor's default commission. Only applies to appointments booked at this specific clinic.", 'doctor-ak-portal' ); ?></p>
+		</div>
+
 		<div class="dak-field-row">
 			<div class="dak-field">
 				<label for="dak-admin-session-phone"><?php esc_html_e( 'Phone (optional)', 'doctor-ak-portal' ); ?></label>

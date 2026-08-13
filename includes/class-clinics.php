@@ -298,11 +298,12 @@ class Clinics {
 				'phone'              => $fields['phone'],
 				'contact_email'      => $fields['contact_email'],
 				'clinic_location_id' => isset( $fields['clinic_location_id'] ) ? (int) $fields['clinic_location_id'] : 0,
+				'doctor_share_percent' => isset( $fields['doctor_share_percent'] ) ? $fields['doctor_share_percent'] : null,
 				'sessions'           => wp_json_encode( $sessions ),
 				'created_at'         => $now,
 				'updated_at'         => $now,
 			),
-			array( '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s' )
+			array( '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s' )
 		);
 
 		return $inserted ? (int) $wpdb->insert_id : false;
@@ -328,25 +329,30 @@ class Clinics {
 			$where_types[]      = '%d';
 		}
 
-		$updated = $wpdb->update(
-			self::table_name(),
-			array(
-				'type'               => $fields['type'],
-				'name'               => $fields['name'],
-				'address'            => $fields['address'],
-				'country'            => $fields['country'],
-				'city'               => $fields['city'],
-				'area'               => $fields['area'],
-				'phone'              => $fields['phone'],
-				'contact_email'      => $fields['contact_email'],
-				'clinic_location_id' => isset( $fields['clinic_location_id'] ) ? (int) $fields['clinic_location_id'] : 0,
-				'sessions'           => wp_json_encode( $sessions ),
-				'updated_at'         => current_time( 'mysql' ),
-			),
-			$where,
-			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s' ),
-			$where_types
+		$data    = array(
+			'type'               => $fields['type'],
+			'name'               => $fields['name'],
+			'address'            => $fields['address'],
+			'country'            => $fields['country'],
+			'city'               => $fields['city'],
+			'area'               => $fields['area'],
+			'phone'              => $fields['phone'],
+			'contact_email'      => $fields['contact_email'],
+			'clinic_location_id' => isset( $fields['clinic_location_id'] ) ? (int) $fields['clinic_location_id'] : 0,
+			'sessions'           => wp_json_encode( $sessions ),
+			'updated_at'         => current_time( 'mysql' ),
 		);
+		$data_formats = array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s' );
+
+		// Only touch the share override when the caller explicitly passed
+		// one (the admin Doctor Sessions form) — omitted entirely for the
+		// doctor's own Clinics tab save, which must never overwrite it.
+		if ( array_key_exists( 'doctor_share_percent', $fields ) ) {
+			$data['doctor_share_percent'] = $fields['doctor_share_percent'];
+			$data_formats[]                = '%s';
+		}
+
+		$updated = $wpdb->update( self::table_name(), $data, $where, $data_formats, $where_types );
 
 		return false !== $updated;
 	}
@@ -703,9 +709,39 @@ class Clinics {
 			'phone'              => $row['phone'],
 			'contact_email'      => $row['contact_email'],
 			'clinic_location_id' => isset( $row['clinic_location_id'] ) ? (int) $row['clinic_location_id'] : 0,
+			'doctor_share_percent' => isset( $row['doctor_share_percent'] ) && null !== $row['doctor_share_percent'] ? (float) $row['doctor_share_percent'] : null,
 			'sessions'           => $sessions,
 			'enabled_days'       => $enabled_days,
 		);
+	}
+
+	/**
+	 * Validates and sanitizes this clinic's admin-only revenue-share
+	 * override (see Revenue_Split::effective_doctor_share_percent()) —
+	 * admin-only by design, so it's never wired into the doctor's own
+	 * Clinics tab (Clinic_Handler::handle_save_clinic()), only the admin
+	 * Doctor Sessions form (Clinic_Handler::handle_admin_save_clinic()). A
+	 * doctor setting their own commission cut would be a conflict of
+	 * interest, mirroring how the base doctor split (Revenue_Split) is
+	 * already admin-only-editable via the Add/Edit Doctor form.
+	 *
+	 * @param array $posted Raw request array (e.g. $_POST, already a plain array).
+	 * @return float|null|\WP_Error Share percent (0-100), null for "no override — use the doctor default", or WP_Error on invalid input.
+	 */
+	public static function sanitize_share_override_from_request( array $posted ) {
+		$raw = isset( $posted['doctor_share_percent'] ) ? trim( (string) wp_unslash( $posted['doctor_share_percent'] ) ) : '';
+
+		if ( '' === $raw ) {
+			return null;
+		}
+
+		$percent = (float) $raw;
+
+		if ( $percent < 0 || $percent > 100 ) {
+			return new \WP_Error( 'doctor_ak_clinic_share_percent_invalid', __( "This clinic's doctor share override must be between 0 and 100%.", 'doctor-ak-portal' ) );
+		}
+
+		return $percent;
 	}
 
 	/**

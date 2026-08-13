@@ -2217,7 +2217,7 @@ class Appointments {
 		$args = array(
 			'post_type'      => self::POST_TYPE,
 			'post_status'    => 'publish',
-			'posts_per_page' => 200,
+			'posts_per_page' => ! empty( $filters['number'] ) ? (int) $filters['number'] : 200,
 			'no_found_rows'  => true,
 		);
 

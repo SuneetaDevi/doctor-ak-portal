@@ -38,7 +38,7 @@ class Db_Installer {
 	 *
 	 * @var string
 	 */
-	const DB_VERSION = '1.3.0';
+	const DB_VERSION = '1.4.0';
 
 	/**
 	 * Option name tracking the installed services-table schema version.
@@ -167,12 +167,49 @@ class Db_Installer {
 	const ENCOUNTER_REPORTS_DB_VERSION = '1.0.0';
 
 	/**
+	 * Option name tracking the installed revenue-ledger-table schema version.
+	 *
+	 * @var string
+	 */
+	const REVENUE_LEDGER_DB_VERSION_OPTION = 'dak_revenue_ledger_db_version';
+
+	/**
+	 * Current revenue-ledger table schema version.
+	 *
+	 * @var string
+	 */
+	const REVENUE_LEDGER_DB_VERSION = '1.0.0';
+
+	/**
+	 * Option name tracking the installed revenue-settlements-table schema version.
+	 *
+	 * @var string
+	 */
+	const REVENUE_SETTLEMENTS_DB_VERSION_OPTION = 'dak_revenue_settlements_db_version';
+
+	/**
+	 * Current revenue-settlements table schema version.
+	 *
+	 * @var string
+	 */
+	const REVENUE_SETTLEMENTS_DB_VERSION = '1.0.0';
+
+	/**
 	 * Option name guarding the one-time legacy-data migration so it never
 	 * runs more than once.
 	 *
 	 * @var string
 	 */
 	const MIGRATION_OPTION = 'dak_clinics_migrated_legacy_data';
+
+	/**
+	 * Option name guarding the one-time revenue-ledger backfill for
+	 * already-paid appointments that predate the ledger's existence — see
+	 * backfill_revenue_ledger().
+	 *
+	 * @var string
+	 */
+	const REVENUE_LEDGER_BACKFILL_OPTION = 'dak_revenue_ledger_backfilled';
 
 	/**
 	 * Option name guarding the one-time common-medicines seed so it never
@@ -221,6 +258,12 @@ class Db_Installer {
 		self::create_encounter_reports_table();
 		update_option( self::ENCOUNTER_REPORTS_DB_VERSION_OPTION, self::ENCOUNTER_REPORTS_DB_VERSION );
 
+		self::create_revenue_ledger_table();
+		update_option( self::REVENUE_LEDGER_DB_VERSION_OPTION, self::REVENUE_LEDGER_DB_VERSION );
+
+		self::create_revenue_settlements_table();
+		update_option( self::REVENUE_SETTLEMENTS_DB_VERSION_OPTION, self::REVENUE_SETTLEMENTS_DB_VERSION );
+
 		if ( ! get_option( self::MIGRATION_OPTION ) ) {
 			self::migrate_legacy_data();
 			update_option( self::MIGRATION_OPTION, 'yes' );
@@ -229,6 +272,11 @@ class Db_Installer {
 		if ( ! get_option( self::MEDICINES_SEED_OPTION ) ) {
 			self::seed_common_medicines();
 			update_option( self::MEDICINES_SEED_OPTION, 'yes' );
+		}
+
+		if ( ! get_option( self::REVENUE_LEDGER_BACKFILL_OPTION ) ) {
+			self::backfill_revenue_ledger();
+			update_option( self::REVENUE_LEDGER_BACKFILL_OPTION, 'yes' );
 		}
 	}
 
@@ -253,6 +301,8 @@ class Db_Installer {
 			&& self::ENCOUNTER_PRESCRIPTIONS_DB_VERSION === get_option( self::ENCOUNTER_PRESCRIPTIONS_DB_VERSION_OPTION )
 			&& self::ENCOUNTER_BILL_ITEMS_DB_VERSION === get_option( self::ENCOUNTER_BILL_ITEMS_DB_VERSION_OPTION )
 			&& self::ENCOUNTER_REPORTS_DB_VERSION === get_option( self::ENCOUNTER_REPORTS_DB_VERSION_OPTION )
+			&& self::REVENUE_LEDGER_DB_VERSION === get_option( self::REVENUE_LEDGER_DB_VERSION_OPTION )
+			&& self::REVENUE_SETTLEMENTS_DB_VERSION === get_option( self::REVENUE_SETTLEMENTS_DB_VERSION_OPTION )
 		) {
 			return;
 		}
@@ -285,6 +335,7 @@ class Db_Installer {
 			phone VARCHAR(30) NOT NULL DEFAULT '',
 			contact_email VARCHAR(191) NOT NULL DEFAULT '',
 			clinic_location_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			doctor_share_percent DECIMAL(5,2) NULL DEFAULT NULL,
 			sessions LONGTEXT NOT NULL,
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
@@ -631,6 +682,102 @@ class Db_Installer {
 	}
 
 	/**
+	 * Runs dbDelta() against the revenue-ledger table schema — the
+	 * doctor+clinic-wise financial ledger (see Revenue_Ledger). One row per
+	 * posted transaction (a paid appointment, or a refund reversal),
+	 * snapshotting the gross amount, split percentage, and each side's
+	 * share at the moment it was posted, so later changes to a doctor's or
+	 * clinic's split never rewrite history.
+	 *
+	 * @return void
+	 */
+	private static function create_revenue_ledger_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$table_name      = Revenue_Ledger::table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table_name} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			doctor_id BIGINT UNSIGNED NOT NULL,
+			clinic_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			appointment_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			service_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			transaction_type VARCHAR(30) NOT NULL,
+			direction VARCHAR(10) NOT NULL DEFAULT 'credit',
+			gross_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			platform_fee DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			share_percent DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+			doctor_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			clinic_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			net_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			description VARCHAR(255) NOT NULL DEFAULT '',
+			reference VARCHAR(100) NOT NULL DEFAULT '',
+			status VARCHAR(20) NOT NULL DEFAULT 'posted',
+			is_legacy TINYINT(1) NOT NULL DEFAULT 0,
+			settlement_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			transaction_date DATE NOT NULL,
+			created_at DATETIME NOT NULL,
+			updated_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY doctor_id (doctor_id),
+			KEY clinic_id (clinic_id),
+			KEY appointment_id (appointment_id),
+			KEY transaction_type (transaction_type),
+			KEY settlement_id (settlement_id),
+			KEY transaction_date (transaction_date)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Runs dbDelta() against the revenue-settlements table schema — one row
+	 * per doctor per reviewed period (see Settlement_Manager). Creating a
+	 * settlement stamps every Revenue_Ledger row it covers with this row's
+	 * id, so a later settlement (or the live "current outstanding" view)
+	 * never double-counts already-settled entries.
+	 *
+	 * @return void
+	 */
+	private static function create_revenue_settlements_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$table_name      = Settlement_Manager::table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table_name} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			doctor_id BIGINT UNSIGNED NOT NULL,
+			period_start DATE NOT NULL,
+			period_end DATE NOT NULL,
+			video_earnings DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			clinic_obligations DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			platform_fees DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			adjustments DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			opening_balance DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			closing_balance DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			settlement_direction VARCHAR(30) NOT NULL DEFAULT 'settled',
+			settlement_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+			settled_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			settled_at DATETIME NULL DEFAULT NULL,
+			settled_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			notes TEXT NULL,
+			created_at DATETIME NOT NULL,
+			updated_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY doctor_id (doctor_id),
+			KEY settlement_status (settlement_status)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
 	 * One-time migration: for every doctor with legacy meta and no clinic
 	 * rows yet, creates a 'physical' clinic from their old clinic_location +
 	 * availability, and a 'video' clinic ("Online Consultation") if they had
@@ -709,6 +856,37 @@ class Db_Installer {
 					null
 				);
 			}
+		}
+	}
+
+	/**
+	 * One-time migration: posts a Revenue_Ledger entry for every appointment
+	 * that was already `payment_status = paid` before the ledger existed —
+	 * otherwise those appointments would simply never appear in the new
+	 * doctor+clinic-wise ledger/settlement screens at all. Computed with
+	 * each doctor's/clinic's CURRENT split settings (there was never a
+	 * historical snapshot to recover — see Revenue_Calculator), and every
+	 * backfilled row is flagged `is_legacy = 1` so it's clearly
+	 * distinguishable from a real-time entry (which snapshots the split
+	 * that was actually in effect the moment the payment was posted).
+	 *
+	 * Safe to re-run: Revenue_Ledger::post_for_appointment() itself is
+	 * idempotent (skips an appointment that already has a non-reversed
+	 * ledger row of that transaction type), on top of this whole method
+	 * only ever running once per site via REVENUE_LEDGER_BACKFILL_OPTION.
+	 *
+	 * @return void
+	 */
+	private static function backfill_revenue_ledger() {
+		$appointments = Appointments::all_for_admin(
+			array(
+				'payment_status' => Appointments::PAYMENT_STATUS_PAID,
+				'number'         => 100000,
+			)
+		);
+
+		foreach ( $appointments as $appointment ) {
+			Revenue_Ledger::post_for_appointment( $appointment['id'], true );
 		}
 	}
 }

@@ -15,9 +15,11 @@ use DoctorAKPortal\Includes\Encounters;
 use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Notifications;
 use DoctorAKPortal\Includes\Page_Finder;
+use DoctorAKPortal\Includes\Revenue_Ledger;
 use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
+use DoctorAKPortal\Includes\Settlement_Manager;
 use DoctorAKPortal\Includes\Specializations;
 use DoctorAKPortal\Includes\Template_Loader;
 use DoctorAKPortal\Includes\Theme_Preference;
@@ -684,17 +686,26 @@ class Doctor_Dashboard {
 	 * @return string
 	 */
 	private function render_earnings_tab( \WP_User $user ) {
+		$clinics = Clinics::get_for_doctor( $user->ID );
+
+		$clinics_by_id = array();
+		foreach ( $clinics as $clinic ) {
+			$clinics_by_id[ $clinic['id'] ] = $clinic['name'];
+		}
+
 		return $this->template_loader->get_template(
 			'dashboard/partials/doctor-earnings-tab.php',
 			array(
-				'earnings' => Appointments::doctor_revenue_summary( $user->ID ),
-				'net_dues' => Appointments::net_dues_for_doctor( $user->ID ),
-				'invoices' => Appointments::all_for_admin(
+				'earnings'      => Appointments::doctor_revenue_summary( $user->ID ),
+				'outstanding'   => Revenue_Ledger::outstanding_for_doctor( $user->ID ),
+				'ledger'        => Revenue_Ledger::all_flat_for_admin(
 					array(
-						'doctor_id'      => $user->ID,
-						'payment_status' => Appointments::PAYMENT_STATUS_PAID,
+						'doctor_id' => $user->ID,
+						'number'    => 300,
 					)
 				),
+				'clinics_by_id' => $clinics_by_id,
+				'settlements'   => Settlement_Manager::for_doctor( $user->ID ),
 			)
 		);
 	}

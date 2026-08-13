@@ -16,10 +16,16 @@
 		}
 
 		saveButton.addEventListener( 'click', function () {
-			[ 'dak-clinic-branding-error', 'dak-notification-preferences-error', 'dak-admin-settings-error', 'dak-admin-settings-success' ].forEach( hide );
+			[ 'dak-clinic-branding-error', 'dak-notification-preferences-error', 'dak-platform-fee-error', 'dak-admin-settings-error', 'dak-admin-settings-success' ].forEach( hide );
 			saveButton.disabled = true;
 
-			Promise.all( [ saveBranding(), savePreferences() ] )
+			var requests = [ saveBranding(), savePreferences() ];
+
+			if ( window.dakPlatformFee ) {
+				requests.push( savePlatformFee() );
+			}
+
+			Promise.all( requests )
 				.then( function ( results ) {
 					saveButton.disabled = false;
 
@@ -83,6 +89,27 @@
 				} )
 				.catch( function () {
 					return { success: false, errorElementId: 'dak-notification-preferences-error' };
+				} );
+		}
+
+		/**
+		 * @return {Promise<Object>} See saveBranding().
+		 */
+		function savePlatformFee() {
+			var formData = new FormData();
+			formData.append( 'action', 'doctor_ak_admin_platform_fee_save' );
+			formData.append( 'nonce', window.dakPlatformFee.nonce );
+			formData.append( 'fee_percent', valueOf( 'dak-platform-fee-percent' ) );
+			formData.append( 'fee_flat', valueOf( 'dak-platform-fee-flat' ) );
+
+			return fetch( window.dakPlatformFee.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
+				.then( function ( response ) { return response.json(); } )
+				.then( function ( result ) {
+					result.errorElementId = 'dak-platform-fee-error';
+					return result;
+				} )
+				.catch( function () {
+					return { success: false, errorElementId: 'dak-platform-fee-error' };
 				} );
 		}
 

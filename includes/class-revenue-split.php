@@ -76,6 +76,41 @@ class Revenue_Split {
 	}
 
 	/**
+	 * A doctor's effective share percentage for a specific clinic, honoring
+	 * a per-clinic override (see Clinics::$doctor_share_percent) when one is
+	 * set, otherwise falling back to the doctor's own default split (see
+	 * get_for_doctor()). Pass $clinic_id = 0 (or omit it) for a context with
+	 * no physical clinic — video consultations always use the doctor
+	 * default, since there's no clinic row to override against.
+	 *
+	 * A salary-based doctor's share is always 0 here too, regardless of any
+	 * clinic override — an override only ever narrows a commission doctor's
+	 * cut at a specific location, it never turns a salaried doctor into a
+	 * commission one.
+	 *
+	 * @param int $doctor_id Doctor's user ID.
+	 * @param int $clinic_id Clinic ID (a doctor's own `dak_clinics` row), or 0 for none/video.
+	 * @return float 0-100.
+	 */
+	public static function effective_doctor_share_percent( $doctor_id, $clinic_id = 0 ) {
+		$settings = self::get_for_doctor( $doctor_id );
+
+		if ( self::MODEL_SALARY === $settings['payment_model'] ) {
+			return 0.0;
+		}
+
+		if ( $clinic_id > 0 ) {
+			$clinic = Clinics::find( $clinic_id );
+
+			if ( $clinic && null !== $clinic['doctor_share_percent'] ) {
+				return max( 0.0, min( 100.0, (float) $clinic['doctor_share_percent'] ) );
+			}
+		}
+
+		return $settings['doctor_share_percent'];
+	}
+
+	/**
 	 * Splits a charge into the doctor's and the hospital's shares, using
 	 * the doctor's current settings (see class docblock).
 	 *

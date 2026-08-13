@@ -123,7 +123,7 @@ class Clinic_Handler {
 			wp_send_json_error( array( 'message' => __( 'An administrator has turned off the Clinics page for your account.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		$this->process_save( get_current_user_id(), get_current_user_id(), true );
+		$this->process_save( get_current_user_id(), get_current_user_id(), true, false );
 	}
 
 	/**
@@ -168,7 +168,7 @@ class Clinic_Handler {
 			wp_send_json_error( array( 'message' => __( 'That doctor no longer exists.', 'doctor-ak-portal' ) ) );
 		}
 
-		$this->process_save( $doctor_id, null, true );
+		$this->process_save( $doctor_id, null, true, true );
 	}
 
 	/**
@@ -195,9 +195,10 @@ class Clinic_Handler {
 	 * @param int      $owner_doctor_id      Doctor ID the clinic is created under (for new clinics).
 	 * @param int|null $ownership_check      Doctor ID an existing clinic must belong to, or null to skip the check (admin context).
 	 * @param bool     $requires_clinic_location Whether a new physical clinic must be aligned to a Clinic_Locations master record instead of free-typed name/address/location — true from both the admin "Doctor Sessions" form and the doctor's own "Clinics" tab, so every physical clinic (new or already saved) is always one of the admin-managed locations, never a one-off free-typed entry.
+	 * @param bool     $is_admin             Whether this save is coming from the admin "Doctor Sessions" form — only then is the clinic-level revenue-share override read from the request and written (see Clinics::sanitize_share_override_from_request()'s docblock for why this is admin-only).
 	 * @return void
 	 */
-	private function process_save( $owner_doctor_id, $ownership_check, $requires_clinic_location = false ) {
+	private function process_save( $owner_doctor_id, $ownership_check, $requires_clinic_location = false, $is_admin = false ) {
 		$clinic_id = isset( $_POST['clinic_id'] ) ? absint( wp_unslash( $_POST['clinic_id'] ) ) : 0;
 		$type      = isset( $_POST['type'] ) ? sanitize_key( wp_unslash( $_POST['type'] ) ) : Clinics::TYPE_PHYSICAL;
 
@@ -265,6 +266,20 @@ class Clinic_Handler {
 
 		if ( is_wp_error( $sessions ) ) {
 			wp_send_json_error( array( 'errors' => array( 'sessions' => $sessions->get_error_message() ) ) );
+		}
+
+		// Admin-only: read the clinic-level revenue-share override. Not read
+		// at all on the doctor's own save path, so $fields never gains this
+		// key there — Clinics::create()/update() rely on that
+		// isset()/array_key_exists() distinction to leave the column alone.
+		if ( $is_admin ) {
+			$share_override = Clinics::sanitize_share_override_from_request( $_POST ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Clinics::sanitize_share_override_from_request() unslashes/sanitizes the field itself.
+
+			if ( is_wp_error( $share_override ) ) {
+				wp_send_json_error( array( 'errors' => array( 'doctor_share_percent' => $share_override->get_error_message() ) ) );
+			}
+
+			$fields['doctor_share_percent'] = $share_override;
 		}
 
 		if ( $clinic_id > 0 ) {

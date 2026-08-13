@@ -94,6 +94,14 @@ class Invoice_Pdf extends Pdf_Document {
 		/* translators: 1: date/time, 2: doctor's display name. */
 		$meta_line = sprintf( __( '%1$s with Dr. %2$s', 'doctor-ak-portal' ), date_i18n( 'd/m/Y h:i A', strtotime( $appointment['date'] . ' ' . $appointment['time'] ) ), $appointment['doctor_name'] );
 
+		// Which clinic the visit was at, or that it was a video consultation
+		// — no revenue-split figures here, this line is purely informational
+		// for the patient (see Revenue_Ledger/Revenue_Calculator for the
+		// internal doctor/clinic split, which stays admin/doctor-only).
+		$location_line = Appointments::TYPE_VIDEO === $appointment['type']
+			? __( 'Video Consultation', 'doctor-ak-portal' )
+			: ( '' !== $appointment['clinic_label'] ? $appointment['clinic_label'] : __( 'Clinic Visit', 'doctor-ak-portal' ) );
+
 		$stream .= self::draw_text( $left, $y, 'F1', 10, $service_label );
 
 		if ( $has_discount ) {
@@ -109,6 +117,9 @@ class Invoice_Pdf extends Pdf_Document {
 		}
 
 		$stream .= self::draw_text( $left, $y, 'F1', 8, $meta_line, 0.4 );
+		$y      -= 12;
+
+		$stream .= self::draw_text( $left, $y, 'F1', 8, $location_line, 0.4 );
 		$y      -= 16;
 
 		$stream .= self::draw_line( $left, $y, $right, $y, 0.6, 0.6, 0.6 );

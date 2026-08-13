@@ -17,10 +17,13 @@ use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Notifications;
 use DoctorAKPortal\Includes\Page_Finder;
+use DoctorAKPortal\Includes\Revenue_Calculator;
+use DoctorAKPortal\Includes\Revenue_Ledger;
 use DoctorAKPortal\Includes\Revenue_Split;
 use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
+use DoctorAKPortal\Includes\Settlement_Manager;
 use DoctorAKPortal\Includes\Specializations;
 use DoctorAKPortal\Includes\Template_Loader;
 use DoctorAKPortal\Includes\Theme_Preference;
@@ -454,7 +457,35 @@ class Admin_Dashboard {
 					Assets::version( 'assets/js/doctor-ak-admin-settings-save.js' ),
 					true
 				);
+
+				wp_localize_script(
+					'doctor-ak-portal-admin-settings-save',
+					'dakPlatformFee',
+					array(
+						'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+						'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+					)
+				);
 			}
+		}
+
+		if ( 'billing' === self::requested_section() ) {
+			wp_enqueue_script(
+				'doctor-ak-portal-admin-billing',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-billing.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-admin-billing.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-admin-billing',
+				'dakAdminBilling',
+				array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+				)
+			);
 		}
 
 		if ( 'services' === self::requested_section() ) {
@@ -1294,26 +1325,62 @@ class Admin_Dashboard {
 		}
 
 		if ( 'billing' === $section ) {
+			$doctor_id = isset( $_GET['doctor_id'] ) ? absint( wp_unslash( $_GET['doctor_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$clinic_id = isset( $_GET['clinic_id'] ) && '' !== $_GET['clinic_id'] ? (int) wp_unslash( $_GET['clinic_id'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- read-only navigation state; cast to int below.
 			$date_from = isset( $_GET['date_from'] ) ? sanitize_text_field( wp_unslash( $_GET['date_from'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			$date_to   = isset( $_GET['date_to'] ) ? sanitize_text_field( wp_unslash( $_GET['date_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 
 			$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
 			$billing_url   = $dashboard_url ? add_query_arg( 'section', 'billing', $dashboard_url ) : '';
 
+			$ledger_filters = array(
+				'doctor_id' => $doctor_id,
+				'clinic_id' => $clinic_id,
+				'date_from' => $date_from,
+				'date_to'   => $date_to,
+			);
+
+			$doctor_options    = $this->doctor_options();
+			$clinics_by_doctor = Clinics::get_for_doctors( array_keys( $doctor_options ) );
+
+			$clinic_names_by_id = array();
+			foreach ( $clinics_by_doctor as $dak_doctor_clinics ) {
+				foreach ( $dak_doctor_clinics as $dak_clinic ) {
+					$clinic_names_by_id[ $dak_clinic['id'] ] = $dak_clinic['name'];
+				}
+			}
+
+			$balances = Revenue_Ledger::balances_by_doctor_and_clinic(
+				array(
+					'doctor_id' => $doctor_id,
+					'date_from' => $date_from,
+					'date_to'   => $date_to,
+				)
+			);
+
+			foreach ( $balances as &$dak_balance_row ) {
+				if ( 0 === $dak_balance_row['clinic_id'] ) {
+					$dak_balance_row['clinic_name'] = __( 'Video Consultation', 'doctor-ak-portal' );
+				} else {
+					$dak_balance_row['clinic_name'] = isset( $clinic_names_by_id[ $dak_balance_row['clinic_id'] ] ) ? $clinic_names_by_id[ $dak_balance_row['clinic_id'] ] : __( 'Clinic', 'doctor-ak-portal' );
+				}
+				$dak_balance_row['doctor_name'] = isset( $doctor_options[ $dak_balance_row['doctor_id'] ] ) ? $doctor_options[ $dak_balance_row['doctor_id'] ]['name'] : __( 'Unknown doctor', 'doctor-ak-portal' );
+			}
+			unset( $dak_balance_row );
+
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-billing.php',
 				array(
-					'invoices'    => Appointments::all_for_admin(
-						array(
-							'payment_status' => Appointments::PAYMENT_STATUS_PAID,
-							'date_from'      => $date_from,
-							'date_to'        => $date_to,
-						)
-					),
-					'revenue'     => Appointments::revenue_summary(),
-					'net_dues'    => Appointments::net_dues_by_doctor(),
-					'billing_url' => $billing_url,
-					'filters'     => array(
+					'balances'          => $balances,
+					'summary'         => Revenue_Ledger::summary( $ledger_filters ),
+					'doctor_options'  => $doctor_options,
+					'clinics_by_doctor' => $clinics_by_doctor,
+					'settlements'     => Settlement_Manager::all_flat_for_admin( $doctor_id > 0 ? array( 'doctor_id' => $doctor_id ) : array() ),
+					'outstanding'     => $doctor_id > 0 ? Revenue_Ledger::outstanding_for_doctor( $doctor_id, $date_from, $date_to ) : null,
+					'billing_url'     => $billing_url,
+					'filters'         => array(
+						'doctor_id' => $doctor_id,
+						'clinic_id' => $clinic_id,
 						'date_from' => $date_from,
 						'date_to'   => $date_to,
 					),
@@ -1395,6 +1462,7 @@ class Admin_Dashboard {
 
 		if ( 'settings' === $section ) {
 			$notify_preferences = Notifications::user_preferences( get_current_user_id() );
+			$video_fee_settings = Revenue_Calculator::video_platform_fee_settings();
 			$settings_tab_html  = $this->template_loader->get_template(
 				'dashboard/partials/dashboard-settings-tab.php',
 				array(
@@ -1428,6 +1496,8 @@ class Admin_Dashboard {
 					'clinic_phone'      => get_option( Site_Footer::OPTION_CLINIC_PHONE, '' ),
 					'clinic_address'    => get_option( Site_Footer::OPTION_CLINIC_ADDRESS, '' ),
 					'clinic_logo_url'   => Site_Footer::bundled_logo_url(),
+					'video_fee_percent' => $video_fee_settings['percent'],
+					'video_fee_flat'    => $video_fee_settings['flat'],
 				)
 			);
 		}

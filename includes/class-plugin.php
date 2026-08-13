@@ -41,6 +41,7 @@ use DoctorAKPortal\Frontend\Registration_Handler;
 use DoctorAKPortal\Frontend\Clinic_Location_Handler;
 use DoctorAKPortal\Frontend\Dashboard_Layout;
 use DoctorAKPortal\Frontend\Service_Handler;
+use DoctorAKPortal\Frontend\Settlement_Handler;
 use DoctorAKPortal\Frontend\Shortcodes;
 use DoctorAKPortal\Frontend\Site_Footer;
 use DoctorAKPortal\Frontend\Site_Header;
@@ -278,6 +279,20 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_notification_mark_read', $notification_handler, 'handle_mark_read' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_notification_mark_all_read', $notification_handler, 'handle_mark_all_read' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_notification_preferences_save', $notification_handler, 'handle_save_preferences' );
+
+		// Revenue ledger — posts a doctor+clinic-wise transaction the moment
+		// an appointment becomes paid, and reverses it if that payment is
+		// later refunded. See includes/class-revenue-ledger.php.
+		$this->loader->add_action( 'doctor_ak_appointment_paid', 'DoctorAKPortal\\Includes\\Revenue_Ledger', 'post_for_appointment' );
+		$this->loader->add_action( 'doctor_ak_appointment_refund_processed', 'DoctorAKPortal\\Includes\\Revenue_Ledger', 'reverse_for_appointment' );
+
+		$settlement_handler = new Settlement_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_create_settlement', $settlement_handler, 'handle_create' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_settlement_mark_paid', $settlement_handler, 'handle_mark_paid' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_settlement_mark_received', $settlement_handler, 'handle_mark_received' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_platform_fee_save', $settlement_handler, 'handle_save_platform_fee' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_get_doctor_clinic_details', $settlement_handler, 'handle_get_doctor_clinic_details' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_statement_download', $settlement_handler, 'handle_download_statement' );
 
 		$admin_dashboard = new Admin_Dashboard( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $admin_dashboard, 'enqueue_assets' );
