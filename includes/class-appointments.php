@@ -224,7 +224,14 @@ class Appointments {
 			$base_charge = $charge;
 		}
 
-		$is_instant = Video_Pricing::is_instant_booking( $doctor_id, $date, $time );
+		// The instant-booking surcharge is a video-consultation pricing knob
+		// (see the TYPE_VIDEO branch above) — gating it to that type matters
+		// beyond video bookings too: a clinic walk-in (see
+		// Encounter_Handler::handle_create_encounter()) is always booked a
+		// minute in the future, which would otherwise fall inside any
+		// doctor's configured instant-lead window and silently add their
+		// video surcharge to a clinic visit's charge.
+		$is_instant = self::TYPE_VIDEO === $type && Video_Pricing::is_instant_booking( $doctor_id, $date, $time );
 		$surcharge  = $is_instant ? Video_Pricing::instant_surcharge_for_doctor( $doctor_id ) : 0.0;
 		$charge    += $surcharge;
 

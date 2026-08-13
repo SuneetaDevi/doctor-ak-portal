@@ -10,6 +10,7 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Invoice_Pdf;
+use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Swich_Payment;
 use DoctorAKPortal\Includes\Template_Loader;
 
@@ -131,6 +132,37 @@ class Appointment_Handler {
 		Appointments::mark_paid( $appointment_id );
 
 		wp_send_json_success( array( 'message' => __( 'Payment marked as received.', 'doctor-ak-portal' ) ) );
+	}
+
+	/**
+	 * AJAX handler: sends a patient a one-off in-app reminder about an
+	 * upcoming appointment — used by the Appointments list's row action and
+	 * bulk "Send reminder" action (the JS calls this once per selected
+	 * appointment). Same narrow front-desk audience as handle_mark_paid().
+	 *
+	 * @return void
+	 */
+	public function handle_send_reminder() {
+		if ( ! check_ajax_referer( Admin_Dashboard::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'doctor_ak_manage_payments' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$appointment_id = isset( $_POST['appointment_id'] ) ? absint( wp_unslash( $_POST['appointment_id'] ) ) : 0;
+		$appointment    = $appointment_id > 0 ? Appointments::find( $appointment_id ) : null;
+
+		if ( empty( $appointment ) ) {
+			wp_send_json_error( array( 'message' => __( 'That appointment no longer exists.', 'doctor-ak-portal' ) ) );
+		}
+
+		if ( ! Notification_Center::notify_reminder( $appointment_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'This appointment has no registered patient to remind.', 'doctor-ak-portal' ) ) );
+		}
+
+		wp_send_json_success( array( 'message' => __( 'Reminder sent.', 'doctor-ak-portal' ) ) );
 	}
 
 	/**

@@ -175,6 +175,14 @@ class Db_Installer {
 	const MIGRATION_OPTION = 'dak_clinics_migrated_legacy_data';
 
 	/**
+	 * Option name guarding the one-time common-medicines seed so it never
+	 * re-inserts rows a site has since edited/deleted.
+	 *
+	 * @var string
+	 */
+	const MEDICINES_SEED_OPTION = 'dak_common_medicines_seeded';
+
+	/**
 	 * Creates/updates the table and runs the legacy-data migration.
 	 *
 	 * Safe to call on every activation: dbDelta() only applies schema
@@ -216,6 +224,11 @@ class Db_Installer {
 		if ( ! get_option( self::MIGRATION_OPTION ) ) {
 			self::migrate_legacy_data();
 			update_option( self::MIGRATION_OPTION, 'yes' );
+		}
+
+		if ( ! get_option( self::MEDICINES_SEED_OPTION ) ) {
+			self::seed_common_medicines();
+			update_option( self::MEDICINES_SEED_OPTION, 'yes' );
 		}
 	}
 
@@ -442,6 +455,66 @@ class Db_Installer {
 		) {$charset_collate};";
 
 		dbDelta( $sql );
+	}
+
+	/**
+	 * Seeds a starting set of common medicines (doctor_id = 0 — visible to
+	 * every doctor alongside their own, see Medicines::get_for_doctor()) so
+	 * the prescription autocomplete has useful suggestions before any doctor
+	 * has typed anything. Runs once, guarded by MEDICINES_SEED_OPTION — a
+	 * site is free to edit/deactivate/delete these afterward without them
+	 * reappearing.
+	 *
+	 * @return void
+	 */
+	private static function seed_common_medicines() {
+		global $wpdb;
+
+		$table_name = Medicines::table_name();
+		$now        = current_time( 'mysql' );
+
+		$common_medicines = array(
+			'Paracetamol',
+			'Ibuprofen',
+			'Amoxicillin',
+			'Azithromycin',
+			'Ciprofloxacin',
+			'Metronidazole',
+			'Omeprazole',
+			'Pantoprazole',
+			'Ranitidine',
+			'Cetirizine',
+			'Loratadine',
+			'Metformin',
+			'Amlodipine',
+			'Atorvastatin',
+			'Losartan',
+			'Aspirin',
+			'Diclofenac',
+			'Domperidone',
+			'Ondansetron',
+			'Prednisolone',
+			'Salbutamol Inhaler',
+			'Multivitamin',
+			'ORS (Oral Rehydration Salts)',
+			'Vitamin D3',
+			'Calcium Carbonate',
+		);
+
+		foreach ( $common_medicines as $medicine_name ) {
+			$wpdb->insert(
+				$table_name,
+				array(
+					'doctor_id'      => 0,
+					'name'           => $medicine_name,
+					'default_dosage' => '',
+					'active'         => 1,
+					'created_at'     => $now,
+					'updated_at'     => $now,
+				),
+				array( '%d', '%s', '%s', '%d', '%s', '%s' )
+			);
+		}
 	}
 
 	/**

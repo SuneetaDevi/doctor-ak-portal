@@ -88,6 +88,8 @@ $appointment_group_labels = array(
 	</button>
 
 	<aside class="dak-dashboard-sidebar" id="dak-dashboard-sidebar">
+		<a class="dak-sidebar-back-link" href="<?php echo esc_url( home_url( '/' ) ); ?>">&larr; <?php esc_html_e( 'Back to site', 'doctor-ak-portal' ); ?></a>
+
 		<div class="dak-sidebar-patient-card">
 			<span class="dak-avatar dak-avatar-md">
 				<?php if ( $avatar_url ) : ?>

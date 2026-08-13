@@ -23,6 +23,7 @@
 		// widget.
 		wireMarkPaid();
 		wirePayNow();
+		wireBulkActions();
 
 		var modal = document.getElementById( 'dak-admin-appointment-modal' );
 		var viewModal = document.getElementById( 'dak-admin-appointment-view-modal' );
@@ -513,6 +514,116 @@
 					window.alert( 'Something went wrong. Please try again.' );
 				} );
 		} );
+	}
+
+	/**
+	 * Row checkboxes + "Select all" + the bulk actions bar (Mark paid / Send
+	 * reminder / Clear) on the Appointments list. Selected IDs are read
+	 * straight from the checked checkboxes when a bulk action runs — no
+	 * separate state array to keep in sync. Both bulk actions just call the
+	 * existing single-appointment AJAX endpoints once per selected row
+	 * (there are only ever a handful selected at a time) rather than adding
+	 * bulk-specific endpoints.
+	 */
+	function wireBulkActions() {
+		var selectAll = document.getElementById( 'dak-appt-select-all' );
+		var bulkBar = document.getElementById( 'dak-appt-bulk-actions' );
+		var bulkCount = document.getElementById( 'dak-appt-bulk-count' );
+
+		if ( ! selectAll || ! bulkBar ) {
+			return;
+		}
+
+		function selectedCheckboxes() {
+			return Array.prototype.slice.call( document.querySelectorAll( '.dak-appt-select' ) );
+		}
+
+		function checkedCheckboxes() {
+			return selectedCheckboxes().filter( function ( box ) { return box.checked; } );
+		}
+
+		function refreshBulkBar() {
+			var checked = checkedCheckboxes();
+
+			bulkBar.classList.toggle( 'dak-hidden', 0 === checked.length );
+			bulkCount.textContent = checked.length + ' selected';
+
+			var all = selectedCheckboxes();
+			selectAll.checked = all.length > 0 && checked.length === all.length;
+			selectAll.indeterminate = checked.length > 0 && checked.length < all.length;
+		}
+
+		selectAll.addEventListener( 'change', function () {
+			selectedCheckboxes().forEach( function ( box ) {
+				box.checked = selectAll.checked;
+			} );
+
+			refreshBulkBar();
+		} );
+
+		document.addEventListener( 'change', function ( event ) {
+			if ( event.target.classList && event.target.classList.contains( 'dak-appt-select' ) ) {
+				refreshBulkBar();
+			}
+		} );
+
+		document.addEventListener( 'click', function ( event ) {
+			if ( event.target.closest( '[data-appt-bulk-clear]' ) ) {
+				selectedCheckboxes().forEach( function ( box ) { box.checked = false; } );
+				refreshBulkBar();
+				return;
+			}
+
+			var markPaidTrigger = event.target.closest( '[data-appt-bulk-mark-paid]' );
+
+			if ( markPaidTrigger ) {
+				runBulkAction( markPaidTrigger, 'doctor_ak_admin_appointment_mark_paid', 'Mark the selected appointments as paid?' );
+				return;
+			}
+
+			var reminderTrigger = event.target.closest( '[data-appt-bulk-send-reminder]' );
+
+			if ( reminderTrigger ) {
+				runBulkAction( reminderTrigger, 'doctor_ak_admin_appointment_send_reminder', 'Send a reminder for each selected appointment?' );
+			}
+		} );
+
+		function runBulkAction( trigger, action, confirmMessage ) {
+			var ids = checkedCheckboxes().map( function ( box ) { return box.getAttribute( 'data-appointment-id' ); } );
+
+			if ( ! ids.length ) {
+				return;
+			}
+
+			if ( ! window.confirm( confirmMessage ) ) {
+				return;
+			}
+
+			trigger.disabled = true;
+
+			Promise.all(
+				ids.map( function ( appointmentId ) {
+					var formData = new FormData();
+					formData.append( 'action', action );
+					formData.append( 'nonce', window.dakAdminAppointments.nonce );
+					formData.append( 'appointment_id', appointmentId );
+
+					return fetch( window.dakAdminAppointments.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
+						.then( function ( response ) { return response.json(); } )
+						.catch( function () { return { success: false }; } );
+				} )
+			).then( function ( results ) {
+				var failed = results.filter( function ( result ) { return ! result.success; } ).length;
+
+				if ( failed > 0 ) {
+					trigger.disabled = false;
+					window.alert( failed + ' of ' + ids.length + ' appointments could not be updated.' );
+					return;
+				}
+
+				window.location.reload();
+			} );
+		}
 	}
 
 	function errorsToMessage( result ) {

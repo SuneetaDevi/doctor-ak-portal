@@ -23,6 +23,8 @@
  * @var string   $patients_url          Same-page URL for the Patients tab.
  * @var string   $earnings_tab_html     Pre-rendered doctor-earnings-tab.php output when $active_tab is 'earnings'.
  * @var string   $earnings_url          Same-page URL for the Earnings tab.
+ * @var string   $encounters_tab_html   Pre-rendered doctor-encounters-tab.php output when $active_tab is 'encounters' — this doctor's own encounters only.
+ * @var string   $encounters_url        Same-page URL for the Encounters tab.
  * @var string   $encounter_tab_html    Pre-rendered doctor-encounter.php output when $active_tab is 'encounter' (not a permanent nav tab — reached via "Open Encounter" on an appointment row).
  * @var array    $doctor_clinics        Doctor's clinics, see Clinics::get_for_doctor() — populates the Add/Edit Patient modal's clinic dropdown.
  * @var string   $notifications_tab_html Pre-rendered notifications-list.php output when $active_tab is 'notifications'.
@@ -69,6 +71,7 @@ $dak_dash_icons = array(
 	'logout'       => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 17H4a1.5 1.5 0 0 1-1.5-1.5v-11A1.5 1.5 0 0 1 4 3h3.5"/><path d="M13 14l4-4-4-4"/><path d="M17 10H7.5"/></svg>',
 	'pin'          => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18s6-5.2 6-9.8A6 6 0 0 0 4 8.2C4 12.8 10 18 10 18z"/><circle cx="10" cy="8" r="2"/></svg>',
 	'money'        => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.2"/><path d="M10 6.2v7.6M12.2 8.1c0-1-1-1.6-2.2-1.6s-2.2.6-2.2 1.5c0 2.2 4.4 1 4.4 3.2 0 .9-1 1.5-2.2 1.5s-2.2-.6-2.2-1.6"/></svg>',
+	'clipboard'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h6a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M8 2.5h4v2H8z"/><path d="M7.5 9h5M7.5 12h5M7.5 15h3"/></svg>',
 );
 ?>
 <div class="dak-portal dak-dashboard dak-doctor-dashboard" data-role="doctor" data-theme="<?php echo esc_attr( $theme ); ?>">
@@ -77,6 +80,8 @@ $dak_dash_icons = array(
 	</button>
 
 	<aside class="dak-dashboard-sidebar" id="dak-dashboard-sidebar">
+		<a class="dak-sidebar-back-link" href="<?php echo esc_url( home_url( '/' ) ); ?>">&larr; <?php esc_html_e( 'Back to site', 'doctor-ak-portal' ); ?></a>
+
 		<div class="dak-sidebar-brand">
 			<span class="dak-sidebar-brand-logo">
 				<?php
@@ -170,6 +175,9 @@ $dak_dash_icons = array(
 				<?php if ( $earnings_url ) : ?>
 					<li class="<?php echo 'earnings' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $earnings_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['money']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Earnings', 'doctor-ak-portal' ); ?></a></li>
 				<?php endif; ?>
+				<?php if ( $encounters_url ) : ?>
+					<li class="<?php echo 'encounters' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $encounters_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['clipboard']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Encounters', 'doctor-ak-portal' ); ?></a></li>
+				<?php endif; ?>
 				<?php if ( $notifications_url ) : ?>
 					<li class="<?php echo 'notifications' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $notifications_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['bell']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Notifications', 'doctor-ak-portal' ); ?><?php if ( $unread_notifications_count > 0 ) : ?><span class="dak-nav-badge" id="dak-notifications-badge"><?php echo esc_html( $unread_notifications_count ); ?></span><?php endif; ?></a></li>
 				<?php endif; ?>
@@ -233,6 +241,10 @@ $dak_dash_icons = array(
 		<?php elseif ( 'earnings' === $active_tab ) : ?>
 
 			<?php echo $earnings_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-earnings-tab.php template, which escapes its own output (including its own page header). ?>
+
+		<?php elseif ( 'encounters' === $active_tab ) : ?>
+
+			<?php echo $encounters_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-encounters-tab.php template, which escapes its own output (including its own page header). ?>
 
 		<?php elseif ( 'encounter' === $active_tab ) : ?>
 

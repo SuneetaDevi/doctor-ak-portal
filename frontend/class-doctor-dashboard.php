@@ -344,7 +344,7 @@ class Doctor_Dashboard {
 
 		$tab = sanitize_key( wp_unslash( $_GET['tab'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 
-		if ( ! in_array( $tab, array( 'profile', 'clinics', 'services', 'video-consultation', 'appointments', 'patients', 'earnings', 'encounter', 'notifications', 'settings' ), true ) ) {
+		if ( ! in_array( $tab, array( 'profile', 'clinics', 'services', 'video-consultation', 'appointments', 'patients', 'earnings', 'encounters', 'encounter', 'notifications', 'settings' ), true ) ) {
 			return 'dashboard';
 		}
 
@@ -700,6 +700,57 @@ class Doctor_Dashboard {
 	}
 
 	/**
+	 * Renders the Encounters tab: every clinical encounter belonging to
+	 * this doctor (opened by checking a patient in, closed once their
+	 * visit is documented and billed), newest first — mirrors the admin
+	 * Encounters list, scoped to just this doctor since that's the only
+	 * audience for this tab.
+	 *
+	 * @param \WP_User $user Currently logged-in doctor.
+	 * @return string
+	 */
+	private function render_encounters_tab( \WP_User $user ) {
+		$date_from = isset( $_GET['date_from'] ) ? sanitize_text_field( wp_unslash( $_GET['date_from'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		$date_to   = isset( $_GET['date_to'] ) ? sanitize_text_field( wp_unslash( $_GET['date_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		$status    = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		$status    = in_array( $status, array( Encounters::STATUS_OPEN, Encounters::STATUS_CLOSED ), true ) ? $status : '';
+
+		$dashboard_url  = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+		$encounters_url = self::tab_url( $dashboard_url, 'encounters' );
+		$encounter_url  = self::tab_url( $dashboard_url, 'encounter' );
+
+		$encounter_rows = array_map(
+			function ( $encounter ) {
+				$encounter['bill_pdf_url'] = Encounter_Handler::bill_pdf_download_url( $encounter['id'] );
+
+				return $encounter;
+			},
+			Encounters::all_flat_for_admin(
+				array(
+					'doctor_id' => $user->ID,
+					'date_from' => $date_from,
+					'date_to'   => $date_to,
+					'status'    => $status,
+				)
+			)
+		);
+
+		return $this->template_loader->get_template(
+			'dashboard/partials/doctor-encounters-tab.php',
+			array(
+				'encounters'      => $encounter_rows,
+				'encounters_url'  => $encounters_url,
+				'encounter_url'   => $encounter_url,
+				'filters'         => array(
+					'date_from' => $date_from,
+					'date_to'   => $date_to,
+					'status'    => $status,
+				),
+			)
+		);
+	}
+
+	/**
 	 * Renders the Encounter detail screen for one checked-in patient — not
 	 * a permanent nav tab (see requested_tab()), reached only by clicking
 	 * "Open Encounter" on an appointment row. The template itself renders
@@ -866,6 +917,7 @@ class Doctor_Dashboard {
 			'appointments_tab_html' => 'appointments' === $active_tab ? $this->render_appointments_tab( $user ) : '',
 			'patients_tab_html'     => 'patients' === $active_tab ? $this->render_patients_tab( $user ) : '',
 			'earnings_tab_html'     => 'earnings' === $active_tab ? $this->render_earnings_tab( $user ) : '',
+			'encounters_tab_html'   => 'encounters' === $active_tab ? $this->render_encounters_tab( $user ) : '',
 			'encounter_tab_html'    => 'encounter' === $active_tab ? $this->render_encounter_tab( $user ) : '',
 			'notifications_tab_html' => 'notifications' === $active_tab ? $this->render_notifications_tab( $user ) : '',
 			'unread_notifications_count' => Notification_Center::unread_count( $user->ID ),
@@ -878,6 +930,7 @@ class Doctor_Dashboard {
 			'appointments_url'      => self::tab_url( $dashboard_url, 'appointments' ),
 			'patients_url'          => self::tab_url( $dashboard_url, 'patients' ),
 			'earnings_url'          => self::tab_url( $dashboard_url, 'earnings' ),
+			'encounters_url'        => self::tab_url( $dashboard_url, 'encounters' ),
 			'notifications_url'     => self::tab_url( $dashboard_url, 'notifications' ),
 			'settings_url'          => self::tab_url( $dashboard_url, 'settings' ),
 			'logout_url'            => wp_logout_url( Page_Finder::url_for_shortcode( 'doctor_login' ) ),

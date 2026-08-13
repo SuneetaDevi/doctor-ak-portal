@@ -37,6 +37,7 @@ class Notification_Center {
 	const TYPE_REFUND_REQUESTED   = 'refund_requested';
 	const TYPE_REFUND_PROCESSED   = 'refund_processed';
 	const TYPE_RESCHEDULED        = 'rescheduled';
+	const TYPE_REMINDER           = 'reminder';
 
 	/**
 	 * Returns the fully prefixed table name.
@@ -111,6 +112,46 @@ class Notification_Center {
 			self::TYPE_BOOKED,
 			$appointment_id
 		);
+	}
+
+	/**
+	 * Admin/receptionist-triggered: sends the patient a one-off reminder
+	 * about an upcoming appointment (and its pending payment, if any) — used
+	 * by the Appointments list's bulk "Send reminder" action, not tied to a
+	 * lifecycle hook like the notify_*() methods above.
+	 *
+	 * @param int $appointment_id Appointment post ID.
+	 * @return bool True if a reminder was recorded, false if there's no patient to notify.
+	 */
+	public static function notify_reminder( $appointment_id ) {
+		$appt = Appointments::notification_data( $appointment_id );
+
+		if ( empty( $appt ) || empty( $appt['patient_id'] ) ) {
+			return false;
+		}
+
+		$has_pending_charge = (float) $appt['charge'] > 0 && ! $appt['is_paid'];
+
+		self::record(
+			$appt['patient_id'],
+			self::TYPE_REMINDER,
+			$has_pending_charge
+				? sprintf(
+					/* translators: 1: doctor's display name, 2: appointment date/time. */
+					__( 'Reminder: your appointment with Dr. %1$s is on %2$s — payment is still pending.', 'doctor-ak-portal' ),
+					$appt['doctor_name'],
+					$appt['datetime_label']
+				)
+				: sprintf(
+					/* translators: 1: doctor's display name, 2: appointment date/time. */
+					__( 'Reminder: your appointment with Dr. %1$s is on %2$s.', 'doctor-ak-portal' ),
+					$appt['doctor_name'],
+					$appt['datetime_label']
+				),
+			$appointment_id
+		);
+
+		return true;
 	}
 
 	/**

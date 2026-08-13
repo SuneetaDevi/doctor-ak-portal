@@ -29,21 +29,17 @@
 		} );
 
 		wireAddForm( 'dak-encounter-add-prescription-form', 'doctor_ak_add_encounter_prescription', function ( formData ) {
-			var medicineSelect = document.getElementById( 'dak-encounter-prescription-medicine' );
-			formData.append( 'medicine_id', medicineSelect.value );
 			formData.append( 'medicine_name', document.getElementById( 'dak-encounter-prescription-medicine-name' ).value );
 			formData.append( 'dosage', document.getElementById( 'dak-encounter-prescription-dosage' ).value );
 			formData.append( 'frequency', document.getElementById( 'dak-encounter-prescription-frequency' ).value );
 			formData.append( 'duration', document.getElementById( 'dak-encounter-prescription-duration' ).value );
 			formData.append( 'instructions', document.getElementById( 'dak-encounter-prescription-instructions' ).value );
 		}, function () {
-			document.getElementById( 'dak-encounter-prescription-medicine' ).value = '0';
 			document.getElementById( 'dak-encounter-prescription-medicine-name' ).value = '';
 			document.getElementById( 'dak-encounter-prescription-dosage' ).value = '';
 			document.getElementById( 'dak-encounter-prescription-frequency' ).value = '';
 			document.getElementById( 'dak-encounter-prescription-duration' ).value = '';
 			document.getElementById( 'dak-encounter-prescription-instructions' ).value = '';
-			toggleMedicineNameField();
 		} );
 
 		wireAddForm( 'dak-encounter-add-bill-item-form', 'doctor_ak_add_encounter_bill_item', function ( formData ) {
@@ -109,12 +105,6 @@
 					} );
 			}
 		} );
-
-		var medicineSelect = document.getElementById( 'dak-encounter-prescription-medicine' );
-
-		if ( medicineSelect ) {
-			medicineSelect.addEventListener( 'change', toggleMedicineNameField );
-		}
 
 		var serviceSelect = document.getElementById( 'dak-encounter-bill-service' );
 
@@ -229,17 +219,6 @@
 		} );
 	}
 
-	function toggleMedicineNameField() {
-		var medicineSelect = document.getElementById( 'dak-encounter-prescription-medicine' );
-		var nameField = document.getElementById( 'dak-encounter-prescription-medicine-name-field' );
-
-		if ( ! medicineSelect || ! nameField ) {
-			return;
-		}
-
-		nameField.classList.toggle( 'dak-hidden', '0' !== medicineSelect.value );
-	}
-
 	function wireAddForm( formId, action, appendFields, resetFields ) {
 		var form = document.getElementById( formId );
 
@@ -332,7 +311,7 @@
 
 		renderProblems( data.problems, isOpen );
 		renderPrescriptions( data.prescriptions, isOpen );
-		renderMedicineOptions( data.medicines );
+		renderMedicineSuggestions( data.medicines );
 		renderServiceOptions( data.services );
 		renderBillItems( data.bill_items, data.bill_total, isOpen );
 		renderReports( data.reports, isOpen );
@@ -449,7 +428,15 @@
 			var main = document.createElement( 'div' );
 			main.className = 'dak-admin-record-row-main';
 
-			var metaParts = [ prescription.dosage, prescription.frequency, prescription.duration ].filter( function ( part ) { return part; } );
+			// Dosage/Frequency/Duration are always shown, labelled, with a
+			// "—" placeholder for whichever ones weren't filled in — so it's
+			// obvious at a glance what's missing instead of the line just
+			// disappearing when a medicine was added with only its name.
+			var metaParts = [
+				'Dosage: ' + ( prescription.dosage || '—' ),
+				'Frequency: ' + ( prescription.frequency || '—' ),
+				'Duration: ' + ( prescription.duration || '—' ),
+			];
 
 			if ( prescription.instructions ) {
 				metaParts.push( prescription.instructions );
@@ -572,24 +559,28 @@
 		select.value = currentValue || '0';
 	}
 
-	function renderMedicineOptions( medicines ) {
-		var select = document.getElementById( 'dak-encounter-prescription-medicine' );
+	/**
+	 * Fills the medicine name field's <datalist> with this doctor's own
+	 * medicines plus the shared common list — the browser filters these
+	 * as-you-type, so typing "amox" surfaces "Amoxicillin" without any
+	 * per-keystroke request. Saving a name that isn't in this list yet
+	 * still works (Encounter_Handler auto-creates it), so it appears here
+	 * on the next refresh.
+	 */
+	function renderMedicineSuggestions( medicines ) {
+		var datalist = document.getElementById( 'dak-encounter-medicine-suggestions' );
 
-		if ( ! select ) {
+		if ( ! datalist ) {
 			return;
 		}
 
-		var currentValue = select.value;
-		select.innerHTML = '<option value="0">— Type a medicine name instead —</option>';
+		datalist.innerHTML = '';
 
 		medicines.forEach( function ( medicine ) {
 			var option = document.createElement( 'option' );
-			option.value = medicine.id;
-			option.textContent = medicine.name + ( medicine.default_dosage ? ' (' + medicine.default_dosage + ')' : '' );
-			select.appendChild( option );
+			option.value = medicine.name;
+			datalist.appendChild( option );
 		} );
-
-		select.value = currentValue || '0';
 	}
 
 	function deleteButton( action, idField, id ) {

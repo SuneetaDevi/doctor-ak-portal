@@ -14,7 +14,6 @@ use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Doctor_Awards;
 use DoctorAKPortal\Includes\Encounters;
 use DoctorAKPortal\Includes\Locations;
-use DoctorAKPortal\Includes\Medicines;
 use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Notifications;
 use DoctorAKPortal\Includes\Page_Finder;
@@ -84,7 +83,6 @@ class Admin_Dashboard {
 		'Clinic'  => array(
 			'clinic'             => 'Clinic',
 			'services'           => 'Services',
-			'medicines'          => 'Medicines',
 			'video-consultation' => 'Video Consultation',
 			'doctor-sessions'    => 'Doctor Sessions',
 		),
@@ -110,7 +108,7 @@ class Admin_Dashboard {
 	 *
 	 * @var array
 	 */
-	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'patients', 'doctors', 'clinic', 'services', 'medicines', 'doctor-sessions', 'settings', 'encounter' );
+	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'patients', 'doctors', 'clinic', 'services', 'doctor-sessions', 'settings', 'encounter' );
 
 	/**
 	 * Section slugs that exist and are reachable, but deliberately have no
@@ -492,32 +490,6 @@ class Admin_Dashboard {
 			);
 		}
 
-		if ( 'medicines' === self::requested_section() ) {
-			wp_enqueue_style(
-				'doctor-ak-portal-registration',
-				DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-registration.css',
-				array( 'doctor-ak-portal-auth' ),
-				Assets::version( 'assets/css/doctor-ak-registration.css' )
-			);
-
-			wp_enqueue_script(
-				'doctor-ak-portal-admin-medicines',
-				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-medicines.js',
-				array(),
-				Assets::version( 'assets/js/doctor-ak-admin-medicines.js' ),
-				true
-			);
-
-			wp_localize_script(
-				'doctor-ak-portal-admin-medicines',
-				'dakAdminMedicines',
-				array(
-					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-					'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
-				)
-			);
-		}
-
 		if ( 'video-consultation' === self::requested_section() ) {
 			wp_enqueue_style(
 				'doctor-ak-portal-registration',
@@ -700,6 +672,9 @@ class Admin_Dashboard {
 					'nonce'        => wp_create_nonce( Encounter_Handler::NONCE_ACTION ),
 					'confirmDelete' => __( 'Delete this encounter? This removes its problems, prescriptions, bill items, and reports, and cannot be undone.', 'doctor-ak-portal' ),
 					'genericError' => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
+					'doctorsByClinicLocation' => $this->doctors_by_clinic_location(),
+					'noDoctorsMessage' => __( 'No doctors practice at this clinic yet.', 'doctor-ak-portal' ),
+					'encounterUrl' => Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ) ? add_query_arg( 'section', 'encounter', Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ) ) : '',
 				)
 			);
 		}
@@ -1024,8 +999,8 @@ class Admin_Dashboard {
 
 		if ( 'services' === $section ) {
 			$modal_html = $this->service_modal_html();
-		} elseif ( 'medicines' === $section ) {
-			$modal_html = $this->medicine_modal_html();
+		} elseif ( 'encounters' === $section ) {
+			$modal_html = $this->add_encounter_modal_html();
 		} elseif ( 'video-consultation' === $section ) {
 			$modal_html = $this->video_pricing_modal_html();
 		} elseif ( 'appointments' === $section ) {
@@ -1385,20 +1360,6 @@ class Admin_Dashboard {
 			);
 		}
 
-		if ( 'medicines' === $section ) {
-			$doctor_id       = isset( $_GET['doctor_id'] ) ? absint( wp_unslash( $_GET['doctor_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
-			$filtered_doctor = $doctor_id > 0 ? get_user_by( 'id', $doctor_id ) : false;
-
-			return $this->template_loader->get_template(
-				'dashboard/partials/admin-medicines.php',
-				array(
-					'medicines'        => Medicines::all_flat_for_admin( array( 'doctor_id' => $doctor_id ) ),
-					'section_url'      => add_query_arg( 'section', $section, Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ) ),
-					'filtered_doctor'  => $filtered_doctor ? self::display_name( $filtered_doctor ) : '',
-				)
-			);
-		}
-
 		if ( 'video-consultation' === $section ) {
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-video-consultation.php',
@@ -1534,18 +1495,66 @@ class Admin_Dashboard {
 	}
 
 	/**
-	 * Renders the "Add/Edit Medicine" modal (shared single instance,
-	 * populated client-side from the clicked row's data).
+	 * Renders the "Add Encounter" modal on the Encounters list — lets an
+	 * admin/receptionist open a walk-in encounter without a pre-existing
+	 * appointment: picks a Clinic first, then a Doctor (filtered to that
+	 * clinic, client-side from doctors_by_clinic_location()), then a
+	 * registered Patient. Submitting creates a same-moment clinic
+	 * appointment behind the scenes and immediately checks it in — see
+	 * Encounter_Handler::handle_create_encounter().
 	 *
 	 * @return string
 	 */
-	private function medicine_modal_html() {
+	private function add_encounter_modal_html() {
 		return $this->template_loader->get_template(
-			'modal/admin-medicine-modal.php',
+			'modal/admin-add-encounter-modal.php',
 			array(
-				'doctor_options' => $this->doctor_options(),
+				'clinic_locations' => Clinic_Locations::get_all(),
+				'patient_options'  => Appointments::patient_options(),
 			)
 		);
+	}
+
+	/**
+	 * Every clinic-location mapped to the doctors who practice there — i.e.
+	 * every doctor with a physical Clinics row aligned to that
+	 * Clinic_Locations record (see Clinics::decode_row()'s
+	 * clinic_location_id). Localized to the Encounters list's "Add
+	 * Encounter" modal JS so picking a clinic filters the Doctor <select>
+	 * instantly, client-side, matching the established by-doctor-map
+	 * localization pattern used elsewhere (e.g. Booking_Page::clinics_by_doctor()).
+	 *
+	 * @return array clinic_location_id => [ { id, name }, ... ]
+	 */
+	private function doctors_by_clinic_location() {
+		$doctor_options  = $this->doctor_options();
+		$doctors_clinics = Clinics::get_for_doctors( array_keys( $doctor_options ) );
+		$map             = array();
+
+		foreach ( $doctors_clinics as $doctor_id => $clinics ) {
+			if ( ! empty( $doctor_options[ $doctor_id ]['is_disabled'] ) ) {
+				continue;
+			}
+
+			foreach ( $clinics as $clinic ) {
+				if ( Clinics::TYPE_PHYSICAL !== $clinic['type'] || (int) $clinic['clinic_location_id'] <= 0 ) {
+					continue;
+				}
+
+				$location_id = (int) $clinic['clinic_location_id'];
+
+				if ( ! isset( $map[ $location_id ] ) ) {
+					$map[ $location_id ] = array();
+				}
+
+				$map[ $location_id ][] = array(
+					'id'   => $doctor_id,
+					'name' => $doctor_options[ $doctor_id ]['name'],
+				);
+			}
+		}
+
+		return $map;
 	}
 
 	/**

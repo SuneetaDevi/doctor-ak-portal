@@ -27,19 +27,22 @@ $dak_status_labels = array(
 	\DoctorAKPortal\Includes\Encounters::STATUS_CLOSED => __( 'Closed', 'doctor-ak-portal' ),
 );
 ?>
-<div class="dak-dashboard-greeting">
-	<h1><?php esc_html_e( 'Encounters', 'doctor-ak-portal' ); ?></h1>
-	<p>
-		<?php
-		echo esc_html(
-			sprintf(
-				/* translators: %d: number of encounters. */
-				_n( '%d encounter', '%d encounters', count( $encounters ), 'doctor-ak-portal' ),
-				count( $encounters )
-			)
-		);
-		?>
-	</p>
+<div class="dak-dashboard-greeting dak-admin-users-header">
+	<div>
+		<h1><?php esc_html_e( 'Encounters', 'doctor-ak-portal' ); ?></h1>
+		<p>
+			<?php
+			echo esc_html(
+				sprintf(
+					/* translators: %d: number of encounters. */
+					_n( '%d encounter', '%d encounters', count( $encounters ), 'doctor-ak-portal' ),
+					count( $encounters )
+				)
+			);
+			?>
+		</p>
+	</div>
+	<button type="button" class="dak-button dak-button-primary" id="dak-admin-add-encounter"><?php esc_html_e( '+ Add Encounter', 'doctor-ak-portal' ); ?></button>
 </div>
 
 <?php if ( '' !== $filtered_patient ) : ?>

@@ -22,6 +22,7 @@ use DoctorAKPortal\Includes\Encounter_Problems;
 use DoctorAKPortal\Includes\Encounters;
 use DoctorAKPortal\Includes\Medicines;
 use DoctorAKPortal\Includes\Prescription_Pdf;
+use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
 
 // Prevent direct file access.
@@ -123,6 +124,103 @@ class Encounter_Handler {
 		wp_send_json_success(
 			array(
 				'message'      => __( 'Patient checked in.', 'doctor-ak-portal' ),
+				'encounter_id' => $encounter_id,
+			)
+		);
+	}
+
+	/**
+	 * AJAX handler: creates a brand-new "walk-in" encounter with no
+	 * pre-existing appointment — admin/receptionist picks a Clinic, then a
+	 * Doctor practicing there, then a registered Patient (see the
+	 * Encounters list's "Add Encounter" modal). Every encounter still needs
+	 * a real Appointments record underneath it (Prescription/Bill PDFs,
+	 * admin_row_data(), etc. all read from one), so this creates a
+	 * same-moment clinic appointment behind the scenes first, then
+	 * immediately checks it in via the normal check-in path.
+	 *
+	 * @return void
+	 */
+	public function handle_create_encounter() {
+		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$doctor_id           = isset( $_POST['doctor_id'] ) ? absint( wp_unslash( $_POST['doctor_id'] ) ) : 0;
+		$patient_id          = isset( $_POST['patient_id'] ) ? absint( wp_unslash( $_POST['patient_id'] ) ) : 0;
+		$clinic_location_id  = isset( $_POST['clinic_location_id'] ) ? absint( wp_unslash( $_POST['clinic_location_id'] ) ) : 0;
+
+		if ( ! self::can_manage_appointment( $doctor_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$doctor = $doctor_id > 0 ? get_userdata( $doctor_id ) : false;
+
+		if ( ! $doctor || ! in_array( Roles::DOCTOR_ROLE, (array) $doctor->roles, true ) ) {
+			wp_send_json_error( array( 'errors' => array( 'doctor_id' => __( 'Please choose a valid doctor.', 'doctor-ak-portal' ) ) ) );
+		}
+
+		$patient = $patient_id > 0 ? get_userdata( $patient_id ) : false;
+
+		if ( ! $patient || ! in_array( Roles::PATIENT_ROLE, (array) $patient->roles, true ) ) {
+			wp_send_json_error( array( 'errors' => array( 'patient_id' => __( 'Please choose a valid patient.', 'doctor-ak-portal' ) ) ) );
+		}
+
+		// Resolve the doctor's OWN Clinics row aligned to the chosen master
+		// clinic location — that row's id is what
+		// doctor_ak_appointment_clinic_id actually stores (see
+		// Appointments::check_in()), not the Clinic_Locations id itself.
+		$clinic_id = 0;
+
+		if ( $clinic_location_id > 0 ) {
+			foreach ( Clinics::get_for_doctor( $doctor_id ) as $clinic ) {
+				if ( Clinics::TYPE_PHYSICAL === $clinic['type'] && (int) $clinic['clinic_location_id'] === $clinic_location_id ) {
+					$clinic_id = $clinic['id'];
+					break;
+				}
+			}
+		}
+
+		if ( 0 === $clinic_id ) {
+			wp_send_json_error( array( 'errors' => array( 'clinic_location_id' => __( 'This doctor does not practice at the chosen clinic.', 'doctor-ak-portal' ) ) ) );
+		}
+
+		// A minute in the future, not "now" — check_in()'s overdue guard
+		// rejects an appointment whose start time has already passed by the
+		// time it actually runs, and "now" would already be in the past by
+		// the time this request reaches that check.
+		$today = current_time( 'Y-m-d' ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- building a local date/time for a new appointment, not doing UTC math.
+		$time  = date_i18n( 'H:i', current_time( 'timestamp' ) + MINUTE_IN_SECONDS ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- building a near-future local time, not doing UTC math.
+
+		$appointment_id = Appointments::create(
+			array(
+				'doctor_id'      => $doctor_id,
+				'patient_id'     => $patient_id,
+				'type'           => Appointments::TYPE_CLINIC,
+				'date'           => $today,
+				'time'           => $time,
+				'notes'          => __( 'Walk-in — added directly from the Encounters list.', 'doctor-ak-portal' ),
+				'clinic_id'      => $clinic_id,
+				'status'         => Appointments::STATUS_CONFIRMED,
+				'payment_status' => Appointments::PAYMENT_STATUS_PAID,
+				'payment_mode'   => Appointments::PAYMENT_MODE_MANUAL,
+				'admin_override' => true,
+			)
+		);
+
+		if ( is_wp_error( $appointment_id ) ) {
+			wp_send_json_error( array( 'message' => $appointment_id->get_error_message() ) );
+		}
+
+		$encounter_id = Encounters::check_in( $appointment_id, $doctor_id, $patient_id, $clinic_id, get_current_user_id() );
+
+		if ( is_wp_error( $encounter_id ) ) {
+			wp_send_json_error( array( 'message' => $encounter_id->get_error_message() ) );
+		}
+
+		wp_send_json_success(
+			array(
+				'message'      => __( 'Encounter opened.', 'doctor-ak-portal' ),
 				'encounter_id' => $encounter_id,
 			)
 		);
@@ -242,6 +340,15 @@ class Encounter_Handler {
 
 		if ( '' === $medicine_name ) {
 			wp_send_json_error( array( 'message' => __( 'Please choose or type a medicine.', 'doctor-ak-portal' ) ) );
+		}
+
+		// Auto-learn: a name typed straight into the field (not picked from
+		// a suggestion) is matched case-insensitively against this doctor's
+		// list and the shared common list, or added as a new entry — so it
+		// shows up as a suggestion next time, with no separate "save this
+		// medicine" step or management screen.
+		if ( 0 === $medicine_id ) {
+			$medicine_id = Medicines::find_or_create_by_name( $medicine_name, $encounter['doctor_id'] );
 		}
 
 		Encounter_Prescriptions::add(

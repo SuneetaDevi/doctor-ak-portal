@@ -54,6 +54,24 @@
 	overflow-y: auto !important;
 }
 
+/* Sidebar's only way back to the public site now that the dashboard pages
+   render without the theme's header/footer (see Dashboard_Layout). */
+.dak-sidebar-back-link {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.35rem !important;
+	margin-bottom: 1rem !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.8rem !important;
+	font-weight: 600 !important;
+	text-decoration: none !important;
+}
+
+.dak-sidebar-back-link:hover {
+	color: var( --dak-primary-dark ) !important;
+	text-decoration: underline !important;
+}
+
 .dak-sidebar-brand {
 	display: flex !important;
 	align-items: center !important;
@@ -1483,6 +1501,135 @@ a.dak-notification-row-link:hover {
 .dak-appt-filters-form .dak-admin-filter-actions {
 	margin-bottom: 0 !important;
 	gap: 0.5rem !important;
+}
+
+/* Appointments summary stat cards (Today / Awaiting payment / Time passed /
+   Completed this week) — a 4-up grid above the filters card. */
+.dak-appt-stats-grid {
+	display: grid !important;
+	grid-template-columns: repeat( 4, 1fr ) !important;
+	gap: 1rem !important;
+	margin-bottom: 1.25rem !important;
+}
+
+.dak-appt-stat-card {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.3rem !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	padding: 1rem 1.1rem !important;
+	box-shadow: var( --dak-shadow ) !important;
+}
+
+.dak-appt-stat-label {
+	font-size: 0.78rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-appt-stat-value {
+	font-size: 1.5rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	line-height: 1.2 !important;
+}
+
+.dak-appt-stat-sub {
+	font-size: 0.78rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+@media ( max-width: 900px ) {
+	.dak-appt-stats-grid {
+		grid-template-columns: repeat( 2, 1fr ) !important;
+	}
+}
+
+/* Today/Tomorrow/Upcoming/Earlier sectioning above the appointment rows. */
+.dak-appt-section {
+	margin-bottom: 1.25rem !important;
+}
+
+.dak-appt-section:last-child {
+	margin-bottom: 0 !important;
+}
+
+.dak-appt-section-header {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.5rem !important;
+	font-size: 0.8rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	padding-bottom: 0.5rem !important;
+	margin-bottom: 0.75rem !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+.dak-appt-section-count {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	min-width: 1.35rem !important;
+	height: 1.35rem !important;
+	padding: 0 0.4rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+	font-size: 0.72rem !important;
+	font-weight: 700 !important;
+}
+
+/* Select-all + bulk actions toolbar shown above the sectioned rows. */
+.dak-appt-bulk-toolbar {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	flex-wrap: wrap !important;
+	gap: 0.75rem !important;
+	margin-bottom: 1rem !important;
+	padding-bottom: 0.85rem !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+.dak-appt-select-all {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.45rem !important;
+	font-size: 0.85rem !important;
+	color: var( --dak-text ) !important;
+	cursor: pointer !important;
+}
+
+.dak-appt-bulk-actions {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.6rem !important;
+	padding: 0.4rem 0.75rem !important;
+	background: var( --dak-primary-tint ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+}
+
+.dak-appt-bulk-actions #dak-appt-bulk-count {
+	font-size: 0.82rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-primary-dark ) !important;
+	margin-right: 0.25rem !important;
+}
+
+.dak-appt-row-checkbox {
+	display: flex !important;
+	align-items: center !important;
+	flex: 0 0 auto !important;
+}
+
+.dak-appt-row-checkbox input,
+.dak-appt-select-all input {
+	width: 16px !important;
+	height: 16px !important;
+	cursor: pointer !important;
 }
 
 /* Accent-bar record row — used wherever a plain table would otherwise be

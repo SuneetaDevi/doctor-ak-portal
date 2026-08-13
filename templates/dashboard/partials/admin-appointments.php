@@ -31,7 +31,119 @@ $dak_appt_icons = array(
 );
 
 $dak_appt_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] || $filters['doctor_id'] > 0 || '' !== $filters['payment_status'] || 'upcoming' !== $filters['range'];
+
+// Summary stat cards + Today/Tomorrow/Upcoming/Earlier sectioning are both
+// derived from the same already-filtered $appointments list — no extra
+// queries, so the cards and the section counts always agree with what's
+// actually shown below.
+$dak_today    = current_time( 'Y-m-d' );
+$dak_tomorrow = gmdate( 'Y-m-d', strtotime( $dak_today . ' +1 day' ) );
+
+$dak_week_start = gmdate( 'Y-m-d', strtotime( 'monday this week', strtotime( $dak_today ) ) );
+$dak_week_end   = gmdate( 'Y-m-d', strtotime( 'sunday this week', strtotime( $dak_today ) ) );
+
+$dak_stat_today_video    = 0;
+$dak_stat_today_clinic   = 0;
+$dak_stat_awaiting_count = 0;
+$dak_stat_awaiting_total = 0.0;
+$dak_stat_time_passed    = 0;
+$dak_stat_completed_week = 0;
+
+$dak_buckets = array(
+	'today'    => array(
+		'label' => __( 'Today', 'doctor-ak-portal' ),
+		'rows'  => array(),
+	),
+	'tomorrow' => array(
+		'label' => __( 'Tomorrow', 'doctor-ak-portal' ),
+		'rows'  => array(),
+	),
+	'upcoming' => array(
+		'label' => __( 'Upcoming', 'doctor-ak-portal' ),
+		'rows'  => array(),
+	),
+	'earlier'  => array(
+		'label' => __( 'Earlier', 'doctor-ak-portal' ),
+		'rows'  => array(),
+	),
+);
+
+foreach ( $appointments as $dak_stat_row ) {
+	if ( $dak_stat_row['date'] === $dak_today ) {
+		$dak_buckets['today']['rows'][] = $dak_stat_row;
+
+		if ( 'video' === $dak_stat_row['type'] ) {
+			++$dak_stat_today_video;
+		} else {
+			++$dak_stat_today_clinic;
+		}
+	} elseif ( $dak_stat_row['date'] === $dak_tomorrow ) {
+		$dak_buckets['tomorrow']['rows'][] = $dak_stat_row;
+	} elseif ( $dak_stat_row['date'] > $dak_tomorrow ) {
+		$dak_buckets['upcoming']['rows'][] = $dak_stat_row;
+	} else {
+		$dak_buckets['earlier']['rows'][] = $dak_stat_row;
+	}
+
+	if ( ! $dak_stat_row['is_paid'] && (float) $dak_stat_row['charge'] > 0 ) {
+		++$dak_stat_awaiting_count;
+		$dak_stat_awaiting_total += (float) $dak_stat_row['charge'];
+	}
+
+	if ( ! empty( $dak_stat_row['is_overdue'] ) ) {
+		++$dak_stat_time_passed;
+	}
+
+	if ( 'completed' === $dak_stat_row['status'] && $dak_stat_row['date'] >= $dak_week_start && $dak_stat_row['date'] <= $dak_week_end ) {
+		++$dak_stat_completed_week;
+	}
+}
 ?>
+
+<div class="dak-appt-stats-grid">
+	<div class="dak-appt-stat-card">
+		<span class="dak-appt-stat-label"><?php esc_html_e( 'Today', 'doctor-ak-portal' ); ?></span>
+		<strong class="dak-appt-stat-value"><?php echo esc_html( count( $dak_buckets['today']['rows'] ) ); ?></strong>
+		<span class="dak-appt-stat-sub">
+			<?php
+			echo esc_html(
+				sprintf(
+					/* translators: 1: video appointment count, 2: clinic appointment count. */
+					__( '%1$d video · %2$d clinic', 'doctor-ak-portal' ),
+					$dak_stat_today_video,
+					$dak_stat_today_clinic
+				)
+			);
+			?>
+		</span>
+	</div>
+	<div class="dak-appt-stat-card">
+		<span class="dak-appt-stat-label"><?php esc_html_e( 'Awaiting payment', 'doctor-ak-portal' ); ?></span>
+		<strong class="dak-appt-stat-value"><?php echo esc_html( 'PKR ' . number_format( $dak_stat_awaiting_total, 0 ) ); ?></strong>
+		<span class="dak-appt-stat-sub">
+			<?php
+			echo esc_html(
+				sprintf(
+					/* translators: %d: number of appointments. */
+					_n( 'across %d appointment', 'across %d appointments', $dak_stat_awaiting_count, 'doctor-ak-portal' ),
+					$dak_stat_awaiting_count
+				)
+			);
+			?>
+		</span>
+	</div>
+	<div class="dak-appt-stat-card">
+		<span class="dak-appt-stat-label"><?php esc_html_e( 'Time passed', 'doctor-ak-portal' ); ?></span>
+		<strong class="dak-appt-stat-value"><?php echo esc_html( $dak_stat_time_passed ); ?></strong>
+		<span class="dak-appt-stat-sub"><?php esc_html_e( 'need reschedule', 'doctor-ak-portal' ); ?></span>
+	</div>
+	<div class="dak-appt-stat-card">
+		<span class="dak-appt-stat-label"><?php esc_html_e( 'Completed this week', 'doctor-ak-portal' ); ?></span>
+		<strong class="dak-appt-stat-value"><?php echo esc_html( $dak_stat_completed_week ); ?></strong>
+		<span class="dak-appt-stat-sub"><?php esc_html_e( 'Mon – Sun', 'doctor-ak-portal' ); ?></span>
+	</div>
+</div>
+
 <div class="dak-dashboard-greeting dak-admin-users-header">
 	<div>
 		<h1><?php esc_html_e( 'Appointments', 'doctor-ak-portal' ); ?></h1>
@@ -148,9 +260,36 @@ $dak_appt_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to
 	<?php if ( empty( $appointments ) ) : ?>
 		<p class="dak-empty-state"><?php esc_html_e( 'No appointments have been booked yet.', 'doctor-ak-portal' ); ?></p>
 	<?php else : ?>
-		<?php foreach ( $appointments as $row ) : ?>
+		<div class="dak-appt-bulk-toolbar">
+			<label class="dak-appt-select-all">
+				<input type="checkbox" id="dak-appt-select-all">
+				<span><?php esc_html_e( 'Select all', 'doctor-ak-portal' ); ?></span>
+			</label>
+			<div class="dak-appt-bulk-actions dak-hidden" id="dak-appt-bulk-actions">
+				<span id="dak-appt-bulk-count">0 <?php esc_html_e( 'selected', 'doctor-ak-portal' ); ?></span>
+				<button type="button" class="dak-button dak-button-secondary dak-button-sm" data-appt-bulk-mark-paid><?php esc_html_e( 'Mark paid', 'doctor-ak-portal' ); ?></button>
+				<button type="button" class="dak-button dak-button-secondary dak-button-sm" data-appt-bulk-send-reminder><?php esc_html_e( 'Send reminder', 'doctor-ak-portal' ); ?></button>
+				<button type="button" class="dak-button dak-button-secondary dak-button-sm" data-appt-bulk-clear><?php esc_html_e( 'Clear', 'doctor-ak-portal' ); ?></button>
+			</div>
+		</div>
+
+		<?php foreach ( $dak_buckets as $dak_bucket ) : ?>
+			<?php if ( empty( $dak_bucket['rows'] ) ) : ?>
+				<?php continue; ?>
+			<?php endif; ?>
+
+			<div class="dak-appt-section">
+				<div class="dak-appt-section-header">
+					<span><?php echo esc_html( $dak_bucket['label'] ); ?></span>
+					<span class="dak-appt-section-count"><?php echo esc_html( count( $dak_bucket['rows'] ) ); ?></span>
+				</div>
+
+				<?php foreach ( $dak_bucket['rows'] as $row ) : ?>
 			<div id="dak-appointment-<?php echo esc_attr( $row['id'] ); ?>" class="dak-admin-record-row" data-appointment-row="<?php echo esc_attr( $row['id'] ); ?>">
 				<div class="dak-admin-record-row-main">
+					<label class="dak-appt-row-checkbox">
+						<input type="checkbox" class="dak-appt-select" data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>">
+					</label>
 					<span class="dak-avatar dak-avatar-sm" aria-hidden="true"><?php echo esc_html( $row['patient_initials'] ); ?></span>
 					<span class="dak-admin-record-row-info">
 						<strong><?php echo esc_html( $row['patient_name'] ); ?></strong>
@@ -245,7 +384,7 @@ $dak_appt_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to
 									<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $dak_encounter_url ); ?>"><?php esc_html_e( 'Open Encounter', 'doctor-ak-portal' ); ?></a>
 								<?php endif; ?>
 							<?php endif; ?>
-							<?php if ( ! $row['is_paid'] && (float) $row['charge'] > 0 && 'online' === $row['payment_mode'] ) : ?>
+							<?php if ( ! $row['is_paid'] && (float) $row['charge'] > 0 ) : ?>
 								<button
 									type="button"
 									class="dak-status-pill dak-status-pill-action"
@@ -261,14 +400,6 @@ $dak_appt_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to
 									title="<?php esc_attr_e( 'Already collected? Mark this appointment as paid manually.', 'doctor-ak-portal' ); ?>"
 									aria-label="<?php esc_attr_e( 'Mark Paid', 'doctor-ak-portal' ); ?>"
 								><?php echo $dak_appt_icons['check']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
-							<?php elseif ( ! $row['is_paid'] && (float) $row['charge'] > 0 ) : ?>
-								<button
-									type="button"
-									class="dak-status-pill dak-status-pill-action"
-									data-admin-appointment-mark-paid
-									data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"
-									title="<?php esc_attr_e( 'Mark this appointment as paid', 'doctor-ak-portal' ); ?>"
-								><?php esc_html_e( 'Mark Paid', 'doctor-ak-portal' ); ?></button>
 							<?php endif; ?>
 							<button
 								type="button"
@@ -322,6 +453,8 @@ $dak_appt_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to
 						<?php endif; ?>
 					</span>
 				</div>
+			</div>
+				<?php endforeach; ?>
 			</div>
 		<?php endforeach; ?>
 	<?php endif; ?>

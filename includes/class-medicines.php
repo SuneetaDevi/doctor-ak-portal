@@ -167,7 +167,8 @@ class Medicines {
 	}
 
 	/**
-	 * Gets every medicine belonging to one doctor.
+	 * Gets every medicine belonging to one doctor, plus the shared common
+	 * list (doctor_id = 0 — seeded defaults, see Db_Installer::seed_common_medicines()).
 	 *
 	 * @param int $doctor_id Doctor's user ID.
 	 * @return array List of decoded medicine rows.
@@ -176,11 +177,56 @@ class Medicines {
 		global $wpdb;
 
 		$rows = $wpdb->get_results(
-			$wpdb->prepare( 'SELECT * FROM ' . self::table_name() . ' WHERE doctor_id = %d ORDER BY name ASC', (int) $doctor_id ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
+			$wpdb->prepare( 'SELECT * FROM ' . self::table_name() . ' WHERE doctor_id = %d OR doctor_id = 0 ORDER BY name ASC', (int) $doctor_id ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
 			ARRAY_A
 		);
 
 		return array_map( array( __CLASS__, 'decode_row' ), $rows );
+	}
+
+	/**
+	 * Finds an existing medicine (this doctor's own, or the shared common
+	 * list) matching a typed name case-insensitively, or creates a new one
+	 * scoped to this doctor. Called when a prescription is saved with a
+	 * free-typed medicine name — this is how the list grows on its own as
+	 * doctors write prescriptions, with no separate "save this medicine"
+	 * step or management screen.
+	 *
+	 * @param string $name      Typed medicine name.
+	 * @param int    $doctor_id Doctor's user ID (used to scope a newly created row).
+	 * @return int Medicine ID (existing or newly created); 0 if $name is empty.
+	 */
+	public static function find_or_create_by_name( $name, $doctor_id ) {
+		global $wpdb;
+
+		$name = trim( $name );
+
+		if ( '' === $name ) {
+			return 0;
+		}
+
+		$existing_id = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT id FROM ' . self::table_name() . ' WHERE ( doctor_id = %d OR doctor_id = 0 ) AND name = %s LIMIT 1', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
+				(int) $doctor_id,
+				$name
+			)
+		);
+
+		if ( $existing_id ) {
+			return (int) $existing_id;
+		}
+
+		$created = self::create(
+			$doctor_id,
+			array(
+				'name'           => $name,
+				'default_dosage' => '',
+				'active'         => true,
+			)
+		);
+
+		return $created ? (int) $created : 0;
 	}
 
 	/**
@@ -198,58 +244,6 @@ class Medicines {
 					return ! empty( $medicine['active'] );
 				}
 			)
-		);
-	}
-
-	/**
-	 * Gets every medicine across every doctor, for the admin "Medicines"
-	 * table, joined with the doctor's display name/email.
-	 *
-	 * @param array $args {
-	 *     Optional.
-	 *
-	 *     @type int $number    Max rows to return. Default 200.
-	 *     @type int $doctor_id Only this doctor's medicines, when > 0. Default 0 (every doctor).
-	 * }
-	 * @return array List of decoded medicine rows, each with an added 'doctor' sub-array (id/name/email).
-	 */
-	public static function all_flat_for_admin( array $args = array() ) {
-		global $wpdb;
-
-		$number    = isset( $args['number'] ) ? (int) $args['number'] : 200;
-		$doctor_id = isset( $args['doctor_id'] ) ? (int) $args['doctor_id'] : 0;
-
-		$where  = $doctor_id > 0 ? 'WHERE m.doctor_id = %d' : '';
-		$params = $doctor_id > 0 ? array( $doctor_id, $number ) : array( $number );
-
-		$sql = $wpdb->prepare(
-			"SELECT m.*, u.display_name AS doctor_display_name, u.user_email AS doctor_email
-			FROM " . self::table_name() . " m
-			INNER JOIN {$wpdb->users} u ON u.ID = m.doctor_id
-			$where
-			ORDER BY m.id DESC
-			LIMIT %d",
-			$params
-		); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names, not user input.
-
-		$rows = $wpdb->get_results( $sql, ARRAY_A );
-
-		return array_map(
-			function ( $row ) {
-				$medicine = self::decode_row( $row );
-
-				$doctor    = get_userdata( $medicine['doctor_id'] );
-				$full_name = $doctor ? trim( $doctor->first_name . ' ' . $doctor->last_name ) : '';
-
-				$medicine['doctor'] = array(
-					'id'    => $medicine['doctor_id'],
-					'name'  => '' !== $full_name ? $full_name : $row['doctor_display_name'],
-					'email' => $row['doctor_email'],
-				);
-
-				return $medicine;
-			},
-			$rows
 		);
 	}
 

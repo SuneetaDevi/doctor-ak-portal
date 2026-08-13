@@ -77,6 +77,8 @@ $dak_admin_section_icons = array(
 	</button>
 
 	<aside class="dak-dashboard-sidebar" id="dak-dashboard-sidebar">
+		<a class="dak-sidebar-back-link" href="<?php echo esc_url( home_url( '/' ) ); ?>">&larr; <?php esc_html_e( 'Back to site', 'doctor-ak-portal' ); ?></a>
+
 		<div class="dak-sidebar-brand">
 			<span class="dak-sidebar-brand-logo">
 				<?php

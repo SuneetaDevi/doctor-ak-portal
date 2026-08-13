@@ -95,14 +95,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<div id="dak-encounter-prescriptions-list"></div>
 					<form id="dak-encounter-add-prescription-form" class="dak-encounter-inline-form">
 						<div class="dak-field">
-							<label for="dak-encounter-prescription-medicine"><?php esc_html_e( 'Medicine', 'doctor-ak-portal' ); ?></label>
-							<select id="dak-encounter-prescription-medicine">
-								<option value="0"><?php esc_html_e( '— Type a medicine name instead —', 'doctor-ak-portal' ); ?></option>
-							</select>
-						</div>
-						<div class="dak-field" id="dak-encounter-prescription-medicine-name-field">
-							<label for="dak-encounter-prescription-medicine-name"><?php esc_html_e( 'Medicine name', 'doctor-ak-portal' ); ?></label>
-							<input type="text" id="dak-encounter-prescription-medicine-name" placeholder="<?php esc_attr_e( 'e.g. Amoxicillin', 'doctor-ak-portal' ); ?>">
+							<label for="dak-encounter-prescription-medicine-name"><?php esc_html_e( 'Medicine', 'doctor-ak-portal' ); ?></label>
+							<input type="text" id="dak-encounter-prescription-medicine-name" list="dak-encounter-medicine-suggestions" autocomplete="off" placeholder="<?php esc_attr_e( 'Start typing — e.g. Amoxicillin', 'doctor-ak-portal' ); ?>">
+							<datalist id="dak-encounter-medicine-suggestions"></datalist>
 						</div>
 						<div class="dak-field">
 							<label for="dak-encounter-prescription-dosage"><?php esc_html_e( 'Dosage', 'doctor-ak-portal' ); ?></label>
