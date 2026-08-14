@@ -67,6 +67,54 @@ class Doctor_Statement_Pdf extends Pdf_Document {
 	}
 
 	/**
+	 * Word-wraps text to fit within `$max_width`, up to `$max_lines` lines —
+	 * used for the columns most likely to hold a long clinic name/address
+	 * (rather than truncating them to a single "..." line, see fit_text()).
+	 * If the text still doesn't fit within `$max_lines`, the last line is
+	 * truncated with '...' via fit_text().
+	 *
+	 * @param string $text      Text to wrap.
+	 * @param string $font      'F1' or 'F2' — must match what it'll be drawn with.
+	 * @param float  $size      Font size — must match what it'll be drawn with.
+	 * @param float  $max_width Maximum rendered width per line, in PDF points.
+	 * @param int    $max_lines Maximum number of lines. Default 2.
+	 * @return array List of line strings, length 1 to $max_lines.
+	 */
+	private static function wrap_lines( $text, $font, $size, $max_width, $max_lines = 2 ) {
+		if ( $max_width <= 0 || '' === trim( (string) $text ) ) {
+			return array( (string) $text );
+		}
+
+		$bold             = 'F2' === $font;
+		$avg_char_width   = $size * ( $bold ? 0.60 : 0.52 );
+		$max_chars        = max( 1, (int) floor( $max_width / $avg_char_width ) );
+
+		$words = preg_split( '/\s+/', trim( (string) $text ) );
+		$lines = array( '' );
+
+		foreach ( $words as $word ) {
+			$line_index = count( $lines ) - 1;
+			$candidate  = '' === $lines[ $line_index ] ? $word : $lines[ $line_index ] . ' ' . $word;
+
+			if ( self::mb_strlen_safe( $candidate ) <= $max_chars ) {
+				$lines[ $line_index ] = $candidate;
+				continue;
+			}
+
+			if ( $line_index + 1 >= $max_lines ) {
+				// No room for another line — truncate this line (plus the
+				// word that didn't fit) and stop, dropping any later words.
+				$lines[ $line_index ] = self::fit_text( $candidate, $font, $size, $max_width );
+				return $lines;
+			}
+
+			$lines[] = $word;
+		}
+
+		return $lines;
+	}
+
+	/**
 	 * Builds the statement PDF for one doctor.
 	 *
 	 * @param \WP_User $doctor        The doctor.
@@ -99,13 +147,22 @@ class Doctor_Statement_Pdf extends Pdf_Document {
 			$text_x  = $left + $logo['width'] + 15;
 		}
 
-		// The clinic name shares its line with the right-aligned "REVENUE
-		// STATEMENT" title, so it must never be wide enough to reach it.
-		$title_width      = self::mb_strlen_safe( __( 'REVENUE STATEMENT', 'doctor-ak-portal' ) ) * 14 * 0.60;
-		$clinic_name_max  = ( $right - $title_width - 20 ) - $text_x;
+		// The clinic name's first line shares its row with the right-aligned
+		// "REVENUE STATEMENT" title, so it must never be wide enough to reach
+		// it — any overflow wraps onto a second line below instead, clear of
+		// the title.
+		$title_width     = self::mb_strlen_safe( __( 'REVENUE STATEMENT', 'doctor-ak-portal' ) ) * 14 * 0.60;
+		$clinic_name_max = ( $right - $title_width - 20 ) - $text_x;
 
-		$stream .= self::draw_text( $text_x, $y, 'F2', 14, self::fit_text( $clinic_name, 'F2', 14, $clinic_name_max ) );
+		$clinic_name_lines = self::wrap_lines( $clinic_name, 'F2', 14, $clinic_name_max, 2 );
+
+		$stream .= self::draw_text( $text_x, $y, 'F2', 14, $clinic_name_lines[0] );
 		$y      -= 16;
+
+		for ( $i = 1, $n = count( $clinic_name_lines ); $i < $n; $i++ ) {
+			$stream .= self::draw_text( $text_x, $y, 'F2', 14, self::fit_text( $clinic_name_lines[ $i ], 'F2', 14, $right - $text_x ) );
+			$y      -= 16;
+		}
 
 		if ( '' !== $clinic_address ) {
 			$stream .= self::draw_text( $text_x, $y, 'F1', 9, self::fit_text( $clinic_address, 'F1', 9, $right - $text_x ), 0.4 );
@@ -153,11 +210,12 @@ class Doctor_Statement_Pdf extends Pdf_Document {
 		$doctor_total    = 0.0;
 
 		foreach ( $line_items as $item ) {
-			$avg_price = $item['appointment_count'] > 0 ? $item['gross_total'] / $item['appointment_count'] : 0.0;
+			$avg_price   = $item['appointment_count'] > 0 ? $item['gross_total'] / $item['appointment_count'] : 0.0;
+			$label_lines = self::wrap_lines( $item['label'], 'F1', 9, 240, 2 );
 
 			$stream .= self::draw_table_row(
 				array(
-					array( 'x' => $left, 'text' => self::fit_text( $item['label'], 'F1', 9, 240 ) ),
+					array( 'x' => $left, 'text' => $label_lines[0] ),
 					array( 'x' => $left + 260, 'text' => 'PKR ' . number_format( $avg_price, 0 ), 'align' => 'right' ),
 					array( 'x' => $left + 360, 'text' => (string) $item['appointment_count'], 'align' => 'right' ),
 					array( 'x' => $right, 'text' => 'PKR ' . number_format( $item['gross_total'], 0 ), 'align' => 'right' ),
@@ -166,6 +224,12 @@ class Doctor_Statement_Pdf extends Pdf_Document {
 				'F1',
 				9
 			);
+
+			for ( $i = 1, $n = count( $label_lines ); $i < $n; $i++ ) {
+				$y      -= 11;
+				$stream .= self::draw_text( $left, $y, 'F1', 9, $label_lines[ $i ] );
+			}
+
 			$y -= 16;
 
 			$gross_total += $item['gross_total'];
@@ -244,9 +308,11 @@ class Doctor_Statement_Pdf extends Pdf_Document {
 				$location = trim( $location );
 			}
 
+			$location_lines = self::wrap_lines( $location, 'F1', 8, 170, 2 );
+
 			$stream .= self::draw_table_row(
 				array(
-					array( 'x' => $left, 'text' => self::fit_text( $location, 'F1', 8, 170 ) ),
+					array( 'x' => $left, 'text' => $location_lines[0] ),
 					array( 'x' => $left + 180, 'text' => $row['transaction_date'] ),
 					array( 'x' => $left + 280, 'text' => self::fit_text( $appointment['patient_name'], 'F1', 8, 140 ) ),
 					array( 'x' => $right, 'text' => 'PKR ' . number_format( $row['gross_amount'], 0 ), 'align' => 'right' ),
@@ -255,6 +321,12 @@ class Doctor_Statement_Pdf extends Pdf_Document {
 				'F1',
 				8
 			);
+
+			for ( $i = 1, $n = count( $location_lines ); $i < $n; $i++ ) {
+				$y      -= 10;
+				$stream .= self::draw_text( $left, $y, 'F1', 8, $location_lines[ $i ] );
+			}
+
 			$y -= 13;
 			++$listed;
 		}
