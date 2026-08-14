@@ -102,7 +102,7 @@ foreach ( $clinics_by_doctor as $dak_doctor_id => $dak_doctor_clinics ) {
 		?>
 		<?php foreach ( $dak_balances_by_doctor as $dak_doctor_id => $dak_doctor_balances ) : ?>
 			<div class="dak-billing-doctor-group">
-				<div class="dak-admin-record-row-secondary" style="margin-bottom: 8px;">
+				<div class="dak-billing-doctor-header">
 					<strong><?php echo esc_html( $dak_doctor_balances[0]['doctor_name'] ); ?></strong>
 					<a
 						class="dak-button dak-button-secondary dak-button-sm"

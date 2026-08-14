@@ -285,6 +285,29 @@
 	opacity: 0.7 !important;
 }
 
+/* The matrix has 5 columns (Capability + Admin/Doctor/Patient/Receptionist)
+   — .dak-table-scroll already lets it scroll horizontally on a phone, but
+   tighter padding and bigger touch targets mean less scrolling is needed
+   and the checkboxes are easier to tap. */
+@media ( max-width: 560px ) {
+	.dak-permission-matrix th,
+	.dak-permission-matrix td {
+		padding: 0.6rem 0.75rem !important;
+		font-size: 0.8rem !important;
+	}
+
+	.dak-permission-matrix th:first-child,
+	.dak-permission-matrix td:first-child {
+		white-space: normal !important;
+		min-width: 110px !important;
+	}
+
+	.dak-permission-matrix input[type='checkbox'] {
+		width: 22px !important;
+		height: 22px !important;
+	}
+}
+
 .dak-status-badge {
 	display: inline-flex !important;
 	align-items: center !important;

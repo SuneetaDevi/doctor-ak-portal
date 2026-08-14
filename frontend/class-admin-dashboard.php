@@ -221,6 +221,14 @@ class Admin_Dashboard {
 		);
 
 		wp_enqueue_script(
+			'doctor-ak-portal-dashboard',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-dashboard.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-dashboard.js' ),
+			true
+		);
+
+		wp_enqueue_script(
 			'doctor-ak-portal-awards-editor',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-awards-editor.js',
 			array(),
@@ -1081,6 +1089,8 @@ class Admin_Dashboard {
 			'dashboard_url'     => $dashboard_url,
 			'logout_url'        => wp_logout_url( Page_Finder::url_for_shortcode( 'doctor_login' ) ),
 			'current_user'      => wp_get_current_user(),
+			'avatar_url'        => self::avatar_url( get_current_user_id() ),
+			'profile_url'       => admin_url( 'profile.php' ),
 			'content_html'      => $content_html,
 			'modal_html'        => $modal_html,
 			'role'              => $is_users_section ? $this->role_for_section( $section ) : '',

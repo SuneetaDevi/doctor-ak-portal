@@ -80,7 +80,12 @@ $dak_dash_icons = array(
 	</button>
 
 	<aside class="dak-dashboard-sidebar" id="dak-dashboard-sidebar">
-		<a class="dak-sidebar-back-link" href="<?php echo esc_url( home_url( '/' ) ); ?>">&larr; <?php esc_html_e( 'Back to site', 'doctor-ak-portal' ); ?></a>
+		<div class="dak-sidebar-top-row">
+			<a class="dak-sidebar-back-link" href="<?php echo esc_url( home_url( '/' ) ); ?>">&larr; <?php esc_html_e( 'Back to site', 'doctor-ak-portal' ); ?></a>
+			<button type="button" class="dak-sidebar-collapse-toggle" id="dak-sidebar-collapse-toggle" aria-label="<?php esc_attr_e( 'Collapse sidebar', 'doctor-ak-portal' ); ?>" aria-expanded="true" aria-controls="dak-dashboard-sidebar">
+				<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 5 7 10l5.5 5"/></svg>
+			</button>
+		</div>
 
 		<div class="dak-sidebar-brand">
 			<span class="dak-sidebar-brand-logo">
@@ -215,6 +220,10 @@ $dak_dash_icons = array(
 				array(
 					'notifications_url'          => $notifications_url,
 					'unread_notifications_count' => $unread_notifications_count,
+					'user'                       => $user,
+					'avatar_url'                 => $avatar_url,
+					'profile_url'                => $profile_url,
+					'logout_url'                 => $logout_url,
 				)
 			);
 			?>

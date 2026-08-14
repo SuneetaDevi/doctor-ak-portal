@@ -1,13 +1,17 @@
 /**
- * Doctor AK Portal — Dashboard behaviour (mobile sidebar toggle, specialty
- * tag "+N" expand/collapse).
+ * Doctor AK Portal — Dashboard behaviour (mobile sidebar toggle, desktop
+ * sidebar collapse, specialty tag "+N" expand/collapse, topbar profile menu).
  */
 ( function () {
 	'use strict';
 
+	var COLLAPSE_STORAGE_KEY = 'dakSidebarCollapsed';
+
 	document.addEventListener( 'DOMContentLoaded', function () {
 		wireSidebarToggle();
+		wireSidebarCollapseToggle();
 		wireSpecialtyTagToggles();
+		wireTopbarProfileMenu();
 	} );
 
 	function wireSidebarToggle() {
@@ -22,6 +26,52 @@
 			var isOpen = sidebar.classList.toggle( 'is-open' );
 			toggle.setAttribute( 'aria-expanded', isOpen ? 'true' : 'false' );
 		} );
+	}
+
+	/**
+	 * Wires the desktop sidebar's collapse/expand toggle (icons-only, with a
+	 * hover preview handled entirely by CSS — see doctor-ak-dashboard.css's
+	 * `.dak-dashboard-sidebar.is-collapsed:hover` rule). The click here only
+	 * controls the pinned collapsed/expanded state, persisted so it survives
+	 * a page reload/navigation.
+	 */
+	function wireSidebarCollapseToggle() {
+		var toggle = document.getElementById( 'dak-sidebar-collapse-toggle' );
+		var sidebar = document.getElementById( 'dak-dashboard-sidebar' );
+
+		if ( ! toggle || ! sidebar ) {
+			return;
+		}
+
+		if ( 'true' === readStoredPreference() ) {
+			setCollapsed( true );
+		}
+
+		toggle.addEventListener( 'click', function () {
+			setCollapsed( ! sidebar.classList.contains( 'is-collapsed' ) );
+		} );
+
+		function setCollapsed( collapsed ) {
+			sidebar.classList.toggle( 'is-collapsed', collapsed );
+			toggle.setAttribute( 'aria-expanded', collapsed ? 'false' : 'true' );
+			storePreference( collapsed );
+		}
+
+		function readStoredPreference() {
+			try {
+				return window.localStorage.getItem( COLLAPSE_STORAGE_KEY );
+			} catch ( error ) {
+				return null;
+			}
+		}
+
+		function storePreference( collapsed ) {
+			try {
+				window.localStorage.setItem( COLLAPSE_STORAGE_KEY, collapsed ? 'true' : 'false' );
+			} catch ( error ) {
+				// Private-browsing/storage-disabled — the toggle still works for this page view.
+			}
+		}
 	}
 
 	/**
@@ -47,5 +97,41 @@
 				toggle.textContent = expanded ? toggle.getAttribute( 'data-less-label' ) : toggle.getAttribute( 'data-more-label' );
 			} );
 		} );
+	}
+
+	/**
+	 * Wires the topbar avatar button's "Edit Profile"/"Logout" dropdown —
+	 * opens on click, closes on outside click, Escape, or selecting an item.
+	 */
+	function wireTopbarProfileMenu() {
+		var wrapper = document.getElementById( 'dak-topbar-profile' );
+		var trigger = document.getElementById( 'dak-topbar-profile-trigger' );
+
+		if ( ! wrapper || ! trigger ) {
+			return;
+		}
+
+		trigger.addEventListener( 'click', function ( event ) {
+			event.stopPropagation();
+			var isOpen = wrapper.classList.toggle( 'is-open' );
+			trigger.setAttribute( 'aria-expanded', isOpen ? 'true' : 'false' );
+		} );
+
+		document.addEventListener( 'click', function ( event ) {
+			if ( wrapper.classList.contains( 'is-open' ) && ! wrapper.contains( event.target ) ) {
+				closeProfileMenu();
+			}
+		} );
+
+		document.addEventListener( 'keydown', function ( event ) {
+			if ( 'Escape' === event.key && wrapper.classList.contains( 'is-open' ) ) {
+				closeProfileMenu();
+			}
+		} );
+
+		function closeProfileMenu() {
+			wrapper.classList.remove( 'is-open' );
+			trigger.setAttribute( 'aria-expanded', 'false' );
+		}
 	}
 } )();

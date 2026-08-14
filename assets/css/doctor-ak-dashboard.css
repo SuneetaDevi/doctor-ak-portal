@@ -677,6 +677,80 @@
 	text-decoration: none !important;
 }
 
+.dak-topbar-profile {
+	position: relative !important;
+}
+
+.dak-topbar-profile-trigger {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	padding: 0 !important;
+	border: 0 !important;
+	background: none !important;
+	cursor: pointer !important;
+	border-radius: 50% !important;
+}
+
+.dak-topbar-profile-menu {
+	display: none !important;
+	position: absolute !important;
+	top: calc( 100% + 0.6rem ) !important;
+	right: 0 !important;
+	min-width: 210px !important;
+	background: var( --dak-bg-card ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	padding: 0.5rem !important;
+	z-index: 50 !important;
+}
+
+.dak-topbar-profile.is-open .dak-topbar-profile-menu {
+	display: block !important;
+}
+
+.dak-topbar-profile-menu-name {
+	padding: 0.5rem 0.75rem !important;
+	font-size: 0.85rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	margin-bottom: 0.35rem !important;
+	white-space: nowrap !important;
+	overflow: hidden !important;
+	text-overflow: ellipsis !important;
+}
+
+.dak-topbar-profile-menu-item {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.6rem !important;
+	padding: 0.55rem 0.75rem !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	color: var( --dak-text ) !important;
+	text-decoration: none !important;
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+}
+
+.dak-topbar-profile-menu-item svg {
+	width: 16px !important;
+	height: 16px !important;
+	flex-shrink: 0 !important;
+}
+
+.dak-topbar-profile-menu-item:hover {
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-topbar-profile-menu-item-danger {
+	color: var( --dak-danger ) !important;
+}
+
+.dak-topbar-profile-menu-item-danger:hover {
+	background: var( --dak-tint-danger ) !important;
+}
+
 .dak-topbar-bell-badge {
 	position: absolute !important;
 	top: -2px !important;
@@ -1075,6 +1149,107 @@
 .dak-appointment-item-time svg {
 	width: 13px !important;
 	height: 13px !important;
+}
+
+.dak-sidebar-top-row {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 0.5rem !important;
+}
+
+/* Desktop sidebar collapse (icon-only, expands on hover, pinned open/closed
+   via the toggle button + localStorage — see doctor-ak-dashboard.js). Mobile
+   keeps its own separate off-canvas drawer behaviour (.is-open, <=782px,
+   below) untouched — this only applies above that breakpoint. */
+@media ( min-width: 783px ) {
+	.dak-sidebar-collapse-toggle {
+		display: flex !important;
+		flex-shrink: 0 !important;
+		align-items: center !important;
+		justify-content: center !important;
+		width: 26px !important;
+		height: 26px !important;
+		border: 1px solid var( --dak-border ) !important;
+		border-radius: 50% !important;
+		background: var( --dak-bg-card ) !important;
+		color: var( --dak-muted ) !important;
+		cursor: pointer !important;
+		padding: 0 !important;
+		transition: transform 0.2s ease, color 0.15s ease, background-color 0.15s ease !important;
+	}
+
+	.dak-sidebar-collapse-toggle:hover {
+		color: var( --dak-primary-dark ) !important;
+		background: var( --dak-primary-tint ) !important;
+	}
+
+	.dak-sidebar-collapse-toggle svg {
+		width: 13px !important;
+		height: 13px !important;
+	}
+
+	.dak-dashboard-sidebar {
+		transition: flex-basis 0.2s ease, width 0.2s ease !important;
+	}
+
+	.dak-dashboard-sidebar.is-collapsed .dak-sidebar-collapse-toggle svg {
+		transform: rotate( 180deg ) !important;
+	}
+
+	.dak-dashboard-sidebar.is-collapsed:not( :hover ) {
+		flex-basis: 78px !important;
+		width: 78px !important;
+		padding-left: 0.9rem !important;
+		padding-right: 0.9rem !important;
+	}
+
+	.dak-dashboard-sidebar.is-collapsed:hover {
+		flex-basis: 260px !important;
+		width: 260px !important;
+		z-index: 20 !important;
+	}
+
+	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-back-link,
+	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-brand-text,
+	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-doctor-name,
+	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-patient-name,
+	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-patient-badge,
+	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-doctor-location,
+	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-doctor-tags,
+	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-doctor-status-row,
+	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-nav-group-label,
+	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-nav-badge {
+		display: none !important;
+	}
+
+	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-top-row {
+		justify-content: center !important;
+	}
+
+	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-brand {
+		justify-content: center !important;
+	}
+
+	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-doctor-card,
+	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-patient-card {
+		align-items: center !important;
+		padding: 0.5rem !important;
+	}
+
+	/* The nav links'/logout's label text is a raw text node (no wrapping
+	   span), so font-size: 0 collapses it to nothing without touching
+	   markup — .dak-nav-icon is sized in px (not em) so the icon itself is
+	   unaffected. Restored automatically on hover since these rules simply
+	   stop matching (:not(:hover) fails), no separate "undo" ruleset needed. */
+	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-dashboard-nav a,
+	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-logout {
+		font-size: 0 !important;
+		justify-content: center !important;
+		gap: 0 !important;
+		padding-left: 0 !important;
+		padding-right: 0 !important;
+	}
 }
 
 /* Mobile: collapse sidebar behind a toggle */
@@ -1795,6 +1970,80 @@ a.dak-notification-row-link:hover {
 		padding-top: 0.6rem !important;
 		border-left: 0 !important;
 		border-top: 1px solid var( --dak-border ) !important;
+	}
+}
+
+/* Admin Billing — one group per doctor (doctor name + "Download Statement"
+   + that doctor's own clinic/video balance rows), visually separated so
+   several doctors in a row don't run together. */
+.dak-billing-doctor-group {
+	margin-bottom: 1.5rem !important;
+	padding-bottom: 1.5rem !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+.dak-billing-doctor-group:last-child {
+	margin-bottom: 0 !important;
+	padding-bottom: 0 !important;
+	border-bottom: 0 !important;
+}
+
+.dak-billing-doctor-header {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 0.75rem !important;
+	margin-bottom: 0.75rem !important;
+}
+
+.dak-billing-doctor-header strong {
+	font-size: 1rem !important;
+	color: var( --dak-text ) !important;
+}
+
+@media ( max-width: 480px ) {
+	.dak-billing-doctor-header {
+		flex-direction: column !important;
+		align-items: flex-start !important;
+	}
+
+	.dak-billing-doctor-header .dak-button {
+		width: 100% !important;
+		justify-content: center !important;
+	}
+}
+
+/* Stat card grids with more than 4 cards (e.g. Billing's 6) still feel
+   cramped at the existing 2-column/480px breakpoint on a small phone —
+   drop to a single column below 400px specifically. Additive: doesn't
+   change the 480-401px 2-column behaviour used elsewhere. */
+@media ( max-width: 400px ) {
+	.dak-dashboard-statistics {
+		grid-template-columns: 1fr !important;
+	}
+}
+
+/* Filter bars (.dak-appt-filters-form, used by Billing/Appointments/
+   Notifications/etc.) — the 160px per-field min-width still leaves fields
+   squeezed side-by-side on a small phone; stack every field full-width
+   below 560px instead. */
+@media ( max-width: 560px ) {
+	.dak-appt-filters-form {
+		gap: 0.75rem !important;
+	}
+
+	.dak-appt-filters-form .dak-field {
+		min-width: 100% !important;
+		flex-basis: 100% !important;
+	}
+
+	.dak-appt-filters-form .dak-admin-filter-actions {
+		width: 100% !important;
+	}
+
+	.dak-appt-filters-form .dak-admin-filter-actions .dak-button {
+		flex: 1 1 auto !important;
 	}
 }
 
