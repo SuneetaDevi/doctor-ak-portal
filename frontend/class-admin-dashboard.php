@@ -139,6 +139,20 @@ class Admin_Dashboard {
 	}
 
 	/**
+	 * Whether a full Administrator (`manage_options`) may access a given
+	 * section, per the Roles & Permissions "Admin" column
+	 * (Role_Permissions::admin_tabs()). 'dashboard' and 'role-permissions'
+	 * are always allowed — see Role_Permissions::is_tab_allowed()'s
+	 * docblock for why that safety ceiling exists.
+	 *
+	 * @param string $slug Section slug.
+	 * @return bool
+	 */
+	private static function admin_can_access( $slug ) {
+		return Role_Permissions::is_tab_allowed( Role_Permissions::ADMIN_KEY, $slug );
+	}
+
+	/**
 	 * Template loader.
 	 *
 	 * @var Template_Loader
@@ -729,6 +743,10 @@ class Admin_Dashboard {
 			return 'dashboard';
 		}
 
+		if ( current_user_can( 'manage_options' ) && ! self::admin_can_access( $section ) ) {
+			return 'dashboard';
+		}
+
 		return $section;
 	}
 
@@ -956,6 +974,10 @@ class Admin_Dashboard {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
+		if ( current_user_can( 'manage_options' ) && ! self::admin_can_access( $section ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
 		foreach ( array( 'status', 'specialization' ) as $key ) {
 			$_GET[ $key ] = isset( $_POST[ $key ] ) ? $_POST[ $key ] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- nonce already verified above; users_section_html() sanitizes each value itself, same as it does for a real $_GET.
 		}
@@ -985,6 +1007,10 @@ class Admin_Dashboard {
 
 			foreach ( $items as $slug => $label ) {
 				if ( $is_receptionist && ! self::receptionist_can_access( $slug ) ) {
+					continue;
+				}
+
+				if ( current_user_can( 'manage_options' ) && ! self::admin_can_access( $slug ) ) {
 					continue;
 				}
 
@@ -1506,6 +1532,7 @@ class Admin_Dashboard {
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-role-permissions.php',
 				array(
+					'admin_tabs'        => Role_Permissions::admin_tabs(),
 					'doctor_tabs'       => Role_Permissions::doctor_tabs(),
 					'patient_tabs'      => Role_Permissions::patient_tabs(),
 					'receptionist_tabs' => Role_Permissions::receptionist_tabs(),

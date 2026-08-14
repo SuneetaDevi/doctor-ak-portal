@@ -35,6 +35,18 @@ class Role_Permissions {
 	const OPTION_KEY = 'dak_role_permissions';
 
 	/**
+	 * Pseudo-role key for the Admin column of the permission matrix — not a
+	 * real Roles::*_ROLE (there's no separate "admin" WordPress role in this
+	 * plugin; full admins are identified by the `manage_options` capability
+	 * instead). This only lets the matrix store/show a checkbox per module
+	 * for Admin alongside Doctor/Patient/Receptionist; no admin-facing page
+	 * currently reads it to restrict anything.
+	 *
+	 * @var string
+	 */
+	const ADMIN_KEY = 'admin';
+
+	/**
 	 * Doctor dashboard's toggle-able tabs, slug => label. Matches the
 	 * whitelist in Doctor_Dashboard::requested_tab().
 	 *
@@ -96,6 +108,48 @@ class Role_Permissions {
 	}
 
 	/**
+	 * The full Admin dashboard's toggle-able sections, slug => label.
+	 * Matches Admin_Dashboard::NAV_GROUPS minus 'dashboard' and
+	 * 'role-permissions' — those two are a hard safety ceiling (see
+	 * is_tab_allowed()) so an admin can never lock themselves out of the
+	 * one screen that lets them undo a mistake here.
+	 *
+	 * @return array
+	 */
+	public static function admin_tabs() {
+		return array(
+			'appointments'       => __( 'Appointments', 'doctor-ak-portal' ),
+			'billing'            => __( 'Billing', 'doctor-ak-portal' ),
+			'encounters'         => __( 'Encounters', 'doctor-ak-portal' ),
+			'notifications'      => __( 'Notifications', 'doctor-ak-portal' ),
+			'doctor-requests'    => __( 'Doctor Requests', 'doctor-ak-portal' ),
+			'patients'           => __( 'Patients', 'doctor-ak-portal' ),
+			'doctors'            => __( 'Doctors', 'doctor-ak-portal' ),
+			'receptionist'       => __( 'Receptionist', 'doctor-ak-portal' ),
+			'clinic'             => __( 'Clinic', 'doctor-ak-portal' ),
+			'services'           => __( 'Services', 'doctor-ak-portal' ),
+			'video-consultation' => __( 'Video Consultation', 'doctor-ak-portal' ),
+			'doctor-sessions'    => __( 'Doctor Sessions', 'doctor-ak-portal' ),
+			'locations'          => __( 'Locations', 'doctor-ak-portal' ),
+			'settings'           => __( 'Settings', 'doctor-ak-portal' ),
+		);
+	}
+
+	/**
+	 * Union of every toggle-able module across all four dashboards, slug =>
+	 * label — Doctor's own tabs first, then any Patient-only,
+	 * Receptionist-only, or Admin-only ones. The permission matrix shows one
+	 * row per entry here, with a checkbox in every role column (even where
+	 * that module isn't actually built into that role's own dashboard yet —
+	 * see is_tab_allowed()'s docblock).
+	 *
+	 * @return array
+	 */
+	public static function all_tabs() {
+		return self::doctor_tabs() + self::patient_tabs() + self::receptionist_tabs() + self::admin_tabs();
+	}
+
+	/**
 	 * The saved permissions map: role => tab slug => bool.
 	 *
 	 * @return array
@@ -108,15 +162,27 @@ class Role_Permissions {
 
 	/**
 	 * Whether a role is allowed to see/use a given tab. Defaults to
-	 * true (allowed) for any tab without an explicit stored value —
-	 * including 'dashboard', which is never stored/toggle-able.
+	 * true (allowed) for any tab without an explicit stored value.
 	 *
-	 * @param string $role Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE, or Roles::RECEPTIONIST_ROLE.
+	 * 'dashboard' and 'role-permissions' are a hard safety ceiling, always
+	 * allowed regardless of what's saved — every account needs a landing
+	 * page, and an admin must always be able to reach Roles & Permissions
+	 * itself to undo a mistake here (otherwise a self-inflicted lockout
+	 * would need a direct database edit to recover from).
+	 *
+	 * The permission matrix shows a checkbox for every module in every role
+	 * column (see all_tabs()), including combinations no dashboard
+	 * controller checks (e.g. Patient/"Clinics") — unchecking one of those
+	 * saves the value here but has no visible effect until that dashboard's
+	 * own controller is wired to call this method for it, same as every
+	 * other tab already is.
+	 *
+	 * @param string $role Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE, Roles::RECEPTIONIST_ROLE, or self::ADMIN_KEY.
 	 * @param string $tab  Tab slug.
 	 * @return bool
 	 */
 	public static function is_tab_allowed( $role, $tab ) {
-		if ( 'dashboard' === $tab ) {
+		if ( 'dashboard' === $tab || 'role-permissions' === $tab ) {
 			return true;
 		}
 
@@ -133,22 +199,28 @@ class Role_Permissions {
 	 * Validates and sanitizes the Settings → Roles & Permissions admin
 	 * form's posted checkboxes into this class's stored shape. A missing
 	 * checkbox means "off" (unchecked checkboxes aren't posted at all), so
-	 * every known tab for both roles is explicitly written — there's no
-	 * partial/sparse save.
+	 * every module (see all_tabs()) is explicitly written for all four
+	 * columns — there's no partial/sparse save. Every column now covers the
+	 * full module list, not just the tabs that role's own dashboard
+	 * currently has, so the matrix can have a real, savable checkbox in
+	 * every cell (see is_tab_allowed()'s docblock for what that does and
+	 * doesn't enforce today).
 	 *
 	 * @param array $posted Raw `dak_role_permissions[role][tab]` nested array (only checked boxes present).
 	 * @return array Sanitized map, see get_all().
 	 */
 	public static function sanitize_from_request( array $posted ) {
 		$roles = array(
-			Roles::DOCTOR_ROLE       => self::doctor_tabs(),
-			Roles::PATIENT_ROLE      => self::patient_tabs(),
-			Roles::RECEPTIONIST_ROLE => self::receptionist_tabs(),
+			self::ADMIN_KEY,
+			Roles::DOCTOR_ROLE,
+			Roles::PATIENT_ROLE,
+			Roles::RECEPTIONIST_ROLE,
 		);
 
+		$tabs      = self::all_tabs();
 		$sanitized = array();
 
-		foreach ( $roles as $role => $tabs ) {
+		foreach ( $roles as $role ) {
 			$posted_role = isset( $posted[ $role ] ) && is_array( $posted[ $role ] ) ? $posted[ $role ] : array();
 
 			foreach ( $tabs as $tab_slug => $tab_label ) {

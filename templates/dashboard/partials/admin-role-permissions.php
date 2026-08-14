@@ -1,11 +1,13 @@
 <?php
 /**
  * Template: Admin dashboard "Roles & Permissions" section — lets an admin
- * turn dashboard tabs on/off per role (doctor/patient), the front-end
- * equivalent of wp-admin's Settings → Roles & Permissions page.
+ * turn dashboard tabs/modules on/off for any of the four portals (Admin,
+ * Doctor, Patient, Receptionist), the front-end equivalent of wp-admin's
+ * Settings → Roles & Permissions page.
  *
  * @package DoctorAKPortal\Templates
  *
+ * @var array $admin_tabs        Tab slug => label, see Role_Permissions::admin_tabs().
  * @var array $doctor_tabs       Tab slug => label, see Role_Permissions::doctor_tabs().
  * @var array $patient_tabs      Tab slug => label, see Role_Permissions::patient_tabs().
  * @var array $receptionist_tabs Tab slug => label, see Role_Permissions::receptionist_tabs().
@@ -17,18 +19,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Union of every toggle-able tab across all three roles, in Doctor's own
-// order first (then any Patient-only, then Receptionist-only tabs appended)
-// — one row per tab, with a checkbox in whichever role column(s) that tab
-// actually applies to.
-$dak_all_tab_slugs     = $doctor_tabs + $patient_tabs + $receptionist_tabs;
-$dak_saved_doctor      = isset( $saved['doctor'] ) ? $saved['doctor'] : array();
-$dak_saved_patient     = isset( $saved['patient'] ) ? $saved['patient'] : array();
-$dak_saved_receptionist = isset( $saved['receptionist'] ) ? $saved['receptionist'] : array();
+// Union of every toggle-able module across all four dashboards — one row
+// per module, with a real checkbox in every one of the four role columns.
+$dak_all_tab_slugs = $admin_tabs + $doctor_tabs + $patient_tabs + $receptionist_tabs;
+
+// Each portal's own native tab list — a cell whose module belongs to that
+// portal's own dashboard defaults to checked (unchanged behaviour); a cell
+// for a module that portal has no page for at all (e.g. Patient/"Clinics")
+// defaults to UNCHECKED instead, since it was never really "on" to begin
+// with — it's just not a meaningful choice for that portal.
+$dak_portals = array(
+	'admin'        => array( __( 'Admin', 'doctor-ak-portal' ), $admin_tabs ),
+	'doctor'       => array( __( 'Doctor', 'doctor-ak-portal' ), $doctor_tabs ),
+	'patient'      => array( __( 'Patient', 'doctor-ak-portal' ), $patient_tabs ),
+	'receptionist' => array( __( 'Receptionist', 'doctor-ak-portal' ), $receptionist_tabs ),
+);
 ?>
 <div class="dak-dashboard-greeting">
 	<h1><?php esc_html_e( 'Role & Permissions', 'doctor-ak-portal' ); ?></h1>
-	<p><?php esc_html_e( 'Choose which dashboard pages doctors, patients, and receptionists can see. Turning a page off hides its menu link and blocks direct access to it — the Dashboard overview itself is always available. Admins always have full access.', 'doctor-ak-portal' ); ?></p>
+	<p><?php esc_html_e( 'Choose which dashboard pages each portal can see. Turning a page off hides its menu link and blocks direct access to it — the Dashboard overview and this Roles & Permissions page itself are always available, so a mistake here can always be undone.', 'doctor-ak-portal' ); ?></p>
 </div>
 
 <section class="dak-dashboard-card dak-admin-users-card" id="dak-role-permissions-form">
@@ -44,55 +53,31 @@ $dak_saved_receptionist = isset( $saved['receptionist'] ) ? $saved['receptionist
 			<thead>
 				<tr>
 					<th><?php esc_html_e( 'Capability', 'doctor-ak-portal' ); ?></th>
-					<th><?php esc_html_e( 'Admin', 'doctor-ak-portal' ); ?></th>
-					<th><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></th>
-					<th><?php esc_html_e( 'Patient', 'doctor-ak-portal' ); ?></th>
-					<th><?php esc_html_e( 'Receptionist', 'doctor-ak-portal' ); ?></th>
+					<?php foreach ( $dak_portals as $dak_portal ) : ?>
+						<th><?php echo esc_html( $dak_portal[0] ); ?></th>
+					<?php endforeach; ?>
 				</tr>
 			</thead>
 			<tbody>
 				<?php foreach ( $dak_all_tab_slugs as $dak_tab_slug => $dak_tab_label ) : ?>
 					<tr>
 						<td><strong><?php echo esc_html( $dak_tab_label ); ?></strong></td>
-						<td>
-							<input type="checkbox" checked disabled title="<?php esc_attr_e( 'Admins always have full access', 'doctor-ak-portal' ); ?>">
-						</td>
-						<td>
-							<?php if ( isset( $doctor_tabs[ $dak_tab_slug ] ) ) : ?>
+						<?php foreach ( $dak_portals as $dak_portal_key => $dak_portal ) : ?>
+							<?php
+							list( , $dak_portal_own_tabs ) = $dak_portal;
+							$dak_saved_portal              = isset( $saved[ $dak_portal_key ] ) ? $saved[ $dak_portal_key ] : array();
+							$dak_default_checked            = isset( $dak_portal_own_tabs[ $dak_tab_slug ] );
+							$dak_is_checked                 = isset( $dak_saved_portal[ $dak_tab_slug ] ) ? $dak_saved_portal[ $dak_tab_slug ] : $dak_default_checked;
+							?>
+							<td>
 								<input
 									type="checkbox"
-									name="permissions[doctor][<?php echo esc_attr( $dak_tab_slug ); ?>]"
+									name="permissions[<?php echo esc_attr( $dak_portal_key ); ?>][<?php echo esc_attr( $dak_tab_slug ); ?>]"
 									value="1"
-									<?php checked( ! isset( $dak_saved_doctor[ $dak_tab_slug ] ) || $dak_saved_doctor[ $dak_tab_slug ] ); ?>
+									<?php checked( $dak_is_checked ); ?>
 								>
-							<?php else : ?>
-								&mdash;
-							<?php endif; ?>
-						</td>
-						<td>
-							<?php if ( isset( $patient_tabs[ $dak_tab_slug ] ) ) : ?>
-								<input
-									type="checkbox"
-									name="permissions[patient][<?php echo esc_attr( $dak_tab_slug ); ?>]"
-									value="1"
-									<?php checked( ! isset( $dak_saved_patient[ $dak_tab_slug ] ) || $dak_saved_patient[ $dak_tab_slug ] ); ?>
-								>
-							<?php else : ?>
-								&mdash;
-							<?php endif; ?>
-						</td>
-						<td>
-							<?php if ( isset( $receptionist_tabs[ $dak_tab_slug ] ) ) : ?>
-								<input
-									type="checkbox"
-									name="permissions[receptionist][<?php echo esc_attr( $dak_tab_slug ); ?>]"
-									value="1"
-									<?php checked( ! isset( $dak_saved_receptionist[ $dak_tab_slug ] ) || $dak_saved_receptionist[ $dak_tab_slug ] ); ?>
-								>
-							<?php else : ?>
-								&mdash;
-							<?php endif; ?>
-						</td>
+							</td>
+						<?php endforeach; ?>
 					</tr>
 				<?php endforeach; ?>
 			</tbody>
