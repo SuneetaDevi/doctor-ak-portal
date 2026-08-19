@@ -57,6 +57,10 @@
 			clearErrors();
 
 			document.getElementById( 'dak-admin-video-pricing-doctor' ).value = trigger.getAttribute( 'data-doctor-id' ) || '';
+
+			if ( window.DAKSearchableSelect ) {
+				window.DAKSearchableSelect.refresh( document.getElementById( 'dak-admin-video-pricing-doctor' ) );
+			}
 			document.getElementById( 'dak-admin-video-pricing-price' ).value = trigger.getAttribute( 'data-price' ) || '0';
 			document.getElementById( 'dak-admin-video-pricing-discount-percent' ).value = trigger.getAttribute( 'data-discount-percent' ) || '0';
 

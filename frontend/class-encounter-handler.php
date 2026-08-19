@@ -569,7 +569,7 @@ class Encounter_Handler {
 
 		nocache_headers();
 		header( 'Content-Type: application/pdf' );
-		header( 'Content-Disposition: attachment; filename="prescription-' . $encounter_id . '.pdf"' );
+		header( 'Content-Disposition: inline; filename="prescription-' . $encounter_id . '.pdf"' );
 		header( 'Content-Length: ' . strlen( $pdf_bytes ) );
 
 		echo $pdf_bytes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw binary PDF bytes, not HTML output.
@@ -627,7 +627,7 @@ class Encounter_Handler {
 
 		nocache_headers();
 		header( 'Content-Type: application/pdf' );
-		header( 'Content-Disposition: attachment; filename="bill-' . $encounter_id . '.pdf"' );
+		header( 'Content-Disposition: inline; filename="bill-' . $encounter_id . '.pdf"' );
 		header( 'Content-Length: ' . strlen( $pdf_bytes ) );
 
 		echo $pdf_bytes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw binary PDF bytes, not HTML output.

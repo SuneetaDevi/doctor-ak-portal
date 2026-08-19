@@ -100,6 +100,13 @@
 					target.innerHTML = result.data.html;
 					target.querySelectorAll( 'form[data-live-filter]' ).forEach( wireForm );
 
+					// The swapped-in HTML has its own fresh doctor/patient
+					// <select> nodes — enhance() only runs once at page load,
+					// so these need re-enhancing explicitly.
+					if ( window.DAKSearchableSelect ) {
+						target.querySelectorAll( 'select.dak-select-searchable' ).forEach( window.DAKSearchableSelect.enhance );
+					}
+
 					if ( newUrl ) {
 						window.history.replaceState( null, '', newUrl );
 					}

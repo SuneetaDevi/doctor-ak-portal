@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		<div class="dak-field">
 			<label for="dak-admin-video-pricing-doctor"><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></label>
-			<select id="dak-admin-video-pricing-doctor">
+			<select id="dak-admin-video-pricing-doctor" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search doctors…', 'doctor-ak-portal' ); ?>">
 				<option value=""><?php esc_html_e( 'Select a doctor…', 'doctor-ak-portal' ); ?></option>
 				<?php foreach ( $doctor_options as $doctor_id => $doctor_option ) : ?>
 					<option value="<?php echo esc_attr( $doctor_id ); ?>" <?php disabled( $doctor_option['is_disabled'] ); ?>><?php echo esc_html( $doctor_option['is_disabled'] ? sprintf( __( '%s (deactivated)', 'doctor-ak-portal' ), $doctor_option['name'] ) : $doctor_option['name'] ); ?></option>

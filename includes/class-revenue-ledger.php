@@ -111,6 +111,83 @@ class Revenue_Ledger {
 	}
 
 	/**
+	 * Posts a ledger entry for the extra charges a doctor added to an
+	 * encounter on top of the appointment's own charge (see
+	 * Encounter_Bill_Items) — hooked to `doctor_ak_encounter_closed` (see
+	 * class-plugin.php) so those on-the-spot charges land in billing the
+	 * moment the visit is checked out, same as the appointment's own charge
+	 * does via post_for_appointment(). Idempotent per encounter: does
+	 * nothing if this encounter already has a posted entry, so it's safe to
+	 * call more than once.
+	 *
+	 * @param int $encounter_id   Encounter ID the extra charges belong to.
+	 * @param int $appointment_id Its appointment's post ID (for the revenue split's doctor/clinic/type/payment_mode context).
+	 * @return int|false New ledger row ID, false if not postable (nothing to bill, appointment missing, or already posted).
+	 */
+	public static function post_for_encounter_extra( $encounter_id, $appointment_id ) {
+		$extra_amount = Encounter_Bill_Items::total_for_encounter( $encounter_id );
+
+		if ( $extra_amount <= 0 ) {
+			return false;
+		}
+
+		$appointment = Appointments::find( $appointment_id );
+
+		if ( empty( $appointment ) ) {
+			return false;
+		}
+
+		$reference = sprintf( 'ENC-%d-EXTRA', $encounter_id );
+
+		global $wpdb;
+
+		$already_posted = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT COUNT(*) FROM ' . self::table_name() . ' WHERE reference = %s AND status = %s', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
+				$reference,
+				self::STATUS_POSTED
+			)
+		);
+
+		if ( $already_posted > 0 ) {
+			return false;
+		}
+
+		$breakdown = Revenue_Calculator::calculate_for_appointment( array_merge( $appointment, array( 'charge' => $extra_amount ) ) );
+
+		$now = current_time( 'mysql' );
+
+		$inserted = $wpdb->insert(
+			self::table_name(),
+			array(
+				'doctor_id'        => (int) $appointment['doctor_id'],
+				'clinic_id'        => (int) $breakdown['clinic_id'],
+				'appointment_id'   => (int) $appointment_id,
+				'service_id'       => (int) $appointment['service_id'],
+				'transaction_type' => $breakdown['transaction_type'],
+				'direction'        => $breakdown['direction'],
+				'gross_amount'     => number_format( $breakdown['gross_amount'], 2, '.', '' ),
+				'platform_fee'     => number_format( $breakdown['platform_fee'], 2, '.', '' ),
+				'share_percent'    => number_format( $breakdown['share_percent'], 2, '.', '' ),
+				'doctor_amount'    => number_format( $breakdown['doctor_amount'], 2, '.', '' ),
+				'clinic_amount'    => number_format( $breakdown['clinic_amount'], 2, '.', '' ),
+				'net_amount'       => number_format( $breakdown['net_amount'], 2, '.', '' ),
+				'description'      => __( 'Additional charges — encounter', 'doctor-ak-portal' ),
+				'reference'        => $reference,
+				'status'           => self::STATUS_POSTED,
+				'is_legacy'        => 0,
+				'settlement_id'    => 0,
+				'transaction_date' => '' !== $appointment['date'] ? $appointment['date'] : gmdate( 'Y-m-d', strtotime( $now ) ),
+				'created_at'       => $now,
+				'updated_at'       => $now,
+			),
+			array( '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s' )
+		);
+
+		return $inserted ? (int) $wpdb->insert_id : false;
+	}
+
+	/**
 	 * Reverses a previously-posted appointment transaction — the refund
 	 * path (see Appointments::mark_refund_processed(), hooked via the
 	 * existing `doctor_ak_appointment_refund_processed` action). The

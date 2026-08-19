@@ -78,7 +78,7 @@ class Site_Footer {
 	 * @return void
 	 */
 	public function enqueue_assets() {
-		if ( is_admin() || self::is_dashboard_page() ) {
+		if ( is_admin() ) {
 			return;
 		}
 
@@ -103,36 +103,11 @@ class Site_Footer {
 	 * @return void
 	 */
 	public function render() {
-		if ( is_admin() || self::is_dashboard_page() ) {
+		if ( is_admin() ) {
 			return;
 		}
 
 		echo $this->template_loader->get_template( 'site-footer.php', $this->prepare_data() ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- template escapes its own output.
-	}
-
-	/**
-	 * Checks whether the current request is for a page containing any of
-	 * the three dashboard shortcodes — those pages are served through
-	 * Dashboard_Layout's bare template (no theme header/footer), and this
-	 * plugin's own site-wide footer shouldn't appear there either, same
-	 * reasoning as Dashboard_Layout/Theme_Handler's own copy of this check.
-	 *
-	 * @return bool
-	 */
-	private static function is_dashboard_page() {
-		global $post;
-
-		if ( ! ( $post instanceof \WP_Post ) ) {
-			return false;
-		}
-
-		foreach ( array( 'admin_dashboard', 'doctor_dashboard', 'patient_dashboard' ) as $shortcode ) {
-			if ( has_shortcode( $post->post_content, $shortcode ) ) {
-				return true;
-			}
-		}
-
-		return false;
 	}
 
 	/**

@@ -45,7 +45,7 @@ $dak_sessions   = $dak_is_editing ? $editing_clinic['sessions'] : \DoctorAKPorta
 
 		<div class="dak-field">
 			<label for="dak-admin-session-doctor"><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></label>
-			<select id="dak-admin-session-doctor" name="doctor_id" required>
+			<select id="dak-admin-session-doctor" name="doctor_id" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search doctors…', 'doctor-ak-portal' ); ?>" required>
 				<option value=""><?php esc_html_e( 'Select a doctor…', 'doctor-ak-portal' ); ?></option>
 				<?php foreach ( $doctor_options as $doctor_id => $doctor_option ) : ?>
 					<option

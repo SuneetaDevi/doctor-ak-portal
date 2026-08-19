@@ -422,7 +422,7 @@ class Appointment_Handler {
 
 		nocache_headers();
 		header( 'Content-Type: application/pdf' );
-		header( 'Content-Disposition: attachment; filename="' . $invoice_number . '.pdf"' );
+		header( 'Content-Disposition: inline; filename="' . $invoice_number . '.pdf"' );
 		header( 'Content-Length: ' . strlen( $pdf_bytes ) );
 
 		echo $pdf_bytes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw binary PDF bytes, not HTML output.

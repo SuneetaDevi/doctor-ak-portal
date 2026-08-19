@@ -714,8 +714,7 @@ class Appointments {
 	 * is_doctors_patient()) — from appointment history and/or having been
 	 * added directly by that doctor — for the doctor dashboard's Patients
 	 * tab. Guests (no account) aren't included since there's no profile to
-	 * edit. Most-recently-seen first; patients with no visit yet (added but
-	 * not yet booked) sort last.
+	 * edit. Most-recently-registered patient first.
 	 *
 	 * @param int $doctor_id Doctor's user ID.
 	 * @return array List of `array( 'id', 'name', 'email', 'phone', 'clinic_name', 'last_visit' )`, 'last_visit' '' if none yet.
@@ -777,14 +776,17 @@ class Appointments {
 				'visit_count' => isset( $visit_count[ $patient_id ] ) ? $visit_count[ $patient_id ] : 0,
 				'avatar_url'  => self::avatar_url_for_user( $patient_id ),
 				'registered_date' => mysql2date( get_option( 'date_format' ), $patient->user_registered ),
+				'registered_at'   => $patient->user_registered,
 				'clinic_location_id' => (int) get_user_meta( $patient_id, Clinic_Locations::PATIENT_META_KEY, true ),
 			);
 		}
 
+		// Most-recently-registered patient first, per the "Patients" tab's
+		// listing convention used across the portal.
 		usort(
 			$rows,
 			function ( $a, $b ) {
-				return strcmp( $b['last_visit'], $a['last_visit'] );
+				return strcmp( $b['registered_at'], $a['registered_at'] );
 			}
 		);
 

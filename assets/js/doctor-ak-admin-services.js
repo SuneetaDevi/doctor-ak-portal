@@ -21,9 +21,16 @@
 		wireDelete();
 	} );
 
+	function refreshSearchable( id ) {
+		if ( window.DAKSearchableSelect ) {
+			window.DAKSearchableSelect.refresh( document.getElementById( id ) );
+		}
+	}
+
 	function resetModalFields() {
 		document.getElementById( 'dak-admin-service-id' ).value = '0';
 		document.getElementById( 'dak-admin-service-doctor' ).value = '';
+		refreshSearchable( 'dak-admin-service-doctor' );
 		document.getElementById( 'dak-admin-service-name' ).value = '';
 		document.getElementById( 'dak-admin-service-category' ).value = '';
 		document.getElementById( 'dak-admin-service-charge' ).value = '0';
@@ -93,6 +100,7 @@
 
 			document.getElementById( 'dak-admin-service-id' ).value = trigger.getAttribute( 'data-service-id' ) || '0';
 			document.getElementById( 'dak-admin-service-doctor' ).value = trigger.getAttribute( 'data-doctor-id' ) || '';
+			refreshSearchable( 'dak-admin-service-doctor' );
 			document.getElementById( 'dak-admin-service-name' ).value = trigger.getAttribute( 'data-name' ) || '';
 			document.getElementById( 'dak-admin-service-category' ).value = trigger.getAttribute( 'data-category' ) || '';
 			document.getElementById( 'dak-admin-service-charge' ).value = trigger.getAttribute( 'data-charge' ) || '0';

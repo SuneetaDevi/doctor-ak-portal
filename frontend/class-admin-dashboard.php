@@ -220,6 +220,26 @@ class Admin_Dashboard {
 			Assets::version( 'assets/css/doctor-ak-admin-dashboard.css' )
 		);
 
+		// Searchable doctor/patient dropdowns (see
+		// doctor-ak-searchable-select.js) — every dashboard section that
+		// lists doctors or patients in a <select> reuses this same
+		// progressive enhancement, so it's loaded unconditionally here
+		// rather than duplicated per section below.
+		wp_enqueue_style(
+			'doctor-ak-portal-searchable-select',
+			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-searchable-select.css',
+			array( 'doctor-ak-portal-auth' ),
+			Assets::version( 'assets/css/doctor-ak-searchable-select.css' )
+		);
+
+		wp_enqueue_script(
+			'doctor-ak-portal-searchable-select',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-searchable-select.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-searchable-select.js' ),
+			true
+		);
+
 		wp_enqueue_script(
 			'doctor-ak-portal-dashboard',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-dashboard.js',
@@ -613,6 +633,16 @@ class Admin_Dashboard {
 				Assets::version( 'assets/css/doctor-ak-clinics.css' )
 			);
 
+			// Only the slot-card styles are reused here (see the "Add/Edit
+			// Appointment" modal's date/time picker, which mirrors the public
+			// booking page's slot grid instead of a free-text time field).
+			wp_enqueue_style(
+				'doctor-ak-portal-booking-page',
+				DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-booking-page.css',
+				array( 'doctor-ak-portal-auth' ),
+				Assets::version( 'assets/css/doctor-ak-booking-page.css' )
+			);
+
 			wp_enqueue_script(
 				'doctor-ak-portal-admin-appointments',
 				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-appointments.js',
@@ -625,8 +655,12 @@ class Admin_Dashboard {
 				'doctor-ak-portal-admin-appointments',
 				'dakAdminAppointments',
 				array(
-					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-					'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+					'ajaxUrl'    => admin_url( 'admin-ajax.php' ),
+					'nonce'      => wp_create_nonce( self::NONCE_ACTION ),
+					// For the doctor_ak_available_slots AJAX action, which the
+					// slot picker reuses from the public booking page (see
+					// Booking_Handler::handle_get_available_slots()).
+					'slotsNonce' => wp_create_nonce( Booking_Handler::NONCE_ACTION ),
 				)
 			);
 		}
@@ -1858,11 +1892,20 @@ class Admin_Dashboard {
 	private function users_section_html( $section ) {
 		$role = $this->role_for_section( $section );
 
+		// Patients list newest-registered first (see the "list of patients"
+		// convention used across the portal); doctors/receptionists keep
+		// the alphabetical roster.
 		$query = new \WP_User_Query(
-			array(
-				'role'    => $role,
-				'orderby' => 'display_name',
-			)
+			'patients' === $section
+				? array(
+					'role'    => $role,
+					'orderby' => 'registered',
+					'order'   => 'DESC',
+				)
+				: array(
+					'role'    => $role,
+					'orderby' => 'display_name',
+				)
 		);
 
 		$results = $query->get_results();

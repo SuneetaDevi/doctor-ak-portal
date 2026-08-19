@@ -48,6 +48,12 @@
 		wireAddEncounterModal();
 	} );
 
+	function refreshSearchable( select ) {
+		if ( window.DAKSearchableSelect ) {
+			window.DAKSearchableSelect.refresh( select );
+		}
+	}
+
 	function wireAddEncounterModal() {
 		var modal = document.getElementById( 'dak-admin-add-encounter-modal' );
 		var addButton = document.getElementById( 'dak-admin-add-encounter' );
@@ -88,6 +94,7 @@
 			patientSelect.innerHTML = patientOptionsHtml;
 			patientSelect.value = '0';
 			patientSelect.disabled = true;
+			refreshSearchable( patientSelect );
 			updateSaveState();
 
 			if ( '0' === clinicLocationId || ! doctors.length ) {
@@ -96,6 +103,7 @@
 				emptyOption.textContent = '0' === clinicLocationId ? 'Select a clinic first…' : window.dakAdminEncounters.noDoctorsMessage;
 				doctorSelect.appendChild( emptyOption );
 				doctorSelect.disabled = true;
+				refreshSearchable( doctorSelect );
 				return;
 			}
 
@@ -112,10 +120,12 @@
 			} );
 
 			doctorSelect.disabled = false;
+			refreshSearchable( doctorSelect );
 		} );
 
 		doctorSelect.addEventListener( 'change', function () {
 			patientSelect.disabled = '0' === doctorSelect.value;
+			refreshSearchable( patientSelect );
 			updateSaveState();
 		} );
 
@@ -158,9 +168,11 @@
 			clinicSelect.value = '0';
 			doctorSelect.innerHTML = '<option value="0">Select a clinic first…</option>';
 			doctorSelect.disabled = true;
+			refreshSearchable( doctorSelect );
 			patientSelect.innerHTML = patientOptionsHtml;
 			patientSelect.value = '0';
 			patientSelect.disabled = true;
+			refreshSearchable( patientSelect );
 			saveButton.disabled = true;
 		}
 	}

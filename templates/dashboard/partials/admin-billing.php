@@ -107,6 +107,8 @@ foreach ( $clinics_by_doctor as $dak_doctor_id => $dak_doctor_clinics ) {
 					<a
 						class="dak-button dak-button-secondary dak-button-sm"
 						href="<?php echo esc_url( \DoctorAKPortal\Frontend\Settlement_Handler::statement_download_url( $dak_doctor_id, $filters['date_from'], $filters['date_to'] ) ); ?>"
+						target="_blank"
+						rel="noopener"
 					>
 						<?php esc_html_e( 'Download Statement', 'doctor-ak-portal' ); ?>
 					</a>
@@ -176,7 +178,7 @@ foreach ( $clinics_by_doctor as $dak_doctor_id => $dak_doctor_clinics ) {
 
 		<div class="dak-field">
 			<label for="dak-billing-doctor"><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></label>
-			<select id="dak-billing-doctor" name="doctor_id">
+			<select id="dak-billing-doctor" name="doctor_id" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search doctors…', 'doctor-ak-portal' ); ?>">
 				<option value=""><?php esc_html_e( 'All doctors', 'doctor-ak-portal' ); ?></option>
 				<?php foreach ( $doctor_options as $dak_doctor_id => $dak_doctor_option ) : ?>
 					<option value="<?php echo esc_attr( $dak_doctor_id ); ?>" <?php selected( (int) $filters['doctor_id'] === (int) $dak_doctor_id ); ?>><?php echo esc_html( $dak_doctor_option['name'] ); ?></option>

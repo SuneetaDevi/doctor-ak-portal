@@ -10,6 +10,10 @@
 	'use strict';
 
 	var servicesByDoctorAndType = {};
+	// The time slot the appointment currently open in the modal already
+	// occupies (edit mode only) — its own slot shouldn't read as "booked"
+	// just because it's already booked by itself.
+	var currentEditTime = '';
 
 	document.addEventListener( 'DOMContentLoaded', function () {
 		if ( ! window.dakAdminAppointments ) {
@@ -42,6 +46,7 @@
 		wireModalClose( modal, 'dak-admin-appointment-modal-close' );
 		wireModalClose( viewModal, 'dak-admin-appointment-view-modal-close' );
 		wireDoctorTypeChange();
+		wireDateTimePicker();
 		wirePatientToggle();
 		wireAdd( modal );
 		wireEdit( modal );
@@ -144,11 +149,19 @@
 		}
 	}
 
+	function refreshSearchable( id ) {
+		if ( window.DAKSearchableSelect ) {
+			window.DAKSearchableSelect.refresh( document.getElementById( id ) );
+		}
+	}
+
 	function resetModalFields() {
 		document.getElementById( 'dak-admin-appointment-id' ).value = '0';
 		document.getElementById( 'dak-admin-appointment-doctor' ).value = '';
+		refreshSearchable( 'dak-admin-appointment-doctor' );
 		document.getElementById( 'dak-admin-appointment-type' ).value = 'clinic';
 		document.getElementById( 'dak-admin-appointment-patient' ).value = '';
+		refreshSearchable( 'dak-admin-appointment-patient' );
 		document.getElementById( 'dak-admin-appointment-guest-name' ).value = '';
 		document.getElementById( 'dak-admin-appointment-guest-email' ).value = '';
 		document.getElementById( 'dak-admin-appointment-guest-phone' ).value = '';
@@ -158,7 +171,9 @@
 		// this again so editing an appointment that's already in the past
 		// (e.g. logging/adjusting a completed visit) isn't blocked.
 		dateField.min = new Date().toISOString().slice( 0, 10 );
+		currentEditTime = '';
 		document.getElementById( 'dak-admin-appointment-time' ).value = '';
+		resetSlots();
 		document.getElementById( 'dak-admin-appointment-status' ).value = 'confirmed';
 		document.getElementById( 'dak-admin-appointment-payment-status' ).value = 'pending';
 		document.getElementById( 'dak-admin-appointment-payment-mode' ).value = 'manual';
@@ -265,6 +280,177 @@
 		typeSelect.addEventListener( 'change', refresh );
 	}
 
+	/**
+	 * Wires the "Add/Edit Appointment" modal's date + slot-grid picker —
+	 * mirrors the public booking page's Date & Time step
+	 * (doctor_ak_available_slots, see Booking_Handler) instead of a
+	 * free-text time field, so an admin sees the same available/booked/past
+	 * slots a patient would.
+	 */
+	function wireDateTimePicker() {
+		var doctorSelect = document.getElementById( 'dak-admin-appointment-doctor' );
+		var typeSelect = document.getElementById( 'dak-admin-appointment-type' );
+		var dateField = document.getElementById( 'dak-admin-appointment-date' );
+
+		if ( ! doctorSelect || ! typeSelect || ! dateField ) {
+			return;
+		}
+
+		function refresh() {
+			// Picking a different doctor/type/date invalidates whatever slot
+			// was selected for the previous one.
+			document.getElementById( 'dak-admin-appointment-time' ).value = '';
+
+			// Slots are day-specific — as soon as a doctor is chosen, default
+			// the date to today (or its min, if that's later) so the slot
+			// grid appears immediately instead of waiting on a separate date
+			// pick. The admin can still change the date afterwards.
+			if ( doctorSelect.value && ! dateField.value ) {
+				var todayStr = new Date().toISOString().slice( 0, 10 );
+				dateField.value = dateField.min && dateField.min > todayStr ? dateField.min : todayStr;
+			}
+
+			fetchSlots( doctorSelect.value, typeSelect.value, dateField.value );
+		}
+
+		doctorSelect.addEventListener( 'change', refresh );
+		typeSelect.addEventListener( 'change', refresh );
+		dateField.addEventListener( 'change', refresh );
+	}
+
+	function resetSlots() {
+		document.getElementById( 'dak-admin-appointment-slots-groups' ).innerHTML = '';
+		hide( document.getElementById( 'dak-admin-appointment-no-slots' ) );
+		show( document.getElementById( 'dak-admin-appointment-slots-hint' ) );
+	}
+
+	function fetchSlots( doctorId, type, date ) {
+		var groups = document.getElementById( 'dak-admin-appointment-slots-groups' );
+		var noSlots = document.getElementById( 'dak-admin-appointment-no-slots' );
+		var hint = document.getElementById( 'dak-admin-appointment-slots-hint' );
+
+		if ( ! groups ) {
+			return;
+		}
+
+		if ( ! doctorId || ! date ) {
+			groups.innerHTML = '';
+			hide( noSlots );
+			show( hint );
+			return;
+		}
+
+		hide( hint );
+		hide( noSlots );
+		groups.innerHTML = '<p>' + 'Loading times…' + '</p>';
+
+		var formData = new FormData();
+		formData.append( 'action', 'doctor_ak_available_slots' );
+		formData.append( 'nonce', window.dakAdminAppointments.slotsNonce );
+		formData.append( 'doctor_id', doctorId );
+		formData.append( 'type', type );
+		formData.append( 'date', date );
+
+		fetch( window.dakAdminAppointments.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
+			.then( function ( response ) { return response.json(); } )
+			.then( function ( result ) {
+				var slots = ( result.success && result.data && result.data.slots ) ? result.data.slots : [];
+				renderSlotGrid( slots );
+			} )
+			.catch( function () {
+				groups.innerHTML = '';
+				show( noSlots );
+			} );
+	}
+
+	function formatTimeLabel( time ) {
+		var parts = time.split( ':' );
+		var hour = parseInt( parts[ 0 ], 10 );
+		var period = hour >= 12 ? 'PM' : 'AM';
+		var displayHour = hour % 12;
+
+		if ( 0 === displayHour ) {
+			displayHour = 12;
+		}
+
+		return displayHour + ':' + parts[ 1 ] + ' ' + period;
+	}
+
+	function renderSlotGrid( slots ) {
+		var groupsEl = document.getElementById( 'dak-admin-appointment-slots-groups' );
+		var noSlots = document.getElementById( 'dak-admin-appointment-no-slots' );
+		var timeField = document.getElementById( 'dak-admin-appointment-time' );
+
+		groupsEl.innerHTML = '';
+
+		// The appointment being edited already occupies its own slot — the
+		// server reports it 'booked' (by this same appointment), but that
+		// shouldn't stop the admin from keeping it selected.
+		if ( currentEditTime ) {
+			slots = slots.map( function ( slot ) {
+				if ( slot.time === currentEditTime && 'available' !== slot.status ) {
+					return { time: slot.time, status: 'available', is_instant: false, surcharge: 0 };
+				}
+				return slot;
+			} );
+		}
+
+		if ( ! slots.length ) {
+			show( noSlots );
+			return;
+		}
+
+		hide( noSlots );
+
+		var gridEl = document.createElement( 'div' );
+		gridEl.className = 'dak-booking-slots-grid';
+
+		slots.forEach( function ( slot ) {
+			var card = document.createElement( 'button' );
+			card.type = 'button';
+			card.className = 'dak-booking-slot-card is-' + slot.status;
+
+			var timeLabel = document.createElement( 'span' );
+			timeLabel.className = 'dak-booking-slot-time';
+			timeLabel.textContent = formatTimeLabel( slot.time );
+			card.appendChild( timeLabel );
+
+			if ( slot.time === timeField.value ) {
+				card.classList.add( 'is-selected' );
+			}
+
+			if ( 'available' === slot.status ) {
+				card.addEventListener( 'click', function () {
+					selectSlot( slot.time, card );
+				} );
+			} else {
+				card.disabled = true;
+			}
+
+			gridEl.appendChild( card );
+		} );
+
+		groupsEl.appendChild( gridEl );
+	}
+
+	function selectSlot( time, card ) {
+		document.getElementById( 'dak-admin-appointment-time' ).value = time;
+		clearFieldError( 'time' );
+
+		document.querySelectorAll( '#dak-admin-appointment-slots-groups .dak-booking-slot-card' ).forEach( function ( el ) {
+			el.classList.remove( 'is-selected' );
+		} );
+		card.classList.add( 'is-selected' );
+	}
+
+	function clearFieldError( field ) {
+		var el = document.querySelector( '.dak-field-error[data-field="' + field + '"]' );
+
+		if ( el ) {
+			el.textContent = '';
+		}
+	}
+
 	function wirePatientToggle() {
 		var patientSelect = document.getElementById( 'dak-admin-appointment-patient' );
 		var guestFields = document.getElementById( 'dak-admin-appointment-guest-fields' );
@@ -291,15 +477,19 @@
 
 			document.getElementById( 'dak-admin-appointment-id' ).value = trigger.getAttribute( 'data-appointment-id' ) || '0';
 			document.getElementById( 'dak-admin-appointment-doctor' ).value = trigger.getAttribute( 'data-doctor-id' ) || '';
+			refreshSearchable( 'dak-admin-appointment-doctor' );
 			document.getElementById( 'dak-admin-appointment-type' ).value = trigger.getAttribute( 'data-type' ) || 'clinic';
 			document.getElementById( 'dak-admin-appointment-patient' ).value = trigger.getAttribute( 'data-patient-id' ) && '0' !== trigger.getAttribute( 'data-patient-id' ) ? trigger.getAttribute( 'data-patient-id' ) : '';
+			refreshSearchable( 'dak-admin-appointment-patient' );
 			document.getElementById( 'dak-admin-appointment-guest-name' ).value = trigger.getAttribute( 'data-guest-name' ) || '';
 			document.getElementById( 'dak-admin-appointment-guest-email' ).value = trigger.getAttribute( 'data-guest-email' ) || '';
 			document.getElementById( 'dak-admin-appointment-guest-phone' ).value = trigger.getAttribute( 'data-guest-phone' ) || '';
 			var dateField = document.getElementById( 'dak-admin-appointment-date' );
 			dateField.min = ''; // Editing an existing (possibly already-past) appointment isn't restricted to future dates — see resetModalFields().
 			dateField.value = trigger.getAttribute( 'data-date' ) || '';
-			document.getElementById( 'dak-admin-appointment-time' ).value = trigger.getAttribute( 'data-time' ) || '';
+			var editTime = trigger.getAttribute( 'data-time' ) || '';
+			currentEditTime = editTime;
+			document.getElementById( 'dak-admin-appointment-time' ).value = editTime;
 			document.getElementById( 'dak-admin-appointment-status' ).value = trigger.getAttribute( 'data-status' ) || 'confirmed';
 			document.getElementById( 'dak-admin-appointment-payment-status' ).value = trigger.getAttribute( 'data-payment-status' ) || 'pending';
 			document.getElementById( 'dak-admin-appointment-payment-mode' ).value = trigger.getAttribute( 'data-payment-mode' ) || 'manual';
@@ -311,6 +501,8 @@
 			);
 
 			updateServiceOptions( trigger.getAttribute( 'data-doctor-id' ) || '', trigger.getAttribute( 'data-type' ) || 'clinic', trigger.getAttribute( 'data-service-id' ) || 0 );
+
+			fetchSlots( trigger.getAttribute( 'data-doctor-id' ) || '', trigger.getAttribute( 'data-type' ) || 'clinic', dateField.value );
 
 			openModal( modal );
 		} );
@@ -659,6 +851,12 @@
 	function show( el ) {
 		if ( el ) {
 			el.classList.remove( 'dak-hidden' );
+		}
+	}
+
+	function hide( el ) {
+		if ( el ) {
+			el.classList.add( 'dak-hidden' );
 		}
 	}
 } )();

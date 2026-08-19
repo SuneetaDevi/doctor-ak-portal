@@ -142,6 +142,22 @@ class Encounters {
 			return new \WP_Error( 'doctor_ak_encounter_not_closed', __( 'The encounter could not be closed. Please try again.', 'doctor-ak-portal' ) );
 		}
 
+		// Closing the encounter means the visit happened and was paid for —
+		// if the appointment's own charge (or any extra charges added
+		// during the visit, see Encounter_Bill_Items) is still marked
+		// payment-pending at this point, settle it now so the amount lands
+		// in billing. (check_in() already required a chargeable appointment
+		// to be paid before the encounter could open, so this only ever
+		// triggers for a checked-in-free appointment that picked up paid
+		// extras during the visit.)
+		$appointment = Appointments::find( $encounter['appointment_id'] );
+
+		if ( $appointment && Appointments::PAYMENT_STATUS_PAID !== $appointment['payment_status']
+			&& ( (float) $appointment['charge'] > 0 || Encounter_Bill_Items::total_for_encounter( $encounter_id ) > 0 )
+		) {
+			Appointments::mark_paid( $encounter['appointment_id'] );
+		}
+
 		Appointments::checkout( $encounter['appointment_id'] );
 
 		/**

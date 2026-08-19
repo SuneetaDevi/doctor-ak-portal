@@ -83,7 +83,7 @@ $dak_status_labels = array(
 
 		<div class="dak-field">
 			<label for="dak-admin-encounters-doctor"><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></label>
-			<select id="dak-admin-encounters-doctor" name="doctor_id">
+			<select id="dak-admin-encounters-doctor" name="doctor_id" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search doctors…', 'doctor-ak-portal' ); ?>">
 				<option value="0"><?php esc_html_e( 'All doctors', 'doctor-ak-portal' ); ?></option>
 				<?php foreach ( $doctors as $dak_doctor_option ) : ?>
 					<option value="<?php echo esc_attr( $dak_doctor_option->ID ); ?>" <?php selected( $filters['doctor_id'], $dak_doctor_option->ID ); ?>><?php echo esc_html( $dak_doctor_option->display_name ); ?></option>

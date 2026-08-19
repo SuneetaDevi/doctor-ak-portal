@@ -286,6 +286,12 @@ class Plugin {
 		$this->loader->add_action( 'doctor_ak_appointment_paid', 'DoctorAKPortal\\Includes\\Revenue_Ledger', 'post_for_appointment' );
 		$this->loader->add_action( 'doctor_ak_appointment_refund_processed', 'DoctorAKPortal\\Includes\\Revenue_Ledger', 'reverse_for_appointment' );
 
+		// Any extra charges a doctor added during an encounter (on top of
+		// the appointment's own charge) also need to land in billing —
+		// posted the moment the encounter is closed. See
+		// Encounters::close() and Revenue_Ledger::post_for_encounter_extra().
+		$this->loader->add_action( 'doctor_ak_encounter_closed', 'DoctorAKPortal\\Includes\\Revenue_Ledger', 'post_for_encounter_extra', 10, 2 );
+
 		$settlement_handler = new Settlement_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_create_settlement', $settlement_handler, 'handle_create' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_settlement_mark_paid', $settlement_handler, 'handle_mark_paid' );

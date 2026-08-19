@@ -35,7 +35,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="dak-field-row">
 			<div class="dak-field">
 				<label for="dak-admin-appointment-doctor"><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></label>
-				<select id="dak-admin-appointment-doctor">
+				<select id="dak-admin-appointment-doctor" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search doctors…', 'doctor-ak-portal' ); ?>">
 					<option value=""><?php esc_html_e( 'Select a doctor…', 'doctor-ak-portal' ); ?></option>
 					<?php foreach ( $doctor_options as $doctor_id => $doctor_option ) : ?>
 						<option value="<?php echo esc_attr( $doctor_id ); ?>" <?php disabled( $doctor_option['is_disabled'] ); ?>><?php echo esc_html( $doctor_option['is_disabled'] ? sprintf( __( '%s (deactivated)', 'doctor-ak-portal' ), $doctor_option['name'] ) : $doctor_option['name'] ); ?></option>
@@ -61,7 +61,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		<div class="dak-field">
 			<label for="dak-admin-appointment-patient"><?php esc_html_e( 'Registered Patient (optional)', 'doctor-ak-portal' ); ?></label>
-			<select id="dak-admin-appointment-patient">
+			<select id="dak-admin-appointment-patient" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search patients…', 'doctor-ak-portal' ); ?>">
 				<option value=""><?php esc_html_e( '— Guest (enter details below) —', 'doctor-ak-portal' ); ?></option>
 				<?php foreach ( $patient_options as $patient_id => $patient_name ) : ?>
 					<option value="<?php echo esc_attr( $patient_id ); ?>"><?php echo esc_html( $patient_name ); ?></option>
@@ -88,17 +88,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</div>
 		</div>
 
-		<div class="dak-field-row">
-			<div class="dak-field">
-				<label for="dak-admin-appointment-date"><?php esc_html_e( 'Date', 'doctor-ak-portal' ); ?></label>
-				<input type="date" id="dak-admin-appointment-date">
-				<span class="dak-field-error" data-field="date"></span>
-			</div>
-			<div class="dak-field">
-				<label for="dak-admin-appointment-time"><?php esc_html_e( 'Time', 'doctor-ak-portal' ); ?></label>
-				<input type="time" id="dak-admin-appointment-time">
-				<span class="dak-field-error" data-field="time"></span>
-			</div>
+		<div class="dak-field">
+			<label for="dak-admin-appointment-date"><?php esc_html_e( 'Date', 'doctor-ak-portal' ); ?></label>
+			<input type="date" id="dak-admin-appointment-date">
+			<span class="dak-field-error" data-field="date"></span>
+		</div>
+
+		<div class="dak-field">
+			<label><?php esc_html_e( 'Time', 'doctor-ak-portal' ); ?></label>
+			<input type="hidden" id="dak-admin-appointment-time">
+			<p class="dak-field-hint dak-hidden" id="dak-admin-appointment-slots-hint"><?php esc_html_e( 'Choose a doctor and date to see open slots.', 'doctor-ak-portal' ); ?></p>
+			<div id="dak-admin-appointment-slots-groups"></div>
+			<p class="dak-empty-state dak-hidden" id="dak-admin-appointment-no-slots"><?php esc_html_e( 'No time slots are configured for this doctor on this date.', 'doctor-ak-portal' ); ?></p>
+			<span class="dak-field-error" data-field="time"></span>
 		</div>
 
 		<div class="dak-field-row">

@@ -354,10 +354,17 @@
 	display: flex !important;
 	flex-direction: column !important;
 	gap: 0.3rem !important;
+	min-width: 0 !important;
+	overflow-wrap: break-word !important;
+	word-break: break-word !important;
 }
 
 .dak-booking-service-card:hover {
 	border-color: var( --dak-primary ) !important;
+}
+
+.dak-booking-service-card {
+	white-space: normal !important;
 }
 
 .dak-booking-service-card.is-selected {

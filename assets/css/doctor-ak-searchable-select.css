@@ -1,0 +1,73 @@
+/**
+ * Doctor AK Portal — Searchable select (doctor/patient dropdowns).
+ *
+ * Progressive enhancement: doctor-ak-searchable-select.js wraps a plain
+ * <select class="dak-select-searchable"> with this markup, keeping the
+ * original <select> as the source of truth (hidden, but still the thing
+ * every other script reads/writes .value on).
+ */
+
+.dak-searchable-select {
+	position: relative !important;
+}
+
+.dak-searchable-select-native {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	padding: 0 !important;
+	margin: -1px !important;
+	overflow: hidden !important;
+	clip: rect( 0, 0, 0, 0 ) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
+}
+
+.dak-searchable-select-input {
+	cursor: text !important;
+}
+
+.dak-searchable-select.is-disabled .dak-searchable-select-input {
+	cursor: not-allowed !important;
+	opacity: 0.6 !important;
+}
+
+.dak-searchable-select-menu {
+	position: absolute !important;
+	top: calc( 100% + 4px ) !important;
+	left: 0 !important;
+	right: 0 !important;
+	z-index: 40 !important;
+	max-height: 240px !important;
+	overflow-y: auto !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	box-shadow: var( --dak-shadow-hover ) !important;
+	padding: 0.3rem !important;
+}
+
+.dak-searchable-select-option {
+	display: block !important;
+	width: 100% !important;
+	text-align: left !important;
+	padding: 0.55rem 0.7rem !important;
+	border: 0 !important;
+	background: transparent !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.9rem !important;
+	font-family: inherit !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	cursor: pointer !important;
+}
+
+.dak-searchable-select-option:hover,
+.dak-searchable-select-option.is-selected {
+	background: var( --dak-primary-tint ) !important;
+}
+
+.dak-searchable-select-empty {
+	padding: 0.55rem 0.7rem !important;
+	font-size: 0.85rem !important;
+	color: var( --dak-muted ) !important;
+}

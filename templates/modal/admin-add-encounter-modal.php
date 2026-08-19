@@ -50,7 +50,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		<div class="dak-field">
 			<label for="dak-admin-add-encounter-doctor"><?php esc_html_e( '2. Doctor', 'doctor-ak-portal' ); ?></label>
-			<select id="dak-admin-add-encounter-doctor" disabled>
+			<select id="dak-admin-add-encounter-doctor" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search doctors…', 'doctor-ak-portal' ); ?>" disabled>
 				<option value="0"><?php esc_html_e( 'Select a clinic first…', 'doctor-ak-portal' ); ?></option>
 			</select>
 			<span class="dak-field-error" data-field="doctor_id"></span>
@@ -58,7 +58,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		<div class="dak-field">
 			<label for="dak-admin-add-encounter-patient"><?php esc_html_e( '3. Patient', 'doctor-ak-portal' ); ?></label>
-			<select id="dak-admin-add-encounter-patient" disabled>
+			<select id="dak-admin-add-encounter-patient" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search patients…', 'doctor-ak-portal' ); ?>" disabled>
 				<option value="0"><?php esc_html_e( 'Select a doctor first…', 'doctor-ak-portal' ); ?></option>
 				<?php foreach ( $patient_options as $dak_patient_id => $dak_patient_name ) : ?>
 					<option value="<?php echo esc_attr( $dak_patient_id ); ?>"><?php echo esc_html( $dak_patient_name ); ?></option>
