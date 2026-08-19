@@ -99,7 +99,7 @@ class Admin_Dashboard {
 	/**
 	 * Section slugs a logged-in Receptionist could ever structurally reach —
 	 * the hard ceiling; everything else (Doctor Requests, the Receptionist
-	 * staff-account tab itself, Billing/Revenue, Encounters, Video
+	 * staff-account tab itself, Billing/Revenue, the Encounters list, Video
 	 * Consultation pricing, Roles & Permissions, Locations) stays
 	 * administrator-only no matter what. Within this ceiling, Settings →
 	 * Roles & Permissions lets an admin further switch individual sections
@@ -111,7 +111,7 @@ class Admin_Dashboard {
 	 *
 	 * @var array
 	 */
-	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'patients', 'doctors', 'clinic', 'services', 'doctor-sessions', 'settings', 'encounter' );
+	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'patients', 'doctors', 'clinic', 'services', 'doctor-sessions', 'settings', 'encounter', 'notifications' );
 
 	/**
 	 * Section slugs that exist and are reachable, but deliberately have no
