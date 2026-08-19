@@ -166,14 +166,47 @@ class Booking_Handler {
 
 		$current_user         = wp_get_current_user();
 		$is_logged_in_patient = is_user_logged_in() && in_array( Roles::PATIENT_ROLE, (array) $current_user->roles, true );
+		$is_staff              = current_user_can( 'manage_options' ) || current_user_can( 'doctor_ak_manage_appointments' );
 
-		$patient_id  = 0;
-		$guest_name  = '';
-		$guest_email = '';
-		$guest_phone = '';
+		$patient_id       = 0;
+		$guest_name       = '';
+		$guest_email      = '';
+		$guest_phone      = '';
+		$staff_new_patient = false;
 
 		if ( $is_logged_in_patient ) {
 			$patient_id = $current_user->ID;
+		} elseif ( $is_staff ) {
+			$posted_patient_id = isset( $_POST['patient_id'] ) ? absint( wp_unslash( $_POST['patient_id'] ) ) : 0;
+
+			if ( $posted_patient_id > 0 ) {
+				$existing_patient = get_userdata( $posted_patient_id );
+
+				if ( ! $existing_patient || ! in_array( Roles::PATIENT_ROLE, (array) $existing_patient->roles, true ) ) {
+					$errors['patient_id'] = __( 'Please choose a valid patient.', 'doctor-ak-portal' );
+				} else {
+					$patient_id = $posted_patient_id;
+				}
+			} else {
+				// "+ Add new patient" — same name/email/phone fields as a
+				// guest booking, but this creates a real patient account
+				// (see self::create_patient_account()) so this admin/
+				// receptionist can find and book them again later.
+				$staff_new_patient = true;
+				$guest_name        = isset( $_POST['guest_name'] ) ? sanitize_text_field( wp_unslash( $_POST['guest_name'] ) ) : '';
+				$guest_email       = isset( $_POST['guest_email'] ) ? sanitize_email( wp_unslash( $_POST['guest_email'] ) ) : '';
+				$guest_phone       = isset( $_POST['guest_phone'] ) ? sanitize_text_field( wp_unslash( $_POST['guest_phone'] ) ) : '';
+
+				if ( '' === $guest_name ) {
+					$errors['guest_name'] = __( "Please enter the patient's name.", 'doctor-ak-portal' );
+				}
+
+				if ( '' === $guest_email || ! is_email( $guest_email ) ) {
+					$errors['guest_email'] = __( 'Please enter a valid email address.', 'doctor-ak-portal' );
+				} elseif ( email_exists( $guest_email ) ) {
+					$errors['guest_email'] = __( 'A patient with that email address already exists — search for them above instead.', 'doctor-ak-portal' );
+				}
+			}
 		} else {
 			$guest_name  = isset( $_POST['guest_name'] ) ? sanitize_text_field( wp_unslash( $_POST['guest_name'] ) ) : '';
 			$guest_email = isset( $_POST['guest_email'] ) ? sanitize_email( wp_unslash( $_POST['guest_email'] ) ) : '';
@@ -188,6 +221,18 @@ class Booking_Handler {
 			}
 		}
 
+		if ( $staff_new_patient && empty( $errors ) ) {
+			$new_patient_id = self::create_patient_account( $guest_name, $guest_email, $guest_phone );
+
+			if ( is_wp_error( $new_patient_id ) ) {
+				wp_send_json_error( array( 'message' => $new_patient_id->get_error_message() ) );
+			}
+
+			$patient_id  = $new_patient_id;
+			$guest_name  = '';
+			$guest_email = '';
+		}
+
 		// A phone number is always required for video consultations (so the
 		// clinic can reach the patient), regardless of whether they're paying
 		// now or later; for clinic (onsite) visits it's only needed when
@@ -195,13 +240,25 @@ class Booking_Handler {
 		$requires_phone = 'video' === $type || 'now' === $payment_choice;
 
 		if ( $requires_phone && empty( $errors ) ) {
-			$phone_for_payment = $is_logged_in_patient ? get_user_meta( $current_user->ID, 'doctor_ak_phone_number', true ) : $guest_phone;
+			$phone_for_payment = $patient_id > 0 ? get_user_meta( $patient_id, 'doctor_ak_phone_number', true ) : $guest_phone;
 
 			if ( '' === Swich_Payment::normalize_msisdn( $phone_for_payment ) ) {
 				if ( $is_logged_in_patient ) {
 					$message = 'video' === $type
 						? __( 'Please add a valid mobile number (e.g. 03xxxxxxxxx) to your profile before booking a video consultation.', 'doctor-ak-portal' )
 						: __( 'Please add a valid mobile number (e.g. 03xxxxxxxxx) to your profile before paying online.', 'doctor-ak-portal' );
+
+					wp_send_json_error( array( 'message' => $message ) );
+				}
+
+				if ( $patient_id > 0 ) {
+					// A staff member picked (or just created) a patient
+					// who has no valid mobile number on file — there's no
+					// guest_phone field visible in that flow, so this has
+					// to be a top-level message rather than a field error.
+					$message = 'video' === $type
+						? __( "This patient doesn't have a valid mobile number on file. Please add one to their profile before booking a video consultation.", 'doctor-ak-portal' )
+						: __( "This patient doesn't have a valid mobile number on file. Please add one to their profile before paying online.", 'doctor-ak-portal' );
 
 					wp_send_json_error( array( 'message' => $message ) );
 				}
@@ -263,6 +320,10 @@ class Booking_Handler {
 			$message = $has_pending_charge
 				? __( 'Your appointment is scheduled. Payment is still pending — pay any time from your dashboard.', 'doctor-ak-portal' )
 				: __( 'Your appointment request has been received. You can track it from your dashboard.', 'doctor-ak-portal' );
+		} elseif ( $is_staff ) {
+			$message = $has_pending_charge
+				? __( 'Appointment booked for the patient — payment is still pending.', 'doctor-ak-portal' )
+				: __( 'Appointment booked for the patient.', 'doctor-ak-portal' );
 		} else {
 			$message = $has_pending_charge
 				? __( "Your appointment request has been received. It has a pending payment — we'll contact you shortly to arrange it.", 'doctor-ak-portal' )
@@ -277,5 +338,75 @@ class Booking_Handler {
 				'redirect_url'   => $redirect_url,
 			)
 		);
+	}
+
+	/**
+	 * Creates a new patient account for a staff member (Admin/Receptionist)
+	 * booking on behalf of someone not already in the system — mirrors
+	 * Doctor_Patient_Handler::handle_add_patient()'s core account-creation
+	 * logic (same Authentication::register_user() primitive, same
+	 * "welcome" email), minus the doctor-specific home-clinic tagging that
+	 * feature has, since this booking flow has no clinic-location field.
+	 *
+	 * @param string $full_name New patient's full name.
+	 * @param string $email     New patient's email address (caller must have already validated it's a real, not-already-registered address).
+	 * @param string $phone     New patient's phone number, or '' if none given.
+	 * @return int|\WP_Error New patient user ID, or WP_Error on failure.
+	 */
+	private static function create_patient_account( $full_name, $email, $phone ) {
+		$name_parts = preg_split( '/\s+/', trim( $full_name ), 2 );
+		$first_name = $name_parts[0];
+		$last_name  = isset( $name_parts[1] ) ? $name_parts[1] : '';
+
+		$authentication = new \DoctorAKPortal\Includes\Authentication();
+		$patient_id      = $authentication->register_user(
+			array(
+				'user_login'   => self::unique_username_from_email( $email ),
+				'user_email'   => $email,
+				'user_pass'    => wp_generate_password( 20, true, true ),
+				'first_name'   => $first_name,
+				'last_name'    => $last_name,
+				'display_name' => $full_name,
+			),
+			Roles::PATIENT_ROLE
+		);
+
+		if ( is_wp_error( $patient_id ) ) {
+			return $patient_id;
+		}
+
+		if ( '' !== $phone ) {
+			update_user_meta( $patient_id, 'doctor_ak_phone_number', $phone );
+		}
+
+		wp_new_user_notification( $patient_id, null, 'user' );
+
+		return $patient_id;
+	}
+
+	/**
+	 * Derives a unique WordPress username from an email address's local
+	 * part, matching Admin_User_Handler/Doctor_Patient_Handler's own copies
+	 * of this same logic.
+	 *
+	 * @param string $email Email address.
+	 * @return string
+	 */
+	private static function unique_username_from_email( $email ) {
+		$base = sanitize_user( current( explode( '@', $email ) ), true );
+
+		if ( '' === $base ) {
+			$base = 'patient';
+		}
+
+		$username = $base;
+		$suffix   = 1;
+
+		while ( username_exists( $username ) ) {
+			++$suffix;
+			$username = $base . $suffix;
+		}
+
+		return $username;
 	}
 }

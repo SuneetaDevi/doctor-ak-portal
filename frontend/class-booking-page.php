@@ -90,6 +90,28 @@ class Booking_Page {
 			Assets::version( 'assets/css/doctor-ak-booking-page.css' )
 		);
 
+		if ( self::is_staff() ) {
+			// The staff identity step's patient picker reuses the same
+			// searchable-<select> progressive enhancement the admin
+			// dashboard's own patient pickers use (see
+			// Admin_Dashboard::enqueue_assets()) — not loaded on this
+			// public-facing page otherwise.
+			wp_enqueue_style(
+				'doctor-ak-portal-searchable-select',
+				DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-searchable-select.css',
+				array( 'doctor-ak-portal-auth' ),
+				Assets::version( 'assets/css/doctor-ak-searchable-select.css' )
+			);
+
+			wp_enqueue_script(
+				'doctor-ak-portal-searchable-select',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-searchable-select.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-searchable-select.js' ),
+				true
+			);
+		}
+
 		wp_enqueue_script(
 			'doctor-ak-portal-booking-page',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-booking-page.js',
@@ -105,6 +127,7 @@ class Booking_Page {
 				'ajaxUrl'     => admin_url( 'admin-ajax.php' ),
 				'nonce'       => wp_create_nonce( self::NONCE_ACTION ),
 				'isLoggedIn'  => is_user_logged_in() && $this->is_patient(),
+				'isStaff'     => self::is_staff(),
 				'user'        => $this->logged_in_patient_data(),
 				'loginUrl'    => Page_Finder::url_for_shortcode( 'doctor_login' ),
 				'registerUrl' => Page_Finder::url_for_shortcode( 'doctor_register' ),
@@ -116,6 +139,18 @@ class Booking_Page {
 				'clinics'      => $this->clinics_by_doctor(),
 			)
 		);
+	}
+
+	/**
+	 * Whether the current viewer is an Administrator or a Receptionist with
+	 * appointment-management access — booking on behalf of a patient instead
+	 * of for themselves, so step 3 shows a patient picker instead of the
+	 * normal Login/Register/Guest choice.
+	 *
+	 * @return bool
+	 */
+	private static function is_staff() {
+		return current_user_can( 'manage_options' ) || current_user_can( 'doctor_ak_manage_appointments' );
 	}
 
 	/**
@@ -153,6 +188,8 @@ class Booking_Page {
 				'selected_type'        => $type,
 				'video_disabled'       => $video_disabled,
 				'contact_url'          => self::contact_url(),
+				'is_staff'             => self::is_staff(),
+				'patient_options'      => self::is_staff() ? Appointments::patient_options() : array(),
 			)
 		);
 	}

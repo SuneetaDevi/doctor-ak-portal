@@ -29,11 +29,9 @@
 	}
 
 	/**
-	 * Wires the desktop sidebar's collapse/expand toggle (icons-only, with a
-	 * hover preview handled entirely by CSS — see doctor-ak-dashboard.css's
-	 * `.dak-dashboard-sidebar.is-collapsed:hover` rule). The click here only
-	 * controls the pinned collapsed/expanded state, persisted so it survives
-	 * a page reload/navigation.
+	 * Wires the desktop sidebar's collapse/expand toggle (icons-only when
+	 * collapsed — see doctor-ak-dashboard.css's `.dak-dashboard-sidebar.is-collapsed`
+	 * rules). State is persisted so it survives a page reload/navigation.
 	 */
 	function wireSidebarCollapseToggle() {
 		var toggle = document.getElementById( 'dak-sidebar-collapse-toggle' );

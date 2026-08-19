@@ -43,6 +43,7 @@
 		wireQuickDates();
 		wireWizardNav();
 		wireGuestToggle();
+		wireStaffPatientToggle();
 		wirePaymentChoice();
 		wireSubmit();
 
@@ -176,6 +177,17 @@
 				}
 
 				return ok;
+			}
+
+			if ( window.dakBookingPage.isStaff ) {
+				var patientSelect = document.getElementById( 'dak-booking-patient-id' );
+
+				if ( ! patientSelect || ! patientSelect.value ) {
+					showFieldError( 'patient_id', 'Please choose a patient, or add a new one.' );
+					return false;
+				}
+
+				return true;
 			}
 
 			if ( ! window.dakBookingPage.isLoggedIn ) {
@@ -1147,8 +1159,22 @@
 		var loggedInBlock = document.getElementById( 'dak-booking-identity-loggedin' );
 		var choiceBlock = document.getElementById( 'dak-booking-identity-choice' );
 		var guestBlock = document.getElementById( 'dak-booking-identity-guest' );
+		var staffBlock = document.getElementById( 'dak-booking-identity-staff' );
 
 		updatePhoneRequirement();
+
+		if ( window.dakBookingPage.isStaff ) {
+			show( staffBlock );
+			hide( loggedInBlock );
+			hide( choiceBlock );
+
+			var patientSelect = document.getElementById( 'dak-booking-patient-id' );
+			guestBlock.classList.toggle( 'dak-hidden', !! ( patientSelect && patientSelect.value ) );
+
+			return;
+		}
+
+		hide( staffBlock );
 
 		if ( window.dakBookingPage.isLoggedIn ) {
 			show( loggedInBlock );
@@ -1194,6 +1220,27 @@
 		button.addEventListener( 'click', function () {
 			hide( document.getElementById( 'dak-booking-identity-choice' ) );
 			show( document.getElementById( 'dak-booking-identity-guest' ) );
+		} );
+	}
+
+	/**
+	 * Staff (Admin/Receptionist) identity step: picking a real patient hides
+	 * the "Add new patient" fields (reuses the same #dak-booking-identity-guest
+	 * block/field names as the guest flow); picking the "+ Add new patient"
+	 * option (empty value) shows them again — mirrors the admin dashboard's
+	 * own Add Appointment modal (wirePatientToggle() in
+	 * doctor-ak-admin-appointments.js).
+	 */
+	function wireStaffPatientToggle() {
+		var select = document.getElementById( 'dak-booking-patient-id' );
+		var guestBlock = document.getElementById( 'dak-booking-identity-guest' );
+
+		if ( ! select || ! guestBlock ) {
+			return;
+		}
+
+		select.addEventListener( 'change', function () {
+			guestBlock.classList.toggle( 'dak-hidden', '' === select.value );
 		} );
 	}
 
@@ -1261,6 +1308,14 @@
 			formData.append( 'service_id', document.getElementById( 'dak-booking-service-id' ).value );
 			formData.append( 'clinic_id', document.getElementById( 'dak-booking-clinic-id' ).value );
 			formData.append( 'payment_choice', document.getElementById( 'dak-booking-payment-choice' ).value );
+
+			if ( window.dakBookingPage.isStaff ) {
+				var patientSelectEl = document.getElementById( 'dak-booking-patient-id' );
+
+				if ( patientSelectEl && patientSelectEl.value ) {
+					formData.append( 'patient_id', patientSelectEl.value );
+				}
+			}
 
 			var guestBlockVisible = ! document.getElementById( 'dak-booking-identity-guest' ).classList.contains( 'dak-hidden' );
 

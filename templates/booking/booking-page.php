@@ -13,6 +13,8 @@
  * @var string $selected_type        'clinic' or 'video'.
  * @var bool   $video_disabled       Whether the preselected doctor doesn't offer video consultations.
  * @var string $contact_url          "Need help with booking?" link target.
+ * @var bool   $is_staff             Whether the current viewer is an Administrator/Receptionist booking on behalf of a patient — shows a patient picker instead of Login/Register/Guest.
+ * @var array  $patient_options      Patient user ID => display name, only populated when $is_staff.
  */
 
 // Prevent direct file access.
@@ -140,6 +142,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<!-- Step 3: Personal Details -->
 				<section class="dak-booking-card dak-hidden" id="dak-booking-step-identity">
 					<h2 class="dak-booking-card-title"><?php esc_html_e( 'Personal Details', 'doctor-ak-portal' ); ?></h2>
+
+					<div id="dak-booking-identity-staff" class="dak-hidden">
+						<div class="dak-field">
+							<label for="dak-booking-patient-id"><?php esc_html_e( 'Patient', 'doctor-ak-portal' ); ?></label>
+							<select id="dak-booking-patient-id" name="patient_id" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search patients…', 'doctor-ak-portal' ); ?>">
+								<option value=""><?php esc_html_e( '+ Add new patient', 'doctor-ak-portal' ); ?></option>
+								<?php foreach ( $patient_options as $dak_patient_id => $dak_patient_name ) : ?>
+									<option value="<?php echo esc_attr( $dak_patient_id ); ?>"><?php echo esc_html( $dak_patient_name ); ?></option>
+								<?php endforeach; ?>
+							</select>
+							<span class="dak-field-error" data-field="patient_id"></span>
+						</div>
+					</div>
 
 					<div id="dak-booking-identity-loggedin" class="dak-hidden">
 						<div class="dak-field">

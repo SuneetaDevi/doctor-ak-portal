@@ -1158,10 +1158,10 @@
 	gap: 0.5rem !important;
 }
 
-/* Desktop sidebar collapse (icon-only, expands on hover, pinned open/closed
-   via the toggle button + localStorage — see doctor-ak-dashboard.js). Mobile
-   keeps its own separate off-canvas drawer behaviour (.is-open, <=782px,
-   below) untouched — this only applies above that breakpoint. */
+/* Desktop sidebar collapse (icon-only), toggled via the button + persisted
+   in localStorage — see doctor-ak-dashboard.js. Mobile keeps its own
+   separate off-canvas drawer behaviour (.is-open, <=782px, below)
+   untouched — this only applies above that breakpoint. */
 @media ( min-width: 783px ) {
 	.dak-sidebar-collapse-toggle {
 		display: flex !important;
@@ -1197,42 +1197,36 @@
 		transform: rotate( 180deg ) !important;
 	}
 
-	.dak-dashboard-sidebar.is-collapsed:not( :hover ) {
+	.dak-dashboard-sidebar.is-collapsed {
 		flex-basis: 78px !important;
 		width: 78px !important;
 		padding-left: 0.9rem !important;
 		padding-right: 0.9rem !important;
 	}
 
-	.dak-dashboard-sidebar.is-collapsed:hover {
-		flex-basis: 260px !important;
-		width: 260px !important;
-		z-index: 20 !important;
-	}
-
-	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-back-link,
-	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-brand-text,
-	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-doctor-name,
-	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-patient-name,
-	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-patient-badge,
-	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-doctor-location,
-	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-doctor-tags,
-	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-doctor-status-row,
-	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-nav-group-label,
-	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-nav-badge {
+	.dak-dashboard-sidebar.is-collapsed .dak-sidebar-back-link,
+	.dak-dashboard-sidebar.is-collapsed .dak-sidebar-brand-text,
+	.dak-dashboard-sidebar.is-collapsed .dak-sidebar-doctor-name,
+	.dak-dashboard-sidebar.is-collapsed .dak-sidebar-patient-name,
+	.dak-dashboard-sidebar.is-collapsed .dak-sidebar-patient-badge,
+	.dak-dashboard-sidebar.is-collapsed .dak-sidebar-doctor-location,
+	.dak-dashboard-sidebar.is-collapsed .dak-sidebar-doctor-tags,
+	.dak-dashboard-sidebar.is-collapsed .dak-sidebar-doctor-status-row,
+	.dak-dashboard-sidebar.is-collapsed .dak-nav-group-label,
+	.dak-dashboard-sidebar.is-collapsed .dak-nav-badge {
 		display: none !important;
 	}
 
-	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-top-row {
+	.dak-dashboard-sidebar.is-collapsed .dak-sidebar-top-row {
 		justify-content: center !important;
 	}
 
-	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-brand {
+	.dak-dashboard-sidebar.is-collapsed .dak-sidebar-brand {
 		justify-content: center !important;
 	}
 
-	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-doctor-card,
-	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-patient-card {
+	.dak-dashboard-sidebar.is-collapsed .dak-sidebar-doctor-card,
+	.dak-dashboard-sidebar.is-collapsed .dak-sidebar-patient-card {
 		align-items: center !important;
 		padding: 0.5rem !important;
 	}
@@ -1240,10 +1234,9 @@
 	/* The nav links'/logout's label text is a raw text node (no wrapping
 	   span), so font-size: 0 collapses it to nothing without touching
 	   markup — .dak-nav-icon is sized in px (not em) so the icon itself is
-	   unaffected. Restored automatically on hover since these rules simply
-	   stop matching (:not(:hover) fails), no separate "undo" ruleset needed. */
-	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-dashboard-nav a,
-	.dak-dashboard-sidebar.is-collapsed:not( :hover ) .dak-sidebar-logout {
+	   unaffected. */
+	.dak-dashboard-sidebar.is-collapsed .dak-dashboard-nav a,
+	.dak-dashboard-sidebar.is-collapsed .dak-sidebar-logout {
 		font-size: 0 !important;
 		justify-content: center !important;
 		gap: 0 !important;
