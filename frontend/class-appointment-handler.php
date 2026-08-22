@@ -336,7 +336,7 @@ class Appointment_Handler {
 	 * @return void
 	 */
 	public function handle_print() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'doctor_ak_manage_appointments' ) ) {
 			wp_die( esc_html__( 'You do not have permission to do this.', 'doctor-ak-portal' ) );
 		}
 
