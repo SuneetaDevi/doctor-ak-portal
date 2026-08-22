@@ -26,7 +26,11 @@ class Clinic_Branding_Handler {
 	const NONCE_ACTION = 'doctor_ak_admin_clinic_branding';
 
 	/**
-	 * AJAX handler: saves the clinic's name/phone/address.
+	 * AJAX handler: saves the clinic's phone. Name and address are no longer
+	 * editable from this form — whatever is already stored in
+	 * Site_Footer::OPTION_CLINIC_NAME/OPTION_CLINIC_ADDRESS (e.g. from before
+	 * this form stopped exposing them) is left untouched, since those values
+	 * still feed emails/invoices/the site footer.
 	 *
 	 * @return void
 	 */
@@ -39,13 +43,9 @@ class Clinic_Branding_Handler {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do that.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		$name    = isset( $_POST['clinic_name'] ) ? sanitize_text_field( wp_unslash( $_POST['clinic_name'] ) ) : '';
-		$phone   = isset( $_POST['clinic_phone'] ) ? sanitize_text_field( wp_unslash( $_POST['clinic_phone'] ) ) : '';
-		$address = isset( $_POST['clinic_address'] ) ? sanitize_textarea_field( wp_unslash( $_POST['clinic_address'] ) ) : '';
+		$phone = isset( $_POST['clinic_phone'] ) ? sanitize_text_field( wp_unslash( $_POST['clinic_phone'] ) ) : '';
 
-		update_option( Site_Footer::OPTION_CLINIC_NAME, $name );
 		update_option( Site_Footer::OPTION_CLINIC_PHONE, $phone );
-		update_option( Site_Footer::OPTION_CLINIC_ADDRESS, $address );
 
 		wp_send_json_success( array( 'message' => __( 'Clinic branding saved.', 'doctor-ak-portal' ) ) );
 	}

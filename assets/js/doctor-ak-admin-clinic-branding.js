@@ -1,6 +1,6 @@
 /**
  * Doctor AK Portal — Admin dashboard "Settings" section: Clinic branding
- * (name/phone/address/logo) form. (Notification preferences live in the
+ * (phone/logo) form. (Notification preferences live in the
  * shared assets/js/doctor-ak-notification-preferences.js instead — they're
  * a per-account setting shared with the Doctor/Patient/Receptionist
  * dashboards, not admin-only.)
@@ -49,9 +49,7 @@
 			var formData = new FormData();
 			formData.append( 'action', 'doctor_ak_admin_clinic_branding_save' );
 			formData.append( 'nonce', window.dakClinicBranding.nonce );
-			formData.append( 'clinic_name', document.getElementById( 'dak-clinic-branding-name' ).value );
 			formData.append( 'clinic_phone', document.getElementById( 'dak-clinic-branding-phone' ).value );
-			formData.append( 'clinic_address', document.getElementById( 'dak-clinic-branding-address' ).value );
 
 			fetch( window.dakClinicBranding.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
 				.then( function ( response ) { return response.json(); } )

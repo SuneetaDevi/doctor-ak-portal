@@ -1,16 +1,15 @@
 <?php
 /**
- * Template: Admin dashboard "Settings" section — clinic branding (name,
- * phone, address, logo — used in emails, invoices, and the site footer),
- * plus (via $settings_tab_html) the shared Appearance/Notifications card
- * every dashboard's Settings tab renders.
+ * Template: Admin dashboard "Settings" section — clinic branding (phone,
+ * logo — used in emails, invoices, and the site footer; name and address
+ * are no longer editable here), plus (via $settings_tab_html) the shared
+ * Appearance/Notifications card every dashboard's Settings tab renders.
  *
  * @package DoctorAKPortal\Templates
  *
  * @var string $settings_tab_html Pre-rendered dashboard-settings-tab.php output (Appearance + this admin's own Notification preferences).
- * @var string $clinic_name       Clinic name (Settings → Footer Settings / this form).
+ * @var string $clinic_name       Clinic name — read-only here, used only as the logo's initials fallback.
  * @var string $clinic_phone      Clinic contact phone.
- * @var string $clinic_address    Clinic address.
  * @var string $clinic_logo_url   Current logo URL, or '' if none set.
  * @var float  $video_fee_percent Video platform/gateway fee — percentage component (0-100).
  * @var float  $video_fee_flat    Video platform/gateway fee — flat PKR amount.
@@ -49,20 +48,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<input type="file" id="dak-clinic-branding-logo-input" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="dak-hidden">
 	</div>
 
-	<div class="dak-field-row">
-		<div class="dak-field">
-			<label for="dak-clinic-branding-name"><?php esc_html_e( 'Clinic name', 'doctor-ak-portal' ); ?></label>
-			<input type="text" id="dak-clinic-branding-name" value="<?php echo esc_attr( $clinic_name ); ?>">
-		</div>
-		<div class="dak-field">
-			<label for="dak-clinic-branding-phone"><?php esc_html_e( 'Phone', 'doctor-ak-portal' ); ?></label>
-			<input type="text" id="dak-clinic-branding-phone" value="<?php echo esc_attr( $clinic_phone ); ?>">
-		</div>
-	</div>
-
 	<div class="dak-field">
-		<label for="dak-clinic-branding-address"><?php esc_html_e( 'Address', 'doctor-ak-portal' ); ?></label>
-		<textarea id="dak-clinic-branding-address" rows="3"><?php echo esc_textarea( $clinic_address ); ?></textarea>
+		<label for="dak-clinic-branding-phone"><?php esc_html_e( 'Phone', 'doctor-ak-portal' ); ?></label>
+		<input type="text" id="dak-clinic-branding-phone" value="<?php echo esc_attr( $clinic_phone ); ?>">
 	</div>
 </section>
 

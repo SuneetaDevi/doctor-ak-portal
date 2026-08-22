@@ -1884,7 +1884,6 @@ class Admin_Dashboard {
 					'settings_tab_html' => $settings_tab_html,
 					'clinic_name'       => get_option( Site_Footer::OPTION_CLINIC_NAME, '' ),
 					'clinic_phone'      => get_option( Site_Footer::OPTION_CLINIC_PHONE, '' ),
-					'clinic_address'    => get_option( Site_Footer::OPTION_CLINIC_ADDRESS, '' ),
 					'clinic_logo_url'   => Site_Footer::bundled_logo_url(),
 					'video_fee_percent' => $video_fee_settings['percent'],
 					'video_fee_flat'    => $video_fee_settings['flat'],

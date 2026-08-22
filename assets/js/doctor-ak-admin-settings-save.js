@@ -54,9 +54,7 @@
 			var formData = new FormData();
 			formData.append( 'action', 'doctor_ak_admin_clinic_branding_save' );
 			formData.append( 'nonce', window.dakClinicBranding.nonce );
-			formData.append( 'clinic_name', valueOf( 'dak-clinic-branding-name' ) );
 			formData.append( 'clinic_phone', valueOf( 'dak-clinic-branding-phone' ) );
-			formData.append( 'clinic_address', valueOf( 'dak-clinic-branding-address' ) );
 
 			return fetch( window.dakClinicBranding.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
 				.then( function ( response ) { return response.json(); } )
