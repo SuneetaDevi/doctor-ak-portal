@@ -1852,6 +1852,13 @@ a.dak-notification-row-link:hover {
 	background: var( --dak-primary-tint ) !important;
 }
 
+/* Same as .dak-admin-record-row:target above, for the doctor dashboard's
+   Clinics tab, which uses its own card layout instead of the shared
+   admin-record-row list. */
+.dak-clinic-card:target {
+	background: var( --dak-primary-tint ) !important;
+}
+
 .dak-admin-record-row-main {
 	display: flex !important;
 	align-items: center !important;
@@ -2050,6 +2057,29 @@ a.dak-notification-row-link:hover {
 .dak-patient-list-search input {
 	padding-top: 0.45rem !important;
 	padding-bottom: 0.45rem !important;
+}
+
+/* Generic instant list-search box (doctor-ak-list-search.js) — same compact
+   variant as .dak-patient-list-search above, reused across every list page
+   that has no other filters (Services, Doctor Sessions, Clinic Locations,
+   Doctor Requests, Encounters, Clinics, Medical History, …). */
+.dak-list-search-box {
+	max-width: 260px !important;
+	flex: 0 0 auto !important;
+}
+
+.dak-list-search-box input {
+	padding-top: 0.45rem !important;
+	padding-bottom: 0.45rem !important;
+}
+
+/* Right-aligns a lone .dak-list-search-box where there's no card header with
+   a title to pair it with (e.g. the doctor dashboard's Clinics tab, which
+   uses a card-grid instead of .dak-dashboard-card-header). */
+.dak-list-search-header {
+	display: flex !important;
+	justify-content: flex-end !important;
+	margin-bottom: 0.75rem !important;
 }
 
 /* Doctor dashboard — Video Consultation tab */

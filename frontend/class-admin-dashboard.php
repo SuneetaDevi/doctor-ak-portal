@@ -295,6 +295,14 @@ class Admin_Dashboard {
 		);
 
 		wp_enqueue_script(
+			'doctor-ak-portal-list-search',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-list-search.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-list-search.js' ),
+			true
+		);
+
+		wp_enqueue_script(
 			'doctor-ak-portal-dashboard-search',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-dashboard-search.js',
 			array(),
@@ -850,13 +858,66 @@ class Admin_Dashboard {
 	}
 
 	/**
-	 * AJAX: the topbar search box — up to 5 matches each of Doctors,
-	 * Patients, and Appointments whose name/email contains the query, for a
-	 * click-to-jump dropdown. Doctors/Patients link to their row in the
-	 * Users table (`#dak-user-{id}`, see admin-user-table.php); Appointments
-	 * link to their row in the Appointments section (`#dak-appointment-{id}`).
-	 * Both anchors reuse the existing `:target` highlight already built for
-	 * notification deep-links.
+	 * Maps each search group key to the nav section slug that gates it (see
+	 * receptionist_can_access()/admin_can_access()), for handle_search()'s
+	 * per-group visibility check. The 'admin' group has no section of its
+	 * own (there's no in-dashboard Administrators list) — it's gated purely
+	 * on 'manage_options' in search_group_allowed() below, so it's absent
+	 * from this map on purpose.
+	 *
+	 * @var array
+	 */
+	const SEARCH_GROUP_SECTIONS = array(
+		'doctors'          => 'doctors',
+		'patients'         => 'patients',
+		'appointments'     => 'appointments',
+		'receptionist'     => 'receptionist',
+		'services'         => 'services',
+		'doctor_sessions'  => 'doctor-sessions',
+		'clinic_locations' => 'clinic',
+		'doctor_requests'  => 'doctor-requests',
+		'encounters'       => 'encounters',
+	);
+
+	/**
+	 * Whether the current user (full Administrator or Receptionist) may see
+	 * results for a given search group — the same section-level gating
+	 * requested_section() already enforces for full page navigation
+	 * (RECEPTIONIST_ALLOWED_SECTIONS ceiling + Role_Permissions toggle for a
+	 * Receptionist; Role_Permissions toggle alone for a full Administrator),
+	 * so a tab an admin has switched off for a role disappears from that
+	 * role's search results too, not just its sidebar.
+	 *
+	 * @param string $group_key One of the SEARCH_GROUP_SECTIONS keys, or 'admin'.
+	 * @return bool
+	 */
+	private static function search_group_allowed( $group_key ) {
+		if ( 'admin' === $group_key ) {
+			return current_user_can( 'manage_options' );
+		}
+
+		if ( ! isset( self::SEARCH_GROUP_SECTIONS[ $group_key ] ) ) {
+			return false;
+		}
+
+		$slug = self::SEARCH_GROUP_SECTIONS[ $group_key ];
+
+		if ( self::is_receptionist() ) {
+			return self::receptionist_can_access( $slug );
+		}
+
+		return self::admin_can_access( $slug );
+	}
+
+	/**
+	 * AJAX: the topbar search box — up to 5 matches per group (Doctors,
+	 * Patients, Receptionists, Admins, Appointments, Services, Doctor
+	 * Sessions, Clinic Locations, Doctor Requests, Encounters) whose
+	 * name/email/etc. contains the query, for a click-to-jump dropdown.
+	 * Every group is gated by search_group_allowed() so a Receptionist only
+	 * ever gets back groups they already have section access to — a group
+	 * they can't see is simply absent from the response, same as an empty
+	 * one (see the JS's renderResults()).
 	 *
 	 * @return void
 	 */
@@ -872,27 +933,57 @@ class Admin_Dashboard {
 		$query = isset( $_POST['query'] ) ? sanitize_text_field( wp_unslash( $_POST['query'] ) ) : '';
 
 		if ( mb_strlen( $query ) < 2 ) {
-			wp_send_json_success(
-				array(
-					'doctors'      => array(),
-					'patients'     => array(),
-					'appointments' => array(),
-				)
-			);
+			wp_send_json_success( array() );
 		}
 
 		$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
-		$doctors_url   = $dashboard_url ? add_query_arg( 'section', 'doctors', $dashboard_url ) : '';
-		$patients_url  = $dashboard_url ? add_query_arg( 'section', 'patients', $dashboard_url ) : '';
-		$appts_url     = $dashboard_url ? add_query_arg( 'section', 'appointments', $dashboard_url ) : '';
+		$section_url   = function ( $slug ) use ( $dashboard_url ) {
+			return $dashboard_url ? add_query_arg( 'section', $slug, $dashboard_url ) : '';
+		};
 
-		wp_send_json_success(
-			array(
-				'doctors'      => self::search_users_for_dropdown( Roles::DOCTOR_ROLE, $query, $doctors_url ),
-				'patients'     => self::search_users_for_dropdown( Roles::PATIENT_ROLE, $query, $patients_url ),
-				'appointments' => self::search_appointments_for_dropdown( $query, $appts_url ),
-			)
-		);
+		$results = array();
+
+		foreach ( array_keys( self::SEARCH_GROUP_SECTIONS ) as $group_key ) {
+			if ( ! self::search_group_allowed( $group_key ) ) {
+				continue;
+			}
+
+			switch ( $group_key ) {
+				case 'doctors':
+					$results[ $group_key ] = self::search_users_for_dropdown( Roles::DOCTOR_ROLE, $query, $section_url( 'doctors' ) );
+					break;
+				case 'patients':
+					$results[ $group_key ] = self::search_users_for_dropdown( Roles::PATIENT_ROLE, $query, $section_url( 'patients' ) );
+					break;
+				case 'receptionist':
+					$results[ $group_key ] = self::search_users_for_dropdown( Roles::RECEPTIONIST_ROLE, $query, $section_url( 'receptionist' ) );
+					break;
+				case 'appointments':
+					$results[ $group_key ] = self::search_appointments_for_dropdown( $query, $section_url( 'appointments' ) );
+					break;
+				case 'services':
+					$results[ $group_key ] = self::search_services_for_dropdown( $query, $section_url( 'services' ) );
+					break;
+				case 'doctor_sessions':
+					$results[ $group_key ] = self::search_clinics_for_dropdown( $query, $section_url( 'doctor-sessions' ) );
+					break;
+				case 'clinic_locations':
+					$results[ $group_key ] = self::search_clinic_locations_for_dropdown( $query, $section_url( 'clinic' ) );
+					break;
+				case 'doctor_requests':
+					$results[ $group_key ] = self::search_doctor_requests_for_dropdown( $query, $section_url( 'doctor-requests' ) );
+					break;
+				case 'encounters':
+					$results[ $group_key ] = self::search_encounters_for_dropdown( $query, $section_url( 'encounters' ) );
+					break;
+			}
+		}
+
+		if ( self::search_group_allowed( 'admin' ) ) {
+			$results['admin'] = self::search_admins_for_dropdown( $query );
+		}
+
+		wp_send_json_success( $results );
 	}
 
 	/**
@@ -968,6 +1059,217 @@ class Admin_Dashboard {
 	}
 
 	/**
+	 * Up to 5 services across every doctor whose name/category/doctor name
+	 * contains the query, shaped for handle_search()'s dropdown response.
+	 *
+	 * @param string $query        Search term.
+	 * @param string $services_url Base URL of the Services section ('' if unresolvable).
+	 * @return array
+	 */
+	private static function search_services_for_dropdown( $query, $services_url ) {
+		$needle  = mb_strtolower( $query );
+		$results = array();
+
+		foreach ( Services::all_flat_for_admin( array( 'number' => 200 ) ) as $service ) {
+			$haystack = mb_strtolower( $service['name'] . ' ' . $service['category_label'] . ' ' . $service['doctor']['name'] );
+
+			if ( false === mb_strpos( $haystack, $needle ) ) {
+				continue;
+			}
+
+			$results[] = array(
+				'label'    => $service['name'],
+				'sublabel' => sprintf( /* translators: %s: doctor name. */ __( 'Dr. %s', 'doctor-ak-portal' ), $service['doctor']['name'] ),
+				'url'      => $services_url ? esc_url_raw( $services_url . '#dak-service-' . $service['id'] ) : '',
+			);
+
+			if ( count( $results ) >= 5 ) {
+				break;
+			}
+		}
+
+		return $results;
+	}
+
+	/**
+	 * Up to 5 clinics ("Doctor Sessions") across every doctor whose
+	 * name/city/doctor name contains the query, shaped for handle_search()'s
+	 * dropdown response.
+	 *
+	 * @param string $query               Search term.
+	 * @param string $doctor_sessions_url Base URL of the Doctor Sessions section ('' if unresolvable).
+	 * @return array
+	 */
+	private static function search_clinics_for_dropdown( $query, $doctor_sessions_url ) {
+		$needle  = mb_strtolower( $query );
+		$results = array();
+
+		foreach ( Clinics::all_flat_for_admin( array( 'number' => 200 ) ) as $clinic ) {
+			$haystack = mb_strtolower( $clinic['name'] . ' ' . $clinic['city_label'] . ' ' . $clinic['doctor']['name'] );
+
+			if ( false === mb_strpos( $haystack, $needle ) ) {
+				continue;
+			}
+
+			$results[] = array(
+				'label'    => $clinic['name'],
+				'sublabel' => sprintf( /* translators: %s: doctor name. */ __( 'Dr. %s', 'doctor-ak-portal' ), $clinic['doctor']['name'] ),
+				'url'      => $doctor_sessions_url ? esc_url_raw( $doctor_sessions_url . '#dak-clinic-' . $clinic['id'] ) : '',
+			);
+
+			if ( count( $results ) >= 5 ) {
+				break;
+			}
+		}
+
+		return $results;
+	}
+
+	/**
+	 * Up to 5 clinic locations whose name/address/city contains the query,
+	 * shaped for handle_search()'s dropdown response.
+	 *
+	 * @param string $query      Search term.
+	 * @param string $clinic_url Base URL of the Clinic section ('' if unresolvable).
+	 * @return array
+	 */
+	private static function search_clinic_locations_for_dropdown( $query, $clinic_url ) {
+		$needle  = mb_strtolower( $query );
+		$results = array();
+
+		foreach ( Clinic_Locations::get_all() as $location ) {
+			$haystack = mb_strtolower( $location['name'] . ' ' . $location['address'] . ' ' . $location['city_label'] );
+
+			if ( false === mb_strpos( $haystack, $needle ) ) {
+				continue;
+			}
+
+			$results[] = array(
+				'label'    => $location['name'],
+				'sublabel' => '' !== $location['address'] ? $location['address'] : $location['city_label'],
+				'url'      => $clinic_url ? esc_url_raw( $clinic_url . '#dak-clinic-location-' . $location['id'] ) : '',
+			);
+
+			if ( count( $results ) >= 5 ) {
+				break;
+			}
+		}
+
+		return $results;
+	}
+
+	/**
+	 * Up to 5 pending doctor registrations whose name/email contains the
+	 * query, shaped for handle_search()'s dropdown response. Mirrors the
+	 * 'pending' filter Doctor_Requests_Handler enforces before approving/
+	 * rejecting a request.
+	 *
+	 * @param string $query              Search term.
+	 * @param string $doctor_requests_url Base URL of the Doctor Requests section ('' if unresolvable).
+	 * @return array
+	 */
+	private static function search_doctor_requests_for_dropdown( $query, $doctor_requests_url ) {
+		$doctors = get_users(
+			array(
+				'role'           => Roles::DOCTOR_ROLE,
+				'search'         => '*' . $query . '*',
+				'search_columns' => array( 'display_name', 'user_email' ),
+				'number'         => 50,
+				'orderby'        => 'display_name',
+			)
+		);
+
+		$results = array();
+
+		foreach ( $doctors as $doctor ) {
+			if ( 'pending' !== get_user_meta( $doctor->ID, 'doctor_ak_registration_status', true ) ) {
+				continue;
+			}
+
+			$results[] = array(
+				'label'    => $doctor->display_name,
+				'sublabel' => $doctor->user_email,
+				'url'      => $doctor_requests_url ? esc_url_raw( $doctor_requests_url . '#dak-doctor-request-' . $doctor->ID ) : '',
+			);
+
+			if ( count( $results ) >= 5 ) {
+				break;
+			}
+		}
+
+		return $results;
+	}
+
+	/**
+	 * Up to 5 encounters across every doctor whose patient/doctor name
+	 * contains the query, shaped for handle_search()'s dropdown response.
+	 *
+	 * @param string $query          Search term.
+	 * @param string $encounters_url Base URL of the Encounters section ('' if unresolvable).
+	 * @return array
+	 */
+	private static function search_encounters_for_dropdown( $query, $encounters_url ) {
+		$needle  = mb_strtolower( $query );
+		$results = array();
+
+		foreach ( Encounters::all_flat_for_admin( array( 'number' => 200 ) ) as $encounter ) {
+			$appointment = isset( $encounter['appointment'] ) ? $encounter['appointment'] : array();
+			$patient_name = isset( $appointment['patient_name'] ) ? $appointment['patient_name'] : '';
+			$doctor_name  = isset( $appointment['doctor_name'] ) ? $appointment['doctor_name'] : '';
+
+			$haystack = mb_strtolower( $patient_name . ' ' . $doctor_name );
+
+			if ( false === mb_strpos( $haystack, $needle ) ) {
+				continue;
+			}
+
+			$results[] = array(
+				'label'    => '' !== $patient_name ? $patient_name : __( 'Unknown patient', 'doctor-ak-portal' ),
+				'sublabel' => '' !== $doctor_name ? sprintf( /* translators: %s: doctor name. */ __( 'Dr. %s', 'doctor-ak-portal' ), $doctor_name ) : '',
+				'url'      => $encounters_url ? esc_url_raw( $encounters_url . '#dak-encounter-' . $encounter['id'] ) : '',
+			);
+
+			if ( count( $results ) >= 5 ) {
+				break;
+			}
+		}
+
+		return $results;
+	}
+
+	/**
+	 * Up to 5 full Administrators whose name/email contains the query,
+	 * shaped for handle_search()'s dropdown response. Links to the WP core
+	 * user-edit screen since there's no in-dashboard Administrators list to
+	 * deep-link into.
+	 *
+	 * @param string $query Search term.
+	 * @return array
+	 */
+	private static function search_admins_for_dropdown( $query ) {
+		$admins = get_users(
+			array(
+				'role'           => 'administrator',
+				'search'         => '*' . $query . '*',
+				'search_columns' => array( 'display_name', 'user_email' ),
+				'number'         => 5,
+				'orderby'        => 'display_name',
+			)
+		);
+
+		return array_map(
+			function ( $user ) {
+				return array(
+					'label'    => $user->display_name,
+					'sublabel' => $user->user_email,
+					'url'      => esc_url_raw( admin_url( 'user-edit.php?user_id=' . $user->ID ) ),
+				);
+			},
+			$admins
+		);
+	}
+
+	/**
 	 * AJAX: re-renders the Appointments section for a new set of filters,
 	 * without a full page reload. Reuses section_content_html() unchanged by
 	 * populating $_GET from the posted filters first, so the returned markup
@@ -985,7 +1287,7 @@ class Admin_Dashboard {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		foreach ( array( 'patient_id', 'date_from', 'date_to', 'doctor_id', 'payment_status', 'range' ) as $key ) {
+		foreach ( array( 'patient_id', 'date_from', 'date_to', 'doctor_id', 'payment_status', 'range', 'search' ) as $key ) {
 			$_GET[ $key ] = isset( $_POST[ $key ] ) ? $_POST[ $key ] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- nonce already verified above; section_content_html() sanitizes each value itself, same as it does for a real $_GET.
 		}
 
@@ -1020,7 +1322,7 @@ class Admin_Dashboard {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		foreach ( array( 'status', 'specialization' ) as $key ) {
+		foreach ( array( 'status', 'specialization', 'search' ) as $key ) {
 			$_GET[ $key ] = isset( $_POST[ $key ] ) ? $_POST[ $key ] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- nonce already verified above; users_section_html() sanitizes each value itself, same as it does for a real $_GET.
 		}
 
@@ -1271,6 +1573,7 @@ class Admin_Dashboard {
 			$date_to    = isset( $_GET['date_to'] ) ? sanitize_text_field( wp_unslash( $_GET['date_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			$doctor_id  = isset( $_GET['doctor_id'] ) ? absint( wp_unslash( $_GET['doctor_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			$payment_status = isset( $_GET['payment_status'] ) ? sanitize_key( wp_unslash( $_GET['payment_status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$search    = isset( $_GET['search'] ) ? sanitize_text_field( wp_unslash( $_GET['search'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			// Defaults to 'upcoming' only on first load (no `range` in the
 			// request at all) — once a range is explicitly submitted
 			// (including '' for "All"), that choice sticks.
@@ -1307,18 +1610,34 @@ class Admin_Dashboard {
 				)
 			);
 
+			$appointments = Appointments::all_for_admin(
+				array(
+					'patient_id'     => $patient_id,
+					'date_from'      => $query_date_from,
+					'date_to'        => $query_date_to,
+					'doctor_id'      => $doctor_id,
+					'payment_status' => $payment_status,
+				)
+			);
+
+			if ( '' !== $search ) {
+				$needle       = mb_strtolower( $search );
+				$appointments = array_values(
+					array_filter(
+						$appointments,
+						function ( $row ) use ( $needle ) {
+							$haystack = mb_strtolower( $row['patient_name'] . ' ' . $row['doctor_name'] . ' ' . $row['guest_name'] );
+
+							return false !== mb_strpos( $haystack, $needle );
+						}
+					)
+				);
+			}
+
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-appointments.php',
 				array(
-					'appointments'      => Appointments::all_for_admin(
-						array(
-							'patient_id'     => $patient_id,
-							'date_from'      => $query_date_from,
-							'date_to'        => $query_date_to,
-							'doctor_id'      => $doctor_id,
-							'payment_status' => $payment_status,
-						)
-					),
+					'appointments'      => $appointments,
 					'filtered_patient'  => $patient_name,
 					'appointments_url'  => $appointments_url,
 					'doctors'                => $doctors,
@@ -1332,6 +1651,7 @@ class Admin_Dashboard {
 						'doctor_id'      => $doctor_id,
 						'payment_status' => $payment_status,
 						'range'          => $range,
+						'search'         => $search,
 					),
 				)
 			);
@@ -1947,6 +2267,22 @@ class Admin_Dashboard {
 			$specialization = Specializations::is_valid( $specialization ) ? $specialization : '';
 		}
 
+		$search = isset( $_GET['search'] ) ? sanitize_text_field( wp_unslash( $_GET['search'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+
+		if ( '' !== $search ) {
+			$needle = mb_strtolower( $search );
+			$users  = array_values(
+				array_filter(
+					$users,
+					function ( $row ) use ( $needle ) {
+						$haystack = mb_strtolower( $row['name'] . ' ' . $row['email'] );
+
+						return false !== mb_strpos( $haystack, $needle );
+					}
+				)
+			);
+		}
+
 		if ( '' !== $status ) {
 			$users = array_values(
 				array_filter(
@@ -1991,6 +2327,7 @@ class Admin_Dashboard {
 				'filters'            => array(
 					'status'         => $status,
 					'specialization' => $specialization,
+					'search'         => $search,
 				),
 				// A receptionist has full Add/Edit/Deactivate/Delete access
 				// to the Doctors/Patients tables. Only a real administrator

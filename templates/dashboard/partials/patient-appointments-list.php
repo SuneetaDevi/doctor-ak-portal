@@ -13,6 +13,7 @@
  * @var string $selected_date   'YYYY-MM-DD', or '' if unfiltered.
  * @var string $selected_status Status slug, or '' if unfiltered.
  * @var string $selected_range  Range slug ('', 'upcoming', 'past').
+ * @var string $selected_search Doctor/service name search term, or '' if unfiltered.
  */
 
 // Prevent direct file access.
@@ -29,6 +30,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 		data-live-filter-nonce="dakPatientDashboard"
 	>
 		<input type="hidden" name="tab" value="appointments">
+		<div class="dak-field">
+			<label for="dak-patient-appt-filter-search"><?php esc_html_e( 'Search', 'doctor-ak-portal' ); ?></label>
+			<input type="search" id="dak-patient-appt-filter-search" name="search" value="<?php echo esc_attr( $selected_search ); ?>" placeholder="<?php esc_attr_e( 'Doctor or service name…', 'doctor-ak-portal' ); ?>">
+		</div>
 		<div class="dak-field">
 			<label for="dak-patient-appt-filter-range"><?php esc_html_e( 'Show', 'doctor-ak-portal' ); ?></label>
 			<select id="dak-patient-appt-filter-range" name="range">
@@ -51,7 +56,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</select>
 		</div>
 		<button type="submit" class="dak-button dak-button-primary"><?php esc_html_e( 'Filter', 'doctor-ak-portal' ); ?></button>
-		<?php if ( '' !== $selected_date || '' !== $selected_status || 'upcoming' !== $selected_range ) : ?>
+		<?php if ( '' !== $selected_date || '' !== $selected_status || 'upcoming' !== $selected_range || '' !== $selected_search ) : ?>
 			<a
 				class="dak-link"
 				href="?tab=appointments"

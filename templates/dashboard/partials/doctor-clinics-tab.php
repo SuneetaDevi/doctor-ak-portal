@@ -39,7 +39,7 @@ function dak_render_clinic_card( $clinic, array $session_days, array $icons ) {
 	$sessions       = $is_blank ? \DoctorAKPortal\Includes\Clinics::empty_sessions() : $clinic['sessions'];
 	$session_periods = \DoctorAKPortal\Includes\Clinics::session_periods();
 	?>
-	<div class="dak-clinic-card" data-clinic-id="<?php echo esc_attr( $is_blank ? '0' : $clinic['id'] ); ?>">
+	<div<?php echo $is_blank ? '' : ' id="dak-clinic-' . esc_attr( $clinic['id'] ) . '"'; ?> class="dak-clinic-card" data-clinic-id="<?php echo esc_attr( $is_blank ? '0' : $clinic['id'] ); ?>"<?php echo $is_blank ? '' : ' data-list-search-row data-list-search-text="' . esc_attr( strtolower( $clinic['name'] . ' ' . $clinic['city_label'] ) ) . '"'; ?>>
 		<div class="dak-clinic-card-summary<?php echo $is_blank ? ' dak-hidden' : ''; ?>">
 			<span class="dak-clinic-card-icon" aria-hidden="true"><?php echo $icons[ 'video' === $type ? 'video' : 'pin' ]; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 			<div class="dak-clinic-card-info">
@@ -167,6 +167,15 @@ endif;
 <div class="dak-alert dak-alert-success dak-hidden" id="dak-clinics-success" role="status"></div>
 <div class="dak-alert dak-alert-error dak-hidden" id="dak-clinics-general-error" role="alert"></div>
 
+<?php if ( ! empty( $clinics ) ) : ?>
+	<div class="dak-list-search-header">
+		<div class="dak-dashboard-search dak-list-search-box">
+			<span class="dak-dashboard-search-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg></span>
+			<input type="search" data-list-search="#dak-clinics-list" placeholder="<?php esc_attr_e( 'Search clinics', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search clinics', 'doctor-ak-portal' ); ?>">
+		</div>
+	</div>
+<?php endif; ?>
+
 <div class="dak-clinics-list" id="dak-clinics-list">
 	<?php if ( empty( $clinics ) ) : ?>
 		<p class="dak-empty-state" id="dak-clinics-empty-state"><?php esc_html_e( "You haven't added any clinics yet. Add one below.", 'doctor-ak-portal' ); ?></p>
@@ -175,6 +184,8 @@ endif;
 	<?php foreach ( $clinics as $clinic ) : ?>
 		<?php dak_render_clinic_card( $clinic, $session_days, $dak_clinic_icons ); ?>
 	<?php endforeach; ?>
+
+	<p class="dak-empty-state dak-hidden" data-list-search-empty><?php esc_html_e( 'No clinics match your search.', 'doctor-ak-portal' ); ?></p>
 </div>
 
 <button type="button" class="dak-button dak-button-secondary" id="dak-clinic-add">

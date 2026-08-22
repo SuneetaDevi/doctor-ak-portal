@@ -12,7 +12,7 @@
  * @var string $doctor_sessions_url Base URL of the admin Doctor Sessions section, for the Doctors table's "View Sessions" action.
  * @var string $section_url      This section's own URL (no filters), for the filter form and "Clear" link.
  * @var array  $specializations  Specialization slug => label, see Specializations::get_all(). Empty outside the doctors table.
- * @var array  $filters          Active filter values: status, specialization.
+ * @var array  $filters          Active filter values: status, specialization, search.
  * @var bool   $read_only        Whether the viewer (a Receptionist) can only look, never add/edit/deactivate/delete —
  *                                only relevant for 'doctors'/'patients' (the 'receptionist' section itself is never
  *                                reachable by a receptionist viewer, see Admin_Dashboard::RECEPTIONIST_ALLOWED_SECTIONS).
@@ -47,10 +47,9 @@ endif;
 $dak_is_patients      = 'patients' === $section;
 $dak_is_receptionists = 'receptionist' === $section;
 $dak_is_doctors        = ! $dak_is_patients && ! $dak_is_receptionists;
-$dak_has_filters       = '' !== $filters['status'] || '' !== $filters['specialization'];
+$dak_has_filters       = '' !== $filters['status'] || '' !== $filters['specialization'] || '' !== $filters['search'];
 $dak_read_only         = ! empty( $read_only );
 ?>
-<?php if ( $dak_is_doctors ) : ?>
 	<section class="dak-dashboard-card dak-appt-filters-card">
 		<form
 			method="get"
@@ -62,14 +61,21 @@ $dak_read_only         = ! empty( $read_only );
 		>
 			<input type="hidden" name="section" value="<?php echo esc_attr( $section ); ?>">
 			<div class="dak-field">
-				<label for="dak-admin-users-filter-specialization"><?php esc_html_e( 'Specialization', 'doctor-ak-portal' ); ?></label>
-				<select id="dak-admin-users-filter-specialization" name="specialization">
-					<option value=""><?php esc_html_e( 'All specializations', 'doctor-ak-portal' ); ?></option>
-					<?php foreach ( $specializations as $slug => $label ) : ?>
-						<option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $filters['specialization'], $slug ); ?>><?php echo esc_html( $label ); ?></option>
-					<?php endforeach; ?>
-				</select>
+				<label for="dak-admin-users-filter-search"><?php esc_html_e( 'Search', 'doctor-ak-portal' ); ?></label>
+				<input type="search" id="dak-admin-users-filter-search" name="search" value="<?php echo esc_attr( $filters['search'] ); ?>" placeholder="<?php esc_attr_e( 'Name or email…', 'doctor-ak-portal' ); ?>">
 			</div>
+
+			<?php if ( $dak_is_doctors ) : ?>
+				<div class="dak-field">
+					<label for="dak-admin-users-filter-specialization"><?php esc_html_e( 'Specialization', 'doctor-ak-portal' ); ?></label>
+					<select id="dak-admin-users-filter-specialization" name="specialization">
+						<option value=""><?php esc_html_e( 'All specializations', 'doctor-ak-portal' ); ?></option>
+						<?php foreach ( $specializations as $slug => $label ) : ?>
+							<option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $filters['specialization'], $slug ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</div>
+			<?php endif; ?>
 
 			<div class="dak-field">
 				<label for="dak-admin-users-filter-status"><?php esc_html_e( 'Status', 'doctor-ak-portal' ); ?></label>
@@ -95,7 +101,6 @@ $dak_read_only         = ! empty( $read_only );
 			</div>
 		</form>
 	</section>
-<?php endif; ?>
 
 <?php if ( $dak_is_patients ) : ?>
 

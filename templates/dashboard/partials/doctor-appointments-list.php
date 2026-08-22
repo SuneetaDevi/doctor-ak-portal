@@ -8,7 +8,7 @@
  * @var array  $rows              Rows from Appointments::all_for_admin( [ 'doctor_id' => ... ] ).
  * @var string $appointments_url  Unfiltered URL of this tab, for the filter form and "Reset filters" link.
  * @var array  $range_options     Range slug => label ('', 'upcoming', 'past'), see Appointments::range_options().
- * @var array  $filters           Active filter values: date_from, date_to, payment_status, range.
+ * @var array  $filters           Active filter values: date_from, date_to, payment_status, range, search.
  */
 
 // Prevent direct file access.
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] || '' !== $filters['payment_status'] || 'upcoming' !== $filters['range'];
+$dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] || '' !== $filters['payment_status'] || 'upcoming' !== $filters['range'] || '' !== $filters['search'];
 ?>
 <div class="dak-dashboard-greeting">
 	<h1><?php esc_html_e( 'Appointments', 'doctor-ak-portal' ); ?></h1>
@@ -47,6 +47,11 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] ||
 		data-live-filter-nonce="dakDoctorAppointments"
 	>
 		<input type="hidden" name="tab" value="appointments">
+
+		<div class="dak-field">
+			<label for="dak-doctor-appt-filter-search"><?php esc_html_e( 'Search', 'doctor-ak-portal' ); ?></label>
+			<input type="search" id="dak-doctor-appt-filter-search" name="search" value="<?php echo esc_attr( $filters['search'] ); ?>" placeholder="<?php esc_attr_e( 'Patient or guest name…', 'doctor-ak-portal' ); ?>">
+		</div>
 
 		<div class="dak-field">
 			<label for="dak-doctor-appt-filter-range"><?php esc_html_e( 'Show', 'doctor-ak-portal' ); ?></label>

@@ -131,6 +131,14 @@ class Patient_Dashboard {
 		);
 
 		wp_enqueue_script(
+			'doctor-ak-portal-list-search',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-list-search.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-list-search.js' ),
+			true
+		);
+
+		wp_enqueue_script(
 			'doctor-ak-portal-dashboard-search',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-dashboard-search.js',
 			array(),
@@ -419,6 +427,16 @@ class Patient_Dashboard {
 	}
 
 	/**
+	 * Reads the current 'search' query var for the Appointments tab's
+	 * doctor/service name filter.
+	 *
+	 * @return string
+	 */
+	private static function requested_appointments_search() {
+		return isset( $_GET['search'] ) ? sanitize_text_field( wp_unslash( $_GET['search'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+	}
+
+	/**
 	 * Renders the Appointments tab: every appointment this patient has ever
 	 * booked, filterable by date, status, and range (All/Upcoming/Past).
 	 *
@@ -429,26 +447,44 @@ class Patient_Dashboard {
 		$date   = self::requested_appointments_date();
 		$status = self::requested_appointments_status();
 		$range  = self::requested_appointments_range();
+		$search = self::requested_appointments_search();
 
 		list( $query_date_from, $query_date_to ) = Appointments::apply_range_filter( $range, '', '' );
+
+		$rows = Appointments::all_for_admin(
+			array(
+				'patient_id' => $user->ID,
+				'date'       => $date,
+				'status'     => $status,
+				'date_from'  => $query_date_from,
+				'date_to'    => $query_date_to,
+			)
+		);
+
+		if ( '' !== $search ) {
+			$needle = mb_strtolower( $search );
+			$rows   = array_values(
+				array_filter(
+					$rows,
+					function ( $row ) use ( $needle ) {
+						$haystack = mb_strtolower( $row['doctor_name'] . ' ' . $row['service_name'] );
+
+						return false !== mb_strpos( $haystack, $needle );
+					}
+				)
+			);
+		}
 
 		return $this->template_loader->get_template(
 			'dashboard/partials/patient-appointments-list.php',
 			array(
-				'rows'            => Appointments::all_for_admin(
-					array(
-						'patient_id' => $user->ID,
-						'date'       => $date,
-						'status'     => $status,
-						'date_from'  => $query_date_from,
-						'date_to'    => $query_date_to,
-					)
-				),
+				'rows'            => $rows,
 				'status_options'  => Appointments::status_options(),
 				'range_options'   => Appointments::range_options(),
 				'selected_date'   => $date,
 				'selected_status' => $status,
 				'selected_range'  => $range,
+				'selected_search' => $search,
 			)
 		);
 	}
@@ -527,7 +563,7 @@ class Patient_Dashboard {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		foreach ( array( 'date', 'status', 'range' ) as $key ) {
+		foreach ( array( 'date', 'status', 'range', 'search' ) as $key ) {
 			$_GET[ $key ] = isset( $_POST[ $key ] ) ? $_POST[ $key ] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- nonce already verified above; render_appointments_tab() sanitizes each value itself, same as it does for a real $_GET.
 		}
 

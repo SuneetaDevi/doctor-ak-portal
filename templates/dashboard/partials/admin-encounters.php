@@ -110,9 +110,15 @@ $dak_status_labels = array(
 	</form>
 </section>
 
-<section class="dak-dashboard-card">
+<section class="dak-dashboard-card" id="dak-encounters-list">
 	<div class="dak-dashboard-card-header">
 		<h2><?php esc_html_e( 'Encounter list', 'doctor-ak-portal' ); ?></h2>
+		<?php if ( ! empty( $encounters ) ) : ?>
+			<div class="dak-dashboard-search dak-list-search-box">
+				<span class="dak-dashboard-search-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg></span>
+				<input type="search" data-list-search="#dak-encounters-list" placeholder="<?php esc_attr_e( 'Search encounters', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search encounters', 'doctor-ak-portal' ); ?>">
+			</div>
+		<?php endif; ?>
 	</div>
 
 	<?php if ( empty( $encounters ) ) : ?>
@@ -122,8 +128,10 @@ $dak_status_labels = array(
 			<?php
 			$dak_appt        = $row['appointment'];
 			$dak_encounter_edit_url = add_query_arg( 'encounter_id', $row['id'], $encounter_url );
+			$dak_encounter_patient_name = isset( $dak_appt['patient_name'] ) ? $dak_appt['patient_name'] : '';
+			$dak_encounter_doctor_name  = isset( $dak_appt['doctor_name'] ) ? $dak_appt['doctor_name'] : '';
 			?>
-			<div class="dak-admin-record-row" data-encounter-row="<?php echo esc_attr( $row['id'] ); ?>">
+			<div id="dak-encounter-<?php echo esc_attr( $row['id'] ); ?>" class="dak-admin-record-row" data-encounter-row="<?php echo esc_attr( $row['id'] ); ?>" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $dak_encounter_patient_name . ' ' . $dak_encounter_doctor_name ) ); ?>">
 				<div class="dak-admin-record-row-main">
 					<span class="dak-avatar dak-avatar-sm" aria-hidden="true">
 						<?php if ( ! empty( $dak_appt['patient_avatar_url'] ) ) : ?>
@@ -191,5 +199,6 @@ $dak_status_labels = array(
 				</div>
 			</div>
 		<?php endforeach; ?>
+		<p class="dak-empty-state dak-hidden" data-list-search-empty><?php esc_html_e( 'No encounters match your search.', 'doctor-ak-portal' ); ?></p>
 	<?php endif; ?>
 </section>

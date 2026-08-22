@@ -28,16 +28,22 @@ $dak_clinic_location_icons = array(
 	<button type="button" class="dak-button dak-button-primary" id="dak-admin-clinic-location-add"><?php esc_html_e( '+ Add Clinic', 'doctor-ak-portal' ); ?></button>
 </div>
 
-<section class="dak-dashboard-card">
+<section class="dak-dashboard-card" id="dak-clinic-locations-list">
 	<div class="dak-dashboard-card-header">
 		<h2><?php esc_html_e( 'Clinic directory', 'doctor-ak-portal' ); ?></h2>
+		<?php if ( ! empty( $clinic_locations ) ) : ?>
+			<div class="dak-dashboard-search dak-list-search-box">
+				<span class="dak-dashboard-search-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg></span>
+				<input type="search" data-list-search="#dak-clinic-locations-list" placeholder="<?php esc_attr_e( 'Search clinics', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search clinics', 'doctor-ak-portal' ); ?>">
+			</div>
+		<?php endif; ?>
 	</div>
 
 	<?php if ( empty( $clinic_locations ) ) : ?>
 		<p class="dak-empty-state"><?php esc_html_e( 'No clinics added yet.', 'doctor-ak-portal' ); ?></p>
 	<?php else : ?>
 		<?php foreach ( $clinic_locations as $clinic_location ) : ?>
-			<div class="dak-admin-record-row" data-clinic-location-row="<?php echo esc_attr( $clinic_location['id'] ); ?>">
+			<div id="dak-clinic-location-<?php echo esc_attr( $clinic_location['id'] ); ?>" class="dak-admin-record-row" data-clinic-location-row="<?php echo esc_attr( $clinic_location['id'] ); ?>" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $clinic_location['name'] . ' ' . $clinic_location['address'] . ' ' . $clinic_location['city_label'] ) ); ?>">
 				<div class="dak-admin-record-row-main">
 					<span class="dak-avatar dak-avatar-sm" aria-hidden="true"><?php echo $dak_clinic_location_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 					<span class="dak-admin-record-row-info">
@@ -79,5 +85,6 @@ $dak_clinic_location_icons = array(
 				</div>
 			</div>
 		<?php endforeach; ?>
+		<p class="dak-empty-state dak-hidden" data-list-search-empty><?php esc_html_e( 'No clinics match your search.', 'doctor-ak-portal' ); ?></p>
 	<?php endif; ?>
 </section>

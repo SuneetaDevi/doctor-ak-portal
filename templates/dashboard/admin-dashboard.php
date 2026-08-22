@@ -135,20 +135,22 @@ $dak_admin_section_icons = array(
 	<main class="dak-dashboard-main">
 		<?php if ( ! $is_user_form_view ) : ?>
 			<header class="dak-dashboard-topbar">
-				<div class="dak-dashboard-search">
-					<span class="dak-dashboard-search-icon" aria-hidden="true"><?php echo $dak_admin_icons['search']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-					<input
-						type="search"
-						id="dak-dashboard-topbar-search"
-						data-live-search="doctor_ak_admin_dashboard_search"
-						data-live-search-nonce="dakAdminUsers"
-						data-live-search-groups="doctors,patients,appointments"
-						placeholder="<?php esc_attr_e( 'Search doctors, patients, appointments…', 'doctor-ak-portal' ); ?>"
-						aria-label="<?php esc_attr_e( 'Search doctors, patients, appointments…', 'doctor-ak-portal' ); ?>"
-						autocomplete="off"
-					>
-					<div class="dak-search-results dak-hidden" id="dak-dashboard-topbar-search-results"></div>
-				</div>
+				<?php if ( 'dashboard' === $section ) : ?>
+					<div class="dak-dashboard-search">
+						<span class="dak-dashboard-search-icon" aria-hidden="true"><?php echo $dak_admin_icons['search']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<input
+							type="search"
+							id="dak-dashboard-topbar-search"
+							data-live-search="doctor_ak_admin_dashboard_search"
+							data-live-search-nonce="dakAdminUsers"
+							data-live-search-groups="doctors,patients,receptionist,admin,appointments,services,doctor_sessions,clinic_locations,doctor_requests,encounters"
+							placeholder="<?php esc_attr_e( 'Search everything…', 'doctor-ak-portal' ); ?>"
+							aria-label="<?php esc_attr_e( 'Search everything…', 'doctor-ak-portal' ); ?>"
+							autocomplete="off"
+						>
+						<div class="dak-search-results dak-hidden" id="dak-dashboard-topbar-search-results"></div>
+					</div>
+				<?php endif; ?>
 				<?php
 				echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own topbar-actions.php template, which escapes its own output.
 					'dashboard/partials/topbar-actions.php',

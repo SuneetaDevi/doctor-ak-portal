@@ -46,9 +46,15 @@ $dak_session_icons = array(
 	</div>
 <?php endif; ?>
 
-<section class="dak-dashboard-card">
+<section class="dak-dashboard-card" id="dak-doctor-sessions-list">
 	<div class="dak-dashboard-card-header">
 		<h2><?php esc_html_e( 'Session directory', 'doctor-ak-portal' ); ?></h2>
+		<?php if ( ! empty( $clinics ) ) : ?>
+			<div class="dak-dashboard-search dak-list-search-box">
+				<span class="dak-dashboard-search-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg></span>
+				<input type="search" data-list-search="#dak-doctor-sessions-list" placeholder="<?php esc_attr_e( 'Search sessions', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search sessions', 'doctor-ak-portal' ); ?>">
+			</div>
+		<?php endif; ?>
 	</div>
 
 	<?php if ( empty( $clinics ) ) : ?>
@@ -68,7 +74,7 @@ $dak_session_icons = array(
 
 			$slot_label = ! empty( $slot_durations ) ? sprintf( /* translators: %d: minutes. */ __( '%d min', 'doctor-ak-portal' ), (int) reset( $slot_durations ) ) : '—';
 			?>
-			<div class="dak-admin-record-row" data-clinic-row="<?php echo esc_attr( $clinic['id'] ); ?>">
+			<div id="dak-clinic-<?php echo esc_attr( $clinic['id'] ); ?>" class="dak-admin-record-row" data-clinic-row="<?php echo esc_attr( $clinic['id'] ); ?>" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $clinic['name'] . ' ' . $clinic['city_label'] . ' ' . $clinic['doctor']['name'] ) ); ?>">
 				<div class="dak-admin-record-row-main">
 					<span class="dak-avatar dak-avatar-sm" aria-hidden="true"><?php echo $dak_session_icons[ 'video' === $clinic['type'] ? 'video' : 'pin' ]; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 					<span class="dak-admin-record-row-info">
@@ -111,5 +117,6 @@ $dak_session_icons = array(
 				</div>
 			</div>
 		<?php endforeach; ?>
+		<p class="dak-empty-state dak-hidden" data-list-search-empty><?php esc_html_e( 'No sessions match your search.', 'doctor-ak-portal' ); ?></p>
 	<?php endif; ?>
 </section>

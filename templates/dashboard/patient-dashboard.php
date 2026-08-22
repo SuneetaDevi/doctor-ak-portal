@@ -154,20 +154,22 @@ $appointment_group_labels = array(
 
 	<main class="dak-dashboard-main">
 		<header class="dak-dashboard-topbar">
-			<div class="dak-dashboard-search">
-				<span class="dak-dashboard-search-icon" aria-hidden="true"><?php echo $dak_patient_icons['search']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-				<input
-					type="search"
-					id="dak-dashboard-topbar-search"
-					data-live-search="doctor_ak_patient_dashboard_search"
-					data-live-search-nonce="dakPatientDashboard"
-					data-live-search-groups="doctors,appointments"
-					placeholder="<?php esc_attr_e( 'Search doctors, appointments…', 'doctor-ak-portal' ); ?>"
-					aria-label="<?php esc_attr_e( 'Search doctors, appointments…', 'doctor-ak-portal' ); ?>"
-					autocomplete="off"
-				>
-				<div class="dak-search-results dak-hidden" id="dak-dashboard-topbar-search-results"></div>
-			</div>
+			<?php if ( 'dashboard' === $active_tab ) : ?>
+				<div class="dak-dashboard-search">
+					<span class="dak-dashboard-search-icon" aria-hidden="true"><?php echo $dak_patient_icons['search']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+					<input
+						type="search"
+						id="dak-dashboard-topbar-search"
+						data-live-search="doctor_ak_patient_dashboard_search"
+						data-live-search-nonce="dakPatientDashboard"
+						data-live-search-groups="doctors,appointments"
+						placeholder="<?php esc_attr_e( 'Search doctors, appointments…', 'doctor-ak-portal' ); ?>"
+						aria-label="<?php esc_attr_e( 'Search doctors, appointments…', 'doctor-ak-portal' ); ?>"
+						autocomplete="off"
+					>
+					<div class="dak-search-results dak-hidden" id="dak-dashboard-topbar-search-results"></div>
+				</div>
+			<?php endif; ?>
 			<?php
 			echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own topbar-actions.php template, which escapes its own output.
 				'dashboard/partials/topbar-actions.php',

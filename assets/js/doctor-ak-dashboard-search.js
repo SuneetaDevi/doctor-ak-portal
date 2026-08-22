@@ -1,10 +1,11 @@
 /**
- * Doctor AK Portal — dashboard topbar search box (Admin: Doctors + Patients
- * + Appointments; Doctor: their own Patients + Appointments). Debounced
- * live search with a click-to-jump results dropdown; each result links to
- * its row via the existing `#dak-user-{id}` / `#dak-patient-{id}` /
- * `#dak-appointment-{id}` anchors (`:target` highlight already built for
- * notification deep-links).
+ * Doctor AK Portal — dashboard topbar search box (Admin: Doctors, Patients,
+ * Receptionists, Admins, Appointments, Services, Doctor Sessions, Clinic
+ * Locations, Doctor Requests, Encounters; Doctor: their own Patients,
+ * Appointments, Services, Clinics; Patient: Doctors + Appointments).
+ * Debounced live search with a click-to-jump results dropdown; each result
+ * links to its row via an existing `#dak-{type}-{id}` anchor (`:target`
+ * highlight already built for notification deep-links).
  */
 ( function () {
 	'use strict';
@@ -12,7 +13,15 @@
 	var GROUP_LABELS = {
 		doctors: 'Doctors',
 		patients: 'Patients',
+		receptionist: 'Receptionist',
+		admin: 'Admins',
 		appointments: 'Appointments',
+		services: 'Services',
+		doctor_sessions: 'Doctor Sessions',
+		clinic_locations: 'Clinic Locations',
+		doctor_requests: 'Doctor Requests',
+		encounters: 'Encounters',
+		clinics: 'Clinics',
 	};
 
 	var DEBOUNCE_MS = 300;

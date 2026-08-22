@@ -133,6 +133,14 @@ class Doctor_Dashboard {
 		);
 
 		wp_enqueue_script(
+			'doctor-ak-portal-list-search',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-list-search.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-list-search.js' ),
+			true
+		);
+
+		wp_enqueue_script(
 			'doctor-ak-portal-dashboard-search',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-dashboard-search.js',
 			array(),
@@ -415,6 +423,7 @@ class Doctor_Dashboard {
 		$date_to        = isset( $_GET['date_to'] ) ? sanitize_text_field( wp_unslash( $_GET['date_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 		$payment_status = isset( $_GET['payment_status'] ) ? sanitize_key( wp_unslash( $_GET['payment_status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 		$range          = isset( $_GET['range'] ) ? sanitize_key( wp_unslash( $_GET['range'] ) ) : 'upcoming'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		$search         = isset( $_GET['search'] ) ? sanitize_text_field( wp_unslash( $_GET['search'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 
 		$payment_status_options = array(
 			Appointments::PAYMENT_STATUS_PENDING => __( 'Pending', 'doctor-ak-portal' ),
@@ -426,6 +435,7 @@ class Doctor_Dashboard {
 			'date_to'        => $date_to,
 			'payment_status' => array_key_exists( $payment_status, $payment_status_options ) ? $payment_status : '',
 			'range'          => array_key_exists( $range, Appointments::range_options() ) ? $range : 'upcoming',
+			'search'         => $search,
 		);
 	}
 
@@ -456,19 +466,35 @@ class Doctor_Dashboard {
 
 		list( $query_date_from, $query_date_to ) = Appointments::apply_range_filter( $filters['range'], $filters['date_from'], $filters['date_to'] );
 
+		$rows = Appointments::all_for_admin(
+			array_merge(
+				array( 'doctor_id' => $user->ID ),
+				$filters,
+				array(
+					'date_from' => $query_date_from,
+					'date_to'   => $query_date_to,
+				)
+			)
+		);
+
+		if ( '' !== $filters['search'] ) {
+			$needle = mb_strtolower( $filters['search'] );
+			$rows   = array_values(
+				array_filter(
+					$rows,
+					function ( $row ) use ( $needle ) {
+						$haystack = mb_strtolower( $row['patient_name'] . ' ' . $row['guest_name'] );
+
+						return false !== mb_strpos( $haystack, $needle );
+					}
+				)
+			);
+		}
+
 		return $this->template_loader->get_template(
 			'dashboard/partials/doctor-appointments-list.php',
 			array(
-				'rows' => Appointments::all_for_admin(
-					array_merge(
-						array( 'doctor_id' => $user->ID ),
-						$filters,
-						array(
-							'date_from' => $query_date_from,
-							'date_to'   => $query_date_to,
-						)
-					)
-				),
+				'rows'              => $rows,
 				'appointments_url' => $appointments_url,
 				'range_options'    => Appointments::range_options(),
 				'filters'          => $filters,
@@ -509,13 +535,16 @@ class Doctor_Dashboard {
 
 	/**
 	 * AJAX: the topbar search box — up to 5 matches each of this doctor's
-	 * own Patients and Appointments whose name contains the query, for a
-	 * click-to-jump dropdown (no "Doctors" category — a doctor only
-	 * searches their own data, never other doctors). Patients link to
-	 * `#dak-patient-{id}` in the Patients tab; Appointments link to
-	 * `#dak-appointment-{id}` in the Appointments tab — both anchors reuse
-	 * the existing `:target` highlight already built for notification
-	 * deep-links.
+	 * own Patients, Appointments, Services, and Clinics ("Sessions") whose
+	 * name contains the query, for a click-to-jump dropdown (no "Doctors"
+	 * category — a doctor only searches their own data, never other
+	 * doctors). Patients link to `#dak-patient-{id}` in the Patients tab;
+	 * Appointments link to `#dak-appointment-{id}` in the Appointments tab;
+	 * Services/Clinics link to `#dak-service-{id}`/`#dak-clinic-{id}` in
+	 * their own tabs — all anchors reuse the existing `:target` highlight
+	 * already built for notification deep-links. Services/Clinics are only
+	 * included when that tab hasn't been switched off for doctors under
+	 * Settings → Roles & Permissions (see tab_url()).
 	 *
 	 * @return void
 	 */
@@ -537,18 +566,15 @@ class Doctor_Dashboard {
 		$query = isset( $_POST['query'] ) ? sanitize_text_field( wp_unslash( $_POST['query'] ) ) : '';
 
 		if ( mb_strlen( $query ) < 2 ) {
-			wp_send_json_success(
-				array(
-					'patients'     => array(),
-					'appointments' => array(),
-				)
-			);
+			wp_send_json_success( array() );
 		}
 
 		$needle            = mb_strtolower( $query );
 		$dashboard_url     = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
 		$patients_url      = self::tab_url( $dashboard_url, 'patients' );
 		$appointments_url  = self::tab_url( $dashboard_url, 'appointments' );
+		$services_url      = self::tab_url( $dashboard_url, 'services' );
+		$clinics_url       = self::tab_url( $dashboard_url, 'clinics' );
 
 		$patient_results = array();
 
@@ -590,12 +616,60 @@ class Doctor_Dashboard {
 			}
 		}
 
-		wp_send_json_success(
-			array(
-				'patients'     => $patient_results,
-				'appointments' => $appointment_results,
-			)
+		$results = array(
+			'patients'     => $patient_results,
+			'appointments' => $appointment_results,
 		);
+
+		if ( Role_Permissions::is_tab_allowed( Roles::DOCTOR_ROLE, 'services' ) ) {
+			$service_results = array();
+
+			foreach ( Services::get_for_doctor( $user->ID ) as $service ) {
+				$haystack = mb_strtolower( $service['name'] . ' ' . $service['category_label'] );
+
+				if ( false === mb_strpos( $haystack, $needle ) ) {
+					continue;
+				}
+
+				$service_results[] = array(
+					'label'    => $service['name'],
+					'sublabel' => $service['category_label'],
+					'url'      => $services_url ? esc_url_raw( $services_url . '#dak-service-' . $service['id'] ) : '',
+				);
+
+				if ( count( $service_results ) >= 5 ) {
+					break;
+				}
+			}
+
+			$results['services'] = $service_results;
+		}
+
+		if ( Role_Permissions::is_tab_allowed( Roles::DOCTOR_ROLE, 'clinics' ) ) {
+			$clinic_results = array();
+
+			foreach ( Clinics::get_for_doctor( $user->ID ) as $clinic ) {
+				$haystack = mb_strtolower( $clinic['name'] . ' ' . $clinic['city_label'] );
+
+				if ( false === mb_strpos( $haystack, $needle ) ) {
+					continue;
+				}
+
+				$clinic_results[] = array(
+					'label'    => $clinic['name'],
+					'sublabel' => $clinic['city_label'],
+					'url'      => $clinics_url ? esc_url_raw( $clinics_url . '#dak-clinic-' . $clinic['id'] ) : '',
+				);
+
+				if ( count( $clinic_results ) >= 5 ) {
+					break;
+				}
+			}
+
+			$results['clinics'] = $clinic_results;
+		}
+
+		wp_send_json_success( $results );
 	}
 
 	/**
@@ -622,7 +696,7 @@ class Doctor_Dashboard {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		foreach ( array( 'date_from', 'date_to', 'payment_status', 'range' ) as $key ) {
+		foreach ( array( 'date_from', 'date_to', 'payment_status', 'range', 'search' ) as $key ) {
 			$_GET[ $key ] = isset( $_POST[ $key ] ) ? $_POST[ $key ] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- nonce already verified above; render_appointments_tab() sanitizes each value itself, same as it does for a real $_GET.
 		}
 

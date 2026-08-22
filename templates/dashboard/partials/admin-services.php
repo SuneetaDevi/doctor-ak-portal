@@ -45,9 +45,15 @@ $dak_service_icons = array(
 	</div>
 <?php endif; ?>
 
-<section class="dak-dashboard-card">
+<section class="dak-dashboard-card" id="dak-services-list">
 	<div class="dak-dashboard-card-header">
 		<h2><?php esc_html_e( 'Service directory', 'doctor-ak-portal' ); ?></h2>
+		<?php if ( ! empty( $services ) ) : ?>
+			<div class="dak-dashboard-search dak-list-search-box">
+				<span class="dak-dashboard-search-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg></span>
+				<input type="search" data-list-search="#dak-services-list" placeholder="<?php esc_attr_e( 'Search services', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search services', 'doctor-ak-portal' ); ?>">
+			</div>
+		<?php endif; ?>
 	</div>
 
 	<?php if ( empty( $services ) ) : ?>
@@ -55,7 +61,7 @@ $dak_service_icons = array(
 	<?php else : ?>
 		<?php foreach ( $services as $service ) : ?>
 			<?php $dak_service_split = \DoctorAKPortal\Includes\Revenue_Split::split( $service['doctor_id'], $service['charge'] ); ?>
-			<div class="dak-admin-record-row" data-service-row="<?php echo esc_attr( $service['id'] ); ?>">
+			<div id="dak-service-<?php echo esc_attr( $service['id'] ); ?>" class="dak-admin-record-row" data-service-row="<?php echo esc_attr( $service['id'] ); ?>" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $service['name'] . ' ' . $service['category_label'] . ' ' . $service['doctor']['name'] ) ); ?>">
 				<div class="dak-admin-record-row-main">
 					<span class="dak-avatar dak-avatar-sm" aria-hidden="true"><?php echo $dak_service_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 					<span class="dak-admin-record-row-info">
@@ -112,5 +118,6 @@ $dak_service_icons = array(
 				</div>
 			</div>
 		<?php endforeach; ?>
+		<p class="dak-empty-state dak-hidden" data-list-search-empty><?php esc_html_e( 'No services match your search.', 'doctor-ak-portal' ); ?></p>
 	<?php endif; ?>
 </section>

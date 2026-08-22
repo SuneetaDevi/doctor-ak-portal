@@ -28,7 +28,7 @@ $dak_service_icons = array(
 	<button type="button" class="dak-button dak-button-primary" id="dak-service-add"><?php esc_html_e( '+ Add Service', 'doctor-ak-portal' ); ?></button>
 </div>
 
-<section class="dak-dashboard-card">
+<section class="dak-dashboard-card" id="dak-doctor-services-list">
 	<div class="dak-dashboard-card-header">
 		<div>
 			<h2><?php esc_html_e( 'All services', 'doctor-ak-portal' ); ?></h2>
@@ -44,6 +44,12 @@ $dak_service_icons = array(
 				?>
 			</p>
 		</div>
+		<?php if ( ! empty( $services ) ) : ?>
+			<div class="dak-dashboard-search dak-list-search-box">
+				<span class="dak-dashboard-search-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg></span>
+				<input type="search" data-list-search="#dak-doctor-services-list" placeholder="<?php esc_attr_e( 'Search services', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search services', 'doctor-ak-portal' ); ?>">
+			</div>
+		<?php endif; ?>
 	</div>
 
 	<div class="dak-alert dak-alert-success dak-hidden" id="dak-services-success" role="status"></div>
@@ -54,7 +60,7 @@ $dak_service_icons = array(
 	<?php else : ?>
 		<?php foreach ( $services as $service ) : ?>
 			<?php $dak_service_split = \DoctorAKPortal\Includes\Revenue_Split::split( $service['doctor_id'], $service['charge'] ); ?>
-			<div class="dak-admin-record-row">
+			<div id="dak-service-<?php echo esc_attr( $service['id'] ); ?>" class="dak-admin-record-row" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $service['name'] . ' ' . $service['category_label'] ) ); ?>">
 				<div class="dak-admin-record-row-main">
 					<span class="dak-admin-record-row-info">
 						<strong><?php echo esc_html( $service['name'] ); ?></strong>
@@ -108,6 +114,7 @@ $dak_service_icons = array(
 				</div>
 			</div>
 		<?php endforeach; ?>
+		<p class="dak-empty-state dak-hidden" data-list-search-empty><?php esc_html_e( 'No services match your search.', 'doctor-ak-portal' ); ?></p>
 	<?php endif; ?>
 </section>
 

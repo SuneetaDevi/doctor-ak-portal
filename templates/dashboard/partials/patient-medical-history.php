@@ -18,14 +18,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 ?>
-<section class="dak-dashboard-card">
+<section class="dak-dashboard-card" id="dak-medical-history-list">
 	<?php if ( empty( $encounters ) ) : ?>
 		<p class="dak-empty-state"><?php esc_html_e( 'You have no completed visits yet.', 'doctor-ak-portal' ); ?></p>
 	<?php else : ?>
+		<div class="dak-list-search-header">
+			<div class="dak-dashboard-search dak-list-search-box">
+				<span class="dak-dashboard-search-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg></span>
+				<input type="search" data-list-search="#dak-medical-history-list" placeholder="<?php esc_attr_e( 'Search visits', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search visits', 'doctor-ak-portal' ); ?>">
+			</div>
+		</div>
 		<ul class="dak-patient-payments-list">
 			<?php foreach ( $encounters as $encounter ) : ?>
-				<?php $dak_appt = $encounter['appointment']; ?>
-				<li id="dak-encounter-<?php echo esc_attr( $encounter['id'] ); ?>" class="dak-patient-payment-row">
+				<?php
+				$dak_appt = $encounter['appointment'];
+				$dak_history_doctor_name = isset( $dak_appt['doctor_name'] ) ? $dak_appt['doctor_name'] : '';
+				$dak_history_clinic_or_type = ! empty( $dak_appt['clinic_label'] ) ? $dak_appt['clinic_label'] : ( isset( $dak_appt['type_label'] ) ? $dak_appt['type_label'] : '' );
+				?>
+				<li id="dak-encounter-<?php echo esc_attr( $encounter['id'] ); ?>" class="dak-patient-payment-row" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $dak_history_doctor_name . ' ' . $dak_history_clinic_or_type ) ); ?>">
 					<span class="dak-patient-appt-avatar">
 						<?php if ( ! empty( $dak_appt['doctor_avatar_url'] ) ) : ?>
 							<img src="<?php echo esc_url( $dak_appt['doctor_avatar_url'] ); ?>" alt="">
@@ -95,5 +105,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 				</li>
 			<?php endforeach; ?>
 		</ul>
+		<p class="dak-empty-state dak-hidden" data-list-search-empty><?php esc_html_e( 'No visits match your search.', 'doctor-ak-portal' ); ?></p>
 	<?php endif; ?>
 </section>

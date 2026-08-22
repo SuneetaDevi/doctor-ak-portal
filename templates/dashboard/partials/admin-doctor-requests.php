@@ -48,13 +48,17 @@ endif;
 		<p class="dak-empty-state"><?php esc_html_e( 'No pending doctor registrations right now.', 'doctor-ak-portal' ); ?></p>
 	</section>
 <?php else : ?>
-	<section class="dak-dashboard-card">
+	<section class="dak-dashboard-card" id="dak-doctor-requests-list">
 		<div class="dak-dashboard-card-header">
 			<h2><?php esc_html_e( 'Pending requests', 'doctor-ak-portal' ); ?></h2>
+			<div class="dak-dashboard-search dak-list-search-box">
+				<span class="dak-dashboard-search-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg></span>
+				<input type="search" data-list-search="#dak-doctor-requests-list" placeholder="<?php esc_attr_e( 'Search requests', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search requests', 'doctor-ak-portal' ); ?>">
+			</div>
 		</div>
 
 		<?php foreach ( $pending_doctors as $row ) : ?>
-			<div class="dak-admin-record-row" data-doctor-request-row="<?php echo esc_attr( $row['id'] ); ?>">
+			<div id="dak-doctor-request-<?php echo esc_attr( $row['id'] ); ?>" class="dak-admin-record-row" data-doctor-request-row="<?php echo esc_attr( $row['id'] ); ?>" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $row['name'] . ' ' . $row['email'] ) ); ?>">
 				<div class="dak-admin-record-row-main">
 					<span class="dak-avatar dak-avatar-sm" aria-hidden="true">
 						<?php if ( $row['avatar_url'] ) : ?>
@@ -108,6 +112,7 @@ endif;
 				</div>
 			</div>
 		<?php endforeach; ?>
+		<p class="dak-empty-state dak-hidden" data-list-search-empty><?php esc_html_e( 'No requests match your search.', 'doctor-ak-portal' ); ?></p>
 	</section>
 
 	<?php foreach ( $pending_doctors as $row ) : ?>
