@@ -1620,6 +1620,33 @@ class Admin_Dashboard {
 				)
 			);
 
+			// A receptionist assigned to specific clinics only sees
+			// appointments at those clinics (matches Notification_Center's
+			// existing receptionist_ids_for_clinic_location() scoping) — one
+			// with no clinics assigned is front-desk for all of them,
+			// including video consultations, and sees everything.
+			if ( self::is_receptionist() ) {
+				$assigned_clinic_location_ids = array_map( 'intval', (array) get_user_meta( get_current_user_id(), Clinic_Locations::RECEPTIONIST_META_KEY, true ) );
+
+				if ( ! empty( $assigned_clinic_location_ids ) ) {
+					$appointments = array_values(
+						array_filter(
+							$appointments,
+							function ( $row ) use ( $assigned_clinic_location_ids ) {
+								$clinic_location_id = 0;
+
+								if ( ! empty( $row['clinic_id'] ) ) {
+									$clinic              = Clinics::find( $row['clinic_id'] );
+									$clinic_location_id = $clinic ? (int) $clinic['clinic_location_id'] : 0;
+								}
+
+								return in_array( $clinic_location_id, $assigned_clinic_location_ids, true );
+							}
+						)
+					);
+				}
+			}
+
 			if ( '' !== $search ) {
 				$needle       = mb_strtolower( $search );
 				$appointments = array_values(
