@@ -45,6 +45,19 @@ class Clinic_Locations {
 	const PATIENT_META_KEY = 'doctor_ak_patient_clinic_location_id';
 
 	/**
+	 * User meta key storing a receptionist's assigned Clinic_Locations rows
+	 * (an array of IDs — a receptionist can front-desk more than one
+	 * clinic, unlike a patient's single home clinic). Set by an admin from
+	 * the Add/Edit Receptionist form. An empty/unset value means "not
+	 * restricted to any particular clinic" — see
+	 * Notification_Center::receptionist_ids_for_clinic_location(), which is
+	 * the only thing that currently reads this.
+	 *
+	 * @var string
+	 */
+	const RECEPTIONIST_META_KEY = 'doctor_ak_receptionist_clinic_locations';
+
+	/**
 	 * Returns the fully prefixed table name.
 	 *
 	 * @return string

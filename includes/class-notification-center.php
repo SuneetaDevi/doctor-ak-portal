@@ -102,16 +102,15 @@ class Notification_Center {
 			$appointment_id
 		);
 
-		self::notify_admins(
-			sprintf(
-				/* translators: 1: patient's display name, 2: doctor's display name. */
-				__( '%1$s booked an appointment with Dr. %2$s.', 'doctor-ak-portal' ),
-				$appt['patient_name'],
-				$appt['doctor_name']
-			),
-			self::TYPE_BOOKED,
-			$appointment_id
+		$admin_message = sprintf(
+			/* translators: 1: patient's display name, 2: doctor's display name. */
+			__( '%1$s booked an appointment with Dr. %2$s.', 'doctor-ak-portal' ),
+			$appt['patient_name'],
+			$appt['doctor_name']
 		);
+
+		self::notify_admins( $admin_message, self::TYPE_BOOKED, $appointment_id );
+		self::notify_receptionists_for_appointment( $admin_message, self::TYPE_BOOKED, $appointment_id, $appt );
 	}
 
 	/**
@@ -191,16 +190,15 @@ class Notification_Center {
 			$appointment_id
 		);
 
-		self::notify_admins(
-			sprintf(
-				/* translators: 1: patient's display name, 2: doctor's display name. */
-				__( '%1$s cancelled their appointment with Dr. %2$s.', 'doctor-ak-portal' ),
-				$appt['patient_name'],
-				$appt['doctor_name']
-			),
-			self::TYPE_CANCELLED,
-			$appointment_id
+		$admin_message = sprintf(
+			/* translators: 1: patient's display name, 2: doctor's display name. */
+			__( '%1$s cancelled their appointment with Dr. %2$s.', 'doctor-ak-portal' ),
+			$appt['patient_name'],
+			$appt['doctor_name']
 		);
+
+		self::notify_admins( $admin_message, self::TYPE_CANCELLED, $appointment_id );
+		self::notify_receptionists_for_appointment( $admin_message, self::TYPE_CANCELLED, $appointment_id, $appt );
 	}
 
 	/**
@@ -244,16 +242,15 @@ class Notification_Center {
 			$appointment_id
 		);
 
-		self::notify_admins(
-			sprintf(
-				/* translators: 1: patient's display name, 2: doctor's display name. */
-				__( '%1$s\'s appointment with Dr. %2$s was rescheduled.', 'doctor-ak-portal' ),
-				$appt['patient_name'],
-				$appt['doctor_name']
-			),
-			self::TYPE_RESCHEDULED,
-			$appointment_id
+		$admin_message = sprintf(
+			/* translators: 1: patient's display name, 2: doctor's display name. */
+			__( '%1$s\'s appointment with Dr. %2$s was rescheduled.', 'doctor-ak-portal' ),
+			$appt['patient_name'],
+			$appt['doctor_name']
 		);
+
+		self::notify_admins( $admin_message, self::TYPE_RESCHEDULED, $appointment_id );
+		self::notify_receptionists_for_appointment( $admin_message, self::TYPE_RESCHEDULED, $appointment_id, $appt );
 	}
 
 	/**
@@ -293,16 +290,15 @@ class Notification_Center {
 			$appointment_id
 		);
 
-		self::notify_admins(
-			sprintf(
-				/* translators: 1: patient's display name, 2: doctor's display name. */
-				__( '%1$s paid for their appointment with Dr. %2$s.', 'doctor-ak-portal' ),
-				$appt['patient_name'],
-				$appt['doctor_name']
-			),
-			self::TYPE_PAID,
-			$appointment_id
+		$admin_message = sprintf(
+			/* translators: 1: patient's display name, 2: doctor's display name. */
+			__( '%1$s paid for their appointment with Dr. %2$s.', 'doctor-ak-portal' ),
+			$appt['patient_name'],
+			$appt['doctor_name']
 		);
+
+		self::notify_admins( $admin_message, self::TYPE_PAID, $appointment_id );
+		self::notify_receptionists_for_appointment( $admin_message, self::TYPE_PAID, $appointment_id, $appt );
 	}
 
 	/**
@@ -333,16 +329,15 @@ class Notification_Center {
 			);
 		}
 
-		self::notify_admins(
-			sprintf(
-				/* translators: 1: patient's display name, 2: doctor's display name. */
-				__( '%1$s\'s appointment with Dr. %2$s is complete.', 'doctor-ak-portal' ),
-				$appt['patient_name'],
-				$appt['doctor_name']
-			),
-			self::TYPE_COMPLETED,
-			$appointment_id
+		$admin_message = sprintf(
+			/* translators: 1: patient's display name, 2: doctor's display name. */
+			__( '%1$s\'s appointment with Dr. %2$s is complete.', 'doctor-ak-portal' ),
+			$appt['patient_name'],
+			$appt['doctor_name']
 		);
+
+		self::notify_admins( $admin_message, self::TYPE_COMPLETED, $appointment_id );
+		self::notify_receptionists_for_appointment( $admin_message, self::TYPE_COMPLETED, $appointment_id, $appt );
 	}
 
 	/**
@@ -466,6 +461,66 @@ class Notification_Center {
 		foreach ( self::admin_user_ids() as $admin_id ) {
 			self::record( $admin_id, $type, $message, $appointment_id );
 		}
+	}
+
+	/**
+	 * Records one notification for every receptionist eligible to see this
+	 * appointment's clinic — see receptionist_ids_for_clinic_location()'s
+	 * docblock for what "eligible" means. Kept separate from notify_admins()
+	 * (administrators see every appointment regardless of clinic): only the
+	 * appointment lifecycle events call this, not the refund/doctor-
+	 * registration ones notify_admins() also handles, since Billing/Revenue
+	 * and Doctor Requests stay administrator-only (see
+	 * Admin_Dashboard::RECEPTIONIST_ALLOWED_SECTIONS).
+	 *
+	 * @param string $message        Notification text (same one recorded for admins).
+	 * @param string $type           One of the TYPE_* constants.
+	 * @param int    $appointment_id Related appointment's post ID.
+	 * @param array  $appt           Decoded appointment row, see Appointments::notification_data().
+	 * @return void
+	 */
+	private static function notify_receptionists_for_appointment( $message, $type, $appointment_id, array $appt ) {
+		$clinic_location_id = 0;
+
+		if ( ! empty( $appt['clinic_id'] ) ) {
+			$clinic              = Clinics::find( $appt['clinic_id'] );
+			$clinic_location_id = $clinic ? (int) $clinic['clinic_location_id'] : 0;
+		}
+
+		foreach ( self::receptionist_ids_for_clinic_location( $clinic_location_id ) as $receptionist_id ) {
+			self::record( $receptionist_id, $type, $message, $appointment_id );
+		}
+	}
+
+	/**
+	 * Every receptionist eligible to be notified about activity at a given
+	 * clinic location. An account with no clinics assigned (see
+	 * Clinic_Locations::RECEPTIONIST_META_KEY) is treated as front-desk for
+	 * every clinic and is notified about all of them (including a video
+	 * consultation, $clinic_location_id = 0, which has no physical clinic
+	 * to match); one with specific clinics assigned only sees a match.
+	 *
+	 * @param int $clinic_location_id Clinic_Locations row ID, 0 for a video consultation.
+	 * @return int[] User IDs.
+	 */
+	private static function receptionist_ids_for_clinic_location( $clinic_location_id ) {
+		$receptionist_ids = get_users(
+			array(
+				'role'   => Roles::RECEPTIONIST_ROLE,
+				'fields' => 'ID',
+			)
+		);
+
+		return array_values(
+			array_filter(
+				array_map( 'intval', $receptionist_ids ),
+				function ( $receptionist_id ) use ( $clinic_location_id ) {
+					$assigned = array_map( 'intval', (array) get_user_meta( $receptionist_id, Clinic_Locations::RECEPTIONIST_META_KEY, true ) );
+
+					return empty( $assigned ) || in_array( (int) $clinic_location_id, $assigned, true );
+				}
+			)
+		);
 	}
 
 	/**

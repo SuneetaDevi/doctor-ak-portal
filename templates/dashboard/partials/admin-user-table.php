@@ -12,7 +12,8 @@
  * @var string $doctor_sessions_url Base URL of the admin Doctor Sessions section, for the Doctors table's "View Sessions" action.
  * @var string $section_url      This section's own URL (no filters), for the filter form and "Clear" link.
  * @var array  $specializations  Specialization slug => label, see Specializations::get_all(). Empty outside the doctors table.
- * @var array  $filters          Active filter values: status, specialization, search.
+ * @var array  $clinic_locations Rows from Clinic_Locations::get_all(). Empty outside the patients table.
+ * @var array  $filters          Active filter values: status, specialization, clinic_location_id, search.
  * @var bool   $read_only        Whether the viewer (a Receptionist) can only look, never add/edit/deactivate/delete —
  *                                only relevant for 'doctors'/'patients' (the 'receptionist' section itself is never
  *                                reachable by a receptionist viewer, see Admin_Dashboard::RECEPTIONIST_ALLOWED_SECTIONS).
@@ -47,7 +48,7 @@ endif;
 $dak_is_patients      = 'patients' === $section;
 $dak_is_receptionists = 'receptionist' === $section;
 $dak_is_doctors        = ! $dak_is_patients && ! $dak_is_receptionists;
-$dak_has_filters       = '' !== $filters['status'] || '' !== $filters['specialization'] || '' !== $filters['search'];
+$dak_has_filters       = '' !== $filters['status'] || '' !== $filters['specialization'] || ! empty( $filters['clinic_location_id'] ) || '' !== $filters['search'];
 $dak_read_only         = ! empty( $read_only );
 ?>
 	<section class="dak-dashboard-card dak-appt-filters-card">
@@ -72,6 +73,20 @@ $dak_read_only         = ! empty( $read_only );
 						<option value=""><?php esc_html_e( 'All specializations', 'doctor-ak-portal' ); ?></option>
 						<?php foreach ( $specializations as $slug => $label ) : ?>
 							<option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $filters['specialization'], $slug ); ?>><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</div>
+			<?php endif; ?>
+
+			<?php if ( $dak_is_patients ) : ?>
+				<div class="dak-field">
+					<label for="dak-admin-users-filter-clinic"><?php esc_html_e( 'Clinic', 'doctor-ak-portal' ); ?></label>
+					<select id="dak-admin-users-filter-clinic" name="clinic_location_id">
+						<option value=""><?php esc_html_e( 'All clinics', 'doctor-ak-portal' ); ?></option>
+						<?php foreach ( $clinic_locations as $clinic_location ) : ?>
+							<option value="<?php echo esc_attr( $clinic_location['id'] ); ?>" <?php selected( (int) $filters['clinic_location_id'], $clinic_location['id'] ); ?>>
+								<?php echo esc_html( sprintf( '%1$s — %2$s, %3$s', $clinic_location['name'], $clinic_location['area_label'], $clinic_location['city_label'] ) ); ?>
+							</option>
 						<?php endforeach; ?>
 					</select>
 				</div>
@@ -124,6 +139,7 @@ $dak_read_only         = ! empty( $read_only );
 						</span>
 						<span class="dak-admin-patient-row-email"><?php echo esc_html( $row['email'] ); ?></span>
 						<span class="dak-admin-patient-row-phone"><?php echo esc_html( '' !== $row['phone'] ? $row['phone'] : '—' ); ?></span>
+						<span class="dak-admin-patient-row-clinic"><?php echo esc_html( '' !== $row['clinic_location_label'] ? $row['clinic_location_label'] : '—' ); ?></span>
 						<span class="dak-admin-patient-row-since">
 							<?php echo esc_html( sprintf( /* translators: %s: registration date. */ __( 'Since %s', 'doctor-ak-portal' ), $row['registered_date'] ) ); ?>
 						</span>
@@ -232,6 +248,10 @@ $dak_read_only         = ! empty( $read_only );
 							aria-label="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
 						><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h12M8 6V4.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V6M6 6l.6 9a1.5 1.5 0 0 0 1.5 1.4h3.8a1.5 1.5 0 0 0 1.5-1.4L14 6"/></svg></button>
 					</span>
+				</div>
+				<div class="dak-admin-record-row-secondary">
+					<span class="dak-admin-record-row-secondary-label"><?php esc_html_e( 'Clinics:', 'doctor-ak-portal' ); ?></span>
+					<span><?php echo esc_html( implode( ', ', $row['clinic_labels'] ) ); ?></span>
 				</div>
 			</div>
 		<?php endforeach; ?>

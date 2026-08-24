@@ -545,7 +545,8 @@
 }
 
 .dak-admin-patient-row-email,
-.dak-admin-patient-row-phone {
+.dak-admin-patient-row-phone,
+.dak-admin-patient-row-clinic {
 	flex: 1 1 190px !important;
 	font-size: 0.86rem !important;
 	color: var( --dak-text ) !important;
@@ -722,7 +723,8 @@
 
 	.dak-admin-patient-row-info,
 	.dak-admin-patient-row-email,
-	.dak-admin-patient-row-phone {
+	.dak-admin-patient-row-phone,
+	.dak-admin-patient-row-clinic {
 		flex-basis: 100% !important;
 	}
 }

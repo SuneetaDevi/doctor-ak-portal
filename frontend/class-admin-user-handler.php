@@ -291,9 +291,9 @@ class Admin_User_Handler {
 			}
 		}
 
-		// Patients (not receptionists) are registered under exactly one
-		// clinic from the master Clinic_Locations directory — never
-		// required for/consulted by the video consultation flow.
+		// A patient is registered under exactly one clinic from the master
+		// Clinic_Locations directory — never required for/consulted by the
+		// video consultation flow.
 		$patient_clinic_location_id = 0;
 
 		if ( Roles::PATIENT_ROLE === $target_role ) {
@@ -301,6 +301,32 @@ class Admin_User_Handler {
 
 			if ( $patient_clinic_location_id <= 0 || ! Clinic_Locations::find( $patient_clinic_location_id ) ) {
 				$errors['clinic_location_id'] = __( "Please select the patient's home clinic.", 'doctor-ak-portal' );
+			}
+		}
+
+		// A receptionist may be assigned zero or more clinics — unlike a
+		// patient's single required home clinic, this is optional: leaving
+		// it empty means "front desk for every clinic" (see
+		// Notification_Center::receptionist_ids_for_clinic_location(), the
+		// only thing that currently reads this).
+		$receptionist_clinic_location_ids = array();
+
+		if ( Roles::RECEPTIONIST_ROLE === $target_role ) {
+			$posted_receptionist_clinic_location_ids = isset( $_POST['clinic_location_ids'] ) && is_array( $_POST['clinic_location_ids'] )
+				? array_unique( array_map( 'absint', wp_unslash( $_POST['clinic_location_ids'] ) ) ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- wp_unslash() applied above before array_map().
+				: array();
+
+			foreach ( $posted_receptionist_clinic_location_ids as $posted_clinic_location_id ) {
+				if ( $posted_clinic_location_id <= 0 ) {
+					continue;
+				}
+
+				if ( ! Clinic_Locations::find( $posted_clinic_location_id ) ) {
+					$errors['clinic_location_ids'] = __( 'One of the chosen clinics could not be found.', 'doctor-ak-portal' );
+					continue;
+				}
+
+				$receptionist_clinic_location_ids[] = $posted_clinic_location_id;
 			}
 		}
 
@@ -402,6 +428,10 @@ class Admin_User_Handler {
 
 			if ( Roles::PATIENT_ROLE === $target_role ) {
 				update_user_meta( $saved_user_id, Clinic_Locations::PATIENT_META_KEY, $patient_clinic_location_id );
+			}
+
+			if ( Roles::RECEPTIONIST_ROLE === $target_role ) {
+				update_user_meta( $saved_user_id, Clinic_Locations::RECEPTIONIST_META_KEY, $receptionist_clinic_location_ids );
 			}
 		}
 

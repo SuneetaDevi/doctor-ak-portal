@@ -275,6 +275,24 @@ $dak_list_noun       = isset( $dak_list_nouns[ $section ] ) ? $dak_list_nouns[ $
 				</div>
 			<?php endif; ?>
 
+			<?php if ( 'receptionist' === $section ) : ?>
+				<div class="dak-field">
+					<label for="dak-admin-user-clinic-locations"><?php esc_html_e( 'Assigned Clinics', 'doctor-ak-portal' ); ?></label>
+					<select id="dak-admin-user-clinic-locations" name="clinic_location_ids[]" multiple>
+						<?php foreach ( $clinic_locations as $clinic_location ) : ?>
+							<option value="<?php echo esc_attr( $clinic_location['id'] ); ?>" <?php selected( $dak_is_editing && in_array( $clinic_location['id'], $editing_user['receptionist_clinic_location_ids'], true ), true ); ?>>
+								<?php echo esc_html( sprintf( '%1$s — %2$s, %3$s', $clinic_location['name'], $clinic_location['area_label'], $clinic_location['city_label'] ) ); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+					<p class="dak-field-hint"><?php esc_html_e( 'Limits which clinics\' appointments/notifications this receptionist sees. Leave empty for front-desk access to every clinic.', 'doctor-ak-portal' ); ?></p>
+					<span class="dak-field-error" data-field="clinic_location_ids"></span>
+					<?php if ( empty( $clinic_locations ) ) : ?>
+						<p class="dak-field-hint"><?php esc_html_e( 'No clinics added yet — add one first from the admin "Clinic" section.', 'doctor-ak-portal' ); ?></p>
+					<?php endif; ?>
+				</div>
+			<?php endif; ?>
+
 		<?php endif; ?>
 
 		<div class="dak-field" id="dak-admin-user-password-field">

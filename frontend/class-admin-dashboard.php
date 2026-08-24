@@ -1322,7 +1322,7 @@ class Admin_Dashboard {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		foreach ( array( 'status', 'specialization', 'search' ) as $key ) {
+		foreach ( array( 'status', 'specialization', 'clinic_location_id', 'search' ) as $key ) {
 			$_GET[ $key ] = isset( $_POST[ $key ] ) ? $_POST[ $key ] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- nonce already verified above; users_section_html() sanitizes each value itself, same as it does for a real $_GET.
 		}
 
@@ -2266,6 +2266,13 @@ class Admin_Dashboard {
 			$specialization = Specializations::is_valid( $specialization ) ? $specialization : '';
 		}
 
+		$is_patients_section = 'patients' === $section;
+		$clinic_location_id  = 0;
+
+		if ( $is_patients_section ) {
+			$clinic_location_id = isset( $_GET['clinic_location_id'] ) ? absint( wp_unslash( $_GET['clinic_location_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		}
+
 		$search = isset( $_GET['search'] ) ? sanitize_text_field( wp_unslash( $_GET['search'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 
 		if ( '' !== $search ) {
@@ -2304,6 +2311,17 @@ class Admin_Dashboard {
 			);
 		}
 
+		if ( $clinic_location_id > 0 ) {
+			$users = array_values(
+				array_filter(
+					$users,
+					function ( $row ) use ( $clinic_location_id ) {
+						return $clinic_location_id === $row['clinic_location_id'];
+					}
+				)
+			);
+		}
+
 		$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
 		$section_url   = $dashboard_url ? add_query_arg( 'section', $section, $dashboard_url ) : '';
 
@@ -2323,10 +2341,12 @@ class Admin_Dashboard {
 				'doctor_sessions_url' => $dashboard_url ? add_query_arg( 'section', 'doctor-sessions', $dashboard_url ) : '',
 				'section_url'        => $section_url,
 				'specializations'    => $is_doctors_section ? Specializations::get_all() : array(),
+				'clinic_locations'   => $is_patients_section ? Clinic_Locations::get_all() : array(),
 				'filters'            => array(
-					'status'         => $status,
-					'specialization' => $specialization,
-					'search'         => $search,
+					'status'             => $status,
+					'specialization'     => $specialization,
+					'clinic_location_id' => $clinic_location_id,
+					'search'             => $search,
 				),
 				// A receptionist has full Add/Edit/Deactivate/Delete access
 				// to the Doctors/Patients tables. Only a real administrator
@@ -2388,10 +2408,11 @@ class Admin_Dashboard {
 		$display_name = trim( $user->first_name . ' ' . $user->last_name );
 		$display_name = '' !== $display_name ? $display_name : $user->display_name;
 
-		$location            = '';
-		$clinic_labels       = array();
-		$clinic_location_id  = 0;
-		$clinic_location_label = '';
+		$location                        = '';
+		$clinic_labels                   = array();
+		$clinic_location_id              = 0;
+		$clinic_location_label           = '';
+		$receptionist_clinic_location_ids = array();
 
 		if ( in_array( Roles::PATIENT_ROLE, (array) $user->roles, true ) ) {
 			$clinic_location_id = (int) get_user_meta( $user->ID, Clinic_Locations::PATIENT_META_KEY, true );
@@ -2428,6 +2449,27 @@ class Admin_Dashboard {
 			);
 		}
 
+		if ( in_array( Roles::RECEPTIONIST_ROLE, (array) $user->roles, true ) ) {
+			$receptionist_clinic_location_ids = array_map( 'intval', (array) get_user_meta( $user->ID, Clinic_Locations::RECEPTIONIST_META_KEY, true ) );
+
+			if ( empty( $receptionist_clinic_location_ids ) ) {
+				$clinic_labels = array( __( 'All clinics', 'doctor-ak-portal' ) );
+			} else {
+				$clinic_labels = array_values(
+					array_filter(
+						array_map(
+							function ( $clinic_location_lookup_id ) {
+								$clinic_location = Clinic_Locations::find( $clinic_location_lookup_id );
+
+								return $clinic_location ? $clinic_location['name'] : '';
+							},
+							$receptionist_clinic_location_ids
+						)
+					)
+				);
+			}
+		}
+
 		return array(
 			'id'                          => $user->ID,
 			'first_name'                  => $user->first_name,
@@ -2440,6 +2482,7 @@ class Admin_Dashboard {
 			'specialization_label'        => implode( ', ', $specialization_labels ),
 			'specialization_labels'       => $specialization_labels,
 			'clinic_labels'               => $clinic_labels,
+			'receptionist_clinic_location_ids' => $receptionist_clinic_location_ids,
 			'clinic_location_id'          => $clinic_location_id,
 			'clinic_location_label'       => $clinic_location_label,
 			'is_disabled'                 => 'yes' === get_user_meta( $user->ID, 'doctor_ak_account_disabled', true ),
