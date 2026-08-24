@@ -8,11 +8,11 @@
 
 namespace DoctorAKPortal\Frontend;
 
+use DoctorAKPortal\Includes\Appointment_Slip_Pdf;
 use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Invoice_Pdf;
 use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Swich_Payment;
-use DoctorAKPortal\Includes\Template_Loader;
 
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -330,8 +330,9 @@ class Appointment_Handler {
 	}
 
 	/**
-	 * AJAX handler (GET): renders a minimal printer-friendly appointment
-	 * slip in a new tab, which the admin table's "Print" button opens.
+	 * AJAX handler (GET): streams a single appointment's slip as a PDF (same
+	 * structured layout as Invoice_Pdf/Encounter_Bill_Pdf), which the admin
+	 * table's "Print" button opens in a new tab.
 	 *
 	 * @return void
 	 */
@@ -355,21 +356,19 @@ class Appointment_Handler {
 
 		$doctor       = $appointment['doctor_id'] > 0 ? get_userdata( $appointment['doctor_id'] ) : false;
 		$doctor_name  = $doctor ? trim( $doctor->first_name . ' ' . $doctor->last_name ) : '';
+		$doctor_name  = '' !== $doctor_name ? $doctor_name : ( $doctor ? $doctor->display_name : __( 'Unknown Doctor', 'doctor-ak-portal' ) );
 		$patient_name = $appointment['patient_id'] > 0 ? self::patient_name_for_print( $appointment['patient_id'] ) : $appointment['guest_name'];
+		$patient_name = '' !== $patient_name ? $patient_name : __( 'Guest', 'doctor-ak-portal' );
 
-		$template_loader = new Template_Loader();
+		$pdf_bytes   = Appointment_Slip_Pdf::build( $appointment, $patient_name, $doctor_name );
+		$slip_number = sprintf( 'SLIP-%05d', $appointment_id );
 
-		echo $template_loader->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- template escapes its own output.
-			'print/appointment-slip.php',
-			array(
-				'appointment'     => $appointment,
-				'patient_name'    => '' !== $patient_name ? $patient_name : __( 'Guest', 'doctor-ak-portal' ),
-				'doctor_name'     => '' !== $doctor_name ? $doctor_name : ( $doctor ? $doctor->display_name : __( 'Unknown Doctor', 'doctor-ak-portal' ) ),
-				'clinic_name'     => get_option( Site_Footer::OPTION_CLINIC_NAME, 'Main Clinic' ),
-				'clinic_address'  => get_option( Site_Footer::OPTION_CLINIC_ADDRESS, '' ),
-				'clinic_phone'    => get_option( Site_Footer::OPTION_CLINIC_PHONE, '' ),
-			)
-		);
+		nocache_headers();
+		header( 'Content-Type: application/pdf' );
+		header( 'Content-Disposition: inline; filename="' . $slip_number . '.pdf"' );
+		header( 'Content-Length: ' . strlen( $pdf_bytes ) );
+
+		echo $pdf_bytes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw binary PDF bytes, not HTML output.
 
 		exit;
 	}
