@@ -111,7 +111,7 @@ class Admin_Dashboard {
 	 *
 	 * @var array
 	 */
-	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'patients', 'doctors', 'clinic', 'services', 'doctor-sessions', 'settings', 'encounter', 'notifications' );
+	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'patients', 'doctors', 'clinic', 'services', 'doctor-sessions', 'settings', 'encounter', 'encounters', 'notifications' );
 
 	/**
 	 * Section slugs that exist and are reachable, but deliberately have no
@@ -1741,6 +1741,30 @@ class Admin_Dashboard {
 					)
 				)
 			);
+
+			// Same clinic scoping as the Appointments list — a receptionist
+			// assigned to specific clinics only sees encounters from
+			// appointments at those clinics.
+			$assigned_clinic_location_ids = self::is_receptionist() ? self::receptionist_assigned_clinic_location_ids() : array();
+
+			if ( ! empty( $assigned_clinic_location_ids ) ) {
+				$encounter_rows = array_values(
+					array_filter(
+						$encounter_rows,
+						function ( $encounter ) use ( $assigned_clinic_location_ids ) {
+							$clinic_location_id = 0;
+							$clinic_id           = ! empty( $encounter['appointment']['clinic_id'] ) ? (int) $encounter['appointment']['clinic_id'] : 0;
+
+							if ( $clinic_id > 0 ) {
+								$clinic              = Clinics::find( $clinic_id );
+								$clinic_location_id = $clinic ? (int) $clinic['clinic_location_id'] : 0;
+							}
+
+							return in_array( $clinic_location_id, $assigned_clinic_location_ids, true );
+						}
+					)
+				);
+			}
 
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-encounters.php',
