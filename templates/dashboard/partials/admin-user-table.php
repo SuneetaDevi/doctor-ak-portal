@@ -7,7 +7,7 @@
  * @var array  $users            Row view-models, see Admin_Dashboard::row_data().
  * @var string $section          'doctors', 'patients', or 'receptionist'.
  * @var string $appointments_url    Base URL of the admin Appointments section, for the "View Appointments" action.
- * @var string $encounters_url      Base URL of the admin Encounters section, for the Patients table's "Encounter" action. Empty for a Receptionist (Encounters is administrator-only).
+ * @var string $encounters_url      Base URL of the admin Encounters section, for the Patients table's "Encounter" action. Empty if the current viewer (admin or Receptionist) can't access Encounters — see Admin_Dashboard::users_section_html().
  * @var string $services_url        Base URL of the admin Services section, for the Doctors table's "View Services" action.
  * @var string $doctor_sessions_url Base URL of the admin Doctor Sessions section, for the Doctors table's "View Sessions" action.
  * @var string $section_url      This section's own URL (no filters), for the filter form and "Clear" link.

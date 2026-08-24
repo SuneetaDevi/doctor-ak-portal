@@ -2473,12 +2473,12 @@ class Admin_Dashboard {
 				'users'              => $users,
 				'section'            => $section,
 				'appointments_url'   => $dashboard_url ? add_query_arg( 'section', 'appointments', $dashboard_url ) : '',
-				// Encounters is administrator-only (not in
-				// RECEPTIONIST_ALLOWED_SECTIONS), so this stays empty for a
-				// receptionist viewing the read-only Patients table — same
-				// as how the template already hides admin-only actions for
-				// them via $read_only.
-				'encounters_url'     => ( $dashboard_url && current_user_can( 'manage_options' ) ) ? add_query_arg( 'section', 'encounters', $dashboard_url ) : '',
+				// Encounters is now in RECEPTIONIST_ALLOWED_SECTIONS too (a
+				// receptionist can view/manage encounters at their own
+				// clinic), so the Patients table's "Encounter" action shows
+				// for them the same as for a full admin — gated by the same
+				// section-access check requested_section() itself uses.
+				'encounters_url'     => ( $dashboard_url && ( current_user_can( 'manage_options' ) || self::receptionist_can_access( 'encounters' ) ) ) ? add_query_arg( 'section', 'encounters', $dashboard_url ) : '',
 				'services_url'       => $dashboard_url ? add_query_arg( 'section', 'services', $dashboard_url ) : '',
 				'doctor_sessions_url' => $dashboard_url ? add_query_arg( 'section', 'doctor-sessions', $dashboard_url ) : '',
 				'section_url'        => $section_url,
