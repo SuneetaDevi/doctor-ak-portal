@@ -1727,7 +1727,8 @@ class Admin_Dashboard {
 
 			$encounter_rows = array_map(
 				function ( $encounter ) {
-					$encounter['bill_pdf_url'] = Encounter_Handler::bill_pdf_download_url( $encounter['id'] );
+					$encounter['bill_pdf_url']         = Encounter_Handler::bill_pdf_download_url( $encounter['id'] );
+					$encounter['prescription_pdf_url'] = Encounter_Handler::prescription_pdf_download_url( $encounter['id'] );
 
 					return $encounter;
 				},

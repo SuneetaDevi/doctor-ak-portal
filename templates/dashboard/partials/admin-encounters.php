@@ -8,7 +8,7 @@
  *
  * @package DoctorAKPortal\Templates
  *
- * @var array  $encounters       Rows from Encounters::all_flat_for_admin(), each with an added 'appointment' sub-array (see Appointments::notification_data()) and 'bill_pdf_url' (see Encounter_Handler::bill_pdf_download_url()).
+ * @var array  $encounters       Rows from Encounters::all_flat_for_admin(), each with an added 'appointment' sub-array (see Appointments::notification_data()), 'bill_pdf_url' (see Encounter_Handler::bill_pdf_download_url()), and 'prescription_pdf_url' (see Encounter_Handler::prescription_pdf_download_url()).
  * @var string $encounters_url   Unfiltered URL of this section, for the filter form and "Clear" link.
  * @var string $encounter_url    Base URL of the Encounter detail screen — each row links here with `&encounter_id=X`.
  * @var array  $doctors          Doctor users { ID, display_name }, for the filter's Doctor select.
@@ -181,6 +181,14 @@ $dak_status_labels = array(
 							title="<?php esc_attr_e( 'View Billing', 'doctor-ak-portal' ); ?>"
 							aria-label="<?php esc_attr_e( 'View Billing', 'doctor-ak-portal' ); ?>"
 						><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="14" height="12" rx="1.5"/><path d="M6.5 8h7M6.5 11h7M6.5 14h4"/></svg></a>
+						<a
+							class="dak-icon-button"
+							href="<?php echo esc_url( $row['prescription_pdf_url'] ); ?>"
+							target="_blank"
+							rel="noopener"
+							title="<?php esc_attr_e( 'Download Prescription', 'doctor-ak-portal' ); ?>"
+							aria-label="<?php esc_attr_e( 'Download Prescription', 'doctor-ak-portal' ); ?>"
+						><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v9m0 0-3.2-3.2M10 12l3.2-3.2"/><path d="M4 14.5v.8A1.7 1.7 0 0 0 5.7 17h8.6a1.7 1.7 0 0 0 1.7-1.7v-.8"/></svg></a>
 						<a
 							class="dak-icon-button"
 							href="<?php echo esc_url( $dak_encounter_edit_url ); ?>"
