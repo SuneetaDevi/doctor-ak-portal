@@ -3,9 +3,9 @@
  * Receptionists, Admins, Appointments, Services, Doctor Sessions, Clinic
  * Locations, Doctor Requests, Encounters; Doctor: their own Patients,
  * Appointments, Services, Clinics; Patient: Doctors + Appointments).
- * Debounced live search with a click-to-jump results dropdown; each result
- * links to its row via an existing `#dak-{type}-{id}` anchor (`:target`
- * highlight already built for notification deep-links).
+ * Searches on Enter (not as-you-type) with a click-to-jump results dropdown;
+ * each result links to its row via an existing `#dak-{type}-{id}` anchor
+ * (`:target` highlight already built for notification deep-links).
  */
 ( function () {
 	'use strict';
@@ -24,7 +24,6 @@
 		clinics: 'Clinics',
 	};
 
-	var DEBOUNCE_MS = 300;
 	var MIN_QUERY_LENGTH = 2;
 
 	document.addEventListener( 'DOMContentLoaded', function () {
@@ -38,22 +37,15 @@
 		var action = input.getAttribute( 'data-live-search' );
 		var nonceSource = input.getAttribute( 'data-live-search-nonce' );
 		var groups = ( input.getAttribute( 'data-live-search-groups' ) || '' ).split( ',' ).filter( Boolean );
-		var debounceTimer = null;
 		var requestId = 0;
 
+		// Clearing the box hides whatever results are still showing, but
+		// typing otherwise does nothing until Enter is pressed — see
+		// keydown below.
 		input.addEventListener( 'input', function () {
-			var query = input.value.trim();
-
-			clearTimeout( debounceTimer );
-
-			if ( query.length < MIN_QUERY_LENGTH ) {
+			if ( '' === input.value.trim() ) {
 				hideResults();
-				return;
 			}
-
-			debounceTimer = setTimeout( function () {
-				runSearch( query );
-			}, DEBOUNCE_MS );
 		} );
 
 		input.addEventListener( 'focus', function () {
@@ -69,7 +61,18 @@
 		} );
 
 		input.addEventListener( 'keydown', function ( event ) {
-			if ( 'Escape' === event.key ) {
+			if ( 'Enter' === event.key ) {
+				event.preventDefault();
+
+				var query = input.value.trim();
+
+				if ( query.length < MIN_QUERY_LENGTH ) {
+					hideResults();
+					return;
+				}
+
+				runSearch( query );
+			} else if ( 'Escape' === event.key ) {
 				hideResults();
 				input.blur();
 			}
