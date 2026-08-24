@@ -2542,33 +2542,108 @@ class Appointments {
 	}
 
 	/**
-	 * How many appointments currently sit in each status — for the admin
-	 * Dashboard overview's "Appointments by status" chart. Every status
-	 * appears (0 if unused), in status_options()' order, colored with the
-	 * same badge class already used for that status's pill everywhere else
-	 * in the dashboard (see status_badge_class()) for visual consistency.
+	 * Default number of buckets shown per period on the admin Dashboard
+	 * overview's "Appointments" clustered bar chart, when the caller doesn't
+	 * ask for a specific count.
 	 *
-	 * @return array List of `array( 'status', 'label', 'count', 'badge_class' )`.
+	 * @var array
 	 */
-	public static function status_counts() {
-		$counts = array();
+	const CHART_PERIOD_DEFAULT_BUCKETS = array(
+		'day'   => 7,
+		'week'  => 8,
+		'month' => 6,
+	);
 
-		foreach ( self::status_options() as $slug => $label ) {
-			$counts[ $slug ] = array(
-				'status'      => $slug,
-				'label'       => $label,
-				'count'       => 0,
-				'badge_class' => self::status_badge_class( $slug ),
-			);
+	/**
+	 * Appointment counts per status, bucketed by day/week/month — for the
+	 * admin Dashboard overview's "Appointments" clustered bar chart (one
+	 * group of bars per bucket, one bar per status). Every bucket in the
+	 * range is present and every status appears in every bucket (0 where
+	 * unused), so the chart never has to interpolate a gap.
+	 *
+	 * @param string $period               'day', 'week', or 'month'. Defaults to 'day' if anything else is passed.
+	 * @param int    $bucket_count         How many buckets back to include (today/this week/this month counts as one). 0 uses CHART_PERIOD_DEFAULT_BUCKETS.
+	 * @param array  $clinic_location_ids  Optional — restrict to appointments at these Clinic_Locations rows (a video consultation, clinic_location_id 0, is only counted if 0 is included). Empty array = no restriction (every clinic, matching the "unassigned receptionist" convention elsewhere).
+	 * @return array List of `array( 'key', 'label', 'counts' => array( status_slug => int ) )`, oldest bucket first.
+	 */
+	public static function status_counts_by_period( $period = 'day', $bucket_count = 0, array $clinic_location_ids = array() ) {
+		$period       = in_array( $period, array( 'day', 'week', 'month' ), true ) ? $period : 'day';
+		$bucket_count = $bucket_count > 0 ? $bucket_count : self::CHART_PERIOD_DEFAULT_BUCKETS[ $period ];
+
+		$today   = current_time( 'Y-m-d' ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- building a local-date range, not doing UTC math.
+		$buckets = array();
+
+		for ( $i = $bucket_count - 1; $i >= 0; $i-- ) {
+			if ( 'month' === $period ) {
+				$timestamp = strtotime( "{$today} -{$i} months" );
+				$key       = gmdate( 'Y-m', $timestamp );
+				$label     = date_i18n( 'M Y', $timestamp );
+			} elseif ( 'week' === $period ) {
+				$day_of_week   = (int) gmdate( 'N', strtotime( $today ) ); // 1 (Mon) - 7 (Sun).
+				$current_monday = strtotime( "{$today} -" . ( $day_of_week - 1 ) . ' days' );
+				$timestamp      = strtotime( "-{$i} weeks", $current_monday );
+				$key            = gmdate( 'Y-m-d', $timestamp );
+				$label          = date_i18n( 'M j', $timestamp );
+			} else {
+				$timestamp = strtotime( "{$today} -{$i} days" );
+				$key       = gmdate( 'Y-m-d', $timestamp );
+				$label     = date_i18n( 'M j', $timestamp );
+			}
+
+			$buckets[ $key ] = $label;
 		}
 
-		foreach ( self::all_for_admin() as $row ) {
-			if ( isset( $counts[ $row['status'] ] ) ) {
-				++$counts[ $row['status'] ]['count'];
+		$bucket_keys = array_keys( $buckets );
+		$first_key   = reset( $bucket_keys );
+		$date_from   = 'month' === $period ? $first_key . '-01' : $first_key;
+
+		$statuses = array_keys( self::status_options() );
+		$counts   = array();
+
+		foreach ( $buckets as $key => $label ) {
+			$counts[ $key ] = array_fill_keys( $statuses, 0 );
+		}
+
+		foreach ( self::all_for_admin( array( 'date_from' => $date_from, 'date_to' => $today ) ) as $row ) {
+			if ( ! empty( $clinic_location_ids ) ) {
+				$clinic_location_id = 0;
+
+				if ( ! empty( $row['clinic_id'] ) ) {
+					$clinic              = Clinics::find( $row['clinic_id'] );
+					$clinic_location_id = $clinic ? (int) $clinic['clinic_location_id'] : 0;
+				}
+
+				if ( ! in_array( $clinic_location_id, $clinic_location_ids, true ) ) {
+					continue;
+				}
+			}
+
+			if ( 'month' === $period ) {
+				$bucket_key = gmdate( 'Y-m', strtotime( $row['date'] ) );
+			} elseif ( 'week' === $period ) {
+				$row_timestamp = strtotime( $row['date'] );
+				$row_day       = (int) gmdate( 'N', $row_timestamp );
+				$bucket_key    = gmdate( 'Y-m-d', strtotime( $row['date'] . ' -' . ( $row_day - 1 ) . ' days' ) );
+			} else {
+				$bucket_key = $row['date'];
+			}
+
+			if ( isset( $counts[ $bucket_key ][ $row['status'] ] ) ) {
+				++$counts[ $bucket_key ][ $row['status'] ];
 			}
 		}
 
-		return array_values( $counts );
+		$rows = array();
+
+		foreach ( $buckets as $key => $label ) {
+			$rows[] = array(
+				'key'    => $key,
+				'label'  => $label,
+				'counts' => $counts[ $key ],
+			);
+		}
+
+		return $rows;
 	}
 
 	/**

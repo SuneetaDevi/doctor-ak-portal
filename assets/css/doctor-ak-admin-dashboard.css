@@ -729,11 +729,11 @@
 	}
 }
 
-/* Dashboard overview — Revenue trend + Appointments-by-status charts
-   (see templates/dashboard/partials/admin-overview.php). Plain inline SVG
-   for the line chart and CSS bars for the status chart — no charting
-   library, so these stay theme-aware (light/dark) for free via the same
-   --dak-* custom properties every other card already uses. */
+/* Dashboard overview — Revenue trend (line) + Appointments (clustered bar)
+   charts (see templates/dashboard/partials/admin-overview.php and
+   admin-appointments-chart.php). Plain inline SVG — no charting library —
+   so these stay theme-aware (light/dark) for free via the same --dak-*
+   custom properties every other card already uses. */
 
 .dak-dashboard-grid-charts {
 	align-items: stretch !important;
@@ -742,14 +742,6 @@
 .dak-dashboard-grid-charts > .dak-dashboard-card {
 	display: flex !important;
 	flex-direction: column !important;
-}
-
-/* Lets the shorter "Appointments by status" bar list vertically center
-   itself in the extra space once both cards are stretched to equal height,
-   instead of leaving it pinned to the top with a large empty gap below. */
-.dak-dashboard-grid-charts > .dak-dashboard-card > .dak-chart-bars {
-	flex: 1 1 auto !important;
-	justify-content: center !important;
 }
 
 .dak-chart-svg {
@@ -800,56 +792,72 @@
 	fill: var( --dak-primary-dark ) !important;
 }
 
-.dak-chart-bars {
-	display: flex !important;
-	flex-direction: column !important;
-	gap: 0.85rem !important;
+/* "Appointments" clustered bar chart (admin-appointments-chart.php) —
+   Day/Week/Month toggle, one group of bars per bucket, one bar per status. */
+
+.dak-chart-period-toggle {
+	display: inline-flex !important;
+	flex-shrink: 0 !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 999px !important;
+	overflow: hidden !important;
 }
 
-.dak-chart-bar-row {
+.dak-chart-period-btn {
+	padding: 0.4rem 0.85rem !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-muted ) !important;
+	font-weight: 600 !important;
+	font-size: 0.8rem !important;
+	border: none !important;
+	cursor: pointer !important;
+}
+
+.dak-chart-period-btn + .dak-chart-period-btn {
+	border-left: 1px solid var( --dak-border ) !important;
+}
+
+.dak-chart-period-btn.is-active {
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+	cursor: default !important;
+}
+
+.dak-chart-cluster-bar {
+	transition: opacity 0.15s ease !important;
+}
+
+.dak-chart-cluster-bar:hover {
+	opacity: 0.8 !important;
+}
+
+.dak-chart-legend {
 	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0.6rem 1rem !important;
+	margin-top: 0.85rem !important;
+	padding-top: 0.85rem !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+.dak-chart-legend-item {
+	display: inline-flex !important;
 	align-items: center !important;
-	gap: 0.75rem !important;
+	gap: 0.4rem !important;
+	font-size: 0.78rem !important;
+	color: var( --dak-muted ) !important;
 }
 
-.dak-chart-bar-label {
-	flex: 0 0 128px !important;
-	font-size: 0.85rem !important;
-	color: var( --dak-text ) !important;
-	white-space: nowrap !important;
-	overflow: hidden !important;
-	text-overflow: ellipsis !important;
+.dak-chart-legend-swatch {
+	display: inline-block !important;
+	width: 9px !important;
+	height: 9px !important;
+	border-radius: 2px !important;
+	flex-shrink: 0 !important;
 }
 
-.dak-chart-bar-track {
-	flex: 1 1 auto !important;
-	display: block !important;
-	height: 14px !important;
-	border-radius: var( --dak-radius-sm ) !important;
-	background: var( --dak-bg-subtle ) !important;
-	overflow: hidden !important;
-}
-
-.dak-chart-bar-fill {
-	display: block !important;
-	height: 100% !important;
-	min-width: 3px !important;
-	border-radius: 0 4px 4px 0 !important;
-	transition: width 0.3s ease !important;
-}
-
-.dak-chart-bar-value {
-	flex: 0 0 auto !important;
-	width: 2.25rem !important;
-	text-align: right !important;
-	font-weight: 700 !important;
-	font-size: 0.85rem !important;
-	color: var( --dak-text ) !important;
-	font-variant-numeric: tabular-nums !important;
-}
-
-@media ( max-width: 600px ) {
-	.dak-chart-bar-label {
-		flex-basis: 96px !important;
+@media ( max-width: 480px ) {
+	#dak-appointments-chart .dak-dashboard-card-header {
+		flex-wrap: wrap !important;
 	}
 }

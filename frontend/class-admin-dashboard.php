@@ -256,6 +256,14 @@ class Admin_Dashboard {
 			true
 		);
 
+		wp_enqueue_script(
+			'doctor-ak-portal-admin-appointments-chart',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-appointments-chart.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-admin-appointments-chart.js' ),
+			true
+		);
+
 		// Registration.js defines and exposes the shared tag-style
 		// window.DoctorAKPortal.initMultiSelect() enhancer the Add/Edit
 		// Doctor/Patient form's specialization field reuses (same one the
@@ -812,6 +820,20 @@ class Admin_Dashboard {
 		}
 
 		return in_array( Roles::RECEPTIONIST_ROLE, (array) wp_get_current_user()->roles, true );
+	}
+
+	/**
+	 * The logged-in receptionist's assigned clinic locations (see
+	 * Clinic_Locations::RECEPTIONIST_META_KEY) — empty array means
+	 * unassigned/front-desk-for-all, same convention used everywhere else
+	 * this meta is read (e.g. Notification_Center::receptionist_ids_for_clinic_location()).
+	 * Only meaningful when is_receptionist() is true; call sites are
+	 * expected to check that first.
+	 *
+	 * @return int[]
+	 */
+	private static function receptionist_assigned_clinic_location_ids() {
+		return array_map( 'intval', (array) get_user_meta( get_current_user_id(), Clinic_Locations::RECEPTIONIST_META_KEY, true ) );
 	}
 
 	/**
@@ -1625,26 +1647,24 @@ class Admin_Dashboard {
 			// existing receptionist_ids_for_clinic_location() scoping) — one
 			// with no clinics assigned is front-desk for all of them,
 			// including video consultations, and sees everything.
-			if ( self::is_receptionist() ) {
-				$assigned_clinic_location_ids = array_map( 'intval', (array) get_user_meta( get_current_user_id(), Clinic_Locations::RECEPTIONIST_META_KEY, true ) );
+			$assigned_clinic_location_ids = self::is_receptionist() ? self::receptionist_assigned_clinic_location_ids() : array();
 
-				if ( ! empty( $assigned_clinic_location_ids ) ) {
-					$appointments = array_values(
-						array_filter(
-							$appointments,
-							function ( $row ) use ( $assigned_clinic_location_ids ) {
-								$clinic_location_id = 0;
+			if ( ! empty( $assigned_clinic_location_ids ) ) {
+				$appointments = array_values(
+					array_filter(
+						$appointments,
+						function ( $row ) use ( $assigned_clinic_location_ids ) {
+							$clinic_location_id = 0;
 
-								if ( ! empty( $row['clinic_id'] ) ) {
-									$clinic              = Clinics::find( $row['clinic_id'] );
-									$clinic_location_id = $clinic ? (int) $clinic['clinic_location_id'] : 0;
-								}
-
-								return in_array( $clinic_location_id, $assigned_clinic_location_ids, true );
+							if ( ! empty( $row['clinic_id'] ) ) {
+								$clinic              = Clinics::find( $row['clinic_id'] );
+								$clinic_location_id = $clinic ? (int) $clinic['clinic_location_id'] : 0;
 							}
-						)
-					);
-				}
+
+							return in_array( $clinic_location_id, $assigned_clinic_location_ids, true );
+						}
+					)
+				);
 			}
 
 			if ( '' !== $search ) {
@@ -2155,6 +2175,7 @@ class Admin_Dashboard {
 		$user_counts   = count_users();
 		$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
 		$today         = current_time( 'Y-m-d' );
+		$is_receptionist = self::is_receptionist();
 
 		$upcoming = Appointments::all_for_admin( array( 'date_from' => $today ) );
 		// all_for_admin() sorts furthest-future-first; the dashboard widget
@@ -2167,18 +2188,88 @@ class Admin_Dashboard {
 			'total_clinics'        => Clinics::total_count(),
 			'total_appointments'   => Appointments::total_count(),
 			'appointments_today'   => count( Appointments::all_for_admin( array( 'date' => $today ) ) ),
-			'total_revenue'        => Appointments::revenue_summary()['total'],
-			'revenue_this_month'   => Appointments::revenue_summary()['this_month'],
+			// Hospital revenue figures are admin-only (see admin-overview.php,
+			// which hides the revenue stat card/chart entirely for a
+			// receptionist) — skip computing them for a receptionist viewer.
+			'total_revenue'        => $is_receptionist ? 0.0 : Appointments::revenue_summary()['total'],
+			'revenue_this_month'   => $is_receptionist ? 0.0 : Appointments::revenue_summary()['this_month'],
 			'pending_doctors_count' => self::pending_doctors_count(),
 			'pending_doctors'      => array_slice( $this->pending_doctors(), 0, 3 ),
 			'latest_appointments'  => $latest_appointments,
-			'revenue_chart'        => Appointments::revenue_by_day( 14 ),
-			'status_chart'         => Appointments::status_counts(),
+			'revenue_chart'        => $is_receptionist ? array() : Appointments::revenue_by_day( 14 ),
+			'appointments_chart_html' => $this->appointments_chart_html( 'day' ),
 			'clinic_name'          => get_option( Site_Footer::OPTION_CLINIC_NAME, 'Main Clinic' ),
 			'clinic_address'       => get_option( Site_Footer::OPTION_CLINIC_ADDRESS, '' ),
 			'appointments_url'     => $dashboard_url ? add_query_arg( 'section', 'appointments', $dashboard_url ) : '',
 			'doctor_requests_url'  => $dashboard_url ? add_query_arg( 'section', 'doctor-requests', $dashboard_url ) : '',
+			'is_receptionist'      => $is_receptionist,
 		);
+	}
+
+	/**
+	 * Renders the Dashboard overview's "Appointments" clustered bar chart —
+	 * appointment counts per status, bucketed by day/week/month — shared by
+	 * the initial page render and the AJAX period-toggle handler so both
+	 * stay in sync. A receptionist assigned to specific clinics only counts
+	 * appointments at those clinics, same scoping as the Appointments list
+	 * (see receptionist_assigned_clinic_location_ids()).
+	 *
+	 * @param string $period 'day', 'week', or 'month'. Anything else falls back to 'day'.
+	 * @return string
+	 */
+	private function appointments_chart_html( $period ) {
+		$period               = in_array( $period, array( 'day', 'week', 'month' ), true ) ? $period : 'day';
+		$clinic_location_ids  = self::is_receptionist() ? self::receptionist_assigned_clinic_location_ids() : array();
+
+		return $this->template_loader->get_template(
+			'dashboard/partials/admin-appointments-chart.php',
+			array(
+				'chart_rows'    => Appointments::status_counts_by_period( $period, 0, $clinic_location_ids ),
+				'statuses'      => Appointments::status_options(),
+				'status_colors' => self::appointments_chart_status_colors(),
+				'period'        => $period,
+			)
+		);
+	}
+
+	/**
+	 * Fixed status => CSS custom-property mapping for the clustered bar
+	 * chart's series — reuses the app's existing status/tint tokens (the
+	 * same ones the status pills already use elsewhere) rather than
+	 * inventing new colors, so "Paid" is the same green everywhere.
+	 *
+	 * @return array Status slug => CSS custom-property name (without var()).
+	 */
+	private static function appointments_chart_status_colors() {
+		return array(
+			Appointments::STATUS_CONFIRMED       => '--dak-tint-info-text',
+			Appointments::STATUS_PENDING_PAYMENT => '--dak-tint-amber-text',
+			Appointments::STATUS_PAID            => '--dak-tint-success-text',
+			Appointments::STATUS_CHECKED_IN      => '--dak-secondary',
+			Appointments::STATUS_CANCELLED       => '--dak-tint-danger-text',
+			Appointments::STATUS_COMPLETED       => '--dak-tint-purple-text',
+			Appointments::STATUS_RESCHEDULED     => '--dak-primary',
+		);
+	}
+
+	/**
+	 * AJAX: re-renders the Dashboard overview's "Appointments" chart for a
+	 * new Day/Week/Month period, without a full page reload.
+	 *
+	 * @return void
+	 */
+	public function handle_appointments_chart() {
+		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) && ! self::is_receptionist() ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$period = isset( $_POST['period'] ) ? sanitize_key( wp_unslash( $_POST['period'] ) ) : 'day';
+
+		wp_send_json_success( array( 'html' => $this->appointments_chart_html( $period ) ) );
 	}
 
 	/**

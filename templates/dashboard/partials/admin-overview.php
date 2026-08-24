@@ -17,11 +17,12 @@
  * @var array  $pending_doctors      Up to 3 pending doctor rows, see Admin_Dashboard::row_data().
  * @var array  $latest_appointments  Up to 6 upcoming appointment rows, see Appointments::admin_row_data(), soonest first.
  * @var array  $revenue_chart        Last 14 days' paid revenue, see Appointments::revenue_by_day().
- * @var array  $status_chart         Appointment counts by status, see Appointments::status_counts().
+ * @var string $appointments_chart_html Pre-rendered admin-appointments-chart.php output — the "Appointments" clustered bar chart (counts by status, by day/week/month).
  * @var string $clinic_name          Clinic name (Settings → Footer Settings).
  * @var string $clinic_address       Clinic address (Settings → Footer Settings).
  * @var string $appointments_url     URL of the Appointments section ("View all" link).
  * @var string $doctor_requests_url  URL of the Doctor Requests section ("Review" links).
+ * @var bool   $is_receptionist      Whether the logged-in viewer is a Receptionist — hospital revenue figures are admin-only and hidden entirely for this role.
  */
 
 // Prevent direct file access.
@@ -98,14 +99,17 @@ endif;
 			</span>
 		<?php endif; ?>
 	</div>
-	<div class="dak-stat-card">
-		<span class="dak-stat-icon dak-stat-icon-green" aria-hidden="true"><?php echo $dak_overview_icons['money']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-		<span class="dak-stat-value">PKR <?php echo esc_html( number_format_i18n( $revenue_this_month ) ); ?></span>
-		<span class="dak-stat-label"><?php esc_html_e( 'Hospital revenue this month', 'doctor-ak-portal' ); ?></span>
-	</div>
+	<?php if ( ! $is_receptionist ) : ?>
+		<div class="dak-stat-card">
+			<span class="dak-stat-icon dak-stat-icon-green" aria-hidden="true"><?php echo $dak_overview_icons['money']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+			<span class="dak-stat-value">PKR <?php echo esc_html( number_format_i18n( $revenue_this_month ) ); ?></span>
+			<span class="dak-stat-label"><?php esc_html_e( 'Hospital revenue this month', 'doctor-ak-portal' ); ?></span>
+		</div>
+	<?php endif; ?>
 </section>
 
 <div class="dak-dashboard-grid dak-dashboard-grid-charts">
+	<?php if ( ! $is_receptionist ) : ?>
 	<section class="dak-dashboard-card">
 		<div class="dak-dashboard-card-header">
 			<div>
@@ -169,38 +173,9 @@ endif;
 			<?php endforeach; ?>
 		</svg>
 	</section>
+	<?php endif; ?>
 
-	<section class="dak-dashboard-card">
-		<div class="dak-dashboard-card-header">
-			<div>
-				<h2><?php esc_html_e( 'Appointments by status', 'doctor-ak-portal' ); ?></h2>
-				<p class="dak-notifications-card-subtitle"><?php esc_html_e( 'All appointments on file', 'doctor-ak-portal' ); ?></p>
-			</div>
-		</div>
-		<?php
-		$dak_status_color_vars = array(
-			'is-active'      => 'var(--dak-tint-success-text)',
-			'is-pending'     => 'var(--dak-tint-amber-text)',
-			'is-disabled'    => 'var(--dak-tint-danger-text)',
-			'is-rescheduled' => 'var(--dak-tint-info-text)',
-		);
-		$dak_status_max = max( 1, max( wp_list_pluck( $status_chart, 'count' ) ) );
-		?>
-		<div class="dak-chart-bars">
-			<?php foreach ( $status_chart as $dak_status_row ) : ?>
-				<div class="dak-chart-bar-row">
-					<span class="dak-chart-bar-label"><?php echo esc_html( $dak_status_row['label'] ); ?></span>
-					<span class="dak-chart-bar-track">
-						<span
-							class="dak-chart-bar-fill"
-							style="width: <?php echo esc_attr( round( $dak_status_row['count'] / $dak_status_max * 100, 1 ) ); ?>%; background: <?php echo esc_attr( isset( $dak_status_color_vars[ $dak_status_row['badge_class'] ] ) ? $dak_status_color_vars[ $dak_status_row['badge_class'] ] : 'var(--dak-muted)' ); ?>;"
-						></span>
-					</span>
-					<span class="dak-chart-bar-value"><?php echo esc_html( number_format_i18n( $dak_status_row['count'] ) ); ?></span>
-				</div>
-			<?php endforeach; ?>
-		</div>
-	</section>
+	<?php echo $appointments_chart_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own admin-appointments-chart.php template, which escapes its own output. ?>
 </div>
 
 <div class="dak-dashboard-grid dak-dashboard-grid-lists">

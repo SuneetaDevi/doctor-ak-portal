@@ -303,6 +303,7 @@ class Plugin {
 		$admin_dashboard = new Admin_Dashboard( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $admin_dashboard, 'enqueue_assets' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointments_filter', $admin_dashboard, 'handle_filter_appointments' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointments_chart', $admin_dashboard, 'handle_appointments_chart' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_users_filter', $admin_dashboard, 'handle_filter_users' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_dashboard_search', $admin_dashboard, 'handle_search' );
 
