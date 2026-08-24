@@ -166,6 +166,20 @@ class Booking_Page {
 
 		$type = ( isset( $_GET['type'] ) && 'video' === $_GET['type'] ) ? 'video' : 'clinic'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 
+		// Staff (admin/receptionist) arriving from the Patients table's
+		// "Book Appointment" action already has a patient in mind — skip
+		// re-searching for them in step 3's patient picker.
+		$selected_patient_id = 0;
+
+		if ( self::is_staff() && isset( $_GET['patient_id'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$requested_patient_id = absint( $_GET['patient_id'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$patient               = $requested_patient_id > 0 ? get_userdata( $requested_patient_id ) : false;
+
+			if ( $patient && in_array( Roles::PATIENT_ROLE, (array) $patient->roles, true ) ) {
+				$selected_patient_id = $patient->ID;
+			}
+		}
+
 		$selected_doctor_name = '';
 		$video_disabled       = false;
 
@@ -190,6 +204,7 @@ class Booking_Page {
 				'contact_url'          => self::contact_url(),
 				'is_staff'             => self::is_staff(),
 				'patient_options'      => self::is_staff() ? Appointments::patient_options() : array(),
+				'selected_patient_id'  => $selected_patient_id,
 			)
 		);
 	}

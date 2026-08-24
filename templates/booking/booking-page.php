@@ -15,6 +15,7 @@
  * @var string $contact_url          "Need help with booking?" link target.
  * @var bool   $is_staff             Whether the current viewer is an Administrator/Receptionist booking on behalf of a patient — shows a patient picker instead of Login/Register/Guest.
  * @var array  $patient_options      Patient user ID => display name, only populated when $is_staff.
+ * @var int    $selected_patient_id  Preselected patient's user ID (from the Patients table's "Book Appointment" action), or 0. Only meaningful when $is_staff.
  */
 
 // Prevent direct file access.
@@ -149,7 +150,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<select id="dak-booking-patient-id" name="patient_id" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search patients…', 'doctor-ak-portal' ); ?>">
 								<option value=""><?php esc_html_e( '+ Add new patient', 'doctor-ak-portal' ); ?></option>
 								<?php foreach ( $patient_options as $dak_patient_id => $dak_patient_name ) : ?>
-									<option value="<?php echo esc_attr( $dak_patient_id ); ?>"><?php echo esc_html( $dak_patient_name ); ?></option>
+									<option value="<?php echo esc_attr( $dak_patient_id ); ?>" <?php selected( $selected_patient_id, $dak_patient_id ); ?>><?php echo esc_html( $dak_patient_name ); ?></option>
 								<?php endforeach; ?>
 							</select>
 							<span class="dak-field-error" data-field="patient_id"></span>

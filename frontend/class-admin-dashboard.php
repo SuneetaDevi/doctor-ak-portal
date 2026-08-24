@@ -2479,6 +2479,12 @@ class Admin_Dashboard {
 				// for them the same as for a full admin — gated by the same
 				// section-access check requested_section() itself uses.
 				'encounters_url'     => ( $dashboard_url && ( current_user_can( 'manage_options' ) || self::receptionist_can_access( 'encounters' ) ) ) ? add_query_arg( 'section', 'encounters', $dashboard_url ) : '',
+				// The Patients table's "Book Appointment" action — takes the
+				// admin/receptionist straight to the booking page with this
+				// patient already selected in its staff patient picker (see
+				// Booking_Page::render()'s `patient_id` handling), instead of
+				// having to search for them again from scratch.
+				'booking_url'        => Page_Finder::url_for_shortcode( 'book_appointment' ),
 				'services_url'       => $dashboard_url ? add_query_arg( 'section', 'services', $dashboard_url ) : '',
 				'doctor_sessions_url' => $dashboard_url ? add_query_arg( 'section', 'doctor-sessions', $dashboard_url ) : '',
 				'section_url'        => $section_url,

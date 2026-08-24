@@ -8,6 +8,7 @@
  * @var string $section          'doctors', 'patients', or 'receptionist'.
  * @var string $appointments_url    Base URL of the admin Appointments section, for the "View Appointments" action.
  * @var string $encounters_url      Base URL of the admin Encounters section, for the Patients table's "Encounter" action. Empty if the current viewer (admin or Receptionist) can't access Encounters — see Admin_Dashboard::users_section_html().
+ * @var string $booking_url         URL of the public booking page, for the Patients table's "Book Appointment" action (patient pre-selected via `?patient_id=`). Empty if the page can't be resolved.
  * @var string $services_url        Base URL of the admin Services section, for the Doctors table's "View Services" action.
  * @var string $doctor_sessions_url Base URL of the admin Doctor Sessions section, for the Doctors table's "View Sessions" action.
  * @var string $section_url      This section's own URL (no filters), for the filter form and "Clear" link.
@@ -147,7 +148,7 @@ $dak_read_only         = ! empty( $read_only );
 							<?php if ( $appointments_url ) : ?>
 								<a
 									class="dak-icon-button"
-									href="<?php echo esc_url( add_query_arg( 'patient_id', $row['id'], $appointments_url ) ); ?>"
+									href="<?php echo esc_url( add_query_arg( array( 'patient_id' => $row['id'], 'range' => '' ), $appointments_url ) ); ?>"
 									title="<?php esc_attr_e( 'View Appointments', 'doctor-ak-portal' ); ?>"
 									aria-label="<?php esc_attr_e( 'View Appointments', 'doctor-ak-portal' ); ?>"
 								><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="4" width="15" height="13" rx="1.5"/><path d="M2.5 8h15"/><path d="M6 2.5v3M14 2.5v3"/></svg></a>
@@ -159,6 +160,14 @@ $dak_read_only         = ! empty( $read_only );
 									title="<?php esc_attr_e( 'Encounter', 'doctor-ak-portal' ); ?>"
 									aria-label="<?php esc_attr_e( 'Encounter', 'doctor-ak-portal' ); ?>"
 								><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3.5h6a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M8 2.5h4v2H8z"/><path d="M7.5 9h5M7.5 12h5M7.5 15h3"/></svg></a>
+							<?php endif; ?>
+							<?php if ( $booking_url && 'patients' === $section ) : ?>
+								<a
+									class="dak-icon-button"
+									href="<?php echo esc_url( add_query_arg( 'patient_id', $row['id'], $booking_url ) ); ?>"
+									title="<?php esc_attr_e( 'Book Appointment', 'doctor-ak-portal' ); ?>"
+									aria-label="<?php esc_attr_e( 'Book Appointment', 'doctor-ak-portal' ); ?>"
+								><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4v12M4 10h12"/><rect x="2.5" y="3.5" width="15" height="13" rx="1.5"/></svg></a>
 							<?php endif; ?>
 							<?php if ( ! $dak_read_only ) : ?>
 								<a
