@@ -500,6 +500,205 @@
 	}
 }
 
+/* Add/Edit Doctor form's onboarding sections — "Doctor Details" / "Clinics
+   & Weekly Hours" / "Services" / "Payment & Revenue Split" — visually
+   separates one long form into clearly labeled stages without turning it
+   into a multi-page wizard (see admin-user-form-screen.php). */
+
+.dak-onboarding-step {
+	padding-top: 1.75rem !important;
+	margin-top: 1.75rem !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+.dak-onboarding-step:first-of-type {
+	padding-top: 0 !important;
+	margin-top: 0 !important;
+	border-top: 0 !important;
+}
+
+.dak-onboarding-step-header {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 0.75rem !important;
+	margin-bottom: 1.25rem !important;
+}
+
+.dak-onboarding-step-badge {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 1.75rem !important;
+	height: 1.75rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+	font-size: 0.85rem !important;
+	font-weight: 700 !important;
+	margin-top: 0.1rem !important;
+}
+
+.dak-onboarding-step-title {
+	margin: 0 !important;
+	font-size: 1.02rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-onboarding-step-desc {
+	margin: 0.2rem 0 0 !important;
+	font-size: 0.84rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+/* Weekly Hours — one card per clinic picked in "Align to Clinics", built
+   dynamically (see assets/js/doctor-ak-onboarding-sessions.js). Reuses the
+   day/period grid markup and classes from the standalone Doctor Sessions
+   form (assets/css/doctor-ak-clinics.css). */
+
+.dak-onboarding-clinic-sessions {
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	padding: 1rem !important;
+	margin-bottom: 1rem !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-onboarding-clinic-sessions:last-child {
+	margin-bottom: 0 !important;
+}
+
+.dak-onboarding-clinic-sessions-title {
+	margin: 0 0 0.85rem !important;
+	font-size: 0.92rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-onboarding-quick-fill {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: flex-end !important;
+	gap: 0.6rem !important;
+	padding: 0.75rem !important;
+	margin-bottom: 1rem !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px dashed var( --dak-border ) !important;
+}
+
+.dak-onboarding-quick-fill-field {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.25rem !important;
+}
+
+.dak-onboarding-quick-fill-field label {
+	font-size: 0.72rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-onboarding-quick-fill-field input {
+	padding: 0.4rem 0.55rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.85rem !important;
+}
+
+.dak-onboarding-quick-fill-actions {
+	display: flex !important;
+	gap: 0.5rem !important;
+	margin-left: auto !important;
+}
+
+/* Services repeater — mirrors .dak-awards-row's pattern (see
+   assets/js/doctor-ak-services-editor.js). */
+
+.dak-services-editor {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.6rem !important;
+}
+
+.dak-services-rows {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.5rem !important;
+}
+
+.dak-services-row,
+.dak-services-row-header {
+	display: grid !important;
+	grid-template-columns: 1.6fr 1.2fr 0.8fr 0.8fr auto !important;
+	gap: 0.5rem !important;
+	align-items: center !important;
+}
+
+.dak-services-row-header {
+	padding: 0 0.6rem !important;
+}
+
+.dak-services-row-header span {
+	font-size: 0.72rem !important;
+	font-weight: 600 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.02em !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-services-row input,
+.dak-services-row select {
+	width: 100% !important;
+	box-sizing: border-box !important;
+	padding: 0.5rem 0.6rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.88rem !important;
+}
+
+.dak-services-remove {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 2.25rem !important;
+	height: 2.25rem !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 1.1rem !important;
+	line-height: 1 !important;
+	cursor: pointer !important;
+}
+
+.dak-services-remove:hover {
+	background: #fbeaea !important;
+	color: var( --dak-danger ) !important;
+	border-color: var( --dak-danger ) !important;
+}
+
+@media ( max-width: 720px ) {
+	.dak-services-row-header {
+		display: none !important;
+	}
+
+	.dak-services-row {
+		grid-template-columns: 1fr 1fr !important;
+	}
+
+	.dak-services-remove {
+		grid-column: 1 / -1 !important;
+		justify-self: start !important;
+	}
+}
+
 .dak-terms-field {
 	margin-bottom: 1.25rem !important;
 }

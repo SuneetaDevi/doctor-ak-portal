@@ -17,6 +17,7 @@ use DoctorAKPortal\Includes\Phone;
 use DoctorAKPortal\Includes\Profile_Picture_Uploader;
 use DoctorAKPortal\Includes\Revenue_Split;
 use DoctorAKPortal\Includes\Roles;
+use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Specializations;
 
 // Prevent direct file access.
@@ -248,6 +249,30 @@ class Admin_User_Handler {
 				? array_unique( array_map( 'absint', wp_unslash( $_POST['clinic_location_ids'] ) ) ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- wp_unslash() applied above before array_map().
 				: array();
 
+			// Weekly Hours per selected clinic, from the onboarding form's
+			// dynamically-built grid (see doctor-ak-onboarding-sessions.js) —
+			// keyed by clinic_location_id, same shape
+			// Clinics::sanitize_sessions_from_request() already expects.
+			// Missing/invalid falls back to every period closed rather than
+			// blocking the whole save, since hours can always be set later
+			// from the Doctor Sessions tab.
+			$posted_clinic_sessions = isset( $_POST['clinic_sessions'] ) && is_array( $_POST['clinic_sessions'] ) ? $_POST['clinic_sessions'] : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Clinics::sanitize_sessions_from_request() unslashes/sanitizes each field itself.
+
+			// Per-clinic doctor-share override — same field the standalone
+			// Doctor Sessions form has, just keyed by clinic_location_id
+			// here since several clinics can be onboarded at once (see
+			// Clinics::sanitize_share_override_from_request(), which expects
+			// a single 'doctor_share_percent' value, hence the per-clinic
+			// re-wrap below).
+			$posted_clinic_share_percents = isset( $_POST['clinic_share_percent'] ) && is_array( $_POST['clinic_share_percent'] ) ? $_POST['clinic_share_percent'] : array();
+
+			// Which existing Clinics row (if any) each clinic_location_id's
+			// card corresponds to — '0' for a clinic being aligned for the
+			// first time. Lets a re-save of an already-onboarded doctor
+			// update their existing row instead of creating a duplicate one
+			// (see doctor-ak-onboarding-sessions.js's hidden clinic_row_id[] field).
+			$posted_clinic_row_ids = isset( $_POST['clinic_row_id'] ) && is_array( $_POST['clinic_row_id'] ) ? $_POST['clinic_row_id'] : array();
+
 			foreach ( $posted_clinic_location_ids as $posted_clinic_location_id ) {
 				if ( $posted_clinic_location_id <= 0 ) {
 					continue;
@@ -278,7 +303,35 @@ class Admin_User_Handler {
 					continue;
 				}
 
-				$clinic_fields_list[] = $clinic_fields;
+				$share_override = Clinics::sanitize_share_override_from_request(
+					array(
+						'doctor_share_percent' => isset( $posted_clinic_share_percents[ $posted_clinic_location_id ] ) ? $posted_clinic_share_percents[ $posted_clinic_location_id ] : '',
+					)
+				);
+
+				if ( is_wp_error( $share_override ) ) {
+					$errors['clinic_location_ids'] = $share_override->get_error_message();
+					continue;
+				}
+
+				$clinic_fields['doctor_share_percent'] = $share_override;
+
+				$posted_sessions_for_clinic = isset( $posted_clinic_sessions[ $posted_clinic_location_id ] ) && is_array( $posted_clinic_sessions[ $posted_clinic_location_id ] )
+					? $posted_clinic_sessions[ $posted_clinic_location_id ]
+					: array();
+
+				$clinic_sessions = Clinics::sanitize_sessions_from_request( $posted_sessions_for_clinic );
+
+				if ( is_wp_error( $clinic_sessions ) ) {
+					$errors['clinic_sessions'] = $clinic_sessions->get_error_message();
+					$clinic_sessions           = Clinics::empty_sessions();
+				}
+
+				$clinic_fields_list[] = array(
+					'row_id'   => isset( $posted_clinic_row_ids[ $posted_clinic_location_id ] ) ? absint( $posted_clinic_row_ids[ $posted_clinic_location_id ] ) : 0,
+					'fields'   => $clinic_fields,
+					'sessions' => $clinic_sessions,
+				);
 			}
 		} else {
 			$phone_number = Phone::sanitize_from_request(
@@ -288,6 +341,52 @@ class Admin_User_Handler {
 
 			if ( is_wp_error( $phone_number ) ) {
 				$errors['phone_number'] = $phone_number->get_error_message();
+			}
+		}
+
+		// Optional "add/edit services" repeater from the onboarding form
+		// (see doctor-ak-services-editor.js) — one row per non-empty name,
+		// each either updating its existing row (service_id > 0) or
+		// creating a new one, once the doctor account itself is saved. This
+		// form has no Active toggle of its own (kept lean for onboarding),
+		// so an existing row keeps whatever active/inactive state it
+		// already had; only a brand-new row defaults to active.
+		$services_to_create = array();
+
+		if ( $is_for_doctor ) {
+			$posted_service_ids         = isset( $_POST['service_id'] ) && is_array( $_POST['service_id'] ) ? $_POST['service_id'] : array();
+			$posted_service_names       = isset( $_POST['service_name'] ) && is_array( $_POST['service_name'] ) ? $_POST['service_name'] : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Services::sanitize_fields_from_request() unslashes/sanitizes each field itself.
+			$posted_service_categories  = isset( $_POST['service_category'] ) && is_array( $_POST['service_category'] ) ? $_POST['service_category'] : array();
+			$posted_service_charges     = isset( $_POST['service_charge'] ) && is_array( $_POST['service_charge'] ) ? $_POST['service_charge'] : array();
+			$posted_service_durations   = isset( $_POST['service_duration_minutes'] ) && is_array( $_POST['service_duration_minutes'] ) ? $_POST['service_duration_minutes'] : array();
+
+			foreach ( $posted_service_names as $dak_service_row_index => $posted_service_name ) {
+				if ( '' === trim( (string) $posted_service_name ) ) {
+					continue;
+				}
+
+				$posted_service_id = isset( $posted_service_ids[ $dak_service_row_index ] ) ? absint( $posted_service_ids[ $dak_service_row_index ] ) : 0;
+				$existing_service  = $posted_service_id > 0 ? Services::find( $posted_service_id ) : null;
+
+				$service_fields = Services::sanitize_fields_from_request(
+					array(
+						'name'             => $posted_service_name,
+						'category'         => isset( $posted_service_categories[ $dak_service_row_index ] ) ? $posted_service_categories[ $dak_service_row_index ] : '',
+						'charge'           => isset( $posted_service_charges[ $dak_service_row_index ] ) ? $posted_service_charges[ $dak_service_row_index ] : 0,
+						'duration_minutes' => isset( $posted_service_durations[ $dak_service_row_index ] ) ? $posted_service_durations[ $dak_service_row_index ] : 0,
+						'active'           => $existing_service ? $existing_service['active'] : true,
+					)
+				);
+
+				if ( is_wp_error( $service_fields ) ) {
+					$errors['services'] = $service_fields->get_error_message();
+					continue;
+				}
+
+				$services_to_create[] = array(
+					'id'     => $posted_service_id,
+					'fields' => $service_fields,
+				);
 			}
 		}
 
@@ -420,8 +519,20 @@ class Admin_User_Handler {
 			update_user_meta( $saved_user_id, Doctor_Awards::META_KEY, Doctor_Awards::encode( $awards ) );
 			Revenue_Split::save_for_doctor( $saved_user_id, $revenue_split_fields );
 
-			foreach ( $clinic_fields_list as $clinic_fields ) {
-				Clinics::create( $saved_user_id, $clinic_fields, Clinics::empty_sessions() );
+			foreach ( $clinic_fields_list as $clinic_entry ) {
+				if ( $clinic_entry['row_id'] > 0 ) {
+					Clinics::update( $clinic_entry['row_id'], $clinic_entry['fields'], $clinic_entry['sessions'], $saved_user_id );
+				} else {
+					Clinics::create( $saved_user_id, $clinic_entry['fields'], $clinic_entry['sessions'] );
+				}
+			}
+
+			foreach ( $services_to_create as $service_entry ) {
+				if ( $service_entry['id'] > 0 ) {
+					Services::update( $service_entry['id'], $service_entry['fields'], $saved_user_id );
+				} else {
+					Services::create( $saved_user_id, $service_entry['fields'] );
+				}
 			}
 		} else {
 			update_user_meta( $saved_user_id, 'doctor_ak_phone_number', $phone_number );

@@ -220,6 +220,17 @@ class Admin_Dashboard {
 			Assets::version( 'assets/css/doctor-ak-admin-dashboard.css' )
 		);
 
+		// The Add/Edit Doctor form's Weekly Hours section (see
+		// doctor-ak-onboarding-sessions.js) reuses the same session-grid
+		// markup/styles as the standalone Doctor Sessions form, so that
+		// stylesheet is needed here too.
+		wp_enqueue_style(
+			'doctor-ak-portal-clinics',
+			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-clinics.css',
+			array( 'doctor-ak-portal-registration' ),
+			Assets::version( 'assets/css/doctor-ak-clinics.css' )
+		);
+
 		// Searchable doctor/patient dropdowns (see
 		// doctor-ak-searchable-select.js) — every dashboard section that
 		// lists doctors or patients in a <select> reuses this same
@@ -253,6 +264,28 @@ class Admin_Dashboard {
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-awards-editor.js',
 			array(),
 			Assets::version( 'assets/js/doctor-ak-awards-editor.js' ),
+			true
+		);
+
+		// Add/Edit Doctor form onboarding sections — Weekly Hours (per
+		// clinic picked in "Align to Clinics") and the Services repeater.
+		// Both no-op on any page without their target elements. Depend on
+		// 'doctor-ak-portal-admin-dashboard' since that's the handle
+		// dakAdminUsers (sessionDays/sessionPeriods/serviceCategories) is
+		// localized onto below, and both read it at DOMContentLoaded.
+		wp_enqueue_script(
+			'doctor-ak-portal-onboarding-sessions',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-onboarding-sessions.js',
+			array( 'doctor-ak-portal-admin-dashboard' ),
+			Assets::version( 'assets/js/doctor-ak-onboarding-sessions.js' ),
+			true
+		);
+
+		wp_enqueue_script(
+			'doctor-ak-portal-services-editor',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-services-editor.js',
+			array( 'doctor-ak-portal-admin-dashboard' ),
+			Assets::version( 'assets/js/doctor-ak-services-editor.js' ),
 			true
 		);
 
@@ -329,6 +362,17 @@ class Admin_Dashboard {
 				'confirmEnable'  => __( 'Reactivate this account?', 'doctor-ak-portal' ),
 				'genericError'   => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
 				'locations'      => Locations::get_all(),
+				// For the Add/Edit Doctor form's onboarding sections — the
+				// Weekly Hours grid generated per clinic picked in "Align to
+				// Clinics" (see doctor-ak-onboarding-sessions.js), and the
+				// Services repeater's Category options (see
+				// doctor-ak-services-editor.js). Passed as JS data since both
+				// are built dynamically, not server-rendered per row.
+				'sessionDays'    => Clinics::session_days(),
+				'sessionPeriods' => Clinics::session_periods(),
+				'serviceCategories' => Specializations::get_all(),
+				'shareOverrideLabel' => __( "Doctor's share override at this clinic (%, optional)", 'doctor-ak-portal' ),
+				'shareOverrideHint'  => __( "Leave blank to use this doctor's default commission below. Only applies to appointments booked at this specific clinic.", 'doctor-ak-portal' ),
 			)
 		);
 
@@ -2522,6 +2566,26 @@ class Admin_Dashboard {
 		$user    = $user_id > 0 ? get_user_by( 'id', $user_id ) : false;
 		$editing = ( $user && in_array( $role, (array) $user->roles, true ) ) ? $this->row_data( $user ) : null;
 
+		// The onboarding form's Clinics/Weekly Hours/Services steps need
+		// this doctor's actual existing rows to pre-fill from — otherwise
+		// editing an existing doctor shows those sections empty even though
+		// clinics/sessions/services are already set up for them.
+		$editing_clinics  = array();
+		$editing_services = array();
+
+		if ( $editing && Roles::DOCTOR_ROLE === $role ) {
+			$editing_clinics = array_values(
+				array_filter(
+					Clinics::get_for_doctor( $user->ID ),
+					function ( $clinic ) {
+						return Clinics::TYPE_PHYSICAL === $clinic['type'] && $clinic['clinic_location_id'] > 0;
+					}
+				)
+			);
+
+			$editing_services = Services::get_for_doctor( $user->ID );
+		}
+
 		$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
 
 		return $this->template_loader->get_template(
@@ -2533,6 +2597,8 @@ class Admin_Dashboard {
 				'list_url'         => $dashboard_url ? add_query_arg( 'section', $section, $dashboard_url ) : '',
 				'editing_user'     => $editing,
 				'clinic_locations' => Clinic_Locations::get_all(),
+				'editing_clinics'  => $editing_clinics,
+				'editing_services' => $editing_services,
 			)
 		);
 	}

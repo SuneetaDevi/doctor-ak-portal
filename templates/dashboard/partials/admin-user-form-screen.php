@@ -16,6 +16,8 @@
  * @var string     $list_url        Back-to-list URL (the table view of this same section).
  * @var array|null $editing_user    Row view-model (see Admin_Dashboard::row_data()) when editing, null when adding.
  * @var array      $clinic_locations Master clinic list, see Clinic_Locations::get_all().
+ * @var array      $editing_clinics  Doctor's own physical Clinics rows already aligned to a Clinic_Locations record (see Clinics::get_for_doctor()) — empty outside doctor-editing.
+ * @var array      $editing_services Doctor's own existing Services rows (see Services::get_for_doctor()) — empty outside doctor-editing.
  */
 
 // Prevent direct file access.
@@ -37,6 +39,22 @@ $dak_list_nouns      = array(
 	'receptionist' => __( 'Receptionists', 'doctor-ak-portal' ),
 );
 $dak_list_noun       = isset( $dak_list_nouns[ $section ] ) ? $dak_list_nouns[ $section ] : __( 'Doctors', 'doctor-ak-portal' );
+
+// For the Weekly Hours step's pre-fill (see doctor-ak-onboarding-sessions.js)
+// — one entry per already-aligned clinic, keyed by clinic_location_id so
+// JS can look a clinic's existing row id/sessions/share-override up the
+// moment its chip renders.
+$dak_editing_clinics_by_location_id = array();
+
+foreach ( $editing_clinics as $dak_editing_clinic ) {
+	$dak_editing_clinics_by_location_id[ $dak_editing_clinic['clinic_location_id'] ] = array(
+		'id'                   => $dak_editing_clinic['id'],
+		'doctor_share_percent' => $dak_editing_clinic['doctor_share_percent'],
+		'sessions'             => $dak_editing_clinic['sessions'],
+	);
+}
+
+$dak_editing_clinic_location_ids = wp_list_pluck( $editing_clinics, 'clinic_location_id' );
 ?>
 <div class="dak-dashboard-greeting dak-admin-users-header">
 	<div>
@@ -110,6 +128,15 @@ $dak_list_noun       = isset( $dak_list_nouns[ $section ] ) ? $dak_list_nouns[ $
 		</div>
 
 		<?php if ( $dak_is_doctor_form ) : ?>
+
+			<div class="dak-onboarding-step">
+				<div class="dak-onboarding-step-header">
+					<span class="dak-onboarding-step-badge">1</span>
+					<div>
+						<h2 class="dak-onboarding-step-title"><?php esc_html_e( 'Doctor Details', 'doctor-ak-portal' ); ?></h2>
+						<p class="dak-onboarding-step-desc"><?php esc_html_e( 'Qualifications, location, and specialization shown on their public profile.', 'doctor-ak-portal' ); ?></p>
+					</div>
+				</div>
 
 			<div class="dak-field-row">
 				<div class="dak-field">
@@ -200,13 +227,22 @@ $dak_list_noun       = isset( $dak_list_nouns[ $section ] ) ? $dak_list_nouns[ $
 				<p class="dak-field-hint"><?php esc_html_e( "When off, this doctor can't be booked for a video consultation, even if they've set up a video clinic schedule.", 'doctor-ak-portal' ); ?></p>
 			</div>
 
+			</div>
+
+			<div class="dak-onboarding-step">
+				<div class="dak-onboarding-step-header">
+					<span class="dak-onboarding-step-badge">2</span>
+					<div>
+						<h2 class="dak-onboarding-step-title"><?php esc_html_e( 'Clinics & Weekly Hours', 'doctor-ak-portal' ); ?></h2>
+						<p class="dak-onboarding-step-desc"><?php esc_html_e( 'Pick which clinics this doctor practices at, then set the hours patients can book at each.', 'doctor-ak-portal' ); ?></p>
+					</div>
+				</div>
+
 			<div class="dak-field">
-				<span class="dak-field-label"><?php esc_html_e( 'Align to Clinics (optional)', 'doctor-ak-portal' ); ?></span>
-				<p class="dak-field-hint"><?php esc_html_e( 'Choose one or more clinics already added under the admin "Clinic" section — weekly session hours for each can be set later from the Doctor Sessions tab.', 'doctor-ak-portal' ); ?></p>
 				<label for="dak-admin-user-clinic-locations"><?php esc_html_e( 'Clinics', 'doctor-ak-portal' ); ?></label>
 				<select id="dak-admin-user-clinic-locations" name="clinic_location_ids[]" multiple>
 					<?php foreach ( $clinic_locations as $clinic_location ) : ?>
-						<option value="<?php echo esc_attr( $clinic_location['id'] ); ?>"><?php echo esc_html( sprintf( '%1$s — %2$s, %3$s', $clinic_location['name'], $clinic_location['area_label'], $clinic_location['city_label'] ) ); ?></option>
+						<option value="<?php echo esc_attr( $clinic_location['id'] ); ?>" <?php selected( in_array( $clinic_location['id'], $dak_editing_clinic_location_ids, true ) ); ?>><?php echo esc_html( sprintf( '%1$s — %2$s, %3$s', $clinic_location['name'], $clinic_location['area_label'], $clinic_location['city_label'] ) ); ?></option>
 					<?php endforeach; ?>
 				</select>
 				<span class="dak-field-error" data-field="clinic_location_ids"></span>
@@ -215,11 +251,74 @@ $dak_list_noun       = isset( $dak_list_nouns[ $section ] ) ? $dak_list_nouns[ $
 				<?php endif; ?>
 			</div>
 
+			<div class="dak-field" id="dak-admin-user-sessions-section">
+				<span class="dak-field-label"><?php esc_html_e( 'Weekly Hours', 'doctor-ak-portal' ); ?></span>
+				<p class="dak-field-hint" id="dak-admin-user-sessions-empty"><?php esc_html_e( 'Pick a clinic above to set its hours here.', 'doctor-ak-portal' ); ?></p>
+				<div id="dak-admin-user-sessions-groups" data-existing="<?php echo esc_attr( wp_json_encode( $dak_editing_clinics_by_location_id ) ); ?>"></div>
+				<span class="dak-field-error" data-field="clinic_sessions"></span>
+			</div>
+
+			</div>
+
+			<div class="dak-onboarding-step">
+				<div class="dak-onboarding-step-header">
+					<span class="dak-onboarding-step-badge">3</span>
+					<div>
+						<h2 class="dak-onboarding-step-title"><?php esc_html_e( 'Services', 'doctor-ak-portal' ); ?></h2>
+						<p class="dak-onboarding-step-desc"><?php esc_html_e( 'What patients can book and pay for — add as many as this doctor offers.', 'doctor-ak-portal' ); ?></p>
+					</div>
+				</div>
+
+			<div class="dak-field">
+				<div class="dak-services-editor" data-services-editor data-categories="<?php echo esc_attr( wp_json_encode( $specializations ) ); ?>">
+					<div class="dak-services-row-header<?php echo empty( $editing_services ) ? ' dak-hidden' : ''; ?>" data-services-row-header>
+						<span><?php esc_html_e( 'Service Name', 'doctor-ak-portal' ); ?></span>
+						<span><?php esc_html_e( 'Category', 'doctor-ak-portal' ); ?></span>
+						<span><?php esc_html_e( 'Charge (PKR)', 'doctor-ak-portal' ); ?></span>
+						<span><?php esc_html_e( 'Duration (min)', 'doctor-ak-portal' ); ?></span>
+						<span></span>
+					</div>
+					<div class="dak-services-rows" data-services-rows>
+						<?php foreach ( $editing_services as $dak_editing_service ) : ?>
+							<div class="dak-services-row" data-services-row>
+								<input type="hidden" name="service_id[]" value="<?php echo esc_attr( $dak_editing_service['id'] ); ?>">
+								<input type="text" name="service_name[]" value="<?php echo esc_attr( $dak_editing_service['name'] ); ?>" placeholder="<?php esc_attr_e( 'e.g. OPD Consultation', 'doctor-ak-portal' ); ?>">
+								<select name="service_category[]">
+									<option value=""><?php esc_html_e( 'No category', 'doctor-ak-portal' ); ?></option>
+									<?php foreach ( $specializations as $dak_service_cat_slug => $dak_service_cat_label ) : ?>
+										<option value="<?php echo esc_attr( $dak_service_cat_slug ); ?>" <?php selected( $dak_editing_service['category'], $dak_service_cat_slug ); ?>><?php echo esc_html( $dak_service_cat_label ); ?></option>
+									<?php endforeach; ?>
+								</select>
+								<input type="number" name="service_charge[]" value="<?php echo esc_attr( $dak_editing_service['charge'] ); ?>" min="0" step="0.01">
+								<input type="number" name="service_duration_minutes[]" value="<?php echo esc_attr( $dak_editing_service['duration_minutes'] ); ?>" min="0" max="480">
+								<button type="button" class="dak-services-remove" data-services-remove-row aria-label="<?php esc_attr_e( 'Remove service', 'doctor-ak-portal' ); ?>" title="<?php esc_attr_e( 'Removes it from this form only — this existing service stays as-is unless you delete it from the Services section.', 'doctor-ak-portal' ); ?>">&times;</button>
+							</div>
+						<?php endforeach; ?>
+					</div>
+					<button type="button" class="dak-button dak-button-secondary dak-button-sm" data-services-add-row>
+						<?php esc_html_e( '+ Add Service', 'doctor-ak-portal' ); ?>
+					</button>
+				</div>
+				<p class="dak-field-hint"><?php esc_html_e( 'Optional — more services can always be added later from the admin "Services" section. Removing a row here only skips it on Save; delete a service permanently from the Services section.', 'doctor-ak-portal' ); ?></p>
+				<span class="dak-field-error" data-field="services"></span>
+			</div>
+
+			</div>
+
 			<?php
 			$dak_payment_model        = $dak_is_editing ? $editing_user['payment_model'] : \DoctorAKPortal\Includes\Revenue_Split::MODEL_COMMISSION;
 			$dak_doctor_share_percent = $dak_is_editing ? $editing_user['doctor_share_percent'] : \DoctorAKPortal\Includes\Revenue_Split::DEFAULT_DOCTOR_SHARE_PERCENT;
 			$dak_is_salary_model      = \DoctorAKPortal\Includes\Revenue_Split::MODEL_SALARY === $dak_payment_model;
 			?>
+			<div class="dak-onboarding-step">
+				<div class="dak-onboarding-step-header">
+					<span class="dak-onboarding-step-badge">4</span>
+					<div>
+						<h2 class="dak-onboarding-step-title"><?php esc_html_e( 'Payment & Revenue Split', 'doctor-ak-portal' ); ?></h2>
+						<p class="dak-onboarding-step-desc"><?php esc_html_e( "This doctor's default commission — each clinic above can override it individually via its own \"Doctor's share override\" field in step 2.", 'doctor-ak-portal' ); ?></p>
+					</div>
+				</div>
+
 			<div class="dak-field-row" id="dak-admin-user-revenue-split">
 				<div class="dak-field">
 					<label for="dak-admin-user-payment-model"><?php esc_html_e( 'Payment Model', 'doctor-ak-portal' ); ?></label>
@@ -235,6 +334,8 @@ $dak_list_noun       = isset( $dak_list_nouns[ $section ] ) ? $dak_list_nouns[ $
 					<p class="dak-field-hint" id="dak-admin-user-hospital-share-hint"></p>
 					<span class="dak-field-error" data-field="doctor_share_percent"></span>
 				</div>
+			</div>
+
 			</div>
 
 		<?php else : ?>
