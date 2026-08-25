@@ -882,6 +882,26 @@ class Admin_Dashboard {
 	}
 
 	/**
+	 * Resolves an appointment's Clinic_Locations ID from its Clinics row ID
+	 * (0 for a video consultation, which has no physical location) — shared
+	 * by every place that scopes a receptionist's view down to their
+	 * assigned clinics (overview_data(), the 'appointments' section, and the
+	 * 'encounters' section).
+	 *
+	 * @param int $clinic_id Clinics table row ID, or 0/empty for video.
+	 * @return int
+	 */
+	private static function clinic_location_id_for_clinic( $clinic_id ) {
+		if ( empty( $clinic_id ) ) {
+			return 0;
+		}
+
+		$clinic = Clinics::find( $clinic_id );
+
+		return $clinic ? (int) $clinic['clinic_location_id'] : 0;
+	}
+
+	/**
 	 * Flattens NAV_GROUPS into a single section slug => label map.
 	 *
 	 * @return array
@@ -1709,12 +1729,7 @@ class Admin_Dashboard {
 					array_filter(
 						$appointments,
 						function ( $row ) use ( $assigned_clinic_location_ids ) {
-							$clinic_location_id = 0;
-
-							if ( ! empty( $row['clinic_id'] ) ) {
-								$clinic              = Clinics::find( $row['clinic_id'] );
-								$clinic_location_id = $clinic ? (int) $clinic['clinic_location_id'] : 0;
-							}
+							$clinic_location_id = self::clinic_location_id_for_clinic( $row['clinic_id'] ?? 0 );
 
 							return in_array( $clinic_location_id, $assigned_clinic_location_ids, true );
 						}
@@ -1808,13 +1823,7 @@ class Admin_Dashboard {
 					array_filter(
 						$encounter_rows,
 						function ( $encounter ) use ( $assigned_clinic_location_ids ) {
-							$clinic_location_id = 0;
-							$clinic_id           = ! empty( $encounter['appointment']['clinic_id'] ) ? (int) $encounter['appointment']['clinic_id'] : 0;
-
-							if ( $clinic_id > 0 ) {
-								$clinic              = Clinics::find( $clinic_id );
-								$clinic_location_id = $clinic ? (int) $clinic['clinic_location_id'] : 0;
-							}
+							$clinic_location_id = self::clinic_location_id_for_clinic( $encounter['appointment']['clinic_id'] ?? 0 );
 
 							return in_array( $clinic_location_id, $assigned_clinic_location_ids, true );
 						}
@@ -2258,6 +2267,28 @@ class Admin_Dashboard {
 		$is_receptionist = self::is_receptionist();
 
 		$upcoming = Appointments::all_for_admin( array( 'date_from' => $today ) );
+
+		// Same clinic scoping as the Appointments list itself — otherwise
+		// this widget could surface a receptionist appointments at clinics
+		// they're not assigned to, which then look like they've vanished
+		// once they click "View all" into the (correctly scoped) list.
+		if ( $is_receptionist ) {
+			$assigned_clinic_location_ids = self::receptionist_assigned_clinic_location_ids();
+
+			if ( ! empty( $assigned_clinic_location_ids ) ) {
+				$upcoming = array_values(
+					array_filter(
+						$upcoming,
+						function ( $row ) use ( $assigned_clinic_location_ids ) {
+							$clinic_location_id = self::clinic_location_id_for_clinic( $row['clinic_id'] ?? 0 );
+
+							return in_array( $clinic_location_id, $assigned_clinic_location_ids, true );
+						}
+					)
+				);
+			}
+		}
+
 		// all_for_admin() sorts furthest-future-first; the dashboard widget
 		// wants soonest-first instead.
 		$latest_appointments = array_slice( array_reverse( $upcoming ), 0, 6 );
