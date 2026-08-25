@@ -124,6 +124,7 @@ class Role_Permissions {
 			'billing'            => __( 'Billing', 'doctor-ak-portal' ),
 			'encounters'         => __( 'Encounters', 'doctor-ak-portal' ),
 			'notifications'      => __( 'Notifications', 'doctor-ak-portal' ),
+			'all-users'          => __( 'All Users', 'doctor-ak-portal' ),
 			'doctor-requests'    => __( 'Doctor Requests', 'doctor-ak-portal' ),
 			'patients'           => __( 'Patients', 'doctor-ak-portal' ),
 			'doctors'            => __( 'Doctors', 'doctor-ak-portal' ),

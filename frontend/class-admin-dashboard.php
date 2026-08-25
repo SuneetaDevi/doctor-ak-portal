@@ -78,6 +78,7 @@ class Admin_Dashboard {
 			'notifications' => 'Notifications',
 		),
 		'Users'  => array(
+			'all-users'   => 'All Users',
 			'doctor-requests' => 'Doctor Requests',
 			'patients'    => 'Patients',
 			'doctors'     => 'Doctors',
@@ -1374,7 +1375,7 @@ class Admin_Dashboard {
 
 		$section = isset( $_POST['section'] ) ? sanitize_key( wp_unslash( $_POST['section'] ) ) : '';
 
-		if ( ! in_array( $section, array( 'doctors', 'patients', 'receptionist' ), true ) ) {
+		if ( ! in_array( $section, array( 'doctors', 'patients', 'receptionist', 'all-users' ), true ) ) {
 			wp_send_json_error( array( 'message' => __( 'Invalid section.', 'doctor-ak-portal' ) ), 400 );
 		}
 
@@ -1386,6 +1387,14 @@ class Admin_Dashboard {
 
 		if ( current_user_can( 'manage_options' ) && ! self::admin_can_access( $section ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( 'all-users' === $section ) {
+			foreach ( array( 'role', 'search' ) as $key ) {
+				$_GET[ $key ] = isset( $_POST[ $key ] ) ? $_POST[ $key ] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- nonce already verified above; all_users_section_html() sanitizes each value itself, same as it does for a real $_GET.
+			}
+
+			wp_send_json_success( array( 'html' => $this->all_users_section_html() ) );
 		}
 
 		foreach ( array( 'status', 'specialization', 'clinic_location_id', 'search' ) as $key ) {
@@ -1480,6 +1489,8 @@ class Admin_Dashboard {
 			$content_html = $this->user_form_screen_html( $section );
 		} elseif ( $is_users_section ) {
 			$content_html = $this->users_section_html( $section );
+		} elseif ( 'all-users' === $section ) {
+			$content_html = $this->all_users_section_html();
 		} else {
 			$content_html = $this->section_content_html( $section );
 		}
@@ -2387,6 +2398,131 @@ class Admin_Dashboard {
 		);
 
 		return (int) $query->get_total();
+	}
+
+	/**
+	 * Role labels for the "All Users" directory's Role column/filter — every
+	 * role a user account in this plugin can have, including WordPress's own
+	 * "administrator" (there's no separate custom admin role — see
+	 * Role_Permissions::ADMIN_KEY's docblock).
+	 *
+	 * @return array Role slug => label.
+	 */
+	private static function all_users_role_labels() {
+		return array(
+			'administrator'          => __( 'Administrator', 'doctor-ak-portal' ),
+			Roles::DOCTOR_ROLE       => __( 'Doctor', 'doctor-ak-portal' ),
+			Roles::PATIENT_ROLE      => __( 'Patient', 'doctor-ak-portal' ),
+			Roles::RECEPTIONIST_ROLE => __( 'Receptionist', 'doctor-ak-portal' ),
+		);
+	}
+
+	/**
+	 * Renders the "All Users" directory — every account across every role
+	 * (Administrator/Doctor/Patient/Receptionist) in one searchable,
+	 * role-filterable list, so an admin can see everyone's name, phone, ID,
+	 * email, and role(s) at once instead of checking each role's own tab
+	 * separately.
+	 *
+	 * @return string
+	 */
+	private function all_users_section_html() {
+		$role_labels = self::all_users_role_labels();
+
+		$role = isset( $_GET['role'] ) ? sanitize_key( wp_unslash( $_GET['role'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		$role = isset( $role_labels[ $role ] ) ? $role : '';
+
+		$query = new \WP_User_Query(
+			array(
+				'role__in' => '' !== $role ? array( $role ) : array_keys( $role_labels ),
+				'orderby'  => 'display_name',
+				'order'    => 'ASC',
+			)
+		);
+
+		$users = array_map(
+			function ( $user ) use ( $role_labels ) {
+				$display_name = trim( $user->first_name . ' ' . $user->last_name );
+				$display_name = '' !== $display_name ? $display_name : $user->display_name;
+
+				$roles = array_values(
+					array_map(
+						function ( $role_slug ) use ( $role_labels ) {
+							return $role_labels[ $role_slug ];
+						},
+						array_intersect( array_keys( $role_labels ), (array) $user->roles )
+					)
+				);
+
+				// Edit/Deactivate/Delete only exist for Doctor/Patient/
+				// Receptionist accounts today (see Admin_User_Handler's
+				// handle_delete_user()/handle_toggle_status(), which never
+				// allow an Administrator as a target — same safety rule
+				// applied here so those actions simply don't render for one).
+				$manageable_role = '';
+
+				foreach ( array( Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE, Roles::RECEPTIONIST_ROLE ) as $candidate_role ) {
+					if ( in_array( $candidate_role, (array) $user->roles, true ) ) {
+						$manageable_role = $candidate_role;
+						break;
+					}
+				}
+
+				return array(
+					'id'               => $user->ID,
+					'name'             => $display_name,
+					'email'            => $user->user_email,
+					'phone'            => get_user_meta( $user->ID, 'doctor_ak_phone_number', true ),
+					'roles'            => $roles,
+					'manageable_role'  => $manageable_role,
+					'is_disabled'      => 'yes' === get_user_meta( $user->ID, 'doctor_ak_account_disabled', true ),
+				);
+			},
+			$query->get_results()
+		);
+
+		$search = isset( $_GET['search'] ) ? sanitize_text_field( wp_unslash( $_GET['search'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+
+		if ( '' !== $search ) {
+			$needle = mb_strtolower( $search );
+			$users  = array_values(
+				array_filter(
+					$users,
+					function ( $row ) use ( $needle ) {
+						$haystack = mb_strtolower( $row['name'] . ' ' . $row['email'] . ' ' . $row['phone'] );
+
+						return false !== mb_strpos( $haystack, $needle );
+					}
+				)
+			);
+		}
+
+		$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+		$section_url   = $dashboard_url ? add_query_arg( 'section', 'all-users', $dashboard_url ) : '';
+
+		// Edit/Delete/Deactivate for a row link into that account's own
+		// role-specific section (Doctors/Patients/Receptionist already have
+		// full Add/Edit/Deactivate/Delete screens — see users_section_html()/
+		// user_form_screen_html()) rather than duplicating those forms here.
+		$manageable_section_urls = array(
+			Roles::DOCTOR_ROLE       => $dashboard_url ? add_query_arg( 'section', 'doctors', $dashboard_url ) : '',
+			Roles::PATIENT_ROLE      => $dashboard_url ? add_query_arg( 'section', 'patients', $dashboard_url ) : '',
+			Roles::RECEPTIONIST_ROLE => $dashboard_url ? add_query_arg( 'section', 'receptionist', $dashboard_url ) : '',
+		);
+
+		return $this->template_loader->get_template(
+			'dashboard/partials/admin-all-users.php',
+			array(
+				'users'                   => $users,
+				'section_url'             => $section_url,
+				'role_labels'             => $role_labels,
+				'manageable_section_urls' => $manageable_section_urls,
+				'filters'                 => array(
+					'role'   => $role,
+					'search' => $search,
+				),
+			)
+		);
 	}
 
 	/**
