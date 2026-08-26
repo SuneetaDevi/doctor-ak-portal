@@ -29,8 +29,10 @@
 
 		select.dakSearchableEnhanced = true;
 
+		var isMulti = select.multiple;
+
 		var wrap = document.createElement( 'div' );
-		wrap.className = 'dak-searchable-select';
+		wrap.className = 'dak-searchable-select' + ( isMulti ? ' is-multi' : '' );
 
 		select.parentNode.insertBefore( wrap, select );
 		wrap.appendChild( select );
@@ -54,6 +56,20 @@
 		wrap.appendChild( menu );
 
 		function currentLabel() {
+			if ( isMulti ) {
+				var selectedOptions = Array.prototype.filter.call( select.options, function ( opt ) { return opt.selected; } );
+
+				if ( 0 === selectedOptions.length ) {
+					return '';
+				}
+
+				if ( 1 === selectedOptions.length ) {
+					return selectedOptions[ 0 ].textContent;
+				}
+
+				return selectedOptions.length + ' selected';
+			}
+
 			var opt = select.options[ select.selectedIndex ];
 			return opt ? opt.textContent : '';
 		}
@@ -83,9 +99,11 @@
 
 				any = true;
 
+				var isSelected = isMulti ? opt.selected : ( opt.value === select.value );
+
 				var item = document.createElement( 'button' );
 				item.type = 'button';
-				item.className = 'dak-searchable-select-option' + ( opt.value === select.value ? ' is-selected' : '' );
+				item.className = 'dak-searchable-select-option' + ( isSelected ? ' is-selected' : '' );
 				item.setAttribute( 'role', 'option' );
 				item.textContent = label;
 
@@ -93,6 +111,17 @@
 				// handler closes the menu out from under it.
 				item.addEventListener( 'mousedown', function ( event ) {
 					event.preventDefault();
+
+					if ( isMulti ) {
+						// Toggle and keep the menu open so several options can
+						// be picked in a row — closes only on blur/Escape,
+						// same as any other multi-select dropdown.
+						opt.selected = ! opt.selected;
+						select.dispatchEvent( new Event( 'change', { bubbles: true } ) );
+						input.value = currentLabel();
+						renderMenu( '' );
+						return;
+					}
 
 					select.value = opt.value;
 					closeMenu();

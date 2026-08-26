@@ -9,7 +9,7 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Page_Finder;
-use DoctorAKPortal\Includes\Service_Catalog;
+use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Template_Loader;
 
 // Prevent direct file access.
@@ -20,12 +20,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class Service_Profile_View
  *
- * A public, read-only detail page for one Service_Catalog entry — reached
- * via `?service_id=` on whichever page contains [service_profile_view]
- * (found dynamically by Page_Finder, same pattern as Doctor_Profile_View).
- * Shows the service's price against every clinic it's offered at and every
- * doctor who provides it, then a "Book Appointment" button into the normal
- * booking flow (pre-selecting the doctor when the service has exactly one).
+ * A public, read-only detail page for one Services row — reached via
+ * `?service_id=` on whichever page contains [service_profile_view] (found
+ * dynamically by Page_Finder, same pattern as Doctor_Profile_View). Shows
+ * the service's price against every clinic it's offered at, then a "Book
+ * Appointment" button into the normal booking flow, pre-selecting the
+ * doctor who provides it.
  */
 class Service_Profile_View {
 
@@ -84,19 +84,30 @@ class Service_Profile_View {
 	 */
 	public function render() {
 		$service_id = isset( $_GET['service_id'] ) ? absint( $_GET['service_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only public lookup.
-		$service    = $service_id > 0 ? Service_Catalog::find( $service_id ) : null;
+		$service    = $service_id > 0 ? Services::find_for_public_profile( $service_id ) : null;
 
-		if ( $service && ! $service['active'] ) {
-			$service = null;
-		}
-
+		$doctor_name = '';
 		$booking_url = Page_Finder::url_for_shortcode( 'book_appointment' );
 
-		// Only preselect a doctor on the booking page when this service has
-		// exactly one — with several, the patient still needs to choose
-		// which of them they want, same as arriving at booking any other way.
-		if ( $service && 1 === count( $service['doctors'] ) && $booking_url ) {
-			$booking_url = add_query_arg( 'doctor_id', $service['doctors'][0]['id'], $booking_url );
+		if ( $service ) {
+			$doctor = get_userdata( $service['doctor_id'] );
+
+			$service['doctor_avatar_url'] = '';
+			$service['doctor_profile_url'] = '';
+
+			if ( $doctor ) {
+				$doctor_name = trim( $doctor->first_name . ' ' . $doctor->last_name );
+				$doctor_name = '' !== $doctor_name ? $doctor_name : $doctor->display_name;
+
+				$service['doctor_avatar_url']  = self::doctor_avatar_url( $doctor->ID );
+				$service['doctor_profile_url'] = add_query_arg( 'doctor_id', $doctor->ID, Page_Finder::url_for_shortcode( 'doctor_profile_view' ) );
+
+				if ( $booking_url ) {
+					$booking_url = add_query_arg( 'doctor_id', $doctor->ID, $booking_url );
+				}
+			}
+
+			$service['doctor_name'] = $doctor_name;
 		}
 
 		return $this->template_loader->get_template(
@@ -107,6 +118,28 @@ class Service_Profile_View {
 				'booking_url'   => $booking_url,
 			)
 		);
+	}
+
+	/**
+	 * Resolves a doctor's uploaded profile picture, falling back to a
+	 * generic avatar if they haven't uploaded one — same as
+	 * Doctors_Directory/Doctor_Profile_View, for the "Provided by" card.
+	 *
+	 * @param int $doctor_id Doctor's user ID.
+	 * @return string
+	 */
+	private static function doctor_avatar_url( $doctor_id ) {
+		$picture_id = (int) get_user_meta( $doctor_id, 'doctor_ak_profile_picture_id', true );
+
+		if ( $picture_id > 0 ) {
+			$url = wp_get_attachment_image_url( $picture_id, 'medium' );
+
+			if ( $url ) {
+				return $url;
+			}
+		}
+
+		return get_avatar_url( $doctor_id, array( 'size' => 200 ) );
 	}
 
 	/**

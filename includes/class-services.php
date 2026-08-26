@@ -82,14 +82,44 @@ class Services {
 
 		$active = ! empty( $posted['active'] );
 
-		return array(
-			'type'              => $type,
-			'name'              => $name,
-			'category'          => $category,
-			'charge'            => number_format( $charge, 2, '.', '' ),
-			'duration_minutes'  => $duration_minutes,
-			'active'            => $active,
+		$fields = array(
+			'type'             => $type,
+			'name'             => $name,
+			'category'         => $category,
+			'charge'           => number_format( $charge, 2, '.', '' ),
+			'duration_minutes' => $duration_minutes,
+			'active'           => $active,
 		);
+
+		// Only the admin "Add/Edit Service" modal's form posts these — the
+		// doctor-facing Services tab has no Description/Clinics fields at
+		// all, so they're genuinely absent from $posted (not just empty) on
+		// a doctor's own save. Keying on array_key_exists() rather than
+		// defaulting to '' / [] here means update() only overwrites these
+		// columns when the submitting form actually has them — otherwise a
+		// doctor editing their own service would silently wipe out
+		// description/clinics an admin had already set on it.
+		if ( array_key_exists( 'description', $posted ) ) {
+			$fields['description'] = sanitize_textarea_field( wp_unslash( $posted['description'] ) );
+		}
+
+		if ( array_key_exists( 'clinic_location_ids', $posted ) ) {
+			$clinic_location_ids = array();
+
+			if ( is_array( $posted['clinic_location_ids'] ) ) {
+				foreach ( wp_unslash( $posted['clinic_location_ids'] ) as $clinic_location_id ) {
+					$clinic_location_id = absint( $clinic_location_id );
+
+					if ( $clinic_location_id > 0 && Clinic_Locations::find( $clinic_location_id ) ) {
+						$clinic_location_ids[] = $clinic_location_id;
+					}
+				}
+			}
+
+			$fields['clinic_location_ids'] = $clinic_location_ids;
+		}
+
+		return $fields;
 	}
 
 	/**
@@ -97,9 +127,10 @@ class Services {
 	 *
 	 * @param int   $doctor_id Doctor's user ID.
 	 * @param array $fields    Sanitized service fields.
+	 * @param int   $image_id  Attachment ID for the public portfolio's image, or 0 for none.
 	 * @return int|false New service ID, or false on failure.
 	 */
-	public static function create( $doctor_id, array $fields ) {
+	public static function create( $doctor_id, array $fields, $image_id = 0 ) {
 		global $wpdb;
 
 		$now = current_time( 'mysql' );
@@ -107,17 +138,20 @@ class Services {
 		$inserted = $wpdb->insert(
 			self::table_name(),
 			array(
-				'doctor_id'         => (int) $doctor_id,
-				'type'              => $fields['type'],
-				'name'              => $fields['name'],
-				'category'          => $fields['category'],
-				'charge'            => $fields['charge'],
-				'duration_minutes'  => $fields['duration_minutes'],
-				'active'            => $fields['active'] ? 1 : 0,
-				'created_at'        => $now,
-				'updated_at'        => $now,
+				'doctor_id'           => (int) $doctor_id,
+				'type'                => $fields['type'],
+				'name'                => $fields['name'],
+				'category'            => $fields['category'],
+				'charge'              => $fields['charge'],
+				'duration_minutes'    => $fields['duration_minutes'],
+				'active'              => $fields['active'] ? 1 : 0,
+				'description'         => isset( $fields['description'] ) ? $fields['description'] : '',
+				'image_id'            => (int) $image_id,
+				'clinic_location_ids' => wp_json_encode( isset( $fields['clinic_location_ids'] ) ? $fields['clinic_location_ids'] : array() ),
+				'created_at'          => $now,
+				'updated_at'          => $now,
 			),
-			array( '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s' )
+			array( '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%d', '%s', '%s', '%s' )
 		);
 
 		if ( ! $inserted ) {
@@ -144,11 +178,12 @@ class Services {
 	 * Updates an existing service row.
 	 *
 	 * @param int      $service_id Service ID.
-	 * @param array    $fields     Sanitized service fields.
+	 * @param array    $fields     Sanitized service fields. 'description'/'clinic_location_ids' only get written when present (see sanitize_fields_from_request()'s docblock) — a doctor's own save, which never posts either, leaves whatever an admin already set on them untouched.
 	 * @param int|null $doctor_id  If given, the update only applies when the service belongs to this doctor; pass null to skip the check (admin context).
+	 * @param int|null $image_id   Attachment ID for the public portfolio's image, or null to leave the existing one untouched (a doctor's own save never posts this field either).
 	 * @return bool
 	 */
-	public static function update( $service_id, array $fields, $doctor_id = null ) {
+	public static function update( $service_id, array $fields, $doctor_id = null, $image_id = null ) {
 		global $wpdb;
 
 		$where       = array( 'id' => (int) $service_id );
@@ -159,21 +194,33 @@ class Services {
 			$where_types[]      = '%d';
 		}
 
-		$updated = $wpdb->update(
-			self::table_name(),
-			array(
-				'type'              => $fields['type'],
-				'name'              => $fields['name'],
-				'category'          => $fields['category'],
-				'charge'            => $fields['charge'],
-				'duration_minutes'  => $fields['duration_minutes'],
-				'active'            => $fields['active'] ? 1 : 0,
-				'updated_at'        => current_time( 'mysql' ),
-			),
-			$where,
-			array( '%s', '%s', '%s', '%s', '%d', '%d', '%s' ),
-			$where_types
+		$data  = array(
+			'type'             => $fields['type'],
+			'name'             => $fields['name'],
+			'category'         => $fields['category'],
+			'charge'           => $fields['charge'],
+			'duration_minutes' => $fields['duration_minutes'],
+			'active'           => $fields['active'] ? 1 : 0,
+			'updated_at'       => current_time( 'mysql' ),
 		);
+		$types = array( '%s', '%s', '%s', '%s', '%d', '%d', '%s' );
+
+		if ( array_key_exists( 'description', $fields ) ) {
+			$data['description'] = $fields['description'];
+			$types[]              = '%s';
+		}
+
+		if ( array_key_exists( 'clinic_location_ids', $fields ) ) {
+			$data['clinic_location_ids'] = wp_json_encode( $fields['clinic_location_ids'] );
+			$types[]                      = '%s';
+		}
+
+		if ( null !== $image_id ) {
+			$data['image_id'] = (int) $image_id;
+			$types[]           = '%d';
+		}
+
+		$updated = $wpdb->update( self::table_name(), $data, $where, $types, $where_types );
 
 		return false !== $updated;
 	}
@@ -324,8 +371,62 @@ class Services {
 	}
 
 	/**
+	 * Every active service, across every non-deactivated doctor, for the
+	 * public [services_directory] grid — this plugin's "service portfolio"
+	 * is simply every Services row an admin has enriched with a
+	 * description/image/clinics (see Service_Handler's admin save path),
+	 * not a separate table.
+	 *
+	 * @return array List of decoded service rows, alphabetical by name.
+	 */
+	public static function active_for_public_directory() {
+		global $wpdb;
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT s.* FROM " . self::table_name() . " s
+				INNER JOIN {$wpdb->users} u ON u.ID = s.doctor_id
+				LEFT JOIN {$wpdb->usermeta} m ON m.user_id = u.ID AND m.meta_key = 'doctor_ak_account_disabled'
+				WHERE s.type = %s AND s.active = 1 AND ( m.meta_value IS NULL OR m.meta_value != 'yes' )
+				ORDER BY s.name ASC",
+				self::TYPE_CLINIC
+			), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table/column names, not user input; the one variable (TYPE_CLINIC) is bound via %s.
+			ARRAY_A
+		);
+
+		return array_map( array( __CLASS__, 'decode_row' ), $rows );
+	}
+
+	/**
+	 * A single active service for the public [service_profile_view] page —
+	 * null if it doesn't exist, isn't active, or its doctor is deactivated
+	 * (matches active_for_public_directory()'s visibility rule).
+	 *
+	 * @param int $service_id Service ID.
+	 * @return array|null
+	 */
+	public static function find_for_public_profile( $service_id ) {
+		$service = self::find( $service_id );
+
+		if ( ! $service || ! $service['active'] ) {
+			return null;
+		}
+
+		$doctor = get_userdata( $service['doctor_id'] );
+
+		if ( ! $doctor || 'yes' === get_user_meta( $doctor->ID, 'doctor_ak_account_disabled', true ) ) {
+			return null;
+		}
+
+		return $service;
+	}
+
+	/**
 	 * Decodes a raw DB row into the shape the rest of the codebase works
-	 * with: casts IDs/numbers, adds a human-readable category label.
+	 * with: casts IDs/numbers, adds a human-readable category label, and
+	 * (for the public service portfolio — see active_for_public_directory())
+	 * resolves the image URL, a formatted price, and the associated
+	 * Clinic_Locations rows.
 	 *
 	 * @param array $row Raw associative row from $wpdb.
 	 * @return array
@@ -333,17 +434,35 @@ class Services {
 	private static function decode_row( array $row ) {
 		$categories = Specializations::get_all();
 		$category   = (string) $row['category'];
+		$charge     = (float) $row['charge'];
+
+		$image_id  = isset( $row['image_id'] ) ? (int) $row['image_id'] : 0;
+		$image_url = '';
+
+		if ( $image_id > 0 ) {
+			$found     = wp_get_attachment_image_url( $image_id, 'large' );
+			$image_url = $found ? $found : '';
+		}
+
+		$clinic_location_ids = array_map( 'intval', (array) json_decode( isset( $row['clinic_location_ids'] ) ? (string) $row['clinic_location_ids'] : '', true ) );
+		$clinic_locations    = array_values( array_filter( array_map( array( __NAMESPACE__ . '\Clinic_Locations', 'find' ), $clinic_location_ids ) ) );
 
 		return array(
-			'id'                => (int) $row['id'],
-			'doctor_id'         => (int) $row['doctor_id'],
-			'type'              => $row['type'],
-			'name'              => $row['name'],
-			'category'          => $category,
-			'category_label'    => isset( $categories[ $category ] ) ? $categories[ $category ] : '',
-			'charge'            => (float) $row['charge'],
-			'duration_minutes'  => (int) $row['duration_minutes'],
-			'active'            => ! empty( $row['active'] ),
+			'id'                  => (int) $row['id'],
+			'doctor_id'           => (int) $row['doctor_id'],
+			'type'                => $row['type'],
+			'name'                => $row['name'],
+			'category'            => $category,
+			'category_label'      => isset( $categories[ $category ] ) ? $categories[ $category ] : '',
+			'charge'              => $charge,
+			'price_label'         => $charge > 0 ? 'PKR ' . number_format_i18n( $charge ) : __( 'Free', 'doctor-ak-portal' ),
+			'duration_minutes'    => (int) $row['duration_minutes'],
+			'active'              => ! empty( $row['active'] ),
+			'description'         => isset( $row['description'] ) ? (string) $row['description'] : '',
+			'image_id'            => $image_id,
+			'image_url'           => $image_url,
+			'clinic_location_ids' => $clinic_location_ids,
+			'clinic_locations'    => $clinic_locations,
 		);
 	}
 }

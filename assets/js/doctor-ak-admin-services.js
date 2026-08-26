@@ -7,6 +7,8 @@
 ( function () {
 	'use strict';
 
+	var selectedImageFile = null;
+
 	document.addEventListener( 'DOMContentLoaded', function () {
 		var modal = document.getElementById( 'dak-admin-service-modal' );
 
@@ -17,6 +19,7 @@
 		wireModalClose( modal );
 		wireAdd( modal );
 		wireEdit( modal );
+		wireImagePicker();
 		wireSave( modal );
 		wireDelete();
 	} );
@@ -25,6 +28,70 @@
 		if ( window.DAKSearchableSelect ) {
 			window.DAKSearchableSelect.refresh( document.getElementById( id ) );
 		}
+	}
+
+	function setMultiSelectValues( id, values ) {
+		var select = document.getElementById( id );
+
+		if ( ! select ) {
+			return;
+		}
+
+		var stringValues = values.map( function ( value ) { return String( value ); } );
+
+		Array.prototype.forEach.call( select.options, function ( option ) {
+			option.selected = -1 !== stringValues.indexOf( option.value );
+		} );
+
+		refreshSearchable( id );
+	}
+
+	function getMultiSelectValues( id ) {
+		var select = document.getElementById( id );
+
+		if ( ! select ) {
+			return [];
+		}
+
+		return Array.prototype.map.call( select.selectedOptions, function ( option ) { return option.value; } );
+	}
+
+	function resetImagePreview() {
+		selectedImageFile = null;
+		document.getElementById( 'dak-admin-service-image-id' ).value = '0';
+		document.getElementById( 'dak-admin-service-image' ).value = '';
+
+		var preview = document.getElementById( 'dak-admin-service-image-preview' );
+		preview.src = '';
+		preview.classList.add( 'dak-hidden' );
+	}
+
+	function setImagePreview( url ) {
+		var preview = document.getElementById( 'dak-admin-service-image-preview' );
+
+		if ( url ) {
+			preview.src = url;
+			preview.classList.remove( 'dak-hidden' );
+		} else {
+			preview.src = '';
+			preview.classList.add( 'dak-hidden' );
+		}
+	}
+
+	function wireImagePicker() {
+		var input = document.getElementById( 'dak-admin-service-image' );
+
+		if ( ! input ) {
+			return;
+		}
+
+		input.addEventListener( 'change', function () {
+			selectedImageFile = input.files && input.files[ 0 ] ? input.files[ 0 ] : null;
+
+			if ( selectedImageFile ) {
+				setImagePreview( URL.createObjectURL( selectedImageFile ) );
+			}
+		} );
 	}
 
 	function resetModalFields() {
@@ -36,6 +103,9 @@
 		document.getElementById( 'dak-admin-service-charge' ).value = '0';
 		document.getElementById( 'dak-admin-service-duration' ).value = '0';
 		document.getElementById( 'dak-admin-service-active' ).checked = true;
+		document.getElementById( 'dak-admin-service-description' ).value = '';
+		setMultiSelectValues( 'dak-admin-service-clinics', [] );
+		resetImagePreview();
 	}
 
 	function wireAdd( modal ) {
@@ -97,6 +167,7 @@
 
 			clearErrors();
 			setModalTitle( 'Edit Service' );
+			resetImagePreview();
 
 			document.getElementById( 'dak-admin-service-id' ).value = trigger.getAttribute( 'data-service-id' ) || '0';
 			document.getElementById( 'dak-admin-service-doctor' ).value = trigger.getAttribute( 'data-doctor-id' ) || '';
@@ -106,6 +177,16 @@
 			document.getElementById( 'dak-admin-service-charge' ).value = trigger.getAttribute( 'data-charge' ) || '0';
 			document.getElementById( 'dak-admin-service-duration' ).value = trigger.getAttribute( 'data-duration-minutes' ) || '0';
 			document.getElementById( 'dak-admin-service-active' ).checked = '1' === trigger.getAttribute( 'data-active' );
+			document.getElementById( 'dak-admin-service-description' ).value = trigger.getAttribute( 'data-description' ) || '';
+			document.getElementById( 'dak-admin-service-image-id' ).value = trigger.getAttribute( 'data-image-id' ) || '0';
+
+			setImagePreview( trigger.getAttribute( 'data-image-url' ) || '' );
+
+			try {
+				setMultiSelectValues( 'dak-admin-service-clinics', JSON.parse( trigger.getAttribute( 'data-clinic-location-ids' ) || '[]' ) );
+			} catch ( error ) {
+				setMultiSelectValues( 'dak-admin-service-clinics', [] );
+			}
 
 			openModal( modal );
 		} );
@@ -145,6 +226,16 @@
 			formData.append( 'charge', document.getElementById( 'dak-admin-service-charge' ).value );
 			formData.append( 'duration_minutes', document.getElementById( 'dak-admin-service-duration' ).value );
 			formData.append( 'active', document.getElementById( 'dak-admin-service-active' ).checked ? '1' : '' );
+			formData.append( 'description', document.getElementById( 'dak-admin-service-description' ).value );
+			formData.append( 'image_id', document.getElementById( 'dak-admin-service-image-id' ).value );
+
+			getMultiSelectValues( 'dak-admin-service-clinics' ).forEach( function ( value ) {
+				formData.append( 'clinic_location_ids[]', value );
+			} );
+
+			if ( selectedImageFile ) {
+				formData.append( 'image', selectedImageFile );
+			}
 
 			fetch( window.dakAdminServices.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
 				.then( function ( response ) { return response.json(); } )
@@ -156,7 +247,7 @@
 						return;
 					}
 
-					showGeneralError( errorsToMessage( result ) );
+					showErrors( result );
 				} )
 				.catch( function () {
 					saveButton.disabled = false;
@@ -198,12 +289,22 @@
 		} );
 	}
 
-	function errorsToMessage( result ) {
+	function showErrors( result ) {
 		if ( result.data && result.data.errors ) {
-			return Object.keys( result.data.errors ).map( function ( field ) { return result.data.errors[ field ]; } ).join( ' ' );
+			Object.keys( result.data.errors ).forEach( function ( field ) {
+				var el = document.querySelector( '#dak-admin-service-modal .dak-field-error[data-field="' + field + '"]' );
+
+				if ( el ) {
+					el.textContent = result.data.errors[ field ];
+				} else {
+					showGeneralError( result.data.errors[ field ] );
+				}
+			} );
+
+			return;
 		}
 
-		return ( result.data && result.data.message ) || 'Something went wrong. Please try again.';
+		showGeneralError( ( result.data && result.data.message ) || 'Something went wrong. Please try again.' );
 	}
 
 	function clearErrors() {

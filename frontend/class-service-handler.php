@@ -9,6 +9,7 @@
 namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
+use DoctorAKPortal\Includes\Profile_Picture_Uploader;
 use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
@@ -25,7 +26,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  * request); administrators can add/edit/delete any doctor's service from the
  * "Services" admin section, reusing the exact same save/delete logic instead
  * of duplicating it, gated by a separate nonce + `manage_options`. Mirrors
- * Clinic_Handler's dual doctor/admin endpoint pattern.
+ * Clinic_Handler's dual doctor/admin endpoint pattern. The admin side also
+ * doubles as this plugin's public "service portfolio" editor — the same
+ * saved rows drive the public [services_directory]/[service_profile_view]
+ * pages (see Services::active_for_public_directory()), so an admin can add
+ * a description/image/clinics to any service without a separate screen.
  */
 class Service_Handler {
 
@@ -35,6 +40,22 @@ class Service_Handler {
 	 * @var string
 	 */
 	const NONCE_ACTION = 'doctor_ak_services';
+
+	/**
+	 * Image upload service, for the admin-only "Image" field.
+	 *
+	 * @var Profile_Picture_Uploader
+	 */
+	private $image_uploader;
+
+	/**
+	 * Sets up collaborators.
+	 *
+	 * @param Profile_Picture_Uploader $image_uploader Image upload service.
+	 */
+	public function __construct( Profile_Picture_Uploader $image_uploader ) {
+		$this->image_uploader = $image_uploader;
+	}
 
 	/**
 	 * Enqueues services-tab assets only when the doctor dashboard's Services
@@ -211,10 +232,26 @@ class Service_Handler {
 			wp_send_json_error( array( 'errors' => array( 'name' => $fields->get_error_message() ) ) );
 		}
 
+		// Only the admin modal's form posts an "Image" field — null tells
+		// Services::update() to leave whatever image is already on the row
+		// untouched, so a doctor editing their own service (whose form has
+		// no such field) can never wipe out an image an admin already set.
+		$image_id = isset( $_POST['image_id'] ) ? absint( wp_unslash( $_POST['image_id'] ) ) : null;
+
+		if ( ! empty( $_FILES['image'] ) && UPLOAD_ERR_NO_FILE !== ( $_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE ) ) {
+			$uploaded_image_id = $this->image_uploader->upload( $_FILES['image'], get_current_user_id() );
+
+			if ( is_wp_error( $uploaded_image_id ) ) {
+				wp_send_json_error( array( 'errors' => array( 'image' => $uploaded_image_id->get_error_message() ) ) );
+			}
+
+			$image_id = $uploaded_image_id;
+		}
+
 		if ( $service_id > 0 ) {
-			$saved = Services::update( $service_id, $fields, $ownership_check );
+			$saved = Services::update( $service_id, $fields, $ownership_check, $image_id );
 		} else {
-			$saved = Services::create( $owner_doctor_id, $fields );
+			$saved = Services::create( $owner_doctor_id, $fields, $image_id );
 		}
 
 		if ( ! $saved ) {

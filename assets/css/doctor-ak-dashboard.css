@@ -326,19 +326,20 @@
 	height: 30px !important;
 }
 
-/* Service Portfolio — admin "Add/Edit Service" modal's image picker (see
-   templates/modal/admin-service-portfolio-modal.php). */
+/* Admin "Add/Edit Service" modal's image picker (see
+   templates/modal/admin-service-modal.php) — the Image field that feeds
+   the public [services_directory]/[service_profile_view] pages. */
 .dak-service-portfolio-image-picker {
 	display: flex !important;
 	align-items: center !important;
 	gap: 0.85rem !important;
 }
 
-#dak-admin-service-portfolio-image-preview-wrap {
+.dak-service-portfolio-image-picker .dak-avatar {
 	overflow: hidden !important;
 }
 
-#dak-admin-service-portfolio-image-preview {
+.dak-service-portfolio-image-picker .dak-avatar img {
 	width: 100% !important;
 	height: 100% !important;
 	object-fit: cover !important;

@@ -39,7 +39,6 @@ use DoctorAKPortal\Frontend\Profile_Handler;
 use DoctorAKPortal\Frontend\Registration_Handler;
 use DoctorAKPortal\Frontend\Clinic_Location_Handler;
 use DoctorAKPortal\Frontend\Dashboard_Layout;
-use DoctorAKPortal\Frontend\Service_Catalog_Handler;
 use DoctorAKPortal\Frontend\Service_Handler;
 use DoctorAKPortal\Frontend\Service_Profile_View;
 use DoctorAKPortal\Frontend\Services_Directory;
@@ -322,16 +321,12 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_approve_doctor', $doctor_requests_handler, 'handle_approve' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_reject_doctor', $doctor_requests_handler, 'handle_reject' );
 
-		$service_handler = new Service_Handler();
+		$service_handler = new Service_Handler( new Profile_Picture_Uploader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $service_handler, 'enqueue_assets' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_service_save', $service_handler, 'handle_save_service' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_service_delete', $service_handler, 'handle_delete_service' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_save', $service_handler, 'handle_admin_save_service' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_delete', $service_handler, 'handle_admin_delete_service' );
-
-		$service_catalog_handler = new Service_Catalog_Handler( new Profile_Picture_Uploader() );
-		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_catalog_save', $service_catalog_handler, 'handle_save' );
-		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_catalog_delete', $service_catalog_handler, 'handle_delete' );
 
 		$clinic_location_handler = new Clinic_Location_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_clinic_location_save', $clinic_location_handler, 'handle_admin_save' );

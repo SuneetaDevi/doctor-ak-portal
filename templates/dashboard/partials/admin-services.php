@@ -6,7 +6,7 @@
  *
  * @package DoctorAKPortal\Templates
  *
- * @var array  $services        Rows from Services::all_flat_for_admin(), each with an added 'doctor' sub-array.
+ * @var array  $services        Rows from Services::all_flat_for_admin(), each with an added 'doctor' sub-array. Also carries 'description'/'image_url'/'clinic_locations' — this same list feeds the public [services_directory]/[service_profile_view] pages (see the Services class), so an admin adding those here is all it takes.
  * @var string $section_url     This section's own URL (?section=services), for the "Clear filter" link.
  * @var string $filtered_doctor Name of the doctor being filtered to (via the Doctors directory's "View Services" action), or '' if unfiltered.
  */
@@ -60,10 +60,19 @@ $dak_service_icons = array(
 		<p class="dak-empty-state"><?php esc_html_e( 'No doctors have added any services yet.', 'doctor-ak-portal' ); ?></p>
 	<?php else : ?>
 		<?php foreach ( $services as $service ) : ?>
-			<?php $dak_service_split = \DoctorAKPortal\Includes\Revenue_Split::split( $service['doctor_id'], $service['charge'] ); ?>
+			<?php
+			$dak_service_split       = \DoctorAKPortal\Includes\Revenue_Split::split( $service['doctor_id'], $service['charge'] );
+			$dak_service_clinic_tags = wp_list_pluck( $service['clinic_locations'], 'name' );
+			?>
 			<div id="dak-service-<?php echo esc_attr( $service['id'] ); ?>" class="dak-admin-record-row" data-service-row="<?php echo esc_attr( $service['id'] ); ?>" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $service['name'] . ' ' . $service['category_label'] . ' ' . $service['doctor']['name'] ) ); ?>">
 				<div class="dak-admin-record-row-main">
-					<span class="dak-avatar dak-avatar-sm" aria-hidden="true"><?php echo $dak_service_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+					<span class="dak-avatar dak-avatar-sm" aria-hidden="true">
+						<?php if ( $service['image_url'] ) : ?>
+							<img src="<?php echo esc_url( $service['image_url'] ); ?>" alt="">
+						<?php else : ?>
+							<?php echo $dak_service_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+						<?php endif; ?>
+					</span>
 					<span class="dak-admin-record-row-info">
 						<strong><?php echo esc_html( $service['name'] ); ?></strong>
 						<span class="dak-admin-record-row-id"><?php echo esc_html( sprintf( 'Dr. %1$s &middot; %2$s', $service['doctor']['name'], $service['doctor']['email'] ) ); ?></span>
@@ -97,6 +106,10 @@ $dak_service_icons = array(
 							data-charge="<?php echo esc_attr( $service['charge'] ); ?>"
 							data-duration-minutes="<?php echo esc_attr( $service['duration_minutes'] ); ?>"
 							data-active="<?php echo $service['active'] ? '1' : '0'; ?>"
+							data-description="<?php echo esc_attr( $service['description'] ); ?>"
+							data-image-id="<?php echo esc_attr( $service['image_id'] ); ?>"
+							data-image-url="<?php echo esc_attr( $service['image_url'] ); ?>"
+							data-clinic-location-ids="<?php echo esc_attr( wp_json_encode( $service['clinic_location_ids'] ) ); ?>"
 							title="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
 							aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
 						><?php echo $dak_service_icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
@@ -116,6 +129,13 @@ $dak_service_icons = array(
 					<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( sprintf( /* translators: %s: doctor's share amount. */ __( "Doctor's share: PKR %s", 'doctor-ak-portal' ), number_format( $dak_service_split['doctor_share'], 0 ) ) ); ?></span>
 					<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( sprintf( /* translators: %s: hospital's share amount. */ __( "Hospital's share: PKR %s", 'doctor-ak-portal' ), number_format( $dak_service_split['hospital_share'], 0 ) ) ); ?></span>
 				</div>
+
+				<?php if ( ! empty( $dak_service_clinic_tags ) ) : ?>
+					<div class="dak-admin-record-row-secondary">
+						<span class="dak-admin-record-row-secondary-label"><?php esc_html_e( 'Clinics:', 'doctor-ak-portal' ); ?></span>
+						<span><?php echo esc_html( implode( ', ', $dak_service_clinic_tags ) ); ?></span>
+					</div>
+				<?php endif; ?>
 			</div>
 		<?php endforeach; ?>
 		<p class="dak-empty-state dak-hidden" data-list-search-empty><?php esc_html_e( 'No services match your search.', 'doctor-ak-portal' ); ?></p>

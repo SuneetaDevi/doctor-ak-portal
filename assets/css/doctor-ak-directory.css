@@ -478,6 +478,25 @@
 	color: var( --dak-text ) !important;
 }
 
+/* "Provided By" card on the [service_profile_view] page (see
+   templates/directory/service-profile-view.php) — a horizontal
+   avatar+name row instead of .dak-profile-clinic-info's default stack. */
+.dak-service-doctor-info {
+	flex-direction: row !important;
+	align-items: center !important;
+	gap: 0.6rem !important;
+}
+
+.dak-profile-clinic-info-link {
+	color: var( --dak-text ) !important;
+	text-decoration: none !important;
+}
+
+.dak-profile-clinic-info-link:hover {
+	color: var( --dak-primary ) !important;
+	text-decoration: underline !important;
+}
+
 .dak-profile-clinic-meta {
 	display: flex !important;
 	align-items: center !important;

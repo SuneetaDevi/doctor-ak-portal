@@ -9,7 +9,7 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Page_Finder;
-use DoctorAKPortal\Includes\Service_Catalog;
+use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Template_Loader;
 
 // Prevent direct file access.
@@ -20,10 +20,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class Services_Directory
  *
- * A public, unauthenticated grid of every active Service_Catalog entry,
- * each card linking to that service's own [service_profile_view] detail
- * page — the same directory/profile-view split already used for Doctors
- * (see Doctors_Directory/Doctor_Profile_View).
+ * A public, unauthenticated grid of every active Services row (the same
+ * rows the admin/doctor "Services" section already manages — see the
+ * Services class), each card linking to that service's own
+ * [service_profile_view] detail page — the same directory/profile-view
+ * split already used for Doctors (see Doctors_Directory/Doctor_Profile_View).
  */
 class Services_Directory {
 
@@ -85,7 +86,7 @@ class Services_Directory {
 			function ( $service ) {
 				return $this->template_loader->get_template( 'directory/service-card.php', $this->card_data( $service ) );
 			},
-			Service_Catalog::active_for_directory()
+			Services::active_for_public_directory()
 		);
 
 		return $this->template_loader->get_template(
@@ -97,11 +98,15 @@ class Services_Directory {
 	/**
 	 * Builds a single service card's view-model.
 	 *
-	 * @param array $service Decoded Service_Catalog row.
+	 * @param array $service Decoded Services row.
 	 * @return array
 	 */
 	private function card_data( array $service ) {
-		$service['profile_url'] = add_query_arg( 'service_id', $service['id'], Page_Finder::url_for_shortcode( 'service_profile_view' ) );
+		$doctor              = get_userdata( $service['doctor_id'] );
+		$doctor_display_name = trim( ( $doctor ? $doctor->first_name : '' ) . ' ' . ( $doctor ? $doctor->last_name : '' ) );
+
+		$service['doctor_name']  = '' !== $doctor_display_name ? $doctor_display_name : ( $doctor ? $doctor->display_name : '' );
+		$service['profile_url']  = add_query_arg( 'service_id', $service['id'], Page_Finder::url_for_shortcode( 'service_profile_view' ) );
 
 		return $service;
 	}

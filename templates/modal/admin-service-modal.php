@@ -2,12 +2,16 @@
 /**
  * Template: Admin "Add/Edit Service" modal for the Services table — lets an
  * admin create or edit any doctor's service (name/type/category/charge/
- * duration/active), via Service_Handler's admin AJAX endpoints.
+ * duration/active), via Service_Handler's admin AJAX endpoints. The
+ * Description/Image/Clinics fields here are what feed the public
+ * [services_directory]/[service_profile_view] pages (see Services class) —
+ * a doctor's own Services tab has no such fields.
  *
  * @package DoctorAKPortal\Templates
  *
- * @var array $doctor_options Doctor user ID => display name.
- * @var array $categories     Category slug => label, see Specializations::get_all().
+ * @var array $doctor_options   Doctor user ID => display name.
+ * @var array $categories       Category slug => label, see Specializations::get_all().
+ * @var array $clinic_locations Rows from Clinic_Locations::get_all().
  */
 
 // Prevent direct file access.
@@ -28,6 +32,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="dak-alert dak-alert-error dak-hidden" id="dak-admin-service-general-error" role="alert"></div>
 
 		<input type="hidden" id="dak-admin-service-id" value="0">
+		<input type="hidden" id="dak-admin-service-image-id" value="0">
 
 		<div class="dak-field">
 			<label for="dak-admin-service-doctor"><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></label>
@@ -72,8 +77,39 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="dak-field">
 			<label class="dak-checkbox">
 				<input type="checkbox" id="dak-admin-service-active" checked>
-				<span><?php esc_html_e( 'Active (visible to patients when booking)', 'doctor-ak-portal' ); ?></span>
+				<span><?php esc_html_e( 'Active (visible to patients when booking, and on the public Services page)', 'doctor-ak-portal' ); ?></span>
 			</label>
+		</div>
+
+		<div class="dak-field">
+			<label for="dak-admin-service-description"><?php esc_html_e( 'Description', 'doctor-ak-portal' ); ?></label>
+			<textarea id="dak-admin-service-description" rows="4" placeholder="<?php esc_attr_e( "What this service is, who it's for, what to expect… (shown on the public Services page)", 'doctor-ak-portal' ); ?>"></textarea>
+			<span class="dak-field-error" data-field="description"></span>
+		</div>
+
+		<div class="dak-field">
+			<label for="dak-admin-service-image"><?php esc_html_e( 'Image', 'doctor-ak-portal' ); ?></label>
+			<div class="dak-service-portfolio-image-picker">
+				<span class="dak-avatar dak-avatar-lg" id="dak-admin-service-image-preview-wrap">
+					<img id="dak-admin-service-image-preview" src="" alt="" class="dak-hidden">
+				</span>
+				<input type="file" id="dak-admin-service-image" accept="image/jpeg,image/png,image/webp">
+			</div>
+			<p class="dak-field-hint"><?php esc_html_e( 'Shown on the public Services page — optional.', 'doctor-ak-portal' ); ?></p>
+			<span class="dak-field-error" data-field="image"></span>
+		</div>
+
+		<div class="dak-field">
+			<label for="dak-admin-service-clinics"><?php esc_html_e( 'Clinics', 'doctor-ak-portal' ); ?></label>
+			<select id="dak-admin-service-clinics" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Select clinics…', 'doctor-ak-portal' ); ?>" multiple>
+				<?php foreach ( $clinic_locations as $clinic_location ) : ?>
+					<option value="<?php echo esc_attr( $clinic_location['id'] ); ?>"><?php echo esc_html( sprintf( '%1$s — %2$s, %3$s', $clinic_location['name'], $clinic_location['area_label'], $clinic_location['city_label'] ) ); ?></option>
+				<?php endforeach; ?>
+			</select>
+			<p class="dak-field-hint"><?php esc_html_e( 'Clinics where this service is offered — pick as many as apply. Shown on the public Services page.', 'doctor-ak-portal' ); ?></p>
+			<?php if ( empty( $clinic_locations ) ) : ?>
+				<p class="dak-field-hint"><?php esc_html_e( 'No clinics added yet — add one first from the admin "Clinic" section.', 'doctor-ak-portal' ); ?></p>
+			<?php endif; ?>
 		</div>
 
 		<button type="button" class="dak-button dak-button-primary dak-button-block" id="dak-admin-service-save">
