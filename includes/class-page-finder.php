@@ -46,6 +46,8 @@ class Page_Finder {
 		'doctors_directory',
 		'doctor_profile_view',
 		'book_appointment',
+		'services_directory',
+		'service_profile_view',
 	);
 
 	/**

@@ -22,6 +22,7 @@ use DoctorAKPortal\Includes\Revenue_Ledger;
 use DoctorAKPortal\Includes\Revenue_Split;
 use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
+use DoctorAKPortal\Includes\Service_Catalog;
 use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Settlement_Manager;
 use DoctorAKPortal\Includes\Specializations;
@@ -87,6 +88,7 @@ class Admin_Dashboard {
 		'Clinic'  => array(
 			'clinic'             => 'Clinic',
 			'services'           => 'Services',
+			'service-portfolio'  => 'Service Portfolio',
 			'video-consultation' => 'Video Consultation',
 			'doctor-sessions'    => 'Doctor Sessions',
 		),
@@ -617,6 +619,39 @@ class Admin_Dashboard {
 			wp_localize_script(
 				'doctor-ak-portal-admin-services',
 				'dakAdminServices',
+				array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+				)
+			);
+		}
+
+		if ( 'service-portfolio' === self::requested_section() ) {
+			wp_enqueue_style(
+				'doctor-ak-portal-registration',
+				DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-registration.css',
+				array( 'doctor-ak-portal-auth' ),
+				Assets::version( 'assets/css/doctor-ak-registration.css' )
+			);
+
+			wp_enqueue_style(
+				'doctor-ak-portal-clinics',
+				DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-clinics.css',
+				array( 'doctor-ak-portal-registration' ),
+				Assets::version( 'assets/css/doctor-ak-clinics.css' )
+			);
+
+			wp_enqueue_script(
+				'doctor-ak-portal-admin-service-portfolio',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-service-portfolio.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-admin-service-portfolio.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-admin-service-portfolio',
+				'dakAdminServicePortfolio',
 				array(
 					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 					'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
@@ -1495,6 +1530,8 @@ class Admin_Dashboard {
 
 		if ( 'services' === $section ) {
 			$modal_html = $this->service_modal_html();
+		} elseif ( 'service-portfolio' === $section ) {
+			$modal_html = $this->service_portfolio_modal_html();
 		} elseif ( 'encounters' === $section ) {
 			$modal_html = $this->add_encounter_modal_html();
 		} elseif ( 'video-consultation' === $section ) {
@@ -1953,6 +1990,13 @@ class Admin_Dashboard {
 			);
 		}
 
+		if ( 'service-portfolio' === $section ) {
+			return $this->template_loader->get_template(
+				'dashboard/partials/admin-service-portfolio.php',
+				array( 'services' => Service_Catalog::all_flat_for_admin() )
+			);
+		}
+
 		if ( 'video-consultation' === $section ) {
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-video-consultation.php',
@@ -2086,6 +2130,24 @@ class Admin_Dashboard {
 			array(
 				'doctor_options' => $this->doctor_options(),
 				'categories'     => Specializations::get_all(),
+			)
+		);
+	}
+
+	/**
+	 * Renders the "Add/Edit Service" modal for the public Service Portfolio
+	 * (shared single instance, populated client-side from the clicked
+	 * row's data) — distinct from service_modal_html() above, which backs
+	 * the internal per-doctor bookable Services table.
+	 *
+	 * @return string
+	 */
+	private function service_portfolio_modal_html() {
+		return $this->template_loader->get_template(
+			'modal/admin-service-portfolio-modal.php',
+			array(
+				'doctor_options'   => $this->doctor_options(),
+				'clinic_locations' => Clinic_Locations::get_all(),
 			)
 		);
 	}

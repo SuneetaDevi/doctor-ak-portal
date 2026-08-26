@@ -88,27 +88,45 @@ class Shortcodes {
 	private $featured_doctors;
 
 	/**
+	 * Services directory controller.
+	 *
+	 * @var Services_Directory
+	 */
+	private $services_directory;
+
+	/**
+	 * Public service profile view controller.
+	 *
+	 * @var Service_Profile_View
+	 */
+	private $service_profile_view;
+
+	/**
 	 * Sets up collaborators.
 	 *
-	 * @param Doctor_Dashboard    $doctor_dashboard    Doctor dashboard controller.
-	 * @param Patient_Dashboard   $patient_dashboard   Patient dashboard controller.
-	 * @param Profile_Handler     $profile_handler     Profile editor controller.
-	 * @param Doctors_Directory   $doctors_directory   Doctors directory controller.
-	 * @param Doctor_Profile_View $doctor_profile_view Public doctor profile view controller.
-	 * @param Admin_Dashboard     $admin_dashboard     Administrator dashboard controller.
-	 * @param Booking_Page        $booking_page        Booking page controller.
-	 * @param Featured_Doctors    $featured_doctors    Homepage featured-doctors slider controller.
+	 * @param Doctor_Dashboard     $doctor_dashboard     Doctor dashboard controller.
+	 * @param Patient_Dashboard    $patient_dashboard    Patient dashboard controller.
+	 * @param Profile_Handler      $profile_handler      Profile editor controller.
+	 * @param Doctors_Directory    $doctors_directory    Doctors directory controller.
+	 * @param Doctor_Profile_View  $doctor_profile_view  Public doctor profile view controller.
+	 * @param Admin_Dashboard      $admin_dashboard      Administrator dashboard controller.
+	 * @param Booking_Page         $booking_page         Booking page controller.
+	 * @param Featured_Doctors     $featured_doctors     Homepage featured-doctors slider controller.
+	 * @param Services_Directory   $services_directory   Services directory controller.
+	 * @param Service_Profile_View $service_profile_view Public service profile view controller.
 	 */
-	public function __construct( Doctor_Dashboard $doctor_dashboard, Patient_Dashboard $patient_dashboard, Profile_Handler $profile_handler, Doctors_Directory $doctors_directory, Doctor_Profile_View $doctor_profile_view, Admin_Dashboard $admin_dashboard, Booking_Page $booking_page, Featured_Doctors $featured_doctors ) {
-		$this->template_loader     = new Template_Loader();
-		$this->doctor_dashboard    = $doctor_dashboard;
-		$this->patient_dashboard   = $patient_dashboard;
-		$this->profile_handler     = $profile_handler;
-		$this->doctors_directory   = $doctors_directory;
-		$this->doctor_profile_view = $doctor_profile_view;
-		$this->admin_dashboard     = $admin_dashboard;
-		$this->booking_page        = $booking_page;
-		$this->featured_doctors    = $featured_doctors;
+	public function __construct( Doctor_Dashboard $doctor_dashboard, Patient_Dashboard $patient_dashboard, Profile_Handler $profile_handler, Doctors_Directory $doctors_directory, Doctor_Profile_View $doctor_profile_view, Admin_Dashboard $admin_dashboard, Booking_Page $booking_page, Featured_Doctors $featured_doctors, Services_Directory $services_directory, Service_Profile_View $service_profile_view ) {
+		$this->template_loader      = new Template_Loader();
+		$this->doctor_dashboard     = $doctor_dashboard;
+		$this->patient_dashboard    = $patient_dashboard;
+		$this->profile_handler      = $profile_handler;
+		$this->doctors_directory    = $doctors_directory;
+		$this->doctor_profile_view  = $doctor_profile_view;
+		$this->admin_dashboard      = $admin_dashboard;
+		$this->booking_page         = $booking_page;
+		$this->featured_doctors     = $featured_doctors;
+		$this->services_directory   = $services_directory;
+		$this->service_profile_view = $service_profile_view;
 	}
 
 	/**
@@ -128,6 +146,8 @@ class Shortcodes {
 		add_shortcode( 'admin_dashboard', array( $this, 'render_admin_dashboard' ) );
 		add_shortcode( 'book_appointment', array( $this, 'render_book_appointment' ) );
 		add_shortcode( 'featured_doctors', array( $this, 'render_featured_doctors' ) );
+		add_shortcode( 'services_directory', array( $this, 'render_services_directory' ) );
+		add_shortcode( 'service_profile_view', array( $this, 'render_service_profile_view' ) );
 	}
 
 	/**
@@ -228,5 +248,23 @@ class Shortcodes {
 	 */
 	public function render_featured_doctors( $atts ) {
 		return $this->featured_doctors->render( $atts );
+	}
+
+	/**
+	 * Renders the [services_directory] shortcode.
+	 *
+	 * @return string
+	 */
+	public function render_services_directory() {
+		return $this->services_directory->render();
+	}
+
+	/**
+	 * Renders the [service_profile_view] shortcode.
+	 *
+	 * @return string
+	 */
+	public function render_service_profile_view() {
+		return $this->service_profile_view->render();
 	}
 }

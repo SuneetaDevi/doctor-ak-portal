@@ -39,7 +39,10 @@ use DoctorAKPortal\Frontend\Profile_Handler;
 use DoctorAKPortal\Frontend\Registration_Handler;
 use DoctorAKPortal\Frontend\Clinic_Location_Handler;
 use DoctorAKPortal\Frontend\Dashboard_Layout;
+use DoctorAKPortal\Frontend\Service_Catalog_Handler;
 use DoctorAKPortal\Frontend\Service_Handler;
+use DoctorAKPortal\Frontend\Service_Profile_View;
+use DoctorAKPortal\Frontend\Services_Directory;
 use DoctorAKPortal\Frontend\Settlement_Handler;
 use DoctorAKPortal\Frontend\Shortcodes;
 use DoctorAKPortal\Frontend\Site_Footer;
@@ -204,6 +207,11 @@ class Plugin {
 		$featured_doctors = new Featured_Doctors( new Template_Loader(), $doctors_directory );
 		$this->loader->add_action( 'wp_enqueue_scripts', $featured_doctors, 'enqueue_assets' );
 
+		$services_directory   = new Services_Directory( new Template_Loader() );
+		$service_profile_view = new Service_Profile_View( new Template_Loader() );
+		$this->loader->add_action( 'wp_enqueue_scripts', $services_directory, 'enqueue_assets' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $service_profile_view, 'enqueue_assets' );
+
 		$booking_page = new Booking_Page( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $booking_page, 'enqueue_assets' );
 
@@ -321,6 +329,10 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_save', $service_handler, 'handle_admin_save_service' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_delete', $service_handler, 'handle_admin_delete_service' );
 
+		$service_catalog_handler = new Service_Catalog_Handler( new Profile_Picture_Uploader() );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_catalog_save', $service_catalog_handler, 'handle_save' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_catalog_delete', $service_catalog_handler, 'handle_delete' );
+
 		$clinic_location_handler = new Clinic_Location_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_clinic_location_save', $clinic_location_handler, 'handle_admin_save' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_clinic_location_delete', $clinic_location_handler, 'handle_admin_delete' );
@@ -390,7 +402,7 @@ class Plugin {
 		// rather than scheduling a second event just for this.
 		$this->loader->add_action( Notifications::CRON_HOOK, 'DoctorAKPortal\\Includes\\Appointments', 'auto_complete_past_appointments' );
 
-		$shortcodes = new Shortcodes( $doctor_dashboard, $patient_dashboard, $profile_handler, $doctors_directory, $doctor_profile_view, $admin_dashboard, $booking_page, $featured_doctors );
+		$shortcodes = new Shortcodes( $doctor_dashboard, $patient_dashboard, $profile_handler, $doctors_directory, $doctor_profile_view, $admin_dashboard, $booking_page, $featured_doctors, $services_directory, $service_profile_view );
 		$this->loader->add_action( 'init', $shortcodes, 'register' );
 
 		$specialization_requests = new Specialization_Request();

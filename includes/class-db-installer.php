@@ -195,6 +195,20 @@ class Db_Installer {
 	const REVENUE_SETTLEMENTS_DB_VERSION = '1.0.0';
 
 	/**
+	 * Option name tracking the installed service-catalog-table schema version.
+	 *
+	 * @var string
+	 */
+	const SERVICE_CATALOG_DB_VERSION_OPTION = 'dak_service_catalog_db_version';
+
+	/**
+	 * Current service-catalog table schema version.
+	 *
+	 * @var string
+	 */
+	const SERVICE_CATALOG_DB_VERSION = '1.0.0';
+
+	/**
 	 * Option name guarding the one-time legacy-data migration so it never
 	 * runs more than once.
 	 *
@@ -264,6 +278,9 @@ class Db_Installer {
 		self::create_revenue_settlements_table();
 		update_option( self::REVENUE_SETTLEMENTS_DB_VERSION_OPTION, self::REVENUE_SETTLEMENTS_DB_VERSION );
 
+		self::create_service_catalog_table();
+		update_option( self::SERVICE_CATALOG_DB_VERSION_OPTION, self::SERVICE_CATALOG_DB_VERSION );
+
 		if ( ! get_option( self::MIGRATION_OPTION ) ) {
 			self::migrate_legacy_data();
 			update_option( self::MIGRATION_OPTION, 'yes' );
@@ -303,6 +320,7 @@ class Db_Installer {
 			&& self::ENCOUNTER_REPORTS_DB_VERSION === get_option( self::ENCOUNTER_REPORTS_DB_VERSION_OPTION )
 			&& self::REVENUE_LEDGER_DB_VERSION === get_option( self::REVENUE_LEDGER_DB_VERSION_OPTION )
 			&& self::REVENUE_SETTLEMENTS_DB_VERSION === get_option( self::REVENUE_SETTLEMENTS_DB_VERSION_OPTION )
+			&& self::SERVICE_CATALOG_DB_VERSION === get_option( self::SERVICE_CATALOG_DB_VERSION_OPTION )
 		) {
 			return;
 		}
@@ -409,6 +427,39 @@ class Db_Installer {
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),
 			KEY doctor_id (doctor_id)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Runs dbDelta() against the service-catalog table schema — the public
+	 * "Service Portfolio" (see Service_Catalog), distinct from the
+	 * `dak_services` table above (which stores each doctor's own bookable
+	 * line-items).
+	 *
+	 * @return void
+	 */
+	private static function create_service_catalog_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$table_name      = Service_Catalog::table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table_name} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			name VARCHAR(191) NOT NULL,
+			description TEXT NOT NULL,
+			price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			image_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			clinic_location_ids LONGTEXT NOT NULL,
+			doctor_ids LONGTEXT NOT NULL,
+			active TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+			created_at DATETIME NOT NULL,
+			updated_at DATETIME NOT NULL,
+			PRIMARY KEY  (id)
 		) {$charset_collate};";
 
 		dbDelta( $sql );

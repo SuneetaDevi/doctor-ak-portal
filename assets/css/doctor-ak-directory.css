@@ -647,3 +647,89 @@
 		gap: 0.4rem !important;
 	}
 }
+
+/* Service Portfolio — [services_directory] grid card (see
+   templates/directory/service-card.php). Uses the same .dak-directory-grid
+   container as the doctor cards above, but an image-led layout instead of
+   a centered avatar, matching a typical service/portfolio tile. */
+.dak-service-card {
+	display: flex !important;
+	flex-direction: column !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	overflow: hidden !important;
+}
+
+.dak-service-card-image {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 100% !important;
+	aspect-ratio: 16 / 10 !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+	overflow: hidden !important;
+}
+
+.dak-service-card-image img {
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+}
+
+.dak-service-card-image svg {
+	width: 42px !important;
+	height: 42px !important;
+}
+
+.dak-service-card-body {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.5rem !important;
+	padding: 1.25rem !important;
+}
+
+.dak-service-card-name {
+	font-size: 1.05rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	margin: 0 !important;
+}
+
+.dak-service-card-excerpt {
+	margin: 0 !important;
+	font-size: 0.88rem !important;
+	color: var( --dak-muted ) !important;
+	line-height: 1.5 !important;
+}
+
+.dak-service-card-price {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	font-size: 0.86rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-service-card-price strong {
+	color: var( --dak-text ) !important;
+	font-size: 1rem !important;
+}
+
+.dak-service-card-actions {
+	margin-top: 0.25rem !important;
+}
+
+.dak-service-card-actions .dak-button {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 0.4rem !important;
+}
+
+.dak-service-card-actions .dak-button svg {
+	width: 18px !important;
+	height: 18px !important;
+}
