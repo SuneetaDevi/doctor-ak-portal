@@ -1,13 +1,17 @@
 /**
  * Doctor AK Portal — Admin "Services" table.
  *
- * Lets an administrator add, edit, or delete any doctor's service, via
- * Service_Handler's admin AJAX endpoints (doctor_ak_admin_service_save/_delete).
+ * Lets an administrator add, edit, or delete a service, via Service_Handler's
+ * admin AJAX endpoints (doctor_ak_admin_service_save/_delete). The Doctor
+ * field is a multi-select: adding a new service with several picked creates
+ * one row per doctor server-side (see Service_Handler), each with its own
+ * per-clinic pricing editable afterward via that row's own Edit.
  */
 ( function () {
 	'use strict';
 
 	var selectedImageFile = null;
+	var clinicChargesPreset = {};
 
 	document.addEventListener( 'DOMContentLoaded', function () {
 		var modal = document.getElementById( 'dak-admin-service-modal' );
@@ -20,6 +24,7 @@
 		wireAdd( modal );
 		wireEdit( modal );
 		wireImagePicker();
+		wireClinicChargeRows();
 		wireSave( modal );
 		wireDelete();
 	} );
@@ -94,17 +99,96 @@
 		} );
 	}
 
+	/**
+	 * Builds one price row per currently-selected clinic underneath the
+	 * Clinics field — preserves whatever's already typed for a clinic that
+	 * stays selected, defaults a newly-selected clinic to
+	 * clinicChargesPreset's value (set when opening Edit) or else the Base
+	 * Charge field's current value, and drops rows for deselected clinics.
+	 */
+	function renderClinicChargeRows() {
+		var container = document.getElementById( 'dak-admin-service-clinic-charges' );
+
+		if ( ! container ) {
+			return;
+		}
+
+		var selectedIds = getMultiSelectValues( 'dak-admin-service-clinics' );
+		var existingValues = {};
+
+		container.querySelectorAll( '[data-clinic-charge-row]' ).forEach( function ( row ) {
+			var input = row.querySelector( 'input' );
+
+			if ( input ) {
+				existingValues[ row.getAttribute( 'data-clinic-charge-row' ) ] = input.value;
+			}
+		} );
+
+		container.innerHTML = '';
+
+		var baseCharge = document.getElementById( 'dak-admin-service-charge' ).value || '0';
+		var clinicsSelect = document.getElementById( 'dak-admin-service-clinics' );
+
+		selectedIds.forEach( function ( clinicId ) {
+			var value = Object.prototype.hasOwnProperty.call( existingValues, clinicId )
+				? existingValues[ clinicId ]
+				: ( Object.prototype.hasOwnProperty.call( clinicChargesPreset, clinicId ) ? clinicChargesPreset[ clinicId ] : baseCharge );
+
+			var option = clinicsSelect ? clinicsSelect.querySelector( 'option[value="' + clinicId + '"]' ) : null;
+			var clinicName = option ? ( option.getAttribute( 'data-clinic-name' ) || option.textContent ) : '';
+
+			var row = document.createElement( 'div' );
+			row.className = 'dak-clinic-charge-row';
+			row.setAttribute( 'data-clinic-charge-row', clinicId );
+
+			var label = document.createElement( 'span' );
+			label.className = 'dak-clinic-charge-row-label';
+			label.textContent = clinicName;
+
+			var input = document.createElement( 'input' );
+			input.type = 'number';
+			input.min = '0';
+			input.step = '0.01';
+			input.className = 'dak-clinic-charge-row-input';
+			input.value = value;
+
+			row.appendChild( label );
+			row.appendChild( input );
+			container.appendChild( row );
+		} );
+	}
+
+	function getClinicCharges() {
+		var charges = {};
+
+		document.querySelectorAll( '#dak-admin-service-clinic-charges [data-clinic-charge-row]' ).forEach( function ( row ) {
+			var input = row.querySelector( 'input' );
+			charges[ row.getAttribute( 'data-clinic-charge-row' ) ] = input ? input.value : '0';
+		} );
+
+		return charges;
+	}
+
+	function wireClinicChargeRows() {
+		var clinicsSelect = document.getElementById( 'dak-admin-service-clinics' );
+
+		if ( clinicsSelect ) {
+			clinicsSelect.addEventListener( 'change', renderClinicChargeRows );
+		}
+	}
+
 	function resetModalFields() {
 		document.getElementById( 'dak-admin-service-id' ).value = '0';
-		document.getElementById( 'dak-admin-service-doctor' ).value = '';
-		refreshSearchable( 'dak-admin-service-doctor' );
+		setMultiSelectValues( 'dak-admin-service-doctor', [] );
 		document.getElementById( 'dak-admin-service-name' ).value = '';
 		document.getElementById( 'dak-admin-service-category' ).value = '';
 		document.getElementById( 'dak-admin-service-charge' ).value = '0';
 		document.getElementById( 'dak-admin-service-duration' ).value = '0';
 		document.getElementById( 'dak-admin-service-active' ).checked = true;
 		document.getElementById( 'dak-admin-service-description' ).value = '';
+		clinicChargesPreset = {};
 		setMultiSelectValues( 'dak-admin-service-clinics', [] );
+		renderClinicChargeRows();
 		resetImagePreview();
 	}
 
@@ -170,8 +254,7 @@
 			resetImagePreview();
 
 			document.getElementById( 'dak-admin-service-id' ).value = trigger.getAttribute( 'data-service-id' ) || '0';
-			document.getElementById( 'dak-admin-service-doctor' ).value = trigger.getAttribute( 'data-doctor-id' ) || '';
-			refreshSearchable( 'dak-admin-service-doctor' );
+			setMultiSelectValues( 'dak-admin-service-doctor', [ trigger.getAttribute( 'data-doctor-id' ) || '' ] );
 			document.getElementById( 'dak-admin-service-name' ).value = trigger.getAttribute( 'data-name' ) || '';
 			document.getElementById( 'dak-admin-service-category' ).value = trigger.getAttribute( 'data-category' ) || '';
 			document.getElementById( 'dak-admin-service-charge' ).value = trigger.getAttribute( 'data-charge' ) || '0';
@@ -183,10 +266,13 @@
 			setImagePreview( trigger.getAttribute( 'data-image-url' ) || '' );
 
 			try {
-				setMultiSelectValues( 'dak-admin-service-clinics', JSON.parse( trigger.getAttribute( 'data-clinic-location-ids' ) || '[]' ) );
+				clinicChargesPreset = JSON.parse( trigger.getAttribute( 'data-clinic-charges' ) || '{}' );
 			} catch ( error ) {
-				setMultiSelectValues( 'dak-admin-service-clinics', [] );
+				clinicChargesPreset = {};
 			}
+
+			setMultiSelectValues( 'dak-admin-service-clinics', Object.keys( clinicChargesPreset ) );
+			renderClinicChargeRows();
 
 			openModal( modal );
 		} );
@@ -202,13 +288,13 @@
 		saveButton.addEventListener( 'click', function () {
 			clearErrors();
 
-			var doctorId = document.getElementById( 'dak-admin-service-doctor' ).value;
+			var doctorIds = getMultiSelectValues( 'dak-admin-service-doctor' );
 
-			if ( ! doctorId ) {
+			if ( ! doctorIds.length ) {
 				var doctorError = document.querySelector( '.dak-field-error[data-field="doctor_id"]' );
 
 				if ( doctorError ) {
-					doctorError.textContent = 'Please select a doctor.';
+					doctorError.textContent = 'Please select at least one doctor.';
 				}
 
 				return;
@@ -220,7 +306,11 @@
 			formData.append( 'action', 'doctor_ak_admin_service_save' );
 			formData.append( 'nonce', window.dakAdminServices.nonce );
 			formData.append( 'service_id', document.getElementById( 'dak-admin-service-id' ).value );
-			formData.append( 'doctor_id', doctorId );
+
+			doctorIds.forEach( function ( doctorId ) {
+				formData.append( 'doctor_ids[]', doctorId );
+			} );
+
 			formData.append( 'name', document.getElementById( 'dak-admin-service-name' ).value );
 			formData.append( 'category', document.getElementById( 'dak-admin-service-category' ).value );
 			formData.append( 'charge', document.getElementById( 'dak-admin-service-charge' ).value );
@@ -228,9 +318,12 @@
 			formData.append( 'active', document.getElementById( 'dak-admin-service-active' ).checked ? '1' : '' );
 			formData.append( 'description', document.getElementById( 'dak-admin-service-description' ).value );
 			formData.append( 'image_id', document.getElementById( 'dak-admin-service-image-id' ).value );
+			formData.append( 'has_portfolio_fields', '1' );
 
-			getMultiSelectValues( 'dak-admin-service-clinics' ).forEach( function ( value ) {
-				formData.append( 'clinic_location_ids[]', value );
+			var clinicCharges = getClinicCharges();
+
+			Object.keys( clinicCharges ).forEach( function ( clinicId ) {
+				formData.append( 'clinic_charges[' + clinicId + ']', clinicCharges[ clinicId ] );
 			} );
 
 			if ( selectedImageFile ) {

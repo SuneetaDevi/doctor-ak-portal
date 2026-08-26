@@ -62,7 +62,12 @@ $dak_service_icons = array(
 		<?php foreach ( $services as $service ) : ?>
 			<?php
 			$dak_service_split       = \DoctorAKPortal\Includes\Revenue_Split::split( $service['doctor_id'], $service['charge'] );
-			$dak_service_clinic_tags = wp_list_pluck( $service['clinic_locations'], 'name' );
+			$dak_service_clinic_tags = array_map(
+				function ( $clinic_location ) {
+					return sprintf( '%1$s (%2$s)', $clinic_location['name'], $clinic_location['price_label'] );
+				},
+				$service['clinic_locations']
+			);
 			?>
 			<div id="dak-service-<?php echo esc_attr( $service['id'] ); ?>" class="dak-admin-record-row" data-service-row="<?php echo esc_attr( $service['id'] ); ?>" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $service['name'] . ' ' . $service['category_label'] . ' ' . $service['doctor']['name'] ) ); ?>">
 				<div class="dak-admin-record-row-main">
@@ -109,7 +114,7 @@ $dak_service_icons = array(
 							data-description="<?php echo esc_attr( $service['description'] ); ?>"
 							data-image-id="<?php echo esc_attr( $service['image_id'] ); ?>"
 							data-image-url="<?php echo esc_attr( $service['image_url'] ); ?>"
-							data-clinic-location-ids="<?php echo esc_attr( wp_json_encode( $service['clinic_location_ids'] ) ); ?>"
+							data-clinic-charges="<?php echo esc_attr( wp_json_encode( $service['clinic_charges'] ) ); ?>"
 							title="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
 							aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
 						><?php echo $dak_service_icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>

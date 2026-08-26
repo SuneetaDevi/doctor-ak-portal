@@ -345,6 +345,35 @@
 	object-fit: cover !important;
 }
 
+/* Admin "Add/Edit Service" modal's per-clinic price rows (see
+   templates/modal/admin-service-modal.php + doctor-ak-admin-services.js's
+   renderClinicChargeRows()) — one row per currently-selected clinic. */
+.dak-clinic-charge-row {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 0.75rem !important;
+	padding: 0.5rem 0 !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+.dak-clinic-charge-row:last-child {
+	border-bottom: 0 !important;
+}
+
+.dak-clinic-charge-row-label {
+	font-size: 0.86rem !important;
+	color: var( --dak-text ) !important;
+	min-width: 0 !important;
+	overflow: hidden !important;
+	text-overflow: ellipsis !important;
+	white-space: nowrap !important;
+}
+
+.dak-clinic-charge-row-input {
+	flex: 0 0 130px !important;
+}
+
 .dak-dashboard-nav {
 	flex: 1 1 auto !important;
 }

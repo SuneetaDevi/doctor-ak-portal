@@ -142,7 +142,31 @@ class Service_Handler {
 			wp_send_json_error( array( 'message' => __( 'An administrator has turned off the Services page for your account.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		$this->process_save( get_current_user_id(), get_current_user_id() );
+		$fields = Services::sanitize_fields_from_request( $_POST ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Services::sanitize_fields_from_request() unslashes/sanitizes each field itself.
+
+		if ( is_wp_error( $fields ) ) {
+			wp_send_json_error( array( 'errors' => array( 'name' => $fields->get_error_message() ) ) );
+		}
+
+		$image_id = $this->resolve_image_id();
+
+		if ( is_wp_error( $image_id ) ) {
+			wp_send_json_error( array( 'errors' => array( 'image' => $image_id->get_error_message() ) ) );
+		}
+
+		$service_id = isset( $_POST['service_id'] ) ? absint( wp_unslash( $_POST['service_id'] ) ) : 0;
+		$result     = $this->save_one( get_current_user_id(), get_current_user_id(), $service_id, $fields, $image_id );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		wp_send_json_success(
+			array(
+				'message'    => __( 'Service saved successfully.', 'doctor-ak-portal' ),
+				'service_id' => $result,
+			)
+		);
 	}
 
 	/**
@@ -168,7 +192,15 @@ class Service_Handler {
 
 	/**
 	 * AJAX handler: admin (or a Receptionist with doctor_ak_manage_services)
-	 * creates/updates a service for any doctor.
+	 * creates/updates a service. The Doctor field is a multi-select — since
+	 * each Services row still belongs to exactly one doctor (booking/
+	 * revenue-split both key off a single doctor per appointment), picking
+	 * several only makes sense when *adding* a brand-new service: this
+	 * creates one identical row per selected doctor (same name/description/
+	 * image/category/duration/clinic pricing), each independently editable
+	 * afterward. Editing an existing row always targets exactly one doctor
+	 * — only the first selection applies there, same as before this field
+	 * became multi-select.
 	 *
 	 * @return void
 	 */
@@ -181,13 +213,81 @@ class Service_Handler {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		$doctor_id = isset( $_POST['doctor_id'] ) ? absint( wp_unslash( $_POST['doctor_id'] ) ) : 0;
+		$doctor_ids = array();
 
-		if ( $doctor_id <= 0 || ! get_userdata( $doctor_id ) ) {
-			wp_send_json_error( array( 'message' => __( 'That doctor no longer exists.', 'doctor-ak-portal' ) ) );
+		if ( isset( $_POST['doctor_ids'] ) && is_array( $_POST['doctor_ids'] ) ) {
+			foreach ( wp_unslash( $_POST['doctor_ids'] ) as $doctor_id ) {
+				$doctor_id = absint( $doctor_id );
+
+				if ( $doctor_id > 0 && get_userdata( $doctor_id ) ) {
+					$doctor_ids[] = $doctor_id;
+				}
+			}
 		}
 
-		$this->process_save( $doctor_id, null );
+		$doctor_ids = array_values( array_unique( $doctor_ids ) );
+
+		if ( empty( $doctor_ids ) ) {
+			wp_send_json_error( array( 'errors' => array( 'doctor_id' => __( 'Please select at least one doctor.', 'doctor-ak-portal' ) ) ) );
+		}
+
+		$fields = Services::sanitize_fields_from_request( $_POST ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Services::sanitize_fields_from_request() unslashes/sanitizes each field itself.
+
+		if ( is_wp_error( $fields ) ) {
+			wp_send_json_error( array( 'errors' => array( 'name' => $fields->get_error_message() ) ) );
+		}
+
+		// Resolved once, even when this creates several rows below, so a
+		// newly uploaded image isn't re-uploaded (as a separate attachment)
+		// once per selected doctor.
+		$image_id = $this->resolve_image_id();
+
+		if ( is_wp_error( $image_id ) ) {
+			wp_send_json_error( array( 'errors' => array( 'image' => $image_id->get_error_message() ) ) );
+		}
+
+		$service_id = isset( $_POST['service_id'] ) ? absint( wp_unslash( $_POST['service_id'] ) ) : 0;
+
+		if ( $service_id > 0 ) {
+			$result = $this->save_one( $doctor_ids[0], null, $service_id, $fields, $image_id );
+
+			if ( is_wp_error( $result ) ) {
+				wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+			}
+
+			wp_send_json_success(
+				array(
+					'message'    => __( 'Service saved successfully.', 'doctor-ak-portal' ),
+					'service_id' => $result,
+				)
+			);
+		}
+
+		$created_count = 0;
+
+		foreach ( $doctor_ids as $doctor_id ) {
+			$result = $this->save_one( $doctor_id, null, 0, $fields, $image_id );
+
+			if ( ! is_wp_error( $result ) ) {
+				++$created_count;
+			}
+		}
+
+		if ( 0 === $created_count ) {
+			wp_send_json_error( array( 'message' => __( 'The service could not be saved. Please try again.', 'doctor-ak-portal' ) ) );
+		}
+
+		wp_send_json_success(
+			array(
+				'message' => $created_count > 1
+					? sprintf(
+						/* translators: %d: number of doctors. */
+						_n( 'Service created for %d doctor.', 'Service created for %d doctors.', $created_count, 'doctor-ak-portal' ),
+						$created_count
+					)
+					: __( 'Service saved successfully.', 'doctor-ak-portal' ),
+			)
+		);
 	}
 
 	/**
@@ -209,61 +309,63 @@ class Service_Handler {
 	}
 
 	/**
-	 * Shared save logic for both the doctor-facing and admin-facing endpoints.
+	 * Resolves the "Image" field's attachment ID for the current request —
+	 * only the admin modal's form posts one. A freshly chosen file (if any)
+	 * is uploaded and takes precedence over the posted `image_id` (which
+	 * otherwise just carries forward whatever the row already had).
 	 *
-	 * @param int      $owner_doctor_id Doctor ID the service is created under (for new services).
-	 * @param int|null $ownership_check Doctor ID an existing service must belong to, or null to skip the check (admin context).
-	 * @return void
+	 * @return int|null|\WP_Error Attachment ID; null when the request has no
+	 *                             Image field at all (a doctor's own save —
+	 *                             tells Services::update() to leave the
+	 *                             existing image untouched); WP_Error on an
+	 *                             invalid upload.
 	 */
-	private function process_save( $owner_doctor_id, $ownership_check ) {
-		$service_id = isset( $_POST['service_id'] ) ? absint( wp_unslash( $_POST['service_id'] ) ) : 0;
-
-		if ( $service_id > 0 ) {
-			$existing = Services::find( $service_id );
-
-			if ( ! $existing || ( null !== $ownership_check && (int) $existing['doctor_id'] !== (int) $ownership_check ) ) {
-				wp_send_json_error( array( 'message' => __( 'That service no longer exists.', 'doctor-ak-portal' ) ) );
-			}
-		}
-
-		$fields = Services::sanitize_fields_from_request( $_POST ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Services::sanitize_fields_from_request() unslashes/sanitizes each field itself.
-
-		if ( is_wp_error( $fields ) ) {
-			wp_send_json_error( array( 'errors' => array( 'name' => $fields->get_error_message() ) ) );
-		}
-
-		// Only the admin modal's form posts an "Image" field — null tells
-		// Services::update() to leave whatever image is already on the row
-		// untouched, so a doctor editing their own service (whose form has
-		// no such field) can never wipe out an image an admin already set.
+	private function resolve_image_id() {
 		$image_id = isset( $_POST['image_id'] ) ? absint( wp_unslash( $_POST['image_id'] ) ) : null;
 
 		if ( ! empty( $_FILES['image'] ) && UPLOAD_ERR_NO_FILE !== ( $_FILES['image']['error'] ?? UPLOAD_ERR_NO_FILE ) ) {
 			$uploaded_image_id = $this->image_uploader->upload( $_FILES['image'], get_current_user_id() );
 
 			if ( is_wp_error( $uploaded_image_id ) ) {
-				wp_send_json_error( array( 'errors' => array( 'image' => $uploaded_image_id->get_error_message() ) ) );
+				return $uploaded_image_id;
 			}
 
 			$image_id = $uploaded_image_id;
 		}
 
+		return $image_id;
+	}
+
+	/**
+	 * Shared save logic for both the doctor-facing and admin-facing
+	 * endpoints — creates one row (or updates the given one) and returns
+	 * its ID, rather than emitting a JSON response itself, so
+	 * handle_admin_save_service() can call this once per selected doctor
+	 * when bulk-creating a new service for several of them at once.
+	 *
+	 * @param int      $owner_doctor_id Doctor ID the service is created under (for new services).
+	 * @param int|null $ownership_check Doctor ID an existing service must belong to, or null to skip the check (admin context).
+	 * @param int      $service_id      Existing service ID to update, or 0 to create a new one.
+	 * @param array    $fields          Sanitized service fields, see Services::sanitize_fields_from_request().
+	 * @param int|null $image_id        See resolve_image_id().
+	 * @return int|\WP_Error Service ID on success, WP_Error on failure.
+	 */
+	private function save_one( $owner_doctor_id, $ownership_check, $service_id, array $fields, $image_id ) {
 		if ( $service_id > 0 ) {
+			$existing = Services::find( $service_id );
+
+			if ( ! $existing || ( null !== $ownership_check && (int) $existing['doctor_id'] !== (int) $ownership_check ) ) {
+				return new \WP_Error( 'doctor_ak_service_not_found', __( 'That service no longer exists.', 'doctor-ak-portal' ) );
+			}
+
 			$saved = Services::update( $service_id, $fields, $ownership_check, $image_id );
-		} else {
-			$saved = Services::create( $owner_doctor_id, $fields, $image_id );
+
+			return $saved ? $service_id : new \WP_Error( 'doctor_ak_service_save_failed', __( 'The service could not be saved. Please try again.', 'doctor-ak-portal' ) );
 		}
 
-		if ( ! $saved ) {
-			wp_send_json_error( array( 'message' => __( 'The service could not be saved. Please try again.', 'doctor-ak-portal' ) ) );
-		}
+		$saved = Services::create( $owner_doctor_id, $fields, (int) $image_id );
 
-		wp_send_json_success(
-			array(
-				'message'    => __( 'Service saved successfully.', 'doctor-ak-portal' ),
-				'service_id' => $service_id > 0 ? $service_id : $saved,
-			)
-		);
+		return $saved ? $saved : new \WP_Error( 'doctor_ak_service_save_failed', __( 'The service could not be saved. Please try again.', 'doctor-ak-portal' ) );
 	}
 
 	/**

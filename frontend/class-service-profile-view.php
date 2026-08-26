@@ -20,12 +20,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class Service_Profile_View
  *
- * A public, read-only detail page for one Services row — reached via
- * `?service_id=` on whichever page contains [service_profile_view] (found
- * dynamically by Page_Finder, same pattern as Doctor_Profile_View). Shows
- * the service's price against every clinic it's offered at, then a "Book
- * Appointment" button into the normal booking flow, pre-selecting the
- * doctor who provides it.
+ * A public, read-only detail page for one service NAME — reached via
+ * `?service_id=` (any one Services row with that name) on whichever page
+ * contains [service_profile_view] (found dynamically by Page_Finder, same
+ * pattern as Doctor_Profile_View). A service added for several doctors at
+ * once (see Service_Handler's bulk-create) is really one portfolio entry
+ * with several doctor-owned rows — this page looks up every one of them
+ * (Services::active_rows_by_name()) and shows a "Doctors & Pricing"
+ * breakdown, each with its own price, clinics, and a "Book with Dr. X"
+ * link into the normal booking flow.
  */
 class Service_Profile_View {
 
@@ -85,38 +88,76 @@ class Service_Profile_View {
 	public function render() {
 		$service_id = isset( $_GET['service_id'] ) ? absint( $_GET['service_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only public lookup.
 		$service    = $service_id > 0 ? Services::find_for_public_profile( $service_id ) : null;
-
-		$doctor_name = '';
-		$booking_url = Page_Finder::url_for_shortcode( 'book_appointment' );
+		$group      = null;
 
 		if ( $service ) {
-			$doctor = get_userdata( $service['doctor_id'] );
-
-			$service['doctor_avatar_url'] = '';
-			$service['doctor_profile_url'] = '';
-
-			if ( $doctor ) {
-				$doctor_name = trim( $doctor->first_name . ' ' . $doctor->last_name );
-				$doctor_name = '' !== $doctor_name ? $doctor_name : $doctor->display_name;
-
-				$service['doctor_avatar_url']  = self::doctor_avatar_url( $doctor->ID );
-				$service['doctor_profile_url'] = add_query_arg( 'doctor_id', $doctor->ID, Page_Finder::url_for_shortcode( 'doctor_profile_view' ) );
-
-				if ( $booking_url ) {
-					$booking_url = add_query_arg( 'doctor_id', $doctor->ID, $booking_url );
-				}
-			}
-
-			$service['doctor_name'] = $doctor_name;
+			$group = $this->build_group( $service['name'] );
 		}
 
 		return $this->template_loader->get_template(
 			'directory/service-profile-view.php',
 			array(
-				'service'       => $service,
+				'group'         => $group,
 				'directory_url' => Page_Finder::url_for_shortcode( 'services_directory' ),
-				'booking_url'   => $booking_url,
 			)
+		);
+	}
+
+	/**
+	 * Gathers every doctor-owned row for a service name into one page's
+	 * worth of data: the shared name/description/image (from whichever row
+	 * has them), an overall price range, and a "Book with Dr. X" offer per
+	 * doctor.
+	 *
+	 * @param string $name Service name (from an already-verified active row).
+	 * @return array
+	 */
+	private function build_group( $name ) {
+		$rows          = Services::active_rows_by_name( $name );
+		$doctor_offers = array();
+		$description   = '';
+		$image_url     = '';
+		$prices        = array();
+
+		$base_booking_url = Page_Finder::url_for_shortcode( 'book_appointment' );
+
+		foreach ( $rows as $row ) {
+			$doctor = get_userdata( $row['doctor_id'] );
+
+			if ( ! $doctor ) {
+				continue;
+			}
+
+			if ( '' === $description && '' !== $row['description'] ) {
+				$description = $row['description'];
+			}
+
+			if ( '' === $image_url && '' !== $row['image_url'] ) {
+				$image_url = $row['image_url'];
+			}
+
+			$prices[] = $row['effective_price'];
+
+			$doctor_name = trim( $doctor->first_name . ' ' . $doctor->last_name );
+			$doctor_name = '' !== $doctor_name ? $doctor_name : $doctor->display_name;
+
+			$doctor_offers[] = array(
+				'doctor_id'          => $doctor->ID,
+				'doctor_name'        => $doctor_name,
+				'doctor_avatar_url'  => self::doctor_avatar_url( $doctor->ID ),
+				'doctor_profile_url' => add_query_arg( 'doctor_id', $doctor->ID, Page_Finder::url_for_shortcode( 'doctor_profile_view' ) ),
+				'price_label'        => $row['price_label'],
+				'clinic_locations'   => $row['clinic_locations'],
+				'booking_url'        => $base_booking_url ? add_query_arg( 'doctor_id', $doctor->ID, $base_booking_url ) : '',
+			);
+		}
+
+		return array(
+			'name'          => $name,
+			'description'   => $description,
+			'image_url'     => $image_url,
+			'price_label'   => Services::price_range_label( $prices ),
+			'doctor_offers' => $doctor_offers,
 		);
 	}
 

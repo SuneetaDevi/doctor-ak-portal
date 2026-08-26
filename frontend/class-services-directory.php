@@ -20,11 +20,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class Services_Directory
  *
- * A public, unauthenticated grid of every active Services row (the same
- * rows the admin/doctor "Services" section already manages — see the
- * Services class), each card linking to that service's own
- * [service_profile_view] detail page — the same directory/profile-view
- * split already used for Doctors (see Doctors_Directory/Doctor_Profile_View).
+ * A public, unauthenticated grid — one card per unique service name, each
+ * linking to that service's own [service_profile_view] detail page (which
+ * lists every doctor/clinic it's actually offered through, see
+ * Services::grouped_active_for_public_directory()) — the same directory/
+ * profile-view split already used for Doctors (see Doctors_Directory/
+ * Doctor_Profile_View). Backed by the same Services rows the admin/doctor
+ * "Services" section already manages, not a separate table.
  */
 class Services_Directory {
 
@@ -83,10 +85,10 @@ class Services_Directory {
 	 */
 	public function render() {
 		$services_html = array_map(
-			function ( $service ) {
-				return $this->template_loader->get_template( 'directory/service-card.php', $this->card_data( $service ) );
+			function ( $group ) {
+				return $this->template_loader->get_template( 'directory/service-card.php', $this->card_data( $group ) );
 			},
-			Services::active_for_public_directory()
+			Services::grouped_active_for_public_directory()
 		);
 
 		return $this->template_loader->get_template(
@@ -98,17 +100,13 @@ class Services_Directory {
 	/**
 	 * Builds a single service card's view-model.
 	 *
-	 * @param array $service Decoded Services row.
+	 * @param array $group One entry from Services::grouped_active_for_public_directory().
 	 * @return array
 	 */
-	private function card_data( array $service ) {
-		$doctor              = get_userdata( $service['doctor_id'] );
-		$doctor_display_name = trim( ( $doctor ? $doctor->first_name : '' ) . ' ' . ( $doctor ? $doctor->last_name : '' ) );
+	private function card_data( array $group ) {
+		$group['profile_url'] = add_query_arg( 'service_id', $group['id'], Page_Finder::url_for_shortcode( 'service_profile_view' ) );
 
-		$service['doctor_name']  = '' !== $doctor_display_name ? $doctor_display_name : ( $doctor ? $doctor->display_name : '' );
-		$service['profile_url']  = add_query_arg( 'service_id', $service['id'], Page_Finder::url_for_shortcode( 'service_profile_view' ) );
-
-		return $service;
+		return $group;
 	}
 
 	/**

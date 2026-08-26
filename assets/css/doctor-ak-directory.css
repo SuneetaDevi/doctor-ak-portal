@@ -162,6 +162,16 @@
 	object-fit: cover !important;
 }
 
+.dak-avatar-sm {
+	width: 36px !important;
+	height: 36px !important;
+}
+
+.dak-avatar-sm svg {
+	width: 16px !important;
+	height: 16px !important;
+}
+
 .dak-avatar-lg {
 	width: 84px !important;
 	height: 84px !important;
@@ -481,10 +491,42 @@
 /* "Provided By" card on the [service_profile_view] page (see
    templates/directory/service-profile-view.php) — a horizontal
    avatar+name row instead of .dak-profile-clinic-info's default stack. */
-.dak-service-doctor-info {
-	flex-direction: row !important;
+/* "Doctors & Pricing" list on the [service_profile_view] page — one block
+   per doctor offering the service, each with its own clinics/prices below
+   its header row (see templates/directory/service-profile-view.php). */
+.dak-service-doctor-offers {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 1rem !important;
+}
+
+.dak-service-doctor-offer {
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	padding: 1rem !important;
+}
+
+.dak-service-doctor-offer-header {
+	display: flex !important;
 	align-items: center !important;
-	gap: 0.6rem !important;
+	gap: 0.75rem !important;
+}
+
+.dak-service-doctor-offer-info {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.15rem !important;
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+}
+
+.dak-service-doctor-offer-price {
+	font-size: 0.82rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-service-doctor-offer-clinics {
+	margin-top: 0.85rem !important;
 }
 
 .dak-profile-clinic-info-link {

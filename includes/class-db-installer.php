@@ -52,7 +52,7 @@ class Db_Installer {
 	 *
 	 * @var string
 	 */
-	const SERVICES_DB_VERSION = '1.1.0';
+	const SERVICES_DB_VERSION = '1.2.0';
 
 	/**
 	 * Option name tracking the installed notifications-table schema version.
@@ -408,6 +408,7 @@ class Db_Installer {
 			description TEXT NULL,
 			image_id BIGINT UNSIGNED NULL DEFAULT NULL,
 			clinic_location_ids TEXT NULL,
+			clinic_charges TEXT NULL,
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),

@@ -1,11 +1,14 @@
 <?php
 /**
  * Template: Admin "Add/Edit Service" modal for the Services table — lets an
- * admin create or edit any doctor's service (name/type/category/charge/
- * duration/active), via Service_Handler's admin AJAX endpoints. The
- * Description/Image/Clinics fields here are what feed the public
+ * admin create or edit a service (name/type/category/charge/duration/
+ * active), via Service_Handler's admin AJAX endpoints. The Description/
+ * Image/Clinics(+per-clinic price) fields here are what feed the public
  * [services_directory]/[service_profile_view] pages (see Services class) —
- * a doctor's own Services tab has no such fields.
+ * a doctor's own Services tab has no such fields. The Doctor field is a
+ * multi-select: adding a new service with several picked creates one row
+ * per doctor (see Service_Handler::handle_admin_save_service()); editing an
+ * existing row always targets just the one it already belongs to.
  *
  * @package DoctorAKPortal\Templates
  *
@@ -33,15 +36,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		<input type="hidden" id="dak-admin-service-id" value="0">
 		<input type="hidden" id="dak-admin-service-image-id" value="0">
+		<input type="hidden" id="dak-admin-service-has-portfolio-fields" value="1">
 
 		<div class="dak-field">
-			<label for="dak-admin-service-doctor"><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></label>
-			<select id="dak-admin-service-doctor" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search doctors…', 'doctor-ak-portal' ); ?>">
-				<option value=""><?php esc_html_e( 'Select a doctor…', 'doctor-ak-portal' ); ?></option>
+			<label for="dak-admin-service-doctor"><?php esc_html_e( 'Doctor(s)', 'doctor-ak-portal' ); ?></label>
+			<select id="dak-admin-service-doctor" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Select doctors…', 'doctor-ak-portal' ); ?>" multiple>
 				<?php foreach ( $doctor_options as $doctor_id => $doctor_option ) : ?>
 					<option value="<?php echo esc_attr( $doctor_id ); ?>" <?php disabled( $doctor_option['is_disabled'] ); ?>><?php echo esc_html( $doctor_option['is_disabled'] ? sprintf( __( '%s (deactivated)', 'doctor-ak-portal' ), $doctor_option['name'] ) : $doctor_option['name'] ); ?></option>
 				<?php endforeach; ?>
 			</select>
+			<p class="dak-field-hint"><?php esc_html_e( 'Adding a new service: selecting several doctors creates a separate copy for each, editable individually afterward. Editing an existing service: only the first selected doctor applies.', 'doctor-ak-portal' ); ?></p>
 			<span class="dak-field-error" data-field="doctor_id"></span>
 		</div>
 
@@ -63,7 +67,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		<div class="dak-field-row">
 			<div class="dak-field">
-				<label for="dak-admin-service-charge"><?php esc_html_e( 'Charge (PKR)', 'doctor-ak-portal' ); ?></label>
+				<label for="dak-admin-service-charge"><?php esc_html_e( 'Base Charge (PKR)', 'doctor-ak-portal' ); ?></label>
 				<input type="number" min="0" step="0.01" id="dak-admin-service-charge" value="0">
 				<span class="dak-field-error" data-field="charge"></span>
 			</div>
@@ -103,13 +107,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<label for="dak-admin-service-clinics"><?php esc_html_e( 'Clinics', 'doctor-ak-portal' ); ?></label>
 			<select id="dak-admin-service-clinics" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Select clinics…', 'doctor-ak-portal' ); ?>" multiple>
 				<?php foreach ( $clinic_locations as $clinic_location ) : ?>
-					<option value="<?php echo esc_attr( $clinic_location['id'] ); ?>"><?php echo esc_html( sprintf( '%1$s — %2$s, %3$s', $clinic_location['name'], $clinic_location['area_label'], $clinic_location['city_label'] ) ); ?></option>
+					<option value="<?php echo esc_attr( $clinic_location['id'] ); ?>" data-clinic-name="<?php echo esc_attr( sprintf( '%1$s — %2$s, %3$s', $clinic_location['name'], $clinic_location['area_label'], $clinic_location['city_label'] ) ); ?>"><?php echo esc_html( sprintf( '%1$s — %2$s, %3$s', $clinic_location['name'], $clinic_location['area_label'], $clinic_location['city_label'] ) ); ?></option>
 				<?php endforeach; ?>
 			</select>
-			<p class="dak-field-hint"><?php esc_html_e( 'Clinics where this service is offered — pick as many as apply. Shown on the public Services page.', 'doctor-ak-portal' ); ?></p>
+			<p class="dak-field-hint"><?php esc_html_e( 'Clinics where this service is offered — pick as many as apply.', 'doctor-ak-portal' ); ?></p>
 			<?php if ( empty( $clinic_locations ) ) : ?>
 				<p class="dak-field-hint"><?php esc_html_e( 'No clinics added yet — add one first from the admin "Clinic" section.', 'doctor-ak-portal' ); ?></p>
 			<?php endif; ?>
+		</div>
+
+		<div class="dak-field" id="dak-admin-service-clinic-charges-field">
+			<span class="dak-field-label"><?php esc_html_e( 'Price Per Clinic', 'doctor-ak-portal' ); ?></span>
+			<div id="dak-admin-service-clinic-charges"></div>
+			<p class="dak-field-hint"><?php esc_html_e( 'Shown on the public Services page against each clinic above — defaults to the Base Charge, editable per clinic.', 'doctor-ak-portal' ); ?></p>
 		</div>
 
 		<button type="button" class="dak-button dak-button-primary dak-button-block" id="dak-admin-service-save">

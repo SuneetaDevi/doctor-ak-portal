@@ -4,14 +4,12 @@
  *
  * @package DoctorAKPortal\Templates
  *
- * @var int    $id               Service's ID (a Services row — see Services class).
- * @var string $name             Service name.
- * @var string $description      Full description (excerpted below), or '' if the admin hasn't added one.
- * @var string $price_label      Formatted price, e.g. "PKR 5,000" or "Free".
- * @var string $image_url        Service image URL, or '' if none uploaded.
- * @var array  $clinic_locations Clinics this service is offered at, see Services::decode_row().
- * @var string $doctor_name      Name of the doctor who provides this service.
- * @var string $profile_url      URL of this service's [service_profile_view] page.
+ * @var int    $id          Representative Services row ID for this service name (see Services::grouped_active_for_public_directory()) — the detail page looks up every doctor offering it from there.
+ * @var string $name        Service name.
+ * @var string $description Full description (excerpted below), or '' if the admin hasn't added one.
+ * @var string $price_label Formatted price, e.g. "PKR 5,000" or "From PKR 5,000" (varies by doctor) or "Free".
+ * @var string $image_url   Service image URL, or '' if none uploaded.
+ * @var string $profile_url URL of this service's [service_profile_view] page.
  */
 
 // Prevent direct file access.
@@ -40,10 +38,6 @@ $dak_service_excerpt = wp_trim_words( $description, 20 );
 
 		<?php if ( '' !== $dak_service_excerpt ) : ?>
 			<p class="dak-service-card-excerpt"><?php echo esc_html( $dak_service_excerpt ); ?></p>
-		<?php endif; ?>
-
-		<?php if ( '' !== $doctor_name ) : ?>
-			<p class="dak-service-card-excerpt"><?php echo esc_html( sprintf( /* translators: %s: doctor's name. */ __( 'By Dr. %s', 'doctor-ak-portal' ), $doctor_name ) ); ?></p>
 		<?php endif; ?>
 
 		<div class="dak-service-card-price">

@@ -91,32 +91,34 @@ class Services {
 			'active'           => $active,
 		);
 
-		// Only the admin "Add/Edit Service" modal's form posts these — the
+		// Only the admin "Add/Edit Service" modal's form posts a
+		// 'has_portfolio_fields' marker (a hidden input, always '1') — the
 		// doctor-facing Services tab has no Description/Clinics fields at
-		// all, so they're genuinely absent from $posted (not just empty) on
-		// a doctor's own save. Keying on array_key_exists() rather than
-		// defaulting to '' / [] here means update() only overwrites these
-		// columns when the submitting form actually has them — otherwise a
-		// doctor editing their own service would silently wipe out
-		// description/clinics an admin had already set on it.
-		if ( array_key_exists( 'description', $posted ) ) {
-			$fields['description'] = sanitize_textarea_field( wp_unslash( $posted['description'] ) );
-		}
+		// all, so it's absent there. Gating on this single marker (rather
+		// than each field's own presence) means update() only overwrites
+		// these columns when the submitting form is the richer admin one —
+		// otherwise a doctor editing their own service would silently wipe
+		// out description/clinic pricing an admin had already set on it,
+		// and an admin clearing every clinic checkbox (a legitimate "no
+		// clinics" edit, which posts no clinic_charges[] entries at all)
+		// wouldn't otherwise be distinguishable from "field not submitted".
+		if ( ! empty( $posted['has_portfolio_fields'] ) ) {
+			$fields['description'] = isset( $posted['description'] ) ? sanitize_textarea_field( wp_unslash( $posted['description'] ) ) : '';
 
-		if ( array_key_exists( 'clinic_location_ids', $posted ) ) {
-			$clinic_location_ids = array();
+			$clinic_charges = array();
 
-			if ( is_array( $posted['clinic_location_ids'] ) ) {
-				foreach ( wp_unslash( $posted['clinic_location_ids'] ) as $clinic_location_id ) {
+			if ( isset( $posted['clinic_charges'] ) && is_array( $posted['clinic_charges'] ) ) {
+				foreach ( wp_unslash( $posted['clinic_charges'] ) as $clinic_location_id => $price ) {
 					$clinic_location_id = absint( $clinic_location_id );
+					$price               = (float) $price;
 
-					if ( $clinic_location_id > 0 && Clinic_Locations::find( $clinic_location_id ) ) {
-						$clinic_location_ids[] = $clinic_location_id;
+					if ( $clinic_location_id > 0 && $price >= 0 && Clinic_Locations::find( $clinic_location_id ) ) {
+						$clinic_charges[ $clinic_location_id ] = number_format( $price, 2, '.', '' );
 					}
 				}
 			}
 
-			$fields['clinic_location_ids'] = $clinic_location_ids;
+			$fields['clinic_charges'] = $clinic_charges;
 		}
 
 		return $fields;
@@ -138,18 +140,18 @@ class Services {
 		$inserted = $wpdb->insert(
 			self::table_name(),
 			array(
-				'doctor_id'           => (int) $doctor_id,
-				'type'                => $fields['type'],
-				'name'                => $fields['name'],
-				'category'            => $fields['category'],
-				'charge'              => $fields['charge'],
-				'duration_minutes'    => $fields['duration_minutes'],
-				'active'              => $fields['active'] ? 1 : 0,
-				'description'         => isset( $fields['description'] ) ? $fields['description'] : '',
-				'image_id'            => (int) $image_id,
-				'clinic_location_ids' => wp_json_encode( isset( $fields['clinic_location_ids'] ) ? $fields['clinic_location_ids'] : array() ),
-				'created_at'          => $now,
-				'updated_at'          => $now,
+				'doctor_id'        => (int) $doctor_id,
+				'type'             => $fields['type'],
+				'name'             => $fields['name'],
+				'category'         => $fields['category'],
+				'charge'           => $fields['charge'],
+				'duration_minutes' => $fields['duration_minutes'],
+				'active'           => $fields['active'] ? 1 : 0,
+				'description'      => isset( $fields['description'] ) ? $fields['description'] : '',
+				'image_id'         => (int) $image_id,
+				'clinic_charges'   => wp_json_encode( isset( $fields['clinic_charges'] ) ? $fields['clinic_charges'] : array() ),
+				'created_at'       => $now,
+				'updated_at'       => $now,
 			),
 			array( '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%d', '%s', '%s', '%s' )
 		);
@@ -178,7 +180,7 @@ class Services {
 	 * Updates an existing service row.
 	 *
 	 * @param int      $service_id Service ID.
-	 * @param array    $fields     Sanitized service fields. 'description'/'clinic_location_ids' only get written when present (see sanitize_fields_from_request()'s docblock) — a doctor's own save, which never posts either, leaves whatever an admin already set on them untouched.
+	 * @param array    $fields     Sanitized service fields. 'description'/'clinic_charges' only get written when present (see sanitize_fields_from_request()'s docblock) — a doctor's own save, which never posts either, leaves whatever an admin already set on them untouched.
 	 * @param int|null $doctor_id  If given, the update only applies when the service belongs to this doctor; pass null to skip the check (admin context).
 	 * @param int|null $image_id   Attachment ID for the public portfolio's image, or null to leave the existing one untouched (a doctor's own save never posts this field either).
 	 * @return bool
@@ -210,9 +212,9 @@ class Services {
 			$types[]              = '%s';
 		}
 
-		if ( array_key_exists( 'clinic_location_ids', $fields ) ) {
-			$data['clinic_location_ids'] = wp_json_encode( $fields['clinic_location_ids'] );
-			$types[]                      = '%s';
+		if ( array_key_exists( 'clinic_charges', $fields ) ) {
+			$data['clinic_charges'] = wp_json_encode( $fields['clinic_charges'] );
+			$types[]                = '%s';
 		}
 
 		if ( null !== $image_id ) {
@@ -398,6 +400,114 @@ class Services {
 	}
 
 	/**
+	 * Every active Services row sharing the given name (case-insensitive,
+	 * trimmed), across every non-deactivated doctor. A service added for
+	 * several doctors at once (see Service_Handler::handle_admin_save_service()'s
+	 * bulk-create) is really ONE portfolio entry with several doctor-owned
+	 * rows, not several unrelated services — this is how the public
+	 * [service_profile_view] page finds all of them to show a "price per
+	 * doctor" breakdown with a Book-with-this-doctor link each.
+	 *
+	 * @param string $name Service name to match.
+	 * @return array List of decoded rows, cheapest first.
+	 */
+	public static function active_rows_by_name( $name ) {
+		global $wpdb;
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT s.* FROM " . self::table_name() . " s
+				INNER JOIN {$wpdb->users} u ON u.ID = s.doctor_id
+				LEFT JOIN {$wpdb->usermeta} m ON m.user_id = u.ID AND m.meta_key = 'doctor_ak_account_disabled'
+				WHERE s.type = %s AND s.active = 1 AND LOWER(TRIM(s.name)) = LOWER(TRIM(%s)) AND ( m.meta_value IS NULL OR m.meta_value != 'yes' )
+				ORDER BY s.charge ASC",
+				self::TYPE_CLINIC,
+				$name
+			), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table/column names, not user input; both variables are bound via %s.
+			ARRAY_A
+		);
+
+		return array_map( array( __CLASS__, 'decode_row' ), $rows );
+	}
+
+	/**
+	 * active_for_public_directory()'s rows, grouped by name (case-
+	 * insensitive, trimmed) — one card per unique service name for the
+	 * public [services_directory] grid, since a service added for several
+	 * doctors (see active_rows_by_name()'s docblock) is one portfolio entry,
+	 * not one per doctor. Each group's description/image come from whichever
+	 * row has them (bulk-create copies both onto every doctor's row
+	 * identically, so this only matters if they've since diverged); its
+	 * price is the cheapest doctor's, "From "-prefixed when they vary.
+	 *
+	 * @return array List of { id (a representative row's, for the detail-page link), name, description, image_url, price_label }, alphabetical by name.
+	 */
+	public static function grouped_active_for_public_directory() {
+		$groups = array();
+
+		foreach ( self::active_for_public_directory() as $row ) {
+			$key = mb_strtolower( trim( $row['name'] ) );
+
+			if ( ! isset( $groups[ $key ] ) ) {
+				$groups[ $key ] = array(
+					'id'          => $row['id'],
+					'name'        => $row['name'],
+					'description' => $row['description'],
+					'image_url'   => $row['image_url'],
+					'prices'      => array(),
+				);
+			}
+
+			if ( '' === $groups[ $key ]['description'] && '' !== $row['description'] ) {
+				$groups[ $key ]['description'] = $row['description'];
+			}
+
+			if ( '' === $groups[ $key ]['image_url'] && '' !== $row['image_url'] ) {
+				$groups[ $key ]['image_url'] = $row['image_url'];
+			}
+
+			$groups[ $key ]['prices'][] = $row['effective_price'];
+		}
+
+		return array_values(
+			array_map(
+				function ( $group ) {
+					$prices = $group['prices'];
+					unset( $group['prices'] );
+
+					$group['price_label'] = self::price_range_label( $prices );
+
+					return $group;
+				},
+				$groups
+			)
+		);
+	}
+
+	/**
+	 * Formats a list of prices as a single label — the lowest one, "From "-
+	 * prefixed when they vary. Shared by grouped_active_for_public_directory()
+	 * and Service_Profile_View for the "price across doctors" headline.
+	 *
+	 * @param float[] $prices Prices to summarize (may be empty).
+	 * @return string
+	 */
+	public static function price_range_label( array $prices ) {
+		if ( empty( $prices ) ) {
+			return __( 'Free', 'doctor-ak-portal' );
+		}
+
+		$min   = min( $prices );
+		$label = $min > 0 ? 'PKR ' . number_format_i18n( $min ) : __( 'Free', 'doctor-ak-portal' );
+
+		if ( count( array_unique( $prices ) ) > 1 ) {
+			$label = sprintf( /* translators: %s: lowest price. */ __( 'From %s', 'doctor-ak-portal' ), $label );
+		}
+
+		return $label;
+	}
+
+	/**
 	 * A single active service for the public [service_profile_view] page —
 	 * null if it doesn't exist, isn't active, or its doctor is deactivated
 	 * (matches active_for_public_directory()'s visibility rule).
@@ -444,25 +554,71 @@ class Services {
 			$image_url = $found ? $found : '';
 		}
 
-		$clinic_location_ids = array_map( 'intval', (array) json_decode( isset( $row['clinic_location_ids'] ) ? (string) $row['clinic_location_ids'] : '', true ) );
-		$clinic_locations    = array_values( array_filter( array_map( array( __NAMESPACE__ . '\Clinic_Locations', 'find' ), $clinic_location_ids ) ) );
+		// clinic_charges maps a Clinic_Locations ID to this doctor's own
+		// price at that clinic (see sanitize_fields_from_request()) — the
+		// public portfolio pages show that instead of the flat $charge
+		// whenever it's set, since the same service can cost differently
+		// at different clinics for this doctor.
+		$clinic_charges_raw = json_decode( isset( $row['clinic_charges'] ) ? (string) $row['clinic_charges'] : '', true );
+		$clinic_charges     = array();
+
+		foreach ( (array) $clinic_charges_raw as $clinic_location_id => $price ) {
+			$clinic_charges[ (int) $clinic_location_id ] = (float) $price;
+		}
+
+		$clinic_locations = array();
+
+		foreach ( $clinic_charges as $clinic_location_id => $price ) {
+			$clinic_location = Clinic_Locations::find( $clinic_location_id );
+
+			if ( ! $clinic_location ) {
+				continue;
+			}
+
+			$clinic_location['price']       = $price;
+			$clinic_location['price_label'] = $price > 0 ? 'PKR ' . number_format_i18n( $price ) : __( 'Free', 'doctor-ak-portal' );
+			$clinic_locations[]             = $clinic_location;
+		}
+
+		// The headline price: the flat $charge, unless per-clinic prices
+		// are set, in which case it's the cheapest of those (with "From "
+		// prefixed if they vary) — same "From X" convention
+		// Doctor_Profile_View::clinic_fee_label() already uses.
+		// effective_price is the same figure as a plain number (no "From "/
+		// currency text), for callers that group several doctors' rows of
+		// the same service name and need to compute their own min/"From"
+		// across doctors (see grouped_active_for_public_directory() and
+		// active_rows_by_name()'s callers).
+		$effective_price = $charge;
+		$price_label      = $charge > 0 ? 'PKR ' . number_format_i18n( $charge ) : __( 'Free', 'doctor-ak-portal' );
+
+		if ( ! empty( $clinic_charges ) ) {
+			$effective_price = min( $clinic_charges );
+
+			$price_label = $effective_price > 0 ? 'PKR ' . number_format_i18n( $effective_price ) : __( 'Free', 'doctor-ak-portal' );
+
+			if ( count( array_unique( $clinic_charges ) ) > 1 ) {
+				$price_label = sprintf( /* translators: %s: lowest clinic price. */ __( 'From %s', 'doctor-ak-portal' ), $price_label );
+			}
+		}
 
 		return array(
-			'id'                  => (int) $row['id'],
-			'doctor_id'           => (int) $row['doctor_id'],
-			'type'                => $row['type'],
-			'name'                => $row['name'],
-			'category'            => $category,
-			'category_label'      => isset( $categories[ $category ] ) ? $categories[ $category ] : '',
-			'charge'              => $charge,
-			'price_label'         => $charge > 0 ? 'PKR ' . number_format_i18n( $charge ) : __( 'Free', 'doctor-ak-portal' ),
-			'duration_minutes'    => (int) $row['duration_minutes'],
-			'active'              => ! empty( $row['active'] ),
-			'description'         => isset( $row['description'] ) ? (string) $row['description'] : '',
-			'image_id'            => $image_id,
-			'image_url'           => $image_url,
-			'clinic_location_ids' => $clinic_location_ids,
-			'clinic_locations'    => $clinic_locations,
+			'id'               => (int) $row['id'],
+			'doctor_id'        => (int) $row['doctor_id'],
+			'type'             => $row['type'],
+			'name'             => $row['name'],
+			'category'         => $category,
+			'category_label'   => isset( $categories[ $category ] ) ? $categories[ $category ] : '',
+			'charge'           => $charge,
+			'effective_price'  => $effective_price,
+			'price_label'      => $price_label,
+			'duration_minutes' => (int) $row['duration_minutes'],
+			'active'           => ! empty( $row['active'] ),
+			'description'      => isset( $row['description'] ) ? (string) $row['description'] : '',
+			'image_id'         => $image_id,
+			'image_url'        => $image_url,
+			'clinic_charges'   => $clinic_charges,
+			'clinic_locations' => $clinic_locations,
 		);
 	}
 }
