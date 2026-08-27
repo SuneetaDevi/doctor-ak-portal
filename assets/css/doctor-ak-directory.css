@@ -504,12 +504,46 @@
 	border: 1px solid var( --dak-border ) !important;
 	border-radius: var( --dak-radius-md ) !important;
 	padding: 1rem !important;
+	cursor: pointer !important;
+	transition: border-color 0.15s ease, background 0.15s ease !important;
+}
+
+.dak-service-doctor-offer:hover {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-service-doctor-offer:focus-visible {
+	outline: 2px solid var( --dak-primary ) !important;
+	outline-offset: 2px !important;
+}
+
+.dak-service-doctor-offer.is-selected {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary-tint ) !important;
+}
+
+.dak-service-doctor-offer.dak-hidden {
+	display: none !important;
 }
 
 .dak-service-doctor-offer-header {
 	display: flex !important;
 	align-items: center !important;
 	gap: 0.75rem !important;
+}
+
+.dak-service-doctor-offer-select {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	cursor: pointer !important;
+}
+
+.dak-service-doctor-offer-select input[type='radio'] {
+	width: 1.1rem !important;
+	height: 1.1rem !important;
+	margin: 0 !important;
+	cursor: pointer !important;
+	accent-color: var( --dak-primary ) !important;
 }
 
 .dak-service-doctor-offer-info {
@@ -520,9 +554,31 @@
 	min-width: 0 !important;
 }
 
-.dak-service-doctor-offer-price {
-	font-size: 0.82rem !important;
+.dak-service-doctor-offer-specialty {
+	font-size: 0.78rem !important;
 	color: var( --dak-muted ) !important;
+}
+
+.dak-service-doctor-offer-price {
+	flex: 0 0 auto !important;
+	font-size: 1rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+/* Filter/sort toolbar above the doctor list. */
+.dak-service-doctor-filters {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0.85rem !important;
+	margin-bottom: 1.25rem !important;
+	padding-bottom: 1.25rem !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+.dak-service-doctor-filters .dak-field {
+	flex: 1 1 180px !important;
+	margin-bottom: 0 !important;
 }
 
 .dak-service-doctor-offer-clinics {
@@ -664,6 +720,14 @@
 	color: var( --dak-muted ) !important;
 	text-align: center !important;
 	margin: 0.85rem 0 0 !important;
+}
+
+/* Service profile page's sidebar Book Appointment button — inert (scrolls
+   to the doctor list instead of booking) until a doctor is selected below,
+   see assets/js/doctor-ak-service-profile.js. */
+.dak-button-disabled {
+	opacity: 0.6 !important;
+	cursor: default !important;
 }
 
 @media ( max-width: 860px ) {

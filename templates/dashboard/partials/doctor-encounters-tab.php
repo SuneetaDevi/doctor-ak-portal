@@ -118,7 +118,7 @@ $dak_status_labels = array(
 					<span class="dak-admin-record-row-meta"><?php echo esc_html( mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $row['checked_in_at'] ) ); ?></span>
 
 					<span class="dak-admin-record-row-tags">
-						<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( '' !== $row['problem_summary'] ? $row['problem_summary'] : __( 'No problem recorded', 'doctor-ak-portal' ) ); ?></span>
+						<span class="dak-status-pill dak-status-pill-outline dak-status-pill-truncate" title="<?php echo esc_attr( $row['problem_summary'] ); ?>"><?php echo esc_html( '' !== $row['problem_summary'] ? $row['problem_summary'] : __( 'No problem recorded', 'doctor-ak-portal' ) ); ?></span>
 					</span>
 
 					<span class="dak-status-pill dak-status-pill-outline <?php echo \DoctorAKPortal\Includes\Encounters::STATUS_OPEN === $row['status'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-disabled'; ?>">

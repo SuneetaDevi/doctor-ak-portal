@@ -1224,23 +1224,79 @@
 	}
 
 	/**
-	 * Staff (Admin/Receptionist) identity step: picking a real patient hides
-	 * the "Add new patient" fields (reuses the same #dak-booking-identity-guest
-	 * block/field names as the guest flow); picking the "+ Add new patient"
-	 * option (empty value) shows them again — mirrors the admin dashboard's
-	 * own Add Appointment modal (wirePatientToggle() in
-	 * doctor-ak-admin-appointments.js).
+	 * Staff (Admin/Receptionist) identity step: a card grid of registered
+	 * patients (plus a dedicated "Add New Patient" card) instead of a
+	 * dropdown. Picking a real patient's card hides the "Add new patient"
+	 * fields (reuses the same #dak-booking-identity-guest block/field names
+	 * as the guest flow) and stores their ID in the hidden
+	 * #dak-booking-patient-id input; picking the "Add New Patient" card
+	 * (empty data-patient-id) clears it and shows those fields again —
+	 * mirrors the admin dashboard's own Add Appointment modal
+	 * (wirePatientToggle() in doctor-ak-admin-appointments.js).
 	 */
 	function wireStaffPatientToggle() {
-		var select = document.getElementById( 'dak-booking-patient-id' );
+		var hiddenInput = document.getElementById( 'dak-booking-patient-id' );
 		var guestBlock = document.getElementById( 'dak-booking-identity-guest' );
+		var cardsContainer = document.getElementById( 'dak-booking-patient-cards' );
 
-		if ( ! select || ! guestBlock ) {
+		if ( ! hiddenInput || ! guestBlock || ! cardsContainer ) {
 			return;
 		}
 
-		select.addEventListener( 'change', function () {
-			guestBlock.classList.toggle( 'dak-hidden', '' === select.value );
+		var cards = Array.prototype.slice.call( cardsContainer.querySelectorAll( '[data-patient-card]' ) );
+
+		cards.forEach( function ( card ) {
+			card.addEventListener( 'click', function () {
+				cards.forEach( function ( el ) {
+					el.classList.remove( 'is-selected' );
+				} );
+				card.classList.add( 'is-selected' );
+
+				var patientId = card.getAttribute( 'data-patient-id' ) || '';
+				hiddenInput.value = patientId;
+				guestBlock.classList.toggle( 'dak-hidden', '' !== patientId );
+				clearFieldError( 'patient_id' );
+			} );
+		} );
+
+		wirePatientSearch( cards );
+	}
+
+	/**
+	 * Filters the patient card grid as the admin types — the "Add New
+	 * Patient" card always stays visible so there's always a way forward
+	 * even when a search matches nothing.
+	 *
+	 * @param {HTMLElement[]} cards Every `[data-patient-card]` element.
+	 */
+	function wirePatientSearch( cards ) {
+		var search = document.getElementById( 'dak-booking-patient-search' );
+		var emptyState = document.getElementById( 'dak-booking-patient-cards-empty' );
+
+		if ( ! search ) {
+			return;
+		}
+
+		search.addEventListener( 'input', function () {
+			var query = search.value.trim().toLowerCase();
+			var visiblePatientCount = 0;
+
+			cards.forEach( function ( card ) {
+				if ( '' === card.getAttribute( 'data-patient-id' ) ) {
+					return; // The "Add New Patient" card is never filtered out.
+				}
+
+				var matches = '' === query || ( card.getAttribute( 'data-patient-name' ) || '' ).indexOf( query ) !== -1;
+				card.classList.toggle( 'dak-hidden', ! matches );
+
+				if ( matches ) {
+					visiblePatientCount++;
+				}
+			} );
+
+			if ( emptyState ) {
+				emptyState.classList.toggle( 'dak-hidden', visiblePatientCount > 0 );
+			}
 		} );
 	}
 

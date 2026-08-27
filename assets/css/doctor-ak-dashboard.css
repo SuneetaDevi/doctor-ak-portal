@@ -1950,6 +1950,20 @@ a.dak-notification-row-link:hover {
 	align-items: center !important;
 	gap: 0.4rem !important;
 	flex: 1 1 220px !important;
+	min-width: 0 !important;
+}
+
+/* A free-text pill (e.g. an encounter's problem/diagnosis summary, which
+   can run to a full sentence) truncates instead of forcing the row to wrap
+   or overflowing past the card's edge — see admin-encounters.php/
+   doctor-encounters-tab.php. Hover/focus still reveals the full text via
+   the element's title attribute. */
+.dak-status-pill.dak-status-pill-truncate {
+	display: inline-block !important;
+	max-width: 100% !important;
+	overflow: hidden !important;
+	text-overflow: ellipsis !important;
+	vertical-align: middle !important;
 }
 
 .dak-admin-record-row-amount {
@@ -2379,6 +2393,12 @@ a.dak-notification-row-link:hover {
 
 .dak-encounter-inline-form .dak-field {
 	flex: 1 1 160px !important;
+}
+
+.dak-encounter-form-actions {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.5rem !important;
 }
 
 .dak-encounter-bill-total {

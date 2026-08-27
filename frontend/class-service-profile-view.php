@@ -78,6 +78,24 @@ class Service_Profile_View {
 			array( 'doctor-ak-portal-auth' ),
 			Assets::version( 'assets/css/doctor-ak-directory.css' )
 		);
+
+		wp_enqueue_script(
+			'doctor-ak-portal-service-profile',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-service-profile.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-service-profile.js' ),
+			true
+		);
+
+		wp_localize_script(
+			'doctor-ak-portal-service-profile',
+			'dakServiceProfile',
+			array(
+				/* translators: %s: doctor's display name, e.g. "Dr. Jane Smith". Keep the literal %s — it's swapped for the name in JS. */
+				'bookingWithLabel'     => __( 'Booking with %s.', 'doctor-ak-portal' ),
+				'bookAppointmentLabel' => __( 'Book Appointment', 'doctor-ak-portal' ),
+			)
+		);
 	}
 
 	/**
@@ -141,16 +159,46 @@ class Service_Profile_View {
 			$doctor_name = trim( $doctor->first_name . ' ' . $doctor->last_name );
 			$doctor_name = '' !== $doctor_name ? $doctor_name : $doctor->display_name;
 
+			// Location labels across this doctor's clinics for this
+			// service, for the "Location" filter — a lightweight "near me"
+			// stand-in that doesn't need geolocation.
+			$location_labels = array_values(
+				array_unique(
+					array_filter(
+						array_map(
+							function ( $clinic_location ) {
+								return isset( $clinic_location['area_label'] ) ? $clinic_location['area_label'] : '';
+							},
+							$row['clinic_locations']
+						)
+					)
+				)
+			);
+
 			$doctor_offers[] = array(
 				'doctor_id'          => $doctor->ID,
 				'doctor_name'        => $doctor_name,
 				'doctor_avatar_url'  => self::doctor_avatar_url( $doctor->ID ),
 				'doctor_profile_url' => add_query_arg( 'doctor_id', $doctor->ID, Page_Finder::url_for_shortcode( 'doctor_profile_view' ) ),
+				'price'              => $row['effective_price'],
 				'price_label'        => $row['price_label'],
+				'category'           => $row['category'],
+				'category_label'     => $row['category_label'],
+				'location_labels'    => $location_labels,
 				'clinic_locations'   => $row['clinic_locations'],
 				'booking_url'        => $base_booking_url ? add_query_arg( 'doctor_id', $doctor->ID, $base_booking_url ) : '',
 			);
 		}
+
+		// Sort doctors cheapest-first by default — matches
+		// active_rows_by_name()'s own ORDER BY, kept explicit here since
+		// the "Sort" control's default option relies on it.
+		usort(
+			$doctor_offers,
+			function ( $a, $b ) {
+				return $a['price'] <=> $b['price'];
+			}
+		);
 
 		return array(
 			'name'          => $name,

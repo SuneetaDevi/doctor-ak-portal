@@ -138,22 +138,27 @@ class Revenue_Ledger {
 		}
 
 		$reference = sprintf( 'ENC-%d-EXTRA', $encounter_id );
+		$breakdown = Revenue_Calculator::calculate_for_appointment( array_merge( $appointment, array( 'charge' => $extra_amount ) ) );
 
 		global $wpdb;
 
+		// Scoped to this specific transaction_type (clinic/video
+		// consultation), not "any posted row with this reference" — a
+		// reversal row from resync_encounter_extra() shares the same
+		// reference but is posted as TRANSACTION_REFUND, and must not count
+		// as "already posted" here or a resync could never repost.
 		$already_posted = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				'SELECT COUNT(*) FROM ' . self::table_name() . ' WHERE reference = %s AND status = %s', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
+				'SELECT COUNT(*) FROM ' . self::table_name() . ' WHERE reference = %s AND status = %s AND transaction_type = %s', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
 				$reference,
-				self::STATUS_POSTED
+				self::STATUS_POSTED,
+				$breakdown['transaction_type']
 			)
 		);
 
 		if ( $already_posted > 0 ) {
 			return false;
 		}
-
-		$breakdown = Revenue_Calculator::calculate_for_appointment( array_merge( $appointment, array( 'charge' => $extra_amount ) ) );
 
 		$now = current_time( 'mysql' );
 
@@ -185,6 +190,101 @@ class Revenue_Ledger {
 		);
 
 		return $inserted ? (int) $wpdb->insert_id : false;
+	}
+
+	/**
+	 * Re-syncs a CLOSED encounter's "extra charges" ledger entry with its
+	 * current Encounter_Bill_Items total — called by Encounter_Handler
+	 * whenever a bill item is added/removed on an encounter that's already
+	 * closed (an OPEN encounter's bill items are left alone; they get
+	 * posted for the first time, once, when it closes — see
+	 * post_for_encounter_extra()). Reverses whatever was posted before (if
+	 * anything) and posts fresh for the current total, so editing a closed
+	 * encounter's bill keeps billing accurate instead of drifting from
+	 * what's actually charged.
+	 *
+	 * @param int $encounter_id   Encounter ID.
+	 * @param int $appointment_id Its appointment's post ID.
+	 * @return void
+	 */
+	public static function resync_encounter_extra( $encounter_id, $appointment_id ) {
+		self::reverse_encounter_extra( $encounter_id );
+		self::post_for_encounter_extra( $encounter_id, $appointment_id );
+	}
+
+	/**
+	 * Reverses whatever is currently posted for an encounter's extra
+	 * charges (see post_for_encounter_extra()) — the original row is marked
+	 * `status = reversed` (kept, never deleted) and a new negated row is
+	 * posted referencing it, mirroring reverse_for_appointment()'s own
+	 * pattern. The reversal row is posted as TRANSACTION_REFUND (not the
+	 * original clinic/video type) specifically so post_for_encounter_extra()'s
+	 * own idempotency check never mistakes it for an already-posted charge.
+	 *
+	 * @param int $encounter_id Encounter ID.
+	 * @return void
+	 */
+	private static function reverse_encounter_extra( $encounter_id ) {
+		global $wpdb;
+
+		$reference = sprintf( 'ENC-%d-EXTRA', $encounter_id );
+
+		$original = $wpdb->get_row(
+			$wpdb->prepare(
+				'SELECT * FROM ' . self::table_name() . ' WHERE reference = %s AND status = %s AND transaction_type != %s ORDER BY id DESC LIMIT 1', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
+				$reference,
+				self::STATUS_POSTED,
+				self::TRANSACTION_REFUND
+			),
+			ARRAY_A
+		);
+
+		if ( ! $original ) {
+			return;
+		}
+
+		$now = current_time( 'mysql' );
+
+		$wpdb->update(
+			self::table_name(),
+			array(
+				'status'     => self::STATUS_REVERSED,
+				'updated_at' => $now,
+			),
+			array( 'id' => (int) $original['id'] ),
+			array( '%s', '%s' ),
+			array( '%d' )
+		);
+
+		$wpdb->insert(
+			self::table_name(),
+			array(
+				'doctor_id'        => (int) $original['doctor_id'],
+				'clinic_id'        => (int) $original['clinic_id'],
+				'appointment_id'   => (int) $original['appointment_id'],
+				'service_id'       => (int) $original['service_id'],
+				'transaction_type' => self::TRANSACTION_REFUND,
+				// The reversal always moves the doctor's balance the
+				// opposite way the original entry did.
+				'direction'        => Revenue_Calculator::DIRECTION_CREDIT === $original['direction'] ? Revenue_Calculator::DIRECTION_DEBIT : Revenue_Calculator::DIRECTION_CREDIT,
+				'gross_amount'     => $original['gross_amount'],
+				'platform_fee'     => $original['platform_fee'],
+				'share_percent'    => $original['share_percent'],
+				'doctor_amount'    => $original['doctor_amount'],
+				'clinic_amount'    => $original['clinic_amount'],
+				'net_amount'       => number_format( 0 - (float) $original['net_amount'], 2, '.', '' ),
+				/* translators: %s: original ledger entry's description. */
+				'description'      => sprintf( __( 'Reversal — %s', 'doctor-ak-portal' ), $original['description'] ),
+				'reference'        => $reference,
+				'status'           => self::STATUS_POSTED,
+				'is_legacy'        => 0,
+				'settlement_id'    => 0,
+				'transaction_date' => gmdate( 'Y-m-d', strtotime( $now ) ),
+				'created_at'       => $now,
+				'updated_at'       => $now,
+			),
+			array( '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s' )
+		);
 	}
 
 	/**

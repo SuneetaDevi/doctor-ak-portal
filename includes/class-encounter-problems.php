@@ -63,6 +63,33 @@ class Encounter_Problems {
 	}
 
 	/**
+	 * Updates a problem row, scoped to the encounter it must belong to.
+	 *
+	 * @param int    $problem_id   Problem row ID.
+	 * @param int    $encounter_id Encounter ID it must belong to.
+	 * @param string $description  Diagnosis/problem text.
+	 * @param string $notes        Optional free-text notes.
+	 * @return bool
+	 */
+	public static function update( $problem_id, $encounter_id, $description, $notes = '' ) {
+		global $wpdb;
+
+		return false !== $wpdb->update(
+			self::table_name(),
+			array(
+				'description' => $description,
+				'notes'       => $notes,
+			),
+			array(
+				'id'           => (int) $problem_id,
+				'encounter_id' => (int) $encounter_id,
+			),
+			array( '%s', '%s' ),
+			array( '%d', '%d' )
+		);
+	}
+
+	/**
 	 * Deletes a problem row, scoped to the encounter it must belong to.
 	 *
 	 * @param int $problem_id   Problem row ID.

@@ -22,6 +22,7 @@ use DoctorAKPortal\Includes\Encounter_Problems;
 use DoctorAKPortal\Includes\Encounters;
 use DoctorAKPortal\Includes\Medicines;
 use DoctorAKPortal\Includes\Prescription_Pdf;
+use DoctorAKPortal\Includes\Revenue_Ledger;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
 
@@ -267,7 +268,10 @@ class Encounter_Handler {
 	}
 
 	/**
-	 * AJAX handler: adds a Problem row to an encounter.
+	 * AJAX handler: adds a Problem row to an encounter, or — when
+	 * `problem_id` is a row already on this encounter — updates it in
+	 * place instead (same "add or edit through one endpoint" pattern
+	 * Admin_User_Handler::handle_save_user() uses).
 	 *
 	 * @return void
 	 */
@@ -277,7 +281,6 @@ class Encounter_Handler {
 		}
 
 		$encounter = self::authorized_encounter_from_request();
-		self::require_open( $encounter );
 
 		$description = isset( $_POST['description'] ) ? sanitize_text_field( wp_unslash( $_POST['description'] ) ) : '';
 
@@ -287,7 +290,13 @@ class Encounter_Handler {
 
 		$notes = isset( $_POST['notes'] ) ? sanitize_textarea_field( wp_unslash( $_POST['notes'] ) ) : '';
 
-		Encounter_Problems::add( $encounter['id'], $description, $notes );
+		$problem_id = isset( $_POST['problem_id'] ) ? absint( wp_unslash( $_POST['problem_id'] ) ) : 0;
+
+		if ( $problem_id > 0 ) {
+			Encounter_Problems::update( $problem_id, $encounter['id'], $description, $notes );
+		} else {
+			Encounter_Problems::add( $encounter['id'], $description, $notes );
+		}
 
 		wp_send_json_success( self::encounter_view_model( $encounter ) );
 	}
@@ -303,7 +312,6 @@ class Encounter_Handler {
 		}
 
 		$encounter = self::authorized_encounter_from_request();
-		self::require_open( $encounter );
 
 		$problem_id = isset( $_POST['problem_id'] ) ? absint( wp_unslash( $_POST['problem_id'] ) ) : 0;
 
@@ -313,9 +321,12 @@ class Encounter_Handler {
 	}
 
 	/**
-	 * AJAX handler: adds a Prescription row to an encounter. medicine_id may
-	 * be 0 (the doctor typed the medicine name directly instead of picking
-	 * from the Medicines list).
+	 * AJAX handler: adds a Prescription row to an encounter, or — when
+	 * `prescription_id` is a row already on this encounter — updates it in
+	 * place instead (same "add or edit through one endpoint" pattern
+	 * Admin_User_Handler::handle_save_user() uses). medicine_id may be 0
+	 * (the doctor typed the medicine name directly instead of picking from
+	 * the Medicines list).
 	 *
 	 * @return void
 	 */
@@ -325,7 +336,6 @@ class Encounter_Handler {
 		}
 
 		$encounter = self::authorized_encounter_from_request();
-		self::require_open( $encounter );
 
 		$medicine_id   = isset( $_POST['medicine_id'] ) ? absint( wp_unslash( $_POST['medicine_id'] ) ) : 0;
 		$medicine_name = isset( $_POST['medicine_name'] ) ? sanitize_text_field( wp_unslash( $_POST['medicine_name'] ) ) : '';
@@ -351,17 +361,22 @@ class Encounter_Handler {
 			$medicine_id = Medicines::find_or_create_by_name( $medicine_name, $encounter['doctor_id'] );
 		}
 
-		Encounter_Prescriptions::add(
-			$encounter['id'],
-			array(
-				'medicine_id'   => $medicine_id,
-				'medicine_name' => $medicine_name,
-				'dosage'        => isset( $_POST['dosage'] ) ? sanitize_text_field( wp_unslash( $_POST['dosage'] ) ) : '',
-				'frequency'     => isset( $_POST['frequency'] ) ? sanitize_text_field( wp_unslash( $_POST['frequency'] ) ) : '',
-				'duration'      => isset( $_POST['duration'] ) ? sanitize_text_field( wp_unslash( $_POST['duration'] ) ) : '',
-				'instructions'  => isset( $_POST['instructions'] ) ? sanitize_text_field( wp_unslash( $_POST['instructions'] ) ) : '',
-			)
+		$fields = array(
+			'medicine_id'   => $medicine_id,
+			'medicine_name' => $medicine_name,
+			'dosage'        => isset( $_POST['dosage'] ) ? sanitize_text_field( wp_unslash( $_POST['dosage'] ) ) : '',
+			'frequency'     => isset( $_POST['frequency'] ) ? sanitize_text_field( wp_unslash( $_POST['frequency'] ) ) : '',
+			'duration'      => isset( $_POST['duration'] ) ? sanitize_text_field( wp_unslash( $_POST['duration'] ) ) : '',
+			'instructions'  => isset( $_POST['instructions'] ) ? sanitize_text_field( wp_unslash( $_POST['instructions'] ) ) : '',
 		);
+
+		$prescription_id = isset( $_POST['prescription_id'] ) ? absint( wp_unslash( $_POST['prescription_id'] ) ) : 0;
+
+		if ( $prescription_id > 0 ) {
+			Encounter_Prescriptions::update( $prescription_id, $encounter['id'], $fields );
+		} else {
+			Encounter_Prescriptions::add( $encounter['id'], $fields );
+		}
 
 		wp_send_json_success( self::encounter_view_model( $encounter ) );
 	}
@@ -377,7 +392,6 @@ class Encounter_Handler {
 		}
 
 		$encounter = self::authorized_encounter_from_request();
-		self::require_open( $encounter );
 
 		$prescription_id = isset( $_POST['prescription_id'] ) ? absint( wp_unslash( $_POST['prescription_id'] ) ) : 0;
 
@@ -401,7 +415,6 @@ class Encounter_Handler {
 		}
 
 		$encounter = self::authorized_encounter_from_request();
-		self::require_open( $encounter );
 
 		$service_id  = isset( $_POST['service_id'] ) ? absint( wp_unslash( $_POST['service_id'] ) ) : 0;
 		$description = isset( $_POST['description'] ) ? sanitize_text_field( wp_unslash( $_POST['description'] ) ) : '';
@@ -426,6 +439,17 @@ class Encounter_Handler {
 
 		Encounter_Bill_Items::add( $encounter['id'], $description, $amount );
 
+		// A closed encounter's extra charges were already posted to the
+		// revenue ledger once, at close time (Revenue_Ledger::
+		// post_for_encounter_extra(), hooked to 'doctor_ak_encounter_closed')
+		// — editing the bill afterwards needs to explicitly re-sync that
+		// posted figure so billing doesn't drift from what's actually
+		// charged. A still-open encounter's bill items are left alone here;
+		// they'll be posted for the first time when it does close.
+		if ( Encounters::STATUS_CLOSED === $encounter['status'] ) {
+			Revenue_Ledger::resync_encounter_extra( $encounter['id'], $encounter['appointment_id'] );
+		}
+
 		wp_send_json_success( self::encounter_view_model( $encounter ) );
 	}
 
@@ -440,11 +464,16 @@ class Encounter_Handler {
 		}
 
 		$encounter = self::authorized_encounter_from_request();
-		self::require_open( $encounter );
 
 		$item_id = isset( $_POST['item_id'] ) ? absint( wp_unslash( $_POST['item_id'] ) ) : 0;
 
 		Encounter_Bill_Items::delete( $item_id, $encounter['id'] );
+
+		// See the matching comment in handle_add_bill_item() — keeps a
+		// closed encounter's posted ledger figure in sync after a bill edit.
+		if ( Encounters::STATUS_CLOSED === $encounter['status'] ) {
+			Revenue_Ledger::resync_encounter_extra( $encounter['id'], $encounter['appointment_id'] );
+		}
 
 		wp_send_json_success( self::encounter_view_model( $encounter ) );
 	}
@@ -461,7 +490,6 @@ class Encounter_Handler {
 		}
 
 		$encounter = self::authorized_encounter_from_request();
-		self::require_open( $encounter );
 
 		if ( empty( $_FILES['report'] ) ) {
 			wp_send_json_error( array( 'message' => __( 'No file was received.', 'doctor-ak-portal' ) ) );
@@ -489,7 +517,6 @@ class Encounter_Handler {
 		}
 
 		$encounter = self::authorized_encounter_from_request();
-		self::require_open( $encounter );
 
 		$report_id = isset( $_POST['report_id'] ) ? absint( wp_unslash( $_POST['report_id'] ) ) : 0;
 
@@ -656,20 +683,6 @@ class Encounter_Handler {
 		}
 
 		return $encounter;
-	}
-
-	/**
-	 * Halts the request with a JSON error if the given encounter is already
-	 * closed — every mutation (adding a problem/prescription/bill item)
-	 * only makes sense on an open encounter.
-	 *
-	 * @param array $encounter Decoded encounter row.
-	 * @return void
-	 */
-	private static function require_open( array $encounter ) {
-		if ( Encounters::STATUS_OPEN !== $encounter['status'] ) {
-			wp_send_json_error( array( 'message' => __( 'This encounter is already closed.', 'doctor-ak-portal' ) ) );
-		}
 	}
 
 	/**

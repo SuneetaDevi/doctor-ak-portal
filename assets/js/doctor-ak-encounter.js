@@ -21,26 +21,25 @@
 		encounterId = root.getAttribute( 'data-encounter-id' );
 
 		wireAddForm( 'dak-encounter-add-problem-form', 'doctor_ak_add_encounter_problem', function ( formData ) {
+			formData.append( 'problem_id', document.getElementById( 'dak-encounter-problem-id' ).value );
 			formData.append( 'description', document.getElementById( 'dak-encounter-problem-description' ).value );
 			formData.append( 'notes', document.getElementById( 'dak-encounter-problem-notes' ).value );
 		}, function () {
-			document.getElementById( 'dak-encounter-problem-description' ).value = '';
-			document.getElementById( 'dak-encounter-problem-notes' ).value = '';
+			resetProblemForm();
 		} );
 
 		wireAddForm( 'dak-encounter-add-prescription-form', 'doctor_ak_add_encounter_prescription', function ( formData ) {
+			formData.append( 'prescription_id', document.getElementById( 'dak-encounter-prescription-id' ).value );
 			formData.append( 'medicine_name', document.getElementById( 'dak-encounter-prescription-medicine-name' ).value );
 			formData.append( 'dosage', document.getElementById( 'dak-encounter-prescription-dosage' ).value );
 			formData.append( 'frequency', document.getElementById( 'dak-encounter-prescription-frequency' ).value );
 			formData.append( 'duration', document.getElementById( 'dak-encounter-prescription-duration' ).value );
 			formData.append( 'instructions', document.getElementById( 'dak-encounter-prescription-instructions' ).value );
 		}, function () {
-			document.getElementById( 'dak-encounter-prescription-medicine-name' ).value = '';
-			document.getElementById( 'dak-encounter-prescription-dosage' ).value = '';
-			document.getElementById( 'dak-encounter-prescription-frequency' ).value = '';
-			document.getElementById( 'dak-encounter-prescription-duration' ).value = '';
-			document.getElementById( 'dak-encounter-prescription-instructions' ).value = '';
+			resetPrescriptionForm();
 		} );
+
+		wireEditCancelButtons();
 
 		wireAddForm( 'dak-encounter-add-bill-item-form', 'doctor_ak_add_encounter_bill_item', function ( formData ) {
 			var serviceSelect = document.getElementById( 'dak-encounter-bill-service' );
@@ -57,6 +56,21 @@
 		wireProblemSuggestions();
 
 		document.addEventListener( 'click', function ( event ) {
+			var editTrigger = event.target.closest( '[data-encounter-edit]' );
+
+			if ( editTrigger ) {
+				var row;
+
+				try {
+					row = JSON.parse( editTrigger.getAttribute( 'data-row' ) || '{}' );
+				} catch ( e ) {
+					row = {};
+				}
+
+				enterEditMode( editTrigger.getAttribute( 'data-edit-type' ), row );
+				return;
+			}
+
 			var deleteTrigger = event.target.closest( '[data-encounter-delete]' );
 
 			if ( deleteTrigger ) {
@@ -70,7 +84,17 @@
 				formData.append( 'encounter_id', encounterId );
 				formData.append( idField, id );
 
-				post( formData );
+				// Deleting the row currently open in the edit form (e.g. via
+				// its own delete button while mid-edit) resets that form back
+				// to "add" mode instead of leaving it pointed at an id that
+				// no longer exists.
+				post( formData, function () {
+					if ( 'problem_id' === idField && document.getElementById( 'dak-encounter-problem-id' ).value === id ) {
+						resetProblemForm();
+					} else if ( 'prescription_id' === idField && document.getElementById( 'dak-encounter-prescription-id' ).value === id ) {
+						resetPrescriptionForm();
+					}
+				} );
 				return;
 			}
 
@@ -239,6 +263,95 @@
 		} );
 	}
 
+	/**
+	 * Populates the Problem/Prescription add-form with an existing row's
+	 * values and switches it into "update" mode (id field set, submit
+	 * button relabeled, Cancel button shown) — triggered by that row's
+	 * pencil button (see editButton()). Submitting from here still posts to
+	 * the same doctor_ak_add_encounter_problem/_prescription action; the
+	 * server updates in place instead of creating a new row whenever a
+	 * non-zero id is present (see Encounter_Handler::handle_add_problem()/
+	 * handle_add_prescription()).
+	 *
+	 * @param {string} type 'problem' or 'prescription'.
+	 * @param {Object} row  The clicked row's data (id + its own fields).
+	 */
+	function enterEditMode( type, row ) {
+		if ( 'problem' === type ) {
+			document.getElementById( 'dak-encounter-problem-id' ).value = row.id;
+			document.getElementById( 'dak-encounter-problem-description' ).value = row.description || '';
+			document.getElementById( 'dak-encounter-problem-notes' ).value = row.notes || '';
+			setEditState( 'dak-encounter-problem-submit', 'dak-encounter-problem-cancel', 'Update Problem' );
+			document.getElementById( 'dak-encounter-problem-description' ).scrollIntoView( { behavior: 'smooth', block: 'center' } );
+			document.getElementById( 'dak-encounter-problem-description' ).focus();
+			return;
+		}
+
+		if ( 'prescription' === type ) {
+			document.getElementById( 'dak-encounter-prescription-id' ).value = row.id;
+			document.getElementById( 'dak-encounter-prescription-medicine-name' ).value = row.medicine_name || '';
+			document.getElementById( 'dak-encounter-prescription-dosage' ).value = row.dosage || '';
+			document.getElementById( 'dak-encounter-prescription-frequency' ).value = row.frequency || '';
+			document.getElementById( 'dak-encounter-prescription-duration' ).value = row.duration || '';
+			document.getElementById( 'dak-encounter-prescription-instructions' ).value = row.instructions || '';
+			setEditState( 'dak-encounter-prescription-submit', 'dak-encounter-prescription-cancel', 'Update Medicine' );
+			document.getElementById( 'dak-encounter-prescription-medicine-name' ).scrollIntoView( { behavior: 'smooth', block: 'center' } );
+			document.getElementById( 'dak-encounter-prescription-medicine-name' ).focus();
+		}
+	}
+
+	function setEditState( submitId, cancelId, label ) {
+		var submitButton = document.getElementById( submitId );
+		var cancelButton = document.getElementById( cancelId );
+
+		if ( submitButton ) {
+			submitButton.textContent = label;
+		}
+
+		if ( cancelButton ) {
+			cancelButton.classList.remove( 'dak-hidden' );
+		}
+	}
+
+	function resetProblemForm() {
+		document.getElementById( 'dak-encounter-problem-id' ).value = '0';
+		document.getElementById( 'dak-encounter-problem-description' ).value = '';
+		document.getElementById( 'dak-encounter-problem-notes' ).value = '';
+		setText( 'dak-encounter-problem-submit', '+ Add Problem' );
+		hide( document.getElementById( 'dak-encounter-problem-cancel' ) );
+	}
+
+	function resetPrescriptionForm() {
+		document.getElementById( 'dak-encounter-prescription-id' ).value = '0';
+		document.getElementById( 'dak-encounter-prescription-medicine-name' ).value = '';
+		document.getElementById( 'dak-encounter-prescription-dosage' ).value = '';
+		document.getElementById( 'dak-encounter-prescription-frequency' ).value = '';
+		document.getElementById( 'dak-encounter-prescription-duration' ).value = '';
+		document.getElementById( 'dak-encounter-prescription-instructions' ).value = '';
+		setText( 'dak-encounter-prescription-submit', '+ Add Medicine' );
+		hide( document.getElementById( 'dak-encounter-prescription-cancel' ) );
+	}
+
+	function wireEditCancelButtons() {
+		var problemCancel = document.getElementById( 'dak-encounter-problem-cancel' );
+
+		if ( problemCancel ) {
+			problemCancel.addEventListener( 'click', resetProblemForm );
+		}
+
+		var prescriptionCancel = document.getElementById( 'dak-encounter-prescription-cancel' );
+
+		if ( prescriptionCancel ) {
+			prescriptionCancel.addEventListener( 'click', resetPrescriptionForm );
+		}
+	}
+
+	function hide( el ) {
+		if ( el ) {
+			el.classList.add( 'dak-hidden' );
+		}
+	}
+
 	function post( formData, onSuccess ) {
 		hideError();
 
@@ -309,12 +422,18 @@
 
 		setText( 'dak-encounter-meta', metaParts.join( ' · ' ) );
 
-		renderProblems( data.problems, isOpen );
-		renderPrescriptions( data.prescriptions, isOpen );
+		// Problems/Prescriptions/Bill/Reports stay fully editable even once
+		// the encounter is closed (fixing a typo, adding a missed charge,
+		// attaching a late-arriving report, etc.) — only "Close encounter"
+		// itself, gated below, is a one-way action. A closed encounter's
+		// bill edits also re-sync the revenue ledger server-side (see
+		// Encounter_Handler::handle_add_bill_item()/handle_delete_bill_item()).
+		renderProblems( data.problems, true );
+		renderPrescriptions( data.prescriptions, true );
 		renderMedicineSuggestions( data.medicines );
 		renderServiceOptions( data.services );
-		renderBillItems( data.bill_items, data.bill_total, isOpen );
-		renderReports( data.reports, isOpen );
+		renderBillItems( data.bill_items, data.bill_total, true );
+		renderReports( data.reports, true );
 
 		setText( 'dak-encounter-problems-count', String( data.problems.length ) );
 		setText( 'dak-encounter-prescriptions-count', String( data.prescriptions.length ) );
@@ -345,7 +464,7 @@
 			closeButton.classList.toggle( 'dak-hidden', ! isOpen );
 		}
 
-		toggleFormsVisible( isOpen );
+		toggleFormsVisible( true );
 
 		var closeHint = document.getElementById( 'dak-encounter-close-hint' );
 
@@ -399,6 +518,7 @@
 			main.appendChild( info );
 
 			if ( isOpen ) {
+				main.appendChild( editButton( 'problem', problem ) );
 				main.appendChild( deleteButton( 'doctor_ak_delete_encounter_problem', 'problem_id', problem.id ) );
 			}
 
@@ -450,6 +570,7 @@
 			main.appendChild( info );
 
 			if ( isOpen ) {
+				main.appendChild( editButton( 'prescription', prescription ) );
 				main.appendChild( deleteButton( 'doctor_ak_delete_encounter_prescription', 'prescription_id', prescription.id ) );
 			}
 
@@ -593,6 +714,26 @@
 		button.setAttribute( 'data-id', id );
 		button.setAttribute( 'aria-label', 'Delete' );
 		button.textContent = '×';
+		return button;
+	}
+
+	/**
+	 * A pencil icon button that loads a Problem/Prescription row back into
+	 * its add-form for editing (see enterEditMode()).
+	 *
+	 * @param {string} type 'problem' or 'prescription'.
+	 * @param {Object} row  The row's data, stashed as JSON on the button so
+	 *   the click handler doesn't need a separate lookup.
+	 */
+	function editButton( type, row ) {
+		var button = document.createElement( 'button' );
+		button.type = 'button';
+		button.className = 'dak-icon-button';
+		button.setAttribute( 'data-encounter-edit', '' );
+		button.setAttribute( 'data-edit-type', type );
+		button.setAttribute( 'data-row', JSON.stringify( row ) );
+		button.setAttribute( 'aria-label', 'Edit' );
+		button.innerHTML = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 3.5a1.7 1.7 0 0 1 2.4 2.4L6.5 15.3l-3 .7.7-3 9.3-9.3z"/></svg>';
 		return button;
 	}
 

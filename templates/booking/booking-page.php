@@ -146,13 +146,37 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 					<div id="dak-booking-identity-staff" class="dak-hidden">
 						<div class="dak-field">
-							<label for="dak-booking-patient-id"><?php esc_html_e( 'Patient', 'doctor-ak-portal' ); ?></label>
-							<select id="dak-booking-patient-id" name="patient_id" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search patients…', 'doctor-ak-portal' ); ?>">
-								<option value=""><?php esc_html_e( '+ Add new patient', 'doctor-ak-portal' ); ?></option>
+							<div class="dak-booking-field-label"><?php esc_html_e( 'Patient', 'doctor-ak-portal' ); ?></div>
+							<input type="hidden" id="dak-booking-patient-id" name="patient_id" value="<?php echo esc_attr( $selected_patient_id ); ?>">
+
+							<?php if ( count( $patient_options ) > 8 ) : ?>
+								<input type="search" class="dak-booking-patient-search" id="dak-booking-patient-search" placeholder="<?php esc_attr_e( 'Search patients…', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search patients', 'doctor-ak-portal' ); ?>">
+							<?php endif; ?>
+
+							<div class="dak-booking-patient-cards" id="dak-booking-patient-cards">
+								<button type="button" class="dak-booking-patient-card dak-booking-patient-card-add<?php echo 0 === $selected_patient_id ? ' is-selected' : ''; ?>" data-patient-card data-patient-id="" data-patient-name="">
+									<span class="dak-booking-patient-avatar" aria-hidden="true">+</span>
+									<span class="dak-booking-patient-info">
+										<strong><?php esc_html_e( 'Add New Patient', 'doctor-ak-portal' ); ?></strong>
+										<span><?php esc_html_e( 'Enter their details', 'doctor-ak-portal' ); ?></span>
+									</span>
+								</button>
+
 								<?php foreach ( $patient_options as $dak_patient_id => $dak_patient_name ) : ?>
-									<option value="<?php echo esc_attr( $dak_patient_id ); ?>" <?php selected( $selected_patient_id, $dak_patient_id ); ?>><?php echo esc_html( $dak_patient_name ); ?></option>
+									<button
+										type="button"
+										class="dak-booking-patient-card<?php echo $selected_patient_id === $dak_patient_id ? ' is-selected' : ''; ?>"
+										data-patient-card
+										data-patient-id="<?php echo esc_attr( $dak_patient_id ); ?>"
+										data-patient-name="<?php echo esc_attr( mb_strtolower( $dak_patient_name ) ); ?>"
+									>
+										<span class="dak-booking-patient-avatar" aria-hidden="true"><?php echo esc_html( mb_strtoupper( mb_substr( $dak_patient_name, 0, 1 ) ) ); ?></span>
+										<span class="dak-booking-patient-info"><strong><?php echo esc_html( $dak_patient_name ); ?></strong></span>
+									</button>
 								<?php endforeach; ?>
-							</select>
+							</div>
+
+							<p class="dak-field-hint dak-hidden" id="dak-booking-patient-cards-empty"><?php esc_html_e( 'No patients match your search.', 'doctor-ak-portal' ); ?></p>
 							<span class="dak-field-error" data-field="patient_id"></span>
 						</div>
 					</div>

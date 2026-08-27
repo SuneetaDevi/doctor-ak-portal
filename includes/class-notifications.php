@@ -112,10 +112,10 @@ class Notifications {
 	 * default on until that account explicitly turns it off. Covers
 	 * 'booking'/'paid'/'cancelled' (sent to a specific patient/doctor
 	 * involved in an appointment) and 'announcements' (sent to every
-	 * account in the directory when a new blog post or service is added —
-	 * see notify_new_blog_post()/notify_new_service()). Guests (no
-	 * account, no `user_id`) always receive — there's nowhere to store
-	 * their preference.
+	 * account in the directory when a new blog post is published — see
+	 * notify_new_blog_post(); a new service only emails administrators, see
+	 * notify_new_service()). Guests (no account, no `user_id`) always
+	 * receive — there's nowhere to store their preference.
 	 *
 	 * @param int    $user_id WP user ID, or 0 for a guest.
 	 * @param string $type    'booking', 'paid', 'cancelled', or 'announcements'.
@@ -182,9 +182,14 @@ class Notifications {
 	}
 
 	/**
-	 * Emails every opted-in account in the directory about a newly created
-	 * service. Hooked to 'doctor_ak_service_created' (see
-	 * Services::create()).
+	 * Emails every administrator that a doctor added a new service — an
+	 * operational notice for the clinic's own staff, not a patient-facing
+	 * announcement. Deliberately administrator-only (see admin_emails()):
+	 * a service is only relevant to that one doctor's own patients, and
+	 * broadcasting it to every patient/doctor/receptionist in the whole
+	 * directory (as this used to, via directory_users()) meant patients
+	 * with no relationship to that doctor were getting emailed about it.
+	 * Hooked to 'doctor_ak_service_created' (see Services::create()).
 	 *
 	 * @param int   $service_id Newly created service's ID.
 	 * @param int   $doctor_id  Doctor the service belongs to.
@@ -205,32 +210,29 @@ class Notifications {
 		$intro = '' !== $doctor_name
 			? sprintf(
 				/* translators: 1: service name, 2: doctor's display name, 3: price. */
-				__( 'A new service, "%1$s", is now available with Dr. %2$s for PKR%3$s.', 'doctor-ak-portal' ),
+				__( 'A new service, "%1$s", was added for Dr. %2$s at PKR%3$s.', 'doctor-ak-portal' ),
 				$fields['name'],
 				$doctor_name,
 				number_format( $charge, 0 )
 			)
 			: sprintf(
 				/* translators: 1: service name, 2: price. */
-				__( 'A new service, "%1$s", is now available for PKR%2$s.', 'doctor-ak-portal' ),
+				__( 'A new service, "%1$s", was added at PKR%2$s.', 'doctor-ak-portal' ),
 				$fields['name'],
 				number_format( $charge, 0 )
 			);
 
-		$booking_url = Page_Finder::url_for_shortcode( 'book_appointment' );
+		$dashboard_url = Page_Finder::url_for_shortcode( 'admin_dashboard' );
+		$services_url  = $dashboard_url ? add_query_arg( 'section', 'services', $dashboard_url ) : '';
 
-		foreach ( self::directory_users() as $user ) {
-			if ( ! is_email( $user->user_email ) || ! self::user_wants( $user->ID, 'announcements' ) ) {
-				continue;
-			}
-
+		foreach ( self::admin_emails() as $admin_email ) {
 			$this->send_simple(
-				$user->user_email,
+				$admin_email,
 				__( 'New Service Added', 'doctor-ak-portal' ),
 				__( 'New Service Added', 'doctor-ak-portal' ),
 				$intro,
-				$booking_url ? $booking_url : '',
-				$booking_url ? __( 'Book Now', 'doctor-ak-portal' ) : ''
+				$services_url ? $services_url : '',
+				$services_url ? __( 'View Services', 'doctor-ak-portal' ) : ''
 			);
 		}
 	}

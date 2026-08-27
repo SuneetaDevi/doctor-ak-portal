@@ -63,6 +63,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</div>
 					<div id="dak-encounter-problems-list"></div>
 					<form id="dak-encounter-add-problem-form" class="dak-encounter-inline-form">
+						<input type="hidden" id="dak-encounter-problem-id" value="0">
 						<div class="dak-field">
 							<label for="dak-encounter-problem-description"><?php esc_html_e( 'Problem / diagnosis', 'doctor-ak-portal' ); ?></label>
 							<input type="text" id="dak-encounter-problem-description" placeholder="<?php esc_attr_e( 'e.g. Acute pharyngitis', 'doctor-ak-portal' ); ?>">
@@ -78,7 +79,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<button type="button" class="dak-encounter-suggestion-chip" data-suggest-problem="<?php echo esc_attr( $dak_suggestion ); ?>"><?php echo esc_html( $dak_suggestion ); ?></button>
 							<?php endforeach; ?>
 						</div>
-						<button type="submit" class="dak-button dak-button-primary dak-button-sm"><?php esc_html_e( '+ Add Problem', 'doctor-ak-portal' ); ?></button>
+						<div class="dak-encounter-form-actions">
+							<button type="submit" class="dak-button dak-button-primary dak-button-sm" id="dak-encounter-problem-submit"><?php esc_html_e( '+ Add Problem', 'doctor-ak-portal' ); ?></button>
+							<button type="button" class="dak-button dak-button-secondary dak-button-sm dak-hidden" id="dak-encounter-problem-cancel"><?php esc_html_e( 'Cancel', 'doctor-ak-portal' ); ?></button>
+						</div>
 					</form>
 				</section>
 
@@ -94,6 +98,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</div>
 					<div id="dak-encounter-prescriptions-list"></div>
 					<form id="dak-encounter-add-prescription-form" class="dak-encounter-inline-form">
+						<input type="hidden" id="dak-encounter-prescription-id" value="0">
 						<div class="dak-field">
 							<label for="dak-encounter-prescription-medicine-name"><?php esc_html_e( 'Medicine', 'doctor-ak-portal' ); ?></label>
 							<input type="text" id="dak-encounter-prescription-medicine-name" list="dak-encounter-medicine-suggestions" autocomplete="off" placeholder="<?php esc_attr_e( 'Start typing — e.g. Amoxicillin', 'doctor-ak-portal' ); ?>">
@@ -115,7 +120,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<label for="dak-encounter-prescription-instructions"><?php esc_html_e( 'Instructions (optional)', 'doctor-ak-portal' ); ?></label>
 							<input type="text" id="dak-encounter-prescription-instructions" placeholder="<?php esc_attr_e( 'e.g. after meals', 'doctor-ak-portal' ); ?>">
 						</div>
-						<button type="submit" class="dak-button dak-button-primary dak-button-sm"><?php esc_html_e( '+ Add Medicine', 'doctor-ak-portal' ); ?></button>
+						<div class="dak-encounter-form-actions">
+							<button type="submit" class="dak-button dak-button-primary dak-button-sm" id="dak-encounter-prescription-submit"><?php esc_html_e( '+ Add Medicine', 'doctor-ak-portal' ); ?></button>
+							<button type="button" class="dak-button dak-button-secondary dak-button-sm dak-hidden" id="dak-encounter-prescription-cancel"><?php esc_html_e( 'Cancel', 'doctor-ak-portal' ); ?></button>
+						</div>
 					</form>
 				</section>
 
@@ -207,8 +215,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<button type="button" class="dak-button dak-button-primary dak-button-block<?php echo $is_closed ? ' dak-hidden' : ''; ?>" id="dak-encounter-close" data-encounter-close>
 						<?php esc_html_e( 'Close encounter', 'doctor-ak-portal' ); ?>
 					</button>
-					<p class="dak-field-hint<?php echo $is_closed ? ' dak-hidden' : ''; ?>" id="dak-encounter-close-hint"><?php esc_html_e( 'Checks the patient out and locks this record.', 'doctor-ak-portal' ); ?></p>
-					<p class="dak-field-hint<?php echo $is_closed ? '' : ' dak-hidden'; ?>" id="dak-encounter-closed-hint"><?php esc_html_e( 'This encounter is closed. The patient has been checked out.', 'doctor-ak-portal' ); ?></p>
+					<p class="dak-field-hint<?php echo $is_closed ? ' dak-hidden' : ''; ?>" id="dak-encounter-close-hint"><?php esc_html_e( 'Checks the patient out. You can still edit this record afterwards.', 'doctor-ak-portal' ); ?></p>
+					<p class="dak-field-hint<?php echo $is_closed ? '' : ' dak-hidden'; ?>" id="dak-encounter-closed-hint"><?php esc_html_e( 'This encounter is closed and the patient has been checked out — you can still add or edit its Problems, Prescriptions, Bill, and Documents.', 'doctor-ak-portal' ); ?></p>
 				</section>
 			</div>
 		</div>

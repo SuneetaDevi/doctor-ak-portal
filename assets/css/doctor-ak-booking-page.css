@@ -271,6 +271,95 @@
 	text-overflow: ellipsis !important;
 }
 
+/* Patient cards — staff (Admin/Receptionist) "Personal Details" step's
+   patient picker (see #dak-booking-identity-staff). Same visual language
+   as the doctor cards above. */
+
+.dak-booking-patient-cards {
+	display: grid !important;
+	grid-template-columns: repeat( auto-fill, minmax( 200px, 1fr ) ) !important;
+	gap: 0.65rem !important;
+	max-height: 320px !important;
+	overflow-y: auto !important;
+	padding: 0.1rem !important;
+}
+
+.dak-booking-patient-card {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.65rem !important;
+	text-align: left !important;
+	padding: 0.75rem !important;
+	border-radius: var( --dak-radius-md ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	cursor: pointer !important;
+	font-family: inherit !important;
+}
+
+.dak-booking-patient-card:hover {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-booking-patient-card.is-selected {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary-tint ) !important;
+}
+
+.dak-booking-patient-card.dak-hidden {
+	display: none !important;
+}
+
+.dak-booking-patient-avatar {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 2.25rem !important;
+	height: 2.25rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+	font-weight: 700 !important;
+	font-size: 0.85rem !important;
+}
+
+.dak-booking-patient-info {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.1rem !important;
+	min-width: 0 !important;
+}
+
+.dak-booking-patient-info strong {
+	font-size: 0.87rem !important;
+	color: var( --dak-text ) !important;
+	white-space: nowrap !important;
+	overflow: hidden !important;
+	text-overflow: ellipsis !important;
+}
+
+.dak-booking-patient-info span {
+	font-size: 0.76rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-booking-patient-card-add {
+	border-style: dashed !important;
+}
+
+.dak-booking-patient-card-add .dak-booking-patient-avatar {
+	background: transparent !important;
+	border: 1.5px dashed var( --dak-primary ) !important;
+	color: var( --dak-primary ) !important;
+	font-size: 1.1rem !important;
+}
+
+.dak-booking-patient-search {
+	margin-bottom: 0.65rem !important;
+}
+
 .dak-booking-selected-doctor {
 	display: flex !important;
 	align-items: center !important;

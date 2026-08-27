@@ -78,6 +78,36 @@ class Encounter_Prescriptions {
 	}
 
 	/**
+	 * Updates a prescription row, scoped to the encounter it must belong to.
+	 *
+	 * @param int   $prescription_id Prescription row ID.
+	 * @param int   $encounter_id    Encounter ID it must belong to.
+	 * @param array $fields          Same shape as add()'s $fields.
+	 * @return bool
+	 */
+	public static function update( $prescription_id, $encounter_id, array $fields ) {
+		global $wpdb;
+
+		return false !== $wpdb->update(
+			self::table_name(),
+			array(
+				'medicine_id'   => (int) $fields['medicine_id'],
+				'medicine_name' => $fields['medicine_name'],
+				'dosage'        => $fields['dosage'],
+				'frequency'     => $fields['frequency'],
+				'duration'      => $fields['duration'],
+				'instructions'  => $fields['instructions'],
+			),
+			array(
+				'id'           => (int) $prescription_id,
+				'encounter_id' => (int) $encounter_id,
+			),
+			array( '%d', '%s', '%s', '%s', '%s', '%s' ),
+			array( '%d', '%d' )
+		);
+	}
+
+	/**
 	 * Deletes a prescription row, scoped to the encounter it must belong to.
 	 *
 	 * @param int $prescription_id Prescription row ID.
