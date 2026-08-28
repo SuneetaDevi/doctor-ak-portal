@@ -515,6 +515,17 @@ class Notification_Center {
 			array_filter(
 				array_map( 'intval', $receptionist_ids ),
 				function ( $receptionist_id ) use ( $clinic_location_id ) {
+					// A video consultation (0, no physical clinic) always
+					// matches — only a real clinic gets checked against what's
+					// assigned. Without this, `in_array( 0, $assigned, true )`
+					// would always be false for a receptionist with specific
+					// clinics assigned, silently excluding them from every
+					// video-consultation notification despite the docblock
+					// above promising otherwise.
+					if ( 0 === (int) $clinic_location_id ) {
+						return true;
+					}
+
 					$assigned = array_map( 'intval', (array) get_user_meta( $receptionist_id, Clinic_Locations::RECEPTIONIST_META_KEY, true ) );
 
 					return empty( $assigned ) || in_array( (int) $clinic_location_id, $assigned, true );

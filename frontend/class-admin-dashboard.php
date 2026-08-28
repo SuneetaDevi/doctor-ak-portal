@@ -903,6 +903,31 @@ class Admin_Dashboard {
 	}
 
 	/**
+	 * Whether a receptionist scoped to specific clinics should see a row at
+	 * a given Clinics row ID — a video consultation (clinic_id 0, no
+	 * physical clinic) always passes, regardless of what's assigned, same
+	 * as a receptionist with no clinics assigned at all (front-desk for
+	 * everything). Only a physical-clinic row is actually checked against
+	 * the assigned list. Centralizes the one gotcha every clinic_location_id_
+	 * for_clinic() call site (overview_data(), 'appointments', 'encounters')
+	 * needs to get right: clinic_location_id_for_clinic(0) resolves to 0,
+	 * which is never a real Clinic_Locations ID, so a naive
+	 * `in_array( 0, $assigned, true )` check would wrongly filter every
+	 * video appointment out.
+	 *
+	 * @param int   $clinic_id                    Clinics table row ID, or 0/empty for video.
+	 * @param int[] $assigned_clinic_location_ids Receptionist's assigned Clinic_Locations IDs (already known non-empty by callers).
+	 * @return bool
+	 */
+	private static function receptionist_can_see_clinic( $clinic_id, array $assigned_clinic_location_ids ) {
+		if ( empty( $clinic_id ) ) {
+			return true;
+		}
+
+		return in_array( self::clinic_location_id_for_clinic( $clinic_id ), $assigned_clinic_location_ids, true );
+	}
+
+	/**
 	 * Flattens NAV_GROUPS into a single section slug => label map.
 	 *
 	 * @return array
@@ -1730,9 +1755,7 @@ class Admin_Dashboard {
 					array_filter(
 						$appointments,
 						function ( $row ) use ( $assigned_clinic_location_ids ) {
-							$clinic_location_id = self::clinic_location_id_for_clinic( $row['clinic_id'] ?? 0 );
-
-							return in_array( $clinic_location_id, $assigned_clinic_location_ids, true );
+							return self::receptionist_can_see_clinic( $row['clinic_id'] ?? 0, $assigned_clinic_location_ids );
 						}
 					)
 				);
@@ -1824,9 +1847,7 @@ class Admin_Dashboard {
 					array_filter(
 						$encounter_rows,
 						function ( $encounter ) use ( $assigned_clinic_location_ids ) {
-							$clinic_location_id = self::clinic_location_id_for_clinic( $encounter['appointment']['clinic_id'] ?? 0 );
-
-							return in_array( $clinic_location_id, $assigned_clinic_location_ids, true );
+							return self::receptionist_can_see_clinic( $encounter['appointment']['clinic_id'] ?? 0, $assigned_clinic_location_ids );
 						}
 					)
 				);
@@ -2282,9 +2303,7 @@ class Admin_Dashboard {
 					array_filter(
 						$upcoming,
 						function ( $row ) use ( $assigned_clinic_location_ids ) {
-							$clinic_location_id = self::clinic_location_id_for_clinic( $row['clinic_id'] ?? 0 );
-
-							return in_array( $clinic_location_id, $assigned_clinic_location_ids, true );
+							return self::receptionist_can_see_clinic( $row['clinic_id'] ?? 0, $assigned_clinic_location_ids );
 						}
 					)
 				);
