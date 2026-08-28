@@ -179,7 +179,7 @@
 		document.getElementById( 'dak-admin-appointment-payment-mode' ).value = 'manual';
 		document.getElementById( 'dak-admin-appointment-notes' ).value = '';
 		show( document.getElementById( 'dak-admin-appointment-guest-fields' ) );
-		updateServiceOptions( '', 'clinic', 0 );
+		updateServiceOptions( '', 'clinic', [] );
 	}
 
 	function wireAdd( modal ) {
@@ -232,21 +232,24 @@
 	}
 
 	/**
-	 * Repopulates the Service <select> for the given doctor + type, keeping
-	 * `keepServiceId` selected if it's still in the list (used when editing).
+	 * Repopulates the (multi-select) Service <select> for the given doctor +
+	 * type, keeping any IDs in `keepServiceIds` selected if still in the list
+	 * (used when editing). Also updates the running total shown below it.
 	 *
-	 * @param {string} doctorId     Doctor user ID (may be empty).
-	 * @param {string} type         'clinic' or 'video'.
-	 * @param {string|number} keepServiceId Service ID to reselect if present.
+	 * @param {string} doctorId       Doctor user ID (may be empty).
+	 * @param {string} type           'clinic' or 'video'.
+	 * @param {Array<string|number>} keepServiceIds Service IDs to reselect if present.
 	 */
-	function updateServiceOptions( doctorId, type, keepServiceId ) {
+	function updateServiceOptions( doctorId, type, keepServiceIds ) {
 		var select = document.getElementById( 'dak-admin-appointment-service' );
 
 		if ( ! select ) {
 			return;
 		}
 
-		select.innerHTML = '<option value="">No service / free booking</option>';
+		var keepIds = ( keepServiceIds || [] ).map( String );
+
+		select.innerHTML = '';
 
 		var services = servicesByDoctorAndType[ doctorId ] ? servicesByDoctorAndType[ doctorId ][ type ] : null;
 
@@ -255,13 +258,34 @@
 				var option = document.createElement( 'option' );
 				option.value = service.id;
 				option.textContent = service.name + ( service.charge > 0 ? ' (PKR ' + service.charge + ')' : '' );
+				option.selected = -1 !== keepIds.indexOf( String( service.id ) );
+				option.setAttribute( 'data-charge', service.charge || 0 );
 				select.appendChild( option );
 			} );
 		}
 
-		if ( keepServiceId ) {
-			select.value = String( keepServiceId );
+		window.DAKSearchableSelect && window.DAKSearchableSelect.enhance( select );
+		window.DAKSearchableSelect && window.DAKSearchableSelect.refresh( select );
+		updateServiceTotal();
+	}
+
+	/**
+	 * Shows the summed charge of every currently-selected service under the
+	 * multi-select, so an admin picking several services can see the combined
+	 * total before saving.
+	 */
+	function updateServiceTotal() {
+		var select = document.getElementById( 'dak-admin-appointment-service' );
+		var totalEl = document.getElementById( 'dak-admin-appointment-service-total' );
+
+		if ( ! select || ! totalEl ) {
+			return;
 		}
+
+		var total = Array.prototype.filter.call( select.options, function ( opt ) { return opt.selected; } )
+			.reduce( function ( sum, opt ) { return sum + ( parseFloat( opt.getAttribute( 'data-charge' ) ) || 0 ); }, 0 );
+
+		totalEl.textContent = total > 0 ? 'Total: PKR ' + total : '';
 	}
 
 	function wireDoctorTypeChange() {
@@ -273,11 +297,17 @@
 		}
 
 		function refresh() {
-			updateServiceOptions( doctorSelect.value, typeSelect.value, 0 );
+			updateServiceOptions( doctorSelect.value, typeSelect.value, [] );
 		}
 
 		doctorSelect.addEventListener( 'change', refresh );
 		typeSelect.addEventListener( 'change', refresh );
+
+		var serviceSelect = document.getElementById( 'dak-admin-appointment-service' );
+
+		if ( serviceSelect ) {
+			serviceSelect.addEventListener( 'change', updateServiceTotal );
+		}
 	}
 
 	/**
@@ -500,7 +530,19 @@
 				'' !== document.getElementById( 'dak-admin-appointment-patient' ).value
 			);
 
-			updateServiceOptions( trigger.getAttribute( 'data-doctor-id' ) || '', trigger.getAttribute( 'data-type' ) || 'clinic', trigger.getAttribute( 'data-service-id' ) || 0 );
+			var editServiceIds = [];
+
+			try {
+				editServiceIds = JSON.parse( trigger.getAttribute( 'data-service-ids' ) || '[]' );
+			} catch ( e ) {
+				editServiceIds = [];
+			}
+
+			if ( ! editServiceIds.length && trigger.getAttribute( 'data-service-id' ) && '0' !== trigger.getAttribute( 'data-service-id' ) ) {
+				editServiceIds = [ trigger.getAttribute( 'data-service-id' ) ];
+			}
+
+			updateServiceOptions( trigger.getAttribute( 'data-doctor-id' ) || '', trigger.getAttribute( 'data-type' ) || 'clinic', editServiceIds );
 
 			fetchSlots( trigger.getAttribute( 'data-doctor-id' ) || '', trigger.getAttribute( 'data-type' ) || 'clinic', dateField.value );
 
@@ -574,7 +616,9 @@
 			formData.append( 'appointment_id', document.getElementById( 'dak-admin-appointment-id' ).value );
 			formData.append( 'doctor_id', doctorId );
 			formData.append( 'type', document.getElementById( 'dak-admin-appointment-type' ).value );
-			formData.append( 'service_id', document.getElementById( 'dak-admin-appointment-service' ).value );
+			Array.prototype.forEach.call( document.getElementById( 'dak-admin-appointment-service' ).selectedOptions, function ( opt ) {
+				formData.append( 'service_ids[]', opt.value );
+			} );
 			formData.append( 'patient_id', document.getElementById( 'dak-admin-appointment-patient' ).value );
 			formData.append( 'guest_name', document.getElementById( 'dak-admin-appointment-guest-name' ).value );
 			formData.append( 'guest_email', document.getElementById( 'dak-admin-appointment-guest-email' ).value );

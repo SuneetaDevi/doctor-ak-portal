@@ -72,6 +72,7 @@ class Appointment_Handler {
 			'time'           => isset( $_POST['time'] ) ? sanitize_text_field( wp_unslash( $_POST['time'] ) ) : '',
 			'notes'          => isset( $_POST['notes'] ) ? sanitize_textarea_field( wp_unslash( $_POST['notes'] ) ) : '',
 			'service_id'     => isset( $_POST['service_id'] ) ? absint( wp_unslash( $_POST['service_id'] ) ) : 0,
+			'service_ids'    => isset( $_POST['service_ids'] ) && is_array( $_POST['service_ids'] ) ? array_map( 'absint', wp_unslash( $_POST['service_ids'] ) ) : array(),
 			'status'         => isset( $_POST['status'] ) ? sanitize_key( wp_unslash( $_POST['status'] ) ) : Appointments::STATUS_CONFIRMED,
 			'payment_status' => isset( $_POST['payment_status'] ) ? sanitize_key( wp_unslash( $_POST['payment_status'] ) ) : Appointments::PAYMENT_STATUS_PENDING,
 			'payment_mode'   => isset( $_POST['payment_mode'] ) ? sanitize_key( wp_unslash( $_POST['payment_mode'] ) ) : Appointments::PAYMENT_MODE_MANUAL,

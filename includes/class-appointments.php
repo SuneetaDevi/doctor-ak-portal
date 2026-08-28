@@ -94,6 +94,79 @@ class Appointments {
 	}
 
 	/**
+	 * Resolves the service(s) picked for a clinic appointment into its
+	 * charge/name fields — shared by create()/update() so both accept
+	 * either a single `service_id` (the patient-facing booking flow, one
+	 * service per visit) or several via `service_ids[]` (the admin Add/Edit
+	 * Appointment modal's multi-select, letting an admin bundle more than
+	 * one service — e.g. "OPD Consultation" + "Dressing" — into one visit).
+	 * Every picked service's charge is summed and its name joined into one
+	 * comma-separated string, so nothing downstream (invoices, PDFs, the
+	 * revenue ledger) needs to know it's more than one service — they only
+	 * ever see the combined charge/name, the same shape a single service
+	 * already produced. Never applies to a video consultation, which always
+	 * uses the doctor's own fixed price instead of a picked service.
+	 *
+	 * @param array  $data      Raw data passed to create()/update() — reads 'service_id' and/or 'service_ids'.
+	 * @param int    $doctor_id Doctor's user ID every picked service must belong to.
+	 * @param string $type      'clinic' or 'video'.
+	 * @return array|\WP_Error {
+	 *     @type int    $service_id   First/primary picked service's ID, 0 if none.
+	 *     @type array  $service_ids  Every picked service's ID, for storage (empty array if none).
+	 *     @type string $service_name Joined name(s), '' if none.
+	 *     @type float  $charge       Summed charge.
+	 *     @type float  $base_charge  Same as $charge (kept as its own field to mirror the video-consultation branch's base/final price split).
+	 * }
+	 */
+	private static function resolve_services( array $data, $doctor_id, $type ) {
+		$empty = array(
+			'service_id'   => 0,
+			'service_ids'  => array(),
+			'service_name' => '',
+			'charge'       => 0.0,
+			'base_charge'  => 0.0,
+		);
+
+		if ( self::TYPE_VIDEO === $type ) {
+			return $empty;
+		}
+
+		$posted_ids = array();
+
+		if ( isset( $data['service_ids'] ) && is_array( $data['service_ids'] ) ) {
+			$posted_ids = array_values( array_unique( array_filter( array_map( 'absint', $data['service_ids'] ) ) ) );
+		} elseif ( isset( $data['service_id'] ) && (int) $data['service_id'] > 0 ) {
+			$posted_ids = array( (int) $data['service_id'] );
+		}
+
+		if ( empty( $posted_ids ) ) {
+			return $empty;
+		}
+
+		$names  = array();
+		$charge = 0.0;
+
+		foreach ( $posted_ids as $service_id ) {
+			$service = Services::find( $service_id );
+
+			if ( ! $service || (int) $service['doctor_id'] !== (int) $doctor_id || self::TYPE_CLINIC !== $service['type'] || empty( $service['active'] ) ) {
+				return new \WP_Error( 'doctor_ak_invalid_service', __( 'Please choose valid, active services.', 'doctor-ak-portal' ) );
+			}
+
+			$names[] = $service['name'];
+			$charge += (float) $service['charge'];
+		}
+
+		return array(
+			'service_id'   => $posted_ids[0],
+			'service_ids'  => $posted_ids,
+			'service_name' => implode( ', ', $names ),
+			'charge'       => $charge,
+			'base_charge'  => $charge,
+		);
+	}
+
+	/**
 	 * Validates and saves a new appointment.
 	 *
 	 * @param array $data {
@@ -190,7 +263,8 @@ class Appointments {
 		$notes         = isset( $data['notes'] ) ? sanitize_textarea_field( $data['notes'] ) : '';
 		$patient_label = $patient_id > 0 ? self::patient_display_name( $patient_id ) : $guest_name;
 
-		$service_id       = isset( $data['service_id'] ) ? (int) $data['service_id'] : 0;
+		$service_id       = 0;
+		$service_ids      = array();
 		$service_name     = '';
 		$charge           = 0.0;
 		$base_charge      = 0.0;
@@ -200,7 +274,6 @@ class Appointments {
 		if ( self::TYPE_VIDEO === $type ) {
 			// Video consultations use the doctor's fixed (possibly
 			// discounted) price instead of a picked service.
-			$service_id   = 0;
 			$service_name = __( 'Video Consultation', 'doctor-ak-portal' );
 			$pricing      = Video_Pricing::effective_price_for_doctor( $doctor_id );
 			$charge       = $pricing['final_price'];
@@ -209,19 +282,18 @@ class Appointments {
 			if ( $pricing['discount_active'] ) {
 				$discount_percent = $pricing['discount_percent'];
 			}
-		} elseif ( $service_id > 0 ) {
-			$service = Services::find( $service_id );
+		} else {
+			$resolved = self::resolve_services( $data, $doctor_id, $type );
 
-			if ( ! $service || (int) $service['doctor_id'] !== $doctor_id || $service['type'] !== $type || empty( $service['active'] ) ) {
-				return new \WP_Error( 'doctor_ak_invalid_service', __( 'Please choose a valid service.', 'doctor-ak-portal' ) );
+			if ( is_wp_error( $resolved ) ) {
+				return $resolved;
 			}
 
-			$service_name = $service['name'];
-			$charge       = (float) $service['charge'];
-			$base_charge  = $charge;
-		} else {
-			$service_id  = 0;
-			$base_charge = $charge;
+			$service_id   = $resolved['service_id'];
+			$service_ids  = $resolved['service_ids'];
+			$service_name = $resolved['service_name'];
+			$charge       = $resolved['charge'];
+			$base_charge  = $resolved['base_charge'];
 		}
 
 		// The instant-booking surcharge is a video-consultation pricing knob
@@ -303,6 +375,7 @@ class Appointments {
 		update_post_meta( $post_id, 'doctor_ak_appointment_payment_status', $payment_status );
 		update_post_meta( $post_id, 'doctor_ak_appointment_notes', $notes );
 		update_post_meta( $post_id, 'doctor_ak_appointment_service_id', $service_id );
+		update_post_meta( $post_id, 'doctor_ak_appointment_service_ids', wp_json_encode( $service_ids ) );
 		update_post_meta( $post_id, 'doctor_ak_appointment_service_name', $service_name );
 		update_post_meta( $post_id, 'doctor_ak_appointment_charge', $charge );
 		update_post_meta( $post_id, 'doctor_ak_appointment_base_charge', $base_charge );
@@ -409,7 +482,8 @@ class Appointments {
 		$notes         = isset( $data['notes'] ) ? sanitize_textarea_field( $data['notes'] ) : '';
 		$patient_label = $patient_id > 0 ? self::patient_display_name( $patient_id ) : $guest_name;
 
-		$service_id       = isset( $data['service_id'] ) ? (int) $data['service_id'] : 0;
+		$service_id       = 0;
+		$service_ids      = array();
 		$service_name     = '';
 		$charge           = 0.0;
 		$base_charge      = 0.0;
@@ -418,7 +492,6 @@ class Appointments {
 		if ( self::TYPE_VIDEO === $type ) {
 			// Video consultations use the doctor's fixed (possibly
 			// discounted) price instead of a picked service.
-			$service_id   = 0;
 			$service_name = __( 'Video Consultation', 'doctor-ak-portal' );
 			$pricing      = Video_Pricing::effective_price_for_doctor( $doctor_id );
 			$charge       = $pricing['final_price'];
@@ -427,19 +500,18 @@ class Appointments {
 			if ( $pricing['discount_active'] ) {
 				$discount_percent = $pricing['discount_percent'];
 			}
-		} elseif ( $service_id > 0 ) {
-			$service = Services::find( $service_id );
+		} else {
+			$resolved = self::resolve_services( $data, $doctor_id, $type );
 
-			if ( ! $service || (int) $service['doctor_id'] !== $doctor_id || $service['type'] !== $type ) {
-				return new \WP_Error( 'doctor_ak_invalid_service', __( 'Please choose a valid service.', 'doctor-ak-portal' ) );
+			if ( is_wp_error( $resolved ) ) {
+				return $resolved;
 			}
 
-			$service_name = $service['name'];
-			$charge       = (float) $service['charge'];
-			$base_charge  = $charge;
-		} else {
-			$service_id  = 0;
-			$base_charge = $charge;
+			$service_id   = $resolved['service_id'];
+			$service_ids  = $resolved['service_ids'];
+			$service_name = $resolved['service_name'];
+			$charge       = $resolved['charge'];
+			$base_charge  = $resolved['base_charge'];
 		}
 
 		$status_options = self::status_options();
@@ -492,6 +564,7 @@ class Appointments {
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_payment_status', $payment_status );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_notes', $notes );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_service_id', $service_id );
+		update_post_meta( $appointment_id, 'doctor_ak_appointment_service_ids', wp_json_encode( $service_ids ) );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_service_name', $service_name );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_charge', $charge );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_base_charge', $base_charge );
@@ -3103,6 +3176,10 @@ class Appointments {
 			'notes'          => get_post_meta( $post->ID, 'doctor_ak_appointment_notes', true ),
 			'encounter_notes' => get_post_meta( $post->ID, 'doctor_ak_appointment_encounter_notes', true ),
 			'service_id'     => (int) get_post_meta( $post->ID, 'doctor_ak_appointment_service_id', true ),
+			'service_ids'    => (function() use ( $post ) {
+				$raw = json_decode( (string) get_post_meta( $post->ID, 'doctor_ak_appointment_service_ids', true ), true );
+				return is_array( $raw ) ? array_map( 'absint', $raw ) : array();
+			})(),
 			'service_name'   => get_post_meta( $post->ID, 'doctor_ak_appointment_service_name', true ),
 			'charge'            => (float) get_post_meta( $post->ID, 'doctor_ak_appointment_charge', true ),
 			'base_charge'       => (float) get_post_meta( $post->ID, 'doctor_ak_appointment_base_charge', true ),
