@@ -467,6 +467,52 @@ class Notifications {
 	}
 
 	/**
+	 * Hook callback: an admin/receptionist clicked "Send Reminder" on one
+	 * appointment in the Appointments list (see
+	 * Appointment_Handler::handle_send_reminder(), which fires
+	 * 'doctor_ak_appointment_reminder_sent' after recording the in-app
+	 * notification via Notification_Center::notify_reminder()) — emails
+	 * just the patient, a manual one-off version of send_reminders()'s
+	 * automated day-before cron email. Deliberately ignores is_enabled()'s
+	 * site-wide "reminder emails" toggle (an admin explicitly asking to
+	 * send this one right now should still work even if the automated
+	 * cron reminder is turned off) but still honors the patient's own
+	 * per-account preference.
+	 *
+	 * @param int $appointment_id Appointment post ID.
+	 * @return void
+	 */
+	public function notify_manual_reminder( $appointment_id ) {
+		$appt = Appointments::notification_data( $appointment_id );
+
+		if ( empty( $appt ) || empty( $appt['patient_id'] ) || ! self::user_wants( $appt['patient_id'], 'reminder' ) ) {
+			return;
+		}
+
+		$has_pending_charge = (float) $appt['charge'] > 0 && ! $appt['is_paid'];
+
+		$this->send(
+			$appt['patient_email'],
+			__( 'Appointment Reminder', 'doctor-ak-portal' ),
+			__( 'Your appointment reminder', 'doctor-ak-portal' ),
+			$has_pending_charge
+				? sprintf(
+					/* translators: 1: doctor's display name, 2: appointment date/time. */
+					__( 'Reminder: your appointment with Dr. %1$s is on %2$s — payment is still pending.', 'doctor-ak-portal' ),
+					$appt['doctor_name'],
+					$appt['datetime_label']
+				)
+				: sprintf(
+					/* translators: 1: doctor's display name, 2: appointment date/time. */
+					__( 'Reminder: your appointment with Dr. %1$s is on %2$s.', 'doctor-ak-portal' ),
+					$appt['doctor_name'],
+					$appt['datetime_label']
+				),
+			$appt
+		);
+	}
+
+	/**
 	 * Cron callback: emails a reminder for every appointment scheduled
 	 * tomorrow that hasn't already had one sent.
 	 *

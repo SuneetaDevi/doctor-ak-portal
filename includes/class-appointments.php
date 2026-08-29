@@ -2724,8 +2724,11 @@ class Appointments {
 	 * the doctor's name and adds human-readable labels for type/status, a
 	 * 'd/m/Y h:i A'-formatted 'datetime_label', and 'is_overdue' (the
 	 * appointment's date/time has already passed and it was never resolved
-	 * — i.e. not cancelled or completed) for templates that restrict a
-	 * lapsed appointment's actions to Reschedule only.
+	 * — i.e. not cancelled, completed, or already checked in) for templates
+	 * that restrict a lapsed appointment's actions to Reschedule only. A
+	 * checked-in appointment is excluded even if its time has technically
+	 * passed: the patient already showed up, so "time passed"/Reschedule
+	 * don't apply — there's nothing left to reschedule.
 	 *
 	 * @param array $appointment Appointment array from get().
 	 * @return array
@@ -2759,7 +2762,7 @@ class Appointments {
 		$start_timestamp = strtotime( $appointment['date'] . ' ' . $appointment['time'] );
 		$is_overdue       = false !== $start_timestamp
 			&& $start_timestamp < current_time( 'timestamp' ) // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- comparing against strtotime() of a stored local date/time string, not doing math that needs UTC.
-			&& ! in_array( $appointment['status'], array( self::STATUS_CANCELLED, self::STATUS_COMPLETED ), true );
+			&& ! in_array( $appointment['status'], array( self::STATUS_CANCELLED, self::STATUS_COMPLETED, self::STATUS_CHECKED_IN ), true );
 
 		return array(
 			'id'                => $appointment['id'],

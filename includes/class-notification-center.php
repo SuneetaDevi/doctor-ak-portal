@@ -150,6 +150,16 @@ class Notification_Center {
 			$appointment_id
 		);
 
+		/**
+		 * Fires after a manual reminder is recorded in-app — Notifications
+		 * listens here to also email the patient (see
+		 * Notifications::notify_manual_reminder()), since this class only
+		 * ever handles the in-app side (see this file's own docblock).
+		 *
+		 * @param int $appointment_id Appointment post ID.
+		 */
+		do_action( 'doctor_ak_appointment_reminder_sent', $appointment_id );
+
 		return true;
 	}
 
