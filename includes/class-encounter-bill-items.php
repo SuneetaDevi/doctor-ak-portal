@@ -20,6 +20,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  * original charge. The encounter's total bill = appointment charge + sum of
  * these rows (see Encounter_Bill_Pdf, which reads the appointment charge
  * directly rather than duplicating it into a row here).
+ *
+ * Each row can carry its own discount (0-100%, e.g. a loyalty/staff
+ * discount on one particular service added to the bill) — decode_row()
+ * applies it, so every consumer that reads a row's 'amount' (this class's
+ * own total_for_encounter(), Encounter_Bill_Pdf, Revenue_Ledger) already
+ * gets the final, already-discounted figure without needing its own
+ * discount-aware logic; the pre-discount price is separately available as
+ * 'original_amount' for the add/edit UI to show what was waived.
  */
 class Encounter_Bill_Items {
 
@@ -44,26 +52,38 @@ class Encounter_Bill_Items {
 	/**
 	 * Adds a bill line item to an encounter.
 	 *
-	 * @param int    $encounter_id Encounter ID.
-	 * @param string $description  Line item description.
-	 * @param float  $amount       Line item amount.
+	 * @param int    $encounter_id     Encounter ID.
+	 * @param string $description      Line item description.
+	 * @param float  $amount           Line item's pre-discount amount.
+	 * @param float  $discount_percent Discount to apply to this line, 0-100. Clamped into range.
 	 * @return int|false New bill item row ID, or false on failure.
 	 */
-	public static function add( $encounter_id, $description, $amount ) {
+	public static function add( $encounter_id, $description, $amount, $discount_percent = 0 ) {
 		global $wpdb;
 
 		$inserted = $wpdb->insert(
 			self::table_name(),
 			array(
-				'encounter_id' => (int) $encounter_id,
-				'description'  => $description,
-				'amount'       => number_format( (float) $amount, 2, '.', '' ),
-				'created_at'   => current_time( 'mysql' ),
+				'encounter_id'     => (int) $encounter_id,
+				'description'      => $description,
+				'amount'           => number_format( (float) $amount, 2, '.', '' ),
+				'discount_percent' => number_format( self::clamp_discount( $discount_percent ), 2, '.', '' ),
+				'created_at'       => current_time( 'mysql' ),
 			),
-			array( '%d', '%s', '%s', '%s' )
+			array( '%d', '%s', '%s', '%s', '%s' )
 		);
 
 		return $inserted ? (int) $wpdb->insert_id : false;
+	}
+
+	/**
+	 * Clamps a posted discount percent into the valid 0-100 range.
+	 *
+	 * @param float $discount_percent Raw value.
+	 * @return float
+	 */
+	private static function clamp_discount( $discount_percent ) {
+		return max( 0, min( 100, (float) $discount_percent ) );
 	}
 
 	/**
@@ -90,7 +110,7 @@ class Encounter_Bill_Items {
 	 * Every bill item row for one encounter, oldest first.
 	 *
 	 * @param int $encounter_id Encounter ID.
-	 * @return array List of `array( 'id', 'description', 'amount' )`.
+	 * @return array List of decoded rows, see decode_row().
 	 */
 	public static function for_encounter( $encounter_id ) {
 		global $wpdb;
@@ -100,20 +120,12 @@ class Encounter_Bill_Items {
 			ARRAY_A
 		);
 
-		return array_map(
-			function ( $row ) {
-				return array(
-					'id'          => (int) $row['id'],
-					'description' => $row['description'],
-					'amount'      => (float) $row['amount'],
-				);
-			},
-			$rows
-		);
+		return array_map( array( __CLASS__, 'decode_row' ), $rows );
 	}
 
 	/**
-	 * Sum of every bill item's amount for one encounter.
+	 * Sum of every bill item's final (already-discounted) amount for one
+	 * encounter.
 	 *
 	 * @param int $encounter_id Encounter ID.
 	 * @return float
@@ -122,7 +134,33 @@ class Encounter_Bill_Items {
 		global $wpdb;
 
 		return (float) $wpdb->get_var(
-			$wpdb->prepare( 'SELECT COALESCE(SUM(amount), 0) FROM ' . self::table_name() . ' WHERE encounter_id = %d', (int) $encounter_id ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
+			$wpdb->prepare(
+				'SELECT COALESCE(SUM(amount * (1 - discount_percent / 100)), 0) FROM ' . self::table_name() . ' WHERE encounter_id = %d', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
+				(int) $encounter_id
+			)
+		);
+	}
+
+	/**
+	 * Decodes a raw DB row: casts numbers, and resolves 'amount' to the
+	 * final, already-discounted figure (with the original pre-discount
+	 * price kept separately as 'original_amount') — see this class's own
+	 * docblock for why.
+	 *
+	 * @param array $row Raw associative row from $wpdb.
+	 * @return array
+	 */
+	private static function decode_row( array $row ) {
+		$original_amount  = (float) $row['amount'];
+		$discount_percent = isset( $row['discount_percent'] ) ? (float) $row['discount_percent'] : 0.0;
+		$final_amount     = round( $original_amount * ( 1 - $discount_percent / 100 ), 2 );
+
+		return array(
+			'id'               => (int) $row['id'],
+			'description'      => $row['description'],
+			'original_amount'  => $original_amount,
+			'discount_percent' => $discount_percent,
+			'amount'           => $final_amount,
 		);
 	}
 }

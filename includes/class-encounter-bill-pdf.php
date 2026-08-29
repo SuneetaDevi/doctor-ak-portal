@@ -113,10 +113,31 @@ class Encounter_Bill_Pdf extends Pdf_Document {
 			$total += $appt_charge;
 		}
 
+		// The Amount column's own text ("PKR 12,345") needs roughly this
+		// much reserved space to its left — same margin Doctor_Statement_Pdf's
+		// fit_text() leaves for a right-aligned neighbor.
+		$description_max_width = ( $right - $left ) - 90;
+
 		foreach ( $bill_items as $item ) {
+			// 'amount' is already the final, post-discount figure (see
+			// Encounter_Bill_Items::decode_row()) — note the discount
+			// alongside the description instead of a separate column, so a
+			// discounted line's math is still visible on the printed bill.
+			$description = ( isset( $item['discount_percent'] ) && $item['discount_percent'] > 0 )
+				? sprintf(
+					/* translators: 1: item description, 2: discount percent, 3: original pre-discount amount. */
+					__( '%1$s (%2$s%% off PKR %3$s)', 'doctor-ak-portal' ),
+					$item['description'],
+					rtrim( rtrim( number_format( (float) $item['discount_percent'], 2 ), '0' ), '.' ),
+					number_format( (float) $item['original_amount'], 0 )
+				)
+				: $item['description'];
+
+			$description = self::fit_text( $description, 'F1', 10, $description_max_width );
+
 			$stream .= self::draw_table_row(
 				array(
-					array( 'x' => $left, 'text' => $item['description'] ),
+					array( 'x' => $left, 'text' => $description ),
 					array(
 						'x'     => $right,
 						'text'  => 'PKR ' . number_format( (float) $item['amount'], 0 ),
@@ -142,5 +163,37 @@ class Encounter_Bill_Pdf extends Pdf_Document {
 		$stream .= self::draw_text( $left, $y, 'F1', 9, __( 'Thank you for choosing us — we look forward to seeing you.', 'doctor-ak-portal' ), 0.4 );
 
 		return self::assemble_single_page( $stream, $logo );
+	}
+
+	/**
+	 * Truncates text with '...' if it's estimated to overflow $max_width —
+	 * same avg-char-width estimate Doctor_Statement_Pdf's fit_text() uses,
+	 * duplicated here rather than shared since Pdf_Document itself has no
+	 * text-fitting helper. Guards a discounted line's now-longer description
+	 * (name + "(X% off PKR Y)") from overlapping the right-aligned Amount
+	 * column.
+	 *
+	 * @param string $text      Text to fit.
+	 * @param string $font      'F1' (regular) or 'F2' (bold).
+	 * @param int    $size      Font size.
+	 * @param float  $max_width Available width, in PDF points.
+	 * @return string
+	 */
+	private static function fit_text( $text, $font, $size, $max_width ) {
+		if ( $max_width <= 0 ) {
+			return $text;
+		}
+
+		$bold            = 'F2' === $font;
+		$avg_char_width  = $size * ( $bold ? 0.60 : 0.52 );
+		$estimated_width = self::mb_strlen_safe( $text ) * $avg_char_width;
+
+		if ( $estimated_width <= $max_width ) {
+			return $text;
+		}
+
+		$max_chars = max( 1, (int) floor( $max_width / $avg_char_width ) - 3 );
+
+		return function_exists( 'mb_substr' ) ? mb_substr( $text, 0, $max_chars ) . '...' : substr( $text, 0, $max_chars ) . '...';
 	}
 }

@@ -46,10 +46,12 @@
 			formData.append( 'service_id', serviceSelect ? serviceSelect.value : '0' );
 			formData.append( 'description', document.getElementById( 'dak-encounter-bill-description' ).value );
 			formData.append( 'amount', document.getElementById( 'dak-encounter-bill-amount' ).value );
+			formData.append( 'discount_percent', document.getElementById( 'dak-encounter-bill-discount' ).value || '0' );
 		}, function () {
 			document.getElementById( 'dak-encounter-bill-service' ).value = '0';
 			document.getElementById( 'dak-encounter-bill-description' ).value = '';
 			document.getElementById( 'dak-encounter-bill-amount' ).value = '';
+			document.getElementById( 'dak-encounter-bill-discount' ).value = '';
 		} );
 
 		wireUploadReportForm();
@@ -599,6 +601,14 @@
 					info.className = 'dak-admin-record-row-info';
 					info.innerHTML = '<strong></strong>';
 					info.querySelector( 'strong' ).textContent = item.description;
+
+					if ( item.discount_percent > 0 ) {
+						var discountNote = document.createElement( 'span' );
+						discountNote.className = 'dak-admin-record-row-id';
+						discountNote.textContent = item.discount_percent + '% off — was PKR ' + Math.round( item.original_amount );
+						info.appendChild( discountNote );
+					}
+
 					main.appendChild( info );
 
 					var amount = document.createElement( 'span' );

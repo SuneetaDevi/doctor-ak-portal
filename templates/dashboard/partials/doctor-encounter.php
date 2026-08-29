@@ -154,6 +154,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<label for="dak-encounter-bill-amount"><?php esc_html_e( 'Amount (PKR)', 'doctor-ak-portal' ); ?></label>
 							<input type="number" id="dak-encounter-bill-amount" min="0" step="0.01" placeholder="0">
 						</div>
+						<div class="dak-field">
+							<label for="dak-encounter-bill-discount"><?php esc_html_e( 'Discount (%)', 'doctor-ak-portal' ); ?></label>
+							<input type="number" id="dak-encounter-bill-discount" min="0" max="100" step="0.01" placeholder="0">
+						</div>
 						<button type="submit" class="dak-button dak-button-primary dak-button-sm"><?php esc_html_e( '+ Add Charge', 'doctor-ak-portal' ); ?></button>
 					</form>
 				</section>

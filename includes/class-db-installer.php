@@ -150,7 +150,7 @@ class Db_Installer {
 	 *
 	 * @var string
 	 */
-	const ENCOUNTER_BILL_ITEMS_DB_VERSION = '1.0.0';
+	const ENCOUNTER_BILL_ITEMS_DB_VERSION = '1.1.0';
 
 	/**
 	 * Option name tracking the installed encounter-reports-table schema version.
@@ -649,6 +649,7 @@ class Db_Installer {
 			encounter_id BIGINT UNSIGNED NOT NULL,
 			description VARCHAR(255) NOT NULL,
 			amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+			discount_percent DECIMAL(5,2) NOT NULL DEFAULT 0.00,
 			created_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),
 			KEY encounter_id (encounter_id)

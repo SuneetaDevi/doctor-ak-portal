@@ -405,7 +405,9 @@ class Encounter_Handler {
 	 * for one of the doctor's own Services (service_id > 0, description/
 	 * amount are taken from the service record itself, same "snapshot"
 	 * pattern handle_add_prescription() uses for a picked medicine) or a
-	 * free-typed one-off charge (service_id = 0).
+	 * free-typed one-off charge (service_id = 0). An optional discount
+	 * (0-100%) applies to this one line item — see Encounter_Bill_Items's
+	 * own docblock for how it's applied.
 	 *
 	 * @return void
 	 */
@@ -416,9 +418,10 @@ class Encounter_Handler {
 
 		$encounter = self::authorized_encounter_from_request();
 
-		$service_id  = isset( $_POST['service_id'] ) ? absint( wp_unslash( $_POST['service_id'] ) ) : 0;
-		$description = isset( $_POST['description'] ) ? sanitize_text_field( wp_unslash( $_POST['description'] ) ) : '';
-		$amount      = isset( $_POST['amount'] ) ? (float) wp_unslash( $_POST['amount'] ) : 0;
+		$service_id       = isset( $_POST['service_id'] ) ? absint( wp_unslash( $_POST['service_id'] ) ) : 0;
+		$description      = isset( $_POST['description'] ) ? sanitize_text_field( wp_unslash( $_POST['description'] ) ) : '';
+		$amount           = isset( $_POST['amount'] ) ? (float) wp_unslash( $_POST['amount'] ) : 0;
+		$discount_percent = isset( $_POST['discount_percent'] ) ? (float) wp_unslash( $_POST['discount_percent'] ) : 0;
 
 		if ( $service_id > 0 ) {
 			$service = Services::find( $service_id );
@@ -437,7 +440,11 @@ class Encounter_Handler {
 			wp_send_json_error( array( 'message' => __( 'Please provide a valid amount.', 'doctor-ak-portal' ) ) );
 		}
 
-		Encounter_Bill_Items::add( $encounter['id'], $description, $amount );
+		if ( $discount_percent < 0 || $discount_percent > 100 ) {
+			wp_send_json_error( array( 'message' => __( 'Please provide a valid discount between 0 and 100%.', 'doctor-ak-portal' ) ) );
+		}
+
+		Encounter_Bill_Items::add( $encounter['id'], $description, $amount, $discount_percent );
 
 		// A closed encounter's extra charges were already posted to the
 		// revenue ledger once, at close time (Revenue_Ledger::

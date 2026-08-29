@@ -86,6 +86,13 @@ class Prescription_Pdf extends Pdf_Document {
 			$stream .= self::draw_text( $left, $y, 'F2', 10, strtoupper( __( 'Diagnosis', 'doctor-ak-portal' ) ) );
 			$y      -= 14;
 
+			// Long clinical notes need to wrap within the page instead of
+			// running off its right edge — a bullet-indent hanging layout:
+			// "• " only on the first wrapped line, later lines aligned
+			// under the text rather than the bullet.
+			$bullet_indent = 12;
+			$wrap_width    = ( $right - $left ) - $bullet_indent;
+
 			foreach ( $problems as $problem ) {
 				$line = $problem['description'];
 
@@ -93,8 +100,15 @@ class Prescription_Pdf extends Pdf_Document {
 					$line .= ' — ' . $problem['notes'];
 				}
 
-				$stream .= self::draw_text( $left, $y, 'F1', 9, '• ' . $line, 0.2 );
-				$y      -= 13;
+				$wrapped = self::wrap_text( $line, 'F1', 9, $wrap_width );
+
+				foreach ( $wrapped as $index => $wrapped_line ) {
+					$prefix = 0 === $index ? '• ' : '';
+					$x      = 0 === $index ? $left : $left + $bullet_indent;
+
+					$stream .= self::draw_text( $x, $y, 'F1', 9, $prefix . $wrapped_line, 0.2 );
+					$y      -= 13;
+				}
 			}
 
 			$y -= 14;
@@ -156,5 +170,50 @@ class Prescription_Pdf extends Pdf_Document {
 		$stream .= self::draw_text_right( $right, $y, 'F1', 9, sprintf( __( 'Dr. %s', 'doctor-ak-portal' ), $appointment['doctor_name'] ), 0.4 );
 
 		return self::assemble_single_page( $stream, $logo );
+	}
+
+	/**
+	 * Greedy word-wraps text to fit within $max_width, with no line limit
+	 * or truncation — unlike Doctor_Statement_Pdf's fit_text()/wrap_lines()
+	 * (which cap a fixed-height table cell at N lines and truncate with
+	 * '...' past that), a diagnosis note has no such height limit here, so
+	 * it should just keep flowing onto as many lines as it needs rather
+	 * than ever being cut off.
+	 *
+	 * @param string $text      Text to wrap.
+	 * @param string $font      'F1' (regular) or 'F2' (bold).
+	 * @param int    $size      Font size.
+	 * @param float  $max_width Available width, in PDF points.
+	 * @return string[] One or more lines.
+	 */
+	private static function wrap_text( $text, $font, $size, $max_width ) {
+		if ( $max_width <= 0 || '' === trim( $text ) ) {
+			return array( $text );
+		}
+
+		$bold           = 'F2' === $font;
+		$avg_char_width = $size * ( $bold ? 0.60 : 0.52 );
+		$max_chars      = max( 1, (int) floor( $max_width / $avg_char_width ) );
+
+		$words = preg_split( '/\s+/', trim( $text ) );
+		$lines = array();
+		$line  = '';
+
+		foreach ( $words as $word ) {
+			$candidate = '' === $line ? $word : $line . ' ' . $word;
+
+			if ( self::mb_strlen_safe( $candidate ) <= $max_chars || '' === $line ) {
+				$line = $candidate;
+			} else {
+				$lines[] = $line;
+				$line    = $word;
+			}
+		}
+
+		if ( '' !== $line ) {
+			$lines[] = $line;
+		}
+
+		return $lines;
 	}
 }
