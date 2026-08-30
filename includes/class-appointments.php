@@ -2258,6 +2258,9 @@ class Appointments {
 	 *     @type string $status         One of the STATUS_* constants.
 	 *     @type string $payment_status One of the PAYMENT_STATUS_* constants.
 	 *     @type string $payment_mode   One of the PAYMENT_MODE_* constants.
+	 *     @type string $sort           'asc' for soonest-first (used for "upcoming" range
+	 *                                  views so the next appointment leads); omit/anything
+	 *                                  else for the default most-recent/furthest-future-first.
 	 * }
 	 * @return array
 	 */
@@ -2348,10 +2351,17 @@ class Appointments {
 
 		$appointments = array_map( array( __CLASS__, 'get' ), wp_list_pluck( $query->posts, 'ID' ) );
 
+		// Upcoming-only views read soonest-first (the next appointment is what
+		// matters most); every other view — past, all, custom range — reads
+		// most-recent/furthest-future-first.
+		$ascending = isset( $filters['sort'] ) && 'asc' === $filters['sort'];
+
 		usort(
 			$appointments,
-			function ( $a, $b ) {
-				return strcmp( $b['date'] . $b['time'], $a['date'] . $a['time'] );
+			function ( $a, $b ) use ( $ascending ) {
+				return $ascending
+					? strcmp( $a['date'] . $a['time'], $b['date'] . $b['time'] )
+					: strcmp( $b['date'] . $b['time'], $a['date'] . $a['time'] );
 			}
 		);
 

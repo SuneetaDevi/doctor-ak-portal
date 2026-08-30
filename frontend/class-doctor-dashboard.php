@@ -456,6 +456,7 @@ class Doctor_Dashboard {
 				array(
 					'date_from' => $query_date_from,
 					'date_to'   => $query_date_to,
+					'sort'      => 'upcoming' === $filters['range'] ? 'asc' : 'desc',
 				)
 			)
 		);

@@ -426,6 +426,7 @@ class Patient_Dashboard {
 				'status'     => $status,
 				'date_from'  => $query_date_from,
 				'date_to'    => $query_date_to,
+				'sort'       => 'upcoming' === $range ? 'asc' : 'desc',
 			)
 		);
 
