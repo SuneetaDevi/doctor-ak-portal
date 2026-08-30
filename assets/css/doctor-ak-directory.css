@@ -476,6 +476,31 @@
 	border-radius: var( --dak-radius-md ) !important;
 }
 
+/* Selectable clinic rows on the doctor profile page (see
+   templates/directory/doctor-profile-view.php +
+   doctor-ak-doctor-profile-clinics.js) — the "Available At"/"Provided By"
+   uses of this same row class elsewhere are read-only and never carry
+   [data-clinic-select], so this doesn't affect them. */
+.dak-profile-clinic-row[data-clinic-select] {
+	cursor: pointer !important;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.dak-profile-clinic-row[data-clinic-select]:hover {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-profile-clinic-row[data-clinic-select]:focus-visible {
+	outline: 2px solid var( --dak-primary ) !important;
+	outline-offset: 2px !important;
+}
+
+.dak-profile-clinic-row[data-clinic-select].is-selected {
+	border-color: var( --dak-primary ) !important;
+	box-shadow: 0 0 0 1px var( --dak-primary ) !important;
+	background: var( --dak-primary-tint ) !important;
+}
+
 .dak-profile-clinic-info {
 	display: flex !important;
 	flex-direction: column !important;

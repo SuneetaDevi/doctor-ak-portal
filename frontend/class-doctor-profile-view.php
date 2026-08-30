@@ -78,6 +78,14 @@ class Doctor_Profile_View {
 			array( 'doctor-ak-portal-auth' ),
 			Assets::version( 'assets/css/doctor-ak-directory.css' )
 		);
+
+		wp_enqueue_script(
+			'doctor-ak-portal-doctor-profile-clinics',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-doctor-profile-clinics.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-doctor-profile-clinics.js' ),
+			true
+		);
 	}
 
 	/**

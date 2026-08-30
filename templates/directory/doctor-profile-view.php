@@ -183,15 +183,28 @@ $dak_profile_view_icons = array(
 							<?php esc_html_e( 'Clinics', 'doctor-ak-portal' ); ?>
 						</h2>
 
-						<div class="dak-profile-clinics">
+						<div class="dak-profile-clinics" id="dak-profile-clinic-list">
 							<?php foreach ( $doctor['clinics'] as $clinic ) : ?>
-								<div class="dak-profile-clinic-row">
+								<?php
+								$dak_clinic_is_video = \DoctorAKPortal\Includes\Clinics::TYPE_VIDEO === $clinic['type'];
+								$dak_clinic_label    = $dak_clinic_is_video ? __( 'Online Consultation', 'doctor-ak-portal' ) : $clinic['name'];
+								?>
+								<div
+									class="dak-profile-clinic-row"
+									data-clinic-select
+									role="button"
+									tabindex="0"
+									aria-pressed="false"
+									data-booking-type="<?php echo esc_attr( $dak_clinic_is_video ? 'video' : 'clinic' ); ?>"
+									data-clinic-label="<?php echo esc_attr( $dak_clinic_label ); ?>"
+									data-fee-label="<?php echo esc_attr( $clinic['fee_label'] ); ?>"
+								>
 									<div class="dak-profile-clinic-info">
 										<strong>
-											<?php echo esc_html( \DoctorAKPortal\Includes\Clinics::TYPE_VIDEO === $clinic['type'] ? __( 'Online Consultation', 'doctor-ak-portal' ) : $clinic['name'] ); ?>
+											<?php echo esc_html( $dak_clinic_label ); ?>
 										</strong>
 
-										<?php if ( \DoctorAKPortal\Includes\Clinics::TYPE_VIDEO !== $clinic['type'] && ( '' !== $clinic['address'] || '' !== $clinic['area_label'] || '' !== $clinic['city_label'] ) ) : ?>
+										<?php if ( ! $dak_clinic_is_video && ( '' !== $clinic['address'] || '' !== $clinic['area_label'] || '' !== $clinic['city_label'] ) ) : ?>
 											<span class="dak-profile-clinic-meta">
 												<span class="dak-location-icon" aria-hidden="true"><?php echo $dak_profile_view_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 												<?php echo esc_html( implode( ', ', array_filter( array( $clinic['address'], $clinic['area_label'], $clinic['city_label'] ) ) ) ); ?>
@@ -230,22 +243,28 @@ $dak_profile_view_icons = array(
 				<div class="dak-profile-card dak-profile-booking-card">
 					<span class="dak-eyebrow"><?php esc_html_e( 'Book Appointment', 'doctor-ak-portal' ); ?></span>
 					<h2><?php esc_html_e( 'Consult Dr.', 'doctor-ak-portal' ); ?> <?php echo esc_html( $doctor['name'] ); ?></h2>
-					<p class="dak-profile-booking-hint"><?php esc_html_e( 'Choose a date and time that works for you on the next step.', 'doctor-ak-portal' ); ?></p>
+					<p class="dak-profile-booking-hint" id="dak-profile-booking-hint">
+						<?php
+						echo ! empty( $doctor['clinics'] )
+							? esc_html__( 'Select a clinic from the list to see its fee, then choose a date and time on the next step.', 'doctor-ak-portal' )
+							: esc_html__( 'Choose a date and time that works for you on the next step.', 'doctor-ak-portal' );
+						?>
+					</p>
 
-					<?php if ( '' !== $starting_fee_label ) : ?>
-						<div class="dak-profile-booking-fee">
-							<span><?php esc_html_e( 'Consultation from', 'doctor-ak-portal' ); ?></span>
-							<strong><?php echo esc_html( $starting_fee_label ); ?></strong>
-						</div>
-					<?php endif; ?>
+					<div class="dak-profile-booking-fee<?php echo '' === $starting_fee_label ? ' dak-hidden' : ''; ?>" id="dak-profile-booking-fee">
+						<span id="dak-profile-booking-fee-label"><?php esc_html_e( 'Consultation from', 'doctor-ak-portal' ); ?></span>
+						<strong id="dak-profile-booking-fee-amount"><?php echo esc_html( $starting_fee_label ); ?></strong>
+					</div>
 
 					<button
 						type="button"
 						class="dak-button dak-button-primary dak-button-block"
+						id="dak-profile-booking-button"
 						data-dak-book-appointment
 						data-doctor-id="<?php echo esc_attr( $doctor['id'] ); ?>"
 						data-doctor-name="<?php echo esc_attr( sprintf( 'Dr. %s', $doctor['name'] ) ); ?>"
 						<?php if ( ! $doctor['video_consultation'] ) : ?>data-video-disabled="1"<?php endif; ?>
+						<?php if ( ! empty( $doctor['clinics'] ) ) : ?>disabled title="<?php esc_attr_e( 'Select a clinic below first', 'doctor-ak-portal' ); ?>"<?php endif; ?>
 					>
 						<?php esc_html_e( 'Book Appointment', 'doctor-ak-portal' ); ?>
 					</button>
