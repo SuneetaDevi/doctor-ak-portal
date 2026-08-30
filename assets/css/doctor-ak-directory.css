@@ -501,6 +501,49 @@
 	background: var( --dak-primary-tint ) !important;
 }
 
+.dak-profile-clinic-main {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 0.75rem !important;
+	min-width: 0 !important;
+	flex: 1 1 auto !important;
+}
+
+/* Decorative radio indicator — only meaningful (and only rendered as a
+   circle) on selectable rows; read-only uses of this row markup elsewhere
+   never carry [data-clinic-select], so it just sits inert/hidden there. */
+.dak-profile-clinic-radio {
+	display: none;
+}
+
+.dak-profile-clinic-row[data-clinic-select] .dak-profile-clinic-radio {
+	display: block !important;
+	flex: 0 0 auto !important;
+	width: 18px !important;
+	height: 18px !important;
+	margin-top: 2px !important;
+	border-radius: 50% !important;
+	border: 2px solid var( --dak-border ) !important;
+	position: relative !important;
+	transition: border-color 0.15s ease !important;
+}
+
+.dak-profile-clinic-row[data-clinic-select]:hover .dak-profile-clinic-radio {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-profile-clinic-row[data-clinic-select].is-selected .dak-profile-clinic-radio {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-profile-clinic-row[data-clinic-select].is-selected .dak-profile-clinic-radio::after {
+	content: '' !important;
+	position: absolute !important;
+	inset: 3px !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary ) !important;
+}
+
 .dak-profile-clinic-info {
 	display: flex !important;
 	flex-direction: column !important;

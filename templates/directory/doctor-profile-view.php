@@ -199,7 +199,9 @@ $dak_profile_view_icons = array(
 									data-clinic-label="<?php echo esc_attr( $dak_clinic_label ); ?>"
 									data-fee-label="<?php echo esc_attr( $clinic['fee_label'] ); ?>"
 								>
-									<div class="dak-profile-clinic-info">
+									<div class="dak-profile-clinic-main">
+										<span class="dak-profile-clinic-radio" aria-hidden="true"></span>
+										<div class="dak-profile-clinic-info">
 										<strong>
 											<?php echo esc_html( $dak_clinic_label ); ?>
 										</strong>
@@ -224,6 +226,7 @@ $dak_profile_view_icons = array(
 												<?php echo esc_html( $clinic['hours_label'] ); ?>
 											</span>
 										<?php endif; ?>
+										</div>
 									</div>
 
 									<?php if ( '' !== $clinic['fee_label'] ) : ?>
