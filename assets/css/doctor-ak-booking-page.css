@@ -207,10 +207,42 @@
 
 /* Doctor cards */
 
+/* Search + specialization filter above the Doctor step's card grid (see
+   templates/booking/booking-page.php + wireDoctorFilters() in
+   doctor-ak-booking-page.js) — reuses .dak-directory-search/
+   #dak-directory-specialization-filter's own styling (loaded alongside this
+   stylesheet) for the input itself, just a simpler row layout than the
+   directory's own multi-filter grid since there are only two fields here. */
+.dak-booking-doctor-filters {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0.75rem !important;
+	margin-bottom: 1.25rem !important;
+}
+
+.dak-booking-doctor-filters .dak-directory-search {
+	flex: 1 1 240px !important;
+}
+
+.dak-booking-doctor-filters select {
+	flex: 0 1 220px !important;
+	box-sizing: border-box !important;
+	padding: 0.65rem 0.85rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.95rem !important;
+}
+
 .dak-booking-doctor-cards {
 	display: grid !important;
 	grid-template-columns: repeat( auto-fill, minmax( 220px, 1fr ) ) !important;
 	gap: 0.75rem !important;
+}
+
+.dak-booking-doctor-card.dak-hidden {
+	display: none !important;
 }
 
 .dak-booking-doctor-card {

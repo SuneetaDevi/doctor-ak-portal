@@ -1,10 +1,10 @@
 <?php
 /**
  * Site-wide "Book Appointment" trigger wiring: navigates any
- * `[data-dak-book-appointment]` element to the booking page (skipping
- * straight to the Service step) when it names a specific doctor, or to the
- * doctors directory to pick one first when it doesn't, instead of opening a
- * popup.
+ * `[data-dak-book-appointment]` element to the booking page, skipping
+ * straight to its Service step when it names a specific doctor, or landing
+ * on its own searchable/filterable Doctor step (see
+ * doctor-ak-booking-page.js) when it doesn't, instead of opening a popup.
  *
  * @package DoctorAKPortal\Frontend
  */
@@ -30,11 +30,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * every template that renders one of those buttons, this keeps the same
  * attribute contract: with a `data-doctor-id` (i.e. triggered against a
  * specific doctor, such as their profile page) it redirects to Booking_Page
- * with the doctor/type carried over as query args; without one (a generic
- * trigger — header nav, homepage, footer, patient dashboard "Book Now") it
- * sends the visitor to the doctors directory to choose a doctor first,
- * rather than dropping them on Booking_Page's own (now rarely-used, only
- * reachable by direct URL) Doctor step.
+ * with the doctor/type carried over as query args, landing past its Doctor
+ * step; without one (a generic trigger — header nav, homepage, footer,
+ * patient dashboard quick actions) it still goes to Booking_Page, but with
+ * no doctor_id, so the visitor picks one on that page's own Doctor step.
  */
 class Booking_Trigger {
 
@@ -60,8 +59,7 @@ class Booking_Trigger {
 			'doctor-ak-portal-booking-redirect',
 			'dakBookingRedirect',
 			array(
-				'pageUrl'      => Page_Finder::url_for_shortcode( Booking_Page::SHORTCODE_TAG ),
-				'directoryUrl' => Page_Finder::url_for_shortcode( Doctors_Directory::SHORTCODE_TAG ),
+				'pageUrl' => Page_Finder::url_for_shortcode( Booking_Page::SHORTCODE_TAG ),
 			)
 		);
 	}

@@ -697,7 +697,6 @@ class Patient_Dashboard {
 			'total_upcoming_count'  => $dashboard_data['total_upcoming_count'],
 			'recent_activity'       => Appointments::recent_activity_for_patient( $user->ID ),
 			'booking_url'           => $booking_page_url,
-			'video_booking_url'     => $booking_page_url ? add_query_arg( 'type', 'video', $booking_page_url ) : '',
 			'profile_url'           => self::tab_url( $dashboard_url, 'profile' ),
 			'directory_url'         => Page_Finder::url_for_shortcode( 'doctors_directory' ),
 			'logout_url'            => wp_logout_url( Page_Finder::url_for_shortcode( 'doctor_login' ) ),

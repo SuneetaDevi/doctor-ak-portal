@@ -5,11 +5,12 @@
  * directory cards, a doctor's profile-view page, the patient dashboard)
  * navigates away instead of opening a popup. One naming a specific doctor
  * (`data-doctor-id`, e.g. from that doctor's card/profile) goes straight to
- * the booking page with the doctor/type carried over as query args. A
- * generic trigger with no doctor — header nav, homepage, footer, patient
- * dashboard "Book Now" — goes to the doctors directory instead, so the
- * visitor picks a doctor there rather than on a doctor-picker step inside
- * the booking wizard.
+ * the booking page with the doctor/type carried over as query args, landing
+ * past its own Doctor step. A generic trigger with no doctor — header nav,
+ * homepage, footer, patient dashboard quick actions — goes to the booking
+ * page too, but with no doctor_id, so it lands on that page's own Doctor
+ * step (searchable/filterable there — see doctor-ak-booking-page.js) rather
+ * than a separate directory page.
  */
 ( function () {
 	'use strict';
@@ -26,15 +27,7 @@
 		var doctorId = trigger.getAttribute( 'data-doctor-id' );
 
 		if ( ! doctorId ) {
-			// Prefer the doctors directory so the visitor can pick a doctor
-			// first; if the site owner hasn't published a page with
-			// [doctors_directory] yet, fall back to the booking page itself
-			// rather than silently doing nothing.
-			var fallbackUrl = window.dakBookingRedirect.directoryUrl || window.dakBookingRedirect.pageUrl;
-
-			if ( fallbackUrl ) {
-				window.location.href = fallbackUrl;
-			}
+			window.location.href = window.dakBookingRedirect.pageUrl;
 
 			return;
 		}

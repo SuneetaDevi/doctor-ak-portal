@@ -7,7 +7,8 @@
  *
  * @package DoctorAKPortal\Templates
  *
- * @var array  $doctor_cards         Doctor cards, see Booking_Page::doctor_cards_data().
+ * @var array  $doctor_cards          Doctor cards, see Booking_Page::doctor_cards_data().
+ * @var array  $specialization_options Specialization slug => label, restricted to specializations at least one listed doctor has, for the Doctor step's filter dropdown.
  * @var int    $selected_doctor_id   Preselected doctor's user ID, or 0.
  * @var string $selected_doctor_name Preselected doctor's display name (no "Dr." prefix).
  * @var string $selected_type        'clinic' or 'video'.
@@ -67,6 +68,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<section class="dak-booking-card" id="dak-booking-step-doctor">
 					<h2 class="dak-booking-card-title"><?php esc_html_e( 'Choose a Doctor', 'doctor-ak-portal' ); ?></h2>
 
+					<?php if ( count( $doctor_cards ) > 1 ) : ?>
+						<div class="dak-booking-doctor-filters">
+							<div class="dak-directory-search">
+								<span class="dak-directory-search-icon" aria-hidden="true">
+									<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg>
+								</span>
+								<input type="search" id="dak-booking-doctor-search" placeholder="<?php esc_attr_e( 'Search by doctor name…', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search by doctor name', 'doctor-ak-portal' ); ?>">
+							</div>
+							<?php if ( ! empty( $specialization_options ) ) : ?>
+								<select id="dak-booking-doctor-specialization-filter" aria-label="<?php esc_attr_e( 'Filter by specialization', 'doctor-ak-portal' ); ?>">
+									<option value=""><?php esc_html_e( 'All specializations', 'doctor-ak-portal' ); ?></option>
+									<?php foreach ( $specialization_options as $dak_spec_slug => $dak_spec_label ) : ?>
+										<option value="<?php echo esc_attr( $dak_spec_slug ); ?>"><?php echo esc_html( $dak_spec_label ); ?></option>
+									<?php endforeach; ?>
+								</select>
+							<?php endif; ?>
+						</div>
+					<?php endif; ?>
+
 					<div class="dak-booking-doctor-cards" id="dak-booking-doctor-cards">
 						<?php foreach ( $doctor_cards as $card ) : ?>
 							<button
@@ -75,6 +95,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 								data-doctor-card
 								data-doctor-id="<?php echo esc_attr( $card['id'] ); ?>"
 								data-doctor-name="<?php echo esc_attr( $card['name'] ); ?>"
+								data-search-name="<?php echo esc_attr( mb_strtolower( $card['name'] ) ); ?>"
+								data-search-specializations="<?php echo esc_attr( implode( ',', $card['specialization_slugs'] ) ); ?>"
 								<?php if ( $card['video_disabled'] ) : ?>data-video-disabled="1"<?php endif; ?>
 							>
 								<span class="dak-booking-doctor-avatar">
@@ -91,6 +113,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 							</button>
 						<?php endforeach; ?>
 					</div>
+					<p class="dak-empty-state dak-hidden" id="dak-booking-doctor-no-results"><?php esc_html_e( 'No doctors match your search.', 'doctor-ak-portal' ); ?></p>
 					<span class="dak-field-error" data-field="doctor_id"></span>
 
 					<div class="dak-booking-wizard-nav">

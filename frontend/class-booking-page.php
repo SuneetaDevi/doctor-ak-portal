@@ -83,10 +83,20 @@ class Booking_Page {
 			Assets::version( 'assets/css/doctor-ak-auth.css' )
 		);
 
+		// Reuses the doctors directory's search-bar/specialization-filter
+		// styles (.dak-directory-search etc.) for the Doctor step's own
+		// filters — see templates/booking/booking-page.php.
+		wp_enqueue_style(
+			'doctor-ak-portal-directory',
+			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-directory.css',
+			array( 'doctor-ak-portal-auth' ),
+			Assets::version( 'assets/css/doctor-ak-directory.css' )
+		);
+
 		wp_enqueue_style(
 			'doctor-ak-portal-booking-page',
 			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-booking-page.css',
-			array( 'doctor-ak-portal-auth' ),
+			array( 'doctor-ak-portal-auth', 'doctor-ak-portal-directory' ),
 			Assets::version( 'assets/css/doctor-ak-booking-page.css' )
 		);
 
@@ -171,20 +181,49 @@ class Booking_Page {
 			}
 		}
 
+		$doctor_cards = $this->doctor_cards_data();
+
 		return $this->template_loader->get_template(
 			'booking/booking-page.php',
 			array(
-				'doctor_cards'         => $this->doctor_cards_data(),
-				'selected_doctor_id'   => $doctor ? $doctor->ID : 0,
-				'selected_doctor_name' => $selected_doctor_name,
-				'selected_type'        => $type,
-				'video_disabled'       => $video_disabled,
-				'contact_url'          => self::contact_url(),
-				'is_staff'             => self::is_staff(),
-				'patient_options'      => self::is_staff() ? Appointments::patient_options() : array(),
-				'selected_patient_id'  => $selected_patient_id,
+				'doctor_cards'            => $doctor_cards,
+				'specialization_options'  => self::specialization_options_for_cards( $doctor_cards ),
+				'selected_doctor_id'      => $doctor ? $doctor->ID : 0,
+				'selected_doctor_name'    => $selected_doctor_name,
+				'selected_type'           => $type,
+				'video_disabled'          => $video_disabled,
+				'contact_url'             => self::contact_url(),
+				'is_staff'                => self::is_staff(),
+				'patient_options'         => self::is_staff() ? Appointments::patient_options() : array(),
+				'selected_patient_id'     => $selected_patient_id,
 			)
 		);
+	}
+
+	/**
+	 * Specialization slug => label, restricted to only the specializations
+	 * at least one listed doctor actually has — for the Doctor step's
+	 * filter dropdown. Same "only what's actually in the list" convention
+	 * Doctors_Directory::render() already uses for its own filters.
+	 *
+	 * @param array $doctor_cards Rows from doctor_cards_data().
+	 * @return array
+	 */
+	private static function specialization_options_for_cards( array $doctor_cards ) {
+		$all_specializations = Specializations::get_all();
+		$options              = array();
+
+		foreach ( $doctor_cards as $card ) {
+			foreach ( $card['specialization_slugs'] as $slug ) {
+				if ( isset( $all_specializations[ $slug ] ) ) {
+					$options[ $slug ] = $all_specializations[ $slug ];
+				}
+			}
+		}
+
+		asort( $options );
+
+		return $options;
 	}
 
 	/**
@@ -239,23 +278,24 @@ class Booking_Page {
 			$display_name = trim( $doctor->first_name . ' ' . $doctor->last_name );
 			$display_name = '' !== $display_name ? $display_name : $doctor->display_name;
 
-			$specialization_slugs = (array) get_user_meta( $doctor->ID, 'doctor_ak_specializations', true );
-			$specialization_label = '';
-
-			foreach ( $specialization_slugs as $slug ) {
-				if ( isset( $all_specializations[ $slug ] ) ) {
-					$specialization_label = $all_specializations[ $slug ];
-					break;
-				}
-			}
+			$specialization_slugs = array_values(
+				array_filter(
+					(array) get_user_meta( $doctor->ID, 'doctor_ak_specializations', true ),
+					function ( $slug ) use ( $all_specializations ) {
+						return isset( $all_specializations[ $slug ] );
+					}
+				)
+			);
+			$specialization_label = ! empty( $specialization_slugs ) ? $all_specializations[ $specialization_slugs[0] ] : '';
 
 			$cards[] = array(
-				'id'             => $doctor->ID,
-				'name'           => $display_name,
-				'initials'       => self::initials( $display_name ),
-				'specialization' => $specialization_label,
-				'avatar_url'     => self::avatar_url( $doctor->ID ),
-				'video_disabled' => ! Clinics::doctor_has_active_video_clinic( $doctor->ID ),
+				'id'                   => $doctor->ID,
+				'name'                 => $display_name,
+				'initials'             => self::initials( $display_name ),
+				'specialization'       => $specialization_label,
+				'specialization_slugs' => $specialization_slugs,
+				'avatar_url'           => self::avatar_url( $doctor->ID ),
+				'video_disabled'       => ! Clinics::doctor_has_active_video_clinic( $doctor->ID ),
 			);
 		}
 

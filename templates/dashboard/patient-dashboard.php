@@ -16,7 +16,6 @@
  * @var int      $total_upcoming_count  Total upcoming (non-cancelled) appointment count.
  * @var array    $recent_activity       List of { label, type, date }, most recent first.
  * @var string   $booking_url           URL of the booking page.
- * @var string   $video_booking_url     Booking page URL pre-set to the Video type.
  * @var string   $profile_url           URL of the Edit Profile page.
  * @var string   $directory_url         URL of the [doctors_directory] page.
  * @var string   $logout_url            Nonce-protected logout URL.
@@ -425,12 +424,10 @@ $appointment_group_labels = array(
 							<span class="dak-nav-icon"><?php echo $dak_patient_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 							<?php esc_html_e( 'Book Appointment', 'doctor-ak-portal' ); ?>
 						</button>
-						<?php if ( $video_booking_url ) : ?>
-							<a class="dak-patient-quick-action" href="<?php echo esc_url( $video_booking_url ); ?>">
-								<span class="dak-nav-icon"><?php echo $dak_patient_icons['video']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-								<?php esc_html_e( 'Video Consult', 'doctor-ak-portal' ); ?>
-							</a>
-						<?php endif; ?>
+						<button type="button" class="dak-patient-quick-action" data-dak-book-appointment data-booking-type="video">
+							<span class="dak-nav-icon"><?php echo $dak_patient_icons['video']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<?php esc_html_e( 'Video Consult', 'doctor-ak-portal' ); ?>
+						</button>
 						<?php if ( $directory_url ) : ?>
 							<a class="dak-patient-quick-action" href="<?php echo esc_url( $directory_url ); ?>">
 								<span class="dak-nav-icon"><?php echo $dak_patient_icons['users']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>

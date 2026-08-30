@@ -38,6 +38,7 @@
 		dateStripStart = new Date();
 
 		wireDoctorCards();
+		wireDoctorFilters();
 		wireSegmentedControl();
 		wireDateStripNav();
 		wireQuickDates();
@@ -89,7 +90,18 @@
 	}
 
 	function getDoctorId() {
-		return document.getElementById( 'dak-booking-doctor-id' ).value;
+		// Returned as a number (0 = none selected), not the hidden input's
+		// raw string value — "0" is truthy in JS, so every `getDoctorId()`
+		// truthiness check across this file (skip the Doctor step, enable
+		// Next, etc.) was treating "no doctor" as "a doctor is selected"
+		// whenever the booking page was reached without a real doctor_id
+		// (e.g. the Patient dashboard's "Video Consult" quick action, which
+		// links here with only `?type=video`). String concatenation and
+		// FormData both coerce a number back to "0" the same as before, so
+		// nothing downstream needed to change.
+		var value = parseInt( document.getElementById( 'dak-booking-doctor-id' ).value, 10 );
+
+		return isNaN( value ) ? 0 : value;
 	}
 
 	function getType() {
@@ -231,6 +243,55 @@
 				selectDoctor( card );
 			} );
 		} );
+	}
+
+	/**
+	 * Client-side search/specialization filtering for the Doctor step's card
+	 * grid — same approach as the public doctors directory
+	 * (doctor-ak-directory.js): the grid is already fully rendered server-
+	 * side, so filtering just shows/hides cards, no AJAX round trip.
+	 */
+	function wireDoctorFilters() {
+		var searchInput = document.getElementById( 'dak-booking-doctor-search' );
+		var specializationSelect = document.getElementById( 'dak-booking-doctor-specialization-filter' );
+
+		if ( ! searchInput ) {
+			return;
+		}
+
+		var cards = document.querySelectorAll( '#dak-booking-doctor-cards [data-doctor-card]' );
+		var noResults = document.getElementById( 'dak-booking-doctor-no-results' );
+
+		function applyDoctorFilters() {
+			var query = searchInput.value.trim().toLowerCase();
+			var specialization = specializationSelect ? specializationSelect.value : '';
+			var visibleCount = 0;
+
+			cards.forEach( function ( card ) {
+				var name = card.getAttribute( 'data-search-name' ) || '';
+				var specializations = card.getAttribute( 'data-search-specializations' ) || '';
+
+				var matchesQuery = '' === query || name.indexOf( query ) !== -1;
+				var matchesSpecialization = '' === specialization || specializations.split( ',' ).indexOf( specialization ) !== -1;
+				var isVisible = matchesQuery && matchesSpecialization;
+
+				card.classList.toggle( 'dak-hidden', ! isVisible );
+
+				if ( isVisible ) {
+					visibleCount++;
+				}
+			} );
+
+			if ( noResults ) {
+				noResults.classList.toggle( 'dak-hidden', visibleCount > 0 );
+			}
+		}
+
+		searchInput.addEventListener( 'input', applyDoctorFilters );
+
+		if ( specializationSelect ) {
+			specializationSelect.addEventListener( 'change', applyDoctorFilters );
+		}
 	}
 
 	function selectDoctor( card ) {
