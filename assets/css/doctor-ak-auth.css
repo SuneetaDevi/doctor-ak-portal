@@ -51,18 +51,43 @@
 	--dak-tint-info-text: #1d4ed8;
 	--dak-tint-purple: #ede4fb;
 	--dak-tint-purple-text: #6c3fc5;
+	--dak-shadow-lg: 0 12px 40px rgba( 20, 30, 40, 0.12 );
+
+	--dak-text-xs: 0.75rem;
+	--dak-text-sm: 0.875rem;
+	--dak-text-md: 1rem;
+	--dak-text-lg: 1.125rem;
+	--dak-text-xl: 1.375rem;
+	--dak-text-2xl: 1.75rem;
+	--dak-text-3xl: 2.25rem;
+
+	--dak-space-1: 4px;
+	--dak-space-2: 8px;
+	--dak-space-3: 12px;
+	--dak-space-4: 16px;
+	--dak-space-5: 24px;
+	--dak-space-6: 32px;
+	--dak-space-7: 48px;
+	--dak-space-8: 64px;
 
 	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
 	color: var( --dak-text ) !important;
 }
 
 /*
- * Dark theme: only the three dashboards (Admin/Doctor/Patient) support the
- * toggle (see assets/js/doctor-ak-theme-toggle.js), so these overrides are
- * scoped to `.dak-dashboard[data-theme="dark"]` rather than `.dak-portal`
- * globally — auth pages, the directory and the booking modal stay light.
+ * Dark theme. Two independent toggles feed the same tokens:
+ * - Dashboards (Admin/Doctor/Patient): assets/js/doctor-ak-theme-toggle.js
+ *   sets `data-theme` on the `.dak-dashboard` element itself, persisted
+ *   server-side per logged-in user — `.dak-portal.dak-dashboard[data-theme]`.
+ * - Public site (header, home, directory, auth, booking): assets/js/
+ *   doctor-ak-public-theme-toggle.js sets `data-theme` on <html>, persisted
+ *   client-side (localStorage) since a visitor may not be logged in —
+ *   `html[data-theme] .dak-portal`. Every `.dak-portal` subtree on the page
+ *   (header/footer/content are separate top-level divs, not nested under one
+ *   shared wrapper) picks up the same overrides via that selector.
  */
-.dak-portal.dak-dashboard[data-theme='dark'] {
+.dak-portal.dak-dashboard[data-theme='dark'],
+html[data-theme='dark'] .dak-portal {
 	--dak-primary-tint: #16210f;
 	--dak-text: #e9eaec;
 	--dak-muted: #9198a3;
@@ -72,6 +97,7 @@
 	--dak-bg-subtle: #17181b;
 	--dak-shadow: 0 4px 20px rgba( 0, 0, 0, 0.6 );
 	--dak-shadow-hover: 0 8px 26px rgba( 0, 0, 0, 0.75 );
+	--dak-shadow-lg: 0 12px 40px rgba( 0, 0, 0, 0.8 );
 	--dak-tint-teal: #0f2422;
 	--dak-tint-amber: #2a2110;
 	--dak-tint-amber-text: #f2b84b;
@@ -93,9 +119,10 @@
 
 .dak-auth-card {
 	width: 100% !important;
+	max-width: 440px !important;
 	background: var( --dak-bg-card ) !important;
 	border-radius: var( --dak-radius-lg ) !important;
-	box-shadow: var( --dak-shadow ) !important;
+	box-shadow: var( --dak-shadow-lg, var( --dak-shadow ) ) !important;
 	padding: 2rem !important;
 	box-sizing: border-box !important;
 }

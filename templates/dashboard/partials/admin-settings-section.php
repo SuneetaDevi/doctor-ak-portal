@@ -74,6 +74,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</div>
 </section>
 
+<section class="dak-dashboard-card" id="dak-home-videos-form" data-home-videos-editor>
+	<div class="dak-dashboard-card-header">
+		<h2><?php esc_html_e( 'Home page videos', 'doctor-ak-portal' ); ?></h2>
+	</div>
+	<p class="dak-field-hint"><?php esc_html_e( 'Shown in a video section on your public Home page. Upload short clinic tour or patient story videos (MP4 recommended) with an optional title and thumbnail.', 'doctor-ak-portal' ); ?></p>
+
+	<div class="dak-alert dak-alert-error dak-hidden" id="dak-home-videos-error" role="alert"></div>
+
+	<div class="dak-home-videos-rows" data-home-videos-rows></div>
+
+	<button type="button" class="dak-button dak-button-secondary" data-home-videos-add-row>
+		<span class="dak-nav-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4.5v11M4.5 10h11"/></svg></span>
+		<?php esc_html_e( 'Add Video', 'doctor-ak-portal' ); ?>
+	</button>
+</section>
+
 <div class="dak-dashboard-greeting">
 	<h1><?php esc_html_e( 'Settings', 'doctor-ak-portal' ); ?></h1>
 	<p><?php esc_html_e( 'Appearance and your own notification preferences', 'doctor-ak-portal' ); ?></p>

@@ -2417,3 +2417,94 @@ a.dak-notification-row-link:hover {
 	flex-wrap: wrap !important;
 	gap: 0.75rem !important;
 }
+
+/* Admin Settings — "Home page videos" repeatable-row editor (see
+   assets/js/doctor-ak-admin-home-videos.js). */
+.dak-home-videos-rows {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.75rem !important;
+	margin-bottom: 1rem !important;
+}
+
+.dak-home-video-row {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 0.75rem !important;
+	padding: 0.85rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+}
+
+.dak-home-video-poster-picker {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+	flex: 0 0 auto !important;
+}
+
+.dak-home-video-poster-preview {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 64px !important;
+	height: 64px !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+	overflow: hidden !important;
+	font-size: 1.4rem !important;
+}
+
+.dak-home-video-poster-preview img {
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+}
+
+.dak-home-video-fields {
+	flex: 1 1 auto !important;
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.5rem !important;
+	min-width: 0 !important;
+}
+
+.dak-home-video-fields input[type='text'] {
+	width: 100% !important;
+}
+
+.dak-home-video-picker {
+	display: flex !important;
+	align-items: center !important;
+	flex-wrap: wrap !important;
+	gap: 0.6rem !important;
+}
+
+.dak-home-video-status {
+	font-size: 0.8rem !important;
+	color: var( --dak-muted ) !important;
+	word-break: break-all !important;
+}
+
+.dak-home-video-remove {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 2.25rem !important;
+	height: 2.25rem !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 1.1rem !important;
+	line-height: 1 !important;
+	cursor: pointer !important;
+}
+
+.dak-home-video-remove:hover {
+	background: var( --dak-tint-danger ) !important;
+	color: var( --dak-danger ) !important;
+	border-color: var( --dak-danger ) !important;
+}

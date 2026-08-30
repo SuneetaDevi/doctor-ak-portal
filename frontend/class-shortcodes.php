@@ -102,6 +102,13 @@ class Shortcodes {
 	private $service_profile_view;
 
 	/**
+	 * Home page controller.
+	 *
+	 * @var Home_Page
+	 */
+	private $home_page;
+
+	/**
 	 * Sets up collaborators.
 	 *
 	 * @param Doctor_Dashboard     $doctor_dashboard     Doctor dashboard controller.
@@ -114,8 +121,9 @@ class Shortcodes {
 	 * @param Featured_Doctors     $featured_doctors     Homepage featured-doctors slider controller.
 	 * @param Services_Directory   $services_directory   Services directory controller.
 	 * @param Service_Profile_View $service_profile_view Public service profile view controller.
+	 * @param Home_Page            $home_page            Home page controller.
 	 */
-	public function __construct( Doctor_Dashboard $doctor_dashboard, Patient_Dashboard $patient_dashboard, Profile_Handler $profile_handler, Doctors_Directory $doctors_directory, Doctor_Profile_View $doctor_profile_view, Admin_Dashboard $admin_dashboard, Booking_Page $booking_page, Featured_Doctors $featured_doctors, Services_Directory $services_directory, Service_Profile_View $service_profile_view ) {
+	public function __construct( Doctor_Dashboard $doctor_dashboard, Patient_Dashboard $patient_dashboard, Profile_Handler $profile_handler, Doctors_Directory $doctors_directory, Doctor_Profile_View $doctor_profile_view, Admin_Dashboard $admin_dashboard, Booking_Page $booking_page, Featured_Doctors $featured_doctors, Services_Directory $services_directory, Service_Profile_View $service_profile_view, Home_Page $home_page ) {
 		$this->template_loader      = new Template_Loader();
 		$this->doctor_dashboard     = $doctor_dashboard;
 		$this->patient_dashboard    = $patient_dashboard;
@@ -127,6 +135,7 @@ class Shortcodes {
 		$this->featured_doctors     = $featured_doctors;
 		$this->services_directory   = $services_directory;
 		$this->service_profile_view = $service_profile_view;
+		$this->home_page            = $home_page;
 	}
 
 	/**
@@ -148,6 +157,7 @@ class Shortcodes {
 		add_shortcode( 'featured_doctors', array( $this, 'render_featured_doctors' ) );
 		add_shortcode( 'services_directory', array( $this, 'render_services_directory' ) );
 		add_shortcode( 'service_profile_view', array( $this, 'render_service_profile_view' ) );
+		add_shortcode( 'dak_home', array( $this, 'render_home_page' ) );
 	}
 
 	/**
@@ -266,5 +276,14 @@ class Shortcodes {
 	 */
 	public function render_service_profile_view() {
 		return $this->service_profile_view->render();
+	}
+
+	/**
+	 * Renders the [dak_home] shortcode.
+	 *
+	 * @return string
+	 */
+	public function render_home_page() {
+		return $this->home_page->render();
 	}
 }

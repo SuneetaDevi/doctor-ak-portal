@@ -9,6 +9,16 @@
  * tab-switcher classes without the header.
  */
 
+/* Wider than the plain .dak-auth-card cap (440px, doctor-ak-auth.css) — this
+   page's Profile/Availability tabs need more room than a login form, but
+   still a cap so it doesn't stretch full-bleed on a wide theme container.
+   Scoped to this exact combination so it doesn't touch the unrelated
+   .dak-profile-card used on the public doctor-profile-view page
+   (doctor-ak-directory.css). */
+.dak-auth-card.dak-profile-card {
+	max-width: 680px !important;
+}
+
 .dak-profile-header {
 	display: flex !important;
 	align-items: center !important;

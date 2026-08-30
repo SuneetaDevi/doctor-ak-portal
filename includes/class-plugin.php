@@ -31,6 +31,8 @@ use DoctorAKPortal\Frontend\Doctors_Directory;
 use DoctorAKPortal\Frontend\Encounter_Handler;
 use DoctorAKPortal\Frontend\Featured_Doctors;
 use DoctorAKPortal\Frontend\Forgot_Password_Handler;
+use DoctorAKPortal\Frontend\Home_Page;
+use DoctorAKPortal\Frontend\Home_Videos_Handler;
 use DoctorAKPortal\Frontend\Login_Handler;
 use DoctorAKPortal\Frontend\Notification_Handler;
 use DoctorAKPortal\Frontend\Patient_Appointment_Handler;
@@ -206,6 +208,9 @@ class Plugin {
 		$featured_doctors = new Featured_Doctors( new Template_Loader(), $doctors_directory );
 		$this->loader->add_action( 'wp_enqueue_scripts', $featured_doctors, 'enqueue_assets' );
 
+		$home_page = new Home_Page( new Template_Loader(), $doctors_directory );
+		$this->loader->add_action( 'wp_enqueue_scripts', $home_page, 'enqueue_assets' );
+
 		$services_directory   = new Services_Directory( new Template_Loader() );
 		$service_profile_view = new Service_Profile_View( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $services_directory, 'enqueue_assets' );
@@ -265,6 +270,13 @@ class Plugin {
 		// on every request too, not just fresh activations. wp_next_scheduled()
 		// makes this a no-op once it's actually scheduled.
 		$this->loader->add_action( 'init', 'DoctorAKPortal\\Includes\\Notifications', 'ensure_video_link_cron_scheduled' );
+
+		// Self-healing: an already-active install never re-runs
+		// Activator::activate(), so a page added to Page_Installer::PAGES
+		// after the site was first activated (e.g. the new Home page) would
+		// otherwise never get created. Page_Installer::maybe_install() is a
+		// no-op once it has already run for the current PAGES version.
+		$this->loader->add_action( 'init', 'DoctorAKPortal\\Includes\\Page_Installer', 'maybe_install' );
 
 		// In-app "Notifications" tab (doctor/patient/admin dashboards) — the
 		// same lifecycle events as above, written to the notifications table
@@ -389,6 +401,11 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_clinic_branding_save', $clinic_branding_handler, 'handle_save' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_clinic_branding_upload_logo', $clinic_branding_handler, 'handle_upload_logo' );
 
+		$home_videos_handler = new Home_Videos_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_home_video_upload', $home_videos_handler, 'handle_upload_video' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_home_video_poster_upload', $home_videos_handler, 'handle_upload_poster' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_home_videos_save', $home_videos_handler, 'handle_save' );
+
 		$doctor_patient_handler = new Doctor_Patient_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_add_patient', $doctor_patient_handler, 'handle_add_patient' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_edit_patient', $doctor_patient_handler, 'handle_edit_patient' );
@@ -397,7 +414,7 @@ class Plugin {
 		// rather than scheduling a second event just for this.
 		$this->loader->add_action( Notifications::CRON_HOOK, 'DoctorAKPortal\\Includes\\Appointments', 'auto_complete_past_appointments' );
 
-		$shortcodes = new Shortcodes( $doctor_dashboard, $patient_dashboard, $profile_handler, $doctors_directory, $doctor_profile_view, $admin_dashboard, $booking_page, $featured_doctors, $services_directory, $service_profile_view );
+		$shortcodes = new Shortcodes( $doctor_dashboard, $patient_dashboard, $profile_handler, $doctors_directory, $doctor_profile_view, $admin_dashboard, $booking_page, $featured_doctors, $services_directory, $service_profile_view, $home_page );
 		$this->loader->add_action( 'init', $shortcodes, 'register' );
 
 		$specialization_requests = new Specialization_Request();

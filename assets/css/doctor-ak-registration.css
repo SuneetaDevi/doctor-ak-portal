@@ -15,6 +15,11 @@
  */
 
 .dak-registration-card {
+	/* Wider than the plain .dak-auth-card cap (440px, doctor-ak-auth.css) —
+	   this form's multi-column field rows and day-pill/specialization
+	   pickers need more room, but it still needs SOME cap so it doesn't
+	   stretch full-bleed on a wide theme container. */
+	max-width: 680px !important;
 }
 
 /* Toggle switch (used by Edit Profile's video consultation field) */

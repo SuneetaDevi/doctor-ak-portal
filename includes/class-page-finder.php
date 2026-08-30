@@ -37,6 +37,7 @@ class Page_Finder {
 	 * @var array
 	 */
 	const KNOWN_SHORTCODES = array(
+		'dak_home',
 		'doctor_register',
 		'doctor_login',
 		'doctor_forgot_password',

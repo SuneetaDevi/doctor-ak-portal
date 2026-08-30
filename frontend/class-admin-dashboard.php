@@ -13,6 +13,7 @@ use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Doctor_Awards;
 use DoctorAKPortal\Includes\Encounters;
+use DoctorAKPortal\Includes\Home_Videos;
 use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Notifications;
@@ -548,15 +549,34 @@ class Admin_Dashboard {
 			);
 
 			// Only a full admin gets the combined "Save Settings" button
-			// (Clinic Branding + Notification Preferences) — a receptionist
-			// has no Clinic Branding section on their cut-down Settings view
-			// (see prepare_data()'s 'settings' branch), so keeps the
-			// Notification Preferences card's own standalone save button.
+			// (Clinic Branding + Home Videos + Notification Preferences) —
+			// a receptionist has no Clinic Branding/Home Videos section on
+			// their cut-down Settings view (see prepare_data()'s 'settings'
+			// branch), so keeps the Notification Preferences card's own
+			// standalone save button.
 			if ( ! self::is_receptionist() ) {
+				wp_enqueue_script(
+					'doctor-ak-portal-admin-home-videos',
+					DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-home-videos.js',
+					array(),
+					Assets::version( 'assets/js/doctor-ak-admin-home-videos.js' ),
+					true
+				);
+
+				wp_localize_script(
+					'doctor-ak-portal-admin-home-videos',
+					'dakHomeVideos',
+					array(
+						'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+						'nonce'   => wp_create_nonce( Home_Videos_Handler::NONCE_ACTION ),
+						'rows'    => Home_Videos::get_all(),
+					)
+				);
+
 				wp_enqueue_script(
 					'doctor-ak-portal-admin-settings-save',
 					DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-settings-save.js',
-					array( 'doctor-ak-portal-admin-clinic-branding', 'doctor-ak-portal-notification-preferences' ),
+					array( 'doctor-ak-portal-admin-clinic-branding', 'doctor-ak-portal-admin-home-videos', 'doctor-ak-portal-notification-preferences' ),
 					Assets::version( 'assets/js/doctor-ak-admin-settings-save.js' ),
 					true
 				);

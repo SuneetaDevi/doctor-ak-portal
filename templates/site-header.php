@@ -53,6 +53,14 @@ $display_name = $is_logged_in ? ( $user->first_name ? $user->first_name : $user-
 		</nav>
 
 		<div class="dak-site-header-auth">
+			<button type="button" class="dak-public-theme-toggle" data-dak-public-theme-toggle aria-pressed="false" aria-label="<?php esc_attr_e( 'Toggle dark mode', 'doctor-ak-portal' ); ?>">
+				<span class="dak-public-theme-toggle-thumb" aria-hidden="true"></span>
+			</button>
+
+			<button type="button" class="dak-button dak-button-primary dak-site-header-cta" data-dak-book-appointment>
+				<?php esc_html_e( 'Book Appointment', 'doctor-ak-portal' ); ?>
+			</button>
+
 			<?php if ( $is_logged_in ) : ?>
 				<button type="button" class="dak-site-header-account" id="dak-site-header-account" aria-haspopup="true" aria-expanded="false">
 					<img src="<?php echo esc_url( $user_avatar_url ); ?>" alt="" class="dak-site-header-avatar">

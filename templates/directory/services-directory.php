@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 <div class="dak-portal dak-directory">
 	<div class="dak-directory-header">
+		<span class="dak-eyebrow"><?php esc_html_e( 'What We Treat', 'doctor-ak-portal' ); ?></span>
 		<h1><?php esc_html_e( 'Our Services', 'doctor-ak-portal' ); ?></h1>
 		<p><?php esc_html_e( 'Browse our services and book an appointment with the doctor and clinic of your choice.', 'doctor-ak-portal' ); ?></p>
 	</div>

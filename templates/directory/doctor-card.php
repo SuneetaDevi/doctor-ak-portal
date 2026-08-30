@@ -29,7 +29,11 @@ $dak_card_icons = array(
 	'pin'      => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18s6-5.2 6-9.8A6 6 0 0 0 4 8.2C4 12.8 10 18 10 18z"/><circle cx="10" cy="8" r="2"/></svg>',
 	'calendar' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="15" height="13" rx="1.5"/><path d="M2.5 8h15"/><path d="M6 2.5v3M14 2.5v3"/></svg>',
 	'person'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.2"/><path d="M4 17c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/></svg>',
+	'video'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="10" height="10" rx="1.5"/><path d="M17.5 7.5 12.5 10l5 2.5z"/></svg>',
 );
+
+$dak_card_visible_specialties = array_slice( $specialization_labels, 0, 2 );
+$dak_card_extra_specialties   = count( $specialization_labels ) - count( $dak_card_visible_specialties );
 ?>
 <div
 	class="dak-doctor-card"
@@ -45,6 +49,12 @@ $dak_card_icons = array(
 		<span class="dak-doctor-card-badge"><?php esc_html_e( 'Available', 'doctor-ak-portal' ); ?></span>
 	<?php endif; ?>
 
+	<?php if ( $video_consultation ) : ?>
+		<span class="dak-doctor-card-video-badge" title="<?php esc_attr_e( 'Offers video consultations', 'doctor-ak-portal' ); ?>">
+			<?php echo $dak_card_icons['video']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+		</span>
+	<?php endif; ?>
+
 	<span class="dak-avatar dak-avatar-lg">
 		<?php if ( $avatar_url ) : ?>
 			<img src="<?php echo esc_url( $avatar_url ); ?>" alt="">
@@ -54,6 +64,19 @@ $dak_card_icons = array(
 	</span>
 
 	<h3 class="dak-doctor-card-name"><?php echo esc_html( sprintf( 'Dr. %s', $name ) ); ?></h3>
+
+	<?php if ( ! empty( $dak_card_visible_specialties ) ) : ?>
+		<div class="dak-specialty-tags dak-doctor-card-specialties">
+			<?php foreach ( $dak_card_visible_specialties as $dak_specialty_label ) : ?>
+				<span class="dak-specialty-tag"><?php echo esc_html( $dak_specialty_label ); ?></span>
+			<?php endforeach; ?>
+			<?php if ( $dak_card_extra_specialties > 0 ) : ?>
+				<span class="dak-specialty-tag dak-specialty-tag-muted">
+					<?php echo esc_html( sprintf( /* translators: %d: number of additional specializations. */ '+%d', $dak_card_extra_specialties ) ); ?>
+				</span>
+			<?php endif; ?>
+		</div>
+	<?php endif; ?>
 
 	<?php if ( '' !== $years_experience ) : ?>
 		<p class="dak-doctor-card-experience">

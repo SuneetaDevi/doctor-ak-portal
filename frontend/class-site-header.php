@@ -126,6 +126,18 @@ class Site_Header {
 			Assets::version( 'assets/js/doctor-ak-site-header.js' ),
 			true
 		);
+
+		// Loaded in the <head> (in_footer = false), not the footer like
+		// everything else here — it needs to apply a returning visitor's
+		// saved theme before the page paints, or dark-mode visitors would
+		// see a flash of the light theme on every page load.
+		wp_enqueue_script(
+			'doctor-ak-portal-public-theme-toggle',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-public-theme-toggle.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-public-theme-toggle.js' ),
+			false
+		);
 	}
 
 	/**

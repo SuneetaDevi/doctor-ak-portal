@@ -16,13 +16,17 @@
 		}
 
 		saveButton.addEventListener( 'click', function () {
-			[ 'dak-clinic-branding-error', 'dak-notification-preferences-error', 'dak-platform-fee-error', 'dak-admin-settings-error', 'dak-admin-settings-success' ].forEach( hide );
+			[ 'dak-clinic-branding-error', 'dak-notification-preferences-error', 'dak-platform-fee-error', 'dak-home-videos-error', 'dak-admin-settings-error', 'dak-admin-settings-success' ].forEach( hide );
 			saveButton.disabled = true;
 
 			var requests = [ saveBranding(), savePreferences() ];
 
 			if ( window.dakPlatformFee ) {
 				requests.push( savePlatformFee() );
+			}
+
+			if ( window.dakHomeVideos && window.dakHomeVideosEditor ) {
+				requests.push( saveVideos() );
 			}
 
 			Promise.all( requests )
@@ -108,6 +112,26 @@
 				} )
 				.catch( function () {
 					return { success: false, errorElementId: 'dak-platform-fee-error' };
+				} );
+		}
+
+		/**
+		 * @return {Promise<Object>} See saveBranding().
+		 */
+		function saveVideos() {
+			var formData = new FormData();
+			formData.append( 'action', 'doctor_ak_admin_home_videos_save' );
+			formData.append( 'nonce', window.dakHomeVideos.nonce );
+			formData.append( 'rows', JSON.stringify( window.dakHomeVideosEditor.collectRows() ) );
+
+			return fetch( window.dakHomeVideos.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
+				.then( function ( response ) { return response.json(); } )
+				.then( function ( result ) {
+					result.errorElementId = 'dak-home-videos-error';
+					return result;
+				} )
+				.catch( function () {
+					return { success: false, errorElementId: 'dak-home-videos-error' };
 				} );
 		}
 
