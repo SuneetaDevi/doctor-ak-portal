@@ -1877,6 +1877,8 @@ class Admin_Dashboard {
 			$clinic_id = isset( $_GET['clinic_id'] ) && '' !== $_GET['clinic_id'] ? (int) wp_unslash( $_GET['clinic_id'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- read-only navigation state; cast to int below.
 			$date_from = isset( $_GET['date_from'] ) ? sanitize_text_field( wp_unslash( $_GET['date_from'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			$date_to   = isset( $_GET['date_to'] ) ? sanitize_text_field( wp_unslash( $_GET['date_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$view      = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : 'doctor'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$view      = in_array( $view, array( 'doctor', 'clinic' ), true ) ? $view : 'doctor';
 
 			$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
 			$billing_url   = $dashboard_url ? add_query_arg( 'section', 'billing', $dashboard_url ) : '';
@@ -1926,6 +1928,7 @@ class Admin_Dashboard {
 					'settlements'     => Settlement_Manager::all_flat_for_admin( $doctor_id > 0 ? array( 'doctor_id' => $doctor_id ) : array() ),
 					'outstanding'     => $doctor_id > 0 ? Revenue_Ledger::outstanding_for_doctor( $doctor_id, $date_from, $date_to ) : null,
 					'billing_url'     => $billing_url,
+					'view'            => $view,
 					'filters'         => array(
 						'doctor_id' => $doctor_id,
 						'clinic_id' => $clinic_id,

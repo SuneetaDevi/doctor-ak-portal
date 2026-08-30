@@ -15,6 +15,7 @@
  * @var array      $settlements       Settlement_Manager::all_flat_for_admin() rows (filtered to the selected doctor, if any).
  * @var array|null $outstanding       Revenue_Ledger::outstanding_for_doctor() for the selected doctor, or null if no doctor filter is active.
  * @var string     $billing_url       Unfiltered URL of this section, for the filter form and "Clear" link.
+ * @var string     $view              Active grouping for the balances list: 'doctor' (default) or 'clinic'.
  * @var array      $filters           Active filter values: doctor_id, clinic_id, date_from, date_to.
  */
 
@@ -85,14 +86,93 @@ foreach ( $clinics_by_doctor as $dak_doctor_id => $dak_doctor_clinics ) {
 	</div>
 </section>
 
+<?php
+$dak_view_base_args = array_filter(
+	array(
+		'doctor_id' => $filters['doctor_id'],
+		'clinic_id' => $filters['clinic_id'],
+		'date_from' => $filters['date_from'],
+		'date_to'   => $filters['date_to'],
+	),
+	function ( $value ) {
+		return '' !== $value && 0 !== $value;
+	}
+);
+?>
 <section class="dak-dashboard-card">
 	<div class="dak-dashboard-card-header">
 		<h2><?php esc_html_e( 'Balances by Doctor & Clinic', 'doctor-ak-portal' ); ?></h2>
+		<div class="dak-billing-view-toggle" role="tablist" aria-label="<?php esc_attr_e( 'Group balances by', 'doctor-ak-portal' ); ?>">
+			<a
+				class="dak-button dak-button-sm <?php echo 'doctor' === $view ? 'dak-button-primary' : 'dak-button-secondary'; ?>"
+				href="<?php echo esc_url( add_query_arg( array_merge( $dak_view_base_args, array( 'section' => 'billing', 'view' => 'doctor' ) ), $billing_url ) ); ?>"
+			><?php esc_html_e( 'Doctor wise', 'doctor-ak-portal' ); ?></a>
+			<a
+				class="dak-button dak-button-sm <?php echo 'clinic' === $view ? 'dak-button-primary' : 'dak-button-secondary'; ?>"
+				href="<?php echo esc_url( add_query_arg( array_merge( $dak_view_base_args, array( 'section' => 'billing', 'view' => 'clinic' ) ), $billing_url ) ); ?>"
+			><?php esc_html_e( 'Clinic wise', 'doctor-ak-portal' ); ?></a>
+		</div>
 	</div>
 	<p class="dak-field-hint"><?php esc_html_e( "Each doctor's clinics (and video consultations) are kept separate — never merged into one figure. Positive = clinic owes the doctor, negative = doctor owes the clinic.", 'doctor-ak-portal' ); ?></p>
 
 	<?php if ( empty( $balances ) ) : ?>
 		<p class="dak-empty-state"><?php esc_html_e( 'No outstanding balances match these filters.', 'doctor-ak-portal' ); ?></p>
+	<?php elseif ( 'clinic' === $view ) : ?>
+		<?php
+		$dak_balances_by_clinic = array();
+		foreach ( $balances as $dak_balance_row ) {
+			$dak_balances_by_clinic[ $dak_balance_row['clinic_id'] ][] = $dak_balance_row;
+		}
+		?>
+		<?php foreach ( $dak_balances_by_clinic as $dak_clinic_id => $dak_clinic_balances ) : ?>
+			<div class="dak-billing-doctor-group">
+				<div class="dak-billing-doctor-header">
+					<strong><?php echo esc_html( $dak_clinic_balances[0]['clinic_name'] ); ?></strong>
+				</div>
+
+				<?php foreach ( $dak_clinic_balances as $dak_row ) : ?>
+					<div class="dak-admin-record-row">
+						<div class="dak-admin-record-row-main">
+							<span class="dak-admin-record-row-info">
+								<strong><?php echo esc_html( $dak_row['doctor_name'] ); ?></strong>
+								<span class="dak-admin-record-row-id"><?php echo esc_html( sprintf( /* translators: %d: number of paid appointments. */ _n( '%d appointment', '%d appointments', $dak_row['appointment_count'], 'doctor-ak-portal' ), $dak_row['appointment_count'] ) ); ?></span>
+							</span>
+
+							<span class="dak-admin-record-row-tags">
+								<?php if ( $dak_row['balance'] > 0.01 ) : ?>
+									<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-active"><?php esc_html_e( 'Clinic owes doctor', 'doctor-ak-portal' ); ?></span>
+								<?php elseif ( $dak_row['balance'] < -0.01 ) : ?>
+									<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-disabled"><?php esc_html_e( 'Doctor owes clinic', 'doctor-ak-portal' ); ?></span>
+								<?php else : ?>
+									<span class="dak-status-pill dak-status-pill-outline"><?php esc_html_e( 'Settled', 'doctor-ak-portal' ); ?></span>
+								<?php endif; ?>
+							</span>
+
+							<span class="dak-admin-record-row-amount">PKR <?php echo esc_html( number_format( abs( $dak_row['balance'] ), 0 ) ); ?></span>
+
+							<span class="dak-admin-record-row-actions">
+								<a
+									class="dak-button dak-button-secondary dak-button-sm"
+									href="<?php echo esc_url( \DoctorAKPortal\Frontend\Settlement_Handler::statement_download_url( $dak_row['doctor_id'], $filters['date_from'], $filters['date_to'] ) ); ?>"
+									target="_blank"
+									rel="noopener"
+								>
+									<?php esc_html_e( 'Statement', 'doctor-ak-portal' ); ?>
+								</a>
+								<button
+									type="button"
+									class="dak-button dak-button-secondary dak-button-sm dak-billing-view-details"
+									data-doctor-id="<?php echo esc_attr( $dak_row['doctor_id'] ); ?>"
+									data-clinic-id="<?php echo esc_attr( $dak_clinic_id ); ?>"
+									data-doctor-name="<?php echo esc_attr( $dak_row['doctor_name'] ); ?>"
+									data-clinic-name="<?php echo esc_attr( $dak_row['clinic_name'] ); ?>"
+								><?php esc_html_e( 'View Details', 'doctor-ak-portal' ); ?></button>
+							</span>
+						</div>
+					</div>
+				<?php endforeach; ?>
+			</div>
+		<?php endforeach; ?>
 	<?php else : ?>
 		<?php
 		$dak_balances_by_doctor = array();

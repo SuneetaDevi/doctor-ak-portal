@@ -1041,6 +1041,11 @@
 	margin-bottom: 0 !important;
 }
 
+.dak-billing-view-toggle {
+	display: flex !important;
+	gap: 0.5rem !important;
+}
+
 .dak-dashboard-profile-form {
 	max-width: 100% !important;
 }
