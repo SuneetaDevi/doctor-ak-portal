@@ -361,7 +361,6 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_pay_now', $doctor_appointment_handler, 'handle_pay_now' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_reschedule_appointment', $doctor_appointment_handler, 'handle_reschedule' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_cancel_appointment', $doctor_appointment_handler, 'handle_cancel_appointment' );
-		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_save_encounter_note', $doctor_appointment_handler, 'handle_save_encounter_note' );
 
 		$encounter_handler = new Encounter_Handler( new Encounter_Report_Uploader() );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_check_in', $encounter_handler, 'handle_check_in' );

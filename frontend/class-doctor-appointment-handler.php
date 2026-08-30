@@ -1,8 +1,7 @@
 <?php
 /**
  * AJAX handlers backing the doctor dashboard's appointment actions: Mark as
- * Completed, Mark Paid, Pay Now, Reschedule, Cancel, and saving an
- * encounter note.
+ * Completed, Mark Paid, Pay Now, Reschedule, Cancel.
  *
  * @package DoctorAKPortal\Frontend
  */
@@ -213,37 +212,5 @@ class Doctor_Appointment_Handler {
 		}
 
 		wp_send_json_success( array( 'message' => __( 'Appointment cancelled.', 'doctor-ak-portal' ) ) );
-	}
-
-	/**
-	 * AJAX handler: saves a visit note for one of the logged-in doctor's own
-	 * completed appointments — feeds the patient dashboard's Medical History
-	 * tab (see Appointments::save_encounter_note_by_doctor()).
-	 *
-	 * @return void
-	 */
-	public function handle_save_encounter_note() {
-		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
-			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
-		}
-
-		if ( ! is_user_logged_in() || ! in_array( Roles::DOCTOR_ROLE, (array) wp_get_current_user()->roles, true ) ) {
-			wp_send_json_error( array( 'message' => __( 'You must be logged in as a doctor.', 'doctor-ak-portal' ) ), 401 );
-		}
-
-		if ( ! Role_Permissions::is_tab_allowed( Roles::DOCTOR_ROLE, 'appointments' ) ) {
-			wp_send_json_error( array( 'message' => __( 'An administrator has turned off the Appointments page for your account.', 'doctor-ak-portal' ) ), 403 );
-		}
-
-		$appointment_id = isset( $_POST['appointment_id'] ) ? absint( wp_unslash( $_POST['appointment_id'] ) ) : 0;
-		$note           = isset( $_POST['note'] ) ? sanitize_textarea_field( wp_unslash( $_POST['note'] ) ) : '';
-
-		$result = Appointments::save_encounter_note_by_doctor( $appointment_id, get_current_user_id(), $note );
-
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
-		}
-
-		wp_send_json_success( array( 'message' => __( 'Visit note saved.', 'doctor-ak-portal' ) ) );
 	}
 }
