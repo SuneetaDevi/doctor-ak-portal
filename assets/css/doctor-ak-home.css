@@ -19,7 +19,6 @@
  */
 
 .dak-home {
-	max-width: 1180px !important;
 	margin: 0 auto !important;
 	padding: 0 1.5rem var( --dak-space-8 ) !important;
 }
@@ -49,6 +48,19 @@
 	border-radius: 999px !important;
 }
 
+/* A subtle gradient + top highlight instead of a flat fill, for a touch of
+   depth on the page's main calls to action — just the background/shadow,
+   nothing that changes size or layout. */
+.dak-home .dak-button-primary {
+	background: linear-gradient( 180deg, color-mix( in srgb, var( --dak-primary ) 100%, white 12% ) 0%, var( --dak-primary ) 100% ) !important;
+	box-shadow: 0 1px 0 rgba( 255, 255, 255, 0.35 ) inset, 0 6px 16px rgba( 20, 60, 40, 0.18 ) !important;
+}
+
+.dak-home .dak-button-primary:hover {
+	background: linear-gradient( 180deg, var( --dak-primary ) 0%, var( --dak-primary-dark ) 100% ) !important;
+	box-shadow: 0 1px 0 rgba( 255, 255, 255, 0.3 ) inset, 0 8px 20px rgba( 20, 60, 40, 0.22 ) !important;
+}
+
 .dak-home-section {
 	margin-top: var( --dak-space-8 ) !important;
 }
@@ -72,7 +84,14 @@
 	margin-top: var( --dak-space-6 ) !important;
 	padding: var( --dak-space-7 ) var( --dak-space-6 ) !important;
 	border-radius: var( --dak-radius-lg ) !important;
-	background: linear-gradient( 180deg, var( --dak-primary-tint ) 0%, var( --dak-bg-card ) 100% ) !important;
+	/* Layered backgrounds (not extra elements) for a soft depth/glow effect
+	   — two large, low-opacity radial "light" blobs sit under the existing
+	   top-to-bottom tint fade. Purely a background value, so it can't affect
+	   layout, overlap content or need z-index. */
+	background:
+		radial-gradient( 640px 360px at 12% -10%, rgba( 255, 255, 255, 0.55 ) 0%, rgba( 255, 255, 255, 0 ) 60% ),
+		radial-gradient( 520px 420px at 108% 15%, var( --dak-primary-tint ) 0%, rgba( 255, 255, 255, 0 ) 62% ),
+		linear-gradient( 180deg, var( --dak-primary-tint ) 0%, var( --dak-bg-card ) 100% ) !important;
 }
 
 .dak-home-hero-grid {
@@ -129,7 +148,9 @@
 	background: linear-gradient( 155deg, var( --dak-bg-card ) 0%, var( --dak-primary-tint ) 100% ) !important;
 	border: 1px solid var( --dak-border ) !important;
 	border-radius: var( --dak-radius-lg ) !important;
-	box-shadow: var( --dak-shadow-lg ) !important;
+	/* Layered shadow: the existing lift shadow, plus a thin inner highlight
+	   along the top edge for a soft glass/3D bevel. */
+	box-shadow: var( --dak-shadow-lg ), 0 1px 0 rgba( 255, 255, 255, 0.6 ) inset !important;
 	padding: var( --dak-space-5 ) !important;
 	display: flex !important;
 	flex-direction: column !important;
@@ -250,8 +271,10 @@
 	min-height: 340px !important;
 	border-radius: var( --dak-radius-lg ) !important;
 	overflow: hidden !important;
-	background: linear-gradient( 135deg, var( --dak-secondary ) 0%, var( --dak-primary-dark ) 100% ) !important;
-	box-shadow: var( --dak-shadow-lg ) !important;
+	background:
+		radial-gradient( 420px 300px at 85% 0%, rgba( 255, 255, 255, 0.22 ) 0%, rgba( 255, 255, 255, 0 ) 60% ),
+		linear-gradient( 135deg, var( --dak-secondary ) 0%, var( --dak-primary-dark ) 100% ) !important;
+	box-shadow: var( --dak-shadow-lg ), 0 1px 0 rgba( 255, 255, 255, 0.25 ) inset !important;
 }
 
 .dak-home-hero-visual video {
@@ -351,8 +374,9 @@
 	height: 40px !important;
 	flex: 0 0 auto !important;
 	border-radius: 50% !important;
-	background: var( --dak-primary-tint ) !important;
+	background: linear-gradient( 165deg, var( --dak-bg-card ) 0%, var( --dak-primary-tint ) 100% ) !important;
 	color: var( --dak-primary-dark ) !important;
+	box-shadow: var( --dak-shadow ), 0 1px 0 rgba( 255, 255, 255, 0.8 ) inset !important;
 	margin-bottom: 0 !important;
 }
 
@@ -423,7 +447,7 @@
 /* Why Choose Us — plain centered icon columns, no card chrome */
 
 .dak-home-why {
-	background: var( --dak-primary-tint ) !important;
+	background: linear-gradient( 165deg, var( --dak-primary-tint ) 0%, var( --dak-bg-card ) 120% ) !important;
 	border-radius: var( --dak-radius-lg ) !important;
 	padding: var( --dak-space-7 ) var( --dak-space-6 ) !important;
 	margin-top: var( --dak-space-8 ) !important;
@@ -454,9 +478,11 @@
 	width: 48px !important;
 	height: 48px !important;
 	border-radius: 50% !important;
-	background: var( --dak-bg-card ) !important;
+	background: linear-gradient( 165deg, var( --dak-bg-card ) 0%, var( --dak-primary-tint ) 100% ) !important;
 	color: var( --dak-primary-dark ) !important;
-	box-shadow: var( --dak-shadow ) !important;
+	/* Lift shadow + a bright top-edge highlight so the circle reads as a
+	   small floating disc rather than a flat tinted dot. */
+	box-shadow: var( --dak-shadow-hover ), 0 1px 0 rgba( 255, 255, 255, 0.8 ) inset !important;
 	margin-bottom: var( --dak-space-3 ) !important;
 }
 
@@ -485,10 +511,14 @@
 	margin-top: var( --dak-space-8 ) !important;
 	/* Deliberately fixed (not a --dak-text/--dak-bg-* token, which flip with
 	   the light/dark toggle) — this band stays dark in both modes, matching
-	   the reference design. */
-	background: #14161a !important;
+	   the reference design. A subtle radial glow + gradient over the flat
+	   fill gives it some depth instead of a flat block of color. */
+	background:
+		radial-gradient( 520px 320px at 100% 0%, rgba( 255, 255, 255, 0.06 ) 0%, rgba( 255, 255, 255, 0 ) 65% ),
+		linear-gradient( 165deg, #1b1e24 0%, #101216 100% ) !important;
 	border-radius: var( --dak-radius-lg ) !important;
 	padding: var( --dak-space-7 ) var( --dak-space-6 ) !important;
+	box-shadow: 0 20px 48px rgba( 0, 0, 0, 0.28 ) !important;
 }
 
 .dak-home-testimonial-band-inner {
@@ -588,7 +618,7 @@
    band and CTA below rather than a full-bleed section. */
 
 .dak-home-clinics {
-	background: var( --dak-primary-tint ) !important;
+	background: linear-gradient( 165deg, var( --dak-primary-tint ) 0%, var( --dak-bg-card ) 120% ) !important;
 	border-radius: var( --dak-radius-lg ) !important;
 	padding: var( --dak-space-7 ) var( --dak-space-6 ) !important;
 }
@@ -650,9 +680,13 @@
 
 .dak-home-cta {
 	margin-top: var( --dak-space-8 ) !important;
-	background: linear-gradient( 135deg, var( --dak-primary ) 0%, var( --dak-primary-dark ) 100% ) !important;
+	background:
+		radial-gradient( 460px 260px at 90% -20%, rgba( 255, 255, 255, 0.25 ) 0%, rgba( 255, 255, 255, 0 ) 65% ),
+		radial-gradient( 420px 260px at 5% 120%, rgba( 0, 0, 0, 0.18 ) 0%, rgba( 0, 0, 0, 0 ) 60% ),
+		linear-gradient( 135deg, var( --dak-primary ) 0%, var( --dak-primary-dark ) 100% ) !important;
 	border-radius: var( --dak-radius-lg ) !important;
 	padding: var( --dak-space-6 ) var( --dak-space-7 ) !important;
+	box-shadow: 0 16px 40px rgba( 20, 60, 40, 0.22 ) !important;
 }
 
 .dak-home-cta-inner {

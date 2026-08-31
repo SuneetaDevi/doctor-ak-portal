@@ -26,6 +26,21 @@ if ( $is_reset_mode ) {
 }
 ?>
 <div class="dak-portal dak-auth-page">
+	<div class="dak-auth-visual" aria-hidden="true">
+		<span class="dak-eyebrow"><?php esc_html_e( 'Dr. AK Lohana Clinic', 'doctor-ak-portal' ); ?></span>
+		<h2><?php esc_html_e( "We'll get you back in.", 'doctor-ak-portal' ); ?></h2>
+		<div class="dak-auth-visual-benefits">
+			<div class="dak-auth-visual-benefit">
+				<span class="dak-auth-visual-benefit-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5l6.5 2.5v4.3c0 4-2.8 7.2-6.5 8.2-3.7-1-6.5-4.2-6.5-8.2V5z"/><path d="M7.2 10l2 2 3.6-4"/></svg></span>
+				<div><strong><?php esc_html_e( 'Secure by design', 'doctor-ak-portal' ); ?></strong><span><?php esc_html_e( 'Reset links are single-use and expire quickly.', 'doctor-ak-portal' ); ?></span></div>
+			</div>
+			<div class="dak-auth-visual-benefit">
+				<span class="dak-auth-visual-benefit-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.2"/><path d="M10 6v4l3 2"/></svg></span>
+				<div><strong><?php esc_html_e( 'Back to your dashboard fast', 'doctor-ak-portal' ); ?></strong><span><?php esc_html_e( 'Appointments and records are right where you left them.', 'doctor-ak-portal' ); ?></span></div>
+			</div>
+		</div>
+	</div>
+
 	<div class="dak-auth-card">
 
 		<?php if ( $is_reset_mode && $reset_key_valid ) : ?>

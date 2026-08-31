@@ -99,9 +99,18 @@ class Appointment_Slip_Pdf extends Pdf_Document {
 			array( __( 'Payment Status', 'doctor-ak-portal' ), $is_paid ? __( 'Paid', 'doctor-ak-portal' ) : __( 'Pending', 'doctor-ak-portal' ) ),
 		);
 
+		// Values sit in a fixed left-aligned column (not right-aligned to the
+		// page edge) so they all start at the same x position — "Dr. Ajeet
+		// Kumar Lohana", "Online" and "Paid" being right-justified against
+		// the far margin instead left their starting edges zigzagging all
+		// over the row, which read as misaligned rather than as a clean
+		// label/value block. 150pt clears the widest label ("Payment
+		// Status" at 9pt) with room to spare.
+		$meta_value_x = $left + 150;
+
 		foreach ( $meta_rows as $meta_row ) {
 			$stream .= self::draw_text( $left, $y, 'F1', 9, $meta_row[0], 0.45 );
-			$stream .= self::draw_text_right( $right, $y, 'F2', 9, $meta_row[1] );
+			$stream .= self::draw_text( $meta_value_x, $y, 'F2', 9, $meta_row[1] );
 			$y      -= 17;
 		}
 

@@ -147,6 +147,15 @@
 	font-size: 0.85rem !important;
 	white-space: nowrap !important;
 	border-radius: 999px !important;
+	/* A soft gradient + top highlight instead of the flat fill inherited
+	   from .dak-button-primary, matching the homepage's button treatment. */
+	background: linear-gradient( 180deg, color-mix( in srgb, var( --dak-primary ) 100%, white 12% ) 0%, var( --dak-primary ) 100% ) !important;
+	box-shadow: 0 1px 0 rgba( 255, 255, 255, 0.35 ) inset, 0 4px 12px rgba( 20, 60, 40, 0.16 ) !important;
+}
+
+.dak-site-header-cta:hover {
+	background: linear-gradient( 180deg, var( --dak-primary ) 0%, var( --dak-primary-dark ) 100% ) !important;
+	box-shadow: 0 1px 0 rgba( 255, 255, 255, 0.3 ) inset, 0 6px 16px rgba( 20, 60, 40, 0.2 ) !important;
 }
 
 .dak-site-header-phone {

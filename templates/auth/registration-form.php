@@ -37,6 +37,25 @@ $dak_icons = array(
 );
 ?>
 <div class="dak-portal dak-auth-page dak-registration-page">
+	<div class="dak-auth-visual" aria-hidden="true">
+		<span class="dak-eyebrow"><?php esc_html_e( 'Dr. AK Lohana Clinic', 'doctor-ak-portal' ); ?></span>
+		<h2><?php esc_html_e( 'Join a healthcare platform built around you.', 'doctor-ak-portal' ); ?></h2>
+		<div class="dak-auth-visual-benefits">
+			<div class="dak-auth-visual-benefit">
+				<span class="dak-auth-visual-benefit-icon"><?php echo $dak_icons['check']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+				<div><strong><?php esc_html_e( 'For patients', 'doctor-ak-portal' ); ?></strong><span><?php esc_html_e( 'Book clinic visits or video consults, and keep every record in one place.', 'doctor-ak-portal' ); ?></span></div>
+			</div>
+			<div class="dak-auth-visual-benefit">
+				<span class="dak-auth-visual-benefit-icon"><?php echo $dak_icons['briefcase']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+				<div><strong><?php esc_html_e( 'For doctors', 'doctor-ak-portal' ); ?></strong><span><?php esc_html_e( 'Reach more patients and manage your schedule, services and earnings.', 'doctor-ak-portal' ); ?></span></div>
+			</div>
+			<div class="dak-auth-visual-benefit">
+				<span class="dak-auth-visual-benefit-icon"><?php echo $dak_icons['lock']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+				<div><strong><?php esc_html_e( 'Private by default', 'doctor-ak-portal' ); ?></strong><span><?php esc_html_e( 'Your information is never shared without your consent.', 'doctor-ak-portal' ); ?></span></div>
+			</div>
+		</div>
+	</div>
+
 	<div class="dak-auth-card dak-registration-card">
 		<div class="dak-auth-header">
 			<span class="dak-eyebrow"><?php esc_html_e( 'Join Us', 'doctor-ak-portal' ); ?></span>

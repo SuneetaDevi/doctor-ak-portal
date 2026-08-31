@@ -128,7 +128,11 @@ html[data-theme='dark'] .dak-portal {
 
 .dak-auth-page {
 	display: flex !important;
+	align-items: center !important;
 	justify-content: center !important;
+	gap: 2rem !important;
+	max-width: 1180px !important;
+	margin: 0 auto !important;
 	padding: 2.5rem 1rem !important;
 }
 
@@ -140,6 +144,95 @@ html[data-theme='dark'] .dak-portal {
 	box-shadow: var( --dak-shadow-lg, var( --dak-shadow ) ) !important;
 	padding: 2rem !important;
 	box-sizing: border-box !important;
+}
+
+/*
+ * Split-layout companion panel — a brand/trust column that sits beside the
+ * auth card on wide screens and disappears entirely below the breakpoint
+ * where the two would no longer comfortably fit side by side (mobile just
+ * gets the plain card, same as before this existed). Used on Login,
+ * Register and Forgot Password; each page supplies its own copy.
+ */
+.dak-auth-visual {
+	display: none !important;
+	flex: 1 1 0 !important;
+	min-width: 0 !important;
+	max-width: 440px !important;
+	/* Was align-self: stretch, which forced this panel to match the auth
+	   card's full height — fine for the short Login/Forgot Password cards,
+	   but Registration's card is a long multi-section form, so the panel's
+	   small content block ended up centered in a mostly-empty tinted box
+	   as tall as the whole form. Sticky + a fixed top offset keeps it
+	   pinned near the top of the viewport while the form scrolls past it
+	   instead, which is the standard pattern for "short panel, long form". */
+	align-self: flex-start !important;
+	position: sticky !important;
+	top: 2.5rem !important;
+	flex-direction: column !important;
+	justify-content: center !important;
+	gap: 1.5rem !important;
+	padding: 2.5rem !important;
+	box-sizing: border-box !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	background: linear-gradient( 155deg, var( --dak-primary-tint ) 0%, var( --dak-bg-page ) 100% ) !important;
+	box-shadow: 0 1px 0 rgba( 255, 255, 255, 0.6 ) inset !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-auth-visual h2 {
+	font-size: 1.7rem !important;
+	font-weight: 700 !important;
+	line-height: 1.25 !important;
+	margin: 0 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-auth-visual-benefits {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 1rem !important;
+}
+
+.dak-auth-visual-benefit {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 0.75rem !important;
+}
+
+.dak-auth-visual-benefit-icon {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	flex: 0 0 auto !important;
+	width: 34px !important;
+	height: 34px !important;
+	border-radius: 50% !important;
+	background: linear-gradient( 165deg, var( --dak-bg-card ) 0%, var( --dak-primary-tint ) 100% ) !important;
+	color: var( --dak-primary-dark ) !important;
+	box-shadow: var( --dak-shadow ), 0 1px 0 rgba( 255, 255, 255, 0.8 ) inset !important;
+}
+
+.dak-auth-visual-benefit-icon svg {
+	width: 16px !important;
+	height: 16px !important;
+}
+
+.dak-auth-visual-benefit strong {
+	display: block !important;
+	font-size: 0.92rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-auth-visual-benefit span {
+	font-size: 0.82rem !important;
+	color: var( --dak-muted ) !important;
+	line-height: 1.4 !important;
+}
+
+@media ( min-width: 900px ) {
+	.dak-auth-visual {
+		display: flex !important;
+	}
 }
 
 .dak-auth-header {

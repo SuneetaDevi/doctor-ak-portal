@@ -17,6 +17,25 @@ $forgot_password_url = \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( 
 $register_url         = \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( 'doctor_register' );
 ?>
 <div class="dak-portal dak-auth-page">
+	<div class="dak-auth-visual" aria-hidden="true">
+		<span class="dak-eyebrow"><?php esc_html_e( 'Dr. AK Lohana Clinic', 'doctor-ak-portal' ); ?></span>
+		<h2><?php esc_html_e( 'Your care, your records, one login away.', 'doctor-ak-portal' ); ?></h2>
+		<div class="dak-auth-visual-benefits">
+			<div class="dak-auth-visual-benefit">
+				<span class="dak-auth-visual-benefit-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5l6.5 2.5v4.3c0 4-2.8 7.2-6.5 8.2-3.7-1-6.5-4.2-6.5-8.2V5z"/><path d="M7.2 10l2 2 3.6-4"/></svg></span>
+				<div><strong><?php esc_html_e( 'Verified specialists', 'doctor-ak-portal' ); ?></strong><span><?php esc_html_e( 'Every doctor here is a credentialed specialist.', 'doctor-ak-portal' ); ?></span></div>
+			</div>
+			<div class="dak-auth-visual-benefit">
+				<span class="dak-auth-visual-benefit-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="15" height="13" rx="1.5"/><path d="M2.5 8h15"/><path d="M6 2.5v3M14 2.5v3"/></svg></span>
+				<div><strong><?php esc_html_e( 'Book in under a minute', 'doctor-ak-portal' ); ?></strong><span><?php esc_html_e( 'Pick a clinic visit or video consult and go.', 'doctor-ak-portal' ); ?></span></div>
+			</div>
+			<div class="dak-auth-visual-benefit">
+				<span class="dak-auth-visual-benefit-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5l6.5 2.5v4.3c0 4-2.8 7.2-6.5 8.2-3.7-1-6.5-4.2-6.5-8.2V5z"/></svg></span>
+				<div><strong><?php esc_html_e( 'Your records, private', 'doctor-ak-portal' ); ?></strong><span><?php esc_html_e( 'Appointments, history and bills, kept secure.', 'doctor-ak-portal' ); ?></span></div>
+			</div>
+		</div>
+	</div>
+
 	<div class="dak-auth-card">
 		<div class="dak-auth-header">
 			<span class="dak-eyebrow"><?php esc_html_e( 'Dr. AK Lohana Clinic & Endoscopy Services', 'doctor-ak-portal' ); ?></span>
