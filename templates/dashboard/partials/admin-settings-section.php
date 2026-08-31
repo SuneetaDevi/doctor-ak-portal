@@ -13,6 +13,8 @@
  * @var string $clinic_logo_url   Current logo URL, or '' if none set.
  * @var float  $video_fee_percent Video platform/gateway fee — percentage component (0-100).
  * @var float  $video_fee_flat    Video platform/gateway fee — flat PKR amount.
+ * @var string $google_place_id  Saved Google Place ID, or '' if not configured.
+ * @var string $google_api_key   Saved Google Places API key, or '' if not configured.
  */
 
 // Prevent direct file access.
@@ -87,6 +89,54 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<button type="button" class="dak-button dak-button-secondary" data-home-videos-add-row>
 		<span class="dak-nav-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4.5v11M4.5 10h11"/></svg></span>
 		<?php esc_html_e( 'Add Video', 'doctor-ak-portal' ); ?>
+	</button>
+</section>
+
+<section class="dak-dashboard-card" id="dak-home-testimonials-form" data-home-testimonials-editor>
+	<div class="dak-dashboard-card-header">
+		<h2><?php esc_html_e( 'Home page testimonials', 'doctor-ak-portal' ); ?></h2>
+	</div>
+	<p class="dak-field-hint"><?php esc_html_e( 'Shown in the "Patient Stories" section on your public Home page. Add a short quote, the patient\'s name, and an optional attribution (e.g. a clinic name).', 'doctor-ak-portal' ); ?></p>
+
+	<div class="dak-alert dak-alert-error dak-hidden" id="dak-home-testimonials-error" role="alert"></div>
+
+	<div class="dak-home-testimonials-rows" data-home-testimonials-rows></div>
+
+	<button type="button" class="dak-button dak-button-secondary" data-home-testimonials-add-row>
+		<span class="dak-nav-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4.5v11M4.5 10h11"/></svg></span>
+		<?php esc_html_e( 'Add Testimonial', 'doctor-ak-portal' ); ?>
+	</button>
+</section>
+
+<section class="dak-dashboard-card" id="dak-google-reviews-form">
+	<div class="dak-dashboard-card-header">
+		<h2><?php esc_html_e( 'Google reviews', 'doctor-ak-portal' ); ?></h2>
+	</div>
+	<p class="dak-field-hint">
+		<?php
+		esc_html_e(
+			'Automatically pulls your clinic\'s Google rating and up to 5 reviews (Google\'s own "most relevant" picks — not selectable) into the Home page\'s Patient Stories section, refreshed roughly once a day. Requires a Places API key from Google Cloud Console (enable the "Places API" and create an API key under Credentials) and your clinic\'s Place ID (search your business name at the "Place ID Finder" tool in Google\'s Places API documentation).',
+			'doctor-ak-portal'
+		);
+		?>
+	</p>
+
+	<div class="dak-alert dak-alert-error dak-hidden" id="dak-google-reviews-error" role="alert"></div>
+	<div class="dak-alert dak-alert-success dak-hidden" id="dak-google-reviews-success" role="status"></div>
+
+	<div class="dak-field-row">
+		<div class="dak-field">
+			<label for="dak-google-reviews-place-id"><?php esc_html_e( 'Place ID', 'doctor-ak-portal' ); ?></label>
+			<input type="text" id="dak-google-reviews-place-id" value="<?php echo esc_attr( $google_place_id ); ?>" placeholder="ChIJ...">
+		</div>
+		<div class="dak-field">
+			<label for="dak-google-reviews-api-key"><?php esc_html_e( 'Places API key', 'doctor-ak-portal' ); ?></label>
+			<input type="password" id="dak-google-reviews-api-key" value="<?php echo esc_attr( $google_api_key ); ?>" autocomplete="off">
+		</div>
+	</div>
+
+	<button type="button" class="dak-button dak-button-secondary" id="dak-google-reviews-save">
+		<?php esc_html_e( 'Save & Refresh', 'doctor-ak-portal' ); ?>
 	</button>
 </section>
 

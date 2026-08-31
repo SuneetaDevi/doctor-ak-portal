@@ -86,6 +86,21 @@
  *   (header/footer/content are separate top-level divs, not nested under one
  *   shared wrapper) picks up the same overrides via that selector.
  */
+/*
+ * Covers the gaps the public dark toggle would otherwise miss: the header,
+ * home-page content and footer are separate top-level `.dak-portal` divs (not
+ * one shared wrapper), so `html[data-theme='dark'] .dak-portal` alone only
+ * re-colors those boxes themselves — the page canvas around/between them
+ * (body's own background, and any transparent section inside .dak-home that
+ * doesn't set its own background) stays whatever the active WordPress
+ * theme's default (usually white) is. Painting `<body>` here means every gap
+ * shows dark too, without having to give every individual section its own
+ * explicit background.
+ */
+html[data-theme='dark'] body {
+	background: #000000 !important;
+}
+
 .dak-portal.dak-dashboard[data-theme='dark'],
 html[data-theme='dark'] .dak-portal {
 	--dak-primary-tint: #16210f;

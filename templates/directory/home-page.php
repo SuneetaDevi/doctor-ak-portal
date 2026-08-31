@@ -11,6 +11,8 @@
  * @var string[]   $doctors_html     Pre-rendered directory/doctor-card.php output, one per featured doctor.
  * @var string[]   $services_html    Pre-rendered directory/service-card.php output, one per featured service.
  * @var array      $videos           Home_Videos::get_all() rows — { title, video_url, poster_url } — admin-uploaded videos.
+ * @var array      $testimonials     Home_Testimonials::get_all() rows merged with Google_Reviews::get_reviews() — { quote, name, attribution, rating? } — 'rating' (1-5) is only present on a Google review.
+ * @var array      $google_rating    Google_Reviews::overall_rating() — { rating, total } — zeroed out if Google reviews aren't configured.
  * @var string     $hero_video_url   Bundled hero tour video URL (assets/videos/thumbnail.mp4), or '' if missing.
  * @var string[]   $marketing_videos Bundled marketing reel video URLs (assets/videos/video-1..3.mp4).
  * @var string     $directory_url    URL of the [doctors_directory] page, or '' if not found.
@@ -61,12 +63,18 @@ $dak_home_trust_points = array(
 	),
 );
 
-// Sample/example copy — replace with your own patients' words once you have
-// some collected; kept here only so the section isn't empty out of the box.
-$dak_home_testimonial = array(
-	'quote' => __( 'Booking was effortless and the doctor was incredibly thorough. Clear pricing and a genuinely caring team.', 'doctor-ak-portal' ),
-	'name'  => __( 'A recent patient', 'doctor-ak-portal' ),
-);
+// Sample/example copy shown only until the admin adds their own testimonials
+// (Settings -> Home page testimonials) — see the same fallback pattern
+// $marketing_videos/$hero_video_url use for the bundled sample clips.
+$dak_home_testimonials = ! empty( $testimonials )
+	? $testimonials
+	: array(
+		array(
+			'quote'       => __( 'Booking was effortless and the doctor was incredibly thorough. Clear pricing and a genuinely caring team.', 'doctor-ak-portal' ),
+			'name'        => __( 'A recent patient', 'doctor-ak-portal' ),
+			'attribution' => '',
+		),
+	);
 
 // Best-effort initials from a display name, for the hero card's avatar
 // fallback when no photo is uploaded — a closure (not a named function) so
@@ -109,7 +117,18 @@ $dak_home_initials = function ( $name ) {
 
 			</div>
 
-			<?php if ( $hero_doctor ) : ?>
+			<?php if ( $hero_video_url ) : ?>
+				<div class="dak-home-hero-visual">
+					<video src="<?php echo esc_url( $hero_video_url ); ?>" autoplay muted loop playsinline preload="auto"></video>
+					<div class="dak-home-hero-visual-caption">
+						<span class="dak-home-hero-visual-play" aria-hidden="true"><?php echo $dak_home_icons['play']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<div>
+							<strong><?php esc_html_e( 'Take a Video Tour', 'doctor-ak-portal' ); ?></strong>
+							<span><?php esc_html_e( 'Inside the clinic', 'doctor-ak-portal' ); ?></span>
+						</div>
+					</div>
+				</div>
+			<?php elseif ( $hero_doctor ) : ?>
 				<div class="dak-home-hero-card">
 					<div class="dak-home-hero-card-doctor">
 						<span class="dak-avatar dak-home-hero-card-avatar">
@@ -175,18 +194,6 @@ $dak_home_initials = function ( $name ) {
 		</div>
 	</section>
 
-	<?php if ( $hero_video_url ) : ?>
-		<section class="dak-home-section">
-			<div class="dak-home-video-banner">
-				<video src="<?php echo esc_url( $hero_video_url ); ?>" autoplay muted loop playsinline preload="auto"></video>
-				<div class="dak-home-video-banner-overlay">
-					<span class="dak-eyebrow"><?php esc_html_e( 'Inside the Clinic', 'doctor-ak-portal' ); ?></span>
-					<h2><?php esc_html_e( 'Take a Video Tour of Our Clinic', 'doctor-ak-portal' ); ?></h2>
-				</div>
-			</div>
-		</section>
-	<?php endif; ?>
-
 	<section class="dak-home-section dak-home-trust">
 		<div class="dak-home-trust-grid">
 			<?php foreach ( $dak_home_trust_points as $dak_point ) : ?>
@@ -239,22 +246,10 @@ $dak_home_initials = function ( $name ) {
 				<?php endif; ?>
 			</div>
 
-			<div class="dak-featured-doctors-slider">
-				<button type="button" class="dak-featured-doctors-nav dak-featured-doctors-prev" id="dak-featured-doctors-prev" aria-label="<?php esc_attr_e( 'Previous doctors', 'doctor-ak-portal' ); ?>">
-					<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.5 5l-5 5 5 5"/></svg>
-				</button>
-
-				<div class="dak-featured-doctors-track" id="dak-featured-doctors-track">
-					<?php foreach ( $doctors_html as $dak_card_html ) : ?>
-						<div class="dak-featured-doctors-slide">
-							<?php echo $dak_card_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- card partial escapes its own output. ?>
-						</div>
-					<?php endforeach; ?>
-				</div>
-
-				<button type="button" class="dak-featured-doctors-nav dak-featured-doctors-next" id="dak-featured-doctors-next" aria-label="<?php esc_attr_e( 'Next doctors', 'doctor-ak-portal' ); ?>">
-					<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 5l5 5-5 5"/></svg>
-				</button>
+			<div class="dak-home-doctors-grid">
+				<?php foreach ( $doctors_html as $dak_card_html ) : ?>
+					<?php echo $dak_card_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- card partial escapes its own output. ?>
+				<?php endforeach; ?>
 			</div>
 		</section>
 	<?php endif; ?>
@@ -278,10 +273,48 @@ $dak_home_initials = function ( $name ) {
 
 	<section class="dak-home-testimonial-band">
 		<div class="dak-home-testimonial-band-inner">
-			<div class="dak-home-testimonial-band-quote">
-				<span class="dak-eyebrow"><?php esc_html_e( 'Patient Stories', 'doctor-ak-portal' ); ?></span>
-				<p>&ldquo;<?php echo esc_html( $dak_home_testimonial['quote'] ); ?>&rdquo;</p>
-				<span class="dak-home-testimonial-band-author"><?php echo esc_html( '— ' . $dak_home_testimonial['name'] ); ?></span>
+			<div class="dak-home-testimonial-band-quotes">
+				<div class="dak-home-testimonial-band-eyebrow-row">
+					<span class="dak-eyebrow"><?php esc_html_e( 'Patient Stories', 'doctor-ak-portal' ); ?></span>
+
+					<?php if ( $google_rating['total'] > 0 ) : ?>
+						<span class="dak-home-google-rating-badge">
+							<?php echo $dak_home_icons['star']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+							<?php
+							echo esc_html(
+								sprintf(
+									/* translators: 1: rating out of 5, e.g. "4.8". 2: number of reviews. */
+									__( '%1$s on Google (%2$s reviews)', 'doctor-ak-portal' ),
+									number_format_i18n( $google_rating['rating'], 1 ),
+									number_format_i18n( $google_rating['total'] )
+								)
+							);
+							?>
+						</span>
+					<?php endif; ?>
+				</div>
+
+				<?php foreach ( $dak_home_testimonials as $dak_testimonial ) : ?>
+					<div class="dak-home-testimonial-card">
+						<?php if ( ! empty( $dak_testimonial['rating'] ) ) : ?>
+							<span class="dak-home-testimonial-stars" aria-hidden="true">
+								<?php for ( $dak_star = 0; $dak_star < 5; $dak_star++ ) : ?>
+									<span class="<?php echo $dak_star < (int) $dak_testimonial['rating'] ? 'is-filled' : ''; ?>"><?php echo $dak_home_icons['star']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+								<?php endfor; ?>
+							</span>
+						<?php endif; ?>
+						<p>&ldquo;<?php echo esc_html( $dak_testimonial['quote'] ); ?>&rdquo;</p>
+						<span class="dak-home-testimonial-band-author">
+							<?php
+							echo esc_html(
+								! empty( $dak_testimonial['attribution'] )
+									? sprintf( '— %1$s, %2$s', $dak_testimonial['name'], $dak_testimonial['attribution'] )
+									: '— ' . $dak_testimonial['name']
+							);
+							?>
+						</span>
+					</div>
+				<?php endforeach; ?>
 			</div>
 
 			<div class="dak-home-testimonial-band-stats">
@@ -302,7 +335,7 @@ $dak_home_initials = function ( $name ) {
 	</section>
 
 	<?php if ( ! empty( $clinic_locations ) ) : ?>
-		<section class="dak-home-section dak-home-clinics">
+		<section class="dak-home-section dak-home-clinics" id="dak-home-clinics">
 			<div class="dak-directory-header">
 				<span class="dak-eyebrow"><?php esc_html_e( 'Visit Us', 'doctor-ak-portal' ); ?></span>
 				<h2><?php echo esc_html( sprintf( /* translators: %d: number of clinics. */ _n( 'Our Clinic Across Karachi', 'Our %d Clinics Across Karachi', $stats['clinics_count'], 'doctor-ak-portal' ), $stats['clinics_count'] ) ); ?></h2>
@@ -331,7 +364,7 @@ $dak_home_initials = function ( $name ) {
 	<?php endif; ?>
 
 	<?php if ( ! empty( $marketing_videos ) || ! empty( $videos ) ) : ?>
-		<section class="dak-home-section dak-home-videos">
+		<section class="dak-home-section dak-home-videos" id="dak-home-videos">
 			<div class="dak-directory-header">
 				<span class="dak-eyebrow"><?php esc_html_e( 'See More', 'doctor-ak-portal' ); ?></span>
 				<h2><?php esc_html_e( 'More From Our Clinic', 'doctor-ak-portal' ); ?></h2>

@@ -13,6 +13,8 @@ use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Doctor_Awards;
 use DoctorAKPortal\Includes\Encounters;
+use DoctorAKPortal\Includes\Google_Reviews;
+use DoctorAKPortal\Includes\Home_Testimonials;
 use DoctorAKPortal\Includes\Home_Videos;
 use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Notification_Center;
@@ -549,9 +551,10 @@ class Admin_Dashboard {
 			);
 
 			// Only a full admin gets the combined "Save Settings" button
-			// (Clinic Branding + Home Videos + Notification Preferences) —
-			// a receptionist has no Clinic Branding/Home Videos section on
-			// their cut-down Settings view (see prepare_data()'s 'settings'
+			// (Clinic Branding + Home Videos + Home Testimonials +
+			// Notification Preferences) — a receptionist has no Clinic
+			// Branding/Home Videos/Home Testimonials section on their
+			// cut-down Settings view (see prepare_data()'s 'settings'
 			// branch), so keeps the Notification Preferences card's own
 			// standalone save button.
 			if ( ! self::is_receptionist() ) {
@@ -574,9 +577,44 @@ class Admin_Dashboard {
 				);
 
 				wp_enqueue_script(
+					'doctor-ak-portal-admin-home-testimonials',
+					DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-home-testimonials.js',
+					array(),
+					Assets::version( 'assets/js/doctor-ak-admin-home-testimonials.js' ),
+					true
+				);
+
+				wp_localize_script(
+					'doctor-ak-portal-admin-home-testimonials',
+					'dakHomeTestimonials',
+					array(
+						'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+						'nonce'   => wp_create_nonce( Home_Testimonials_Handler::NONCE_ACTION ),
+						'rows'    => Home_Testimonials::get_all(),
+					)
+				);
+
+				wp_enqueue_script(
+					'doctor-ak-portal-admin-google-reviews',
+					DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-google-reviews.js',
+					array(),
+					Assets::version( 'assets/js/doctor-ak-admin-google-reviews.js' ),
+					true
+				);
+
+				wp_localize_script(
+					'doctor-ak-portal-admin-google-reviews',
+					'dakGoogleReviews',
+					array(
+						'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+						'nonce'   => wp_create_nonce( Google_Reviews_Handler::NONCE_ACTION ),
+					)
+				);
+
+				wp_enqueue_script(
 					'doctor-ak-portal-admin-settings-save',
 					DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-settings-save.js',
-					array( 'doctor-ak-portal-admin-clinic-branding', 'doctor-ak-portal-admin-home-videos', 'doctor-ak-portal-notification-preferences' ),
+					array( 'doctor-ak-portal-admin-clinic-branding', 'doctor-ak-portal-admin-home-videos', 'doctor-ak-portal-admin-home-testimonials', 'doctor-ak-portal-notification-preferences' ),
 					Assets::version( 'assets/js/doctor-ak-admin-settings-save.js' ),
 					true
 				);
@@ -2068,6 +2106,8 @@ class Admin_Dashboard {
 					'clinic_logo_url'   => Site_Footer::bundled_logo_url(),
 					'video_fee_percent' => $video_fee_settings['percent'],
 					'video_fee_flat'    => $video_fee_settings['flat'],
+					'google_place_id'   => Google_Reviews::get_place_id(),
+					'google_api_key'    => Google_Reviews::get_api_key(),
 				)
 			);
 		}

@@ -85,8 +85,8 @@
 .dak-site-header-menu a {
 	display: block !important;
 	padding: 0.6rem 0.85rem !important;
-	font-size: 0.85rem !important;
-	font-weight: 600 !important;
+	font-size: 0.88rem !important;
+	font-weight: 500 !important;
 	color: var( --dak-text ) !important;
 	text-decoration: none !important;
 	border-radius: var( --dak-radius-sm ) !important;
@@ -94,19 +94,7 @@
 }
 
 .dak-site-header-menu > .menu-item > a:hover {
-	background: var( --dak-bg-subtle ) !important;
 	color: var( --dak-primary-dark ) !important;
-}
-
-/* "Book Appointment" (last top-level item with children) rendered as a solid button */
-.dak-site-header-menu > .menu-item.menu-item-has-children:last-child > a {
-	background: var( --dak-primary ) !important;
-	color: #ffffff !important;
-}
-
-.dak-site-header-menu > .menu-item.menu-item-has-children:last-child > a:hover {
-	background: var( --dak-primary-dark ) !important;
-	color: #ffffff !important;
 }
 
 .dak-site-header-menu .sub-menu {
@@ -158,6 +146,35 @@
 	padding: 0.55rem 1.1rem !important;
 	font-size: 0.85rem !important;
 	white-space: nowrap !important;
+	border-radius: 999px !important;
+}
+
+.dak-site-header-phone {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+	font-size: 0.85rem !important;
+	font-weight: 500 !important;
+	color: var( --dak-text ) !important;
+	text-decoration: none !important;
+	white-space: nowrap !important;
+}
+
+.dak-site-header-phone svg {
+	width: 15px !important;
+	height: 15px !important;
+	flex: 0 0 auto !important;
+}
+
+.dak-site-header-phone:hover {
+	color: var( --dak-primary-dark ) !important;
+}
+
+@media ( max-width: 640px ) {
+	.dak-site-header-phone span,
+	.dak-site-header-phone {
+		display: none !important;
+	}
 }
 
 .dak-public-theme-toggle {
@@ -301,11 +318,6 @@
 		align-items: stretch !important;
 		gap: 0.15rem !important;
 		padding: 0.5rem 0 !important;
-	}
-
-	.dak-site-header-menu > .menu-item.menu-item-has-children:last-child > a {
-		background: var( --dak-bg-subtle ) !important;
-		color: var( --dak-text ) !important;
 	}
 
 	.dak-site-header-menu .sub-menu {

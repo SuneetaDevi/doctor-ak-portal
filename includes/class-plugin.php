@@ -31,7 +31,9 @@ use DoctorAKPortal\Frontend\Doctors_Directory;
 use DoctorAKPortal\Frontend\Encounter_Handler;
 use DoctorAKPortal\Frontend\Featured_Doctors;
 use DoctorAKPortal\Frontend\Forgot_Password_Handler;
+use DoctorAKPortal\Frontend\Google_Reviews_Handler;
 use DoctorAKPortal\Frontend\Home_Page;
+use DoctorAKPortal\Frontend\Home_Testimonials_Handler;
 use DoctorAKPortal\Frontend\Home_Videos_Handler;
 use DoctorAKPortal\Frontend\Login_Handler;
 use DoctorAKPortal\Frontend\Notification_Handler;
@@ -405,6 +407,12 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_home_video_upload', $home_videos_handler, 'handle_upload_video' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_home_video_poster_upload', $home_videos_handler, 'handle_upload_poster' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_home_videos_save', $home_videos_handler, 'handle_save' );
+
+		$home_testimonials_handler = new Home_Testimonials_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_home_testimonials_save', $home_testimonials_handler, 'handle_save' );
+
+		$google_reviews_handler = new Google_Reviews_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_google_reviews_save', $google_reviews_handler, 'handle_save' );
 
 		$doctor_patient_handler = new Doctor_Patient_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_doctor_add_patient', $doctor_patient_handler, 'handle_add_patient' );

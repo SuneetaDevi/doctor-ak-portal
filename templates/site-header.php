@@ -6,6 +6,7 @@
  *
  * @var string   $menu_location Registered nav menu location slug.
  * @var string   $logo_url        Bundled logo URL (assets/images/logo.*), or '' if none was placed there.
+ * @var string   $phone           Contact phone number (first clinic location with one on file), or '' if none.
  * @var bool     $is_logged_in    Whether a user is currently logged in.
  * @var \WP_User $user            Current user (id 0 when logged out).
  * @var string   $user_avatar_url Logged-in user's uploaded profile picture, or a default avatar if none set.
@@ -53,6 +54,13 @@ $display_name = $is_logged_in ? ( $user->first_name ? $user->first_name : $user-
 		</nav>
 
 		<div class="dak-site-header-auth">
+			<?php if ( $phone ) : ?>
+				<a class="dak-site-header-phone" href="<?php echo esc_url( 'tel:' . preg_replace( '/[^0-9+]/', '', $phone ) ); ?>">
+					<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3.5h2.3l1 3.3-1.6 1.4a9 9 0 0 0 4.1 4.1l1.4-1.6 3.3 1v2.3c0 .8-.7 1.4-1.5 1.3C8.7 15 5 11.3 4.2 6c-.1-.8.5-1.5 1.3-1.5z"/></svg>
+					<?php echo esc_html( $phone ); ?>
+				</a>
+			<?php endif; ?>
+
 			<button type="button" class="dak-public-theme-toggle" data-dak-public-theme-toggle aria-pressed="false" aria-label="<?php esc_attr_e( 'Toggle dark mode', 'doctor-ak-portal' ); ?>">
 				<span class="dak-public-theme-toggle-thumb" aria-hidden="true"></span>
 			</button>

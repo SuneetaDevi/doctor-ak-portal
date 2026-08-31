@@ -8,6 +8,7 @@
 namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
+use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
@@ -67,10 +68,11 @@ class Site_Header {
 	/**
 	 * Turns "Online Video Consultation" / "Clinic Appointment" links in the
 	 * header's nav menu into booking-modal triggers, by matching on their
-	 * exact title text. This works whether the menu is the coded fallback
-	 * (render_fallback_menu(), which already carries these attributes
-	 * directly) or a real menu the site owner assigned under Appearance ->
-	 * Menus using plain "#" custom links with these exact labels.
+	 * exact title text. Only relevant to a real menu the site owner assigned
+	 * under Appearance -> Menus using plain "#" custom links with these
+	 * exact labels — the coded fallback (render_fallback_menu()) no longer
+	 * includes a Book Appointment nav item at all (it's the standalone CTA
+	 * button instead), so this is a no-op there.
 	 *
 	 * @param array         $atts  Existing link attributes.
 	 * @param \WP_Post      $item  Menu item.
@@ -175,6 +177,7 @@ class Site_Header {
 		return array(
 			'menu_location'   => self::MENU_LOCATION,
 			'logo_url'        => self::bundled_logo_url(),
+			'phone'           => self::primary_phone(),
 			'is_logged_in'    => is_user_logged_in(),
 			'user'            => $user,
 			'user_avatar_url' => self::user_avatar_url( $user ),
@@ -227,6 +230,23 @@ class Site_Header {
 	}
 
 	/**
+	 * Resolves a contact number for the header — the first clinic location
+	 * with a phone number on file, since the plugin has no separate
+	 * site-wide "contact phone" setting.
+	 *
+	 * @return string Phone number, or '' if no clinic has one set.
+	 */
+	private static function primary_phone() {
+		foreach ( Clinic_Locations::get_all() as $clinic_location ) {
+			if ( '' !== $clinic_location['phone'] ) {
+				return $clinic_location['phone'];
+			}
+		}
+
+		return '';
+	}
+
+	/**
 	 * Resolves the bundled logo's URL, checking a few common extensions
 	 * under assets/images/logo.* so the site owner can just drop a file in
 	 * without editing code.
@@ -249,40 +269,31 @@ class Site_Header {
 	 * Renders a sensible default menu when the site owner hasn't assigned
 	 * one to the header's menu location yet (Appearance -> Menus).
 	 *
-	 * Matches the nav requested for this site: Home, Doctors, Intragastric
-	 * Balloon (IGB), Services, Blogs, Contact Us, and a "Book Appointment"
-	 * item with "Online Video Consultation" / "Clinic Appointment"
-	 * sub-items. Since those two booking destinations don't exist yet (no
-	 * booking module), they link to "#" until one does.
+	 * Four links: Services and Doctors go to their directory pages; Videos
+	 * and Clinics jump to the matching section of the home page (see the
+	 * `id="dak-home-videos"` / `id="dak-home-clinics"` anchors in
+	 * templates/directory/home-page.php) since those aren't standalone
+	 * pages. "Book Appointment" isn't in this list — it's the standalone
+	 * CTA button in the header's auth area, not a nav link.
 	 *
 	 * @param array $args wp_nav_menu() args (only 'menu_class' is used here).
 	 * @return void
 	 */
 	public static function render_fallback_menu( $args ) {
 		$menu_class = isset( $args['menu_class'] ) ? $args['menu_class'] : '';
+		$home_url   = Page_Finder::url_for_shortcode( 'dak_home' );
+		$home_url   = $home_url ? $home_url : home_url( '/' );
 
-		$titles = array(
-			__( 'Doctors', 'doctor-ak-portal' ),
-			__( 'Intragastric Balloon (IGB)', 'doctor-ak-portal' ),
-			__( 'Services', 'doctor-ak-portal' ),
-			__( 'Blogs', 'doctor-ak-portal' ),
-			__( 'Contact Us', 'doctor-ak-portal' ),
+		$links = array(
+			__( 'Services', 'doctor-ak-portal' ) => Page_Finder::url_for_shortcode( 'services_directory' ),
+			__( 'Doctors', 'doctor-ak-portal' )  => Page_Finder::url_for_shortcode( 'doctors_directory' ),
+			__( 'Videos', 'doctor-ak-portal' )   => $home_url . '#dak-home-videos',
+			__( 'Clinics', 'doctor-ak-portal' )  => $home_url . '#dak-home-clinics',
 		);
-
-		$pages = array();
-		foreach ( $titles as $title ) {
-			$pages[ $title ] = self::find_page_url( $title );
-		}
 
 		echo '<ul class="' . esc_attr( $menu_class ) . '">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 
-		printf(
-			'<li class="menu-item"><a href="%1$s">%2$s</a></li>',
-			esc_url( home_url( '/' ) ),
-			esc_html__( 'Home', 'doctor-ak-portal' )
-		);
-
-		foreach ( $pages as $title => $url ) {
+		foreach ( $links as $title => $url ) {
 			printf(
 				'<li class="menu-item"><a href="%1$s">%2$s</a></li>',
 				esc_url( $url ),
@@ -290,41 +301,6 @@ class Site_Header {
 			);
 		}
 
-		printf(
-			'<li class="menu-item menu-item-has-children"><a href="#">%1$s</a><ul class="sub-menu"><li class="menu-item"><a href="#" data-dak-book-appointment data-booking-type="video">%2$s</a></li><li class="menu-item"><a href="#" data-dak-book-appointment data-booking-type="clinic">%3$s</a></li></ul></li>',
-			esc_html__( 'Book Appointment', 'doctor-ak-portal' ),
-			esc_html__( 'Online Video Consultation', 'doctor-ak-portal' ),
-			esc_html__( 'Clinic Appointment', 'doctor-ak-portal' )
-		);
-
 		echo '</ul>';
-	}
-
-	/**
-	 * Looks up a published page by its exact title, for the fallback menu's
-	 * best-effort links. Returns '#' if no matching page is found — the
-	 * site owner should assign a real menu to this location for full
-	 * control instead of relying on title matching.
-	 *
-	 * @param string $title Page title to match.
-	 * @return string
-	 */
-	private static function find_page_url( $title ) {
-		$query = new \WP_Query(
-			array(
-				'post_type'      => 'page',
-				'post_status'    => 'publish',
-				'title'          => $title,
-				'posts_per_page' => 1,
-				'no_found_rows'  => true,
-				'fields'         => 'ids',
-			)
-		);
-
-		if ( ! empty( $query->posts ) ) {
-			return get_permalink( $query->posts[0] );
-		}
-
-		return '#';
 	}
 }

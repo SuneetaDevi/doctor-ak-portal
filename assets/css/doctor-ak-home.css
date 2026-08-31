@@ -7,6 +7,15 @@
  * service/doctor cards) and doctor-ak-featured-doctors.css (slider). Every
  * color here reads from the shared --dak-* tokens so the public light/dark
  * toggle (assets/js/doctor-ak-public-theme-toggle.js) re-colors it for free.
+ *
+ * Editorial redesign pass: a serif display face for headings (system serif —
+ * no external font request), pill-shaped buttons/eyebrows, a soft gradient
+ * hero, and boxed tinted panels for a few sections (matching the existing
+ * "colored panel inside the container" pattern .dak-home-cta and
+ * .dak-home-testimonial-band already used, rather than full-bleed bands).
+ * Everything here is scoped under .dak-home so it never leaks into the
+ * dashboards, auth pages or the standalone directory pages that share the
+ * same button/card components.
  */
 
 .dak-home {
@@ -15,8 +24,40 @@
 	padding: 0 1.5rem var( --dak-space-8 ) !important;
 }
 
+.dak-home-serif {
+	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+}
+
+.dak-home h1,
+.dak-home .dak-directory-header h2,
+.dak-home-testimonial-card p {
+	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+}
+
+.dak-home .dak-directory-header h2 {
+	font-size: var( --dak-text-2xl ) !important;
+	font-weight: 600 !important;
+	line-height: 1.25 !important;
+	color: var( --dak-text ) !important;
+	margin: 0.4rem 0 0.6rem !important;
+}
+
+/* Pill-shaped buttons everywhere on this page (hero, cards, CTA) — scoped
+   here rather than on the shared .dak-button so dashboards/auth/directory
+   keep their existing rounded-rect buttons. */
+.dak-home .dak-button {
+	border-radius: 999px !important;
+}
+
 .dak-home-section {
 	margin-top: var( --dak-space-8 ) !important;
+}
+
+/* Offsets anchor-scrolling (header nav's Videos/Clinics links) so the
+   section title doesn't land underneath the sticky header. */
+#dak-home-videos,
+#dak-home-clinics {
+	scroll-margin-top: 96px !important;
 }
 
 .dak-home-section-footer {
@@ -29,28 +70,29 @@
 
 .dak-home-hero {
 	margin-top: var( --dak-space-6 ) !important;
-	padding: var( --dak-space-7 ) 0 !important;
-	border-bottom: 1px solid var( --dak-border ) !important;
+	padding: var( --dak-space-7 ) var( --dak-space-6 ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	background: linear-gradient( 180deg, var( --dak-primary-tint ) 0%, var( --dak-bg-card ) 100% ) !important;
 }
 
 .dak-home-hero-grid {
 	display: grid !important;
-	grid-template-columns: 1fr 340px !important;
+	grid-template-columns: 1fr 380px !important;
 	gap: var( --dak-space-7 ) !important;
-	align-items: center !important;
+	align-items: stretch !important;
 }
 
 .dak-home-hero-copy h1 {
-	font-size: var( --dak-text-3xl ) !important;
-	font-weight: 800 !important;
-	line-height: 1.18 !important;
+	font-size: 2.75rem !important;
+	font-weight: 600 !important;
+	line-height: 1.12 !important;
 	margin: var( --dak-space-3 ) 0 var( --dak-space-3 ) !important;
 	color: var( --dak-text ) !important;
 }
 
 .dak-home-hero-accent {
 	font-style: italic !important;
-	color: var( --dak-primary ) !important;
+	color: var( --dak-primary-dark ) !important;
 }
 
 .dak-home-hero-copy > p {
@@ -81,7 +123,10 @@
 /* Hero floating doctor card */
 
 .dak-home-hero-card {
-	background: var( --dak-bg-card ) !important;
+	position: relative !important;
+	overflow: hidden !important;
+	align-self: center !important;
+	background: linear-gradient( 155deg, var( --dak-bg-card ) 0%, var( --dak-primary-tint ) 100% ) !important;
 	border: 1px solid var( --dak-border ) !important;
 	border-radius: var( --dak-radius-lg ) !important;
 	box-shadow: var( --dak-shadow-lg ) !important;
@@ -101,10 +146,11 @@
 	width: 52px !important;
 	height: 52px !important;
 	flex: 0 0 auto !important;
-	background: var( --dak-primary-tint ) !important;
+	background: var( --dak-bg-card ) !important;
 	color: var( --dak-primary-dark ) !important;
 	font-weight: 700 !important;
 	font-size: var( --dak-text-md ) !important;
+	box-shadow: var( --dak-shadow ) !important;
 }
 
 .dak-home-hero-card-doctor div {
@@ -183,8 +229,9 @@
 }
 
 .dak-home-hero-stat strong {
+	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
 	font-size: var( --dak-text-2xl ) !important;
-	font-weight: 800 !important;
+	font-weight: 700 !important;
 	color: var( --dak-text ) !important;
 }
 
@@ -194,18 +241,20 @@
 	font-weight: 600 !important;
 }
 
-/* Video tour banner */
+/* Hero visual — the video-tour teaser filling the hero's right column
+   (falls back to the doctor spotlight card below when no video is set). */
 
-.dak-home-video-banner {
+.dak-home-hero-visual {
 	position: relative !important;
-	aspect-ratio: 16 / 7 !important;
+	height: 100% !important;
+	min-height: 340px !important;
 	border-radius: var( --dak-radius-lg ) !important;
 	overflow: hidden !important;
 	background: linear-gradient( 135deg, var( --dak-secondary ) 0%, var( --dak-primary-dark ) 100% ) !important;
 	box-shadow: var( --dak-shadow-lg ) !important;
 }
 
-.dak-home-video-banner video {
+.dak-home-hero-visual video {
 	position: absolute !important;
 	inset: 0 !important;
 	width: 100% !important;
@@ -213,23 +262,69 @@
 	object-fit: cover !important;
 }
 
-.dak-home-video-banner-overlay {
+.dak-home-hero-visual-caption {
 	position: absolute !important;
-	left: 0 !important;
-	bottom: 0 !important;
-	width: 100% !important;
-	padding: var( --dak-space-6 ) var( --dak-space-5 ) !important;
-	background: linear-gradient( 180deg, transparent 0%, rgba( 0, 0, 0, 0.75 ) 100% ) !important;
+	left: var( --dak-space-4 ) !important;
+	bottom: var( --dak-space-4 ) !important;
+	z-index: 1 !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: var( --dak-space-3 ) !important;
 }
 
-.dak-home-video-banner-overlay h2 {
+.dak-home-hero-visual::after {
+	content: '' !important;
+	position: absolute !important;
+	inset: 0 !important;
+	background: linear-gradient( 0deg, rgba( 0, 0, 0, 0.55 ) 0%, rgba( 0, 0, 0, 0 ) 45% ) !important;
+}
+
+.dak-home-hero-visual-play {
+	position: relative !important;
+	z-index: 1 !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 44px !important;
+	height: 44px !important;
+	flex: 0 0 auto !important;
+	border-radius: 50% !important;
+	background: rgba( 255, 255, 255, 0.94 ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-home-hero-visual-play svg {
+	width: 16px !important;
+	height: 16px !important;
+	margin-left: 2px !important;
+}
+
+.dak-home-hero-visual-caption div {
+	position: relative !important;
+	z-index: 1 !important;
+	display: flex !important;
+	flex-direction: column !important;
+}
+
+.dak-home-hero-visual-caption strong {
 	color: #fff !important;
-	font-size: var( --dak-text-xl ) !important;
-	font-weight: 800 !important;
-	margin: var( --dak-space-1 ) 0 0 !important;
+	font-size: var( --dak-text-sm ) !important;
+	font-weight: 700 !important;
 }
 
-/* Trust strip (used as the "Why Choose Us" icon grid too, see .dak-home-why-*) */
+.dak-home-hero-visual-caption span {
+	color: rgba( 255, 255, 255, 0.8 ) !important;
+	font-size: var( --dak-text-xs ) !important;
+}
+
+/* Trust strip — flat icon + label row (no card chrome), separated from the
+   sections above/below by hairlines, matching the reference design. */
+
+.dak-home-trust {
+	padding: var( --dak-space-5 ) 0 !important;
+	border-top: 1px solid var( --dak-border ) !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
 
 .dak-home-trust-grid {
 	display: grid !important;
@@ -238,34 +333,38 @@
 }
 
 .dak-home-trust-card {
-	background: var( --dak-bg-card ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-md ) !important;
-	padding: var( --dak-space-5 ) !important;
-	box-shadow: var( --dak-shadow ) !important;
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: var( --dak-space-3 ) !important;
+	background: none !important;
+	border: none !important;
+	border-radius: 0 !important;
+	padding: 0 !important;
+	box-shadow: none !important;
 }
 
 .dak-home-trust-icon {
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: center !important;
-	width: 44px !important;
-	height: 44px !important;
-	border-radius: var( --dak-radius-md ) !important;
+	width: 40px !important;
+	height: 40px !important;
+	flex: 0 0 auto !important;
+	border-radius: 50% !important;
 	background: var( --dak-primary-tint ) !important;
 	color: var( --dak-primary-dark ) !important;
-	margin-bottom: var( --dak-space-3 ) !important;
+	margin-bottom: 0 !important;
 }
 
 .dak-home-trust-icon svg {
-	width: 22px !important;
-	height: 22px !important;
+	width: 19px !important;
+	height: 19px !important;
 }
 
 .dak-home-trust-card h3 {
-	font-size: var( --dak-text-lg ) !important;
+	font-size: var( --dak-text-md ) !important;
 	font-weight: 700 !important;
-	margin: 0 0 var( --dak-space-2 ) !important;
+	margin: 0 0 0.2rem !important;
 	color: var( --dak-text ) !important;
 }
 
@@ -273,10 +372,62 @@
 	font-size: var( --dak-text-sm ) !important;
 	color: var( --dak-muted ) !important;
 	margin: 0 !important;
-	line-height: 1.55 !important;
+	line-height: 1.5 !important;
+}
+
+/* Services / doctors — plain white ground, cards get a touch more lift */
+
+.dak-home-services .dak-service-card,
+.dak-home-doctors .dak-doctor-card {
+	border-radius: var( --dak-radius-lg ) !important;
+	transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.dak-home-services .dak-service-card:hover,
+.dak-home-doctors .dak-doctor-card:hover {
+	transform: translateY( -3px ) !important;
+	box-shadow: var( --dak-shadow-hover ) !important;
+}
+
+/* Doctors — a plain, equal-width grid (not the horizontal-scroll slider the
+   standalone [featured_doctors] shortcode uses elsewhere), so long names/
+   specialty tags get enough room to wrap instead of overflowing a fixed
+   270px slide. */
+
+.dak-home-doctors-grid {
+	display: grid !important;
+	grid-template-columns: repeat( 4, 1fr ) !important;
+	gap: var( --dak-space-5 ) !important;
+}
+
+.dak-home-doctors-grid .dak-doctor-card {
+	height: 100% !important;
+}
+
+.dak-home-doctors-grid .dak-doctor-card-name {
+	overflow-wrap: break-word !important;
+}
+
+@media ( max-width: 1024px ) {
+	.dak-home-doctors-grid {
+		grid-template-columns: repeat( 2, 1fr ) !important;
+	}
+}
+
+@media ( max-width: 560px ) {
+	.dak-home-doctors-grid {
+		grid-template-columns: 1fr !important;
+	}
 }
 
 /* Why Choose Us — plain centered icon columns, no card chrome */
+
+.dak-home-why {
+	background: var( --dak-primary-tint ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	padding: var( --dak-space-7 ) var( --dak-space-6 ) !important;
+	margin-top: var( --dak-space-8 ) !important;
+}
 
 .dak-home-why .dak-directory-header {
 	text-align: center !important;
@@ -303,8 +454,9 @@
 	width: 48px !important;
 	height: 48px !important;
 	border-radius: 50% !important;
-	background: var( --dak-primary-tint ) !important;
+	background: var( --dak-bg-card ) !important;
 	color: var( --dak-primary-dark ) !important;
+	box-shadow: var( --dak-shadow ) !important;
 	margin-bottom: var( --dak-space-3 ) !important;
 }
 
@@ -343,20 +495,70 @@
 	display: grid !important;
 	grid-template-columns: 1.4fr 1fr !important;
 	gap: var( --dak-space-6 ) !important;
-	align-items: center !important;
+	align-items: start !important;
 }
 
-.dak-home-testimonial-band-quote .dak-eyebrow {
+.dak-home-testimonial-band-quotes {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: var( --dak-space-4 ) !important;
+}
+
+.dak-home-testimonial-band-eyebrow-row {
+	display: flex !important;
+	align-items: center !important;
+	flex-wrap: wrap !important;
+	gap: var( --dak-space-3 ) !important;
+}
+
+.dak-home-testimonial-band-quotes .dak-eyebrow {
 	background: rgba( 255, 255, 255, 0.1 ) !important;
 	color: var( --dak-primary ) !important;
 }
 
-.dak-home-testimonial-band-quote p {
-	color: #fff !important;
-	font-size: var( --dak-text-xl ) !important;
+.dak-home-google-rating-badge {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.3rem !important;
+	color: #d7dade !important;
+	font-size: var( --dak-text-sm ) !important;
 	font-weight: 600 !important;
-	line-height: 1.45 !important;
-	margin: var( --dak-space-3 ) 0 !important;
+}
+
+.dak-home-google-rating-badge svg {
+	width: 15px !important;
+	height: 15px !important;
+	color: #f5b942 !important;
+}
+
+.dak-home-testimonial-card + .dak-home-testimonial-card {
+	padding-top: var( --dak-space-4 ) !important;
+	border-top: 1px solid rgba( 255, 255, 255, 0.12 ) !important;
+}
+
+.dak-home-testimonial-stars {
+	display: flex !important;
+	gap: 0.15rem !important;
+	margin-bottom: var( --dak-space-2 ) !important;
+}
+
+.dak-home-testimonial-stars svg {
+	width: 14px !important;
+	height: 14px !important;
+	color: rgba( 255, 255, 255, 0.25 ) !important;
+}
+
+.dak-home-testimonial-stars .is-filled svg {
+	color: #f5b942 !important;
+}
+
+.dak-home-testimonial-card p {
+	color: #fff !important;
+	font-size: 1.25rem !important;
+	font-style: italic !important;
+	font-weight: 500 !important;
+	line-height: 1.5 !important;
+	margin: 0 0 var( --dak-space-2 ) !important;
 }
 
 .dak-home-testimonial-band-author {
@@ -382,7 +584,14 @@
 	font-size: var( --dak-text-sm ) !important;
 }
 
-/* Visit Us / clinics */
+/* Visit Us / clinics — boxed tinted panel, same pattern as the testimonial
+   band and CTA below rather than a full-bleed section. */
+
+.dak-home-clinics {
+	background: var( --dak-primary-tint ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	padding: var( --dak-space-7 ) var( --dak-space-6 ) !important;
+}
 
 .dak-home-clinics-grid {
 	display: grid !important;
@@ -400,10 +609,18 @@
 	border-radius: var( --dak-radius-md ) !important;
 	padding: var( --dak-space-4 ) !important;
 	box-shadow: var( --dak-shadow ) !important;
+	transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.dak-home-clinic-card:hover {
+	transform: translateY( -3px ) !important;
+	box-shadow: var( --dak-shadow-hover ) !important;
 }
 
 .dak-home-clinic-card strong {
+	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
 	font-size: var( --dak-text-md ) !important;
+	font-weight: 700 !important;
 	color: var( --dak-text ) !important;
 }
 
@@ -428,13 +645,14 @@
 	height: 100% !important;
 }
 
-/* Final CTA band */
+/* Final CTA band — bold solid primary panel, matching the reference design's
+   high-contrast "Ready to see a specialist?" banner. */
 
 .dak-home-cta {
 	margin-top: var( --dak-space-8 ) !important;
-	background: var( --dak-primary-tint ) !important;
+	background: linear-gradient( 135deg, var( --dak-primary ) 0%, var( --dak-primary-dark ) 100% ) !important;
 	border-radius: var( --dak-radius-lg ) !important;
-	padding: var( --dak-space-6 ) !important;
+	padding: var( --dak-space-6 ) var( --dak-space-7 ) !important;
 }
 
 .dak-home-cta-inner {
@@ -446,16 +664,26 @@
 }
 
 .dak-home-cta h2 {
-	color: var( --dak-text ) !important;
+	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+	color: #fff !important;
 	font-size: var( --dak-text-xl ) !important;
-	font-weight: 800 !important;
+	font-weight: 600 !important;
 	margin: 0 0 var( --dak-space-1 ) !important;
 }
 
 .dak-home-cta p {
-	color: var( --dak-muted ) !important;
+	color: rgba( 255, 255, 255, 0.85 ) !important;
 	font-size: var( --dak-text-md ) !important;
 	margin: 0 !important;
+}
+
+.dak-home-cta .dak-button-primary {
+	background: #fff !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-home-cta .dak-button-primary:hover {
+	background: rgba( 255, 255, 255, 0.9 ) !important;
 }
 
 /* Video grid + lightbox (marketing reel + admin-uploaded videos) */
@@ -473,7 +701,7 @@
 	align-items: flex-end !important;
 	aspect-ratio: 16 / 10 !important;
 	border: none !important;
-	border-radius: var( --dak-radius-md ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
 	overflow: hidden !important;
 	background: #000 !important;
 	cursor: pointer !important;
@@ -597,6 +825,10 @@
 }
 
 @media ( max-width: 900px ) {
+	.dak-home-hero {
+		padding: var( --dak-space-6 ) var( --dak-space-5 ) !important;
+	}
+
 	.dak-home-hero-grid {
 		grid-template-columns: 1fr !important;
 	}
@@ -621,7 +853,12 @@
 	}
 
 	.dak-home-hero-copy h1 {
-		font-size: var( --dak-text-2xl ) !important;
+		font-size: 2rem !important;
+	}
+
+	.dak-home-why,
+	.dak-home-clinics {
+		padding: var( --dak-space-6 ) var( --dak-space-4 ) !important;
 	}
 }
 

@@ -16,7 +16,7 @@
 		}
 
 		saveButton.addEventListener( 'click', function () {
-			[ 'dak-clinic-branding-error', 'dak-notification-preferences-error', 'dak-platform-fee-error', 'dak-home-videos-error', 'dak-admin-settings-error', 'dak-admin-settings-success' ].forEach( hide );
+			[ 'dak-clinic-branding-error', 'dak-notification-preferences-error', 'dak-platform-fee-error', 'dak-home-videos-error', 'dak-home-testimonials-error', 'dak-admin-settings-error', 'dak-admin-settings-success' ].forEach( hide );
 			saveButton.disabled = true;
 
 			var requests = [ saveBranding(), savePreferences() ];
@@ -27,6 +27,10 @@
 
 			if ( window.dakHomeVideos && window.dakHomeVideosEditor ) {
 				requests.push( saveVideos() );
+			}
+
+			if ( window.dakHomeTestimonials && window.dakHomeTestimonialsEditor ) {
+				requests.push( saveTestimonials() );
 			}
 
 			Promise.all( requests )
@@ -132,6 +136,26 @@
 				} )
 				.catch( function () {
 					return { success: false, errorElementId: 'dak-home-videos-error' };
+				} );
+		}
+
+		/**
+		 * @return {Promise<Object>} See saveBranding().
+		 */
+		function saveTestimonials() {
+			var formData = new FormData();
+			formData.append( 'action', 'doctor_ak_admin_home_testimonials_save' );
+			formData.append( 'nonce', window.dakHomeTestimonials.nonce );
+			formData.append( 'rows', JSON.stringify( window.dakHomeTestimonialsEditor.collectRows() ) );
+
+			return fetch( window.dakHomeTestimonials.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
+				.then( function ( response ) { return response.json(); } )
+				.then( function ( result ) {
+					result.errorElementId = 'dak-home-testimonials-error';
+					return result;
+				} )
+				.catch( function () {
+					return { success: false, errorElementId: 'dak-home-testimonials-error' };
 				} );
 		}
 

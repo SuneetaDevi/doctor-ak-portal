@@ -10,6 +10,8 @@ namespace DoctorAKPortal\Frontend;
 use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinic_Locations;
+use DoctorAKPortal\Includes\Google_Reviews;
+use DoctorAKPortal\Includes\Home_Testimonials;
 use DoctorAKPortal\Includes\Home_Videos;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Roles;
@@ -188,6 +190,8 @@ class Home_Page {
 				'doctors_html'     => $doctors_html,
 				'services_html'    => $services_html,
 				'videos'           => Home_Videos::get_all(),
+				'testimonials'     => array_merge( Home_Testimonials::get_all(), Google_Reviews::get_reviews() ),
+				'google_rating'    => Google_Reviews::overall_rating(),
 				'hero_video_url'   => $this->bundled_asset_url( self::HERO_VIDEO_PATH ),
 				'marketing_videos' => array_values( array_filter( array_map( array( $this, 'bundled_asset_url' ), self::MARKETING_VIDEO_PATHS ) ) ),
 				'directory_url'    => Page_Finder::url_for_shortcode( 'doctors_directory' ),

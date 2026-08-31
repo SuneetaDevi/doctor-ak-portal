@@ -2508,3 +2508,61 @@ a.dak-notification-row-link:hover {
 	color: var( --dak-danger ) !important;
 	border-color: var( --dak-danger ) !important;
 }
+
+/* Admin Settings — "Home page testimonials" repeatable-row editor (see
+   assets/js/doctor-ak-admin-home-testimonials.js). */
+.dak-home-testimonials-rows {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.75rem !important;
+	margin-bottom: 1rem !important;
+}
+
+.dak-home-testimonial-row {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 0.75rem !important;
+	padding: 0.85rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+}
+
+.dak-home-testimonial-row textarea {
+	flex: 1 1 40% !important;
+	min-width: 0 !important;
+	resize: vertical !important;
+}
+
+.dak-home-testimonial-fields {
+	flex: 1 1 40% !important;
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.5rem !important;
+	min-width: 0 !important;
+}
+
+.dak-home-testimonial-fields input[type='text'] {
+	width: 100% !important;
+}
+
+.dak-home-testimonial-remove {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 2.25rem !important;
+	height: 2.25rem !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 1.1rem !important;
+	line-height: 1 !important;
+	cursor: pointer !important;
+}
+
+.dak-home-testimonial-remove:hover {
+	background: var( --dak-tint-danger ) !important;
+	color: var( --dak-danger ) !important;
+	border-color: var( --dak-danger ) !important;
+}
