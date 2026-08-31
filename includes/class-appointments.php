@@ -1054,14 +1054,16 @@ class Appointments {
 			);
 		}
 
-		if ( self::STATUS_CHECKED_IN === $appointment['status'] ) {
-			return array(
-				'applicable' => true,
-				'can_join'   => false,
-				'room_url'   => $room_url,
-				'hint'       => __( 'Patient already checked in', 'doctor-ak-portal' ),
-			);
-		}
+		// Note: no "already checked in" block here (unlike cancelled/
+		// completed above) — for an in-person clinic visit, "Checked In"
+		// means the patient is now physically with the doctor, but for a
+		// VIDEO appointment it doesn't mean that at all (there's no front
+		// desk), and the doctor still needs this exact link to actually
+		// talk to the patient. This function only ever runs for video
+		// appointments (see the type check at the top), so blocking on
+		// checked-in status here was hiding the Join Call link/button for
+		// every checked-in video patient, with no other way to join left
+		// in the UI.
 
 		if ( self::PAYMENT_STATUS_PAID !== $appointment['payment_status'] ) {
 			return array(

@@ -155,6 +155,7 @@ html[data-theme='dark'] .dak-portal {
  */
 .dak-auth-visual {
 	display: none !important;
+	height: fit-content;
 	flex: 1 1 0 !important;
 	min-width: 0 !important;
 	max-width: 440px !important;
