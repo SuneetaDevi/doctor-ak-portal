@@ -131,7 +131,7 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] ||
 
 					<div class="dak-patient-appt-row-actions dak-patient-appt-row-actions-buttons">
 						<?php if ( ! empty( $row['video_call']['can_join'] ) ) : ?>
-							<a class="dak-button dak-button-primary dak-button-sm" href="<?php echo esc_url( $row['video_call']['room_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Join', 'doctor-ak-portal' ); ?></a>
+							<button type="button" class="dak-button dak-button-primary dak-button-sm" data-join-video-call data-room-url="<?php echo esc_url( $row['video_call']['room_url'] ); ?>"><?php esc_html_e( 'Join', 'doctor-ak-portal' ); ?></button>
 						<?php endif; ?>
 						<?php if ( ! $row['is_paid'] && (float) $row['charge'] > 0 && 'online' === $row['payment_mode'] ) : ?>
 							<button type="button" class="dak-button dak-button-primary dak-button-sm" data-doctor-pay-now data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>">

@@ -378,7 +378,7 @@ foreach ( $appointments as $dak_stat_row ) {
 									aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
 								><?php echo $dak_appt_icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
 							<?php if ( ! empty( $row['video_call']['can_join'] ) ) : ?>
-								<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $row['video_call']['room_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></a>
+								<button type="button" class="dak-status-pill dak-status-pill-action" data-join-video-call data-room-url="<?php echo esc_url( $row['video_call']['room_url'] ); ?>"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></button>
 							<?php endif; ?>
 							<?php if ( in_array( $row['status'], array( 'confirmed', 'paid', 'rescheduled' ), true ) && ( $row['is_paid'] || (float) $row['charge'] <= 0 ) && ! $row['is_overdue'] ) : ?>
 								<button type="button" class="dak-status-pill dak-status-pill-action" data-check-in data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>" title="<?php esc_attr_e( 'Check the patient in and open their encounter', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Check In', 'doctor-ak-portal' ); ?></button>

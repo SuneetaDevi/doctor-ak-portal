@@ -1170,6 +1170,8 @@
 .dak-tag-join-call {
 	background: var( --dak-primary ) !important;
 	color: #fff !important;
+	border: none !important;
+	font-family: inherit !important;
 	cursor: pointer !important;
 }
 

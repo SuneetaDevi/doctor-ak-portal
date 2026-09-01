@@ -32,7 +32,7 @@ $is_paid            = 'paid' === $payment_status;
 			</span>
 			<?php if ( ! empty( $video_call['applicable'] ) ) : ?>
 				<?php if ( $video_call['can_join'] ) : ?>
-					<a class="dak-tag dak-tag-join-call" href="<?php echo esc_url( $video_call['room_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></a>
+					<button type="button" class="dak-tag dak-tag-join-call" data-join-video-call data-room-url="<?php echo esc_url( $video_call['room_url'] ); ?>"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></button>
 				<?php else : ?>
 					<span class="dak-tag dak-tag-join-call is-disabled" title="<?php echo esc_attr( $video_call['hint'] ); ?>"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></span>
 				<?php endif; ?>

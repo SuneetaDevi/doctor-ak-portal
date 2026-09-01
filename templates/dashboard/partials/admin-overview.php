@@ -261,7 +261,7 @@ endif;
 						<?php elseif ( ! $dak_row['is_paid'] || ! empty( $dak_row['video_call']['can_join'] ) || in_array( $dak_row['status'], array( 'confirmed', 'paid', 'rescheduled', 'checked_in' ), true ) ) : ?>
 							<div class="dak-patient-appt-row-actions">
 								<?php if ( ! empty( $dak_row['video_call']['can_join'] ) ) : ?>
-									<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $dak_row['video_call']['room_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></a>
+									<button type="button" class="dak-status-pill dak-status-pill-action" data-join-video-call data-room-url="<?php echo esc_url( $dak_row['video_call']['room_url'] ); ?>"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></button>
 								<?php endif; ?>
 								<?php if ( in_array( $dak_row['status'], array( 'confirmed', 'paid', 'rescheduled' ), true ) && ( $dak_row['is_paid'] || (float) $dak_row['charge'] <= 0 ) ) : ?>
 									<button type="button" class="dak-status-pill dak-status-pill-action" data-check-in data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>" title="<?php esc_attr_e( 'Check the patient in and open their encounter', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Check In', 'doctor-ak-portal' ); ?></button>
