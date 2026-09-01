@@ -88,7 +88,7 @@ $can_request_refund  = 'cancelled' === $appointment['status'] && $appointment['i
 
 		<span class="dak-admin-record-row-actions">
 			<?php if ( ! empty( $appointment['video_call']['can_join'] ) ) : ?>
-				<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $appointment['video_call']['room_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></a>
+				<button type="button" class="dak-status-pill dak-status-pill-action" data-join-video-call data-room-url="<?php echo esc_url( $appointment['video_call']['room_url'] ); ?>"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></button>
 			<?php endif; ?>
 			<?php if ( $can_request_refund ) : ?>
 				<button type="button" class="dak-status-pill dak-status-pill-action" data-request-refund data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"><?php esc_html_e( 'Request Refund', 'doctor-ak-portal' ); ?></button>

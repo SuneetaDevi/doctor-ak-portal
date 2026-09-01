@@ -139,6 +139,86 @@ body.dak-modal-open {
 	border-top: 1px solid var( --dak-border ) !important;
 }
 
+/*
+ * In-page video call — built and appended to <body> by
+ * assets/js/doctor-ak-video-call.js on first use, not present in any
+ * template. Full-bleed rather than the standard .dak-modal-dialog card
+ * treatment, since the whole point is to hand the Jitsi UI as much screen
+ * as possible.
+ */
+.dak-video-call-modal {
+	position: fixed !important;
+	inset: 0 !important;
+	z-index: 1000 !important;
+	display: none !important;
+}
+
+.dak-video-call-modal.is-open {
+	display: block !important;
+}
+
+.dak-video-call-modal-overlay {
+	position: fixed !important;
+	inset: 0 !important;
+	background: rgba( 15, 23, 42, 0.9 ) !important;
+}
+
+.dak-video-call-modal-dialog {
+	position: relative !important;
+	z-index: 1 !important;
+	display: flex !important;
+	flex-direction: column !important;
+	width: 100% !important;
+	height: 100% !important;
+	height: 100dvh !important;
+}
+
+.dak-video-call-modal-header {
+	flex: 0 0 auto !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 1rem !important;
+	padding: 0.75rem 1rem !important;
+	background: #101418 !important;
+}
+
+.dak-video-call-modal-header .dak-link {
+	color: #d7dade !important;
+	font-size: 0.85rem !important;
+}
+
+.dak-video-call-modal-header .dak-link:hover {
+	color: #ffffff !important;
+}
+
+.dak-video-call-modal-close {
+	flex: 0 0 auto !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 32px !important;
+	height: 32px !important;
+	border: 0 !important;
+	border-radius: 50% !important;
+	background: rgba( 255, 255, 255, 0.1 ) !important;
+	color: #ffffff !important;
+	font-size: 1.4rem !important;
+	line-height: 1 !important;
+	cursor: pointer !important;
+}
+
+.dak-video-call-modal-close:hover {
+	background: rgba( 255, 255, 255, 0.2 ) !important;
+}
+
+.dak-video-call-modal-iframe {
+	flex: 1 1 auto !important;
+	width: 100% !important;
+	border: 0 !important;
+	background: #000 !important;
+}
+
 @media ( max-width: 640px ) {
 	.dak-modal {
 		padding: 0 !important;

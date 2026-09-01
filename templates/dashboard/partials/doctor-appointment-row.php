@@ -85,13 +85,13 @@ $datetime_label     = $datetime_timestamp ? date_i18n( 'd/m/Y h:i A', $datetime_
 
 		<div class="dak-patient-appt-row-actions">
 			<?php if ( ! empty( $appointment['video_call']['can_join'] ) ) : ?>
-				<a
+				<button
+					type="button"
 					class="dak-status-pill dak-status-pill-action"
-					href="<?php echo esc_url( $appointment['video_call']['room_url'] ); ?>"
-					target="_blank"
-					rel="noopener"
+					data-join-video-call
+					data-room-url="<?php echo esc_url( $appointment['video_call']['room_url'] ); ?>"
 					title="<?php esc_attr_e( "You'll be asked to log in with a free account (Google, GitHub, etc.) to start the call — your patient won't need to.", 'doctor-ak-portal' ); ?>"
-				><?php esc_html_e( 'Start Call', 'doctor-ak-portal' ); ?></a>
+				><?php esc_html_e( 'Start Call', 'doctor-ak-portal' ); ?></button>
 			<?php endif; ?>
 			<?php if ( ! $appointment['is_paid'] && (float) $appointment['charge'] > 0 && 'online' === $appointment['payment_mode'] ) : ?>
 				<button type="button" class="dak-status-pill dak-status-pill-action" data-doctor-pay-now data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>">

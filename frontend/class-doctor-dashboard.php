@@ -124,6 +124,18 @@ class Doctor_Dashboard {
 			true
 		);
 
+		// The video call modal itself is built by JS on first use (see the
+		// file's own docblock) — nothing to localize, just needs to be on
+		// the page wherever a [data-join-video-call] "Start Call" button
+		// can appear.
+		wp_enqueue_script(
+			'doctor-ak-portal-video-call',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-video-call.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-video-call.js' ),
+			true
+		);
+
 		wp_enqueue_script(
 			'doctor-ak-portal-live-filters',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-live-filters.js',
