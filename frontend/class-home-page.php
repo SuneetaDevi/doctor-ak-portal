@@ -16,6 +16,7 @@ use DoctorAKPortal\Includes\Home_Videos;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
+use DoctorAKPortal\Includes\Specializations;
 use DoctorAKPortal\Includes\Template_Loader;
 
 // Prevent direct file access.
@@ -49,7 +50,7 @@ class Home_Page {
 	 * @var int
 	 */
 	const FEATURED_DOCTORS_LIMIT  = 8;
-	const FEATURED_SERVICES_LIMIT = 6;
+	const FEATURED_SERVICES_LIMIT = 3;
 	const FEATURED_CLINICS_LIMIT  = 6;
 
 	/**
@@ -60,6 +61,27 @@ class Home_Page {
 	 * @var string
 	 */
 	const HERO_VIDEO_PATH = 'assets/videos/thumbnail.mp4';
+
+	/**
+	 * Bundled hero banner photo (assets/images/) shown behind the hero
+	 * headline.
+	 *
+	 * @var string
+	 */
+	const HERO_BANNER_IMAGE_PATH = 'assets/images/doctor-banner.avif';
+
+	/**
+	 * Illustration for each "Why Choose Us" row, keyed by the icon its trust
+	 * point uses in directory/home-page.php so the two stay in step.
+	 *
+	 * @var string[]
+	 */
+	const WHY_IMAGE_PATHS = array(
+		'shield' => 'assets/images/why-verified-specialists.webp',
+		'clock'  => 'assets/images/why-fast-easy-booking.webp',
+		'video'  => 'assets/images/why-in-person-or-online.webp',
+		'tag'    => 'assets/images/why-transparent-pricing.webp',
+	);
 
 	/**
 	 * Bundled marketing reel shown in its own section, separate from the
@@ -168,7 +190,7 @@ class Home_Page {
 
 		$doctors_html = array_map(
 			function ( $card ) {
-				return $this->template_loader->get_template( 'directory/doctor-card.php', $card );
+				return $this->template_loader->get_template( 'directory/home-doctor-card.php', $card );
 			},
 			$doctor_cards
 		);
@@ -179,50 +201,78 @@ class Home_Page {
 			function ( $group ) {
 				$group['profile_url'] = add_query_arg( 'service_id', $group['id'], Page_Finder::url_for_shortcode( 'service_profile_view' ) );
 
-				return $this->template_loader->get_template( 'directory/service-card.php', $group );
+				return $this->template_loader->get_template( 'directory/home-service-card.php', $group );
 			},
 			$service_groups
 		);
+
+		$directory_url = Page_Finder::url_for_shortcode( 'doctors_directory' );
 
 		return $this->template_loader->get_template(
 			'directory/home-page.php',
 			array(
 				'doctors_html'     => $doctors_html,
 				'services_html'    => $services_html,
+				'specialties'      => $this->specialties( $directory_url ),
 				'videos'           => Home_Videos::get_all(),
 				'testimonials'     => array_merge( Home_Testimonials::get_all(), Google_Reviews::get_reviews() ),
 				'google_rating'    => Google_Reviews::overall_rating(),
 				'hero_video_url'   => $this->bundled_asset_url( self::HERO_VIDEO_PATH ),
+				'hero_banner_url'  => $this->bundled_asset_url( self::HERO_BANNER_IMAGE_PATH ),
+				'why_images'       => array_map( array( $this, 'bundled_asset_url' ), self::WHY_IMAGE_PATHS ),
 				'marketing_videos' => array_values( array_filter( array_map( array( $this, 'bundled_asset_url' ), self::MARKETING_VIDEO_PATHS ) ) ),
-				'directory_url'    => Page_Finder::url_for_shortcode( 'doctors_directory' ),
+				'directory_url'    => $directory_url,
+				'booking_url'      => Page_Finder::url_for_shortcode( Booking_Page::SHORTCODE_TAG ),
 				'services_url'     => Page_Finder::url_for_shortcode( 'services_directory' ),
 				'stats'            => $this->stats( $doctor_cards ),
-				'hero_doctor'      => $this->hero_doctor( $doctor_cards ),
 				'clinic_locations' => array_slice( Clinic_Locations::get_all(), 0, self::FEATURED_CLINICS_LIMIT ),
 			)
 		);
 	}
 
 	/**
-	 * Picks the doctor featured in the hero's floating card — the first
-	 * currently-available one (so "Available Today" is actually true), or
-	 * just the first doctor if none are marked available right now.
+	 * The specializations at least one registered doctor actually has, most
+	 * represented first — never the full canonical Specializations::get_all()
+	 * list, so a tile can't send a visitor to an empty filtered directory and
+	 * the booking form's Department picker can't offer one nobody covers.
 	 *
-	 * @param array $doctor_cards Doctors_Directory::doctor_cards_data() rows.
-	 * @return array|null Same shape as one row of $doctor_cards, or null if there are no doctors yet.
+	 * Each row's URL preselects that specialty in the directory's filter (see
+	 * assets/js/doctor-ak-directory.js), so the value has to be the lowercased
+	 * label the filter's <option>s carry, not the slug.
+	 *
+	 * @param string $directory_url URL of the [doctors_directory] page, or '' if not found.
+	 * @return array List of { slug, label, count, url }.
 	 */
-	private function hero_doctor( array $doctor_cards ) {
-		if ( empty( $doctor_cards ) ) {
-			return null;
-		}
+	private function specialties( $directory_url ) {
+		$counts = array();
 
-		foreach ( $doctor_cards as $card ) {
-			if ( $card['is_available'] ) {
-				return $card;
+		foreach ( get_users( array( 'role' => Roles::DOCTOR_ROLE, 'fields' => 'ID' ) ) as $doctor_id ) {
+			foreach ( (array) get_user_meta( $doctor_id, 'doctor_ak_specializations', true ) as $slug ) {
+				if ( '' === $slug ) {
+					continue;
+				}
+
+				$counts[ $slug ] = isset( $counts[ $slug ] ) ? $counts[ $slug ] + 1 : 1;
 			}
 		}
 
-		return $doctor_cards[0];
+		arsort( $counts );
+
+		$all         = Specializations::get_all();
+		$specialties = array();
+
+		foreach ( $counts as $slug => $count ) {
+			$label = isset( $all[ $slug ] ) ? $all[ $slug ] : $slug;
+
+			$specialties[] = array(
+				'slug'  => $slug,
+				'label' => $label,
+				'count' => $count,
+				'url'   => '' === $directory_url ? '' : add_query_arg( 'specialization', mb_strtolower( $label ), $directory_url ),
+			);
+		}
+
+		return $specialties;
 	}
 
 	/**
@@ -238,7 +288,15 @@ class Home_Page {
 			return '';
 		}
 
-		return DOCTOR_AK_PORTAL_URL . $relative_path;
+		// Versioned on the file's own modification time, exactly like the
+		// enqueued CSS/JS. These URLs are otherwise identical from one release
+		// to the next, so replacing a bundled clip or photo in assets/ would
+		// leave browsers and CDNs serving the previously cached copy.
+		return add_query_arg(
+			'ver',
+			Assets::version( $relative_path ),
+			DOCTOR_AK_PORTAL_URL . $relative_path
+		);
 	}
 
 	/**

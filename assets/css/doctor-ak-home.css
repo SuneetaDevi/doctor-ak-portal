@@ -18,9 +18,33 @@
  * same button/card components.
  */
 
+/* Side gutter for the page's contained sections. The full-bleed hero cancels
+   it out with a matching negative margin and aligns its own text to it, so
+   everything reads from this one value — change the gutter here and the hero
+   follows. It steps down on narrower screens so the content doesn't get
+   squeezed into a sliver on tablets/phones. */
 .dak-home {
+	--dak-home-gutter: 11.5rem;
 	margin: 0 auto !important;
-	padding: 0 1.5rem var( --dak-space-8 ) !important;
+	padding: 0 var( --dak-home-gutter ) var( --dak-space-8 ) !important;
+}
+
+@media ( max-width: 1600px ) {
+	.dak-home {
+		--dak-home-gutter: 6rem;
+	}
+}
+
+@media ( max-width: 1280px ) {
+	.dak-home {
+		--dak-home-gutter: 3rem;
+	}
+}
+
+@media ( max-width: 900px ) {
+	.dak-home {
+		--dak-home-gutter: 1.5rem;
+	}
 }
 
 .dak-home-serif {
@@ -46,6 +70,18 @@
    keep their existing rounded-rect buttons. */
 .dak-home .dak-button {
 	border-radius: 999px !important;
+	/* Labels stay on one line — an inline icon that wraps below its text
+	   turns a pill button into a lopsided blob. */
+	white-space: nowrap !important;
+}
+
+/* Every inline button icon on this page. Without a size an inline <svg> with
+   only a viewBox falls back to its default 300x150 box, which blows the
+   button apart. */
+.dak-home .dak-button svg {
+	width: 18px !important;
+	height: 18px !important;
+	flex: 0 0 auto !important;
 }
 
 /* A subtle gradient + top highlight instead of a flat fill, for a touch of
@@ -78,47 +114,366 @@
 	margin-top: var( --dak-space-5 ) !important;
 }
 
-/* Hero */
+/* Hero — full-width photo banner with the headline/CTAs overlaid directly on
+   the image (a fixed dark gradient tint, not a --dak-* token, so headline
+   text stays legible over a photo regardless of the light/dark toggle). */
 
-.dak-home-hero {
-	margin-top: var( --dak-space-6 ) !important;
-	padding: var( --dak-space-7 ) var( --dak-space-6 ) !important;
-	border-radius: var( --dak-radius-lg ) !important;
-	/* Layered backgrounds (not extra elements) for a soft depth/glow effect
-	   — two large, low-opacity radial "light" blobs sit under the existing
-	   top-to-bottom tint fade. Purely a background value, so it can't affect
-	   layout, overlap content or need z-index. */
-	background:
-		radial-gradient( 640px 360px at 12% -10%, rgba( 255, 255, 255, 0.55 ) 0%, rgba( 255, 255, 255, 0 ) 60% ),
-		radial-gradient( 520px 420px at 108% 15%, var( --dak-primary-tint ) 0%, rgba( 255, 255, 255, 0 ) 62% ),
-		linear-gradient( 180deg, var( --dak-primary-tint ) 0%, var( --dak-bg-card ) 100% ) !important;
+/* Full-bleed: negative margins cancel the page gutter so the banner runs
+   edge to edge, with square corners and no top gap under the site header. */
+.dak-home-hero-banner {
+	position: relative !important;
+	margin: 0 calc( -1 * var( --dak-home-gutter ) ) !important;
+	min-height: 520px !important;
+	border-radius: 0 !important;
+	overflow: hidden !important;
+	background: linear-gradient( 135deg, var( --dak-secondary ) 0%, var( --dak-primary-dark ) 100% ) !important;
+	box-shadow: var( --dak-shadow-lg ) !important;
 }
 
-.dak-home-hero-grid {
-	display: grid !important;
-	grid-template-columns: 1fr 380px !important;
-	gap: var( --dak-space-7 ) !important;
-	align-items: stretch !important;
+.dak-home-hero-banner-media {
+	position: absolute !important;
+	inset: 0 !important;
 }
 
-.dak-home-hero-copy h1 {
+.dak-home-hero-banner-img {
+	position: absolute !important;
+	inset: 0 !important;
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+	object-position: 78% 25% !important;
+}
+
+.dak-home-hero-banner-overlay {
+	position: absolute !important;
+	inset: 0 !important;
+	background: linear-gradient( 100deg, rgba( 6, 20, 12, 0.94 ) 0%, rgba( 8, 28, 17, 0.88 ) 30%, rgba( 15, 46, 30, 0.6 ) 52%, rgba( 22, 182, 165, 0.32 ) 78%, rgba( 22, 182, 165, 0.22 ) 100% ) !important;
+}
+
+.dak-home-hero-banner-content {
+	position: relative !important;
+	z-index: 1 !important;
+	max-width: calc( 560px + var( --dak-home-gutter ) ) !important;
+	padding: var( --dak-space-7 ) var( --dak-space-6 ) var( --dak-space-7 ) var( --dak-home-gutter ) !important;
+}
+
+.dak-home-hero-banner-content h1 {
 	font-size: 2.75rem !important;
 	font-weight: 600 !important;
 	line-height: 1.12 !important;
 	margin: var( --dak-space-3 ) 0 var( --dak-space-3 ) !important;
+	color: #fff !important;
+	text-shadow: 0 2px 10px rgba( 0, 0, 0, 0.5 ) !important;
+}
+
+.dak-home-hero-banner-content .dak-home-hero-accent {
+	color: #d9f0c4 !important;
+}
+
+.dak-home-hero-banner-content > p {
+	font-size: var( --dak-text-lg ) !important;
+	color: rgba( 255, 255, 255, 0.92 ) !important;
+	text-shadow: 0 1px 6px rgba( 0, 0, 0, 0.45 ) !important;
+	margin: 0 0 var( --dak-space-5 ) !important;
+	max-width: 46ch !important;
+}
+
+.dak-home-hero-banner-outline {
+	text-shadow: 0 1px 4px rgba( 0, 0, 0, 0.35 ) !important;
+}
+
+.dak-home-hero-banner-stats {
+	position: absolute !important;
+	z-index: 1 !important;
+	top: var( --dak-space-5 ) !important;
+	right: var( --dak-home-gutter ) !important;
+	display: flex !important;
+	gap: var( --dak-space-4 ) !important;
+	padding: var( --dak-space-3 ) var( --dak-space-4 ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	background: rgba( 15, 23, 20, 0.45 ) !important;
+	backdrop-filter: blur( 6px ) !important;
+	-webkit-backdrop-filter: blur( 6px ) !important;
+	box-shadow: 0 1px 0 rgba( 255, 255, 255, 0.15 ) inset !important;
+}
+
+.dak-home-hero-banner-stats div {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: center !important;
+	text-align: center !important;
+}
+
+.dak-home-hero-banner-stats strong {
+	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+	font-size: var( --dak-text-lg ) !important;
+	font-weight: 700 !important;
+	color: #fff !important;
+}
+
+.dak-home-hero-banner-stats span {
+	font-size: 0.68rem !important;
+	color: rgba( 255, 255, 255, 0.8 ) !important;
+	line-height: 1.3 !important;
+}
+
+/* Hero search bar — overlaps the banner's bottom edge. It's a single link to
+   the doctors directory (which already has real search/filtering) rather
+   than a form of its own, so the fields shown here are a preview, not
+   editable inputs. */
+
+.dak-home-hero-search {
+	position: relative !important;
+	z-index: 1 !important;
+	margin: -34px var( --dak-space-6 ) 0 !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: var( --dak-space-4 ) !important;
+	background: var( --dak-bg-card ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	padding: var( --dak-space-4 ) var( --dak-space-5 ) !important;
+	box-shadow: var( --dak-shadow-lg ) !important;
+	text-decoration: none !important;
+}
+
+.dak-home-hero-search-field {
+	display: flex !important;
+	align-items: center !important;
+	gap: var( --dak-space-3 ) !important;
+	flex: 1 1 0 !important;
+	min-width: 0 !important;
+	padding-right: var( --dak-space-4 ) !important;
+	border-right: 1px solid var( --dak-border ) !important;
+}
+
+.dak-home-hero-search-field:last-of-type {
+	border-right: none !important;
+}
+
+.dak-home-hero-search-field > span {
+	display: flex !important;
+	flex-direction: column !important;
+	min-width: 0 !important;
+}
+
+.dak-home-hero-search-field strong {
+	font-size: var( --dak-text-sm ) !important;
+	font-weight: 700 !important;
 	color: var( --dak-text ) !important;
 }
 
-.dak-home-hero-accent {
-	font-style: italic !important;
+.dak-home-hero-search-field em {
+	font-style: normal !important;
+	font-size: var( --dak-text-xs ) !important;
+	color: var( --dak-muted ) !important;
+	white-space: nowrap !important;
+	overflow: hidden !important;
+	text-overflow: ellipsis !important;
+}
+
+.dak-home-hero-search-icon {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 34px !important;
+	height: 34px !important;
+	flex: 0 0 auto !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary-tint ) !important;
 	color: var( --dak-primary-dark ) !important;
 }
 
-.dak-home-hero-copy > p {
-	font-size: var( --dak-text-lg ) !important;
+.dak-home-hero-search-icon svg {
+	width: 16px !important;
+	height: 16px !important;
+}
+
+.dak-home-hero-search-submit {
+	flex: 0 0 auto !important;
+	padding: 0.85rem 1.75rem !important;
+}
+
+/* Quick-access cards — right below the hero */
+
+.dak-home-quick-links {
+	margin-top: var( --dak-space-8 ) !important;
+}
+
+.dak-home-quick-links-grid {
+	display: grid !important;
+	grid-template-columns: repeat( 4, 1fr ) !important;
+	gap: var( --dak-space-5 ) !important;
+}
+
+.dak-home-quick-link-card {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: flex-start !important;
+	gap: var( --dak-space-1 ) !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	padding: var( --dak-space-5 ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	text-decoration: none !important;
+	text-align: left !important;
+	cursor: pointer !important;
+	font: inherit !important;
+	transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.dak-home-quick-link-card:hover {
+	transform: translateY( -3px ) !important;
+	box-shadow: var( --dak-shadow-hover ) !important;
+}
+
+.dak-home-quick-link-icon {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 44px !important;
+	height: 44px !important;
+	border-radius: 50% !important;
+	margin-bottom: var( --dak-space-2 ) !important;
+	background: var( --dak-tint-success ) !important;
+	color: var( --dak-tint-success-text ) !important;
+}
+
+.dak-home-quick-link-icon svg {
+	width: 20px !important;
+	height: 20px !important;
+}
+
+.dak-home-quick-link-icon-teal {
+	background: var( --dak-tint-teal ) !important;
+	color: var( --dak-secondary ) !important;
+}
+
+.dak-home-quick-link-icon-amber {
+	background: var( --dak-tint-amber ) !important;
+	color: var( --dak-tint-amber-text ) !important;
+}
+
+.dak-home-quick-link-icon-purple {
+	background: var( --dak-tint-purple ) !important;
+	color: var( --dak-tint-purple-text ) !important;
+}
+
+.dak-home-quick-link-title {
+	font-size: var( --dak-text-md ) !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-home-quick-link-text {
+	font-size: var( --dak-text-sm ) !important;
 	color: var( --dak-muted ) !important;
-	margin: 0 0 var( --dak-space-5 ) !important;
-	max-width: 46ch !important;
+}
+
+/* Video tour — the bundled hero clip, now its own section with a two-column
+   heading (eyebrow + title on the left, a plain description on the right). */
+
+.dak-home-video-tour {
+	margin-top: var( --dak-space-8 ) !important;
+}
+
+.dak-home-video-tour-heading {
+	display: grid !important;
+	grid-template-columns: 1.2fr 1fr !important;
+	gap: var( --dak-space-6 ) !important;
+	align-items: end !important;
+	margin-bottom: var( --dak-space-5 ) !important;
+}
+
+.dak-home-video-tour-heading h2 {
+	font-size: var( --dak-text-2xl ) !important;
+	font-weight: 600 !important;
+	line-height: 1.25 !important;
+	color: var( --dak-text ) !important;
+	margin: 0.4rem 0 0 !important;
+}
+
+.dak-home-video-tour-heading p {
+	font-size: var( --dak-text-md ) !important;
+	color: var( --dak-muted ) !important;
+	margin: 0 !important;
+}
+
+.dak-home-video-tour .dak-home-hero-visual {
+	height: 380px !important;
+	min-height: 0 !important;
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: var( --dak-space-4 ) !important;
+	/* Bottom padding keeps the play button and steps clear of the feature
+	   cards that overlap the panel's lower edge. */
+	padding: var( --dak-space-6 ) var( --dak-space-5 ) 96px !important;
+	text-align: center !important;
+}
+
+/* The four trust points are light cards that overlap the bottom edge of the
+   clip — the panel itself is just a positioning wrapper, so it must not clip
+   (no overflow: hidden) or the cards' lower half would be cut off. */
+
+.dak-home-video-tour-panel {
+	position: relative !important;
+	padding-bottom: var( --dak-space-2 ) !important;
+}
+
+.dak-home-video-tour-features {
+	position: relative !important;
+	z-index: 1 !important;
+	display: grid !important;
+	grid-template-columns: repeat( 4, 1fr ) !important;
+	gap: var( --dak-space-4 ) !important;
+	margin: -60px var( --dak-space-6 ) 0 !important;
+}
+
+.dak-home-video-tour-feature {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: flex-start !important;
+	gap: var( --dak-space-2 ) !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	padding: var( --dak-space-4 ) !important;
+	box-shadow: var( --dak-shadow-lg ) !important;
+}
+
+.dak-home-video-tour-feature-icon {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 34px !important;
+	height: 34px !important;
+	flex: 0 0 auto !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-home-video-tour-feature-icon svg {
+	width: 17px !important;
+	height: 17px !important;
+}
+
+.dak-home-video-tour-feature strong {
+	display: block !important;
+	color: var( --dak-text ) !important;
+	font-size: var( --dak-text-sm ) !important;
+	font-weight: 700 !important;
+	margin-bottom: 0.15rem !important;
+}
+
+.dak-home-video-tour-feature span {
+	padding : 6px 7px 7px 1px;
+	display: block !important;
+	color: var( --dak-muted ) !important;
+	font-size: var( --dak-text-xs ) !important;
+	line-height: 1.5 !important;
 }
 
 .dak-home-hero-actions {
@@ -132,174 +487,41 @@
 	font-size: var( --dak-text-md ) !important;
 }
 
-.dak-home-hero-actions .dak-button svg,
-.dak-home-cta .dak-button svg {
-	width: 18px !important;
-	height: 18px !important;
-	flex: 0 0 auto !important;
-}
 
-/* Hero floating doctor card */
-
-.dak-home-hero-card {
-	position: relative !important;
-	overflow: hidden !important;
-	align-self: center !important;
-	background: linear-gradient( 155deg, var( --dak-bg-card ) 0%, var( --dak-primary-tint ) 100% ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-lg ) !important;
-	/* Layered shadow: the existing lift shadow, plus a thin inner highlight
-	   along the top edge for a soft glass/3D bevel. */
-	box-shadow: var( --dak-shadow-lg ), 0 1px 0 rgba( 255, 255, 255, 0.6 ) inset !important;
-	padding: var( --dak-space-5 ) !important;
-	display: flex !important;
-	flex-direction: column !important;
-	gap: var( --dak-space-4 ) !important;
-}
-
-.dak-home-hero-card-doctor {
-	display: flex !important;
-	align-items: center !important;
-	gap: var( --dak-space-3 ) !important;
-}
-
-.dak-home-hero-card-avatar {
-	width: 52px !important;
-	height: 52px !important;
-	flex: 0 0 auto !important;
-	background: var( --dak-bg-card ) !important;
-	color: var( --dak-primary-dark ) !important;
-	font-weight: 700 !important;
-	font-size: var( --dak-text-md ) !important;
-	box-shadow: var( --dak-shadow ) !important;
-}
-
-.dak-home-hero-card-doctor div {
-	display: flex !important;
-	flex-direction: column !important;
-	min-width: 0 !important;
-}
-
-.dak-home-hero-card-doctor strong {
-	font-size: var( --dak-text-md ) !important;
-	color: var( --dak-text ) !important;
-}
-
-.dak-home-hero-card-doctor span {
-	font-size: var( --dak-text-sm ) !important;
-	color: var( --dak-muted ) !important;
-}
-
-.dak-home-hero-card-stats {
-	display: grid !important;
-	grid-template-columns: repeat( 3, 1fr ) !important;
-	gap: var( --dak-space-2 ) !important;
-	padding-top: var( --dak-space-4 ) !important;
-	border-top: 1px solid var( --dak-border ) !important;
-}
-
-.dak-home-hero-card-stats div {
-	display: flex !important;
-	flex-direction: column !important;
-	align-items: center !important;
-	text-align: center !important;
-}
-
-.dak-home-hero-card-stats strong {
-	font-size: var( --dak-text-lg ) !important;
-	font-weight: 800 !important;
-	color: var( --dak-primary-dark ) !important;
-}
-
-.dak-home-hero-card-stats span {
-	font-size: 0.68rem !important;
-	color: var( --dak-muted ) !important;
-	line-height: 1.3 !important;
-}
-
-.dak-home-hero-card-badge {
-	align-self: flex-start !important;
-	display: inline-flex !important;
-	align-items: center !important;
-	gap: 0.3rem !important;
-	padding: 0.3rem 0.75rem !important;
-	border-radius: 999px !important;
-	background: var( --dak-tint-success, var( --dak-primary-tint ) ) !important;
-	color: var( --dak-tint-success-text, var( --dak-primary-dark ) ) !important;
-	font-size: var( --dak-text-xs ) !important;
-	font-weight: 700 !important;
-}
-
-/* Stats strip below the hero */
-
-.dak-home-hero-stats-strip {
-	margin-top: var( --dak-space-7 ) !important;
-	padding-top: var( --dak-space-6 ) !important;
-	border-top: 1px solid var( --dak-border ) !important;
-	display: grid !important;
-	grid-template-columns: repeat( 4, 1fr ) !important;
-	gap: var( --dak-space-4 ) !important;
-}
-
-.dak-home-hero-stat {
-	display: flex !important;
-	flex-direction: column !important;
-	align-items: center !important;
-	text-align: center !important;
-	gap: var( --dak-space-1 ) !important;
-}
-
-.dak-home-hero-stat strong {
-	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
-	font-size: var( --dak-text-2xl ) !important;
-	font-weight: 700 !important;
-	color: var( --dak-text ) !important;
-}
-
-.dak-home-hero-stat span {
-	font-size: var( --dak-text-sm ) !important;
-	color: var( --dak-muted ) !important;
-	font-weight: 600 !important;
-}
-
-/* Hero visual — the video-tour teaser filling the hero's right column
-   (falls back to the doctor spotlight card below when no video is set). */
+/* Hero visual — reused as the video-tour section's clip banner. */
 
 .dak-home-hero-visual {
 	position: relative !important;
+	display: block !important;
+	width: 100% !important;
 	height: 100% !important;
 	min-height: 340px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: none !important;
 	border-radius: var( --dak-radius-lg ) !important;
 	overflow: hidden !important;
 	background:
 		radial-gradient( 420px 300px at 85% 0%, rgba( 255, 255, 255, 0.22 ) 0%, rgba( 255, 255, 255, 0 ) 60% ),
 		linear-gradient( 135deg, var( --dak-secondary ) 0%, var( --dak-primary-dark ) 100% ) !important;
 	box-shadow: var( --dak-shadow-lg ), 0 1px 0 rgba( 255, 255, 255, 0.25 ) inset !important;
+	font: inherit !important;
+	text-align: left !important;
+	cursor: pointer !important;
 }
 
-.dak-home-hero-visual video {
-	position: absolute !important;
-	inset: 0 !important;
-	width: 100% !important;
-	height: 100% !important;
-	object-fit: cover !important;
-}
-
-.dak-home-hero-visual-caption {
-	position: absolute !important;
-	left: var( --dak-space-4 ) !important;
-	bottom: var( --dak-space-4 ) !important;
-	z-index: 1 !important;
-	display: flex !important;
-	align-items: center !important;
-	gap: var( --dak-space-3 ) !important;
-}
+/* Deliberately no <video> in the preview: a paused clip freezes on whatever
+   its first frame happens to be (mid-sentence, mid-blink), and preloading a
+   large file just to show that frame is wasted bandwidth. This is a designed
+   panel instead — the real clip loads in the lightbox on click. */
 
 .dak-home-hero-visual::after {
 	content: '' !important;
 	position: absolute !important;
 	inset: 0 !important;
-	background: linear-gradient( 0deg, rgba( 0, 0, 0, 0.55 ) 0%, rgba( 0, 0, 0, 0 ) 45% ) !important;
+	background:
+		radial-gradient( 60% 60% at 50% 40%, rgba( 255, 255, 255, 0.12 ) 0%, rgba( 255, 255, 255, 0 ) 70% ),
+		rgba( 0, 0, 0, 0.12 ) !important;
 }
 
 .dak-home-hero-visual-play {
@@ -308,201 +530,608 @@
 	display: flex !important;
 	align-items: center !important;
 	justify-content: center !important;
-	width: 44px !important;
-	height: 44px !important;
+	width: 68px !important;
+	height: 68px !important;
 	flex: 0 0 auto !important;
 	border-radius: 50% !important;
-	background: rgba( 255, 255, 255, 0.94 ) !important;
+	background: rgba( 255, 255, 255, 0.96 ) !important;
 	color: var( --dak-primary-dark ) !important;
+	box-shadow: 0 6px 20px rgba( 0, 0, 0, 0.35 ) !important;
+	transition: transform 0.2s ease !important;
+}
+
+.dak-home-hero-visual:hover .dak-home-hero-visual-play {
+	transform: scale( 1.06 ) !important;
 }
 
 .dak-home-hero-visual-play svg {
-	width: 16px !important;
-	height: 16px !important;
-	margin-left: 2px !important;
+	width: 26px !important;
+	height: 26px !important;
+	margin-left: 3px !important;
 }
 
-.dak-home-hero-visual-caption div {
+.dak-home-hero-visual-label {
+	position: relative !important;
+	z-index: 1 !important;
+	color: #fff !important;
+	font-size: var( --dak-text-md ) !important;
+	font-weight: 700 !important;
+	text-shadow: 0 1px 6px rgba( 0, 0, 0, 0.35 ) !important;
+}
+
+.dak-home-video-tour-steps {
 	position: relative !important;
 	z-index: 1 !important;
 	display: flex !important;
-	flex-direction: column !important;
+	flex-wrap: wrap !important;
+	justify-content: center !important;
+	gap: var( --dak-space-2 ) !important;
 }
 
-.dak-home-hero-visual-caption strong {
-	color: #fff !important;
-	font-size: var( --dak-text-sm ) !important;
-	font-weight: 700 !important;
-}
-
-.dak-home-hero-visual-caption span {
-	color: rgba( 255, 255, 255, 0.8 ) !important;
-	font-size: var( --dak-text-xs ) !important;
-}
-
-/* Trust strip — flat icon + label row (no card chrome), separated from the
-   sections above/below by hairlines, matching the reference design. */
-
-.dak-home-trust {
-	padding: var( --dak-space-5 ) 0 !important;
-	border-top: 1px solid var( --dak-border ) !important;
-	border-bottom: 1px solid var( --dak-border ) !important;
-}
-
-.dak-home-trust-grid {
-	display: grid !important;
-	grid-template-columns: repeat( 4, 1fr ) !important;
-	gap: var( --dak-space-5 ) !important;
-}
-
-.dak-home-trust-card {
-	display: flex !important;
-	align-items: flex-start !important;
-	gap: var( --dak-space-3 ) !important;
-	background: none !important;
-	border: none !important;
-	border-radius: 0 !important;
-	padding: 0 !important;
-	box-shadow: none !important;
-}
-
-.dak-home-trust-icon {
+.dak-home-video-tour-step {
 	display: inline-flex !important;
 	align-items: center !important;
-	justify-content: center !important;
-	width: 40px !important;
-	height: 40px !important;
-	flex: 0 0 auto !important;
-	border-radius: 50% !important;
-	background: linear-gradient( 165deg, var( --dak-bg-card ) 0%, var( --dak-primary-tint ) 100% ) !important;
-	color: var( --dak-primary-dark ) !important;
-	box-shadow: var( --dak-shadow ), 0 1px 0 rgba( 255, 255, 255, 0.8 ) inset !important;
-	margin-bottom: 0 !important;
+	gap: 0.4rem !important;
+	padding: 0.4rem 0.85rem !important;
+	border-radius: 999px !important;
+	background: rgba( 255, 255, 255, 0.14 ) !important;
+	border: 1px solid rgba( 255, 255, 255, 0.22 ) !important;
+	color: #fff !important;
+	font-size: var( --dak-text-xs ) !important;
+	font-weight: 600 !important;
 }
 
-.dak-home-trust-icon svg {
-	width: 19px !important;
-	height: 19px !important;
+.dak-home-video-tour-step svg {
+	display: block !important;
+	width: 15px !important;
+	height: 15px !important;
 }
 
-.dak-home-trust-card h3 {
-	font-size: var( --dak-text-md ) !important;
-	font-weight: 700 !important;
-	margin: 0 0 0.2rem !important;
-	color: var( --dak-text ) !important;
-}
+/* Services — wide stacked rows (copy left, photo right) rather than the
+   compact portrait grid the standalone [services_directory] page uses. Its
+   own directory/home-service-card.php template renders these. */
 
-.dak-home-trust-card p {
-	font-size: var( --dak-text-sm ) !important;
-	color: var( --dak-muted ) !important;
-	margin: 0 !important;
-	line-height: 1.5 !important;
-}
-
-/* Services / doctors — plain white ground, cards get a touch more lift */
-
-.dak-home-services .dak-service-card,
-.dak-home-doctors .dak-doctor-card {
-	border-radius: var( --dak-radius-lg ) !important;
-	transition: transform 0.15s ease, box-shadow 0.15s ease !important;
-}
-
-.dak-home-services .dak-service-card:hover,
-.dak-home-doctors .dak-doctor-card:hover {
-	transform: translateY( -3px ) !important;
-	box-shadow: var( --dak-shadow-hover ) !important;
-}
-
-/* Doctors — a plain, equal-width grid (not the horizontal-scroll slider the
-   standalone [featured_doctors] shortcode uses elsewhere), so long names/
-   specialty tags get enough room to wrap instead of overflowing a fixed
-   270px slide. */
-
-.dak-home-doctors-grid {
-	display: grid !important;
-	grid-template-columns: repeat( 4, 1fr ) !important;
-	gap: var( --dak-space-5 ) !important;
-}
-
-.dak-home-doctors-grid .dak-doctor-card {
-	height: 100% !important;
-}
-
-.dak-home-doctors-grid .dak-doctor-card-name {
-	overflow-wrap: break-word !important;
-}
-
-@media ( max-width: 1024px ) {
-	.dak-home-doctors-grid {
-		grid-template-columns: repeat( 2, 1fr ) !important;
-	}
-}
-
-@media ( max-width: 560px ) {
-	.dak-home-doctors-grid {
-		grid-template-columns: 1fr !important;
-	}
-}
-
-/* Why Choose Us — plain centered icon columns, no card chrome */
-
-.dak-home-why {
-	background: linear-gradient( 165deg, var( --dak-primary-tint ) 0%, var( --dak-bg-card ) 120% ) !important;
-	border-radius: var( --dak-radius-lg ) !important;
-	padding: var( --dak-space-7 ) var( --dak-space-6 ) !important;
-	margin-top: var( --dak-space-8 ) !important;
-}
-
-.dak-home-why .dak-directory-header {
-	text-align: center !important;
-}
-
-.dak-home-why-grid {
-	display: grid !important;
-	grid-template-columns: repeat( 4, 1fr ) !important;
+.dak-home-services-list {
+	display: flex !important;
+	flex-direction: column !important;
 	gap: var( --dak-space-5 ) !important;
 	margin-top: var( --dak-space-6 ) !important;
 }
 
-.dak-home-why-item {
+.dak-home-service-row {
+	display: grid !important;
+	grid-template-columns: 1fr 360px !important;
+	gap: var( --dak-space-6 ) !important;
+	align-items: center !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	padding: var( --dak-space-5 ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease !important;
+}
+
+.dak-home-service-row:hover {
+	transform: translateY( -3px ) !important;
+	border-color: var( --dak-primary ) !important;
+	box-shadow: var( --dak-shadow-hover ) !important;
+}
+
+.dak-home-service-row-body {
 	display: flex !important;
 	flex-direction: column !important;
+	align-items: flex-start !important;
+	gap: var( --dak-space-3 ) !important;
+	min-width: 0 !important;
+}
+
+.dak-home-service-row-body h3 {
+	margin: 0 !important;
+	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+	font-size: var( --dak-text-xl ) !important;
+	font-weight: 600 !important;
+	line-height: 1.25 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-home-service-row-body > p {
+	margin: 0 !important;
+	max-width: 60ch !important;
+	font-size: var( --dak-text-md ) !important;
+	line-height: 1.55 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-home-service-row-meta {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: var( --dak-space-2 ) !important;
+}
+
+.dak-home-service-row-chip {
+	display: inline-flex !important;
 	align-items: center !important;
+	gap: 0.4rem !important;
+	padding: 0.35rem 0.8rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+	font-size: var( --dak-text-xs ) !important;
+	font-weight: 700 !important;
+}
+
+.dak-home-service-row-chip svg {
+	display: block !important;
+	width: 14px !important;
+	height: 14px !important;
+}
+
+.dak-home-service-row-link {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.45rem !important;
+	color: var( --dak-primary-dark ) !important;
+	font-size: var( --dak-text-sm ) !important;
+	font-weight: 700 !important;
+	text-decoration: none !important;
+}
+
+.dak-home-service-row-link svg {
+	width: 16px !important;
+	height: 16px !important;
+	transition: transform 0.18s ease !important;
+}
+
+.dak-home-service-row:hover .dak-home-service-row-link svg {
+	transform: translateX( 3px ) !important;
+}
+
+.dak-home-service-row-media {
+	position: relative !important;
+	overflow: hidden !important;
+	height: 220px !important;
+	border-radius: var( --dak-radius-md ) !important;
+	background: linear-gradient( 165deg, var( --dak-primary-tint ) 0%, var( --dak-bg-subtle ) 100% ) !important;
+}
+
+.dak-home-service-row-media img {
+	position: absolute !important;
+	inset: 0 !important;
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+}
+
+.dak-home-service-row-placeholder {
+	position: absolute !important;
+	inset: 0 !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	color: var( --dak-primary-dark ) !important;
+	opacity: 0.35 !important;
+}
+
+.dak-home-service-row-placeholder svg {
+	width: 56px !important;
+	height: 56px !important;
+}
+
+/* Specialty tiles — "Consult Top Doctors Online". Each tile links into the
+   doctors directory with that specialty preselected in its filter, so only
+   specialties a registered doctor actually has are ever listed. */
+
+.dak-home-specialties-header {
 	text-align: center !important;
 }
 
-.dak-home-why-icon {
+.dak-home-specialties-header p {
+	max-width: 54ch !important;
+	margin: 0 auto !important;
+	font-size: var( --dak-text-md ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-home-specialties-grid {
+	display: grid !important;
+	grid-template-columns: repeat( auto-fit, minmax( 140px, 1fr ) ) !important;
+	gap: var( --dak-space-4 ) !important;
+	max-width: 1040px !important;
+	margin: var( --dak-space-6 ) auto 0 !important;
+}
+
+.dak-home-specialty-card {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: center !important;
+	gap: var( --dak-space-3 ) !important;
+	padding: var( --dak-space-5 ) var( --dak-space-3 ) var( --dak-space-4 ) !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	text-align: center !important;
+	text-decoration: none !important;
+	transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease !important;
+}
+
+.dak-home-specialty-card:hover {
+	transform: translateY( -4px ) !important;
+	border-color: var( --dak-primary ) !important;
+	box-shadow: var( --dak-shadow-hover ) !important;
+}
+
+.dak-home-specialty-icon {
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: center !important;
 	width: 48px !important;
 	height: 48px !important;
-	border-radius: 50% !important;
-	background: linear-gradient( 165deg, var( --dak-bg-card ) 0%, var( --dak-primary-tint ) 100% ) !important;
+	flex: 0 0 auto !important;
+	border-radius: 14px !important;
+	background: var( --dak-primary-tint ) !important;
 	color: var( --dak-primary-dark ) !important;
-	/* Lift shadow + a bright top-edge highlight so the circle reads as a
-	   small floating disc rather than a flat tinted dot. */
-	box-shadow: var( --dak-shadow-hover ), 0 1px 0 rgba( 255, 255, 255, 0.8 ) inset !important;
-	margin-bottom: var( --dak-space-3 ) !important;
 }
 
-.dak-home-why-icon svg {
-	width: 22px !important;
-	height: 22px !important;
+.dak-home-specialty-icon svg {
+	width: 24px !important;
+	height: 24px !important;
 }
 
-.dak-home-why-item h3 {
-	font-size: var( --dak-text-md ) !important;
+/* Rotating tints so the row reads as colourful without pinning a colour to
+   each specialty name (the list is admin-driven, not fixed). */
+.dak-home-specialty-card:nth-child( 6n + 2 ) .dak-home-specialty-icon {
+	background: var( --dak-tint-teal ) !important;
+	color: var( --dak-secondary ) !important;
+}
+
+.dak-home-specialty-card:nth-child( 6n + 3 ) .dak-home-specialty-icon {
+	background: var( --dak-tint-amber ) !important;
+	color: var( --dak-tint-amber-text ) !important;
+}
+
+.dak-home-specialty-card:nth-child( 6n + 4 ) .dak-home-specialty-icon {
+	background: var( --dak-tint-purple ) !important;
+	color: var( --dak-tint-purple-text ) !important;
+}
+
+.dak-home-specialty-card:nth-child( 6n + 5 ) .dak-home-specialty-icon {
+	background: var( --dak-tint-info ) !important;
+	color: var( --dak-tint-info-text ) !important;
+}
+
+.dak-home-specialty-card:nth-child( 6n ) .dak-home-specialty-icon {
+	background: var( --dak-tint-success ) !important;
+	color: var( --dak-tint-success-text ) !important;
+}
+
+.dak-home-specialty-label {
+	font-size: var( --dak-text-sm ) !important;
 	font-weight: 700 !important;
-	margin: 0 0 var( --dak-space-1 ) !important;
+	line-height: 1.35 !important;
 	color: var( --dak-text ) !important;
 }
 
-.dak-home-why-item p {
-	font-size: var( --dak-text-sm ) !important;
-	color: var( --dak-muted ) !important;
+/* Revealed on hover/keyboard focus — the whole tile is the link, so this is
+   an affordance rather than a second control. */
+.dak-home-specialty-action {
+	max-height: 0 !important;
+	padding: 0 var( --dak-space-3 ) !important;
+	overflow: hidden !important;
+	opacity: 0 !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+	font-size: var( --dak-text-xs ) !important;
+	font-weight: 700 !important;
+	line-height: 1.9 !important;
+	transition: max-height 0.18s ease, opacity 0.18s ease !important;
+}
+
+.dak-home-specialty-card:hover .dak-home-specialty-action,
+.dak-home-specialty-card:focus-visible .dak-home-specialty-action {
+	max-height: 32px !important;
+	opacity: 1 !important;
+}
+
+/* Doctors — reuses the [featured_doctors] shortcode's own horizontal-scroll
+   slider markup/CSS/JS (dak-featured-doctors-slider/-track/-slide/-nav,
+   already enqueued alongside the home page's own styles) instead of a
+   second carousel implementation, but with the home page's own full-photo
+   card (directory/home-doctor-card.php) — a big photo with the name/
+   specialty always legible over a permanent bottom scrim, and the years-
+   experience line + action buttons revealed on hover/focus. Deliberately a
+   separate template + these dak-home-doctor-card-* classes rather than
+   restyling the shared .dak-doctor-card partial, which the standalone
+   doctors directory grid and the [featured_doctors] widget also render. */
+
+.dak-home-doctor-card {
+	position: relative !important;
+	height: 400px !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	overflow: hidden !important;
+	background: var( --dak-bg-subtle ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	transition: box-shadow 0.25s ease, transform 0.25s ease !important;
+}
+
+.dak-home-doctor-card:hover,
+.dak-home-doctor-card:focus-within {
+	transform: translateY( -4px ) !important;
+	box-shadow: var( --dak-shadow-lg ) !important;
+}
+
+.dak-home-doctor-card-photo {
+	position: absolute !important;
+	inset: 0 !important;
+	display: block !important;
+	overflow: hidden !important;
+	background: linear-gradient( 165deg, var( --dak-primary-tint ) 0%, var( --dak-bg-subtle ) 100% ) !important;
+}
+
+.dak-home-doctor-card-photo img {
+	position: absolute !important;
+	inset: 0 !important;
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+	transition: transform 0.35s ease !important;
+}
+
+.dak-home-doctor-card:hover .dak-home-doctor-card-photo img,
+.dak-home-doctor-card:focus-within .dak-home-doctor-card-photo img {
+	transform: scale( 1.06 ) !important;
+}
+
+.dak-home-doctor-card-placeholder {
+	position: absolute !important;
+	inset: 0 !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	color: var( --dak-primary-dark ) !important;
+	opacity: 0.35 !important;
+}
+
+.dak-home-doctor-card-placeholder svg {
+	width: 30% !important;
+	height: 30% !important;
+}
+
+.dak-home-doctor-card-badge {
+	position: absolute !important;
+	z-index: 1 !important;
+	top: var( --dak-space-3 ) !important;
+	left: var( --dak-space-3 ) !important;
+	padding: 0.3rem 0.75rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-tint-success ) !important;
+	color: var( --dak-tint-success-text ) !important;
+	font-size: var( --dak-text-xs ) !important;
+	font-weight: 700 !important;
+	box-shadow: 0 2px 8px rgba( 0, 0, 0, 0.18 ) !important;
+}
+
+/* Name/specialty sit over a permanent scrim so every card is identifiable
+   without hovering; the panel grows taller on hover/focus to also reveal
+   the years-experience line and action buttons underneath. */
+
+.dak-home-doctor-card-info {
+	position: absolute !important;
+	z-index: 1 !important;
+	left: 0 !important;
+	right: 0 !important;
+	bottom: 0 !important;
+	padding: var( --dak-space-4 ) var( --dak-space-4 ) var( --dak-space-3 ) !important;
+	display: flex !important;
+	flex-direction: column !important;
+	background: linear-gradient( 0deg, rgba( 0, 0, 0, 0.82 ) 0%, rgba( 0, 0, 0, 0.55 ) 60%, rgba( 0, 0, 0, 0 ) 100% ) !important;
+}
+
+.dak-home-doctor-card-info h3 {
 	margin: 0 !important;
+	font-size: var( --dak-text-md ) !important;
+	font-weight: 700 !important;
+	color: #fff !important;
+}
+
+.dak-home-doctor-card-specialty {
+	font-size: var( --dak-text-sm ) !important;
+	font-weight: 600 !important;
+	color: #d9f0c4 !important;
+}
+
+.dak-home-doctor-card-more {
+	max-height: 0 !important;
+	overflow: hidden !important;
+	opacity: 0 !important;
+	transition: max-height 0.25s ease, opacity 0.2s ease !important;
+}
+
+.dak-home-doctor-card:hover .dak-home-doctor-card-more,
+.dak-home-doctor-card:focus-within .dak-home-doctor-card-more {
+	max-height: 120px !important;
+	opacity: 1 !important;
+}
+
+.dak-home-doctor-card-meta {
+	display: block !important;
+	font-size: var( --dak-text-xs ) !important;
+	color: rgba( 255, 255, 255, 0.8 ) !important;
+	margin-top: 0.35rem !important;
+}
+
+.dak-home-doctor-card-actions {
+	display: flex !important;
+	gap: var( --dak-space-2 ) !important;
+	margin-top: var( --dak-space-3 ) !important;
+}
+
+.dak-home-doctor-card-actions .dak-button {
+	flex: 1 1 0 !important;
+	justify-content: center !important;
+}
+
+.dak-home-doctor-card-actions .dak-button-secondary {
+	background: rgba( 255, 255, 255, 0.12 ) !important;
+	border-color: rgba( 255, 255, 255, 0.4 ) !important;
+	color: #fff !important;
+}
+
+.dak-home-doctor-card-actions .dak-button-secondary:hover {
+	background: rgba( 255, 255, 255, 0.22 ) !important;
+}
+
+@media ( hover: none ) {
+	/* Touch devices have no hover — keep the extra details/buttons visible so
+	   they're always reachable, not hidden behind a tap. */
+	.dak-home-doctor-card-more {
+		max-height: 120px !important;
+		opacity: 1 !important;
+	}
+}
+
+/* Why Choose Us — plain centered icon columns, no card chrome */
+
+/* Sits on the plain page ground — no tinted panel, and the rows below carry
+   no card chrome either, so the whole section reads as one flow rather than
+   a stack of separate boxes. */
+.dak-home-why {
+	margin-top: var( --dak-space-8 ) !important;
+}
+
+.dak-home-why-header {
+	text-align: center !important;
+}
+
+/* Alternating rows: illustration and copy swap sides down the list, each in
+   its own white card on the section's tinted ground. */
+
+.dak-home-why-rows {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: var( --dak-space-5 ) !important;
+	margin-top: var( --dak-space-6 ) !important;
+}
+
+.dak-home-why-row {
+	display: grid !important;
+	grid-template-columns: 1fr 1fr !important;
+	gap: var( --dak-space-6 ) !important;
+	align-items: center !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	padding: var( --dak-space-6 ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+}
+
+.dak-home-why-row:nth-child( even ) .dak-home-why-row-media {
+	order: -1 !important;
+}
+
+.dak-home-why-row-body {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: flex-start !important;
+	gap: var( --dak-space-3 ) !important;
+	min-width: 0 !important;
+}
+
+.dak-home-why-row-tag {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+	padding: 0.35rem 0.85rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+	font-size: var( --dak-text-xs ) !important;
+	font-weight: 700 !important;
+}
+
+.dak-home-why-row-tag svg {
+	display: block !important;
+	width: 14px !important;
+	height: 14px !important;
+}
+
+.dak-home-why-row-body h3 {
+	margin: 0 !important;
+	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+	font-size: 1.9rem !important;
+	font-weight: 600 !important;
+	line-height: 1.2 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-home-why-row-body h3 em {
+	font-style: normal !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-home-why-row-body > p {
+	margin: 0 !important;
+	max-width: 46ch !important;
+	font-size: var( --dak-text-md ) !important;
+	line-height: 1.6 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-home-why-row-points {
+	list-style: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	display: flex !important;
+	flex-direction: column !important;
+	gap: var( --dak-space-2 ) !important;
+}
+
+.dak-home-why-row-points li {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: var( --dak-space-3 ) !important;
+	font-size: var( --dak-text-sm ) !important;
 	line-height: 1.5 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-home-why-row-check {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 20px !important;
+	height: 20px !important;
+	flex: 0 0 auto !important;
+	margin-top: 0.1rem !important;
+	border-radius: 50% !important;
+	background: var( --dak-tint-success ) !important;
+	color: var( --dak-tint-success-text ) !important;
+}
+
+.dak-home-why-row-check svg {
+	width: 12px !important;
+	height: 12px !important;
+}
+
+.dak-home-why-row-cta {
+	margin-top: var( --dak-space-2 ) !important;
+}
+
+.dak-home-why-row-media {
+	overflow: hidden !important;
+	border-radius: var( --dak-radius-md ) !important;
+	/* The illustrations sit on their own near-white ground and vary in aspect
+	   ratio, so they're contained (never cropped) on a matching tint. */
+	background: #f2f7fd !important;
+	aspect-ratio: 4 / 3 !important;
+}
+
+.dak-home-why-row-media img {
+	display: block !important;
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: contain !important;
 }
 
 /* Testimonial band — dark, full-bleed within the page's max-width */
@@ -675,49 +1304,170 @@
 	height: 100% !important;
 }
 
-/* Final CTA band — bold solid primary panel, matching the reference design's
-   high-contrast "Ready to see a specialist?" banner. */
+/* Booking band — dark panel, copy on the left, a light "Schedule your
+   appointment" card on the right. The card is a plain GET form pointed at the
+   booking page: it prefills that wizard's specialization filter and guest
+   details rather than booking anything itself, so nobody's request can be
+   submitted into a void (see assets/js/doctor-ak-booking-page.js). */
 
-.dak-home-cta {
-	margin-top: var( --dak-space-8 ) !important;
+.dak-home-booking {
+	/* Extra top margin buys back the space the form card rises into, so it
+	   still clears the section above once it breaks out of the band. */
+	margin-top: calc( var( --dak-space-8 ) + 72px ) !important;
+	/* Fixed dark, like the testimonial band — it stays dark in both themes.
+	   The sweeping line texture on top is an inline SVG rather than an image
+	   file: it's a few hundred bytes, scales to any band size without going
+	   soft, and needs nothing added to assets/. */
 	background:
-		radial-gradient( 460px 260px at 90% -20%, rgba( 255, 255, 255, 0.25 ) 0%, rgba( 255, 255, 255, 0 ) 65% ),
-		radial-gradient( 420px 260px at 5% 120%, rgba( 0, 0, 0, 0.18 ) 0%, rgba( 0, 0, 0, 0 ) 60% ),
-		linear-gradient( 135deg, var( --dak-primary ) 0%, var( --dak-primary-dark ) 100% ) !important;
+		url( "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201200%20700'%20preserveAspectRatio='none'%3E%3Cg%20fill='none'%20stroke='%23ffffff'%20stroke-opacity='0.07'%20stroke-width='1.2'%3E%3Cpath%20d='M-60%2070%20C%20240%20-10%20520%2050%20780%20150%201000%20236%201120%20272%201260%20250'/%3E%3Cpath%20d='M-60%20152%20C%20240%2072%20520%20132%20780%20232%201000%20318%201120%20354%201260%20332'/%3E%3Cpath%20d='M-60%20234%20C%20240%20154%20520%20214%20780%20314%201000%20400%201120%20436%201260%20414'/%3E%3Cpath%20d='M-60%20316%20C%20240%20236%20520%20296%20780%20396%201000%20482%201120%20518%201260%20496'/%3E%3Cpath%20d='M-60%20398%20C%20240%20318%20520%20378%20780%20478%201000%20564%201120%20600%201260%20578'/%3E%3Cpath%20d='M-60%20480%20C%20240%20400%20520%20460%20780%20560%201000%20646%201120%20682%201260%20660'/%3E%3Cpath%20d='M-60%20562%20C%20240%20482%20520%20542%20780%20642%201000%20728%201120%20764%201260%20742'/%3E%3C/g%3E%3C/svg%3E" ) left center / 100% 100% no-repeat,
+		radial-gradient( 620px 420px at 88% -10%, rgba( 22, 182, 165, 0.22 ) 0%, rgba( 22, 182, 165, 0 ) 70% ),
+		linear-gradient( 160deg, #1d3a33 0%, #142521 40%, #101d1a 100% ) !important;
+	background-color: #101d1a !important;
 	border-radius: var( --dak-radius-lg ) !important;
-	padding: var( --dak-space-6 ) var( --dak-space-7 ) !important;
-	box-shadow: 0 16px 40px rgba( 20, 60, 40, 0.22 ) !important;
+	padding: var( --dak-space-7 ) var( --dak-space-6 ) !important;
+	box-shadow: 0 20px 48px rgba( 0, 0, 0, 0.28 ) !important;
 }
 
-.dak-home-cta-inner {
-	display: flex !important;
+.dak-home-booking-inner {
+	display: grid !important;
+	grid-template-columns: 1fr 440px !important;
+	gap: var( --dak-space-7 ) !important;
 	align-items: center !important;
-	justify-content: space-between !important;
-	flex-wrap: wrap !important;
+}
+
+.dak-home-booking-copy .dak-eyebrow {
+	background: rgba( 255, 255, 255, 0.1 ) !important;
+	color: var( --dak-primary ) !important;
+}
+
+.dak-home-booking-copy h2 {
+	margin: var( --dak-space-3 ) 0 !important;
+	font-size: 2.4rem !important;
+	font-weight: 600 !important;
+	line-height: 1.15 !important;
+	color: #fff !important;
+}
+
+.dak-home-booking-copy > p {
+	max-width: 48ch !important;
+	margin: 0 !important;
+	font-size: var( --dak-text-md ) !important;
+	line-height: 1.6 !important;
+	color: rgba( 255, 255, 255, 0.75 ) !important;
+}
+
+.dak-home-booking-contact {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: var( --dak-space-4 ) !important;
+	margin-top: var( --dak-space-6 ) !important;
+	text-decoration: none !important;
+}
+
+.dak-home-booking-contact-icon {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 56px !important;
+	height: 56px !important;
+	flex: 0 0 auto !important;
+	border-radius: 50% !important;
+	background: linear-gradient( 160deg, var( --dak-secondary ) 0%, var( --dak-primary-dark ) 100% ) !important;
+	color: #fff !important;
+	box-shadow: 0 8px 22px rgba( 22, 182, 165, 0.28 ) !important;
+}
+
+.dak-home-booking-contact-icon svg {
+	width: 24px !important;
+	height: 24px !important;
+}
+
+.dak-home-booking-contact span {
+	display: flex !important;
+	flex-direction: column !important;
+}
+
+.dak-home-booking-contact em {
+	font-style: normal !important;
+	font-size: var( --dak-text-sm ) !important;
+	color: rgba( 255, 255, 255, 0.7 ) !important;
+}
+
+.dak-home-booking-contact strong {
+	font-size: var( --dak-text-lg ) !important;
+	font-weight: 700 !important;
+	color: #fff !important;
+}
+
+/* Lifted so its top edge sits above the band's, overlapping the section
+   above — anchored to the top of the row (not centred) so the offset is
+   exact rather than dependent on how tall the copy beside it ends up. */
+.dak-home-booking-form {
+	align-self: start !important;
+	margin-top: -104px !important;
+	background: var( --dak-bg-card ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	padding: var( --dak-space-6 ) !important;
+	box-shadow: 0 24px 60px rgba( 0, 0, 0, 0.3 ) !important;
+}
+
+.dak-home-booking-form h3 {
+	margin: 0 0 var( --dak-space-5 ) !important;
+	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+	font-size: var( --dak-text-xl ) !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-home-booking-field {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.35rem !important;
+	margin-bottom: var( --dak-space-4 ) !important;
+	min-width: 0 !important;
+}
+
+.dak-home-booking-field label {
+	font-size: var( --dak-text-sm ) !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-home-booking-field input,
+.dak-home-booking-field select {
+	width: 100% !important;
+	padding: 0.75rem 0.9rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font: inherit !important;
+	font-size: var( --dak-text-sm ) !important;
+}
+
+.dak-home-booking-field input:focus,
+.dak-home-booking-field select:focus {
+	outline: none !important;
+	border-color: var( --dak-primary ) !important;
+	box-shadow: 0 0 0 3px rgba( 127, 181, 45, 0.18 ) !important;
+}
+
+.dak-home-booking-field-row {
+	display: grid !important;
+	grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
 	gap: var( --dak-space-4 ) !important;
 }
 
-.dak-home-cta h2 {
-	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
-	color: #fff !important;
-	font-size: var( --dak-text-xl ) !important;
-	font-weight: 600 !important;
-	margin: 0 0 var( --dak-space-1 ) !important;
+.dak-home-booking-submit {
+	margin-top: var( --dak-space-2 ) !important;
+	padding: 0.85rem 1.6rem !important;
 }
 
-.dak-home-cta p {
-	color: rgba( 255, 255, 255, 0.85 ) !important;
-	font-size: var( --dak-text-md ) !important;
-	margin: 0 !important;
-}
 
-.dak-home-cta .dak-button-primary {
-	background: #fff !important;
-	color: var( --dak-primary-dark ) !important;
-}
-
-.dak-home-cta .dak-button-primary:hover {
-	background: rgba( 255, 255, 255, 0.9 ) !important;
+.dak-home-booking-note {
+	margin: var( --dak-space-3 ) 0 0 !important;
+	font-size: var( --dak-text-xs ) !important;
+	color: var( --dak-muted ) !important;
 }
 
 /* Video grid + lightbox (marketing reel + admin-uploaded videos) */
@@ -859,26 +1609,110 @@
 }
 
 @media ( max-width: 900px ) {
-	.dak-home-hero {
+	.dak-home-hero-banner {
+		min-height: 0 !important;
+	}
+
+	.dak-home-hero-banner-content {
+		max-width: none !important;
 		padding: var( --dak-space-6 ) var( --dak-space-5 ) !important;
 	}
 
-	.dak-home-hero-grid {
-		grid-template-columns: 1fr !important;
+	.dak-home-hero-banner-stats {
+		position: static !important;
+		margin: 0 var( --dak-space-5 ) var( --dak-space-6 ) !important;
+		justify-content: space-between !important;
 	}
 
-	.dak-home-hero-card {
-		max-width: 360px !important;
+	.dak-home-hero-search {
+		margin: -24px var( --dak-space-5 ) 0 !important;
+		flex-wrap: wrap !important;
 	}
 
-	.dak-home-hero-stats-strip,
-	.dak-home-trust-grid,
-	.dak-home-why-grid {
+	.dak-home-hero-search-field {
+		flex: 1 1 45% !important;
+		border-right: none !important;
+		padding-right: 0 !important;
+	}
+
+	.dak-home-hero-search-submit {
+		flex: 1 1 100% !important;
+		justify-content: center !important;
+	}
+
+	.dak-home-quick-links-grid {
 		grid-template-columns: repeat( 2, 1fr ) !important;
 	}
 
-	.dak-home-testimonial-band-inner {
+	/* Illustration always above the copy once stacked, so the alternating
+	   order doesn't leave some rows starting with text and others with an
+	   image. */
+	.dak-home-why-row {
 		grid-template-columns: 1fr !important;
+		gap: var( --dak-space-5 ) !important;
+		padding: var( --dak-space-5 ) !important;
+	}
+
+	.dak-home-why-row:nth-child( even ) .dak-home-why-row-media,
+	.dak-home-why-row-media {
+		order: -1 !important;
+	}
+
+	.dak-home-why-row-body h3 {
+		font-size: 1.6rem !important;
+	}
+
+	.dak-home-video-tour-heading {
+		grid-template-columns: 1fr !important;
+	}
+
+	/* Photo above the copy rather than a cramped side column. */
+	.dak-home-service-row {
+		grid-template-columns: 1fr !important;
+		gap: var( --dak-space-4 ) !important;
+	}
+
+	.dak-home-service-row-media {
+		order: -1 !important;
+		height: 200px !important;
+	}
+
+	.dak-home-video-tour-features {
+		grid-template-columns: repeat( 2, 1fr ) !important;
+		gap: var( --dak-space-3 ) !important;
+		margin: -40px var( --dak-space-4 ) 0 !important;
+	}
+
+	.dak-home-video-tour .dak-home-hero-visual {
+		height: 320px !important;
+		padding: var( --dak-space-5 ) var( --dak-space-4 ) 72px !important;
+	}
+
+	/* Three chips wrap to two or three rows here and crowd the play button —
+	   the heading above already explains what the clip covers. */
+	.dak-home-video-tour-steps {
+		display: none !important;
+	}
+
+	.dak-home-testimonial-band-inner,
+	.dak-home-booking-inner {
+		grid-template-columns: 1fr !important;
+	}
+
+	/* Stacked here, so the card sits under the copy — lifting it would drag
+	   it over the text instead of over the band's top edge. */
+	.dak-home-booking {
+		margin-top: var( --dak-space-8 ) !important;
+		padding: var( --dak-space-6 ) var( --dak-space-4 ) !important;
+	}
+
+	.dak-home-booking-form {
+		align-self: auto !important;
+		margin-top: 0 !important;
+	}
+
+	.dak-home-booking-copy h2 {
+		font-size: 1.9rem !important;
 	}
 
 	.dak-home-clinics-grid,
@@ -886,25 +1720,36 @@
 		grid-template-columns: 1fr !important;
 	}
 
-	.dak-home-hero-copy h1 {
+	.dak-home-hero-banner-content h1 {
 		font-size: 2rem !important;
 	}
 
-	.dak-home-why,
 	.dak-home-clinics {
 		padding: var( --dak-space-6 ) var( --dak-space-4 ) !important;
 	}
 }
 
 @media ( max-width: 560px ) {
-	.dak-home-hero-stats-strip,
-	.dak-home-trust-grid,
-	.dak-home-why-grid {
+	.dak-home-hero-banner-stats {
+		flex-wrap: wrap !important;
+		gap: var( --dak-space-3 ) !important;
+	}
+
+	.dak-home-quick-links-grid {
 		grid-template-columns: 1fr !important;
 	}
 
-	.dak-home-cta-inner {
-		flex-direction: column !important;
-		align-items: flex-start !important;
+	.dak-home-video-tour-features {
+		grid-template-columns: 1fr !important;
+		margin: -28px var( --dak-space-3 ) 0 !important;
+	}
+
+	.dak-home-video-tour .dak-home-hero-visual {
+		height: 240px !important;
+		padding: var( --dak-space-4 ) var( --dak-space-3 ) 56px !important;
+	}
+
+	.dak-home-booking-field-row {
+		grid-template-columns: 1fr !important;
 	}
 }

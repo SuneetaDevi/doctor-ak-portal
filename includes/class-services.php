@@ -477,6 +477,11 @@ class Services {
 
 					$group['price_label'] = self::price_range_label( $prices );
 
+					// One price was collected per doctor offering this service,
+					// so the count of them is the number of doctors it can be
+					// booked with.
+					$group['doctor_count'] = count( $prices );
+
 					return $group;
 				},
 				$groups

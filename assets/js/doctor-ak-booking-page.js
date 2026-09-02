@@ -292,6 +292,52 @@
 		if ( specializationSelect ) {
 			specializationSelect.addEventListener( 'change', applyDoctorFilters );
 		}
+
+		applyLandingPrefill( specializationSelect, applyDoctorFilters );
+	}
+
+	/**
+	 * Carries over what the visitor typed into the home page's "Schedule your
+	 * appointment" form, which links here rather than booking anything itself:
+	 * `specialization` narrows this step's doctor list, and name/email/phone
+	 * fill the guest fields further along so they aren't asked twice. Every
+	 * one is optional, and an unrecognised specialization is ignored so the
+	 * full doctor list still shows rather than an empty one.
+	 *
+	 * @param {HTMLSelectElement} specializationSelect The doctor step's specialization filter.
+	 * @param {Function}          applyDoctorFilters   Re-runs the doctor card filtering.
+	 */
+	function applyLandingPrefill( specializationSelect, applyDoctorFilters ) {
+		if ( ! window.URLSearchParams ) {
+			return;
+		}
+
+		var params = new URLSearchParams( window.location.search );
+
+		[
+			[ 'name', 'dak-booking-guest-name' ],
+			[ 'email', 'dak-booking-guest-email' ],
+			[ 'phone', 'dak-booking-guest-phone' ],
+		].forEach( function ( pair ) {
+			var value = params.get( pair[ 0 ] );
+			var field = document.getElementById( pair[ 1 ] );
+
+			if ( value && field ) {
+				field.value = value;
+			}
+		} );
+
+		var specialization = params.get( 'specialization' );
+
+		if ( ! specialization || ! specializationSelect ) {
+			return;
+		}
+
+		specializationSelect.value = specialization;
+
+		if ( '' !== specializationSelect.value ) {
+			applyDoctorFilters();
+		}
 	}
 
 	function selectDoctor( card ) {

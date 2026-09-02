@@ -74,7 +74,37 @@
 				select.addEventListener( 'change', applyFilters );
 			}
 		} );
+
+		applyPreselectedSpecialization( specializationSelect, applyFilters );
 	} );
+
+	/**
+	 * Lands on this page with a specialty already chosen — the home page's
+	 * "Consult Top Doctors Online" tiles link here as `?specialization=<lowercased
+	 * label>`, matching the filter's own option values. Anything that isn't an
+	 * option (a specialty no listed doctor has, or a hand-edited URL) is
+	 * ignored, leaving the unfiltered grid rather than an empty one.
+	 *
+	 * @param {HTMLSelectElement} select       The specialization filter.
+	 * @param {Function}          applyFilters Re-runs the grid filtering.
+	 */
+	function applyPreselectedSpecialization( select, applyFilters ) {
+		if ( ! select || ! window.URLSearchParams ) {
+			return;
+		}
+
+		var requested = new URLSearchParams( window.location.search ).get( 'specialization' );
+
+		if ( ! requested ) {
+			return;
+		}
+
+		select.value = requested.toLowerCase();
+
+		if ( '' !== select.value ) {
+			applyFilters();
+		}
+	}
 
 	function findBySlug( list, slug ) {
 		return ( list || [] ).filter( function ( entry ) {
