@@ -103,7 +103,11 @@ class Services {
 		// clinics" edit, which posts no clinic_charges[] entries at all)
 		// wouldn't otherwise be distinguishable from "field not submitted".
 		if ( ! empty( $posted['has_portfolio_fields'] ) ) {
-			$fields['description'] = isset( $posted['description'] ) ? sanitize_textarea_field( wp_unslash( $posted['description'] ) ) : '';
+			// wp_kses_post() (not sanitize_textarea_field()) since the admin
+			// modal's description field is now a rich-text editor — this
+			// keeps safe formatting tags (bold/italic/lists/links/paragraphs)
+			// and strips anything else (scripts, event handlers, etc.).
+			$fields['description'] = isset( $posted['description'] ) ? wp_kses_post( wp_unslash( $posted['description'] ) ) : '';
 
 			$clinic_charges = array();
 

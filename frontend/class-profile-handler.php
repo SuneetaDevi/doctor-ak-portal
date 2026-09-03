@@ -125,6 +125,14 @@ class Profile_Handler {
 		);
 
 		wp_enqueue_script(
+			'doctor-ak-portal-rich-text-editor',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-rich-text-editor.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-rich-text-editor.js' ),
+			true
+		);
+
+		wp_enqueue_script(
 			'doctor-ak-portal-profile',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-profile.js',
 			array( 'doctor-ak-portal-registration', 'doctor-ak-portal-awards-editor', 'doctor-ak-portal-city-area-select' ),
@@ -408,7 +416,10 @@ class Profile_Handler {
 
 		$meta['doctor_ak_short_description'] = $short_description;
 
-		$meta['doctor_ak_expertise'] = isset( $_POST['expertise'] ) ? sanitize_textarea_field( wp_unslash( $_POST['expertise'] ) ) : '';
+		// wp_kses_post() (not sanitize_textarea_field()) since this field is
+		// now a rich-text editor — keeps safe formatting tags (bold/italic/
+		// lists/links/paragraphs), strips anything else.
+		$meta['doctor_ak_expertise'] = isset( $_POST['expertise'] ) ? wp_kses_post( wp_unslash( $_POST['expertise'] ) ) : '';
 		$meta[ Doctor_Awards::META_KEY ] = Doctor_Awards::encode( Doctor_Awards::sanitize_from_request( $errors ) );
 
 		$specializations = array();

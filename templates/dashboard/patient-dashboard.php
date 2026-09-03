@@ -20,7 +20,6 @@
  * @var string   $directory_url         URL of the [doctors_directory] page.
  * @var string   $logout_url            Nonce-protected logout URL.
  * @var string   $contact_url           Contact Us page URL for the "Contact Support" button.
- * @var string   $theme                 'light' or 'dark' — the patient's saved dashboard theme preference.
  * @var string   $active_tab            'dashboard', 'profile', 'settings', 'medical-history', or 'payments'.
  * @var string   $dashboard_url         URL of this dashboard page.
  * @var string   $settings_url          Same-page URL for the Settings tab.
@@ -81,7 +80,7 @@ $appointment_group_labels = array(
 	'later'     => __( 'Later', 'doctor-ak-portal' ),
 );
 ?>
-<div class="dak-portal dak-dashboard dak-patient-dashboard" data-role="patient" data-theme="<?php echo esc_attr( $theme ); ?>">
+<div class="dak-portal dak-dashboard dak-patient-dashboard" data-role="patient">
 	<button type="button" class="dak-dashboard-sidebar-toggle" id="dak-sidebar-toggle" aria-label="<?php esc_attr_e( 'Toggle navigation', 'doctor-ak-portal' ); ?>" aria-expanded="false" aria-controls="dak-dashboard-sidebar">
 		<span></span><span></span><span></span>
 	</button>

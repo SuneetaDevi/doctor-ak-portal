@@ -22,7 +22,6 @@ use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Settlement_Manager;
 use DoctorAKPortal\Includes\Specializations;
 use DoctorAKPortal\Includes\Template_Loader;
-use DoctorAKPortal\Includes\Theme_Preference;
 use DoctorAKPortal\Includes\Video_Pricing;
 
 // Prevent direct file access.
@@ -989,7 +988,6 @@ class Doctor_Dashboard {
 			'video_consultation'    => Clinics::doctor_has_active_video_clinic( $user->ID ),
 			'appointment_groups'    => $appointment_groups_html,
 			'total_upcoming_appointments' => $appointment_data['total_upcoming_count'],
-			'theme'                 => Theme_Preference::get( $user->ID ),
 			'active_tab'            => $active_tab,
 			'profile_form_html'     => 'profile' === $active_tab ? $this->render_profile_form( $user ) : '',
 			'clinics_tab_html'      => 'clinics' === $active_tab ? $this->render_clinics_tab( $user ) : '',

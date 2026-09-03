@@ -16,7 +16,6 @@
  * @var bool      $is_users_section  Whether the active section is 'doctors', 'patients', or 'receptionist'.
  * @var bool      $is_user_form_view Whether `?view=form` is active (full-screen Add/Edit form instead of the table).
  * @var bool      $is_receptionist   Whether the logged-in viewer is a Receptionist (vs. a full Administrator) — gets a cut-down, mostly read-only view of this same dashboard.
- * @var string    $theme             'light' or 'dark' — the admin's saved dashboard theme preference.
  */
 
 // Prevent direct file access.
@@ -71,7 +70,7 @@ $dak_admin_section_icons = array(
 	'settings'         => 'settings',
 );
 ?>
-<div class="dak-portal dak-dashboard dak-admin-dashboard" data-role="<?php echo esc_attr( $is_receptionist ? 'receptionist' : 'administrator' ); ?>" data-theme="<?php echo esc_attr( $theme ); ?>">
+<div class="dak-portal dak-dashboard dak-admin-dashboard" data-role="<?php echo esc_attr( $is_receptionist ? 'receptionist' : 'administrator' ); ?>">
 	<button type="button" class="dak-dashboard-sidebar-toggle" id="dak-sidebar-toggle" aria-label="<?php esc_attr_e( 'Toggle navigation', 'doctor-ak-portal' ); ?>" aria-expanded="false" aria-controls="dak-dashboard-sidebar">
 		<span></span><span></span><span></span>
 	</button>

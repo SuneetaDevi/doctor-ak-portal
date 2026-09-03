@@ -326,9 +326,123 @@
 	height: 30px !important;
 }
 
-/* Admin "Add/Edit Service" modal's image picker (see
-   templates/modal/admin-service-modal.php) — the Image field that feeds
-   the public [services_directory]/[service_profile_view] pages. */
+/* Reusable rich-text (contenteditable) editor toolbar (see
+   assets/js/doctor-ak-rich-text-editor.js) — currently used by the admin
+   "Add/Edit Service" modal's Description field. */
+.dak-rich-text {
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	overflow: hidden !important;
+	background: var( --dak-bg-card ) !important;
+}
+
+.dak-rich-text-toolbar {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 0.15rem !important;
+	padding: 0.35rem !important;
+	background: var( --dak-bg-subtle ) !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+.dak-rich-text-button {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 28px !important;
+	height: 28px !important;
+	border: 0 !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: none !important;
+	color: var( --dak-text ) !important;
+	cursor: pointer !important;
+}
+
+.dak-rich-text-button svg {
+	width: 16px !important;
+	height: 16px !important;
+	flex: 0 0 auto !important;
+	/* Belt-and-suspenders: the icon paths use stroke/fill="currentColor",
+	   which normally just inherits the button's own `color` — but setting
+	   both explicitly here means the icons render correctly even if
+	   something else on the page (theme CSS, etc.) interferes with that
+	   inheritance chain. */
+	color: var( --dak-text ) !important;
+	stroke: var( --dak-text ) !important;
+}
+
+.dak-rich-text-button:hover {
+	background: var( --dak-border ) !important;
+}
+
+.dak-rich-text-divider {
+	width: 1px !important;
+	height: 18px !important;
+	margin: 0 0.2rem !important;
+	background: var( --dak-border ) !important;
+}
+
+.dak-rich-text-editor {
+	min-height: 120px !important;
+	max-height: 320px !important;
+	overflow-y: auto !important;
+	padding: 0.65rem 0.85rem !important;
+	font-size: 0.9rem !important;
+	line-height: 1.55 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-rich-text-editor:focus {
+	outline: none !important;
+}
+
+.dak-rich-text-editor:empty::before {
+	content: attr( data-placeholder ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-rich-text-editor p {
+	margin: 0 0 0.6em !important;
+}
+
+.dak-rich-text-editor ul,
+.dak-rich-text-editor ol {
+	margin: 0 0 0.6em !important;
+	padding-left: 1.4em !important;
+}
+
+.dak-rich-text-editor a {
+	color: var( --dak-primary-dark ) !important;
+}
+
+/* Rendered rich-text HTML (bold/italic/lists/links) shown read-only within
+   the dashboard — e.g. the admin "Doctor Requests" review screen's Other
+   Expertise section (see templates/dashboard/partials/admin-doctor-requests.php).
+   The public-facing equivalent of this same class lives in
+   doctor-ak-directory.css, since that stylesheet isn't loaded here. */
+.dak-rich-text-content p {
+	margin: 0 0 0.75em !important;
+}
+
+.dak-rich-text-content p:last-child {
+	margin-bottom: 0 !important;
+}
+
+.dak-rich-text-content ul,
+.dak-rich-text-content ol {
+	margin: 0 0 0.75em !important;
+	padding-left: 1.4em !important;
+}
+
+.dak-rich-text-content a {
+	color: var( --dak-primary-dark ) !important;
+}
+
+/* Admin "Add/Edit Service" form's image picker (see
+   templates/dashboard/partials/admin-service-form-screen.php) — the Image
+   field that feeds the public [services_directory]/[service_profile_view]
+   pages. */
 .dak-service-portfolio-image-picker {
 	display: flex !important;
 	align-items: center !important;
@@ -345,9 +459,10 @@
 	object-fit: cover !important;
 }
 
-/* Admin "Add/Edit Service" modal's per-clinic price rows (see
-   templates/modal/admin-service-modal.php + doctor-ak-admin-services.js's
-   renderClinicChargeRows()) — one row per currently-selected clinic. */
+/* Admin "Add/Edit Service" form's per-clinic price rows (see
+   templates/dashboard/partials/admin-service-form-screen.php +
+   doctor-ak-admin-service-form.js's renderClinicChargeRows()) — one row per
+   currently-selected clinic. */
 .dak-clinic-charge-row {
 	display: flex !important;
 	align-items: center !important;
@@ -450,55 +565,6 @@
 	color: var( --dak-danger ) !important;
 }
 
-.dak-theme-toggle {
-	display: flex !important;
-	align-items: center !important;
-	gap: 0.65rem !important;
-	width: 100% !important;
-	padding: 0.6rem 0.75rem !important;
-	margin-bottom: 0.25rem !important;
-	border: 0 !important;
-	border-radius: var( --dak-radius-sm ) !important;
-	background: none !important;
-	font-size: 0.88rem !important;
-	font-weight: 600 !important;
-	font-family: inherit !important;
-	color: var( --dak-muted ) !important;
-	cursor: pointer !important;
-	text-align: left !important;
-}
-
-.dak-theme-toggle:hover {
-	background: var( --dak-bg-subtle ) !important;
-	color: var( --dak-text ) !important;
-}
-
-.dak-theme-icon {
-	width: 20px !important;
-	height: 20px !important;
-	flex-shrink: 0 !important;
-	display: flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-}
-
-.dak-theme-icon svg {
-	width: 100% !important;
-	height: 100% !important;
-}
-
-.dak-theme-icon-moon {
-	display: none !important;
-}
-
-.dak-dashboard[data-theme='dark'] .dak-theme-icon-sun {
-	display: none !important;
-}
-
-.dak-dashboard[data-theme='dark'] .dak-theme-icon-moon {
-	display: flex !important;
-}
-
 .dak-settings-section h2 {
 	font-size: 1rem !important;
 	font-weight: 700 !important;
@@ -538,14 +604,6 @@
 	margin: 0 !important;
 	color: var( --dak-muted ) !important;
 	font-size: 0.85rem !important;
-}
-
-.dak-settings-row .dak-theme-toggle {
-	width: auto !important;
-	flex-shrink: 0 !important;
-	margin-bottom: 0 !important;
-	border: 1px solid var( --dak-border ) !important;
-	background: var( --dak-bg-subtle ) !important;
 }
 
 /* Main column */
@@ -701,23 +759,6 @@
 .dak-icon-button:hover {
 	background: var( --dak-primary-tint ) !important;
 	color: var( --dak-primary-dark ) !important;
-}
-
-/* Topbar theme-toggle (compact variant of .dak-theme-toggle, used next to
-   the settings-tab's full labelled row) and the notifications bell. */
-.dak-theme-toggle.dak-icon-button {
-	width: 38px !important;
-	height: 38px !important;
-	padding: 0 !important;
-	margin-bottom: 0 !important;
-	border-radius: 50% !important;
-	background: var( --dak-bg-subtle ) !important;
-	justify-content: center !important;
-}
-
-.dak-theme-toggle.dak-icon-button .dak-theme-icon {
-	width: 18px !important;
-	height: 18px !important;
 }
 
 .dak-topbar-bell {

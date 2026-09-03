@@ -383,6 +383,34 @@
 	white-space: pre-line !important;
 }
 
+/* Rendered rich-text HTML (bold/italic/lists/links) from the admin
+   Description field's formatting toolbar — see doctor-ak-rich-text-editor.js
+   and templates/directory/service-profile-view.php. Real markup already
+   carries its own line breaks, so this cancels .dak-profile-expertise's
+   plain-text white-space: pre-line (meant for the doctor profile's
+   free-text "Other expertise" field, not HTML). */
+.dak-rich-text-content {
+	white-space: normal !important;
+}
+
+.dak-rich-text-content p {
+	margin: 0 0 0.75em !important;
+}
+
+.dak-rich-text-content p:last-child {
+	margin-bottom: 0 !important;
+}
+
+.dak-rich-text-content ul,
+.dak-rich-text-content ol {
+	margin: 0 0 0.75em !important;
+	padding-left: 1.4em !important;
+}
+
+.dak-rich-text-content a {
+	color: var( --dak-primary-dark ) !important;
+}
+
 .dak-profile-stats {
 	display: flex !important;
 	flex-wrap: wrap !important;

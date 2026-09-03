@@ -1,11 +1,13 @@
 <?php
 /**
  * Template: Dashboard "Settings" tab/section content, shared by the Admin,
- * Doctor, Receptionist and Patient dashboards — the light/dark theme
- * toggle, plus each account's own notification email preferences (whether
- * *they* personally receive "appointment booked"/"payment received"/
- * "cancelled" emails for appointments involving them — a per-account
- * choice, see Notifications::user_wants(), not a clinic-wide switch).
+ * Doctor, Receptionist and Patient dashboards — each account's own
+ * notification email preferences (whether *they* personally receive
+ * "appointment booked"/"payment received"/"cancelled" emails for
+ * appointments involving them — a per-account choice, see
+ * Notifications::user_wants(), not a clinic-wide switch). The light/dark
+ * toggle lives in the public site header now (see templates/site-header.php)
+ * — the dashboards no longer have a separate one.
  *
  * @package DoctorAKPortal\Templates
  *
@@ -27,17 +29,6 @@ $notify_cancelled     = isset( $notify_cancelled ) ? $notify_cancelled : true;
 $notify_announcements = isset( $notify_announcements ) ? $notify_announcements : true;
 $show_save_button     = ! isset( $show_save_button ) || $show_save_button;
 ?>
-<div class="dak-settings-section">
-	<h2><?php esc_html_e( 'Appearance', 'doctor-ak-portal' ); ?></h2>
-	<div class="dak-settings-row">
-		<div class="dak-settings-row-text">
-			<strong><?php esc_html_e( 'Dark Mode', 'doctor-ak-portal' ); ?></strong>
-			<p><?php esc_html_e( 'Switch the dashboard between light and dark. Your choice is saved to your account.', 'doctor-ak-portal' ); ?></p>
-		</div>
-		<?php echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( 'dashboard/partials/theme-toggle-button.php' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own theme-toggle-button.php template, which escapes its own output. ?>
-	</div>
-</div>
-
 <div class="dak-settings-section" id="dak-notification-preferences-form">
 	<h2><?php esc_html_e( 'Notifications', 'doctor-ak-portal' ); ?></h2>
 	<p class="dak-settings-section-subtitle"><?php esc_html_e( "These control only your own account — no one else's notifications are affected.", 'doctor-ak-portal' ); ?></p>

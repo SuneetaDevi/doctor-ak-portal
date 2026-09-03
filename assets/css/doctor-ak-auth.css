@@ -75,16 +75,15 @@
 }
 
 /*
- * Dark theme. Two independent toggles feed the same tokens:
- * - Dashboards (Admin/Doctor/Patient): assets/js/doctor-ak-theme-toggle.js
- *   sets `data-theme` on the `.dak-dashboard` element itself, persisted
- *   server-side per logged-in user — `.dak-portal.dak-dashboard[data-theme]`.
- * - Public site (header, home, directory, auth, booking): assets/js/
- *   doctor-ak-public-theme-toggle.js sets `data-theme` on <html>, persisted
- *   client-side (localStorage) since a visitor may not be logged in —
- *   `html[data-theme] .dak-portal`. Every `.dak-portal` subtree on the page
- *   (header/footer/content are separate top-level divs, not nested under one
- *   shared wrapper) picks up the same overrides via that selector.
+ * Dark theme — one toggle, site-wide: assets/js/doctor-ak-public-theme-toggle.js
+ * (in the site header, shown on every page including the three dashboards)
+ * sets `data-theme` on <html>, persisted client-side (localStorage) since a
+ * visitor may not be logged in. Every `.dak-portal` subtree on the page
+ * (header/footer/dashboard/content are separate top-level divs, not nested
+ * under one shared wrapper) picks up the same overrides via
+ * `html[data-theme] .dak-portal`. The dashboards used to have their own
+ * second, server-persisted toggle (Theme_Preference/Theme_Handler) — removed
+ * in favor of this single one.
  */
 /*
  * Covers the gaps the public dark toggle would otherwise miss: the header,
@@ -101,7 +100,6 @@ html[data-theme='dark'] body {
 	background: #000000 !important;
 }
 
-.dak-portal.dak-dashboard[data-theme='dark'],
 html[data-theme='dark'] .dak-portal {
 	--dak-primary-tint: #16210f;
 	--dak-text: #e9eaec;

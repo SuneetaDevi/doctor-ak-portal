@@ -15,7 +15,7 @@
  *     @type string   $years_experience      Years of experience.
  *     @type string   $qualification         Qualification(s), e.g. "MBBS, FCPS".
  *     @type string   $short_description     One-line profile tagline, or ''.
- *     @type string   $expertise             Other-expertise free text, or ''.
+ *     @type string   $expertise             Other-expertise text — may contain rich-text HTML (bold/italic/lists/links) from the doctor's/admin's formatting toolbar, or ''.
  *     @type array    $awards                Awards list, see Doctor_Awards::get_for_doctor().
  *     @type bool     $video_consultation    Whether video consultations are offered.
  *     @type string   $phone                 First clinic with a phone number on file, or ''.
@@ -151,7 +151,7 @@ $dak_profile_view_icons = array(
 				<?php if ( '' !== $doctor['expertise'] ) : ?>
 					<div class="dak-profile-card">
 						<h2><?php esc_html_e( 'Other Expertise', 'doctor-ak-portal' ); ?></h2>
-						<p class="dak-profile-expertise"><?php echo esc_html( $doctor['expertise'] ); ?></p>
+						<div class="dak-profile-expertise dak-rich-text-content"><?php echo wp_kses_post( $doctor['expertise'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_kses_post() output. ?></div>
 					</div>
 				<?php endif; ?>
 

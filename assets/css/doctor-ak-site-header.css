@@ -189,34 +189,64 @@
 .dak-public-theme-toggle {
 	position: relative !important;
 	flex: 0 0 auto !important;
-	width: 42px !important;
-	height: 24px !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 36px !important;
+	height: 36px !important;
 	border: 1px solid var( --dak-border ) !important;
-	border-radius: 999px !important;
-	background: var( --dak-bg-subtle ) !important;
+	border-radius: 50% !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
 	cursor: pointer !important;
-	padding: 2px !important;
 	transition: background 0.15s ease, border-color 0.15s ease !important;
 }
 
-.dak-public-theme-toggle-thumb {
-	display: block !important;
+.dak-public-theme-toggle:hover {
+	border-color: var( --dak-primary ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+/* Sun/moon icon swap, keyed off this button's own aria-pressed state (see
+   doctor-ak-public-theme-toggle.js) rather than a `data-theme` ancestor,
+   since the icon needs to reflect this specific toggle instance. This is
+   the plugin's only theme toggle — shown site-wide, including on the three
+   dashboards. */
+.dak-public-theme-toggle .dak-theme-icon {
 	width: 18px !important;
 	height: 18px !important;
-	border-radius: 50% !important;
-	background: var( --dak-bg-card ) !important;
-	box-shadow: 0 1px 3px rgba( 0, 0, 0, 0.25 ) !important;
-	transform: translateX( 0 ) !important;
-	transition: transform 0.15s ease, background 0.15s ease !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
 }
 
-.dak-public-theme-toggle[aria-pressed='true'] {
-	background: var( --dak-primary ) !important;
-	border-color: var( --dak-primary ) !important;
+.dak-public-theme-toggle .dak-theme-icon svg {
+	width: 100% !important;
+	height: 100% !important;
+	/* Belt-and-suspenders: the icon paths use stroke="currentColor", which
+	   normally just inherits the button's own `color` — but setting it
+	   explicitly here means the icon renders correctly even if something
+	   else on the page interferes with that inheritance chain (see the same
+	   fix applied to the rich-text editor toolbar's icons). */
+	color: var( --dak-text ) !important;
+	stroke: var( --dak-text ) !important;
 }
 
-.dak-public-theme-toggle[aria-pressed='true'] .dak-public-theme-toggle-thumb {
-	transform: translateX( 18px ) !important;
+.dak-public-theme-toggle:hover .dak-theme-icon svg {
+	color: var( --dak-primary-dark ) !important;
+	stroke: var( --dak-primary-dark ) !important;
+}
+
+.dak-public-theme-toggle .dak-theme-icon-moon {
+	display: none !important;
+}
+
+.dak-public-theme-toggle[aria-pressed='true'] .dak-theme-icon-sun {
+	display: none !important;
+}
+
+.dak-public-theme-toggle[aria-pressed='true'] .dak-theme-icon-moon {
+	display: flex !important;
 }
 
 .dak-site-header-account-link {

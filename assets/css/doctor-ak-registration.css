@@ -828,3 +828,95 @@
 		flex: 1 1 auto !important;
 	}
 }
+
+/* Reusable rich-text (contenteditable) editor toolbar (see
+   assets/js/doctor-ak-rich-text-editor.js) — the registration form's and
+   Edit Profile page's "Other Expertise" field. Identical to the admin
+   dashboard's own copy in doctor-ak-dashboard.css, duplicated here since
+   these public-facing auth pages don't load that stylesheet. */
+.dak-rich-text {
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	overflow: hidden !important;
+	background: var( --dak-bg-card ) !important;
+}
+
+.dak-rich-text-toolbar {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 0.15rem !important;
+	padding: 0.35rem !important;
+	background: var( --dak-bg-subtle ) !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+.dak-rich-text-button {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 28px !important;
+	height: 28px !important;
+	border: 0 !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: none !important;
+	color: var( --dak-text ) !important;
+	cursor: pointer !important;
+}
+
+.dak-rich-text-button svg {
+	width: 16px !important;
+	height: 16px !important;
+	flex: 0 0 auto !important;
+	/* Belt-and-suspenders: the icon paths use stroke/fill="currentColor",
+	   which normally just inherits the button's own `color` — but setting
+	   both explicitly here means the icons render correctly even if
+	   something else on the page (theme CSS, etc.) interferes with that
+	   inheritance chain. */
+	color: var( --dak-text ) !important;
+	stroke: var( --dak-text ) !important;
+}
+
+.dak-rich-text-button:hover {
+	background: var( --dak-border ) !important;
+}
+
+.dak-rich-text-divider {
+	width: 1px !important;
+	height: 18px !important;
+	margin: 0 0.2rem !important;
+	background: var( --dak-border ) !important;
+}
+
+.dak-rich-text-editor {
+	min-height: 90px !important;
+	max-height: 320px !important;
+	overflow-y: auto !important;
+	padding: 0.65rem 0.85rem !important;
+	font-size: 0.9rem !important;
+	line-height: 1.55 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-rich-text-editor:focus {
+	outline: none !important;
+}
+
+.dak-rich-text-editor:empty::before {
+	content: attr( data-placeholder ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-rich-text-editor p {
+	margin: 0 0 0.6em !important;
+}
+
+.dak-rich-text-editor ul,
+.dak-rich-text-editor ol {
+	margin: 0 0 0.6em !important;
+	padding-left: 1.4em !important;
+}
+
+.dak-rich-text-editor a {
+	color: var( --dak-primary-dark ) !important;
+}

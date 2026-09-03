@@ -102,6 +102,14 @@ class Registration_Handler {
 		);
 
 		wp_enqueue_script(
+			'doctor-ak-portal-rich-text-editor',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-rich-text-editor.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-rich-text-editor.js' ),
+			true
+		);
+
+		wp_enqueue_script(
 			'doctor-ak-portal-city-area-select',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-city-area-select.js',
 			array(),
@@ -338,10 +346,11 @@ class Registration_Handler {
 			$meta['doctor_ak_area']    = $area;
 		}
 
-		// Optional — a free-text field for anything not already covered by
-		// the structured specialization list (e.g. a niche procedure or
-		// interest area).
-		$expertise = isset( $_POST['expertise'] ) ? sanitize_textarea_field( wp_unslash( $_POST['expertise'] ) ) : '';
+		// Optional — a rich-text field (bold/italic/lists/links) for anything
+		// not already covered by the structured specialization list (e.g. a
+		// niche procedure or interest area). wp_kses_post() keeps safe
+		// formatting tags, strips anything else.
+		$expertise = isset( $_POST['expertise'] ) ? wp_kses_post( wp_unslash( $_POST['expertise'] ) ) : '';
 
 		if ( '' !== $expertise ) {
 			$meta['doctor_ak_expertise'] = $expertise;

@@ -159,7 +159,19 @@ $dak_icons = array(
 
 					<div class="dak-field">
 						<label for="dak-expertise"><span class="dak-field-icon dak-field-icon-specialization"><?php echo $dak_icons['briefcase']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Other Expertise', 'doctor-ak-portal' ); ?></label>
-						<textarea id="dak-expertise" name="expertise" rows="3" placeholder="<?php esc_attr_e( 'Any additional skills, procedures, or areas of interest not covered above (optional).', 'doctor-ak-portal' ); ?>"></textarea>
+						<div class="dak-rich-text" data-rich-text>
+							<?php echo \DoctorAKPortal\Includes\Rich_Text::toolbar_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapes its own output. ?>
+							<div
+								id="dak-expertise"
+								class="dak-rich-text-editor"
+								contenteditable="true"
+								role="textbox"
+								aria-multiline="true"
+								aria-label="<?php esc_attr_e( 'Other Expertise', 'doctor-ak-portal' ); ?>"
+								data-placeholder="<?php esc_attr_e( 'Any additional skills, procedures, or areas of interest not covered above (optional).', 'doctor-ak-portal' ); ?>"
+							></div>
+							<input type="hidden" name="expertise" data-rich-text-value>
+						</div>
 						<span class="dak-field-error" data-field="expertise"></span>
 					</div>
 

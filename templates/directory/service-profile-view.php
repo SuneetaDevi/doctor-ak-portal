@@ -10,7 +10,7 @@
  *     Null if no valid/active service_id was given.
  *
  *     @type string $name          Service name.
- *     @type string $description   Full description, or '' if none set on any doctor's row.
+ *     @type string $description   Full description — may contain rich-text HTML (bold/italic/lists/links) from the admin's formatting toolbar, or '' if none set on any doctor's row.
  *     @type string $image_url     Service image URL, or '' if none uploaded on any doctor's row.
  *     @type string $price_label   Overall price range across every doctor, e.g. "PKR 5,000" or "From PKR 5,000".
  *     @type array  $doctor_offers One entry per doctor offering this service, cheapest first {
@@ -89,7 +89,7 @@ $dak_service_view_icons = array(
 				<?php if ( '' !== $group['description'] ) : ?>
 					<div class="dak-profile-card">
 						<h2><?php esc_html_e( 'About This Service', 'doctor-ak-portal' ); ?></h2>
-						<p class="dak-profile-expertise"><?php echo nl2br( esc_html( $group['description'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- nl2br() output of already-escaped text. ?></p>
+						<div class="dak-profile-expertise dak-rich-text-content"><?php echo wp_kses_post( $group['description'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_kses_post() output. ?></div>
 					</div>
 				<?php endif; ?>
 

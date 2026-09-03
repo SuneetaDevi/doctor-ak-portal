@@ -7,7 +7,7 @@
  * @package DoctorAKPortal\Templates
  *
  * @var array  $services        Rows from Services::all_flat_for_admin(), each with an added 'doctor' sub-array. Also carries 'description'/'image_url'/'clinic_locations' — this same list feeds the public [services_directory]/[service_profile_view] pages (see the Services class), so an admin adding those here is all it takes.
- * @var string $section_url     This section's own URL (?section=services), for the "Clear filter" link.
+ * @var string $section_url     This section's own URL (?section=services), for the "Clear filter" link and the Add/Edit form's `?view=form` links.
  * @var string $filtered_doctor Name of the doctor being filtered to (via the Doctors directory's "View Services" action), or '' if unfiltered.
  */
 
@@ -27,7 +27,7 @@ $dak_service_icons = array(
 		<h1><?php esc_html_e( 'Services', 'doctor-ak-portal' ); ?></h1>
 		<p><?php esc_html_e( 'Every service doctors offer, with its charge and duration, ready for patients to book.', 'doctor-ak-portal' ); ?></p>
 	</div>
-	<button type="button" class="dak-button dak-button-primary" id="dak-admin-service-add"><?php esc_html_e( '+ Add Service', 'doctor-ak-portal' ); ?></button>
+	<a class="dak-button dak-button-primary" href="<?php echo esc_url( add_query_arg( 'view', 'form', $section_url ) ); ?>"><?php esc_html_e( '+ Add Service', 'doctor-ak-portal' ); ?></a>
 </div>
 
 <?php if ( '' !== $filtered_doctor ) : ?>
@@ -100,24 +100,12 @@ $dak_service_icons = array(
 					</span>
 
 					<span class="dak-admin-record-row-actions">
-						<button
-							type="button"
+						<a
 							class="dak-icon-button"
-							data-admin-service-edit
-							data-service-id="<?php echo esc_attr( $service['id'] ); ?>"
-							data-doctor-id="<?php echo esc_attr( $service['doctor_id'] ); ?>"
-							data-name="<?php echo esc_attr( $service['name'] ); ?>"
-							data-category="<?php echo esc_attr( $service['category'] ); ?>"
-							data-charge="<?php echo esc_attr( $service['charge'] ); ?>"
-							data-duration-minutes="<?php echo esc_attr( $service['duration_minutes'] ); ?>"
-							data-active="<?php echo $service['active'] ? '1' : '0'; ?>"
-							data-description="<?php echo esc_attr( $service['description'] ); ?>"
-							data-image-id="<?php echo esc_attr( $service['image_id'] ); ?>"
-							data-image-url="<?php echo esc_attr( $service['image_url'] ); ?>"
-							data-clinic-charges="<?php echo esc_attr( wp_json_encode( $service['clinic_charges'] ) ); ?>"
+							href="<?php echo esc_url( add_query_arg( array( 'view' => 'form', 'service_id' => $service['id'] ), $section_url ) ); ?>"
 							title="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
 							aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
-						><?php echo $dak_service_icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
+						><?php echo $dak_service_icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
 						<button
 							type="button"
 							class="dak-icon-button dak-icon-button-danger"

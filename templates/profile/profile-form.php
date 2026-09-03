@@ -125,7 +125,19 @@ $current_picture_url = $current_profile_picture_id ? wp_get_attachment_image_url
 
 		<div class="dak-field">
 			<label for="dak-profile-expertise"><?php esc_html_e( 'Other Expertise', 'doctor-ak-portal' ); ?></label>
-			<textarea id="dak-profile-expertise" name="expertise" rows="3" placeholder="<?php esc_attr_e( 'Any additional skills, procedures, or areas of interest not covered above (optional).', 'doctor-ak-portal' ); ?>"><?php echo esc_textarea( $current_expertise ); ?></textarea>
+			<div class="dak-rich-text" data-rich-text>
+				<?php echo \DoctorAKPortal\Includes\Rich_Text::toolbar_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapes its own output. ?>
+				<div
+					id="dak-profile-expertise"
+					class="dak-rich-text-editor"
+					contenteditable="true"
+					role="textbox"
+					aria-multiline="true"
+					aria-label="<?php esc_attr_e( 'Other Expertise', 'doctor-ak-portal' ); ?>"
+					data-placeholder="<?php esc_attr_e( 'Any additional skills, procedures, or areas of interest not covered above (optional).', 'doctor-ak-portal' ); ?>"
+				><?php echo wp_kses_post( $current_expertise ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_kses_post() output; pre-fills the editor with the doctor's existing (already-sanitized) formatted content. ?></div>
+				<input type="hidden" name="expertise" value="<?php echo esc_attr( $current_expertise ); ?>" data-rich-text-value>
+			</div>
 			<span class="dak-field-error" data-field="expertise"></span>
 		</div>
 

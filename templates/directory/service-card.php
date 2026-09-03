@@ -6,7 +6,7 @@
  *
  * @var int    $id          Representative Services row ID for this service name (see Services::grouped_active_for_public_directory()) — the detail page looks up every doctor offering it from there.
  * @var string $name        Service name.
- * @var string $description Full description (excerpted below), or '' if the admin hasn't added one.
+ * @var string $description Full description — may contain rich-text HTML (bold/italic/lists/links) from the admin's formatting toolbar (excerpted to plain text below), or '' if the admin hasn't added one.
  * @var string $price_label Formatted price, e.g. "PKR 5,000" or "From PKR 5,000" (varies by doctor) or "Free".
  * @var string $image_url   Service image URL, or '' if none uploaded.
  * @var string $profile_url URL of this service's [service_profile_view] page.
@@ -22,7 +22,10 @@ $dak_service_card_icons = array(
 	'calendar' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="15" height="13" rx="1.5"/><path d="M2.5 8h15"/><path d="M6 2.5v3M14 2.5v3"/></svg>',
 );
 
-$dak_service_excerpt = wp_trim_words( $description, 20 );
+// $description may contain rich-text HTML (bold/italic/lists/links) from the
+// admin's formatting toolbar — strip it down to plain text before trimming
+// to a word count, so the excerpt never mid-cuts a tag.
+$dak_service_excerpt = wp_trim_words( wp_strip_all_tags( $description ), 20 );
 ?>
 <div class="dak-service-card">
 	<span class="dak-service-card-image">

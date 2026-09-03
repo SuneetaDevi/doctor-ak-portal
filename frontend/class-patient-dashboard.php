@@ -18,7 +18,6 @@ use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Template_Loader;
-use DoctorAKPortal\Includes\Theme_Preference;
 
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -714,7 +713,6 @@ class Patient_Dashboard {
 			'directory_url'         => Page_Finder::url_for_shortcode( 'doctors_directory' ),
 			'logout_url'            => wp_logout_url( Page_Finder::url_for_shortcode( 'doctor_login' ) ),
 			'contact_url'           => self::contact_url(),
-			'theme'                 => Theme_Preference::get( $user->ID ),
 			'active_tab'            => $active_tab,
 			'dashboard_url'         => $dashboard_url,
 			'settings_url'          => self::tab_url( $dashboard_url, 'settings' ),

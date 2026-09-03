@@ -50,7 +50,6 @@ use DoctorAKPortal\Frontend\Settlement_Handler;
 use DoctorAKPortal\Frontend\Shortcodes;
 use DoctorAKPortal\Frontend\Site_Footer;
 use DoctorAKPortal\Frontend\Site_Header;
-use DoctorAKPortal\Frontend\Theme_Handler;
 use DoctorAKPortal\Frontend\Video_Pricing_Handler;
 
 // Prevent direct file access.
@@ -187,10 +186,6 @@ class Plugin {
 		$this->loader->add_action( 'wp_enqueue_scripts', $profile_handler, 'enqueue_assets' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_profile_upload_picture', $profile_handler, 'handle_upload_profile_picture' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_profile_update', $profile_handler, 'handle_update_profile' );
-
-		$theme_handler = new Theme_Handler();
-		$this->loader->add_action( 'wp_enqueue_scripts', $theme_handler, 'enqueue_assets' );
-		$this->loader->add_action( 'wp_ajax_doctor_ak_toggle_theme', $theme_handler, 'handle_toggle_theme' );
 
 		$dashboard_layout = new Dashboard_Layout();
 		$this->loader->add_filter( 'template_include', $dashboard_layout, 'template_include' );

@@ -2,8 +2,8 @@
  * Doctor AK Portal — Home page ([dak_home]).
  *
  * Loaded together with doctor-ak-auth.css (tokens, .dak-button*, .dak-eyebrow,
- * the html[data-theme='dark']/.dak-dashboard[data-theme='dark'] dark-mode
- * overrides), doctor-ak-directory.css (.dak-directory-header/-grid,
+ * the html[data-theme='dark'] dark-mode overrides), doctor-ak-directory.css
+ * (.dak-directory-header/-grid,
  * service/doctor cards) and doctor-ak-featured-doctors.css (slider). Every
  * color here reads from the shared --dak-* tokens so the public light/dark
  * toggle (assets/js/doctor-ak-public-theme-toggle.js) re-colors it for free.

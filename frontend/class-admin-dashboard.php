@@ -29,7 +29,6 @@ use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Settlement_Manager;
 use DoctorAKPortal\Includes\Specializations;
 use DoctorAKPortal\Includes\Template_Loader;
-use DoctorAKPortal\Includes\Theme_Preference;
 use DoctorAKPortal\Includes\Video_Pricing;
 
 // Prevent direct file access.
@@ -273,6 +272,18 @@ class Admin_Dashboard {
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-video-call.js',
 			array(),
 			Assets::version( 'assets/js/doctor-ak-video-call.js' ),
+			true
+		);
+
+		// Used by the admin "Add/Edit Service" modal's Description field and
+		// the "Add/Edit Doctor" form's Other Expertise field — enqueued
+		// unconditionally (like the awards editor just below) rather than
+		// gated to one section, since it's needed on more than one screen.
+		wp_enqueue_script(
+			'doctor-ak-portal-rich-text-editor',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-rich-text-editor.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-rich-text-editor.js' ),
 			true
 		);
 
@@ -693,6 +704,16 @@ class Admin_Dashboard {
 					'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
 				)
 			);
+
+			if ( self::is_service_form_view() ) {
+				wp_enqueue_script(
+					'doctor-ak-portal-admin-service-form',
+					DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-service-form.js',
+					array( 'doctor-ak-portal-admin-services' ),
+					Assets::version( 'assets/js/doctor-ak-admin-service-form.js' ),
+					true
+				);
+			}
 		}
 
 
@@ -1590,9 +1611,7 @@ class Admin_Dashboard {
 
 		$modal_html = '';
 
-		if ( 'services' === $section ) {
-			$modal_html = $this->service_modal_html();
-		} elseif ( 'encounters' === $section ) {
+		if ( 'encounters' === $section ) {
 			$modal_html = $this->add_encounter_modal_html();
 		} elseif ( 'video-consultation' === $section ) {
 			$modal_html = $this->video_pricing_modal_html();
@@ -1627,7 +1646,6 @@ class Admin_Dashboard {
 			'is_users_section'  => $is_users_section,
 			'is_user_form_view' => $is_user_form_view,
 			'is_receptionist'   => $is_receptionist,
-			'theme'             => Theme_Preference::get( get_current_user_id() ),
 			'unread_notifications_count' => $unread_notifications_count,
 			'notifications_url'          => $dashboard_url ? add_query_arg( 'section', 'notifications', $dashboard_url ) : '',
 		);
@@ -1655,6 +1673,18 @@ class Admin_Dashboard {
 	 * @return bool
 	 */
 	private static function is_user_form_view() {
+		return isset( $_GET['view'] ) && 'form' === sanitize_key( wp_unslash( $_GET['view'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+	}
+
+	/**
+	 * Whether the current request wants the full-screen Add/Edit Service
+	 * form instead of the Services table (`?view=form`, optionally with
+	 * `&service_id=X` to edit; without it, it's the "Add" form). Mirrors
+	 * is_user_form_view()/is_session_form_view() for the 'services' section.
+	 *
+	 * @return bool
+	 */
+	private static function is_service_form_view() {
 		return isset( $_GET['view'] ) && 'form' === sanitize_key( wp_unslash( $_GET['view'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 	}
 
@@ -2036,6 +2066,10 @@ class Admin_Dashboard {
 		}
 
 		if ( 'services' === $section ) {
+			if ( self::is_service_form_view() ) {
+				return $this->service_form_screen_html( $section );
+			}
+
 			$doctor_id       = isset( $_GET['doctor_id'] ) ? absint( wp_unslash( $_GET['doctor_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			$filtered_doctor = $doctor_id > 0 ? get_user_by( 'id', $doctor_id ) : false;
 
@@ -2173,18 +2207,28 @@ class Admin_Dashboard {
 	}
 
 	/**
-	 * Renders the "Add/Edit Service" modal (shared single instance,
-	 * populated client-side from the clicked row's data).
+	 * Renders the full-screen Add/Edit Service form (replaces the Services
+	 * table content area when `?view=form` is present) — same fields the old
+	 * modal had, just rendered in-page instead of a popup. Mirrors
+	 * user_form_screen_html()/session_form_screen_html()'s own pattern.
 	 *
+	 * @param string $section Always 'services'.
 	 * @return string
 	 */
-	private function service_modal_html() {
+	private function service_form_screen_html( $section ) {
+		$service_id = isset( $_GET['service_id'] ) ? absint( wp_unslash( $_GET['service_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		$editing    = $service_id > 0 ? Services::find( $service_id ) : null;
+
+		$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+
 		return $this->template_loader->get_template(
-			'modal/admin-service-modal.php',
+			'dashboard/partials/admin-service-form-screen.php',
 			array(
 				'doctor_options'   => $this->doctor_options(),
 				'categories'       => Specializations::get_all(),
 				'clinic_locations' => Clinic_Locations::get_all(),
+				'list_url'         => $dashboard_url ? add_query_arg( 'section', $section, $dashboard_url ) : '',
+				'editing_service'  => $editing,
 			)
 		);
 	}

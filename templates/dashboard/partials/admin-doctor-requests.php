@@ -182,7 +182,7 @@ endif;
 			<?php if ( '' !== $row['expertise'] ) : ?>
 				<div class="dak-doctor-profile-section">
 					<span class="dak-doctor-profile-label"><?php esc_html_e( 'Other Expertise', 'doctor-ak-portal' ); ?></span>
-					<p><?php echo esc_html( $row['expertise'] ); ?></p>
+					<div class="dak-rich-text-content"><?php echo wp_kses_post( $row['expertise'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_kses_post() output. ?></div>
 				</div>
 			<?php endif; ?>
 

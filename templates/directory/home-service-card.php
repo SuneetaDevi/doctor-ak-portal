@@ -11,7 +11,7 @@
  *
  * @var int    $id           Representative Services row ID for this service name (see Services::grouped_active_for_public_directory()).
  * @var string $name         Service name.
- * @var string $description  Full description (excerpted below), or '' if the admin hasn't added one.
+ * @var string $description  Full description — may contain rich-text HTML (bold/italic/lists/links) from the admin's formatting toolbar (excerpted to plain text below), or '' if the admin hasn't added one.
  * @var string $price_label  Formatted price, e.g. "PKR 5,000" or "From PKR 5,000" (varies by doctor) or "Free".
  * @var int    $doctor_count How many doctors offer this service.
  * @var string $image_url    Service image URL, or '' if none uploaded.
@@ -30,7 +30,10 @@ $dak_home_service_icons = array(
 	'arrow'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10h12"/><path d="M11 5.5l4.5 4.5-4.5 4.5"/></svg>',
 );
 
-$dak_home_service_excerpt = wp_trim_words( $description, 22 );
+// $description may contain rich-text HTML (bold/italic/lists/links) from the
+// admin's formatting toolbar — strip it down to plain text before trimming
+// to a word count, so the excerpt never mid-cuts a tag.
+$dak_home_service_excerpt = wp_trim_words( wp_strip_all_tags( $description ), 22 );
 ?>
 <article class="dak-home-service-row">
 	<div class="dak-home-service-row-body">

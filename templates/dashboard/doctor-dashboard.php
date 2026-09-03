@@ -39,7 +39,6 @@
  * @var string   $services_url          Same-page URL for the Services tab.
  * @var string   $video_consultation_url Same-page URL for the Video Consultation tab.
  * @var string   $settings_url          Same-page URL for the Settings tab.
- * @var string   $theme                 'light' or 'dark' — the doctor's saved dashboard theme preference.
  * @var string   $logout_url            Nonce-protected logout URL.
  * @var int      $total_patients        Count of registered patient accounts.
  * @var int      $today_appointments    Today's appointment count (0 until a booking module exists).
@@ -74,7 +73,7 @@ $dak_dash_icons = array(
 	'clipboard'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h6a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M8 2.5h4v2H8z"/><path d="M7.5 9h5M7.5 12h5M7.5 15h3"/></svg>',
 );
 ?>
-<div class="dak-portal dak-dashboard dak-doctor-dashboard" data-role="doctor" data-theme="<?php echo esc_attr( $theme ); ?>">
+<div class="dak-portal dak-dashboard dak-doctor-dashboard" data-role="doctor">
 	<button type="button" class="dak-dashboard-sidebar-toggle" id="dak-sidebar-toggle" aria-label="<?php esc_attr_e( 'Toggle navigation', 'doctor-ak-portal' ); ?>" aria-expanded="false" aria-controls="dak-dashboard-sidebar">
 		<span></span><span></span><span></span>
 	</button>

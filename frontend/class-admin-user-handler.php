@@ -196,7 +196,10 @@ class Admin_User_Handler {
 
 			$short_description = isset( $_POST['short_description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['short_description'] ) ) : '';
 
-			$expertise = isset( $_POST['expertise'] ) ? sanitize_textarea_field( wp_unslash( $_POST['expertise'] ) ) : '';
+			// wp_kses_post() (not sanitize_textarea_field()) since this field
+			// is now a rich-text editor — keeps safe formatting tags
+			// (bold/italic/lists/links/paragraphs), strips anything else.
+			$expertise = isset( $_POST['expertise'] ) ? wp_kses_post( wp_unslash( $_POST['expertise'] ) ) : '';
 			$awards    = Doctor_Awards::sanitize_from_request( $errors );
 
 			$video_consultation_allowed = isset( $_POST['video_consultation_allowed'] );
