@@ -365,22 +365,6 @@ $dak_home_testimonials = ! empty( $testimonials )
 						preload="auto"
 					></video>
 					<span class="dak-home-hero-visual-play" aria-hidden="true"><?php echo $dak_home_icons['play']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-					<span class="dak-home-hero-visual-label"><?php esc_html_e( 'Watch the walkthrough', 'doctor-ak-portal' ); ?></span>
-
-					<span class="dak-home-video-tour-steps">
-						<span class="dak-home-video-tour-step">
-							<span aria-hidden="true"><?php echo $dak_home_icons['user']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-							<?php esc_html_e( 'Choose your doctor', 'doctor-ak-portal' ); ?>
-						</span>
-						<span class="dak-home-video-tour-step">
-							<span aria-hidden="true"><?php echo $dak_home_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-							<?php esc_html_e( 'Pick a time slot', 'doctor-ak-portal' ); ?>
-						</span>
-						<span class="dak-home-video-tour-step">
-							<span aria-hidden="true"><?php echo $dak_home_icons['shield']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-							<?php esc_html_e( 'Confirm and you are booked', 'doctor-ak-portal' ); ?>
-						</span>
-					</span>
 				</button>
 
 				<div class="dak-home-video-tour-features">

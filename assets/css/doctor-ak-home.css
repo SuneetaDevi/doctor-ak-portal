@@ -467,8 +467,18 @@
 }
 
 .dak-home-video-tour-feature-icon svg {
+	display: block !important;
 	width: 17px !important;
 	height: 17px !important;
+	/* The active theme resets bare <svg> elements to fill: currentColor;
+	   stroke: none !important (expecting icon-font-style glyphs) — these are
+	   stroke-only line icons, so left alone the theme renders them as solid
+	   filled blobs instead of the intended thin outline, which reads as the
+	   icon sitting "off" inside its circle. Same fix already used for the
+	   header's theme toggle and the featured-doctors nav arrows. */
+	fill: none !important;
+	stroke: var( --dak-primary-dark ) !important;
+	stroke-width: 1.5 !important;
 }
 
 .dak-home-video-tour-feature strong {
@@ -568,43 +578,6 @@
 	width: 26px !important;
 	height: 26px !important;
 	margin-left: 3px !important;
-}
-
-.dak-home-hero-visual-label {
-	position: relative !important;
-	z-index: 1 !important;
-	color: #fff !important;
-	font-size: var( --dak-text-lg ) !important;
-	font-weight: 700 !important;
-	text-shadow: 0 1px 6px rgba( 0, 0, 0, 0.35 ) !important;
-}
-
-.dak-home-video-tour-steps {
-	position: relative !important;
-	z-index: 1 !important;
-	display: flex !important;
-	flex-wrap: wrap !important;
-	justify-content: center !important;
-	gap: var( --dak-space-2 ) !important;
-}
-
-.dak-home-video-tour-step {
-	display: inline-flex !important;
-	align-items: center !important;
-	gap: 0.4rem !important;
-	padding: 0.4rem 0.85rem !important;
-	border-radius: 999px !important;
-	background: rgba( 255, 255, 255, 0.14 ) !important;
-	border: 1px solid rgba( 255, 255, 255, 0.22 ) !important;
-	color: #fff !important;
-	font-size: var( --dak-text-sm ) !important;
-	font-weight: 600 !important;
-}
-
-.dak-home-video-tour-step svg {
-	display: block !important;
-	width: 15px !important;
-	height: 15px !important;
 }
 
 /* Services — wide stacked rows (copy left, photo right) rather than the
@@ -1711,12 +1684,6 @@
 	.dak-home-video-tour .dak-home-hero-visual {
 		height: 320px !important;
 		padding: var( --dak-space-5 ) var( --dak-space-4 ) !important;
-	}
-
-	/* Three chips wrap to two or three rows here and crowd the play button —
-	   the heading above already explains what the clip covers. */
-	.dak-home-video-tour-steps {
-		display: none !important;
 	}
 
 	.dak-home-testimonial-band-inner,
