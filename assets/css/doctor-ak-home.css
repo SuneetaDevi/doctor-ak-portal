@@ -468,8 +468,8 @@
 
 .dak-home-video-tour-feature-icon svg {
 	display: block !important;
-	width: 17px !important;
-	height: 17px !important;
+	width: 31px !important;
+	height: 21px !important;
 	/* The active theme resets bare <svg> elements to fill: currentColor;
 	   stroke: none !important (expecting icon-font-style glyphs) — these are
 	   stroke-only line icons, so left alone the theme renders them as solid
