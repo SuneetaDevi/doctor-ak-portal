@@ -25,19 +25,16 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Unlike the shortcode handlers, this renders on every front-end request
  * (via wp_body_open) rather than only on pages containing a specific
  * shortcode, since the header is meant to replace the active theme's own
- * header wherever the plugin is installed. The nav menu itself is a
- * registered WordPress menu location so the site owner can edit its links
- * from Appearance -> Menus; a fallback renders sensible defaults out of the
- * box until they do.
+ * header wherever the plugin is installed.
+ *
+ * The nav itself (Doctors/Services/Clinics/Videos, the Doctors mega-menu's
+ * specialty/clinic lists) is fully plugin-rendered from real data — it no
+ * longer reads a wp_nav_menu() location under Appearance -> Menus. That
+ * gave up site-owner-editable links in exchange for the mega-menu actually
+ * being possible to build safely; the old fallback link set (all this ever
+ * rendered in practice) is now simply the only nav.
  */
 class Site_Header {
-
-	/**
-	 * Registered nav menu location slug.
-	 *
-	 * @var string
-	 */
-	const MENU_LOCATION = 'doctor_ak_portal_header';
 
 	/**
 	 * Template loader.
@@ -53,48 +50,6 @@ class Site_Header {
 	 */
 	public function __construct( Template_Loader $template_loader ) {
 		$this->template_loader = $template_loader;
-	}
-
-	/**
-	 * Registers the header's nav menu location so it appears under
-	 * Appearance -> Menus.
-	 *
-	 * @return void
-	 */
-	public function register_menu_location() {
-		register_nav_menu( self::MENU_LOCATION, __( 'Doctor AK Portal Header', 'doctor-ak-portal' ) );
-	}
-
-	/**
-	 * Turns "Online Video Consultation" / "Clinic Appointment" links in the
-	 * header's nav menu into booking-modal triggers, by matching on their
-	 * exact title text. Only relevant to a real menu the site owner assigned
-	 * under Appearance -> Menus using plain "#" custom links with these
-	 * exact labels — the coded fallback (render_fallback_menu()) no longer
-	 * includes a Book Appointment nav item at all (it's the standalone CTA
-	 * button instead), so this is a no-op there.
-	 *
-	 * @param array         $atts  Existing link attributes.
-	 * @param \WP_Post      $item  Menu item.
-	 * @param \stdClass|null $args wp_nav_menu() args, if available.
-	 * @return array
-	 */
-	public function add_booking_trigger_attributes( $atts, $item, $args = null ) {
-		if ( ! isset( $args->theme_location ) || self::MENU_LOCATION !== $args->theme_location ) {
-			return $atts;
-		}
-
-		$title = trim( $item->title );
-
-		if ( 'Online Video Consultation' === $title ) {
-			$atts['data-dak-book-appointment'] = '';
-			$atts['data-booking-type']         = 'video';
-		} elseif ( 'Clinic Appointment' === $title ) {
-			$atts['data-dak-book-appointment'] = '';
-			$atts['data-booking-type']         = 'clinic';
-		}
-
-		return $atts;
 	}
 
 	/**
@@ -174,19 +129,34 @@ class Site_Header {
 			? true
 			: Role_Permissions::is_tab_allowed( $is_doctor ? Roles::DOCTOR_ROLE : Roles::PATIENT_ROLE, 'profile' );
 
+		$directory_url = Page_Finder::url_for_shortcode( 'doctors_directory' );
+		$home_url      = Page_Finder::url_for_shortcode( 'dak_home' );
+		$home_url      = $home_url ? $home_url : home_url( '/' );
+
 		return array(
-			'menu_location'   => self::MENU_LOCATION,
-			'logo_url'        => self::bundled_logo_url(),
-			'phone'           => self::primary_phone(),
-			'is_logged_in'    => is_user_logged_in(),
-			'user'            => $user,
-			'user_avatar_url' => self::user_avatar_url( $user ),
-			'dashboard_url' => is_user_logged_in()
+			'logo_url'           => self::bundled_logo_url(),
+			'phone'              => self::primary_phone(),
+			'email'              => self::primary_email(),
+			'address'            => get_option( Site_Footer::OPTION_CLINIC_ADDRESS, '' ),
+			'facebook_url'       => get_option( Site_Footer::OPTION_FACEBOOK_URL, '' ),
+			'twitter_url'        => get_option( Site_Footer::OPTION_TWITTER_URL, '' ),
+			'instagram_url'      => get_option( Site_Footer::OPTION_INSTAGRAM_URL, '' ),
+			'linkedin_url'       => get_option( Site_Footer::OPTION_LINKEDIN_URL, '' ),
+			'directory_url'      => $directory_url,
+			'services_url'       => Page_Finder::url_for_shortcode( 'services_directory' ),
+			'videos_url'         => $home_url . '#dak-home-videos',
+			'clinics_url'        => $home_url . '#dak-home-clinics',
+			'doctor_specialties' => Home_Page::specialties_in_use( $directory_url ),
+			'current_path'       => self::current_path(),
+			'is_logged_in'       => is_user_logged_in(),
+			'user'               => $user,
+			'user_avatar_url'    => self::user_avatar_url( $user ),
+			'dashboard_url'      => is_user_logged_in()
 				? Page_Finder::url_for_shortcode( self::dashboard_shortcode_for( $user, $is_doctor ) )
 				: '',
-			'profile_url'   => ( is_user_logged_in() && $profile_allowed ) ? Page_Finder::url_for_shortcode( 'doctor_profile' ) : '',
-			'login_url'     => Page_Finder::url_for_shortcode( 'doctor_login' ),
-			'logout_url'    => wp_logout_url( home_url( '/' ) ),
+			'profile_url'        => ( is_user_logged_in() && $profile_allowed ) ? Page_Finder::url_for_shortcode( 'doctor_profile' ) : '',
+			'login_url'          => Page_Finder::url_for_shortcode( 'doctor_login' ),
+			'logout_url'         => wp_logout_url( home_url( '/' ) ),
 		);
 	}
 
@@ -247,6 +217,40 @@ class Site_Header {
 	}
 
 	/**
+	 * Resolves a contact email for the header — the first clinic location
+	 * with one on file, mirroring primary_phone() (the plugin has no
+	 * separate site-wide "contact email" setting either).
+	 *
+	 * @return string Email address, or '' if no clinic has one set.
+	 */
+	private static function primary_email() {
+		foreach ( Clinic_Locations::get_all() as $clinic_location ) {
+			if ( '' !== $clinic_location['contact_email'] ) {
+				return $clinic_location['contact_email'];
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * The current request's URL path (no query string, no trailing slash),
+	 * for the nav's "which page is this" underline — see the
+	 * `dak-site-header-menu-current` class applied in templates/site-header.php.
+	 * Read-only string comparison only, never output, so this doesn't need
+	 * sanitizing the way echoing $_SERVER['REQUEST_URI'] would.
+	 *
+	 * @return string
+	 */
+	private static function current_path() {
+		if ( ! isset( $_SERVER['REQUEST_URI'] ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- compared as a plain string below, never output.
+			return '';
+		}
+
+		return untrailingslashit( (string) wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- compared as a plain string below, never output.
+	}
+
+	/**
 	 * Resolves the bundled logo's URL, checking a few common extensions
 	 * under assets/images/logo.* so the site owner can just drop a file in
 	 * without editing code.
@@ -263,44 +267,5 @@ class Site_Header {
 		}
 
 		return '';
-	}
-
-	/**
-	 * Renders a sensible default menu when the site owner hasn't assigned
-	 * one to the header's menu location yet (Appearance -> Menus).
-	 *
-	 * Four links: Services and Doctors go to their directory pages; Videos
-	 * and Clinics jump to the matching section of the home page (see the
-	 * `id="dak-home-videos"` / `id="dak-home-clinics"` anchors in
-	 * templates/directory/home-page.php) since those aren't standalone
-	 * pages. "Book Appointment" isn't in this list — it's the standalone
-	 * CTA button in the header's auth area, not a nav link.
-	 *
-	 * @param array $args wp_nav_menu() args (only 'menu_class' is used here).
-	 * @return void
-	 */
-	public static function render_fallback_menu( $args ) {
-		$menu_class = isset( $args['menu_class'] ) ? $args['menu_class'] : '';
-		$home_url   = Page_Finder::url_for_shortcode( 'dak_home' );
-		$home_url   = $home_url ? $home_url : home_url( '/' );
-
-		$links = array(
-			__( 'Services', 'doctor-ak-portal' ) => Page_Finder::url_for_shortcode( 'services_directory' ),
-			__( 'Doctors', 'doctor-ak-portal' )  => Page_Finder::url_for_shortcode( 'doctors_directory' ),
-			__( 'Videos', 'doctor-ak-portal' )   => $home_url . '#dak-home-videos',
-			__( 'Clinics', 'doctor-ak-portal' )  => $home_url . '#dak-home-clinics',
-		);
-
-		echo '<ul class="' . esc_attr( $menu_class ) . '">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-
-		foreach ( $links as $title => $url ) {
-			printf(
-				'<li class="menu-item"><a href="%1$s">%2$s</a></li>',
-				esc_url( $url ),
-				esc_html( $title )
-			);
-		}
-
-		echo '</ul>';
 	}
 }

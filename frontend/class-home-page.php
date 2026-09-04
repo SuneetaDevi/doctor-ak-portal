@@ -213,7 +213,7 @@ class Home_Page {
 			array(
 				'doctors_html'     => $doctors_html,
 				'services_html'    => $services_html,
-				'specialties'      => $this->specialties( $directory_url ),
+				'specialties'      => self::specialties_in_use( $directory_url ),
 				'videos'           => Home_Videos::get_all(),
 				'testimonials'     => array_merge( Home_Testimonials::get_all(), Google_Reviews::get_reviews() ),
 				'google_rating'    => Google_Reviews::overall_rating(),
@@ -240,10 +240,14 @@ class Home_Page {
 	 * assets/js/doctor-ak-directory.js), so the value has to be the lowercased
 	 * label the filter's <option>s carry, not the slug.
 	 *
+	 * Public/static so the site header's Doctors mega-menu (see
+	 * Site_Header::prepare_data()) can list the same real specialties without
+	 * duplicating this query.
+	 *
 	 * @param string $directory_url URL of the [doctors_directory] page, or '' if not found.
 	 * @return array List of { slug, label, count, url }.
 	 */
-	private function specialties( $directory_url ) {
+	public static function specialties_in_use( $directory_url ) {
 		$counts = array();
 
 		foreach ( get_users( array( 'role' => Roles::DOCTOR_ROLE, 'fields' => 'ID' ) ) as $doctor_id ) {
@@ -280,10 +284,17 @@ class Home_Page {
 	 * actually there (a plugin update or a manual removal of the sample
 	 * videos shouldn't produce a broken <video> tag).
 	 *
+	 * Public/static — PHP resolves `array( $this, 'bundled_asset_url' )`
+	 * (used below via array_map()) as a valid callable for a static method
+	 * too, so this didn't need to change at its call sites. Made public so
+	 * the site header's Doctors mega-menu backdrop (see
+	 * Site_Header::prepare_data()) can reuse the same hero photo without a
+	 * second file_exists()/cache-busting implementation.
+	 *
 	 * @param string $relative_path Path relative to the plugin root, e.g. 'assets/videos/thumbnail.mp4'.
 	 * @return string
 	 */
-	private function bundled_asset_url( $relative_path ) {
+	public static function bundled_asset_url( $relative_path ) {
 		if ( ! file_exists( DOCTOR_AK_PORTAL_PATH . $relative_path ) ) {
 			return '';
 		}

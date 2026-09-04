@@ -157,6 +157,20 @@
 	padding: var( --dak-space-7 ) var( --dak-space-6 ) var( --dak-space-7 ) var( --dak-home-gutter ) !important;
 }
 
+/* The site header now floats fixed over this banner's photo (see the
+   `body.front-page` rules in doctor-ak-site-header.css) rather than sitting
+   above it — the photo itself is meant to run right up to the top of the
+   viewport behind the header, but the actual headline/stat-badge need extra
+   clearance so the header doesn't sit on top of them. Matches that same
+   >900px breakpoint: below it the header goes back to its plain, in-flow
+   self and this banner needs no extra room for it. */
+@media ( min-width: 901px ) {
+
+	.dak-home-hero-banner-stats {
+		top: 150px !important;
+	}
+}
+
 .dak-home-hero-banner-content h1 {
 	font-size: 2.75rem !important;
 	font-weight: 600 !important;
@@ -187,6 +201,7 @@
 	z-index: 1 !important;
 	top: var( --dak-space-5 ) !important;
 	right: var( --dak-home-gutter ) !important;
+	/* Same fixed-header clearance as .dak-home-hero-banner-content above. */
 	display: flex !important;
 	gap: var( --dak-space-4 ) !important;
 	padding: var( --dak-space-3 ) var( --dak-space-4 ) !important;
@@ -400,35 +415,31 @@
 }
 
 .dak-home-video-tour .dak-home-hero-visual {
-	height: 380px !important;
-	min-height: 0 !important;
+	height: 100% !important;
+	min-height: 420px !important;
 	display: flex !important;
 	flex-direction: column !important;
 	align-items: center !important;
 	justify-content: center !important;
 	gap: var( --dak-space-4 ) !important;
-	/* Bottom padding keeps the play button and steps clear of the feature
-	   cards that overlap the panel's lower edge. */
-	padding: var( --dak-space-6 ) var( --dak-space-5 ) 96px !important;
+	padding: var( --dak-space-6 ) var( --dak-space-5 ) !important;
 	text-align: center !important;
 }
 
-/* The four trust points are light cards that overlap the bottom edge of the
-   clip — the panel itself is just a positioning wrapper, so it must not clip
-   (no overflow: hidden) or the cards' lower half would be cut off. */
-
+/* Two columns: the clip on the left, the four trust points stacked 2x2 on
+   the right — replaces the old single-column layout where the cards
+   overlapped the bottom edge of the clip. */
 .dak-home-video-tour-panel {
-	position: relative !important;
-	padding-bottom: var( --dak-space-2 ) !important;
+	display: grid !important;
+	grid-template-columns: 1.15fr 0.85fr !important;
+	gap: var( --dak-space-6 ) !important;
+	align-items: stretch !important;
 }
 
 .dak-home-video-tour-features {
-	position: relative !important;
-	z-index: 1 !important;
 	display: grid !important;
-	grid-template-columns: repeat( 4, 1fr ) !important;
+	grid-template-columns: repeat( 2, 1fr ) !important;
 	gap: var( --dak-space-4 ) !important;
-	margin: -60px var( --dak-space-6 ) 0 !important;
 }
 
 .dak-home-video-tour-feature {
@@ -463,7 +474,7 @@
 .dak-home-video-tour-feature strong {
 	display: block !important;
 	color: var( --dak-text ) !important;
-	font-size: var( --dak-text-sm ) !important;
+	font-size: var( --dak-text-lg ) !important;
 	font-weight: 700 !important;
 	margin-bottom: 0.15rem !important;
 }
@@ -472,7 +483,7 @@
 	padding : 6px 7px 7px 1px;
 	display: block !important;
 	color: var( --dak-muted ) !important;
-	font-size: var( --dak-text-xs ) !important;
+	font-size: var( --dak-text-md ) !important;
 	line-height: 1.5 !important;
 }
 
@@ -510,10 +521,19 @@
 	cursor: pointer !important;
 }
 
-/* Deliberately no <video> in the preview: a paused clip freezes on whatever
-   its first frame happens to be (mid-sentence, mid-blink), and preloading a
-   large file just to show that frame is wasted bandwidth. This is a designed
-   panel instead — the real clip loads in the lightbox on click. */
+/* The clip itself, playing muted/looped as the panel's own background — the
+   gradient on .dak-home-hero-visual above still shows while it loads (and
+   stays as a fallback if the file 404s), then sits behind it once ready.
+   Clicking the button still opens the lightbox (doctor-ak-home.js) for the
+   full-size, unmuted version. */
+.dak-home-hero-visual-video {
+	position: absolute !important;
+	inset: 0 !important;
+	z-index: 0 !important;
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+}
 
 .dak-home-hero-visual::after {
 	content: '' !important;
@@ -554,7 +574,7 @@
 	position: relative !important;
 	z-index: 1 !important;
 	color: #fff !important;
-	font-size: var( --dak-text-md ) !important;
+	font-size: var( --dak-text-lg ) !important;
 	font-weight: 700 !important;
 	text-shadow: 0 1px 6px rgba( 0, 0, 0, 0.35 ) !important;
 }
@@ -577,7 +597,7 @@
 	background: rgba( 255, 255, 255, 0.14 ) !important;
 	border: 1px solid rgba( 255, 255, 255, 0.22 ) !important;
 	color: #fff !important;
-	font-size: var( --dak-text-xs ) !important;
+	font-size: var( --dak-text-sm ) !important;
 	font-weight: 600 !important;
 }
 
@@ -1677,15 +1697,20 @@
 		height: 200px !important;
 	}
 
+	/* Video above the cards rather than side by side — there isn't enough
+	   width here for both a legible clip and a legible pair of card columns. */
+	.dak-home-video-tour-panel {
+		grid-template-columns: 1fr !important;
+	}
+
 	.dak-home-video-tour-features {
 		grid-template-columns: repeat( 2, 1fr ) !important;
 		gap: var( --dak-space-3 ) !important;
-		margin: -40px var( --dak-space-4 ) 0 !important;
 	}
 
 	.dak-home-video-tour .dak-home-hero-visual {
 		height: 320px !important;
-		padding: var( --dak-space-5 ) var( --dak-space-4 ) 72px !important;
+		padding: var( --dak-space-5 ) var( --dak-space-4 ) !important;
 	}
 
 	/* Three chips wrap to two or three rows here and crowd the play button —
@@ -1741,12 +1766,11 @@
 
 	.dak-home-video-tour-features {
 		grid-template-columns: 1fr !important;
-		margin: -28px var( --dak-space-3 ) 0 !important;
 	}
 
 	.dak-home-video-tour .dak-home-hero-visual {
 		height: 240px !important;
-		padding: var( --dak-space-4 ) var( --dak-space-3 ) 56px !important;
+		padding: var( --dak-space-4 ) var( --dak-space-3 ) !important;
 	}
 
 	.dak-home-booking-field-row {

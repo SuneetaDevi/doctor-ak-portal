@@ -4,24 +4,146 @@
  * Loaded together with doctor-ak-auth.css, which provides the shared design
  * tokens (--dak-primary, --dak-border, etc.) and the defensive
  * text-transform/letter-spacing reset scoped to .dak-portal.
+ *
+ * Two tiers: a thin "utility" bar (address/phone/email, social icons) above
+ * the main bar (logo, nav, theme toggle, Schedule Appointment, account) —
+ * the whole header (both tiers) stays pinned to the top of the viewport
+ * while scrolling.
  */
 
+/* position: sticky lives here, on the OUTER wrapper, not on
+   .dak-site-header-inner — a sticky element only stays pinned while its own
+   parent box is still in view, and .dak-site-header-inner's parent used to
+   be this element sized to fit just the two header bars (barely taller than
+   the sticky child itself). That gave it only a few pixels of scroll before
+   running out of room to stick within, so in practice the header scrolled
+   away like a normal in-flow element almost immediately. This element's own
+   parent is <body> — always far taller than the viewport — so sticking it
+   directly here actually holds for the full page scroll. */
 .dak-site-header {
 	position: sticky !important;
 	top: 0 !important;
 	z-index: 200 !important;
-	background: var( --dak-bg-card ) !important;
-	border-bottom: 1px solid var( --dak-border ) !important;
-	box-shadow: var( --dak-shadow ) !important;
+	/* Slightly off-white — the main bar below is pure --dak-bg-card (white),
+	   so this sliver of contrast plus its shadow is what makes the pill read
+	   as "floating" rather than just another flat bar. */
+	background: var( --dak-bg-page ) !important;
 }
 
-.dak-site-header-inner {
-	max-width: 1200px !important;
+/* Home page only: the header floats over the hero photo instead of sitting
+   in a plain strip above it — WordPress's own `front-page` body class (from
+   the active theme's body_class() call) is what scopes this, since only the
+   home page actually has a hero banner behind it; everywhere else this
+   plugin's header keeps its normal, plain, in-flow appearance.
+   Desktop-only (matches the >900px breakpoint the rest of this file already
+   treats as "the non-mobile nav"): a floating-over-a-photo header competes
+   with the hamburger menu's own affordances at narrow widths, and the hero
+   itself reflows a lot there, making a hand-tuned clearance offset (below)
+   unreliable — simpler and safer to leave mobile as the plain header it
+   already was. */
+@media ( min-width: 901px ) {
+	body.front-page .dak-site-header {
+		position: fixed !important;
+		top: 0 !important;
+		left: 0 !important;
+		right: 0 !important;
+		z-index: 250 !important;
+		background: transparent !important;
+	}
+}
+
+/* Utility bar */
+
+.dak-site-header-utility {
+	background: var( --dak-bg-subtle ) !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+.dak-site-header-utility-inner {
+	max-width: 1280px !important;
 	margin: 0 auto !important;
-	padding: 0.75rem 1.5rem !important;
+	padding: 0.5rem 1.5rem !important;
 	display: flex !important;
 	align-items: center !important;
-	gap: 1.5rem !important;
+	justify-content: space-between !important;
+	gap: 1rem !important;
+	flex-wrap: wrap !important;
+}
+
+.dak-site-header-utility-contact {
+	display: flex !important;
+	align-items: center !important;
+	gap: 1.25rem !important;
+	flex-wrap: wrap !important;
+}
+
+.dak-site-header-utility-item {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+	font-size: 0.78rem !important;
+	font-weight: 500 !important;
+	color: var( --dak-muted ) !important;
+	text-decoration: none !important;
+	white-space: nowrap !important;
+}
+
+a.dak-site-header-utility-item:hover {
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-site-header-utility-item svg {
+	width: 13px !important;
+	height: 13px !important;
+	flex: 0 0 auto !important;
+}
+
+.dak-site-header-utility-social {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.6rem !important;
+	flex: 0 0 auto !important;
+}
+
+.dak-site-header-utility-social a {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 26px !important;
+	height: 26px !important;
+	border-radius: 50% !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-site-header-utility-social a:hover {
+	background: var( --dak-primary ) !important;
+	border-color: var( --dak-primary ) !important;
+	color: #fff !important;
+}
+
+.dak-site-header-utility-social svg {
+	width: 13px !important;
+	height: 13px !important;
+}
+
+/* Main bar — a rounded, floating pill (not a full-width rectangle) with a
+   soft shadow standing in for the border/hard edge the old bar used.
+   Stickiness itself lives on .dak-site-header (the outer wrapper) now, not
+   here — see the comment there. Logo / nav / auth actions split into three
+   flex groups so the nav can center itself in the middle regardless of how
+   wide the outer two end up. */
+
+.dak-site-header-inner {
+	margin: 0 auto !important;
+	padding: 0.65rem 0.75rem 0.65rem 1.5rem !important;
+	background: var( --dak-bg-card ) !important;
+	box-shadow: 0 8px 28px rgba( 20, 30, 40, 0.1 ) !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: var( --dak-space-5 ) !important;
 }
 
 .dak-site-header-logo {
@@ -74,8 +196,11 @@
 	padding: 0 !important;
 	display: flex !important;
 	align-items: center !important;
-	gap: 0.35rem !important;
-	flex-wrap: wrap !important;
+	/* Centered between the logo and the auth actions, like the reference —
+	   .dak-site-header-nav's flex: 1 1 auto (above) is what gives this <ul>
+	   the full middle width to center within. */
+	justify-content: center !important;
+	gap: 0.2rem !important;
 }
 
 .dak-site-header-menu .menu-item {
@@ -83,10 +208,12 @@
 }
 
 .dak-site-header-menu a {
-	display: block !important;
-	padding: 0.6rem 0.85rem !important;
-	font-size: 0.88rem !important;
-	font-weight: 500 !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.3rem !important;
+	padding: 0.55rem 0.9rem !important;
+	font-size: 0.9rem !important;
+	font-weight: 600 !important;
 	color: var( --dak-text ) !important;
 	text-decoration: none !important;
 	border-radius: var( --dak-radius-sm ) !important;
@@ -97,39 +224,252 @@
 	color: var( --dak-primary-dark ) !important;
 }
 
+/* Active-page indicator — an underline on whichever nav item's own page
+   you're currently on (see Site_Header::current_path() /
+   $dak_is_current_page() in templates/site-header.php), matching the
+   reference design's "Home" state. Anchor-only items (Clinics/Videos, which
+   both just jump to a spot on the home page rather than being pages of
+   their own) don't participate — no "site.com/#dak-home-clinics" URL to
+   compare against, and highlighting whichever one was clicked last would
+   need extra JS state for a cosmetic detail. */
+.dak-site-header-menu-current > a {
+	color: var( --dak-primary-dark ) !important;
+	position: relative !important;
+}
+
+.dak-site-header-menu-current > a::after {
+	content: '' !important;
+	position: absolute !important;
+	left: 0.9rem !important;
+	right: 0.9rem !important;
+	bottom: 0.1rem !important;
+	height: 2px !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary ) !important;
+}
+
+.dak-site-header-menu-caret {
+	display: inline-flex !important;
+	width: 13px !important;
+	height: 13px !important;
+	transition: transform 0.15s ease !important;
+}
+
+.menu-item-has-children:hover > a .dak-site-header-menu-caret,
+.menu-item-has-children.is-open > a .dak-site-header-menu-caret {
+	transform: rotate( 180deg ) !important;
+}
+
+/* Doctors mega-menu — a white content panel floating over a dimmed photo
+   backdrop (the same hero banner behind the homepage hero), inset so the
+   photo shows around its edges. Two card grids (By Speciality / By
+   Location) plus a "what next" column, all built from real data (see
+   Site_Header::prepare_data()): every card deep-links into the doctors
+   directory with that filter preselected (assets/js/doctor-ak-directory.js),
+   and the search bar submits there as a real `?s=` search. */
+
 .dak-site-header-menu .sub-menu {
-	list-style: none !important;
 	margin: 0 !important;
-	padding: 0.4rem !important;
+	padding: 0 !important;
 	position: absolute !important;
 	top: 100% !important;
-	right: 0 !important;
-	min-width: 220px !important;
-	background: var( --dak-bg-card ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-md ) !important;
-	box-shadow: var( --dak-shadow ) !important;
+	left: 0 !important;
+	z-index: 1 !important;
 	opacity: 0 !important;
 	visibility: hidden !important;
 	transform: translateY( 6px ) !important;
 	transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s !important;
 }
 
-.dak-site-header-menu .menu-item-has-children:hover > .sub-menu,
-.dak-site-header-menu .menu-item-has-children.is-open > .sub-menu {
+.menu-item-has-children:hover > .sub-menu,
+.menu-item-has-children.is-open > .sub-menu {
 	opacity: 1 !important;
 	visibility: visible !important;
 	transform: translateY( 0 ) !important;
 }
 
-.dak-site-header-menu .sub-menu a {
-	color: var( --dak-text ) !important;
-	border-radius: var( --dak-radius-sm ) !important;
+.dak-site-header-mega {
+	position: relative !important;
+	width: 900px !important;
+	max-width: calc( 100vw - 3rem ) !important;
 }
 
-.dak-site-header-menu .sub-menu a:hover {
+.dak-site-header-mega-panel {
+	padding: var( --dak-space-5 ) !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	box-shadow: var( --dak-shadow-lg ) !important;
+}
+
+.dak-site-header-mega-search {
+	display: flex !important;
+	align-items: center !important;
+	gap: var( --dak-space-2 ) !important;
+	padding: 0.7rem 1rem !important;
+	margin-bottom: var( --dak-space-3 ) !important;
 	background: var( --dak-bg-subtle ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+/* The bar itself carries the focus cue since its <input> has its own
+   outline suppressed below — this is what actually makes it visible that
+   the search box auto-focused when the menu opened (see
+   initMegaMenuAutoFocus() in doctor-ak-site-header.js), not just that
+   typing happens to work. */
+.dak-site-header-mega-search:focus-within {
+	border-color: var( --dak-primary ) !important;
+	box-shadow: 0 0 0 3px var( --dak-primary-tint ) !important;
+}
+
+/* Shown only while a live search (see initMegaMenuSearch() in
+   doctor-ak-site-header.js) matches nothing among the rendered specialty/
+   location cards. */
+.dak-site-header-mega-no-results {
+	margin: 0 0 var( --dak-space-3 ) !important;
+	font-size: 0.82rem !important;
+	color: var( --dak-muted ) !important;
+	text-align: center !important;
+}
+
+.dak-site-header-mega-search svg {
+	width: 16px !important;
+	height: 16px !important;
+	flex: 0 0 auto !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-site-header-mega-search input {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+	border: 0 !important;
+	background: none !important;
+	font: inherit !important;
+	font-size: 0.88rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-site-header-mega-search input:focus {
+	outline: none !important;
+}
+
+.dak-site-header-mega-body {
+	margin-top: var( --dak-space-2 ) !important;
+}
+
+.dak-site-header-mega-heading {
+	margin-bottom: var( --dak-space-3 ) !important;
+	font-size: 0.72rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.04em !important;
 	color: var( --dak-primary-dark ) !important;
+}
+
+/* By Speciality — a 3-column grid of icon cards, each showing how many
+   doctors have that specialty rather than just its name; every specialty in
+   use is listed (no cap), so a fixed max-height with its own scrollbar keeps
+   the dropdown from ever growing past what fits comfortably on screen. */
+.dak-site-header-mega-cards {
+	display: grid !important;
+	grid-template-columns: repeat( 3, minmax( 0, 1fr ) ) !important;
+	gap: 0.1rem 0.5rem !important;
+	max-height: 360px !important;
+	overflow-y: auto !important;
+}
+
+.dak-site-header-mega-card {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 0.55rem !important;
+	min-width: 0 !important;
+	padding: 0.5rem !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	text-decoration: none !important;
+}
+
+/* .dak-hidden (shared utility, doctor-ak-auth.css) sets display: none
+   !important too — same specificity, and this stylesheet loads after it, so
+   without the extra specificity here the card's own `display: flex
+   !important` would win the tie and initMegaMenuSearch()'s hide would
+   silently do nothing. Same fix mirrored below for .dak-site-header-mega-
+   location. */
+.dak-site-header-mega-card.dak-hidden {
+	display: none !important;
+}
+
+.dak-site-header-mega-card:hover {
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-site-header-mega-card-icon {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 32px !important;
+	height: 32px !important;
+	flex: 0 0 auto !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-site-header-mega-card-icon svg {
+	width: 16px !important;
+	height: 16px !important;
+}
+
+.dak-site-header-mega-card-body {
+	display: flex !important;
+	flex-direction: column !important;
+	min-width: 0 !important;
+	gap: 0.1rem !important;
+}
+
+.dak-site-header-mega-card-body strong {
+	/* Full name, wrapping to a second line rather than being cut off with an
+	   ellipsis — some specialty names ("Metabolic & Endocrine Disorders")
+	   are long enough that truncating them loses real information. */
+	white-space: normal !important;
+	line-height: 1.25 !important;
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-site-header-mega-card-body span {
+	font-size: 0.75rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+/* Footer strip below the specialty grid — replaces the old "Not sure who to
+   see?" side panel with a single, plainer "View All Doctors" link,
+   right-aligned in the bottom corner of the dropdown. */
+.dak-site-header-mega-footer {
+	display: flex !important;
+	justify-content: flex-end !important;
+	margin-top: var( --dak-space-4 ) !important;
+	padding-top: var( --dak-space-3 ) !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+/* Restates what the generic .dak-button-primary/.dak-button-sm rules already
+   set, at higher specificity than the plain-link-row ".dak-site-header-menu
+   a" rule above (a class+tag selector, which would otherwise win on
+   `color`/padding/border-radius and turn this button into gray text). */
+.dak-site-header-mega-footer .dak-button {
+	padding: 0.5rem 1.1rem !important;
+	font-size: 0.85rem !important;
+	color: #fff !important;
+	border-radius: 999px !important;
+	white-space: nowrap !important;
+}
+
+.dak-site-header-mega-footer .dak-button svg {
+	width: 15px !important;
+	height: 15px !important;
 }
 
 /* Auth area */
@@ -143,47 +483,10 @@
 }
 
 .dak-site-header-cta {
-	padding: 0.55rem 1.1rem !important;
+	padding: 0.7rem 1.4rem !important;
 	font-size: 0.85rem !important;
 	white-space: nowrap !important;
 	border-radius: 999px !important;
-	/* A soft gradient + top highlight instead of the flat fill inherited
-	   from .dak-button-primary, matching the homepage's button treatment. */
-	background: linear-gradient( 180deg, color-mix( in srgb, var( --dak-primary ) 100%, white 12% ) 0%, var( --dak-primary ) 100% ) !important;
-	box-shadow: 0 1px 0 rgba( 255, 255, 255, 0.35 ) inset, 0 4px 12px rgba( 20, 60, 40, 0.16 ) !important;
-}
-
-.dak-site-header-cta:hover {
-	background: linear-gradient( 180deg, var( --dak-primary ) 0%, var( --dak-primary-dark ) 100% ) !important;
-	box-shadow: 0 1px 0 rgba( 255, 255, 255, 0.3 ) inset, 0 6px 16px rgba( 20, 60, 40, 0.2 ) !important;
-}
-
-.dak-site-header-phone {
-	display: inline-flex !important;
-	align-items: center !important;
-	gap: 0.4rem !important;
-	font-size: 0.85rem !important;
-	font-weight: 500 !important;
-	color: var( --dak-text ) !important;
-	text-decoration: none !important;
-	white-space: nowrap !important;
-}
-
-.dak-site-header-phone svg {
-	width: 15px !important;
-	height: 15px !important;
-	flex: 0 0 auto !important;
-}
-
-.dak-site-header-phone:hover {
-	color: var( --dak-primary-dark ) !important;
-}
-
-@media ( max-width: 640px ) {
-	.dak-site-header-phone span,
-	.dak-site-header-phone {
-		display: none !important;
-	}
 }
 
 .dak-public-theme-toggle {
@@ -221,15 +524,28 @@
 }
 
 .dak-public-theme-toggle .dak-theme-icon svg {
-	width: 100% !important;
-	height: 100% !important;
-	/* Belt-and-suspenders: the icon paths use stroke="currentColor", which
-	   normally just inherits the button's own `color` — but setting it
-	   explicitly here means the icon renders correctly even if something
-	   else on the page interferes with that inheritance chain (see the same
-	   fix applied to the rich-text editor toolbar's icons). */
-	color: var( --dak-text ) !important;
+	/* Fixed pixels, not 100% — a theme that resets the wrapping <span>'s box
+	   model (display/line-height) can collapse a percentage-sized child to
+	   0, leaving an <svg> that's "present" but invisible for a completely
+	   different reason than the stroke issue below. */
+	display: inline-block !important;
+	width: 18px !important;
+	height: 18px !important;
+	/* Belt-and-suspenders: the icon paths use stroke="currentColor" and
+	   fill="none" (they're line-art, not filled glyphs) — but some
+	   page-builder/news themes (doctor-ak-featured-doctors.css and
+	   doctor-ak-booking-page.css note the same fix for the same theme
+	   behaviour) reset every <svg> to fill="currentColor"; stroke="none"
+	   expecting an icon-font convention instead. That leaves a
+	   stroke-only icon with nothing to paint: present in the DOM,
+	   "visible" by every computed display/opacity check, zero actual
+	   pixels. Restating both here at !important, directly on the element
+	   rather than relying on inheritance, wins that fight explicitly
+	   instead of hoping the cascade falls our way. */
+	fill: none !important;
 	stroke: var( --dak-text ) !important;
+	stroke-width: 1.5 !important;
+	color: var( --dak-text ) !important;
 }
 
 .dak-public-theme-toggle:hover .dak-theme-icon svg {
@@ -255,6 +571,7 @@
 	gap: 0.4rem !important;
 	padding: 0.55rem 1rem !important;
 	border: 1px solid var( --dak-border ) !important;
+	border-color: var( --dak-primary ) !important;
 	border-radius: 999px !important;
 	font-size: 0.85rem !important;
 	font-weight: 600 !important;
@@ -279,18 +596,20 @@
 	height: 100% !important;
 }
 
+/* Avatar-only — the account name used to sit next to this as text; by
+   request, the photo alone is the whole button now (still labelled for
+   screen readers via the button's own aria-label, set in
+   templates/site-header.php). */
 .dak-site-header-account {
 	display: inline-flex !important;
-	align-items: center !important;
-	gap: 0.5rem !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: 999px !important;
+	flex: 0 0 auto !important;
+	width: 40px !important;
+	height: 40px !important;
+	border: 2px solid transparent !important;
+	border-radius: 50% !important;
 	background: none !important;
-	padding: 0.35rem 0.9rem 0.35rem 0.35rem !important;
+	padding: 0 !important;
 	cursor: pointer !important;
-	font-size: 0.85rem !important;
-	font-weight: 600 !important;
-	color: var( --dak-text ) !important;
 }
 
 .dak-site-header-account:hover {
@@ -298,8 +617,8 @@
 }
 
 .dak-site-header-avatar {
-	width: 28px !important;
-	height: 28px !important;
+	width: 100% !important;
+	height: 100% !important;
 	border-radius: 50% !important;
 	object-fit: cover !important;
 }
@@ -337,7 +656,24 @@
 	color: var( --dak-primary-dark ) !important;
 }
 
+@media ( max-width: 1020px ) {
+	.dak-site-header-mega {
+		width: 560px !important;
+	}
+
+	/* Three columns of icon cards get tight once the panel itself narrows —
+	   back to two here (see the 420px breakpoint below for the next step,
+	   down to one). */
+	.dak-site-header-mega-cards {
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+	}
+}
+
 @media ( max-width: 900px ) {
+	.dak-site-header-utility-contact {
+		gap: 0.75rem !important;
+	}
+
 	.dak-site-header-toggle {
 		display: flex !important;
 	}
@@ -367,15 +703,53 @@
 		box-shadow: none !important;
 		border: 0 !important;
 		display: none !important;
-		padding-left: 1rem !important;
 	}
 
-	.dak-site-header-menu .menu-item-has-children.is-open > .sub-menu {
+	.menu-item-has-children.is-open > .sub-menu {
 		display: block !important;
+	}
+
+	/* Stacked in the mobile nav, the mega-menu is just a plain block of the
+	   same three sections in a single column rather than a floating panel. */
+	.dak-site-header-mega {
+		width: auto !important;
+		max-width: none !important;
+	}
+
+	.dak-site-header-mega-panel {
+		padding: var( --dak-space-3 ) 0 var( --dak-space-3 ) 1rem !important;
+		border: 0 !important;
+		background: none !important;
+		box-shadow: none !important;
+	}
+
+	.dak-site-header-mega-footer {
+		justify-content: stretch !important;
+	}
+
+	.dak-site-header-mega-footer .dak-button {
+		flex: 1 1 auto !important;
+		text-align: center !important;
+		justify-content: center !important;
 	}
 
 	.dak-site-header-inner {
 		flex-wrap: wrap !important;
+		/* A full 999px pill stops looking like one once the mobile nav wraps
+		   underneath it and the bar grows tall — a normal rounded rectangle
+		   suits a multi-row bar better. */
+		border-radius: var( --dak-radius-lg ) !important;
+	}
+}
+
+@media ( max-width: 640px ) {
+	.dak-site-header-utility-item span:last-child,
+	.dak-site-header-utility-contact {
+		display: none !important;
+	}
+
+	.dak-site-header-utility-inner {
+		justify-content: flex-end !important;
 	}
 }
 
@@ -385,7 +759,10 @@
 		font-size: 0.78rem !important;
 	}
 
-	.dak-site-header-account-name {
-		display: none !important;
+	/* Two columns of icon cards get too tight once the mobile nav's own
+	   left indent (see .dak-site-header-mega-panel above) eats into the
+	   width too — back to a single column here. */
+	.dak-site-header-mega-cards {
+		grid-template-columns: 1fr !important;
 	}
 }

@@ -355,6 +355,15 @@ $dak_home_testimonials = ! empty( $testimonials )
 					data-video-title="<?php esc_attr_e( 'How to Book an Appointment', 'doctor-ak-portal' ); ?>"
 					aria-label="<?php esc_attr_e( 'Play the booking walkthrough video', 'doctor-ak-portal' ); ?>"
 				>
+					<video
+						class="dak-home-hero-visual-video"
+						src="<?php echo esc_url( $hero_video_url ); ?>"
+						autoplay
+						muted
+						loop
+						playsinline
+						preload="auto"
+					></video>
 					<span class="dak-home-hero-visual-play" aria-hidden="true"><?php echo $dak_home_icons['play']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 					<span class="dak-home-hero-visual-label"><?php esc_html_e( 'Watch the walkthrough', 'doctor-ak-portal' ); ?></span>
 
