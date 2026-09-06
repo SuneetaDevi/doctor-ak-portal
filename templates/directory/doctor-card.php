@@ -63,54 +63,56 @@ $dak_card_extra_specialties   = count( $specialization_labels ) - count( $dak_ca
 		<?php endif; ?>
 	</span>
 
-	<h3 class="dak-doctor-card-name"><?php echo esc_html( sprintf( 'Dr. %s', $name ) ); ?></h3>
+	<div class="dak-doctor-card-info">
+		<h3 class="dak-doctor-card-name"><?php echo esc_html( sprintf( 'Dr. %s', $name ) ); ?></h3>
 
-	<?php if ( ! empty( $dak_card_visible_specialties ) ) : ?>
-		<div class="dak-specialty-tags dak-doctor-card-specialties">
-			<?php foreach ( $dak_card_visible_specialties as $dak_specialty_label ) : ?>
-				<span class="dak-specialty-tag"><?php echo esc_html( $dak_specialty_label ); ?></span>
-			<?php endforeach; ?>
-			<?php if ( $dak_card_extra_specialties > 0 ) : ?>
-				<span class="dak-specialty-tag dak-specialty-tag-muted">
-					<?php echo esc_html( sprintf( /* translators: %d: number of additional specializations. */ '+%d', $dak_card_extra_specialties ) ); ?>
-				</span>
-			<?php endif; ?>
-		</div>
-	<?php endif; ?>
-
-	<?php if ( '' !== $years_experience ) : ?>
-		<p class="dak-doctor-card-experience">
-			<?php
-			echo esc_html(
-				sprintf(
-					/* translators: %d: number of years of experience. */
-					_n( '%d year of experience', '%d years of experience', (int) $years_experience, 'doctor-ak-portal' ),
-					(int) $years_experience
-				)
-			);
-			?>
-		</p>
-	<?php endif; ?>
-
-	<?php if ( $clinic_location ) : ?>
-		<div class="dak-doctor-card-location">
-			<span class="dak-location-icon" aria-hidden="true"><?php echo $dak_card_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-			<span>
-				<?php echo esc_html( $clinic_location ); ?>
-				<?php if ( $extra_clinic_count > 0 ) : ?>
-					<?php
-					echo esc_html(
-						sprintf(
-							/* translators: %d: number of additional clinics. */
-							_n( ' +%d more', ' +%d more', $extra_clinic_count, 'doctor-ak-portal' ),
-							$extra_clinic_count
-						)
-					);
-					?>
+		<?php if ( ! empty( $dak_card_visible_specialties ) ) : ?>
+			<div class="dak-specialty-tags dak-doctor-card-specialties">
+				<?php foreach ( $dak_card_visible_specialties as $dak_specialty_label ) : ?>
+					<span class="dak-specialty-tag"><?php echo esc_html( $dak_specialty_label ); ?></span>
+				<?php endforeach; ?>
+				<?php if ( $dak_card_extra_specialties > 0 ) : ?>
+					<span class="dak-specialty-tag dak-specialty-tag-muted">
+						<?php echo esc_html( sprintf( /* translators: %d: number of additional specializations. */ '+%d', $dak_card_extra_specialties ) ); ?>
+					</span>
 				<?php endif; ?>
-			</span>
-		</div>
-	<?php endif; ?>
+			</div>
+		<?php endif; ?>
+
+		<?php if ( '' !== $years_experience ) : ?>
+			<p class="dak-doctor-card-experience">
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: %d: number of years of experience. */
+						_n( '%d year of experience', '%d years of experience', (int) $years_experience, 'doctor-ak-portal' ),
+						(int) $years_experience
+					)
+				);
+				?>
+			</p>
+		<?php endif; ?>
+
+		<?php if ( $clinic_location ) : ?>
+			<div class="dak-doctor-card-location">
+				<span class="dak-location-icon" aria-hidden="true"><?php echo $dak_card_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+				<span>
+					<?php echo esc_html( $clinic_location ); ?>
+					<?php if ( $extra_clinic_count > 0 ) : ?>
+						<?php
+						echo esc_html(
+							sprintf(
+								/* translators: %d: number of additional clinics. */
+								_n( ' +%d more', ' +%d more', $extra_clinic_count, 'doctor-ak-portal' ),
+								$extra_clinic_count
+							)
+						);
+						?>
+					<?php endif; ?>
+				</span>
+			</div>
+		<?php endif; ?>
+	</div>
 
 	<div class="dak-doctor-card-actions">
 		<a class="dak-button dak-button-primary dak-button-block" href="<?php echo esc_url( $profile_url ); ?>">

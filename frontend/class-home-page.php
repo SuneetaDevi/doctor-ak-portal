@@ -71,19 +71,6 @@ class Home_Page {
 	const HERO_BANNER_IMAGE_PATH = 'assets/images/doctor-banner.avif';
 
 	/**
-	 * Illustration for each "Why Choose Us" row, keyed by the icon its trust
-	 * point uses in directory/home-page.php so the two stay in step.
-	 *
-	 * @var string[]
-	 */
-	const WHY_IMAGE_PATHS = array(
-		'shield' => 'assets/images/why-verified-specialists.webp',
-		'clock'  => 'assets/images/why-fast-easy-booking.webp',
-		'video'  => 'assets/images/why-in-person-or-online.webp',
-		'tag'    => 'assets/images/why-transparent-pricing.webp',
-	);
-
-	/**
 	 * Bundled marketing reel shown in its own section, separate from the
 	 * admin-uploaded Home_Videos list.
 	 *
@@ -219,10 +206,9 @@ class Home_Page {
 				'google_rating'    => Google_Reviews::overall_rating(),
 				'hero_video_url'   => $this->bundled_asset_url( self::HERO_VIDEO_PATH ),
 				'hero_banner_url'  => $this->bundled_asset_url( self::HERO_BANNER_IMAGE_PATH ),
-				'why_images'       => array_map( array( $this, 'bundled_asset_url' ), self::WHY_IMAGE_PATHS ),
 				'marketing_videos' => array_values( array_filter( array_map( array( $this, 'bundled_asset_url' ), self::MARKETING_VIDEO_PATHS ) ) ),
 				'directory_url'    => $directory_url,
-				'booking_url'      => Page_Finder::url_for_shortcode( Booking_Page::SHORTCODE_TAG ),
+				'doctor_register_url' => Page_Finder::url_for_shortcode( 'doctor_register' ),
 				'services_url'     => Page_Finder::url_for_shortcode( 'services_directory' ),
 				'stats'            => $this->stats( $doctor_cards ),
 				'clinic_locations' => array_slice( Clinic_Locations::get_all(), 0, self::FEATURED_CLINICS_LIMIT ),

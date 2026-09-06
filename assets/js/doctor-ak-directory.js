@@ -40,6 +40,7 @@
 
 		wireLocationCascade( countrySelect, citySelect, areaSelect );
 		wireClinicAreaDependency( areaSelect, clinicSelect );
+		initViewToggle( grid );
 
 		function applyFilters() {
 			var query = searchInput.value.trim().toLowerCase();
@@ -272,5 +273,58 @@
 			clinicSelect.value = matches.some( function ( clinic ) { return clinic.value === previousValue; } ) ? previousValue : '';
 			clinicSelect.dispatchEvent( new Event( 'change' ) );
 		} );
+	}
+
+	/**
+	 * Wires the Grid/List view toggle buttons (templates/directory/doctors-directory.php)
+	 * — swaps a modifier class on the grid so CSS re-flows each existing card
+	 * (see .dak-directory-grid-list in doctor-ak-directory.css), no re-render
+	 * needed. Remembers the visitor's last choice in localStorage so it
+	 * sticks across visits.
+	 *
+	 * @param {HTMLElement} grid The doctors grid ("dak-directory-grid").
+	 * @return {void}
+	 */
+	function initViewToggle( grid ) {
+		var buttons = document.querySelectorAll( '[data-directory-view]' );
+
+		if ( ! buttons.length ) {
+			return;
+		}
+
+		var STORAGE_KEY = 'dakDirectoryView';
+		var savedView = '';
+
+		try {
+			savedView = window.localStorage.getItem( STORAGE_KEY ) || '';
+		} catch ( e ) {
+			savedView = '';
+		}
+
+		if ( 'list' === savedView ) {
+			setView( 'list' );
+		}
+
+		buttons.forEach( function ( button ) {
+			button.addEventListener( 'click', function () {
+				setView( button.getAttribute( 'data-directory-view' ) );
+			} );
+		} );
+
+		function setView( view ) {
+			grid.classList.toggle( 'dak-directory-grid-list', 'list' === view );
+
+			buttons.forEach( function ( button ) {
+				var isActive = button.getAttribute( 'data-directory-view' ) === view;
+				button.classList.toggle( 'is-active', isActive );
+				button.setAttribute( 'aria-pressed', isActive ? 'true' : 'false' );
+			} );
+
+			try {
+				window.localStorage.setItem( STORAGE_KEY, view );
+			} catch ( e ) {
+				// Private browsing / storage disabled — the choice just won't persist.
+			}
+		}
 	}
 } )();

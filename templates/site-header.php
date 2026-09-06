@@ -54,7 +54,31 @@ $dak_header_icons = array(
 	'user'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.2"/><path d="M3.5 17c1-3.5 4-5 6.5-5s5.5 1.5 6.5 5"/></svg>',
 	'search'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.8" cy="8.8" r="5.3"/><path d="M17 17l-3.8-3.8"/></svg>',
 	'home'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 10 3.5l7 6"/><path d="M4.8 8v8.5h10.4V8"/></svg>',
+	'tag'      => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5l6.5 6.5-7.5 7.5-6.5-6.5V3.5z"/><circle cx="6.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>',
+	'flask'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5h4M8.4 2.5v4.6L4.3 14a1.6 1.6 0 0 0 1.4 2.5h8.6a1.6 1.6 0 0 0 1.4-2.5l-4.1-6.9V2.5"/><path d="M6.2 12.3h7.6"/></svg>',
+	'pill'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="7.2" width="14.4" height="7.6" rx="3.8" transform="rotate(-45 10 10)"/><path d="M8.3 11.7l3.4-3.4"/></svg>',
 );
+
+// Message shown when tapping the not-yet-built Lab/Pharmacy booking items —
+// a simple stopgap (see data-dak-coming-soon handling in
+// doctor-ak-site-header.js) until those modules are actually built, per the
+// same pattern as $dak_home_coming_soon_note in templates/directory/home-page.php.
+$dak_header_coming_soon_note = static function ( $feature_label ) use ( $phone ) {
+	if ( '' !== $phone ) {
+		return sprintf(
+			/* translators: 1: feature name, e.g. "Lab Test Booking". 2: clinic phone number. */
+			__( '%1$s is launching soon. Call us to book today: %2$s', 'doctor-ak-portal' ),
+			$feature_label,
+			$phone
+		);
+	}
+
+	return sprintf(
+		/* translators: %s: feature name, e.g. "Lab Test Booking". */
+		__( '%s is launching soon — check back soon.', 'doctor-ak-portal' ),
+		$feature_label
+	);
+};
 
 // Same body-part glyphs + keyword matching as the home page's "Consult Top
 // Doctors Online" tiles (templates/directory/home-page.php) — duplicated
@@ -250,9 +274,32 @@ $dak_header_has_utility_bar = $address || $phone || $email || $facebook_url || $
 				<span class="dak-theme-icon dak-theme-icon-moon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 12.3A6.8 6.8 0 0 1 7.7 3.5a6.8 6.8 0 1 0 8.8 8.8z"/></svg></span>
 			</button>
 
-			<button type="button" class="dak-button dak-button-primary dak-site-header-cta" data-dak-book-appointment>
-				<?php esc_html_e( 'Schedule Appointment', 'doctor-ak-portal' ); ?>
-			</button>
+			<div class="dak-site-header-book">
+				<button type="button" class="dak-button dak-button-primary dak-site-header-cta" id="dak-site-header-book-trigger" aria-haspopup="true" aria-expanded="false">
+					<?php esc_html_e( 'Book Now', 'doctor-ak-portal' ); ?>
+					<span class="dak-site-header-book-caret" aria-hidden="true"><?php echo $dak_header_icons['chevron']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+				</button>
+				<div class="dak-site-header-book-menu" id="dak-site-header-book-menu">
+					<button type="button" data-dak-book-appointment>
+						<span aria-hidden="true"><?php echo $dak_header_icons['user']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<?php esc_html_e( 'Book Doctor', 'doctor-ak-portal' ); ?>
+					</button>
+					<?php if ( $services_url ) : ?>
+						<a href="<?php echo esc_url( $services_url ); ?>">
+							<span aria-hidden="true"><?php echo $dak_header_icons['tag']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<?php esc_html_e( 'Book Service', 'doctor-ak-portal' ); ?>
+						</a>
+					<?php endif; ?>
+					<button type="button" data-dak-coming-soon="<?php echo esc_attr( $dak_header_coming_soon_note( __( 'Lab Test Booking', 'doctor-ak-portal' ) ) ); ?>">
+						<span aria-hidden="true"><?php echo $dak_header_icons['flask']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<?php esc_html_e( 'Book Lab', 'doctor-ak-portal' ); ?>
+					</button>
+					<button type="button" data-dak-coming-soon="<?php echo esc_attr( $dak_header_coming_soon_note( __( 'Pharmacy Ordering', 'doctor-ak-portal' ) ) ); ?>">
+						<span aria-hidden="true"><?php echo $dak_header_icons['pill']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<?php esc_html_e( 'Book Pharmacy', 'doctor-ak-portal' ); ?>
+					</button>
+				</div>
+			</div>
 
 			<?php if ( $is_logged_in ) : ?>
 				<button type="button" class="dak-site-header-account" id="dak-site-header-account" aria-haspopup="true" aria-expanded="false" aria-label="<?php echo esc_attr( $display_name ); ?>">

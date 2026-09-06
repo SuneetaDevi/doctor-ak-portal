@@ -101,6 +101,48 @@
 	cursor: not-allowed !important;
 }
 
+/* Grid/List view toggle. */
+.dak-directory-view-toggle {
+	display: inline-flex !important;
+	align-self: center !important;
+	gap: 0.25rem !important;
+	padding: 0.25rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-directory-view-btn {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 34px !important;
+	height: 34px !important;
+	border: none !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: none !important;
+	color: var( --dak-muted ) !important;
+	cursor: pointer !important;
+	transition: background-color 0.15s ease, color 0.15s ease !important;
+}
+
+.dak-directory-view-btn svg {
+	width: 18px !important;
+	height: 18px !important;
+	color: currentColor !important;
+	stroke: currentColor !important;
+}
+
+.dak-directory-view-btn:hover {
+	color: var( --dak-text ) !important;
+}
+
+.dak-directory-view-btn.is-active {
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-primary-dark ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+}
+
 @media ( max-width: 640px ) {
 	.dak-directory-filters {
 		grid-template-columns: 1fr !important;
@@ -220,6 +262,18 @@
 	height: 40px !important;
 }
 
+/* Groups name/specialties/experience/location as one flex item (separate
+   from the avatar and the actions button), so list view (below) can lay the
+   card out as a single row — avatar, this info column, actions — without
+   each of these becoming its own column. */
+.dak-doctor-card-info {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: center !important;
+	gap: 0.5rem !important;
+	width: 100% !important;
+}
+
 .dak-doctor-card-name {
 	font-size: 1.05rem !important;
 	font-weight: 700 !important;
@@ -279,6 +333,76 @@
 .dak-doctor-card-actions .dak-button svg {
 	width: 18px !important;
 	height: 18px !important;
+}
+
+/* List view — toggled via [data-directory-view] in doctor-ak-directory.js,
+   same card markup as grid view, just re-flowed into a single row:
+   avatar | info column | actions. */
+.dak-directory-grid.dak-directory-grid-list {
+	grid-template-columns: 1fr !important;
+	gap: 0.85rem !important;
+}
+
+.dak-directory-grid-list .dak-doctor-card {
+	flex-direction: row !important;
+	align-items: center !important;
+	text-align: left !important;
+	gap: 1.25rem !important;
+	padding: 1rem 1.5rem !important;
+}
+
+.dak-directory-grid-list .dak-avatar-lg {
+	margin-bottom: 0 !important;
+}
+
+.dak-directory-grid-list .dak-doctor-card-info {
+	align-items: flex-start !important;
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+}
+
+.dak-directory-grid-list .dak-doctor-card-specialties,
+.dak-directory-grid-list .dak-doctor-card-location {
+	justify-content: flex-start !important;
+}
+
+.dak-directory-grid-list .dak-doctor-card-experience {
+	text-align: left !important;
+}
+
+.dak-directory-grid-list .dak-doctor-card-actions {
+	width: auto !important;
+	flex: 0 0 auto !important;
+	margin-top: 0 !important;
+}
+
+.dak-directory-grid-list .dak-doctor-card-actions .dak-button {
+	width: auto !important;
+	white-space: nowrap !important;
+}
+
+@media ( max-width: 640px ) {
+	.dak-directory-grid-list .dak-doctor-card {
+		flex-direction: column !important;
+		text-align: center !important;
+	}
+
+	.dak-directory-grid-list .dak-doctor-card-info {
+		align-items: center !important;
+	}
+
+	.dak-directory-grid-list .dak-doctor-card-specialties,
+	.dak-directory-grid-list .dak-doctor-card-location {
+		justify-content: center !important;
+	}
+
+	.dak-directory-grid-list .dak-doctor-card-experience {
+		text-align: center !important;
+	}
+
+	.dak-directory-grid-list .dak-doctor-card-actions .dak-button {
+		width: 100% !important;
+	}
 }
 
 /* Specialty tags — also used on the dashboard (doctor-ak-dashboard.css),

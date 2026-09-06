@@ -1,11 +1,14 @@
 <?php
 /**
- * Bare page template for the Admin/Doctor/Patient dashboards — served via
+ * Bare page template for every page this plugin owns — the Admin/Doctor/
+ * Patient dashboards AND the public-facing pages (Home, directories,
+ * profiles, booking, login/register) — served via
  * Dashboard_Layout::template_include() instead of the active theme's own
- * page template, so none of the theme's header.php/footer.php markup (site
- * nav, footer links, etc.) wraps the dashboard. Still calls wp_head()/
- * wp_footer()/wp_body_open() so enqueued assets, the admin bar, and other
- * plugins keep working as normal.
+ * page template, so none of the theme's header.php/footer.php markup (its
+ * own nav, footer links, etc.) ever wraps/collides with this plugin's own
+ * header/footer (Site_Header/Site_Footer, hooked to wp_body_open/wp_footer
+ * below). Still calls wp_head()/wp_footer()/wp_body_open() so enqueued
+ * assets, the admin bar, and other plugins keep working as normal.
  *
  * @package DoctorAKPortal\Templates
  */

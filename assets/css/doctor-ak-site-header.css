@@ -482,6 +482,82 @@ a.dak-site-header-utility-item:hover {
 	gap: 0.75rem !important;
 }
 
+/* "Book Now" dropdown — replaced the single "Schedule Appointment" button so
+   Lab/Pharmacy (not just Doctor/Service) are visible as booking options. */
+.dak-site-header-book {
+	position: relative !important;
+	flex-shrink: 0 !important;
+}
+
+.dak-site-header-book-caret {
+	display: inline-flex !important;
+	margin-left: 0.3rem !important;
+	transition: transform 0.15s ease !important;
+}
+
+.dak-site-header-book-caret svg {
+	width: 12px !important;
+	height: 12px !important;
+	color: currentColor !important;
+	stroke: currentColor !important;
+}
+
+.dak-site-header-cta[aria-expanded='true'] .dak-site-header-book-caret {
+	transform: rotate( 180deg ) !important;
+}
+
+.dak-site-header-book-menu {
+	position: absolute !important;
+	top: calc( 100% + 8px ) !important;
+	right: 0 !important;
+	min-width: 210px !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	padding: 0.4rem !important;
+	display: none !important;
+	flex-direction: column !important;
+	gap: 0.15rem !important;
+	z-index: 20 !important;
+}
+
+.dak-site-header-book-menu.is-open {
+	display: flex !important;
+}
+
+.dak-site-header-book-menu a,
+.dak-site-header-book-menu button {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.55rem !important;
+	width: 100% !important;
+	border: none !important;
+	background: none !important;
+	padding: 0.55rem 0.7rem !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+	text-decoration: none !important;
+	text-align: left !important;
+	cursor: pointer !important;
+}
+
+.dak-site-header-book-menu a:hover,
+.dak-site-header-book-menu button:hover {
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-site-header-book-menu svg {
+	width: 16px !important;
+	height: 16px !important;
+	flex-shrink: 0 !important;
+	color: var( --dak-muted ) !important;
+	stroke: var( --dak-muted ) !important;
+}
+
 .dak-site-header-cta {
 	padding: 0.7rem 1.4rem !important;
 	font-size: 0.85rem !important;
@@ -765,4 +841,34 @@ a.dak-site-header-utility-item:hover {
 	.dak-site-header-mega-cards {
 		grid-template-columns: 1fr !important;
 	}
+}
+
+/* "Coming soon" toast — shown when a not-yet-built booking option (Book Lab /
+   Book Pharmacy, see [data-dak-coming-soon] in templates/site-header.php and
+   templates/directory/home-page.php) is tapped. One shared element, reused
+   and repositioned by doctor-ak-site-header.js. */
+.dak-coming-soon-toast {
+	position: fixed !important;
+	left: 50% !important;
+	bottom: 24px !important;
+	transform: translate( -50%, 12px ) !important;
+	max-width: min( 90vw, 420px ) !important;
+	background: var( --dak-text ) !important;
+	color: var( --dak-bg-card ) !important;
+	padding: 0.75rem 1.1rem !important;
+	border-radius: var( --dak-radius-md ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+	line-height: 1.4 !important;
+	text-align: center !important;
+	z-index: 999 !important;
+	opacity: 0 !important;
+	pointer-events: none !important;
+	transition: opacity 0.2s ease, transform 0.2s ease !important;
+}
+
+.dak-coming-soon-toast.is-visible {
+	opacity: 1 !important;
+	transform: translate( -50%, 0 ) !important;
 }

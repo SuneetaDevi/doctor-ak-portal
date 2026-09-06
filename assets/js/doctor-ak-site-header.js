@@ -2,8 +2,12 @@
  * Doctor AK Portal — Site-wide header behaviour.
  *
  * Handles the mobile menu toggle, tap-to-open submenus (desktop uses
- * hover via CSS, touch devices need a click target instead), and the
- * logged-in account dropdown.
+ * hover via CSS, touch devices need a click target instead), the
+ * logged-in account dropdown, the header's "Book Now" dropdown, and the
+ * "coming soon" toast for booking options that don't have a module yet
+ * (Book Lab / Book Pharmacy) — the latter also covers the matching buttons
+ * in the home page hero (templates/directory/home-page.php), since this
+ * script loads on every front-end page (see Site_Header::enqueue_assets()).
  */
 ( function () {
 	'use strict';
@@ -11,9 +15,11 @@
 	document.addEventListener( 'DOMContentLoaded', function () {
 		initMobileToggle();
 		initSubmenuToggles();
-		initAccountMenu();
+		initDropdown( 'dak-site-header-account', 'dak-site-header-account-menu' );
+		initDropdown( 'dak-site-header-book-trigger', 'dak-site-header-book-menu' );
 		initMegaMenuSearch();
 		initMegaMenuAutoFocus();
+		initComingSoonToast();
 	} );
 
 	/**
@@ -142,11 +148,16 @@
 	}
 
 	/**
-	 * Toggles the logged-in user's account dropdown.
+	 * Wires a trigger button + its dropdown menu: click to toggle, click
+	 * outside to close. Shared by the logged-in account dropdown and the
+	 * "Book Now" dropdown — same open/close behaviour, different content.
+	 *
+	 * @param {string} triggerId Trigger button's element id.
+	 * @param {string} menuId    Dropdown menu's element id.
 	 */
-	function initAccountMenu() {
-		var trigger = document.getElementById( 'dak-site-header-account' );
-		var menu = document.getElementById( 'dak-site-header-account-menu' );
+	function initDropdown( triggerId, menuId ) {
+		var trigger = document.getElementById( triggerId );
+		var menu = document.getElementById( menuId );
 
 		if ( ! trigger || ! menu ) {
 			return;
@@ -163,6 +174,43 @@
 				menu.classList.remove( 'is-open' );
 				trigger.setAttribute( 'aria-expanded', 'false' );
 			}
+		} );
+	}
+
+	/**
+	 * Shows a short-lived toast when a not-yet-built booking option is
+	 * tapped (Book Lab / Book Pharmacy) — the button's own
+	 * `data-dak-coming-soon` attribute carries the message to show, already
+	 * built server-side (feature name + clinic phone, when known).
+	 */
+	function initComingSoonToast() {
+		var toast = null;
+		var hideTimeout = null;
+
+		document.addEventListener( 'click', function ( event ) {
+			var trigger = event.target.closest( '[data-dak-coming-soon]' );
+
+			if ( ! trigger ) {
+				return;
+			}
+
+			event.preventDefault();
+
+			if ( ! toast ) {
+				toast = document.createElement( 'div' );
+				toast.className = 'dak-coming-soon-toast';
+				toast.setAttribute( 'role', 'status' );
+				toast.setAttribute( 'aria-live', 'polite' );
+				document.body.appendChild( toast );
+			}
+
+			toast.textContent = trigger.getAttribute( 'data-dak-coming-soon' );
+			toast.classList.add( 'is-visible' );
+
+			window.clearTimeout( hideTimeout );
+			hideTimeout = window.setTimeout( function () {
+				toast.classList.remove( 'is-visible' );
+			}, 4000 );
 		} );
 	}
 } )();

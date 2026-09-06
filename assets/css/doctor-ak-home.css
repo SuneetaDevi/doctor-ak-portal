@@ -221,15 +221,20 @@
 
 .dak-home-hero-banner-stats strong {
 	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
-	font-size: var( --dak-text-lg ) !important;
+	font-size: var( --dak-text-2xl ) !important;
 	font-weight: 700 !important;
+	line-height: 1.1 !important;
 	color: #fff !important;
 }
 
 .dak-home-hero-banner-stats span {
-	font-size: 0.68rem !important;
+	font-size: 0.72rem !important;
 	color: rgba( 255, 255, 255, 0.8 ) !important;
 	line-height: 1.3 !important;
+}
+
+.dak-home-hero-banner-stats-2 {
+	gap: var( --dak-space-6 ) !important;
 }
 
 /* Hero search bar — overlaps the banner's bottom edge. It's a single link to
@@ -500,7 +505,54 @@
 .dak-home-hero-actions {
 	display: flex !important;
 	flex-wrap: wrap !important;
+	align-items: center !important;
 	gap: var( --dak-space-3 ) !important;
+}
+
+/* The 4-way "Book Doctor / Service / Lab / Pharmacy" cluster that replaced
+   the old single "Book Appointment" button, so visitors immediately see the
+   platform covers more than doctor consultations. */
+.dak-home-hero-book-group {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: var( --dak-space-2 ) !important;
+}
+
+.dak-home-hero-book-btn {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+	border: none !important;
+	border-radius: var( --dak-radius-md ) !important;
+	padding: 0.85rem 1.25rem !important;
+	font-size: var( --dak-text-sm ) !important;
+	font-weight: 600 !important;
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+	cursor: pointer !important;
+	transition: background-color 0.15s ease, transform 0.15s ease !important;
+}
+
+.dak-home-hero-book-btn:hover {
+	background: var( --dak-primary-dark ) !important;
+	transform: translateY( -1px ) !important;
+}
+
+.dak-home-hero-book-btn:nth-child(3),
+.dak-home-hero-book-btn:nth-child(4) {
+	background: rgba( 255, 255, 255, 0.16 ) !important;
+}
+
+.dak-home-hero-book-btn:nth-child(3):hover,
+.dak-home-hero-book-btn:nth-child(4):hover {
+	background: rgba( 255, 255, 255, 0.26 ) !important;
+}
+
+.dak-home-hero-book-icon svg {
+	width: 16px !important;
+	height: 16px !important;
+	color: #fff !important;
+	stroke: #fff !important;
 }
 
 .dak-button-lg {
@@ -552,32 +604,6 @@
 	background:
 		radial-gradient( 60% 60% at 50% 40%, rgba( 255, 255, 255, 0.12 ) 0%, rgba( 255, 255, 255, 0 ) 70% ),
 		rgba( 0, 0, 0, 0.12 ) !important;
-}
-
-.dak-home-hero-visual-play {
-	position: relative !important;
-	z-index: 1 !important;
-	display: flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	width: 68px !important;
-	height: 68px !important;
-	flex: 0 0 auto !important;
-	border-radius: 50% !important;
-	background: rgba( 255, 255, 255, 0.96 ) !important;
-	color: var( --dak-primary-dark ) !important;
-	box-shadow: 0 6px 20px rgba( 0, 0, 0, 0.35 ) !important;
-	transition: transform 0.2s ease !important;
-}
-
-.dak-home-hero-visual:hover .dak-home-hero-visual-play {
-	transform: scale( 1.06 ) !important;
-}
-
-.dak-home-hero-visual-play svg {
-	width: 26px !important;
-	height: 26px !important;
-	margin-left: 3px !important;
 }
 
 /* Services — wide stacked rows (copy left, photo right) rather than the
@@ -984,149 +1010,6 @@
 	}
 }
 
-/* Why Choose Us — plain centered icon columns, no card chrome */
-
-/* Sits on the plain page ground — no tinted panel, and the rows below carry
-   no card chrome either, so the whole section reads as one flow rather than
-   a stack of separate boxes. */
-.dak-home-why {
-	margin-top: var( --dak-space-8 ) !important;
-}
-
-.dak-home-why-header {
-	text-align: center !important;
-}
-
-/* Alternating rows: illustration and copy swap sides down the list, each in
-   its own white card on the section's tinted ground. */
-
-.dak-home-why-rows {
-	display: flex !important;
-	flex-direction: column !important;
-	gap: var( --dak-space-5 ) !important;
-	margin-top: var( --dak-space-6 ) !important;
-}
-
-.dak-home-why-row {
-	display: grid !important;
-	grid-template-columns: 1fr 1fr !important;
-	gap: var( --dak-space-6 ) !important;
-	align-items: center !important;
-	background: var( --dak-bg-card ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-lg ) !important;
-	padding: var( --dak-space-6 ) !important;
-	box-shadow: var( --dak-shadow ) !important;
-}
-
-.dak-home-why-row:nth-child( even ) .dak-home-why-row-media {
-	order: -1 !important;
-}
-
-.dak-home-why-row-body {
-	display: flex !important;
-	flex-direction: column !important;
-	align-items: flex-start !important;
-	gap: var( --dak-space-3 ) !important;
-	min-width: 0 !important;
-}
-
-.dak-home-why-row-tag {
-	display: inline-flex !important;
-	align-items: center !important;
-	gap: 0.4rem !important;
-	padding: 0.35rem 0.85rem !important;
-	border-radius: 999px !important;
-	background: var( --dak-primary-tint ) !important;
-	color: var( --dak-primary-dark ) !important;
-	font-size: var( --dak-text-xs ) !important;
-	font-weight: 700 !important;
-}
-
-.dak-home-why-row-tag svg {
-	display: block !important;
-	width: 14px !important;
-	height: 14px !important;
-}
-
-.dak-home-why-row-body h3 {
-	margin: 0 !important;
-	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
-	font-size: 1.9rem !important;
-	font-weight: 600 !important;
-	line-height: 1.2 !important;
-	color: var( --dak-text ) !important;
-}
-
-.dak-home-why-row-body h3 em {
-	font-style: normal !important;
-	color: var( --dak-primary-dark ) !important;
-}
-
-.dak-home-why-row-body > p {
-	margin: 0 !important;
-	max-width: 46ch !important;
-	font-size: var( --dak-text-md ) !important;
-	line-height: 1.6 !important;
-	color: var( --dak-muted ) !important;
-}
-
-.dak-home-why-row-points {
-	list-style: none !important;
-	margin: 0 !important;
-	padding: 0 !important;
-	display: flex !important;
-	flex-direction: column !important;
-	gap: var( --dak-space-2 ) !important;
-}
-
-.dak-home-why-row-points li {
-	display: flex !important;
-	align-items: flex-start !important;
-	gap: var( --dak-space-3 ) !important;
-	font-size: var( --dak-text-sm ) !important;
-	line-height: 1.5 !important;
-	color: var( --dak-text ) !important;
-}
-
-.dak-home-why-row-check {
-	display: inline-flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	width: 20px !important;
-	height: 20px !important;
-	flex: 0 0 auto !important;
-	margin-top: 0.1rem !important;
-	border-radius: 50% !important;
-	background: var( --dak-tint-success ) !important;
-	color: var( --dak-tint-success-text ) !important;
-}
-
-.dak-home-why-row-check svg {
-	width: 12px !important;
-	height: 12px !important;
-}
-
-.dak-home-why-row-cta {
-	margin-top: var( --dak-space-2 ) !important;
-}
-
-.dak-home-why-row-media {
-	overflow: hidden !important;
-	border-radius: var( --dak-radius-md ) !important;
-	/* The illustrations sit on their own near-white ground and vary in aspect
-	   ratio, so they're contained (never cropped) on a matching tint. */
-	background: #f2f7fd !important;
-	aspect-ratio: 4 / 3 !important;
-}
-
-.dak-home-why-row-media img {
-	display: block !important;
-	width: 100% !important;
-	height: 100% !important;
-	object-fit: contain !important;
-}
-
 /* Testimonial band — dark, full-bleed within the page's max-width */
 
 .dak-home-testimonial-band {
@@ -1297,14 +1180,12 @@
 	height: 100% !important;
 }
 
-/* Booking band — dark panel, copy on the left, a light "Schedule your
-   appointment" card on the right. The card is a plain GET form pointed at the
-   booking page: it prefills that wizard's specialization filter and guest
-   details rather than booking anything itself, so nobody's request can be
-   submitted into a void (see assets/js/doctor-ak-booking-page.js). */
+/* "Join as a Doctor" band — dark panel, copy on the left, a light "Why
+   doctors choose us" benefits card on the right (a recruitment CTA, not a
+   patient booking form — see templates/directory/home-page.php). */
 
-.dak-home-booking {
-	/* Extra top margin buys back the space the form card rises into, so it
+.dak-home-join-doctors {
+	/* Extra top margin buys back the space the card rises into, so it
 	   still clears the section above once it breaks out of the band. */
 	margin-top: calc( var( --dak-space-8 ) + 72px ) !important;
 	/* Fixed dark, like the testimonial band — it stays dark in both themes.
@@ -1321,19 +1202,19 @@
 	box-shadow: 0 20px 48px rgba( 0, 0, 0, 0.28 ) !important;
 }
 
-.dak-home-booking-inner {
+.dak-home-join-doctors-inner {
 	display: grid !important;
 	grid-template-columns: 1fr 440px !important;
 	gap: var( --dak-space-7 ) !important;
 	align-items: center !important;
 }
 
-.dak-home-booking-copy .dak-eyebrow {
+.dak-home-join-doctors-copy .dak-eyebrow {
 	background: rgba( 255, 255, 255, 0.1 ) !important;
 	color: var( --dak-primary ) !important;
 }
 
-.dak-home-booking-copy h2 {
+.dak-home-join-doctors-copy h2 {
 	margin: var( --dak-space-3 ) 0 !important;
 	font-size: 2.4rem !important;
 	font-weight: 600 !important;
@@ -1341,12 +1222,16 @@
 	color: #fff !important;
 }
 
-.dak-home-booking-copy > p {
+.dak-home-join-doctors-copy > p {
 	max-width: 48ch !important;
-	margin: 0 !important;
+	margin: 0 0 var( --dak-space-5 ) !important;
 	font-size: var( --dak-text-md ) !important;
 	line-height: 1.6 !important;
 	color: rgba( 255, 255, 255, 0.75 ) !important;
+}
+
+.dak-home-join-doctors-copy .dak-button {
+	margin-bottom: var( --dak-space-5 ) !important;
 }
 
 .dak-home-booking-contact {
@@ -1395,7 +1280,7 @@
 /* Lifted so its top edge sits above the band's, overlapping the section
    above — anchored to the top of the row (not centred) so the offset is
    exact rather than dependent on how tall the copy beside it ends up. */
-.dak-home-booking-form {
+.dak-home-join-doctors-card {
 	align-self: start !important;
 	margin-top: -104px !important;
 	background: var( --dak-bg-card ) !important;
@@ -1404,7 +1289,7 @@
 	box-shadow: 0 24px 60px rgba( 0, 0, 0, 0.3 ) !important;
 }
 
-.dak-home-booking-form h3 {
+.dak-home-join-doctors-card h3 {
 	margin: 0 0 var( --dak-space-5 ) !important;
 	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
 	font-size: var( --dak-text-xl ) !important;
@@ -1412,55 +1297,40 @@
 	color: var( --dak-text ) !important;
 }
 
-.dak-home-booking-field {
+.dak-home-join-doctors-list {
+	list-style: none !important;
+	margin: 0 0 var( --dak-space-6 ) !important;
+	padding: 0 !important;
 	display: flex !important;
 	flex-direction: column !important;
-	gap: 0.35rem !important;
-	margin-bottom: var( --dak-space-4 ) !important;
-	min-width: 0 !important;
+	gap: var( --dak-space-3 ) !important;
 }
 
-.dak-home-booking-field label {
+.dak-home-join-doctors-list li {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: var( --dak-space-3 ) !important;
 	font-size: var( --dak-text-sm ) !important;
-	font-weight: 700 !important;
+	line-height: 1.5 !important;
 	color: var( --dak-text ) !important;
 }
 
-.dak-home-booking-field input,
-.dak-home-booking-field select {
-	width: 100% !important;
-	padding: 0.75rem 0.9rem !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-sm ) !important;
-	background: var( --dak-bg-card ) !important;
-	color: var( --dak-text ) !important;
-	font: inherit !important;
-	font-size: var( --dak-text-sm ) !important;
+.dak-home-join-doctors-check {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 20px !important;
+	height: 20px !important;
+	flex: 0 0 auto !important;
+	margin-top: 0.1rem !important;
+	border-radius: 50% !important;
+	background: var( --dak-tint-success ) !important;
+	color: var( --dak-tint-success-text ) !important;
 }
 
-.dak-home-booking-field input:focus,
-.dak-home-booking-field select:focus {
-	outline: none !important;
-	border-color: var( --dak-primary ) !important;
-	box-shadow: 0 0 0 3px rgba( 127, 181, 45, 0.18 ) !important;
-}
-
-.dak-home-booking-field-row {
-	display: grid !important;
-	grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
-	gap: var( --dak-space-4 ) !important;
-}
-
-.dak-home-booking-submit {
-	margin-top: var( --dak-space-2 ) !important;
-	padding: 0.85rem 1.6rem !important;
-}
-
-
-.dak-home-booking-note {
-	margin: var( --dak-space-3 ) 0 0 !important;
-	font-size: var( --dak-text-xs ) !important;
-	color: var( --dak-muted ) !important;
+.dak-home-join-doctors-check svg {
+	width: 12px !important;
+	height: 12px !important;
 }
 
 /* Video grid + lightbox (marketing reel + admin-uploaded videos) */
@@ -1637,24 +1507,6 @@
 		grid-template-columns: repeat( 2, 1fr ) !important;
 	}
 
-	/* Illustration always above the copy once stacked, so the alternating
-	   order doesn't leave some rows starting with text and others with an
-	   image. */
-	.dak-home-why-row {
-		grid-template-columns: 1fr !important;
-		gap: var( --dak-space-5 ) !important;
-		padding: var( --dak-space-5 ) !important;
-	}
-
-	.dak-home-why-row:nth-child( even ) .dak-home-why-row-media,
-	.dak-home-why-row-media {
-		order: -1 !important;
-	}
-
-	.dak-home-why-row-body h3 {
-		font-size: 1.6rem !important;
-	}
-
 	.dak-home-video-tour-heading {
 		grid-template-columns: 1fr !important;
 	}
@@ -1687,23 +1539,23 @@
 	}
 
 	.dak-home-testimonial-band-inner,
-	.dak-home-booking-inner {
+	.dak-home-join-doctors-inner {
 		grid-template-columns: 1fr !important;
 	}
 
 	/* Stacked here, so the card sits under the copy — lifting it would drag
 	   it over the text instead of over the band's top edge. */
-	.dak-home-booking {
+	.dak-home-join-doctors {
 		margin-top: var( --dak-space-8 ) !important;
 		padding: var( --dak-space-6 ) var( --dak-space-4 ) !important;
 	}
 
-	.dak-home-booking-form {
+	.dak-home-join-doctors-card {
 		align-self: auto !important;
 		margin-top: 0 !important;
 	}
 
-	.dak-home-booking-copy h2 {
+	.dak-home-join-doctors-copy h2 {
 		font-size: 1.9rem !important;
 	}
 
@@ -1738,9 +1590,5 @@
 	.dak-home-video-tour .dak-home-hero-visual {
 		height: 240px !important;
 		padding: var( --dak-space-4 ) var( --dak-space-3 ) !important;
-	}
-
-	.dak-home-booking-field-row {
-		grid-template-columns: 1fr !important;
 	}
 }

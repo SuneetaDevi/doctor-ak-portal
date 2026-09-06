@@ -1,8 +1,14 @@
 <?php
 /**
- * Serves the three dashboards (Admin/Receptionist, Doctor, Patient) inside a
- * bare page template — no theme header.php/footer.php — so they read as a
- * standalone app rather than a page embedded in the public site.
+ * Serves every page this plugin owns — the three dashboards
+ * (Admin/Receptionist, Doctor, Patient) and the public-facing pages (Home,
+ * Doctors/Services directories, doctor/service profile, booking, login/
+ * register/forgot-password, profile) — inside a bare page template: no
+ * active theme header.php/footer.php. Without this, the theme's own nav
+ * (often pointing at nothing, since the site owner never built real pages
+ * for it) would render alongside/on top of this plugin's own header,
+ * producing a second, non-functional "navbar" on every page but the ones
+ * this filter already covered.
  *
  * @package DoctorAKPortal\Frontend
  */
@@ -31,6 +37,27 @@ class Dashboard_Layout {
 	const DASHBOARD_SHORTCODES = array( 'admin_dashboard', 'doctor_dashboard', 'patient_dashboard' );
 
 	/**
+	 * Every public-facing (non-dashboard) shortcode this plugin owns a whole
+	 * page for. Deliberately excludes 'featured_doctors' — that one is meant
+	 * to be embedded inside an otherwise normal theme page, not to occupy a
+	 * whole page of its own.
+	 *
+	 * @var array
+	 */
+	const PUBLIC_SHORTCODES = array(
+		'dak_home',
+		'doctors_directory',
+		'doctor_profile_view',
+		'services_directory',
+		'service_profile_view',
+		'book_appointment',
+		'doctor_register',
+		'doctor_login',
+		'doctor_forgot_password',
+		'doctor_profile',
+	);
+
+	/**
 	 * Swaps in a header/footer-free template for any page containing the
 	 * admin, doctor, or patient dashboard shortcode. wp_head()/wp_footer()
 	 * still fire (see templates/dashboard/dashboard-canvas.php), so enqueued
@@ -53,17 +80,21 @@ class Dashboard_Layout {
 	public function template_include( $template ) {
 		$shortcode = $this->dashboard_shortcode_on_page();
 
-		if ( '' === $shortcode ) {
-			return $template;
+		if ( '' !== $shortcode ) {
+			if ( ! is_user_logged_in() ) {
+				$this->redirect( Page_Finder::url_for_shortcode( 'doctor_login' ) );
+			} else {
+				$this->maybe_redirect_to_own_dashboard( $shortcode );
+			}
+
+			return DOCTOR_AK_PORTAL_PATH . 'templates/dashboard/dashboard-canvas.php';
 		}
 
-		if ( ! is_user_logged_in() ) {
-			$this->redirect( Page_Finder::url_for_shortcode( 'doctor_login' ) );
-		} else {
-			$this->maybe_redirect_to_own_dashboard( $shortcode );
+		if ( $this->public_shortcode_on_page() ) {
+			return DOCTOR_AK_PORTAL_PATH . 'templates/dashboard/dashboard-canvas.php';
 		}
 
-		return DOCTOR_AK_PORTAL_PATH . 'templates/dashboard/dashboard-canvas.php';
+		return $template;
 	}
 
 	/**
@@ -151,5 +182,27 @@ class Dashboard_Layout {
 		}
 
 		return '';
+	}
+
+	/**
+	 * Checks whether the current request is for a page containing any of
+	 * this plugin's public-facing shortcodes (see PUBLIC_SHORTCODES).
+	 *
+	 * @return bool
+	 */
+	private function public_shortcode_on_page() {
+		global $post;
+
+		if ( ! ( $post instanceof \WP_Post ) ) {
+			return false;
+		}
+
+		foreach ( self::PUBLIC_SHORTCODES as $shortcode ) {
+			if ( has_shortcode( $post->post_content, $shortcode ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

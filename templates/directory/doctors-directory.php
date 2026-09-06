@@ -48,6 +48,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<?php endforeach; ?>
 				</select>
 			<?php endif; ?>
+
+			<div class="dak-directory-view-toggle" role="group" aria-label="<?php esc_attr_e( 'Grid or list view', 'doctor-ak-portal' ); ?>">
+				<button type="button" class="dak-directory-view-btn is-active" data-directory-view="grid" aria-pressed="true" title="<?php esc_attr_e( 'Grid view', 'doctor-ak-portal' ); ?>">
+					<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="6.5" height="6.5" rx="1"/><rect x="11" y="2.5" width="6.5" height="6.5" rx="1"/><rect x="2.5" y="11" width="6.5" height="6.5" rx="1"/><rect x="11" y="11" width="6.5" height="6.5" rx="1"/></svg>
+					<span class="dak-visually-hidden"><?php esc_html_e( 'Grid view', 'doctor-ak-portal' ); ?></span>
+				</button>
+				<button type="button" class="dak-directory-view-btn" data-directory-view="list" aria-pressed="false" title="<?php esc_attr_e( 'List view', 'doctor-ak-portal' ); ?>">
+					<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14"/></svg>
+					<span class="dak-visually-hidden"><?php esc_html_e( 'List view', 'doctor-ak-portal' ); ?></span>
+				</button>
+			</div>
 		</div>
 	<?php endif; ?>
 
