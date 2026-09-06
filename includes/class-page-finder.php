@@ -49,6 +49,8 @@ class Page_Finder {
 		'book_appointment',
 		'services_directory',
 		'service_profile_view',
+		'blogs_directory',
+		'blog_single',
 	);
 
 	/**

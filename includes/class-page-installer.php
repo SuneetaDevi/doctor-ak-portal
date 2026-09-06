@@ -49,7 +49,7 @@ class Page_Installer {
 	 *
 	 * @var string
 	 */
-	const VERSION = '1.0.0';
+	const VERSION = '1.1.0';
 
 	/**
 	 * Self-healing install, safe to run on every request: does nothing once
@@ -84,6 +84,8 @@ class Page_Installer {
 		'doctor_profile_view'     => 'Doctor Profile',
 		'services_directory'      => 'Our Services',
 		'service_profile_view'    => 'Service Details',
+		'blogs_directory'         => 'Blog',
+		'blog_single'             => 'Blog Post',
 		'book_appointment'        => 'Book Appointment',
 		'doctor_register'         => 'Register',
 		'doctor_login'            => 'Login',

@@ -116,31 +116,54 @@
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: center !important;
-	width: 34px !important;
+	gap: 0.4rem !important;
 	height: 34px !important;
+	padding: 0 0.75rem !important;
 	border: none !important;
 	border-radius: var( --dak-radius-sm ) !important;
 	background: none !important;
 	color: var( --dak-muted ) !important;
+	font-size: 0.82rem !important;
+	font-weight: 600 !important;
 	cursor: pointer !important;
 	transition: background-color 0.15s ease, color 0.15s ease !important;
 }
 
-.dak-directory-view-btn svg {
-	width: 18px !important;
-	height: 18px !important;
-	color: currentColor !important;
-	stroke: currentColor !important;
+.dak-directory-view-btn span {
+	color: var( --dak-muted ) !important;
 }
 
-.dak-directory-view-btn:hover {
+.dak-directory-view-btn svg {
+	width: 16px !important;
+	height: 16px !important;
+	flex-shrink: 0 !important;
+	color: var( --dak-muted ) !important;
+	stroke: var( --dak-muted ) !important;
+}
+
+.dak-directory-view-btn:hover,
+.dak-directory-view-btn:hover span {
 	color: var( --dak-text ) !important;
+}
+
+.dak-directory-view-btn:hover svg {
+	color: var( --dak-text ) !important;
+	stroke: var( --dak-text ) !important;
 }
 
 .dak-directory-view-btn.is-active {
 	background: var( --dak-bg-card ) !important;
-	color: var( --dak-primary-dark ) !important;
 	box-shadow: var( --dak-shadow ) !important;
+}
+
+.dak-directory-view-btn.is-active,
+.dak-directory-view-btn.is-active span {
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-directory-view-btn.is-active svg {
+	color: var( --dak-primary-dark ) !important;
+	stroke: var( --dak-primary-dark ) !important;
 }
 
 @media ( max-width: 640px ) {
@@ -461,6 +484,21 @@
 	box-shadow: var( --dak-shadow ) !important;
 	padding: 1.75rem !important;
 	margin-bottom: 1.5rem !important;
+}
+
+/* Single blog post ([blog_single]) — reuses .dak-profile-header-card's
+   card/shadow styling, just stacked vertically instead of avatar+info
+   side-by-side. */
+.dak-blog-single-card {
+	flex-direction: column !important;
+	align-items: stretch !important;
+}
+
+.dak-blog-single-image {
+	width: 100% !important;
+	height: auto !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	margin: 1rem 0 !important;
 }
 
 .dak-profile-header-card .dak-avatar-lg {

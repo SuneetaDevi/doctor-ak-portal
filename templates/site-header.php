@@ -16,6 +16,7 @@
  * @var string   $services_url    URL of the [services_directory] page, or '' if not found.
  * @var string   $videos_url      Home page's "More From Our Clinic" section anchor.
  * @var string   $clinics_url     Home page's "Visit Us" section anchor.
+ * @var string   $blogs_url       URL of the [blogs_directory] page, or '' if not found.
  * @var array    $doctor_specialties All rows from Home_Page::specialties_in_use() — { slug, label, count, url } — real specialties at least one doctor has.
  * @var string   $current_path    Site_Header::current_path() — current request's URL path, for the active-page nav underline.
  * @var bool     $is_logged_in    Whether a user is currently logged in.
@@ -256,15 +257,17 @@ $dak_header_has_utility_bar = $address || $phone || $email || $facebook_url || $
 				<li class="menu-item"><a href="<?php echo esc_url( $videos_url ); ?>"><?php esc_html_e( 'Videos', 'doctor-ak-portal' ); ?></a></li>
 
 				<!--
-					Gallery/Blogs: nav items only, by request — neither has a
-					real page or content behind it yet (no photo-gallery
-					feature exists in the plugin, and no WordPress "posts
-					page" is configured), so these intentionally go nowhere
-					(href="#") rather than link to a fabricated destination.
-					Point them at a real URL once there's something to show.
+					Gallery: nav item only, by request — no photo-gallery
+					feature exists in the plugin yet, so this intentionally
+					goes nowhere (href="#") rather than link to a fabricated
+					destination. Point it at a real URL once there's
+					something to show. Blogs, unlike Gallery, now has a real
+					page — see $blogs_url above (Blogs_Directory).
 				-->
 				<li class="menu-item"><a href="#"><?php esc_html_e( 'Gallery', 'doctor-ak-portal' ); ?></a></li>
-				<li class="menu-item"><a href="#"><?php esc_html_e( 'Blogs', 'doctor-ak-portal' ); ?></a></li>
+				<?php if ( $blogs_url ) : ?>
+					<li class="menu-item<?php echo $dak_is_current_page( $blogs_url ) ? ' dak-site-header-menu-current' : ''; ?>"><a href="<?php echo esc_url( $blogs_url ); ?>"><?php esc_html_e( 'Blogs', 'doctor-ak-portal' ); ?></a></li>
+				<?php endif; ?>
 			</ul>
 		</nav>
 

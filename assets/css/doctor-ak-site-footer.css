@@ -21,7 +21,7 @@
 	max-width: 1200px !important;
 	margin: 0 auto !important;
 	display: grid !important;
-	grid-template-columns: 1.4fr 1fr 1fr 1fr !important;
+	grid-template-columns: 1.5fr 1fr 1fr 1fr !important;
 	gap: 2rem !important;
 	padding-bottom: 2.5rem !important;
 }
@@ -47,6 +47,14 @@
 	font-size: 1.3rem !important;
 	font-weight: 700 !important;
 	color: #ffffff !important;
+}
+
+.dak-site-footer-tagline {
+	color: var( --dak-primary, #7fb52d ) !important;
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+	letter-spacing: 0.02em !important;
+	margin: 0 0 0.75rem !important;
 }
 
 .dak-site-footer-description {
@@ -132,17 +140,13 @@
 	color: var( --dak-primary, #7fb52d ) !important;
 }
 
-.dak-site-footer-clinic-name {
-	font-size: 0.95rem !important;
-	font-weight: 700 !important;
+.dak-site-footer-menu-highlight a {
 	color: var( --dak-primary, #7fb52d ) !important;
-	margin: 0 0 0.6rem !important;
 }
 
-.dak-site-footer-clinic-address {
-	font-size: 0.88rem !important;
-	line-height: 1.6 !important;
-	color: #d1d5db !important;
+.dak-site-footer-empty {
+	font-size: 0.85rem !important;
+	color: #6b7280 !important;
 	margin: 0 !important;
 }
 
@@ -150,6 +154,25 @@
 	border-top: 1px solid rgba( 255, 255, 255, 0.1 ) !important;
 	padding: 1.25rem 0 !important;
 	text-align: center !important;
+}
+
+.dak-site-footer-policy-links {
+	list-style: none !important;
+	margin: 0 0 0.85rem !important;
+	padding: 0 !important;
+	display: flex !important;
+	flex-wrap: wrap !important;
+	justify-content: center !important;
+	gap: 0.4rem 1.25rem !important;
+}
+
+.dak-site-footer-policy-links a {
+	font-size: 0.82rem !important;
+	color: #9ca3af !important;
+}
+
+.dak-site-footer-policy-links a:hover {
+	color: var( --dak-primary, #7fb52d ) !important;
 }
 
 .dak-site-footer-bottom p {

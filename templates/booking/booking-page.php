@@ -1,9 +1,15 @@
 <?php
 /**
  * Template: Full booking page for the [book_appointment] shortcode — a
- * 6-step wizard (Doctor -> Service -> Personal Details -> Date & Time ->
+ * 4-step wizard (Doctor & Service -> Personal Details -> Date, Time &
  * Payment -> Confirmation) with a persistent vertical step sidebar and
- * explicit Back/Next navigation between steps.
+ * explicit Back/Next navigation between steps. The Personal Details step is
+ * skipped entirely for a logged-in patient with a phone on file (see
+ * $identity_fully_known); the Doctor & Service step is skipped entirely
+ * when the patient already arrives with everything it would ask already
+ * decided (see $selection_fully_known) — both computed by
+ * Booking_Page::resolved_selection()/identity_fully_known() and re-applied
+ * by assets/js/doctor-ak-booking-page.js's initialStep().
  *
  * @package DoctorAKPortal\Templates
  *
@@ -13,6 +19,10 @@
  * @var string $selected_doctor_name Preselected doctor's display name (no "Dr." prefix).
  * @var string $selected_type        'clinic' or 'video'.
  * @var bool   $video_disabled       Whether the preselected doctor doesn't offer video consultations.
+ * @var int[]  $selected_service_ids Preselected, validated service ids (clinic type only), or an empty array.
+ * @var int    $selected_clinic_id   Preselected, validated Clinics row id, or 0.
+ * @var bool   $selection_fully_known Whether the Doctor & Service step can be skipped entirely.
+ * @var bool   $identity_fully_known  Whether the Personal Details step can be skipped entirely.
  * @var string $contact_url          "Need help with booking?" link target.
  * @var bool   $is_staff             Whether the current viewer is an Administrator/Receptionist booking on behalf of a patient — shows a patient picker instead of Login/Register/Guest.
  * @var array  $patient_options      Patient user ID => display name, only populated when $is_staff.
@@ -43,12 +53,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="dak-booking-wizard-layout">
 			<aside class="dak-booking-wizard-sidebar">
 				<ol class="dak-booking-wizard-steps" id="dak-booking-steps">
-					<li class="dak-booking-wizard-step" data-step="doctor"><span class="dak-booking-wizard-step-badge" data-num="1"></span><span class="dak-booking-wizard-step-label"><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></span></li>
-					<li class="dak-booking-wizard-step" data-step="service"><span class="dak-booking-wizard-step-badge" data-num="2"></span><span class="dak-booking-wizard-step-label"><?php esc_html_e( 'Service', 'doctor-ak-portal' ); ?></span></li>
-					<li class="dak-booking-wizard-step" data-step="identity"><span class="dak-booking-wizard-step-badge" data-num="3"></span><span class="dak-booking-wizard-step-label"><?php esc_html_e( 'Personal Details', 'doctor-ak-portal' ); ?></span></li>
-					<li class="dak-booking-wizard-step" data-step="datetime"><span class="dak-booking-wizard-step-badge" data-num="4"></span><span class="dak-booking-wizard-step-label"><?php esc_html_e( 'Date & Time', 'doctor-ak-portal' ); ?></span></li>
-					<li class="dak-booking-wizard-step" data-step="payment"><span class="dak-booking-wizard-step-badge" data-num="5"></span><span class="dak-booking-wizard-step-label"><?php esc_html_e( 'Payment', 'doctor-ak-portal' ); ?></span></li>
-					<li class="dak-booking-wizard-step" data-step="confirmation"><span class="dak-booking-wizard-step-badge" data-num="6"></span><span class="dak-booking-wizard-step-label"><?php esc_html_e( 'Confirmation', 'doctor-ak-portal' ); ?></span></li>
+					<li class="dak-booking-wizard-step" data-step="selection"><span class="dak-booking-wizard-step-badge" data-num="1"></span><span class="dak-booking-wizard-step-label"><?php esc_html_e( 'Doctor & Service', 'doctor-ak-portal' ); ?></span></li>
+					<li class="dak-booking-wizard-step" data-step="identity"><span class="dak-booking-wizard-step-badge" data-num="2"></span><span class="dak-booking-wizard-step-label"><?php esc_html_e( 'Personal Details', 'doctor-ak-portal' ); ?></span></li>
+					<li class="dak-booking-wizard-step" data-step="schedule"><span class="dak-booking-wizard-step-badge" data-num="3"></span><span class="dak-booking-wizard-step-label"><?php esc_html_e( 'Date, Time & Payment', 'doctor-ak-portal' ); ?></span></li>
+					<li class="dak-booking-wizard-step" data-step="confirmation"><span class="dak-booking-wizard-step-badge" data-num="4"></span><span class="dak-booking-wizard-step-label"><?php esc_html_e( 'Confirmation', 'doctor-ak-portal' ); ?></span></li>
 				</ol>
 
 				<?php if ( $contact_url ) : ?>
@@ -64,8 +72,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<div class="dak-booking-wizard-content">
 				<div class="dak-alert dak-alert-error dak-hidden" id="dak-booking-error" role="alert"></div>
 
-				<!-- Step 1: Doctor -->
-				<section class="dak-booking-card" id="dak-booking-step-doctor">
+				<!-- Step: Doctor & Service (merged) -->
+				<section class="dak-booking-card" id="dak-booking-step-selection">
 					<h2 class="dak-booking-card-title"><?php esc_html_e( 'Choose a Doctor', 'doctor-ak-portal' ); ?></h2>
 
 					<?php if ( count( $doctor_cards ) > 1 ) : ?>
@@ -116,24 +124,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<p class="dak-empty-state dak-hidden" id="dak-booking-doctor-no-results"><?php esc_html_e( 'No doctors match your search.', 'doctor-ak-portal' ); ?></p>
 					<span class="dak-field-error" data-field="doctor_id"></span>
 
-					<div class="dak-booking-wizard-nav">
-						<span></span>
-						<button type="button" class="dak-button dak-button-primary" data-wizard-next="service"><?php esc_html_e( 'Next', 'doctor-ak-portal' ); ?></button>
-					</div>
-				</section>
-
-				<!-- Step 2: Service -->
-				<section class="dak-booking-card dak-hidden" id="dak-booking-step-service">
-					<h2 class="dak-booking-card-title"><?php esc_html_e( 'Appointment Type & Service', 'doctor-ak-portal' ); ?></h2>
-
-					<div class="dak-booking-selected-doctor dak-hidden" id="dak-booking-service-doctor-summary">
-						<span class="dak-booking-doctor-avatar" id="dak-booking-service-doctor-avatar"></span>
-						<span class="dak-booking-doctor-info">
-							<span class="dak-booking-selected-doctor-label"><?php esc_html_e( 'Booking with', 'doctor-ak-portal' ); ?></span>
-							<strong id="dak-booking-service-doctor-name"></strong>
-						</span>
-						<button type="button" class="dak-button dak-button-secondary dak-booking-selected-doctor-change" data-wizard-back="doctor"><?php esc_html_e( 'Change', 'doctor-ak-portal' ); ?></button>
-					</div>
+					<h2 class="dak-booking-card-title dak-booking-card-title-secondary"><?php esc_html_e( 'Appointment Type & Service', 'doctor-ak-portal' ); ?></h2>
 
 					<div class="dak-booking-field-label"><?php esc_html_e( 'Appointment type', 'doctor-ak-portal' ); ?></div>
 					<div class="dak-booking-segmented" role="tablist">
@@ -158,12 +149,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</div>
 
 					<div class="dak-booking-wizard-nav">
-						<button type="button" class="dak-button dak-button-secondary" data-wizard-back="doctor">&larr; <?php esc_html_e( 'Back', 'doctor-ak-portal' ); ?></button>
+						<span></span>
 						<button type="button" class="dak-button dak-button-primary" data-wizard-next="identity"><?php esc_html_e( 'Next', 'doctor-ak-portal' ); ?></button>
 					</div>
 				</section>
 
-				<!-- Step 3: Personal Details -->
+				<!-- Step: Personal Details -->
 				<section class="dak-booking-card dak-hidden" id="dak-booking-step-identity">
 					<h2 class="dak-booking-card-title"><?php esc_html_e( 'Personal Details', 'doctor-ak-portal' ); ?></h2>
 
@@ -255,13 +246,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</div>
 
 					<div class="dak-booking-wizard-nav">
-						<button type="button" class="dak-button dak-button-secondary" data-wizard-back="service">&larr; <?php esc_html_e( 'Back', 'doctor-ak-portal' ); ?></button>
-						<button type="button" class="dak-button dak-button-primary" id="dak-booking-identity-next" data-wizard-next="datetime"><?php esc_html_e( 'Next', 'doctor-ak-portal' ); ?></button>
+						<button type="button" class="dak-button dak-button-secondary" data-wizard-back="selection">&larr; <?php esc_html_e( 'Back', 'doctor-ak-portal' ); ?></button>
+						<button type="button" class="dak-button dak-button-primary" id="dak-booking-identity-next" data-wizard-next="schedule"><?php esc_html_e( 'Next', 'doctor-ak-portal' ); ?></button>
 					</div>
 				</section>
 
-				<!-- Step 4: Date & Time -->
-				<section class="dak-booking-card dak-hidden" id="dak-booking-step-datetime">
+				<!-- Step: Date, Time & Payment (merged) -->
+				<section class="dak-booking-card dak-hidden" id="dak-booking-step-schedule">
 					<div class="dak-booking-calendar-toolbar">
 						<h2 class="dak-booking-card-title"><?php esc_html_e( 'Select Date and Time', 'doctor-ak-portal' ); ?></h2>
 						<div class="dak-booking-calendar-header">
@@ -304,15 +295,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</span>
 					</div>
 
-					<div class="dak-booking-wizard-nav">
-						<button type="button" class="dak-button dak-button-secondary" data-wizard-back="identity">&larr; <?php esc_html_e( 'Back', 'doctor-ak-portal' ); ?></button>
-						<button type="button" class="dak-button dak-button-primary" data-wizard-next="payment"><?php esc_html_e( 'Next', 'doctor-ak-portal' ); ?></button>
-					</div>
-				</section>
-
-				<!-- Step 5: Payment -->
-				<section class="dak-booking-card dak-hidden" id="dak-booking-step-payment">
-					<h2 class="dak-booking-card-title"><?php esc_html_e( 'Review & Payment', 'doctor-ak-portal' ); ?></h2>
+					<h2 class="dak-booking-card-title dak-booking-card-title-secondary"><?php esc_html_e( 'Review & Payment', 'doctor-ak-portal' ); ?></h2>
 
 					<ul class="dak-booking-summary-list" id="dak-booking-summary-list">
 						<li class="dak-hidden" data-summary-row="doctor"><span class="dak-booking-summary-icon" aria-hidden="true">&#128100;</span><span data-summary-value></span></li>
@@ -348,12 +331,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</div>
 
 					<div class="dak-booking-wizard-nav">
-						<button type="button" class="dak-button dak-button-secondary" data-wizard-back="datetime">&larr; <?php esc_html_e( 'Back', 'doctor-ak-portal' ); ?></button>
+						<button type="button" class="dak-button dak-button-secondary" data-wizard-back="identity">&larr; <?php esc_html_e( 'Back', 'doctor-ak-portal' ); ?></button>
 						<span></span>
 					</div>
 				</section>
 
-				<!-- Step 6: Confirmation -->
+				<!-- Step: Confirmation -->
 				<section class="dak-booking-card dak-hidden" id="dak-booking-step-confirmation">
 					<h2 class="dak-booking-card-title"><?php esc_html_e( 'Confirmation', 'doctor-ak-portal' ); ?></h2>
 					<div class="dak-alert dak-alert-success dak-hidden" id="dak-booking-success" role="status"></div>

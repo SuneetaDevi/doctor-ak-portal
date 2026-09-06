@@ -6,8 +6,10 @@
  * "Book Appointment" button there — see templates/directory/doctor-profile-view.php.
  * That button carries `data-dak-book-appointment` like every other one on
  * the site, so once enabled the site-wide doctor-ak-booking-redirect.js
- * still handles the actual click-through, reading whichever `data-booking-type`
- * this file has just set on it.
+ * still handles the actual click-through, reading whichever `data-booking-type`/
+ * `data-clinic-id` this file has just set on it — carrying the clinic the
+ * patient just picked here straight into the booking wizard, instead of it
+ * being asked again there (see Booking_Page::resolved_selection()).
  */
 ( function () {
 	'use strict';
@@ -65,6 +67,7 @@
 			button.removeAttribute( 'disabled' );
 			button.removeAttribute( 'title' );
 			button.setAttribute( 'data-booking-type', selectedRow.getAttribute( 'data-booking-type' ) || '' );
+			button.setAttribute( 'data-clinic-id', selectedRow.getAttribute( 'data-clinic-id' ) || '' );
 		}
 	} );
 } )();

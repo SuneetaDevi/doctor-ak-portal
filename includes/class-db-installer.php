@@ -195,6 +195,20 @@ class Db_Installer {
 	const REVENUE_SETTLEMENTS_DB_VERSION = '1.0.0';
 
 	/**
+	 * Option name tracking the installed blogs-table schema version.
+	 *
+	 * @var string
+	 */
+	const BLOGS_DB_VERSION_OPTION = 'dak_blogs_db_version';
+
+	/**
+	 * Current blogs table schema version.
+	 *
+	 * @var string
+	 */
+	const BLOGS_DB_VERSION = '1.0.0';
+
+	/**
 	 * Option name guarding the one-time legacy-data migration so it never
 	 * runs more than once.
 	 *
@@ -264,6 +278,9 @@ class Db_Installer {
 		self::create_revenue_settlements_table();
 		update_option( self::REVENUE_SETTLEMENTS_DB_VERSION_OPTION, self::REVENUE_SETTLEMENTS_DB_VERSION );
 
+		self::create_blogs_table();
+		update_option( self::BLOGS_DB_VERSION_OPTION, self::BLOGS_DB_VERSION );
+
 		if ( ! get_option( self::MIGRATION_OPTION ) ) {
 			self::migrate_legacy_data();
 			update_option( self::MIGRATION_OPTION, 'yes' );
@@ -303,6 +320,7 @@ class Db_Installer {
 			&& self::ENCOUNTER_REPORTS_DB_VERSION === get_option( self::ENCOUNTER_REPORTS_DB_VERSION_OPTION )
 			&& self::REVENUE_LEDGER_DB_VERSION === get_option( self::REVENUE_LEDGER_DB_VERSION_OPTION )
 			&& self::REVENUE_SETTLEMENTS_DB_VERSION === get_option( self::REVENUE_SETTLEMENTS_DB_VERSION_OPTION )
+			&& self::BLOGS_DB_VERSION === get_option( self::BLOGS_DB_VERSION_OPTION )
 		) {
 			return;
 		}
@@ -413,6 +431,37 @@ class Db_Installer {
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),
 			KEY doctor_id (doctor_id)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Runs dbDelta() against the blogs table schema.
+	 *
+	 * @return void
+	 */
+	private static function create_blogs_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$table_name      = Blogs::table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table_name} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			author_id BIGINT UNSIGNED NOT NULL,
+			title VARCHAR(191) NOT NULL,
+			content LONGTEXT NULL,
+			image_id BIGINT UNSIGNED NULL DEFAULT NULL,
+			status VARCHAR(20) NOT NULL DEFAULT 'draft',
+			published_at DATETIME NULL DEFAULT NULL,
+			created_at DATETIME NOT NULL,
+			updated_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY author_id (author_id),
+			KEY status (status)
 		) {$charset_collate};";
 
 		dbDelta( $sql );

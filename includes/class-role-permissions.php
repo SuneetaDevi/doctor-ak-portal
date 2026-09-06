@@ -133,6 +133,7 @@ class Role_Permissions {
 			'services'           => __( 'Services', 'doctor-ak-portal' ),
 			'video-consultation' => __( 'Video Consultation', 'doctor-ak-portal' ),
 			'doctor-sessions'    => __( 'Doctor Sessions', 'doctor-ak-portal' ),
+			'blogs'              => __( 'Blogs', 'doctor-ak-portal' ),
 			'locations'          => __( 'Locations', 'doctor-ak-portal' ),
 			'settings'           => __( 'Settings', 'doctor-ak-portal' ),
 		);

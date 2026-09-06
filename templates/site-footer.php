@@ -4,19 +4,20 @@
  *
  * @package DoctorAKPortal\Templates
  *
- * @var string $quick_links_menu_location Registered nav menu location slug for "Quick Links".
- * @var string $services_menu_location    Registered nav menu location slug for "Our Services".
- * @var string $logo_url                  Bundled logo URL (assets/images/logo.*), or '' if none was placed there.
- * @var string $description               Clinic description paragraph.
- * @var string $phone                     Booking phone number.
- * @var string $facebook_url              Facebook page URL, or '' to hide the icon.
- * @var string $twitter_url               X (Twitter) profile URL, or '' to hide the icon.
- * @var string $instagram_url             Instagram profile URL, or '' to hide the icon.
- * @var string $linkedin_url              LinkedIn profile URL, or '' to hide the icon.
- * @var string $clinic_name               Clinic name (e.g. "Main Clinic").
- * @var string $clinic_address            Clinic address.
- * @var string $clinic_phone              Clinic contact phone.
- * @var string $copyright_name            Name shown in the "Copyright © [year] [name]" line.
+ * @var string $logo_url          Bundled logo URL (assets/images/logo.*), or '' if none was placed there.
+ * @var string $brand_domain      Site_Footer::BRAND_DOMAIN — shown in place of the logo when none is uploaded.
+ * @var string $brand_tagline     Short tagline shown under the brand — same one used on the home hero.
+ * @var string $description       Clinic description paragraph.
+ * @var string $phone             Booking phone number.
+ * @var string $facebook_url      Facebook page URL, or '' to hide the icon.
+ * @var string $twitter_url       X (Twitter) profile URL, or '' to hide the icon.
+ * @var string $instagram_url     Instagram profile URL, or '' to hide the icon.
+ * @var string $linkedin_url      LinkedIn profile URL, or '' to hide the icon.
+ * @var array  $doctors           Site_Footer::doctors_for_footer() rows — { name, url } — a handful of real, active doctors.
+ * @var string $directory_url     URL of the [doctors_directory] page, or '' if not found — the "Doctors" column's "All Doctors" link.
+ * @var array  $services          Site_Footer::services_for_footer() rows — { name, url } — real, bookable services.
+ * @var array  $clinics_by_city   Site_Footer::clinics_by_city_for_footer() rows — { label, url } — one per distinct clinic city.
+ * @var array  $policy_links      Site_Footer::policy_links() rows — { label, url } — legal pages found by title, only those that exist.
  */
 
 // Prevent direct file access.
@@ -36,11 +37,15 @@ $dak_footer_social_icons = array(
 		<div class="dak-site-footer-col dak-site-footer-brand">
 			<a class="dak-site-footer-logo" href="<?php echo esc_url( home_url( '/' ) ); ?>">
 				<?php if ( $logo_url ) : ?>
-					<img src="<?php echo esc_url( $logo_url ); ?>" alt="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>">
+					<img src="<?php echo esc_url( $logo_url ); ?>" alt="<?php echo esc_attr( $brand_domain ); ?>">
 				<?php else : ?>
-					<span class="dak-site-footer-logo-text"><?php echo esc_html( get_bloginfo( 'name' ) ); ?></span>
+					<span class="dak-site-footer-logo-text"><?php echo esc_html( $brand_domain ); ?></span>
 				<?php endif; ?>
 			</a>
+
+			<?php if ( $brand_tagline ) : ?>
+				<p class="dak-site-footer-tagline"><?php echo esc_html( $brand_tagline ); ?></p>
+			<?php endif; ?>
 
 			<?php if ( $description ) : ?>
 				<p class="dak-site-footer-description"><?php echo esc_html( $description ); ?></p>
@@ -71,60 +76,59 @@ $dak_footer_social_icons = array(
 		</div>
 
 		<div class="dak-site-footer-col">
-			<h3><?php esc_html_e( 'Quick Links', 'doctor-ak-portal' ); ?></h3>
-			<?php
-			wp_nav_menu(
-				array(
-					'theme_location' => $quick_links_menu_location,
-					'container'      => false,
-					'menu_class'     => 'dak-site-footer-menu',
-					'items_wrap'     => '<ul class="%2$s">%3$s</ul>',
-					'fallback_cb'    => array( '\\DoctorAKPortal\\Frontend\\Site_Footer', 'render_fallback_quick_links_menu' ),
-				)
-			);
-			?>
+			<h3><?php esc_html_e( 'Doctors', 'doctor-ak-portal' ); ?></h3>
+			<ul class="dak-site-footer-menu">
+				<?php if ( $directory_url ) : ?>
+					<li class="menu-item dak-site-footer-menu-highlight"><a href="<?php echo esc_url( $directory_url ); ?>"><?php esc_html_e( 'All Doctors', 'doctor-ak-portal' ); ?></a></li>
+				<?php endif; ?>
+				<?php foreach ( $doctors as $dak_doctor ) : ?>
+					<li class="menu-item"><a href="<?php echo esc_url( $dak_doctor['url'] ); ?>"><?php echo esc_html( $dak_doctor['name'] ); ?></a></li>
+				<?php endforeach; ?>
+			</ul>
 		</div>
 
 		<div class="dak-site-footer-col">
-			<h3><?php esc_html_e( 'Our Services', 'doctor-ak-portal' ); ?></h3>
-			<?php
-			wp_nav_menu(
-				array(
-					'theme_location' => $services_menu_location,
-					'container'      => false,
-					'menu_class'     => 'dak-site-footer-menu',
-					'items_wrap'     => '<ul class="%2$s">%3$s</ul>',
-					'fallback_cb'    => array( '\\DoctorAKPortal\\Frontend\\Site_Footer', 'render_fallback_services_menu' ),
-				)
-			);
-			?>
-		</div>
-
-		<div class="dak-site-footer-col">
-			<h3><?php esc_html_e( 'Our Clinics', 'doctor-ak-portal' ); ?></h3>
-			<?php if ( $clinic_name ) : ?>
-				<h4 class="dak-site-footer-clinic-name"><?php echo esc_html( $clinic_name ); ?></h4>
+			<h3><?php esc_html_e( 'Services', 'doctor-ak-portal' ); ?></h3>
+			<?php if ( empty( $services ) ) : ?>
+				<p class="dak-site-footer-empty"><?php esc_html_e( 'Coming soon.', 'doctor-ak-portal' ); ?></p>
+			<?php else : ?>
+				<ul class="dak-site-footer-menu">
+					<?php foreach ( $services as $dak_service ) : ?>
+						<li class="menu-item"><a href="<?php echo esc_url( $dak_service['url'] ); ?>"><?php echo esc_html( $dak_service['name'] ); ?></a></li>
+					<?php endforeach; ?>
+				</ul>
 			<?php endif; ?>
-			<?php if ( $clinic_address ) : ?>
-				<p class="dak-site-footer-clinic-address">
-					<?php echo esc_html( $clinic_address ); ?>
-					<?php if ( $clinic_phone ) : ?>
-						<?php esc_html_e( 'Contact:', 'doctor-ak-portal' ); ?> <?php echo esc_html( $clinic_phone ); ?>
-					<?php endif; ?>
-				</p>
+		</div>
+
+		<div class="dak-site-footer-col">
+			<h3><?php esc_html_e( 'Clinics / Locations', 'doctor-ak-portal' ); ?></h3>
+			<?php if ( empty( $clinics_by_city ) ) : ?>
+				<p class="dak-site-footer-empty"><?php esc_html_e( 'Coming soon.', 'doctor-ak-portal' ); ?></p>
+			<?php else : ?>
+				<ul class="dak-site-footer-menu">
+					<?php foreach ( $clinics_by_city as $dak_city ) : ?>
+						<li class="menu-item"><a href="<?php echo esc_url( $dak_city['url'] ); ?>"><?php echo esc_html( $dak_city['label'] ); ?></a></li>
+					<?php endforeach; ?>
+				</ul>
 			<?php endif; ?>
 		</div>
 	</div>
 
 	<div class="dak-site-footer-bottom">
+		<?php if ( ! empty( $policy_links ) ) : ?>
+			<ul class="dak-site-footer-policy-links">
+				<?php foreach ( $policy_links as $dak_policy_link ) : ?>
+					<li><a href="<?php echo esc_url( $dak_policy_link['url'] ); ?>"><?php echo esc_html( $dak_policy_link['label'] ); ?></a></li>
+				<?php endforeach; ?>
+			</ul>
+		<?php endif; ?>
 		<p>
 			<?php
 			echo esc_html(
 				sprintf(
-					/* translators: 1: current year, 2: site/clinic name. */
-					__( 'Copyright © %1$s %2$s. All Rights Reserved.', 'doctor-ak-portal' ),
-					gmdate( 'Y' ),
-					$copyright_name
+					/* translators: %s: brand domain, e.g. "drakhlana.com". */
+					__( '%s – All Rights Reserved', 'doctor-ak-portal' ),
+					$brand_domain
 				)
 			);
 			?>

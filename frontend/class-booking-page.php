@@ -108,6 +108,8 @@ class Booking_Page {
 			true
 		);
 
+		$selection = $this->resolved_selection();
+
 		wp_localize_script(
 			'doctor-ak-portal-booking-page',
 			'dakBookingPage',
@@ -125,6 +127,13 @@ class Booking_Page {
 				'videoPricing' => $this->video_pricing_by_doctor(),
 				'bookingRules' => $this->booking_rules_by_doctor(),
 				'clinics'      => $this->clinics_by_doctor(),
+				// Drives the Selection/Identity steps' "skip entirely if
+				// already known" behaviour — see resolved_selection() and
+				// identity_fully_known(). Re-checked client-side too (against
+				// the 'services'/'clinics' maps above) before being trusted,
+				// in case something became invalid between render and load.
+				'selectionFullyKnown' => $selection['selection_fully_known'],
+				'identityFullyKnown'  => $this->identity_fully_known(),
 			)
 		);
 	}
@@ -147,12 +156,8 @@ class Booking_Page {
 	 * @return string
 	 */
 	public function render() {
-		$requested_doctor_id = isset( $_GET['doctor_id'] ) ? absint( $_GET['doctor_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
-		$doctor               = $requested_doctor_id > 0 ? get_userdata( $requested_doctor_id ) : false;
-		$doctor               = ( $doctor && in_array( Roles::DOCTOR_ROLE, (array) $doctor->roles, true ) ) ? $doctor : false;
-		$doctor               = ( $doctor && 'yes' !== get_user_meta( $doctor->ID, 'doctor_ak_account_disabled', true ) ) ? $doctor : false;
-
-		$type = ( isset( $_GET['type'] ) && 'video' === $_GET['type'] ) ? 'video' : 'clinic'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		$selection = $this->resolved_selection();
+		$doctor    = $selection['doctor'];
 
 		// Staff (admin/receptionist) arriving from the Patients table's
 		// "Book Appointment" action already has a patient in mind — skip
@@ -169,16 +174,10 @@ class Booking_Page {
 		}
 
 		$selected_doctor_name = '';
-		$video_disabled       = false;
 
 		if ( $doctor ) {
 			$selected_doctor_name = trim( $doctor->first_name . ' ' . $doctor->last_name );
 			$selected_doctor_name = '' !== $selected_doctor_name ? $selected_doctor_name : $doctor->display_name;
-			$video_disabled       = ! Clinics::doctor_has_active_video_clinic( $doctor->ID );
-
-			if ( $video_disabled ) {
-				$type = 'clinic';
-			}
 		}
 
 		$doctor_cards = $this->doctor_cards_data();
@@ -190,14 +189,132 @@ class Booking_Page {
 				'specialization_options'  => self::specialization_options_for_cards( $doctor_cards ),
 				'selected_doctor_id'      => $doctor ? $doctor->ID : 0,
 				'selected_doctor_name'    => $selected_doctor_name,
-				'selected_type'           => $type,
-				'video_disabled'          => $video_disabled,
+				'selected_type'           => $selection['type'],
+				'video_disabled'          => $selection['video_disabled'],
+				'selected_service_ids'    => $selection['selected_service_ids'],
+				'selected_clinic_id'      => $selection['selected_clinic_id'],
+				'selection_fully_known'   => $selection['selection_fully_known'],
+				'identity_fully_known'    => $this->identity_fully_known(),
 				'contact_url'             => self::contact_url(),
 				'is_staff'                => self::is_staff(),
 				'patient_options'         => self::is_staff() ? Appointments::patient_options() : array(),
 				'selected_patient_id'     => $selected_patient_id,
 			)
 		);
+	}
+
+	/**
+	 * Reads and validates the "already known" navigation state from the
+	 * URL — doctor, appointment type, service(s), and clinic — so the
+	 * Selection step can be skipped entirely when a patient already arrives
+	 * with everything it would ask already decided (e.g. from a doctor's
+	 * profile page, or a service's "Book" link). Invalid/foreign ids (e.g.
+	 * a service belonging to a different doctor, or a stale/tampered
+	 * clinic_id) are silently dropped rather than erroring — Selection
+	 * still shows in that case, just without that one bad preselection,
+	 * exactly like $doctor_id already behaved before this method existed.
+	 * Called from both render() (to pick the initial step/prefill) and
+	 * enqueue_assets() (to localize the same flag for the client-side
+	 * re-check before goToStep() runs) — cheap enough to compute twice per
+	 * request, and keeps both call sites from ever disagreeing.
+	 *
+	 * @return array {
+	 *     @type \WP_User|false $doctor                 Validated doctor, or false.
+	 *     @type string         $type                   'clinic' or 'video'.
+	 *     @type bool           $video_disabled          Whether the doctor has no active video clinic.
+	 *     @type int[]          $selected_service_ids   Validated service ids (clinic type only, empty for video).
+	 *     @type int            $selected_clinic_id     Validated Clinics row id (0 if none requested/applicable).
+	 *     @type bool           $selection_fully_known  Whether the Selection step can be skipped entirely.
+	 * }
+	 */
+	private function resolved_selection() {
+		$requested_doctor_id = isset( $_GET['doctor_id'] ) ? absint( $_GET['doctor_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		$doctor               = $requested_doctor_id > 0 ? get_userdata( $requested_doctor_id ) : false;
+		$doctor               = ( $doctor && in_array( Roles::DOCTOR_ROLE, (array) $doctor->roles, true ) ) ? $doctor : false;
+		$doctor               = ( $doctor && 'yes' !== get_user_meta( $doctor->ID, 'doctor_ak_account_disabled', true ) ) ? $doctor : false;
+
+		$type           = ( isset( $_GET['type'] ) && 'video' === $_GET['type'] ) ? 'video' : 'clinic'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		$video_disabled = false;
+
+		if ( $doctor ) {
+			$video_disabled = ! Clinics::doctor_has_active_video_clinic( $doctor->ID );
+
+			if ( $video_disabled ) {
+				$type = 'clinic';
+			}
+		}
+
+		$selected_service_ids  = array();
+		$selected_clinic_id    = 0;
+		$selection_fully_known = false;
+
+		if ( $doctor && 'video' === $type ) {
+			$selection_fully_known = true;
+		} elseif ( $doctor ) {
+			$requested_service_ids = array();
+
+			if ( isset( $_GET['service_ids'] ) && is_array( $_GET['service_ids'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+				$requested_service_ids = array_map( 'absint', wp_unslash( $_GET['service_ids'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			} elseif ( isset( $_GET['service_id'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+				$requested_service_ids = array( absint( $_GET['service_id'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			}
+
+			$valid_service_ids = wp_list_pluck( Services::active_for_doctor( $doctor->ID, 'clinic' ), 'id' );
+
+			foreach ( $requested_service_ids as $requested_service_id ) {
+				if ( $requested_service_id > 0 && in_array( $requested_service_id, $valid_service_ids, true ) ) {
+					$selected_service_ids[] = $requested_service_id;
+				}
+			}
+
+			$selected_service_ids = array_values( array_unique( $selected_service_ids ) );
+
+			$doctor_clinic_ids = wp_list_pluck(
+				array_filter(
+					Clinics::get_for_doctor( $doctor->ID ),
+					function ( $clinic ) {
+						return Clinics::TYPE_PHYSICAL === $clinic['type'];
+					}
+				),
+				'id'
+			);
+
+			$requested_clinic_id = isset( $_GET['clinic_id'] ) ? absint( $_GET['clinic_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$clinic_valid        = empty( $doctor_clinic_ids ) || in_array( $requested_clinic_id, $doctor_clinic_ids, true );
+
+			if ( $clinic_valid && ! empty( $doctor_clinic_ids ) ) {
+				$selected_clinic_id = $requested_clinic_id;
+			}
+
+			$selection_fully_known = ! empty( $selected_service_ids ) && $clinic_valid;
+		}
+
+		return array(
+			'doctor'                => $doctor,
+			'type'                  => $type,
+			'video_disabled'        => $video_disabled,
+			'selected_service_ids'  => $selected_service_ids,
+			'selected_clinic_id'    => $selected_clinic_id,
+			'selection_fully_known' => $selection_fully_known,
+		);
+	}
+
+	/**
+	 * Whether the Identity step can be skipped entirely — true only for a
+	 * logged-in patient (never staff or a guest) who already has a phone
+	 * number on file, regardless of clinic vs video booking: a clinic visit
+	 * needs nothing else from them, and a video booking's only extra
+	 * requirement (a phone on file, see Booking_Handler's phone check) is
+	 * already satisfied too.
+	 *
+	 * @return bool
+	 */
+	private function identity_fully_known() {
+		if ( self::is_staff() || ! $this->is_patient() ) {
+			return false;
+		}
+
+		return '' !== get_user_meta( wp_get_current_user()->ID, 'doctor_ak_phone_number', true );
 	}
 
 	/**
@@ -368,6 +485,13 @@ class Booking_Page {
 							'name'             => $service['name'],
 							'charge'           => $service['charge'],
 							'duration_minutes' => $service['duration_minutes'],
+							// Clinic_Locations id => this doctor's own override
+							// price at that clinic for this service, when set
+							// (see Services::decode_row()) — lets the JS show/
+							// sum the correct price as the patient's clinic
+							// selection changes, instead of always the flat
+							// charge above.
+							'clinic_charges'   => $service['clinic_charges'],
 						);
 					},
 					$services
@@ -428,10 +552,15 @@ class Booking_Page {
 					);
 
 					return array(
-						'id'      => $clinic['id'],
-						'name'    => $clinic['name'],
-						'address' => $address_line,
-						'phone'   => $clinic['phone'],
+						'id'                 => $clinic['id'],
+						'name'               => $clinic['name'],
+						'address'            => $address_line,
+						'phone'              => $clinic['phone'],
+						// The shared Clinic_Locations id this Clinics row
+						// points at — a different id space than 'id' above —
+						// used client-side to look up a service's
+						// clinic_charges override for this specific clinic.
+						'clinic_location_id' => $clinic['clinic_location_id'],
 					);
 				},
 				$clinics

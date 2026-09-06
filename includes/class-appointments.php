@@ -110,6 +110,10 @@ class Appointments {
 	 * @param array  $data      Raw data passed to create()/update() — reads 'service_id' and/or 'service_ids'.
 	 * @param int    $doctor_id Doctor's user ID every picked service must belong to.
 	 * @param string $type      'clinic' or 'video'.
+	 * @param int    $clinic_id Which of the doctor's Clinics rows this visit is at (0 if none/not
+	 *                          applicable) — used to look up each service's clinic_charges override
+	 *                          (keyed by Clinic_Locations id, NOT this row id) for its price, falling
+	 *                          back to the service's flat $charge when no override is set for this clinic.
 	 * @return array|\WP_Error {
 	 *     @type int    $service_id   First/primary picked service's ID, 0 if none.
 	 *     @type array  $service_ids  Every picked service's ID, for storage (empty array if none).
@@ -118,7 +122,7 @@ class Appointments {
 	 *     @type float  $base_charge  Same as $charge (kept as its own field to mirror the video-consultation branch's base/final price split).
 	 * }
 	 */
-	private static function resolve_services( array $data, $doctor_id, $type ) {
+	private static function resolve_services( array $data, $doctor_id, $type, $clinic_id = 0 ) {
 		$empty = array(
 			'service_id'   => 0,
 			'service_ids'  => array(),
@@ -143,6 +147,18 @@ class Appointments {
 			return $empty;
 		}
 
+		// A service can cost differently at different clinic locations for the
+		// same doctor (Services::decode_row()'s 'clinic_charges', keyed by
+		// Clinic_Locations id). $clinic_id here is the doctor's own Clinics row
+		// id (Clinics::get_for_doctor()'s 'id'), a different id space — resolve
+		// it to the shared Clinic_Locations id it points at once, up front.
+		$clinic_location_id = 0;
+
+		if ( $clinic_id > 0 ) {
+			$clinic_row          = Clinics::find( $clinic_id );
+			$clinic_location_id = $clinic_row ? (int) $clinic_row['clinic_location_id'] : 0;
+		}
+
 		$names  = array();
 		$charge = 0.0;
 
@@ -153,8 +169,12 @@ class Appointments {
 				return new \WP_Error( 'doctor_ak_invalid_service', __( 'Please choose valid, active services.', 'doctor-ak-portal' ) );
 			}
 
-			$names[] = $service['name'];
-			$charge += (float) $service['charge'];
+			$names[]         = $service['name'];
+			$clinic_charges  = isset( $service['clinic_charges'] ) ? $service['clinic_charges'] : array();
+			$effective_price = ( $clinic_location_id > 0 && isset( $clinic_charges[ $clinic_location_id ] ) )
+				? (float) $clinic_charges[ $clinic_location_id ]
+				: (float) $service['charge'];
+			$charge         += $effective_price;
 		}
 
 		return array(
@@ -283,7 +303,7 @@ class Appointments {
 				$discount_percent = $pricing['discount_percent'];
 			}
 		} else {
-			$resolved = self::resolve_services( $data, $doctor_id, $type );
+			$resolved = self::resolve_services( $data, $doctor_id, $type, $clinic_id );
 
 			if ( is_wp_error( $resolved ) ) {
 				return $resolved;

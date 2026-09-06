@@ -19,9 +19,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Lets an administrator fill in the site-wide footer's real content —
  * description, booking phone, social links, and the clinic's actual
- * name/address/phone — mirroring Notification_Settings' shape. The "Quick
- * Links" and "Our Services" columns are handled separately, as real
- * WordPress menus (Appearance -> Menus), not settings here.
+ * name/address/phone (the latter three also feed invoices/prescriptions/
+ * statements — see Site_Footer::OPTION_CLINIC_*) — mirroring
+ * Notification_Settings' shape. The footer's Doctors/Specialities/Services/
+ * Clinics columns aren't configured here — they're generated straight from
+ * real site data (see Site_Footer::prepare_data()), not a hand-edited menu.
  */
 class Footer_Settings {
 
@@ -73,7 +75,7 @@ class Footer_Settings {
 			<p>
 				<?php
 				esc_html_e(
-					'Content for the site-wide footer shown on every page. The "Quick Links" and "Our Services" columns are managed separately under Appearance -> Menus ("Footer Quick Links" and "Footer Services").',
+					'Content for the site-wide footer shown on every page. The Doctors, Specialities, Services, and Clinics/Locations columns are generated automatically from real site data and aren\'t editable here.',
 					'doctor-ak-portal'
 				);
 				?>

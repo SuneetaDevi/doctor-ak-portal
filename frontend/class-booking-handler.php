@@ -147,6 +147,13 @@ class Booking_Handler {
 		$time           = isset( $_POST['time'] ) ? sanitize_text_field( wp_unslash( $_POST['time'] ) ) : '';
 		$notes          = isset( $_POST['notes'] ) ? sanitize_textarea_field( wp_unslash( $_POST['notes'] ) ) : '';
 		$service_id     = isset( $_POST['service_id'] ) ? absint( $_POST['service_id'] ) : 0;
+		// A patient can now select more than one service for the same
+		// visit (see the Selection step's checkboxes) — sanitized the same
+		// way Appointments::resolve_services() itself would, so there's no
+		// drift between what's validated here and what's actually used.
+		$service_ids    = isset( $_POST['service_ids'] ) && is_array( $_POST['service_ids'] )
+			? array_values( array_unique( array_filter( array_map( 'absint', wp_unslash( $_POST['service_ids'] ) ) ) ) )
+			: array();
 		$clinic_id      = isset( $_POST['clinic_id'] ) ? absint( $_POST['clinic_id'] ) : 0;
 		$payment_choice = ( isset( $_POST['payment_choice'] ) && 'now' === $_POST['payment_choice'] ) ? 'now' : 'later';
 
@@ -162,6 +169,14 @@ class Booking_Handler {
 
 		if ( '' === $time ) {
 			$errors['time'] = __( 'Please choose an appointment time.', 'doctor-ak-portal' );
+		}
+
+		// The Selection step's service checkboxes can now all be left
+		// unchecked (previously always auto-selected one) — a clinic visit
+		// needs at least one, otherwise Appointments::create() would happily
+		// save a PKR 0 visit with no service on it.
+		if ( 'clinic' === $type && 0 === $service_id && empty( $service_ids ) ) {
+			$errors['service_id'] = __( 'Please choose at least one service.', 'doctor-ak-portal' );
 		}
 
 		$current_user         = wp_get_current_user();
@@ -285,6 +300,7 @@ class Booking_Handler {
 				'time'        => $time,
 				'notes'       => $notes,
 				'service_id'  => $service_id,
+				'service_ids' => $service_ids,
 				'clinic_id'   => $clinic_id,
 				'payment_choice' => $payment_choice,
 			)

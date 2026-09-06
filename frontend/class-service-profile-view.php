@@ -186,7 +186,22 @@ class Service_Profile_View {
 				'category_label'     => $row['category_label'],
 				'location_labels'    => $location_labels,
 				'clinic_locations'   => $row['clinic_locations'],
-				'booking_url'        => $base_booking_url ? add_query_arg( 'doctor_id', $doctor->ID, $base_booking_url ) : '',
+				// Carries the exact service the patient just picked here
+				// straight into the booking wizard's Selection step, so it
+				// doesn't have to be re-picked (see
+				// Booking_Page::resolved_selection()). Deliberately doesn't
+				// also carry a clinic id — this service can list more than
+				// one clinic location for this doctor (see
+				// 'clinic_locations' above), so there's no single
+				// unambiguous one to preselect; Selection still shows the
+				// clinic picker in that case.
+				'booking_url'        => $base_booking_url ? add_query_arg(
+					array(
+						'doctor_id'  => $doctor->ID,
+						'service_id' => $row['id'],
+					),
+					$base_booking_url
+				) : '',
 			);
 		}
 

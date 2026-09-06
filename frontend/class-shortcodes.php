@@ -109,6 +109,20 @@ class Shortcodes {
 	private $home_page;
 
 	/**
+	 * Blogs directory controller.
+	 *
+	 * @var Blogs_Directory
+	 */
+	private $blogs_directory;
+
+	/**
+	 * Public single blog post controller.
+	 *
+	 * @var Blog_Single
+	 */
+	private $blog_single;
+
+	/**
 	 * Sets up collaborators.
 	 *
 	 * @param Doctor_Dashboard     $doctor_dashboard     Doctor dashboard controller.
@@ -122,8 +136,10 @@ class Shortcodes {
 	 * @param Services_Directory   $services_directory   Services directory controller.
 	 * @param Service_Profile_View $service_profile_view Public service profile view controller.
 	 * @param Home_Page            $home_page            Home page controller.
+	 * @param Blogs_Directory      $blogs_directory      Blogs directory controller.
+	 * @param Blog_Single          $blog_single          Public single blog post controller.
 	 */
-	public function __construct( Doctor_Dashboard $doctor_dashboard, Patient_Dashboard $patient_dashboard, Profile_Handler $profile_handler, Doctors_Directory $doctors_directory, Doctor_Profile_View $doctor_profile_view, Admin_Dashboard $admin_dashboard, Booking_Page $booking_page, Featured_Doctors $featured_doctors, Services_Directory $services_directory, Service_Profile_View $service_profile_view, Home_Page $home_page ) {
+	public function __construct( Doctor_Dashboard $doctor_dashboard, Patient_Dashboard $patient_dashboard, Profile_Handler $profile_handler, Doctors_Directory $doctors_directory, Doctor_Profile_View $doctor_profile_view, Admin_Dashboard $admin_dashboard, Booking_Page $booking_page, Featured_Doctors $featured_doctors, Services_Directory $services_directory, Service_Profile_View $service_profile_view, Home_Page $home_page, Blogs_Directory $blogs_directory, Blog_Single $blog_single ) {
 		$this->template_loader      = new Template_Loader();
 		$this->doctor_dashboard     = $doctor_dashboard;
 		$this->patient_dashboard    = $patient_dashboard;
@@ -136,6 +152,8 @@ class Shortcodes {
 		$this->services_directory   = $services_directory;
 		$this->service_profile_view = $service_profile_view;
 		$this->home_page            = $home_page;
+		$this->blogs_directory      = $blogs_directory;
+		$this->blog_single          = $blog_single;
 	}
 
 	/**
@@ -158,6 +176,8 @@ class Shortcodes {
 		add_shortcode( 'services_directory', array( $this, 'render_services_directory' ) );
 		add_shortcode( 'service_profile_view', array( $this, 'render_service_profile_view' ) );
 		add_shortcode( 'dak_home', array( $this, 'render_home_page' ) );
+		add_shortcode( 'blogs_directory', array( $this, 'render_blogs_directory' ) );
+		add_shortcode( 'blog_single', array( $this, 'render_blog_single' ) );
 	}
 
 	/**
@@ -285,5 +305,23 @@ class Shortcodes {
 	 */
 	public function render_home_page() {
 		return $this->home_page->render();
+	}
+
+	/**
+	 * Renders the [blogs_directory] shortcode.
+	 *
+	 * @return string
+	 */
+	public function render_blogs_directory() {
+		return $this->blogs_directory->render();
+	}
+
+	/**
+	 * Renders the [blog_single] shortcode.
+	 *
+	 * @return string
+	 */
+	public function render_blog_single() {
+		return $this->blog_single->render();
 	}
 }

@@ -50,6 +50,8 @@ class Dashboard_Layout {
 		'doctor_profile_view',
 		'services_directory',
 		'service_profile_view',
+		'blogs_directory',
+		'blog_single',
 		'book_appointment',
 		'doctor_register',
 		'doctor_login',

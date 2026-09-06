@@ -196,6 +196,7 @@ $dak_profile_view_icons = array(
 									tabindex="0"
 									aria-pressed="false"
 									data-booking-type="<?php echo esc_attr( $dak_clinic_is_video ? 'video' : 'clinic' ); ?>"
+									data-clinic-id="<?php echo esc_attr( $clinic['id'] ); ?>"
 									data-clinic-label="<?php echo esc_attr( $dak_clinic_label ); ?>"
 									data-fee-label="<?php echo esc_attr( $clinic['fee_label'] ); ?>"
 								>

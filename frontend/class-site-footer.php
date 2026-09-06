@@ -8,7 +8,9 @@
 namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
+use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Page_Finder;
+use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Template_Loader;
 
 // Prevent direct file access.
@@ -20,17 +22,19 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Class Site_Footer
  *
  * Mirrors Site_Header: renders on every front-end request (via wp_footer)
- * rather than only on shortcode pages. "Quick Links" and "Our Services" are
- * registered WordPress menu locations the site owner edits from Appearance ->
- * Menus, each with a sensible fallback until one is assigned; everything
- * else (description, phone, social links, clinic info) comes from
- * Footer_Settings (Settings -> Footer Settings), defaulting to this
- * clinic's real, current content rather than a placeholder.
+ * rather than only on shortcode pages. Its link columns (Doctors, Services,
+ * Clinics) are generated straight from the same real data the rest of the
+ * public site already uses (Doctors_Directory, Services, Clinic_Locations) — not
+ * site-owner-edited WordPress menus, since a stale hand-built menu could
+ * easily point at a doctor/specialty/clinic that no longer exists. The
+ * legal/policy links (Privacy Policy, Terms, etc.) that used to live in the
+ * old "Quick Links" menu are still real WordPress pages, found by title —
+ * see policy_links(). Everything else (description, phone, social links,
+ * clinic branding used elsewhere in the plugin) comes from Footer_Settings
+ * (Settings -> Footer Settings), defaulting to this clinic's real, current
+ * content rather than a placeholder.
  */
 class Site_Footer {
-
-	const MENU_LOCATION_QUICK_LINKS = 'doctor_ak_portal_footer_quick_links';
-	const MENU_LOCATION_SERVICES    = 'doctor_ak_portal_footer_services';
 
 	const OPTION_DESCRIPTION     = 'doctor_ak_footer_description';
 	const OPTION_PHONE           = 'doctor_ak_footer_phone';
@@ -46,6 +50,25 @@ class Site_Footer {
 	const OPTION_CLINIC_LOGO_PATH = 'doctor_ak_footer_clinic_logo_path';
 
 	/**
+	 * The site's brand domain — shown in the footer in place of the logo
+	 * when no bundled logo file exists, and in the copyright line, per the
+	 * site owner's explicit request to lead with the domain rather than any
+	 * one person's name.
+	 *
+	 * @var string
+	 */
+	const BRAND_DOMAIN = 'drakhlana.com';
+
+	/**
+	 * Max doctors listed in the footer's "Doctors" column before pointing
+	 * the rest at the full directory — keeps the column tidy regardless of
+	 * how many doctors are registered.
+	 *
+	 * @var int
+	 */
+	const FOOTER_DOCTORS_LIMIT = 8;
+
+	/**
 	 * Template loader.
 	 *
 	 * @var Template_Loader
@@ -53,23 +76,22 @@ class Site_Footer {
 	private $template_loader;
 
 	/**
-	 * Sets up collaborators.
+	 * Doctors directory controller — supplies the footer's "Doctors" column
+	 * (same card data the directory grid/featured-doctors slider use).
 	 *
-	 * @param Template_Loader $template_loader Template loader.
+	 * @var Doctors_Directory
 	 */
-	public function __construct( Template_Loader $template_loader ) {
-		$this->template_loader = $template_loader;
-	}
+	private $doctors_directory;
 
 	/**
-	 * Registers the footer's two nav menu locations so they appear under
-	 * Appearance -> Menus.
+	 * Sets up collaborators.
 	 *
-	 * @return void
+	 * @param Template_Loader   $template_loader   Template loader.
+	 * @param Doctors_Directory $doctors_directory Doctors directory controller.
 	 */
-	public function register_menu_locations() {
-		register_nav_menu( self::MENU_LOCATION_QUICK_LINKS, __( 'Doctor AK Portal Footer — Quick Links', 'doctor-ak-portal' ) );
-		register_nav_menu( self::MENU_LOCATION_SERVICES, __( 'Doctor AK Portal Footer — Our Services', 'doctor-ak-portal' ) );
+	public function __construct( Template_Loader $template_loader, Doctors_Directory $doctors_directory ) {
+		$this->template_loader   = $template_loader;
+		$this->doctors_directory = $doctors_directory;
 	}
 
 	/**
@@ -116,23 +138,132 @@ class Site_Footer {
 	 * @return array
 	 */
 	private function prepare_data() {
-		$copyright_name = get_option( self::OPTION_COPYRIGHT_NAME, '' );
+		$directory_url = Page_Finder::url_for_shortcode( 'doctors_directory' );
 
 		return array(
-			'quick_links_menu_location' => self::MENU_LOCATION_QUICK_LINKS,
-			'services_menu_location'    => self::MENU_LOCATION_SERVICES,
-			'logo_url'                  => self::bundled_logo_url(),
-			'description'               => get_option( self::OPTION_DESCRIPTION, 'At Dr. A.K. Lohana Clinics And Endoscopy Services, We Provide Comprehensive Care For Digestive, Liver, And Gastrointestinal Conditions.' ),
-			'phone'                     => get_option( self::OPTION_PHONE, '0303-3638304' ),
-			'facebook_url'              => get_option( self::OPTION_FACEBOOK_URL, '' ),
-			'twitter_url'               => get_option( self::OPTION_TWITTER_URL, '' ),
-			'instagram_url'             => get_option( self::OPTION_INSTAGRAM_URL, '' ),
-			'linkedin_url'              => get_option( self::OPTION_LINKEDIN_URL, '' ),
-			'clinic_name'               => get_option( self::OPTION_CLINIC_NAME, 'Main Clinic' ),
-			'clinic_address'            => get_option( self::OPTION_CLINIC_ADDRESS, 'Chugtai Lab, Khaliq Zaman Road, Adjacent To Bacha Party, Block 8 Clifton, Karachi.' ),
-			'clinic_phone'              => get_option( self::OPTION_CLINIC_PHONE, '0303-3638304' ),
-			'copyright_name'            => '' !== $copyright_name ? $copyright_name : get_bloginfo( 'name' ),
+			'logo_url'          => self::bundled_logo_url(),
+			'brand_domain'      => self::BRAND_DOMAIN,
+			'brand_tagline'     => __( 'Gastroenterology & Endoscopy · Karachi', 'doctor-ak-portal' ),
+			'description'       => get_option( self::OPTION_DESCRIPTION, 'At Dr. A.K. Lohana Clinics And Endoscopy Services, We Provide Comprehensive Care For Digestive, Liver, And Gastrointestinal Conditions.' ),
+			'phone'             => get_option( self::OPTION_PHONE, '0303-3638304' ),
+			'facebook_url'      => get_option( self::OPTION_FACEBOOK_URL, '' ),
+			'twitter_url'       => get_option( self::OPTION_TWITTER_URL, '' ),
+			'instagram_url'     => get_option( self::OPTION_INSTAGRAM_URL, '' ),
+			'linkedin_url'      => get_option( self::OPTION_LINKEDIN_URL, '' ),
+			'doctors'           => self::doctors_for_footer( $directory_url ),
+			'directory_url'     => $directory_url,
+			'services'          => self::services_for_footer(),
+			'clinics_by_city'   => self::clinics_by_city_for_footer( $directory_url ),
+			'policy_links'      => self::policy_links(),
 		);
+	}
+
+	/**
+	 * Real, active doctors for the footer's "Doctors" column — same card
+	 * data the directory grid/featured-doctors slider use, capped at
+	 * FOOTER_DOCTORS_LIMIT with the full directory linked separately for
+	 * "see all".
+	 *
+	 * @param string $directory_url URL of the [doctors_directory] page, or '' if not found.
+	 * @return array [{name, url}, ...]
+	 */
+	private function doctors_for_footer( $directory_url ) {
+		return array_map(
+			function ( $card ) {
+				return array(
+					'name' => sprintf( 'Dr. %s', $card['name'] ),
+					'url'  => $card['profile_url'],
+				);
+			},
+			$this->doctors_directory->doctor_cards_data( self::FOOTER_DOCTORS_LIMIT )
+		);
+	}
+
+	/**
+	 * Real, bookable services for the footer's "Services" column — the same
+	 * grouped-by-name rows the [services_directory] grid uses, each linking
+	 * to that service's own detail page.
+	 *
+	 * @return array [{name, url}, ...]
+	 */
+	private static function services_for_footer() {
+		$service_profile_url = Page_Finder::url_for_shortcode( 'service_profile_view' );
+
+		return array_map(
+			function ( $group ) use ( $service_profile_url ) {
+				return array(
+					'name' => $group['name'],
+					'url'  => $service_profile_url ? add_query_arg( 'service_id', $group['id'], $service_profile_url ) : '',
+				);
+			},
+			Services::grouped_active_for_public_directory()
+		);
+	}
+
+	/**
+	 * Physical clinic locations grouped by city for the footer's "Clinics"
+	 * column — one row per distinct city, each linking to the doctors
+	 * directory pre-filtered to it (?city=<slug>, the same deep link
+	 * assets/js/doctor-ak-directory.js's presetCity handling already reads).
+	 *
+	 * @param string $directory_url URL of the [doctors_directory] page, or '' if not found.
+	 * @return array [{label, url}, ...], alphabetical by city.
+	 */
+	private static function clinics_by_city_for_footer( $directory_url ) {
+		$cities = array();
+
+		foreach ( Clinic_Locations::get_all() as $clinic_location ) {
+			if ( '' === $clinic_location['city'] || isset( $cities[ $clinic_location['city'] ] ) ) {
+				continue;
+			}
+
+			$cities[ $clinic_location['city'] ] = array(
+				'label' => $clinic_location['city_label'],
+				'url'   => $directory_url ? add_query_arg( 'city', $clinic_location['city'], $directory_url ) : '',
+			);
+		}
+
+		uasort(
+			$cities,
+			function ( $a, $b ) {
+				return strcasecmp( $a['label'], $b['label'] );
+			}
+		);
+
+		return array_values( $cities );
+	}
+
+	/**
+	 * Legal/policy pages for the footer's bottom bar, found by title — the
+	 * same best-effort lookup the old "Quick Links" menu's fallback used
+	 * (see find_page_url()), now the only thing that column was for once
+	 * Doctors/Specialities/Services/Clinics became their own real columns.
+	 *
+	 * @return array [{label, url}, ...] — an entry is dropped entirely (not
+	 *               shown as a dead link) when no matching page is published.
+	 */
+	private static function policy_links() {
+		$titles = array(
+			__( 'Privacy Policy', 'doctor-ak-portal' ),
+			__( 'Terms and Conditions', 'doctor-ak-portal' ),
+			__( 'Cancellation Policy', 'doctor-ak-portal' ),
+			__( 'Refund & Return Policy', 'doctor-ak-portal' ),
+		);
+
+		$links = array();
+
+		foreach ( $titles as $title ) {
+			$url = self::find_page_url( $title );
+
+			if ( '' !== $url ) {
+				$links[] = array(
+					'label' => $title,
+					'url'   => $url,
+				);
+			}
+		}
+
+		return $links;
 	}
 
 	/**
@@ -189,82 +320,8 @@ class Site_Footer {
 	}
 
 	/**
-	 * Renders a sensible default "Quick Links" menu when the site owner
-	 * hasn't assigned one to that location yet (Appearance -> Menus).
-	 *
-	 * @param array $args wp_nav_menu() args (only 'menu_class' is used here).
-	 * @return void
-	 */
-	public static function render_fallback_quick_links_menu( $args ) {
-		$menu_class = isset( $args['menu_class'] ) ? $args['menu_class'] : '';
-
-		$items = array(
-			__( 'Book Online Consultation', 'doctor-ak-portal' ) => Page_Finder::url_for_shortcode( 'doctors_directory' ),
-			__( 'Refund & Return Policy', 'doctor-ak-portal' )   => self::find_page_url( __( 'Refund & Return Policy', 'doctor-ak-portal' ) ),
-			__( 'Cancellation Policy', 'doctor-ak-portal' )      => self::find_page_url( __( 'Cancellation Policy', 'doctor-ak-portal' ) ),
-			__( 'Privacy Policy', 'doctor-ak-portal' )           => self::find_page_url( __( 'Privacy Policy', 'doctor-ak-portal' ) ),
-			__( 'Terms and Conditions', 'doctor-ak-portal' )     => self::find_page_url( __( 'Terms and Conditions', 'doctor-ak-portal' ) ),
-		);
-
-		self::render_fallback_list( $menu_class, $items );
-	}
-
-	/**
-	 * Renders a sensible default "Our Services" menu when the site owner
-	 * hasn't assigned one to that location yet (Appearance -> Menus). These
-	 * are marketing/procedure names, not the plugin's bookable per-doctor
-	 * Services (which have their own charges/duration) — purely informational
-	 * links the site owner should point at real service-detail pages.
-	 *
-	 * @param array $args wp_nav_menu() args (only 'menu_class' is used here).
-	 * @return void
-	 */
-	public static function render_fallback_services_menu( $args ) {
-		$menu_class = isset( $args['menu_class'] ) ? $args['menu_class'] : '';
-
-		$titles = array(
-			__( 'Hemorrhoidal Band Ligation', 'doctor-ak-portal' ),
-			__( 'Endoscopic Submucosal Dissection', 'doctor-ak-portal' ),
-			__( 'Endoscopic Mucosal Resection', 'doctor-ak-portal' ),
-			__( 'Endoscopic Ultrasound', 'doctor-ak-portal' ),
-			__( 'Endoscopic Retrograde Cholangiopancreatography', 'doctor-ak-portal' ),
-			__( 'Pediatric Colonoscopy', 'doctor-ak-portal' ),
-			__( 'Pediatric Gastroscopy', 'doctor-ak-portal' ),
-			__( 'GI Bleeding Management', 'doctor-ak-portal' ),
-		);
-
-		$items = array();
-		foreach ( $titles as $title ) {
-			$items[ $title ] = self::find_page_url( $title );
-		}
-
-		self::render_fallback_list( $menu_class, $items );
-	}
-
-	/**
-	 * @param string $menu_class CSS class for the <ul>.
-	 * @param array  $items      Label => URL.
-	 * @return void
-	 */
-	private static function render_fallback_list( $menu_class, array $items ) {
-		echo '<ul class="' . esc_attr( $menu_class ) . '">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-
-		foreach ( $items as $label => $url ) {
-			printf(
-				'<li class="menu-item"><a href="%1$s">%2$s</a></li>',
-				esc_url( $url ? $url : '#' ),
-				esc_html( $label )
-			);
-		}
-
-		echo '</ul>';
-	}
-
-	/**
-	 * Looks up a published page by its exact title, for the fallback menus'
-	 * best-effort links. Returns '' if no matching page is found — the site
-	 * owner should assign a real menu to these locations for full control
-	 * instead of relying on title matching.
+	 * Looks up a published page by its exact title, for policy_links()'s
+	 * best-effort links. Returns '' if no matching page is found.
 	 *
 	 * @param string $title Page title to match.
 	 * @return string

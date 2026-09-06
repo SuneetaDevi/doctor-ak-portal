@@ -1,11 +1,25 @@
 /**
  * Doctor AK Portal — Booking page ([book_appointment] shortcode).
  *
- * A 6-step wizard: Doctor -> Service -> Personal Details -> Date & Time ->
- * Payment -> Confirmation. Only one step's card is visible at once (see
- * goToStep()); navigation between steps is explicit via "Next"/"Back"
+ * A 4-step wizard: Doctor & Service -> Personal Details -> Date, Time &
+ * Payment -> Confirmation (collapsed from an earlier 6-step version — the
+ * old separate Doctor/Service steps are now one screen, and so are the old
+ * separate Date&Time/Payment steps). Only one step's card is visible at once
+ * (see goToStep()); navigation between steps is explicit via "Next"/"Back"
  * buttons (data-wizard-next/data-wizard-back), never automatic. A vertical
  * sidebar step list mirrors the active/complete state of each step.
+ *
+ * Two steps can additionally be skipped entirely when everything they'd ask
+ * is already known: Doctor & Service (when the patient arrived with a
+ * doctor+service+clinic already carried over — see
+ * Booking_Page::resolved_selection() and initialStep()/wireWizardNav()
+ * below), and Personal Details (for a logged-in patient with a phone on
+ * file — see Booking_Page::identity_fully_known()). Both flags are
+ * computed and validated server-side and simply trusted here — there's no
+ * separate client-side re-check, since the localized service/clinic maps
+ * this page's JS uses for everything else come from that exact same
+ * request, so they can't disagree with the also-localized "fully known"
+ * flags.
  */
 ( function () {
 	'use strict';
@@ -16,14 +30,12 @@
 	var monthCache = {}; // 'doctorId:type:YYYY-M' => { 'YYYY-MM-DD': { total, available } }
 	var selectedSlotSurcharge = 0;
 
-	var STEP_KEYS = [ 'doctor', 'service', 'identity', 'datetime', 'payment', 'confirmation' ];
+	var STEP_KEYS = [ 'selection', 'identity', 'schedule', 'confirmation' ];
 
 	var STEP_SECTION_IDS = {
-		doctor: 'dak-booking-step-doctor',
-		service: 'dak-booking-step-service',
+		selection: 'dak-booking-step-selection',
 		identity: 'dak-booking-step-identity',
-		datetime: 'dak-booking-step-datetime',
-		payment: 'dak-booking-step-payment',
+		schedule: 'dak-booking-step-schedule',
 		confirmation: 'dak-booking-step-confirmation',
 	};
 
@@ -49,16 +61,15 @@
 		wireSubmit();
 
 		renderDateStrip();
-		updateServiceCards( getDoctorId(), getType() );
-		updateClinicCards( getDoctorId(), getType() );
+		// Clinic cards render first — the service cards' prices depend on
+		// which clinic is selected (clinic_charges overrides), see
+		// updateServiceCards()/refreshServiceCardPrices().
+		updateClinicCards( getDoctorId(), getType(), true );
+		updateServiceCards( getDoctorId(), getType(), true );
 		applyIdentityState();
 		updateSummary();
-		updateServiceStepDoctorSummary();
 
-		// A doctor is already preselected (booking triggered from that
-		// doctor's card/profile), so skip straight to the Service step
-		// instead of making the patient pick a doctor again.
-		goToStep( getDoctorId() ? 'service' : 'doctor' );
+		goToStep( initialStep() );
 
 		if ( getDoctorId() ) {
 			fetchAndRenderDateStrip();
@@ -66,27 +77,22 @@
 	} );
 
 	/**
-	 * Mirrors the currently selected doctor's avatar/name into the small
-	 * "Booking with Dr. X" summary shown atop the Service step — the only
-	 * place a patient sees who they're booking once the Doctor step (1) is
-	 * skipped.
+	 * Which step to land on at load — skips Doctor & Service and/or
+	 * Personal Details entirely when everything either would ask is
+	 * already known (see the file-level doc comment above).
+	 *
+	 * @return {string}
 	 */
-	function updateServiceStepDoctorSummary() {
-		var summary = document.getElementById( 'dak-booking-service-doctor-summary' );
-		var doctorCard = document.querySelector( '[data-doctor-card].is-selected' );
-
-		if ( ! summary ) {
-			return;
+	function initialStep() {
+		if ( ! window.dakBookingPage.selectionFullyKnown ) {
+			return 'selection';
 		}
 
-		if ( ! doctorCard ) {
-			summary.classList.add( 'dak-hidden' );
-			return;
+		if ( ! window.dakBookingPage.identityFullyKnown ) {
+			return 'identity';
 		}
 
-		document.getElementById( 'dak-booking-service-doctor-avatar' ).innerHTML = doctorCard.querySelector( '.dak-booking-doctor-avatar' ).innerHTML;
-		document.getElementById( 'dak-booking-service-doctor-name' ).textContent = 'Dr. ' + doctorCard.getAttribute( 'data-doctor-name' );
-		summary.classList.remove( 'dak-hidden' );
+		return 'schedule';
 	}
 
 	function getDoctorId() {
@@ -141,13 +147,29 @@
 					return;
 				}
 
-				goToStep( button.getAttribute( 'data-wizard-next' ) );
+				// Skip the Personal Details step transparently whenever
+				// there's nothing it would collect (see the file-level doc
+				// comment) — same skip the initial page load already
+				// applies, just re-applied to manual Next clicks too.
+				var target = button.getAttribute( 'data-wizard-next' );
+
+				if ( 'identity' === target && window.dakBookingPage.identityFullyKnown ) {
+					target = 'schedule';
+				}
+
+				goToStep( target );
 			} );
 		} );
 
 		document.querySelectorAll( '[data-wizard-back]' ).forEach( function ( button ) {
 			button.addEventListener( 'click', function () {
-				goToStep( button.getAttribute( 'data-wizard-back' ) );
+				var target = button.getAttribute( 'data-wizard-back' );
+
+				if ( 'identity' === target && window.dakBookingPage.identityFullyKnown ) {
+					target = 'selection';
+				}
+
+				goToStep( target );
 			} );
 		} );
 	}
@@ -155,13 +177,27 @@
 	function validateStepBeforeNext( key ) {
 		clearFieldErrors();
 
-		if ( 'doctor' === key ) {
+		if ( 'selection' === key ) {
+			var selectionOk = true;
+
 			if ( ! getDoctorId() ) {
 				showFieldError( 'doctor_id', 'Please choose a doctor.' );
-				return false;
+				selectionOk = false;
 			}
 
-			return true;
+			if ( 'clinic' === getType() ) {
+				if ( ! getSelectedServiceIds().length ) {
+					showFieldError( 'service_id', 'Please choose at least one service.' );
+					selectionOk = false;
+				}
+
+				if ( clinicSectionVisible() && ! document.getElementById( 'dak-booking-clinic-id' ).value ) {
+					showFieldError( 'clinic_id', "Please choose which of the doctor's clinics you'd like to visit." );
+					selectionOk = false;
+				}
+			}
+
+			return selectionOk;
 		}
 
 		if ( 'identity' === key ) {
@@ -215,7 +251,7 @@
 			return true;
 		}
 
-		if ( 'datetime' === key ) {
+		if ( 'schedule' === key ) {
 			var dateOk = !! document.getElementById( 'dak-booking-date' ).value;
 			var timeOk = !! document.getElementById( 'dak-booking-time' ).value;
 
@@ -350,14 +386,13 @@
 		clearFieldError( 'doctor_id' );
 
 		updateVideoAvailability( card.hasAttribute( 'data-video-disabled' ) );
-		updateServiceCards( getDoctorId(), getType() );
-		updateClinicCards( getDoctorId(), getType() );
+		updateClinicCards( getDoctorId(), getType(), false );
+		updateServiceCards( getDoctorId(), getType(), false );
 		resetDateSelection();
 		monthCache = {};
 		fetchAndRenderDateStrip();
-		updateSteps( 'doctor' );
+		updateSteps( 'selection' );
 		updateSummary();
-		updateServiceStepDoctorSummary();
 		refreshBookingRules( getDoctorId() );
 	}
 
@@ -406,8 +441,8 @@
 				}
 
 				setType( segment.getAttribute( 'data-type' ) );
-				updateServiceCards( getDoctorId(), getType() );
-				updateClinicCards( getDoctorId(), getType() );
+				updateClinicCards( getDoctorId(), getType(), false );
+				updateServiceCards( getDoctorId(), getType(), false );
 				resetDateSelection();
 				monthCache = {};
 
@@ -483,7 +518,27 @@
 		}
 	}
 
-	function updateServiceCards( doctorId, type ) {
+	/**
+	 * Renders the Service picker for the selected doctor/type — checkboxes
+	 * (not single-select) so a patient can bundle more than one service
+	 * into the same visit (see getSelectedServiceIds()/wireSubmit(), and
+	 * Appointments::resolve_services() server-side, which already summed
+	 * multiple services' charges for the admin's own multi-select before
+	 * this patient-facing picker existed).
+	 *
+	 * @param {number}  doctorId          Selected doctor's ID (0 if none).
+	 * @param {string}  type              'clinic' or 'video'.
+	 * @param {boolean} applyPreselection Whether to honor
+	 *                                    window.dakBookingPage.selectedServiceIds
+	 *                                    (only true on the very first render
+	 *                                    — see initialStep()) — everywhere
+	 *                                    else (switching doctor/type by
+	 *                                    hand) falls back to auto-selecting
+	 *                                    the first service, same convenience
+	 *                                    the old single-select cards offered.
+	 * @return {void}
+	 */
+	function updateServiceCards( doctorId, type, applyPreselection ) {
 		var container = document.getElementById( 'dak-booking-service-cards' );
 
 		if ( ! container ) {
@@ -514,41 +569,53 @@
 			return;
 		}
 
+		var preselectedIds = ( applyPreselection && window.dakBookingPage.selectedServiceIds )
+			? window.dakBookingPage.selectedServiceIds.map( String )
+			: [];
+
 		services.forEach( function ( service, index ) {
-			var card = document.createElement( 'button' );
-			card.type = 'button';
-			card.className = 'dak-booking-service-card';
+			var card = document.createElement( 'label' );
+			card.className = 'dak-booking-service-card dak-booking-service-card-selectable';
 			card.setAttribute( 'data-service-id', service.id );
 			card.setAttribute( 'data-service-name', service.name );
 			card.setAttribute( 'data-service-charge', service.charge );
+			card.setAttribute( 'data-service-clinic-charges', JSON.stringify( service.clinic_charges || {} ) );
 			card.setAttribute( 'data-service-duration', service.duration_minutes || 0 );
+
+			var checkbox = document.createElement( 'input' );
+			checkbox.type = 'checkbox';
+			checkbox.className = 'dak-booking-service-checkbox';
+			checkbox.value = service.id;
+
+			var isPreselected = preselectedIds.length
+				? preselectedIds.indexOf( String( service.id ) ) !== -1
+				: 0 === index;
+
+			checkbox.checked = isPreselected;
+			card.classList.toggle( 'is-selected', isPreselected );
+
+			checkbox.addEventListener( 'change', function () {
+				card.classList.toggle( 'is-selected', checkbox.checked );
+				syncSelectedServiceIds();
+				updateSummary();
+			} );
 
 			var nameEl = document.createElement( 'strong' );
 			nameEl.textContent = service.name;
 
 			var metaEl = document.createElement( 'span' );
-			var metaParts = [];
+			metaEl.className = 'dak-booking-service-card-meta';
 
-			if ( service.duration_minutes > 0 ) {
-				metaParts.push( service.duration_minutes + ' min' );
-			}
-
-			metaParts.push( service.charge > 0 ? 'PKR' + service.charge : 'Free' );
-			metaEl.textContent = metaParts.join( ' · ' );
-
+			card.appendChild( checkbox );
 			card.appendChild( nameEl );
 			card.appendChild( metaEl );
 
-			card.addEventListener( 'click', function () {
-				selectService( card );
-			} );
-
 			container.appendChild( card );
-
-			if ( 0 === index ) {
-				selectService( card );
-			}
 		} );
+
+		refreshServiceCardPrices();
+		syncSelectedServiceIds();
+		clearFieldError( 'service_id' );
 	}
 
 	function updateVideoPriceCard( container, doctorId ) {
@@ -566,6 +633,7 @@
 		card.setAttribute( 'data-service-id', '0' );
 		card.setAttribute( 'data-service-name', 'Video Consultation' );
 		card.setAttribute( 'data-service-charge', pricing.final_price );
+		card.setAttribute( 'data-service-effective-charge', pricing.final_price );
 		card.setAttribute( 'data-service-duration', '0' );
 
 		var nameEl = document.createElement( 'strong' );
@@ -610,15 +678,31 @@
 		clearFieldError( 'service_id' );
 	}
 
-	function selectService( card ) {
-		document.querySelectorAll( '.dak-booking-service-card' ).forEach( function ( el ) {
-			el.classList.remove( 'is-selected' );
+	/**
+	 * Every currently checked service checkbox's id (clinic type only — a
+	 * video booking has no checkboxes, its single fixed-price card is never
+	 * a checkbox). Used for the "at least one service" validation, the
+	 * submit payload's `service_ids[]`, and the summary's service row/total.
+	 *
+	 * @return {string[]}
+	 */
+	function getSelectedServiceIds() {
+		return Array.prototype.slice.call( document.querySelectorAll( '#dak-booking-service-cards .dak-booking-service-checkbox:checked' ) ).map( function ( checkbox ) {
+			return checkbox.value;
 		} );
-		card.classList.add( 'is-selected' );
+	}
 
-		document.getElementById( 'dak-booking-service-id' ).value = card.getAttribute( 'data-service-id' );
-		clearFieldError( 'service_id' );
-		updateSummary();
+	/**
+	 * Mirrors the first checked service into the legacy singular
+	 * #dak-booking-service-id hidden input — kept around purely as the
+	 * server error response's field-anchor (Booking_Handler still reports
+	 * a "choose at least one service" error against `service_id`) and for
+	 * the no-services-configured/video fallbacks, which still use it as
+	 * their single source of truth.
+	 */
+	function syncSelectedServiceIds() {
+		var ids = getSelectedServiceIds();
+		document.getElementById( 'dak-booking-service-id' ).value = ids.length ? ids[ 0 ] : '';
 	}
 
 	/**
@@ -628,11 +712,15 @@
 	 * entirely for "Online Video", or when the doctor has no clinic
 	 * locations configured (falls back to the generic hint instead).
 	 *
-	 * @param {string} doctorId Selected doctor's ID.
-	 * @param {string} type     'clinic' or 'video'.
+	 * @param {string}  doctorId          Selected doctor's ID.
+	 * @param {string}  type              'clinic' or 'video'.
+	 * @param {boolean} applyPreselection Whether to honor
+	 *                                    window.dakBookingPage.selectedClinicId
+	 *                                    (only true on the very first
+	 *                                    render — see initialStep()).
 	 * @return {void}
 	 */
-	function updateClinicCards( doctorId, type ) {
+	function updateClinicCards( doctorId, type, applyPreselection ) {
 		var section = document.getElementById( 'dak-booking-clinic-section' );
 		var container = document.getElementById( 'dak-booking-clinic-cards' );
 		var hint = document.getElementById( 'dak-booking-clinic-hint' );
@@ -672,18 +760,25 @@
 
 		section.classList.remove( 'dak-hidden' );
 
-		clinics.forEach( function ( clinic, index ) {
+		var preselectedClinicId = ( applyPreselection && window.dakBookingPage.selectedClinicId )
+			? String( window.dakBookingPage.selectedClinicId )
+			: '';
+		var cards = [];
+
+		clinics.forEach( function ( clinic ) {
 			var card = document.createElement( 'button' );
 			card.type = 'button';
 			card.className = 'dak-booking-service-card';
 			card.setAttribute( 'data-clinic-id', clinic.id );
 			card.setAttribute( 'data-clinic-name', clinic.name );
 			card.setAttribute( 'data-clinic-address', clinic.address || '' );
+			card.setAttribute( 'data-clinic-location-id', clinic.clinic_location_id || '' );
 
 			var nameEl = document.createElement( 'strong' );
 			nameEl.textContent = clinic.name;
 
 			var metaEl = document.createElement( 'span' );
+			metaEl.className = 'dak-booking-service-card-meta';
 			metaEl.textContent = clinic.address || clinic.phone || '';
 
 			card.appendChild( nameEl );
@@ -694,11 +789,14 @@
 			} );
 
 			container.appendChild( card );
-
-			if ( 0 === index ) {
-				selectClinic( card );
-			}
+			cards.push( card );
 		} );
+
+		var matchByPreselect = preselectedClinicId
+			? cards.filter( function ( card ) { return card.getAttribute( 'data-clinic-id' ) === preselectedClinicId; } )[ 0 ]
+			: null;
+
+		selectClinic( matchByPreselect || cards[ 0 ] );
 	}
 
 	function selectClinic( card ) {
@@ -709,7 +807,94 @@
 
 		document.getElementById( 'dak-booking-clinic-id' ).value = card.getAttribute( 'data-clinic-id' );
 		clearFieldError( 'clinic_id' );
+		// A service can cost differently at different clinics for the same
+		// doctor (clinic_charges) — re-price every service card now that
+		// the selected clinic changed.
+		refreshServiceCardPrices();
 		updateSummary();
+	}
+
+	/**
+	 * The currently selected clinic card's shared Clinic_Locations id (a
+	 * different id space than the clinic's own Clinics row id — see
+	 * Appointments::resolve_services()' docblock) — used to look up a
+	 * service's clinic_charges override for this specific clinic.
+	 *
+	 * @return {string}
+	 */
+	function getSelectedClinicLocationId() {
+		var clinicCard = document.querySelector( '#dak-booking-clinic-cards .dak-booking-service-card.is-selected' );
+
+		return clinicCard ? ( clinicCard.getAttribute( 'data-clinic-location-id' ) || '' ) : '';
+	}
+
+	/**
+	 * A service card's price at the currently selected clinic — its
+	 * clinic_charges override when the selected clinic has one configured,
+	 * otherwise its flat charge.
+	 *
+	 * @param {HTMLElement} card A service card (data-service-charge/
+	 *                           data-service-clinic-charges already set).
+	 * @return {number}
+	 */
+	function effectiveChargeForCard( card ) {
+		var base = parseFloat( card.getAttribute( 'data-service-charge' ) ) || 0;
+		var clinicCharges = {};
+
+		try {
+			clinicCharges = JSON.parse( card.getAttribute( 'data-service-clinic-charges' ) || '{}' );
+		} catch ( e ) {
+			clinicCharges = {};
+		}
+
+		var clinicLocationId = getSelectedClinicLocationId();
+
+		if ( clinicLocationId && Object.prototype.hasOwnProperty.call( clinicCharges, clinicLocationId ) ) {
+			return parseFloat( clinicCharges[ clinicLocationId ] );
+		}
+
+		return base;
+	}
+
+	/**
+	 * Re-renders every service card's displayed price/meta text and its
+	 * cached `data-service-effective-charge` (what updateSummary() actually
+	 * sums) — called whenever the selected clinic changes, or right after
+	 * the cards are first built.
+	 */
+	function refreshServiceCardPrices() {
+		document.querySelectorAll( '#dak-booking-service-cards .dak-booking-service-card[data-service-id]' ).forEach( function ( card ) {
+			var metaEl = card.querySelector( '.dak-booking-service-card-meta' );
+
+			if ( ! metaEl ) {
+				return;
+			}
+
+			var duration = parseInt( card.getAttribute( 'data-service-duration' ), 10 ) || 0;
+			var charge = effectiveChargeForCard( card );
+			var metaParts = [];
+
+			if ( duration > 0 ) {
+				metaParts.push( duration + ' min' );
+			}
+
+			metaParts.push( charge > 0 ? 'PKR' + charge : 'Free' );
+			metaEl.textContent = metaParts.join( ' · ' );
+			card.setAttribute( 'data-service-effective-charge', charge );
+		} );
+	}
+
+	/**
+	 * Whether the clinic picker is currently shown — used by
+	 * validateStepBeforeNext() to know whether a clinic pick is actually
+	 * required (it isn't for a doctor with no physical clinics configured).
+	 *
+	 * @return {boolean}
+	 */
+	function clinicSectionVisible() {
+		var section = document.getElementById( 'dak-booking-clinic-section' );
+
+		return !! section && ! section.classList.contains( 'dak-hidden' );
 	}
 
 	/* ---------------------------------------------------------------------
@@ -1130,11 +1315,9 @@
 
 	function updateSteps( activeKey ) {
 		var completeness = {
-			doctor: !! getDoctorId(),
-			service: !! document.getElementById( 'dak-booking-service-id' ).value,
+			selection: !! getDoctorId() && ( 'video' === getType() || getSelectedServiceIds().length > 0 ),
 			identity: window.dakBookingPage.isLoggedIn || ( !! document.getElementById( 'dak-booking-guest-name' ).value.trim() && !! document.getElementById( 'dak-booking-guest-email' ).value.trim() ),
-			datetime: !! document.getElementById( 'dak-booking-date' ).value && !! document.getElementById( 'dak-booking-time' ).value,
-			payment: false,
+			schedule: !! document.getElementById( 'dak-booking-date' ).value && !! document.getElementById( 'dak-booking-time' ).value,
 			confirmation: false,
 		};
 
@@ -1154,18 +1337,33 @@
 
 	function updateSummary() {
 		var doctorCard = document.querySelector( '[data-doctor-card].is-selected' );
-		var serviceCard = document.querySelector( '.dak-booking-service-card.is-selected' );
 		var clinicCard = document.querySelector( '#dak-booking-clinic-cards .dak-booking-service-card.is-selected' );
+		// A video booking's single fixed-price card is also
+		// `.dak-booking-service-card.is-selected` (just not a checkbox), so
+		// this same query covers both the multi-select clinic case and the
+		// video case without a separate branch.
+		var selectedServiceCards = Array.prototype.slice.call( document.querySelectorAll( '#dak-booking-service-cards .dak-booking-service-card.is-selected' ) );
 		var date = document.getElementById( 'dak-booking-date' ).value;
 		var time = document.getElementById( 'dak-booking-time' ).value;
 		var type = getType();
 		var hasDoctor = !! doctorCard;
 
+		var serviceNames = selectedServiceCards.map( function ( card ) {
+			var name = card.getAttribute( 'data-service-name' ) || '';
+			var duration = parseInt( card.getAttribute( 'data-service-duration' ), 10 ) || 0;
+
+			return duration > 0 ? name + ' · ' + duration + ' min' : name;
+		} );
+
+		var baseCharge = selectedServiceCards.reduce( function ( sum, card ) {
+			return sum + ( parseFloat( card.getAttribute( 'data-service-effective-charge' ) ) || 0 );
+		}, 0 );
+
 		var rows = {
 			doctor: hasDoctor ? 'Dr. ' + doctorCard.getAttribute( 'data-doctor-name' ) : '',
 			type: hasDoctor ? ( 'video' === type ? 'Online Video' : 'Clinic Visit' ) : '',
 			clinic: ( hasDoctor && 'clinic' === type && clinicCard ) ? clinicCard.getAttribute( 'data-clinic-name' ) + ( clinicCard.getAttribute( 'data-clinic-address' ) ? ' — ' + clinicCard.getAttribute( 'data-clinic-address' ) : '' ) : '',
-			service: ( hasDoctor && serviceCard ) ? serviceCard.getAttribute( 'data-service-name' ) + ( serviceCard.getAttribute( 'data-service-duration' ) > 0 ? ' · ' + serviceCard.getAttribute( 'data-service-duration' ) + ' min' : '' ) : '',
+			service: ( hasDoctor && serviceNames.length ) ? serviceNames.join( ', ' ) : '',
 			date: date ? formatDateLabel( date ) : '',
 			time: time ? formatTimeLabel( time ) : '',
 			instant: ( time && selectedSlotSurcharge > 0 ) ? ( 'Instant booking fee: +PKR' + selectedSlotSurcharge ) : '',
@@ -1188,7 +1386,6 @@
 		} );
 
 		var totalEl = document.getElementById( 'dak-booking-summary-total-amount' );
-		var baseCharge = serviceCard ? parseFloat( serviceCard.getAttribute( 'data-service-charge' ) ) : 0;
 		var charge = baseCharge + ( time ? selectedSlotSurcharge : 0 );
 		totalEl.textContent = hasDoctor ? ( charge > 0 ? 'PKR' + charge : 'Free' ) : '—';
 
@@ -1428,13 +1625,19 @@
 
 			if ( ! getDoctorId() ) {
 				showFieldError( 'doctor_id', 'Please choose a doctor.' );
-				goToStep( 'doctor' );
+				goToStep( 'selection' );
+				return;
+			}
+
+			if ( 'clinic' === getType() && ! getSelectedServiceIds().length ) {
+				showFieldError( 'service_id', 'Please choose at least one service.' );
+				goToStep( 'selection' );
 				return;
 			}
 
 			if ( ! document.getElementById( 'dak-booking-date' ).value || ! document.getElementById( 'dak-booking-time' ).value ) {
 				showFieldError( 'time', 'Please choose a date and time.' );
-				goToStep( 'datetime' );
+				goToStep( 'schedule' );
 				return;
 			}
 
@@ -1469,6 +1672,11 @@
 			formData.append( 'date', document.getElementById( 'dak-booking-date' ).value );
 			formData.append( 'time', document.getElementById( 'dak-booking-time' ).value );
 			formData.append( 'service_id', document.getElementById( 'dak-booking-service-id' ).value );
+
+			getSelectedServiceIds().forEach( function ( serviceId ) {
+				formData.append( 'service_ids[]', serviceId );
+			} );
+
 			formData.append( 'clinic_id', document.getElementById( 'dak-booking-clinic-id' ).value );
 			formData.append( 'payment_choice', document.getElementById( 'dak-booking-payment-choice' ).value );
 

@@ -12,6 +12,13 @@
  * Doctor step (searchable/filterable there — see doctor-ak-booking-page.js)
  * rather than a separate directory page; a `data-booking-type` still carries
  * over on its own (e.g. `?type=video`) so that step can preselect it.
+ *
+ * `data-service-id` and `data-clinic-id` carry the same way when present
+ * (e.g. from a service's "Book" link, or a clinic already picked on a
+ * doctor's profile page — see doctor-ak-doctor-profile-clinics.js) — this
+ * is what lets Booking_Page::resolved_selection() skip its Selection step
+ * entirely when everything it would ask is already known. Purely additive:
+ * a trigger without either attribute behaves exactly as before.
  */
 ( function () {
 	'use strict';
@@ -27,6 +34,8 @@
 
 		var doctorId    = trigger.getAttribute( 'data-doctor-id' );
 		var bookingType = trigger.getAttribute( 'data-booking-type' );
+		var serviceId   = trigger.getAttribute( 'data-service-id' );
+		var clinicId    = trigger.getAttribute( 'data-clinic-id' );
 		var params      = [];
 
 		if ( doctorId ) {
@@ -35,6 +44,14 @@
 
 		if ( bookingType ) {
 			params.push( 'type=' + encodeURIComponent( bookingType ) );
+		}
+
+		if ( serviceId ) {
+			params.push( 'service_id=' + encodeURIComponent( serviceId ) );
+		}
+
+		if ( clinicId ) {
+			params.push( 'clinic_id=' + encodeURIComponent( clinicId ) );
 		}
 
 		if ( ! params.length ) {

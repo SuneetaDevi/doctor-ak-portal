@@ -9,6 +9,7 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
+use DoctorAKPortal\Includes\Blogs;
 use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Doctor_Awards;
@@ -91,6 +92,9 @@ class Admin_Dashboard {
 			'services'           => 'Services',
 			'video-consultation' => 'Video Consultation',
 			'doctor-sessions'    => 'Doctor Sessions',
+		),
+		'Content' => array(
+			'blogs' => 'Blogs',
 		),
 		'Account' => array(
 			'role-permissions' => 'Roles & Permissions',
@@ -711,6 +715,35 @@ class Admin_Dashboard {
 					DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-service-form.js',
 					array( 'doctor-ak-portal-admin-services' ),
 					Assets::version( 'assets/js/doctor-ak-admin-service-form.js' ),
+					true
+				);
+			}
+		}
+
+		if ( 'blogs' === self::requested_section() ) {
+			wp_enqueue_script(
+				'doctor-ak-portal-admin-blogs',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-blogs.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-admin-blogs.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-admin-blogs',
+				'dakAdminBlogs',
+				array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+				)
+			);
+
+			if ( self::is_blog_form_view() ) {
+				wp_enqueue_script(
+					'doctor-ak-portal-admin-blog-form',
+					DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-blog-form.js',
+					array( 'doctor-ak-portal-admin-blogs' ),
+					Assets::version( 'assets/js/doctor-ak-admin-blog-form.js' ),
 					true
 				);
 			}
@@ -1689,6 +1722,17 @@ class Admin_Dashboard {
 	}
 
 	/**
+	 * Whether the current request wants the full-screen Add/Edit Blog Post
+	 * form instead of the Blogs table (`?view=form`, optionally with
+	 * `&blog_id=X` to edit). Mirrors is_service_form_view() for the 'blogs' section.
+	 *
+	 * @return bool
+	 */
+	private static function is_blog_form_view() {
+		return isset( $_GET['view'] ) && 'form' === sanitize_key( wp_unslash( $_GET['view'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+	}
+
+	/**
 	 * Whether the current request wants the full-screen Add/Edit Session
 	 * form instead of the Doctor Sessions table (`?view=form`, optionally
 	 * with `&clinic_id=X` to edit; without it, it's the "Add" form). Mirrors
@@ -2083,6 +2127,20 @@ class Admin_Dashboard {
 			);
 		}
 
+		if ( 'blogs' === $section ) {
+			if ( self::is_blog_form_view() ) {
+				return $this->blog_form_screen_html( $section );
+			}
+
+			return $this->template_loader->get_template(
+				'dashboard/partials/admin-blogs.php',
+				array(
+					'blogs'       => Blogs::all_flat_for_admin(),
+					'section_url' => add_query_arg( 'section', $section, Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ) ),
+				)
+			);
+		}
+
 		if ( 'video-consultation' === $section ) {
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-video-consultation.php',
@@ -2229,6 +2287,30 @@ class Admin_Dashboard {
 				'clinic_locations' => Clinic_Locations::get_all(),
 				'list_url'         => $dashboard_url ? add_query_arg( 'section', $section, $dashboard_url ) : '',
 				'editing_service'  => $editing,
+			)
+		);
+	}
+
+	/**
+	 * Renders the full-screen Add/Edit Blog Post form (replaces the Blogs
+	 * table content area when `?view=form` is present). Mirrors
+	 * service_form_screen_html()'s own pattern.
+	 *
+	 * @param string $section Always 'blogs'.
+	 * @return string
+	 */
+	private function blog_form_screen_html( $section ) {
+		$blog_id = isset( $_GET['blog_id'] ) ? absint( wp_unslash( $_GET['blog_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+		$editing = $blog_id > 0 ? Blogs::find( $blog_id ) : null;
+
+		$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+
+		return $this->template_loader->get_template(
+			'dashboard/partials/admin-blog-form-screen.php',
+			array(
+				'status_options' => Blogs::status_options(),
+				'list_url'       => $dashboard_url ? add_query_arg( 'section', $section, $dashboard_url ) : '',
+				'editing_blog'   => $editing,
 			)
 		);
 	}

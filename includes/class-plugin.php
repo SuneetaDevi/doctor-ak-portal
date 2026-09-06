@@ -18,6 +18,9 @@ use DoctorAKPortal\Frontend\Appointment_Handler;
 use DoctorAKPortal\Frontend\Booking_Handler;
 use DoctorAKPortal\Frontend\Booking_Page;
 use DoctorAKPortal\Frontend\Booking_Trigger;
+use DoctorAKPortal\Frontend\Blog_Handler;
+use DoctorAKPortal\Frontend\Blog_Single;
+use DoctorAKPortal\Frontend\Blogs_Directory;
 use DoctorAKPortal\Frontend\Clinic_Handler;
 use DoctorAKPortal\Frontend\Doctor_Appointment_Handler;
 use DoctorAKPortal\Frontend\Clinic_Branding_Handler;
@@ -166,11 +169,6 @@ class Plugin {
 		$this->loader->add_action( 'wp_enqueue_scripts', $site_header, 'enqueue_assets' );
 		$this->loader->add_action( 'wp_body_open', $site_header, 'render' );
 
-		$site_footer = new Site_Footer( new Template_Loader() );
-		$this->loader->add_action( 'after_setup_theme', $site_footer, 'register_menu_locations' );
-		$this->loader->add_action( 'wp_enqueue_scripts', $site_footer, 'enqueue_assets' );
-		$this->loader->add_action( 'wp_footer', $site_footer, 'render' );
-
 		$doctor_dashboard  = new Doctor_Dashboard( new Template_Loader() );
 		$patient_dashboard = new Patient_Dashboard( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $doctor_dashboard, 'enqueue_assets' );
@@ -200,6 +198,10 @@ class Plugin {
 		$this->loader->add_action( 'wp_enqueue_scripts', $doctors_directory, 'enqueue_assets' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $doctor_profile_view, 'enqueue_assets' );
 
+		$site_footer = new Site_Footer( new Template_Loader(), $doctors_directory );
+		$this->loader->add_action( 'wp_enqueue_scripts', $site_footer, 'enqueue_assets' );
+		$this->loader->add_action( 'wp_footer', $site_footer, 'render' );
+
 		$featured_doctors = new Featured_Doctors( new Template_Loader(), $doctors_directory );
 		$this->loader->add_action( 'wp_enqueue_scripts', $featured_doctors, 'enqueue_assets' );
 
@@ -210,6 +212,15 @@ class Plugin {
 		$service_profile_view = new Service_Profile_View( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $services_directory, 'enqueue_assets' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $service_profile_view, 'enqueue_assets' );
+
+		$blogs_directory = new Blogs_Directory( new Template_Loader() );
+		$blog_single      = new Blog_Single( new Template_Loader() );
+		$this->loader->add_action( 'wp_enqueue_scripts', $blogs_directory, 'enqueue_assets' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $blog_single, 'enqueue_assets' );
+
+		$blog_handler = new Blog_Handler( new Profile_Picture_Uploader() );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_blog_save', $blog_handler, 'handle_admin_save_blog' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_blog_delete', $blog_handler, 'handle_admin_delete_blog' );
 
 		$booking_page = new Booking_Page( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $booking_page, 'enqueue_assets' );
@@ -415,7 +426,7 @@ class Plugin {
 		// rather than scheduling a second event just for this.
 		$this->loader->add_action( Notifications::CRON_HOOK, 'DoctorAKPortal\\Includes\\Appointments', 'auto_complete_past_appointments' );
 
-		$shortcodes = new Shortcodes( $doctor_dashboard, $patient_dashboard, $profile_handler, $doctors_directory, $doctor_profile_view, $admin_dashboard, $booking_page, $featured_doctors, $services_directory, $service_profile_view, $home_page );
+		$shortcodes = new Shortcodes( $doctor_dashboard, $patient_dashboard, $profile_handler, $doctors_directory, $doctor_profile_view, $admin_dashboard, $booking_page, $featured_doctors, $services_directory, $service_profile_view, $home_page, $blogs_directory, $blog_single );
 		$this->loader->add_action( 'init', $shortcodes, 'register' );
 
 		$specialization_requests = new Specialization_Request();
