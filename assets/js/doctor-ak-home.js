@@ -268,6 +268,14 @@
 				button.classList.remove( 'dak-hidden' );
 				button.classList.toggle( 'is-selected', button.getAttribute( 'data-city-slug' ) === slug );
 			} );
+
+			// Picking a city re-filters an already-typed doctor search down
+			// to that city immediately, rather than waiting for the next
+			// keystroke — a no-op (still shows the quick-pick list) while
+			// the search box is empty.
+			if ( queryInput ) {
+				renderResults( queryInput.value );
+			}
 		}
 
 		/**
@@ -315,6 +323,18 @@
 				triggerLocation.textContent = '' === query
 					? defaultLocationLabel
 					: ( exactMatch ? exactMatch.getAttribute( 'data-city-label' ) : locationInput.value );
+			}
+
+			// Typing out a city's full name (rather than clicking it) is
+			// still a real selection, and clearing the field back to empty
+			// is just as definitively "any city" — both re-filter an
+			// already-typed doctor search immediately, the same way
+			// selectCity() does. A fragment mid-typed that matches neither
+			// is left alone (still just showing the quick-pick suggestions
+			// above) rather than flickering the results through a
+			// momentarily-wrong filter on every keystroke.
+			if ( ( exactMatch || '' === query ) && queryInput && '' !== queryInput.value.trim() ) {
+				renderResults( queryInput.value );
 			}
 		}
 
@@ -392,14 +412,17 @@
 		}
 
 		/**
-		 * Filters window.dakHomeSearch.doctors by name/specialty and renders
-		 * the "Doctors" results list — swaps out the city quick-picks while a
-		 * search is in progress, and back once the query is cleared.
+		 * Filters window.dakHomeSearch.doctors by name/specialty — and, if a
+		 * city is currently selected in the Location field, to just the
+		 * doctors practising there — and renders the "Doctors" results list.
+		 * Swaps out the city quick-picks while a search is in progress, and
+		 * back once the query is cleared.
 		 *
 		 * @param {string} rawQuery Current value of the search input.
 		 */
 		function renderResults( rawQuery ) {
 			var query = rawQuery.trim().toLowerCase();
+			var selectedCity = cityHidden ? cityHidden.value : '';
 
 			if ( queryClearButton ) {
 				queryClearButton.classList.toggle( 'dak-hidden', '' === query );
@@ -431,8 +454,10 @@
 			var matches = allDoctors.filter( function ( doctor ) {
 				var name = ( doctor.name || '' ).toLowerCase();
 				var specialty = ( doctor.specialty || '' ).toLowerCase();
+				var matchesQuery = name.indexOf( query ) !== -1 || specialty.indexOf( query ) !== -1;
+				var matchesCity = '' === selectedCity || ( doctor.citySlugs || [] ).indexOf( selectedCity ) !== -1;
 
-				return name.indexOf( query ) !== -1 || specialty.indexOf( query ) !== -1;
+				return matchesQuery && matchesCity;
 			} ).slice( 0, RESULTS_LIMIT );
 
 			if ( noResultsEl ) {

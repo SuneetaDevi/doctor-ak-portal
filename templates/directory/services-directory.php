@@ -1,10 +1,13 @@
 <?php
 /**
- * Template: Services directory grid for the [services_directory] shortcode.
+ * Template: Services directory list for the [services_directory] shortcode
+ * — wide stacked rows, matching how services are shown on the home page
+ * (see .dak-home-services-list in doctor-ak-directory.css, redefined there
+ * from doctor-ak-home.css since that stylesheet isn't loaded on this page).
  *
  * @package DoctorAKPortal\Templates
  *
- * @var string[] $services_html Pre-rendered directory/service-card.php output, one per active service.
+ * @var string[] $services_html Pre-rendered directory/home-service-card.php output, one per active service.
  */
 
 // Prevent direct file access.
@@ -22,7 +25,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<?php if ( empty( $services_html ) ) : ?>
 		<p class="dak-empty-state"><?php esc_html_e( 'No services are available yet. Please check back soon.', 'doctor-ak-portal' ); ?></p>
 	<?php else : ?>
-		<div class="dak-directory-grid" id="dak-services-directory-grid">
+		<div class="dak-home-services-list" id="dak-services-directory-grid">
 			<?php foreach ( $services_html as $card_html ) : ?>
 				<?php echo $card_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- card partial escapes its own output. ?>
 			<?php endforeach; ?>

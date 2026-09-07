@@ -7,7 +7,6 @@
  */
 
 .dak-directory {
-	max-width: 1200px !important;
 	margin: 0 auto !important;
 	padding: 2rem 1.5rem !important;
 }
@@ -30,14 +29,102 @@
 	font-size: var( --dak-text-lg, 1rem ) !important;
 }
 
-/* A CSS grid rather than flex-wrap: flex-wrap left a ragged, unpredictable
-   last row whenever the filters didn't fit one line (which is the common
-   case — search + up to 5 selects easily exceeds 1200px). Grid always wraps
-   in full, evenly-sized rows instead, down to a single tidy column on
-   mobile — see the breakpoints below. */
+/* [doctors_directory]'s own hero banner — matches the home page's own hero
+   banner (.dak-home-hero-banner in doctor-ak-home.css): the bundled photo
+   (Doctors_Directory::HERO_BANNER_IMAGE_PATH) full-bleed behind the
+   heading, a dark tinted gradient over it for contrast, white text sitting
+   directly on top rather than a separate light card off to the side.
+   (.dak-directory-header above is a separate, plain centered heading also
+   used by the home page's "Consult Top Doctors Online" section —
+   untouched, this page just doesn't use it any more.) */
+.dak-directory-hero {
+	position: relative !important;
+	display: flex !important;
+	align-items: center !important;
+	min-height: 400px !important;
+	margin: -2rem -1.5rem 2rem !important;
+	padding: 2.5rem 1.5rem !important;
+	background: linear-gradient( 135deg, var( --dak-secondary ) 0%, var( --dak-primary-dark ) 100% ) !important;
+	overflow: hidden !important;
+}
+
+.dak-directory-hero-media {
+	position: absolute !important;
+	inset: 0 !important;
+}
+
+.dak-directory-hero-media img {
+	display: block !important;
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+	object-position: 78% 25% !important;
+}
+
+.dak-directory-hero-overlay {
+	position: absolute !important;
+	inset: 0 !important;
+	background: linear-gradient(
+		100deg,
+		rgba( 6, 20, 12, 0.94 ) 0%,
+		rgba( 8, 28, 17, 0.88 ) 30%,
+		rgba( 15, 46, 30, 0.6 ) 52%,
+		rgba( 22, 182, 165, 0.32 ) 78%,
+		rgba( 22, 182, 165, 0.22 ) 100%
+	) !important;
+}
+
+.dak-directory-hero-content {
+	position: relative !important;
+	z-index: 1 !important;
+	max-width: 46ch !important;
+}
+
+.dak-directory-hero-content h1 {
+	margin: 0.5rem 0 0.6rem !important;
+	font-size: var( --dak-text-3xl, 2.5rem ) !important;
+	font-weight: 600 !important;
+	line-height: 1.15 !important;
+	color: #fff !important;
+	text-shadow: 0 2px 10px rgba( 0, 0, 0, 0.5 ) !important;
+}
+
+.dak-directory-hero-accent {
+	color: #d9f0c4 !important;
+}
+
+.dak-directory-hero-content p {
+	margin: 0 !important;
+	max-width: 42ch !important;
+	color: rgba( 255, 255, 255, 0.92 ) !important;
+	text-shadow: 0 1px 6px rgba( 0, 0, 0, 0.45 ) !important;
+	font-size: var( --dak-text-lg, 1rem ) !important;
+}
+
+/* Same mobile treatment as the home page's own hero banner — let the
+   content dictate the height instead of forcing 400px on a phone screen. */
+@media ( max-width: 720px ) {
+	.dak-directory-hero {
+		min-height: 0 !important;
+	}
+
+	.dak-directory-hero-content {
+		max-width: none !important;
+	}
+}
+
+/* Flexbox rather than the grid this used to be: with City/Area now living
+   in the separate Location panel (see .dak-directory-quick-filters further
+   down) there are few enough items left here — search + up to 4 selects +
+   the view toggle — to fit one line at typical desktop widths, and a flex
+   item can shrink to its content instead of being forced into an equal
+   170px-minimum grid column the way the view toggle was, which is what was
+   pushing it onto its own row before. Still wraps to a stacked column on
+   narrow screens — see the breakpoint below. */
 .dak-directory-filters {
-	display: grid !important;
-	grid-template-columns: repeat( auto-fit, minmax( 170px, 1fr ) ) !important;
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
 	gap: 0.75rem !important;
 	margin-bottom: 1.75rem !important;
 	padding: 1rem !important;
@@ -49,7 +136,22 @@
 
 .dak-directory-search {
 	position: relative !important;
-	grid-column: span 2 !important;
+	flex: 2 1 220px !important;
+	min-width: 0 !important;
+}
+
+/* Only the selects that live in this row — the whole Country/City/Area
+   cascade sits in the Location panel instead and is sized there. */
+#dak-directory-specialization-filter,
+#dak-directory-clinic-filter,
+#dak-directory-sort {
+	width: auto !important;
+	flex: 1 1 150px !important;
+	min-width: 0 !important;
+}
+
+.dak-directory-view-toggle {
+	flex: 0 0 auto !important;
 }
 
 .dak-directory-search-icon {
@@ -80,12 +182,14 @@
 	box-shadow: 0 0 0 3px var( --dak-primary-tint ) !important;
 }
 
+/* Only the filter row's own selects — Country/City/Area live in the
+   Location panel now and are styled by .dak-directory-location-panel
+   select further down. Listing them here as well would override that with
+   this rule's row-oriented sizing, since an #id beats that rule's class
+   selector. */
 #dak-directory-specialization-filter,
-#dak-directory-country-filter,
-#dak-directory-city-filter,
-#dak-directory-area-filter,
-#dak-directory-clinic-filter {
-	width: 100% !important;
+#dak-directory-clinic-filter,
+#dak-directory-sort {
 	box-sizing: border-box !important;
 	padding: 0.65rem 0.85rem !important;
 	border: 1px solid var( --dak-border ) !important;
@@ -93,12 +197,6 @@
 	background: var( --dak-bg-card ) !important;
 	color: var( --dak-text ) !important;
 	font-size: 0.95rem !important;
-}
-
-#dak-directory-city-filter:disabled,
-#dak-directory-area-filter:disabled {
-	opacity: 0.6 !important;
-	cursor: not-allowed !important;
 }
 
 /* Grid/List view toggle. */
@@ -166,20 +264,216 @@
 	stroke: var( --dak-primary-dark ) !important;
 }
 
-@media ( max-width: 640px ) {
-	.dak-directory-filters {
-		grid-template-columns: 1fr !important;
-	}
+/* "Cards per row" (2 / 4 / 6) — same segmented-control look as the
+   Grid/List toggle above it, just narrower since each button is a digit. */
+.dak-directory-columns-toggle {
+	display: inline-flex !important;
+	align-self: center !important;
+	flex: 0 0 auto !important;
+	gap: 0.25rem !important;
+	padding: 0.25rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+}
 
-	.dak-directory-search {
-		grid-column: 1 !important;
+/* .dak-hidden (shared utility, doctor-ak-auth.css) sets display: none
+   !important at the same specificity, and this stylesheet loads later —
+   without this compound selector the toggle's own `display: inline-flex`
+   would win and it would stay visible in list view, where setView() hides
+   it (see initViewToggle() in doctor-ak-directory.js). */
+.dak-directory-columns-toggle.dak-hidden {
+	display: none !important;
+}
+
+.dak-directory-columns-btn {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	min-width: 30px !important;
+	height: 34px !important;
+	padding: 0 0.5rem !important;
+	border: none !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: none !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.82rem !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+	transition: background-color 0.15s ease, color 0.15s ease !important;
+}
+
+.dak-directory-columns-btn:hover {
+	color: var( --dak-text ) !important;
+}
+
+.dak-directory-columns-btn.is-active {
+	background: var( --dak-bg-card ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+/* Below this width the layout caps the count anyway (see the
+   .dak-directory-grid-cols-* breakpoints further down), so the control
+   would just be inert. */
+@media ( max-width: 900px ) {
+	.dak-directory-columns-toggle {
+		display: none !important;
 	}
 }
 
+@media ( max-width: 640px ) {
+	.dak-directory-search,
+	#dak-directory-specialization-filter,
+	#dak-directory-clinic-filter,
+	#dak-directory-sort,
+	.dak-directory-view-toggle {
+		flex-basis: 100% !important;
+	}
+}
+
+/* Quick-filter pills row — Location (opens the City/Area panel below it),
+   Video Consultation and Availability (both plain on/off toggles, see
+   initTogglePill() in doctor-ak-directory.js). */
+.dak-directory-quick-filters {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 0.6rem !important;
+	margin-bottom: 1.75rem !important;
+}
+
+.dak-directory-pill {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+	padding: 0.5rem 0.9rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+	transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease !important;
+}
+
+.dak-directory-pill svg {
+	width: 15px !important;
+	height: 15px !important;
+	flex-shrink: 0 !important;
+}
+
+.dak-directory-pill:hover {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-directory-pill.is-active {
+	background: var( --dak-primary ) !important;
+	border-color: var( --dak-primary ) !important;
+	color: #fff !important;
+}
+
+/* The Location pill's own chevron flips to show the panel's open/closed
+   state — everything else about .dak-directory-pill.is-active (the Video/
+   Availability pills too) already applies, this is on top of that. */
+#dak-directory-location-toggle svg:last-child {
+	transition: transform 0.15s ease !important;
+}
+
+#dak-directory-location-toggle[aria-expanded='true'] svg:last-child {
+	transform: rotate( 180deg ) !important;
+}
+
+/* A normal in-flow block, not a floating overlay — flex-basis: 100% forces
+   it onto its own full-width line within .dak-directory-quick-filters
+   (a flex-wrap row) the moment it's un-hidden, which grows that row's own
+   height and pushes the doctor grid below it down the page, rather than
+   floating on top and covering the first row of cards the way an
+   absolutely-positioned dropdown would. */
+.dak-directory-location-panel {
+	flex-basis: 100% !important;
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0.6rem !important;
+	margin-top: 0.4rem !important;
+	padding: 0.85rem !important;
+	background: var( --dak-bg-subtle ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+}
+
+/* .dak-hidden (shared utility, doctor-ak-auth.css) sets display: none
+   !important too — same specificity, and this stylesheet loads after it, so
+   without the extra specificity here the panel's own `display: flex
+   !important` above would win the tie and the panel would render open by
+   default on every page load, regardless of the toggle button — which is
+   exactly what was happening. */
+.dak-directory-location-panel.dak-hidden {
+	display: none !important;
+}
+
+.dak-directory-location-panel select {
+	flex: 1 1 160px !important;
+	box-sizing: border-box !important;
+	padding: 0.55rem 0.7rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.88rem !important;
+}
+
+.dak-directory-location-panel select:disabled {
+	opacity: 0.6 !important;
+	cursor: not-allowed !important;
+}
+
+/* The auto-fill default is the no-JS fallback; initColumnsToggle() adds one
+   of the .dak-directory-grid-cols-* classes below on load, which pins the
+   count to whatever the visitor picked. */
 .dak-directory-grid {
 	display: grid !important;
 	grid-template-columns: repeat( auto-fill, minmax( 250px, 1fr ) ) !important;
 	gap: 1.5rem !important;
+}
+
+.dak-directory-grid-cols-2 {
+	grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+}
+
+.dak-directory-grid-cols-4 {
+	grid-template-columns: repeat( 4, minmax( 0, 1fr ) ) !important;
+}
+
+.dak-directory-grid-cols-6 {
+	grid-template-columns: repeat( 6, minmax( 0, 1fr ) ) !important;
+}
+
+/* Caps, not fixed counts: each breakpoint only overrides the choices that
+   would be too cramped at that width, so picking 2 still gives 2 on a
+   laptop rather than being bumped up to whatever the breakpoint says.
+   These stay below list view's own .dak-directory-grid.dak-directory-grid-list
+   (two classes) in specificity, so list view keeps its single column. */
+@media ( max-width: 1200px ) {
+	.dak-directory-grid-cols-6 {
+		grid-template-columns: repeat( 4, minmax( 0, 1fr ) ) !important;
+	}
+}
+
+@media ( max-width: 900px ) {
+	.dak-directory-grid-cols-4,
+	.dak-directory-grid-cols-6 {
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+	}
+}
+
+@media ( max-width: 560px ) {
+	.dak-directory-grid-cols-2,
+	.dak-directory-grid-cols-4,
+	.dak-directory-grid-cols-6 {
+		grid-template-columns: 1fr !important;
+	}
 }
 
 .dak-doctor-card.dak-hidden {
@@ -211,38 +505,47 @@
 	position: absolute !important;
 	top: 0.9rem !important;
 	right: 0.9rem !important;
-	padding: 0.2rem 0.6rem !important;
-	border-radius: 999px !important;
-	background: var( --dak-tint-success, var( --dak-primary-tint ) ) !important;
-	color: var( --dak-tint-success-text, var( --dak-primary-dark ) ) !important;
-	font-size: 0.68rem !important;
-	font-weight: 700 !important;
-	text-transform: uppercase !important;
-	letter-spacing: 0.03em !important;
-}
-
-.dak-doctor-card-video-badge {
-	position: absolute !important;
-	top: 0.9rem !important;
-	left: 0.9rem !important;
 	display: inline-flex !important;
 	align-items: center !important;
+	gap: 0.25rem !important;
+	padding: 0.25rem 0.65rem !important;
+	border: 1px solid var( --dak-tint-success-text, var( --dak-primary-dark ) ) !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-tint-success-text, var( --dak-primary-dark ) ) !important;
+	font-size: 0.7rem !important;
+	font-weight: 700 !important;
+}
+
+.dak-doctor-card-badge svg {
+	width: 12px !important;
+	height: 12px !important;
+	flex-shrink: 0 !important;
+}
+
+/* Wraps the name + Available badge together — in grid view this is just a
+   centered flex row and the badge escapes it entirely (position: absolute,
+   still anchored to .dak-doctor-card's corner as before, since absolute
+   positioning looks past its own DOM parent to the nearest positioned
+   ancestor). List view is what actually needs this wrapper: there, the
+   badge switches to sitting inline right next to the name instead (see
+   below) — anchoring it to the whole card's top-right corner in that
+   layout is what put it on top of the Book Appointment button, since the
+   actions column sits in that exact corner once the card is a row instead
+   of a stack. */
+.dak-doctor-card-name-row {
+	display: flex !important;
+	align-items: center !important;
 	justify-content: center !important;
-	width: 26px !important;
-	height: 26px !important;
-	border-radius: 50% !important;
-	background: var( --dak-tint-info, var( --dak-primary-tint ) ) !important;
-	color: var( --dak-tint-info-text, var( --dak-primary-dark ) ) !important;
+	gap: 0.5rem !important;
 }
 
-.dak-doctor-card-video-badge svg {
-	width: 14px !important;
-	height: 14px !important;
+.dak-directory-grid-list .dak-doctor-card-name-row {
+	justify-content: flex-start !important;
 }
 
-.dak-specialty-tag-muted {
-	background: var( --dak-bg-subtle ) !important;
-	color: var( --dak-muted ) !important;
+.dak-directory-grid-list .dak-doctor-card-badge {
+	position: static !important;
 }
 
 /* .dak-avatar base rules (normally defined in doctor-ak-dashboard.css, which
@@ -309,20 +612,33 @@
 }
 
 .dak-doctor-card-experience {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 0.4rem !important;
 	margin: 0 !important;
 	font-size: 0.9rem !important;
 	color: var( --dak-muted ) !important;
 	text-align: center !important;
 }
 
+.dak-doctor-card-experience svg {
+	width: 14px !important;
+	height: 14px !important;
+	flex-shrink: 0 !important;
+	color: var( --dak-secondary ) !important;
+}
+
 .dak-doctor-card-location {
 	display: flex !important;
-	align-items: center !important;
+	align-items: flex-start !important;
 	justify-content: center !important;
 	gap: 0.35rem !important;
 	font-size: 0.82rem !important;
 	font-weight: 600 !important;
+	line-height: 1.5 !important;
 	color: var( --dak-muted ) !important;
+	text-align: center !important;
 }
 
 .dak-doctor-card-location .dak-location-icon {
@@ -330,6 +646,7 @@
 	flex-shrink: 0 !important;
 	width: 14px !important;
 	height: 14px !important;
+	margin-top: 0.15rem !important;
 	color: var( --dak-secondary ) !important;
 }
 
@@ -356,6 +673,18 @@
 .dak-doctor-card-actions .dak-button svg {
 	width: 18px !important;
 	height: 18px !important;
+}
+
+/* Plain/text-only button — "View Profile" here, no border or fill of its
+   own (unlike .dak-button-secondary's outline), since it's the third,
+   least-emphasized action alongside Book Appointment/Video Consultation. */
+.dak-button-ghost {
+	background: none !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-button-ghost:hover {
+	background: var( --dak-primary-tint ) !important;
 }
 
 /* List view — toggled via [data-directory-view] in doctor-ak-directory.js,
@@ -385,11 +714,9 @@
 }
 
 .dak-directory-grid-list .dak-doctor-card-specialties,
-.dak-directory-grid-list .dak-doctor-card-location {
-	justify-content: flex-start !important;
-}
-
+.dak-directory-grid-list .dak-doctor-card-location,
 .dak-directory-grid-list .dak-doctor-card-experience {
+	justify-content: flex-start !important;
 	text-align: left !important;
 }
 
@@ -404,6 +731,22 @@
 	white-space: nowrap !important;
 }
 
+/* Video Consultation / View Profile only make sense as a stacked row of
+   actions — list view's actions column has room for that (grid view stays
+   to just the one primary "Book Appointment" button, matching the reference
+   design), and outside the directory entirely (the home page's
+   Featured_Doctors slider, which reuses this same card partial) they never
+   apply since that never enters list mode either. */
+.dak-doctor-card-video-btn,
+.dak-doctor-card-profile-btn {
+	display: none !important;
+}
+
+.dak-directory-grid-list .dak-doctor-card-video-btn,
+.dak-directory-grid-list .dak-doctor-card-profile-btn {
+	display: inline-flex !important;
+}
+
 @media ( max-width: 640px ) {
 	.dak-directory-grid-list .dak-doctor-card {
 		flex-direction: column !important;
@@ -414,18 +757,93 @@
 		align-items: center !important;
 	}
 
+	.dak-directory-grid-list .dak-doctor-card-name-row,
 	.dak-directory-grid-list .dak-doctor-card-specialties,
-	.dak-directory-grid-list .dak-doctor-card-location {
+	.dak-directory-grid-list .dak-doctor-card-location,
+	.dak-directory-grid-list .dak-doctor-card-experience {
 		justify-content: center !important;
+		text-align: center !important;
 	}
 
-	.dak-directory-grid-list .dak-doctor-card-experience {
-		text-align: center !important;
+	.dak-directory-grid-list .dak-doctor-card-actions {
+		width: 100% !important;
 	}
 
 	.dak-directory-grid-list .dak-doctor-card-actions .dak-button {
 		width: 100% !important;
 	}
+}
+
+/* Pagination — see initPagination()/renderPagination() in
+   doctor-ak-directory.js. Hidden entirely whenever everything fits on one
+   page (renderPagination() adds .dak-hidden to the <nav> itself then). */
+.dak-directory-pagination {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 0.5rem !important;
+	margin-top: 2.5rem !important;
+}
+
+/* Same specificity-tie fix as .dak-directory-location-panel.dak-hidden
+   above — this stylesheet loads after doctor-ak-auth.css's shared
+   .dak-hidden, so without this the pagination nav's own `display: flex
+   !important` would win the tie and it would never actually hide. */
+.dak-directory-pagination.dak-hidden {
+	display: none !important;
+}
+
+.dak-directory-page-nav,
+.dak-directory-page-number {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	min-width: 38px !important;
+	height: 38px !important;
+	padding: 0 0.6rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.88rem !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+}
+
+.dak-directory-page-nav svg {
+	width: 16px !important;
+	height: 16px !important;
+}
+
+.dak-directory-page-nav:hover:not( :disabled ),
+.dak-directory-page-number:hover:not( .is-active ) {
+	border-color: var( --dak-primary ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-directory-page-nav:disabled {
+	opacity: 0.45 !important;
+	cursor: not-allowed !important;
+}
+
+.dak-directory-page-numbers {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.35rem !important;
+}
+
+.dak-directory-page-number.is-active {
+	background: var( --dak-primary ) !important;
+	border-color: var( --dak-primary ) !important;
+	color: #fff !important;
+}
+
+.dak-directory-page-ellipsis {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	min-width: 24px !important;
+	color: var( --dak-muted ) !important;
 }
 
 /* Specialty tags — also used on the dashboard (doctor-ak-dashboard.css),

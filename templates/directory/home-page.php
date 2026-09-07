@@ -25,9 +25,11 @@
  * @var array    $clinic_locations Clinic_Locations::get_all() rows (capped), for the "Visit Us" section.
  *
  * Every registered doctor is also available client-side as
- * window.dakHomeSearch.doctors — { name, specialty, avatarUrl, url } rows —
- * via wp_localize_script() in Home_Page::render(), for the hero search
- * modal's live "Doctors" results (see initHeroSearch() in doctor-ak-home.js).
+ * window.dakHomeSearch.doctors — { name, specialty, avatarUrl, url, citySlugs }
+ * rows — via wp_localize_script() in Home_Page::render(), for the hero
+ * search modal's live "Doctors" results (see initHeroSearch() in
+ * doctor-ak-home.js), filtered there by both the typed query and whichever
+ * city is currently selected in the Location field.
  */
 
 // Prevent direct file access.

@@ -189,10 +189,10 @@ class Home_Page {
 
 		// A compact, name-searchable index of every registered doctor for the
 		// hero search popup's live results (see initHeroSearch() in
-		// doctor-ak-home.js) — just enough fields to render a result row and
-		// link to it, so this stays a small inline JSON blob rather than
-		// shipping the full doctor_cards_data() shape (clinic/location/etc.)
-		// the visitor doesn't need there.
+		// doctor-ak-home.js) — just enough fields to render a result row,
+		// filter by the selected city, and link to it, so this stays a small
+		// inline JSON blob rather than shipping the full doctor_cards_data()
+		// shape (clinic/location/etc.) the visitor doesn't need there.
 		$doctor_search_index = array_map(
 			function ( $card ) {
 				return array(
@@ -200,6 +200,7 @@ class Home_Page {
 					'specialty' => empty( $card['specialization_labels'] ) ? '' : $card['specialization_labels'][0],
 					'avatarUrl' => $card['avatar_url'],
 					'url'       => $card['profile_url'],
+					'citySlugs' => $card['city_slugs'],
 				);
 			},
 			$all_doctor_cards

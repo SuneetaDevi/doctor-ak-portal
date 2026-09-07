@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class Services_Directory
  *
- * A public, unauthenticated grid — one card per unique service name, each
+ * A public, unauthenticated list — one row per unique service name, each
  * linking to that service's own [service_profile_view] detail page (which
  * lists every doctor/clinic it's actually offered through, see
  * Services::grouped_active_for_public_directory()) — the same directory/
@@ -84,9 +84,13 @@ class Services_Directory {
 	 * @return string
 	 */
 	public function render() {
+		// Same wide-row template the home page's own services section uses
+		// (directory/home-service-card.php) rather than the old compact
+		// portrait card, so this directory page's list matches how services
+		// already look on the home page.
 		$services_html = array_map(
 			function ( $group ) {
-				return $this->template_loader->get_template( 'directory/service-card.php', $this->card_data( $group ) );
+				return $this->template_loader->get_template( 'directory/home-service-card.php', $this->card_data( $group ) );
 			},
 			Services::grouped_active_for_public_directory()
 		);

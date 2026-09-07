@@ -37,6 +37,13 @@ class Doctors_Directory {
 	const SHORTCODE_TAG = 'doctors_directory';
 
 	/**
+	 * Bundled hero banner photo shown behind this page's own heading.
+	 *
+	 * @var string
+	 */
+	const HERO_BANNER_IMAGE_PATH = 'assets/images/our_doctors_banner.jpg';
+
+	/**
 	 * Template loader.
 	 *
 	 * @var Template_Loader
@@ -142,6 +149,11 @@ class Doctors_Directory {
 				'doctors_html'    => $doctors_html,
 				'specializations' => $used_specializations,
 				'clinics'         => $used_clinics,
+				// This page's own bundled banner photo — reuses Home_Page's
+				// now-public helper for the file_exists()/cache-busting
+				// logic rather than duplicating it, but points at this
+				// class's own HERO_BANNER_IMAGE_PATH, not Home_Page's.
+				'hero_banner_url' => Home_Page::bundled_asset_url( self::HERO_BANNER_IMAGE_PATH ),
 			)
 		);
 	}
@@ -204,13 +216,15 @@ class Doctors_Directory {
 			}
 		);
 
-		$primary_clinic_location = '';
-		$extra_clinic_count      = 0;
-		$clinic_labels           = array();
-		$clinic_areas            = array();
-		$country_slugs           = array();
-		$city_slugs              = array();
-		$area_slugs              = array();
+		$primary_clinic_location      = '';
+		$primary_clinic_city_label    = '';
+		$primary_clinic_country_label = '';
+		$extra_clinic_count           = 0;
+		$clinic_labels                = array();
+		$clinic_areas                 = array();
+		$country_slugs                = array();
+		$city_slugs                   = array();
+		$area_slugs                   = array();
 
 		foreach ( $clinics as $clinic ) {
 			if ( Clinics::TYPE_PHYSICAL !== $clinic['type'] ) {
@@ -218,7 +232,9 @@ class Doctors_Directory {
 			}
 
 			if ( '' === $primary_clinic_location ) {
-				$primary_clinic_location = '' !== $clinic['name'] ? $clinic['name'] : $clinic['address'];
+				$primary_clinic_location      = '' !== $clinic['name'] ? $clinic['name'] : $clinic['address'];
+				$primary_clinic_city_label    = $clinic['city_label'];
+				$primary_clinic_country_label = $clinic['country_label'];
 			} else {
 				++$extra_clinic_count;
 			}
@@ -285,6 +301,8 @@ class Doctors_Directory {
 			'specialization_labels' => $specialization_labels,
 			'years_experience'      => get_user_meta( $doctor->ID, 'doctor_ak_years_experience', true ),
 			'clinic_location'       => $primary_clinic_location,
+			'clinic_city_label'     => $primary_clinic_city_label,
+			'clinic_country_label'  => $primary_clinic_country_label,
 			'extra_clinic_count'    => $extra_clinic_count,
 			'country_slugs'         => $country_slugs,
 			'city_slugs'            => $city_slugs,
