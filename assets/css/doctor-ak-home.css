@@ -237,12 +237,13 @@
 	gap: var( --dak-space-6 ) !important;
 }
 
-/* Hero search bar — overlaps the banner's bottom edge. It's a single link to
-   the doctors directory (which already has real search/filtering) rather
-   than a form of its own, so the fields shown here are a preview, not
-   editable inputs. */
+/* Hero search bar — overlaps the banner's bottom edge. Just a trigger: click
+   opens the "Search for doctors" popup below (initHeroSearch() in
+   doctor-ak-home.js), which holds the real form — see .dak-home-search-modal
+   further down. */
 
 .dak-home-hero-search {
+	width: 100% !important;
 	position: relative !important;
 	z-index: 1 !important;
 	margin: -34px var( --dak-space-6 ) 0 !important;
@@ -250,10 +251,13 @@
 	align-items: center !important;
 	gap: var( --dak-space-4 ) !important;
 	background: var( --dak-bg-card ) !important;
+	border: none !important;
 	border-radius: var( --dak-radius-lg ) !important;
 	padding: var( --dak-space-4 ) var( --dak-space-5 ) !important;
 	box-shadow: var( --dak-shadow-lg ) !important;
-	text-decoration: none !important;
+	font: inherit !important;
+	text-align: left !important;
+	cursor: pointer !important;
 }
 
 .dak-home-hero-search-field {
@@ -270,19 +274,20 @@
 	border-right: none !important;
 }
 
-.dak-home-hero-search-field > span {
+.dak-home-hero-search-control {
 	display: flex !important;
 	flex-direction: column !important;
 	min-width: 0 !important;
+	flex: 1 1 auto !important;
 }
 
-.dak-home-hero-search-field strong {
+.dak-home-hero-search-control strong {
 	font-size: var( --dak-text-sm ) !important;
 	font-weight: 700 !important;
 	color: var( --dak-text ) !important;
 }
 
-.dak-home-hero-search-field em {
+.dak-home-hero-search-control em {
 	font-style: normal !important;
 	font-size: var( --dak-text-xs ) !important;
 	color: var( --dak-muted ) !important;
@@ -311,6 +316,360 @@
 .dak-home-hero-search-submit {
 	flex: 0 0 auto !important;
 	padding: 0.85rem 1.75rem !important;
+}
+
+/* Detect-my-location button, inside the popup's Location row — see
+   initHeroSearch() in doctor-ak-home.js. */
+.dak-home-hero-search-detect {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 0.35rem !important;
+	flex: 0 0 auto !important;
+	margin: 0 !important;
+	padding: 0.4rem 0.7rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-primary-dark ) !important;
+	font-size: var( --dak-text-xs ) !important;
+	font-weight: 600 !important;
+	white-space: nowrap !important;
+	cursor: pointer !important;
+}
+
+.dak-home-hero-search-detect:hover {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-home-hero-search-detect:disabled {
+	opacity: 0.5 !important;
+	cursor: not-allowed !important;
+}
+
+.dak-home-hero-search-detect svg {
+	width: 14px !important;
+	height: 14px !important;
+}
+
+/* Spins while a detection request is in flight (initHeroSearch()
+   toggles this class from geolocation's request/response callbacks). */
+.dak-home-hero-search-detect.is-detecting svg {
+	animation: dak-home-hero-detect-spin 0.8s linear infinite !important;
+}
+
+@keyframes dak-home-hero-detect-spin {
+	from {
+		transform: rotate( 0deg );
+	}
+
+	to {
+		transform: rotate( 360deg );
+	}
+}
+
+/* "Search for doctors" popup — same fixed-overlay/centered-dialog pattern
+   as .dak-home-video-modal further down, but a plain white card instead of
+   a black video frame. */
+
+.dak-home-search-modal {
+	position: fixed !important;
+	inset: 0 !important;
+	z-index: 9999 !important;
+	display: flex !important;
+	align-items: flex-start !important;
+	justify-content: center !important;
+	padding: 10vh var( --dak-space-5 ) var( --dak-space-5 ) !important;
+	overflow-y: auto !important;
+}
+
+.dak-home-search-modal[aria-hidden='true'] {
+	display: none !important;
+}
+
+.dak-home-search-modal-overlay {
+	position: fixed !important;
+	inset: 0 !important;
+	background: rgba( 10, 12, 15, 0.55 ) !important;
+}
+
+.dak-home-search-modal-dialog {
+	position: relative !important;
+	z-index: 1 !important;
+	width: 100% !important;
+	max-width: 640px !important;
+	background: var( --dak-bg-card ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	box-shadow: var( --dak-shadow-lg ) !important;
+	padding: var( --dak-space-5 ) !important;
+}
+
+.dak-home-search-modal-header {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: var( --dak-space-3 ) !important;
+	margin-bottom: var( --dak-space-4 ) !important;
+}
+
+.dak-home-search-modal-header h2 {
+	margin: 0 !important;
+	font-size: var( --dak-text-lg ) !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-home-search-modal-close {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 32px !important;
+	height: 32px !important;
+	flex: 0 0 auto !important;
+	border: none !important;
+	border-radius: 50% !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 1.3rem !important;
+	line-height: 1 !important;
+	cursor: pointer !important;
+}
+
+.dak-home-search-modal-close:hover {
+	background: var( --dak-border ) !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-home-search-modal-form {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: var( --dak-space-3 ) !important;
+}
+
+/* Location and Specialty/Doctor side by side — two equal columns, each
+   shrinkable below its content's natural width (minmax(0, …)) so the city
+   name/Detect button and the search icon/input don't force the row wider
+   than the popup. Stacks back to one column on narrow screens — see the
+   max-width: 560px breakpoint further down. */
+.dak-home-search-modal-row {
+	display: grid !important;
+	grid-template-columns: minmax( 0, 1fr ) minmax( 0, 1fr ) !important;
+	gap: var( --dak-space-3 ) !important;
+}
+
+.dak-home-search-modal-location,
+.dak-home-search-modal-query {
+	display: flex !important;
+	align-items: center !important;
+	gap: var( --dak-space-2 ) !important;
+	min-width: 0 !important;
+	padding: 0.6rem 0.75rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-home-search-modal-location input,
+.dak-home-search-modal-query input {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	background: none !important;
+	font: inherit !important;
+	font-size: 0.9rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-home-search-modal-location input:focus,
+.dak-home-search-modal-query input:focus {
+	outline: none !important;
+}
+
+.dak-home-search-modal-query-clear {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 22px !important;
+	height: 22px !important;
+	flex: 0 0 auto !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 50% !important;
+	background: var( --dak-border ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 1rem !important;
+	line-height: 1 !important;
+	cursor: pointer !important;
+}
+
+.dak-home-search-modal-query-clear:hover {
+	background: var( --dak-muted ) !important;
+	color: #fff !important;
+}
+
+/* Quick-pick list of the clinic's own registered cities (see
+   Home_Page::cities_in_use()) — clicking one fills the Location row above
+   without needing Geolocation at all. */
+.dak-home-search-modal-cities {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.1rem !important;
+	max-height: 260px !important;
+	overflow-y: auto !important;
+}
+
+.dak-home-search-modal-city {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.6rem !important;
+	padding: 0.6rem 0.5rem !important;
+	border: 0 !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: none !important;
+	color: var( --dak-text ) !important;
+	font: inherit !important;
+	font-size: 0.9rem !important;
+	text-align: left !important;
+	cursor: pointer !important;
+}
+
+.dak-home-search-modal-city:hover {
+	background: var( --dak-bg-subtle ) !important;
+}
+
+/* .dak-hidden (shared utility) sets display: none !important too — same
+   specificity, and this stylesheet loads after it, so without the extra
+   specificity here the button's own `display: flex !important` would win
+   the tie and handleLocationInput()'s per-city filtering would silently do
+   nothing (same fix as the header mega-menu's search cards). */
+.dak-home-search-modal-city.dak-hidden {
+	display: none !important;
+}
+
+.dak-home-search-modal-city.is-selected {
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+	font-weight: 600 !important;
+}
+
+.dak-home-search-modal-city span {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 26px !important;
+	height: 26px !important;
+	flex: 0 0 auto !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-home-search-modal-city span svg {
+	width: 13px !important;
+	height: 13px !important;
+}
+
+/* Live "Doctors" results — swaps in over .dak-home-search-modal-cities the
+   moment the search box has anything typed into it (see renderResults() in
+   doctor-ak-home.js), so the visitor never has to leave the popup or press
+   Enter to see whether a name/specialty matches anything. */
+.dak-home-search-modal-results-heading {
+	display: block !important;
+	margin: 0 0 var( --dak-space-2 ) !important;
+	padding: 0.5rem 0.6rem !important;
+	background: var( --dak-bg-subtle ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	font-size: 0.72rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.04em !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-home-search-modal-results-list {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.1rem !important;
+	max-height: 300px !important;
+	overflow-y: auto !important;
+}
+
+.dak-home-search-modal-result {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.65rem !important;
+	width: 100% !important;
+	padding: 0.5rem !important;
+	border: 0 !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: none !important;
+	font: inherit !important;
+	text-align: left !important;
+	cursor: pointer !important;
+}
+
+.dak-home-search-modal-result:hover {
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-home-search-modal-result-avatar {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 38px !important;
+	height: 38px !important;
+	flex: 0 0 auto !important;
+	overflow: hidden !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+	font-size: 0.75rem !important;
+	font-weight: 700 !important;
+}
+
+.dak-home-search-modal-result-avatar img {
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+}
+
+.dak-home-search-modal-result-body {
+	display: flex !important;
+	flex-direction: column !important;
+	min-width: 0 !important;
+}
+
+.dak-home-search-modal-result-body strong {
+	font-size: 0.92rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-home-search-modal-result-body strong mark {
+	background: #fde047 !important;
+	color: inherit !important;
+	border-radius: 2px !important;
+}
+
+.dak-home-search-modal-result-body span {
+	font-size: 0.8rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-home-search-modal-no-results {
+	margin: var( --dak-space-2 ) 0 0 !important;
+	font-size: 0.85rem !important;
+	color: var( --dak-muted ) !important;
+	text-align: center !important;
+}
+
+.dak-home-search-modal-submit {
+	width: 100% !important;
+	justify-content: center !important;
+	margin-top: var( --dak-space-1 ) !important;
 }
 
 /* Quick-access cards — right below the hero */
@@ -1455,6 +1814,20 @@
 	.dak-home-hero-search-submit {
 		flex: 1 1 100% !important;
 		justify-content: center !important;
+	}
+
+	.dak-home-search-modal {
+		padding: var( --dak-space-4 ) !important;
+	}
+
+	.dak-home-search-modal-dialog {
+		padding: var( --dak-space-4 ) !important;
+	}
+
+	/* Back to one column — a phone-width popup has no room for two boxed
+	   fields (each with its own icon and Detect/clear button) side by side. */
+	.dak-home-search-modal-row {
+		grid-template-columns: 1fr !important;
 	}
 
 	.dak-home-quick-links-grid {

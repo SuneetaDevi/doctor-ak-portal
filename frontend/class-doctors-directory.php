@@ -218,7 +218,7 @@ class Doctors_Directory {
 			}
 
 			if ( '' === $primary_clinic_location ) {
-				$primary_clinic_location = '' !== $clinic['address'] ? $clinic['address'] : $clinic['name'];
+				$primary_clinic_location = '' !== $clinic['name'] ? $clinic['name'] : $clinic['address'];
 			} else {
 				++$extra_clinic_count;
 			}

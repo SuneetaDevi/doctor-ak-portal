@@ -175,11 +175,40 @@ class Home_Page {
 	public function render() {
 		$doctor_cards = $this->doctors_directory->doctor_cards_data( self::FEATURED_DOCTORS_LIMIT );
 
+		// Uncapped, unlike $doctor_cards above (which is limited to what the
+		// featured-doctors carousel shows) — cities_in_use() needs to see
+		// every registered doctor to count cities accurately.
+		$all_doctor_cards = $this->doctors_directory->doctor_cards_data();
+
 		$doctors_html = array_map(
 			function ( $card ) {
 				return $this->template_loader->get_template( 'directory/home-doctor-card.php', $card );
 			},
 			$doctor_cards
+		);
+
+		// A compact, name-searchable index of every registered doctor for the
+		// hero search popup's live results (see initHeroSearch() in
+		// doctor-ak-home.js) — just enough fields to render a result row and
+		// link to it, so this stays a small inline JSON blob rather than
+		// shipping the full doctor_cards_data() shape (clinic/location/etc.)
+		// the visitor doesn't need there.
+		$doctor_search_index = array_map(
+			function ( $card ) {
+				return array(
+					'name'      => $card['name'],
+					'specialty' => empty( $card['specialization_labels'] ) ? '' : $card['specialization_labels'][0],
+					'avatarUrl' => $card['avatar_url'],
+					'url'       => $card['profile_url'],
+				);
+			},
+			$all_doctor_cards
+		);
+
+		wp_localize_script(
+			'doctor-ak-portal-home',
+			'dakHomeSearch',
+			array( 'doctors' => $doctor_search_index )
 		);
 
 		$service_groups = array_slice( Services::grouped_active_for_public_directory(), 0, self::FEATURED_SERVICES_LIMIT );
@@ -201,6 +230,7 @@ class Home_Page {
 				'doctors_html'     => $doctors_html,
 				'services_html'    => $services_html,
 				'specialties'      => self::specialties_in_use( $directory_url ),
+				'cities'           => self::cities_in_use( $all_doctor_cards ),
 				'videos'           => Home_Videos::get_all(),
 				'testimonials'     => array_merge( Home_Testimonials::get_all(), Google_Reviews::get_reviews() ),
 				'google_rating'    => Google_Reviews::overall_rating(),
@@ -263,6 +293,55 @@ class Home_Page {
 		}
 
 		return $specialties;
+	}
+
+	/**
+	 * The cities at least one registered doctor actually practises in, most
+	 * represented first — mirrors specialties_in_use()'s "never send a
+	 * visitor to an empty filtered directory" discipline, for the hero
+	 * search modal's city quick-picks. Doctor cards only carry city slugs (see
+	 * Doctors_Directory::doctor_cards_data()), so labels are cross-referenced
+	 * from Clinic_Locations (the admin-managed clinic list) — a city with no
+	 * clinic on file at all is skipped even if a doctor's own profile
+	 * happens to list it, since there'd be nothing to show them there.
+	 *
+	 * @param array $doctor_cards Full (uncapped) Doctors_Directory::doctor_cards_data() rows.
+	 * @return array List of { slug, label, count }.
+	 */
+	public static function cities_in_use( array $doctor_cards ) {
+		$labels = array();
+
+		foreach ( Clinic_Locations::get_all() as $clinic_location ) {
+			if ( '' !== $clinic_location['city'] && ! isset( $labels[ $clinic_location['city'] ] ) ) {
+				$labels[ $clinic_location['city'] ] = $clinic_location['city_label'];
+			}
+		}
+
+		$counts = array();
+
+		foreach ( $doctor_cards as $card ) {
+			foreach ( $card['city_slugs'] as $slug ) {
+				if ( ! isset( $labels[ $slug ] ) ) {
+					continue;
+				}
+
+				$counts[ $slug ] = isset( $counts[ $slug ] ) ? $counts[ $slug ] + 1 : 1;
+			}
+		}
+
+		arsort( $counts );
+
+		$cities = array();
+
+		foreach ( $counts as $slug => $count ) {
+			$cities[] = array(
+				'slug'  => $slug,
+				'label' => $labels[ $slug ],
+				'count' => $count,
+			);
+		}
+
+		return $cities;
 	}
 
 	/**

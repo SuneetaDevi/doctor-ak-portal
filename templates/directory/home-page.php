@@ -11,6 +11,7 @@
  * @var string[]   $doctors_html     Pre-rendered directory/doctor-card.php output, one per featured doctor.
  * @var string[]   $services_html    Pre-rendered directory/service-card.php output, one per featured service.
  * @var array      $specialties      Home_Page::specialties() rows — { slug, label, count, url } — only specializations a registered doctor actually has.
+ * @var array      $cities           Home_Page::cities_in_use() rows — { slug, label, count } — only cities a registered doctor actually practises in, for the hero search modal's city quick-picks.
  * @var array      $videos           Home_Videos::get_all() rows — { title, video_url, poster_url } — admin-uploaded videos.
  * @var array      $testimonials     Home_Testimonials::get_all() rows merged with Google_Reviews::get_reviews() — { quote, name, attribution, rating? } — 'rating' (1-5) is only present on a Google review.
  * @var array      $google_rating    Google_Reviews::overall_rating() — { rating, total } — zeroed out if Google reviews aren't configured.
@@ -22,6 +23,11 @@
  * @var string   $services_url     URL of the [services_directory] page, or '' if not found.
  * @var array    $stats            { doctors_count, patients_count, appointments_count, max_years_experience, clinics_count }.
  * @var array    $clinic_locations Clinic_Locations::get_all() rows (capped), for the "Visit Us" section.
+ *
+ * Every registered doctor is also available client-side as
+ * window.dakHomeSearch.doctors — { name, specialty, avatarUrl, url } rows —
+ * via wp_localize_script() in Home_Page::render(), for the hero search
+ * modal's live "Doctors" results (see initHeroSearch() in doctor-ak-home.js).
  */
 
 // Prevent direct file access.
@@ -40,6 +46,7 @@ $dak_home_icons = array(
 	'chevron_left' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.5 4.5l-5.5 5.5 5.5 5.5"/></svg>',
 	'play'     => '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6.5 4.3v11.4a1 1 0 0 0 1.53.85l9-5.7a1 1 0 0 0 0-1.7l-9-5.7A1 1 0 0 0 6.5 4.3z"/></svg>',
 	'pin'      => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18s6-5.2 6-9.8A6 6 0 0 0 4 8.2C4 12.8 10 18 10 18z"/><circle cx="10" cy="8" r="2"/></svg>',
+	'locate'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="2.2"/><path d="M10 2.5v2.3M10 15.2v2.3M17.5 10h-2.3M4.8 10H2.5"/></svg>',
 	'phone'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3.5h2.3l1 3.3-1.6 1.4a9 9 0 0 0 4.1 4.1l1.4-1.6 3.3 1v2.3c0 .8-.7 1.4-1.5 1.3C8.7 15 5 11.3 4.2 6c-.1-.8.5-1.5 1.3-1.5z"/></svg>',
 	'search'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.8" cy="8.8" r="5.3"/><path d="M17 17l-3.8-3.8"/></svg>',
 	'user'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.2"/><path d="M3.5 17c1-3.5 4-5 6.5-5s5.5 1.5 6.5 5"/></svg>',
@@ -259,32 +266,107 @@ $dak_home_testimonials = ! empty( $testimonials )
 	</section>
 
 	<?php if ( $directory_url ) : ?>
-		<a class="dak-home-hero-search" href="<?php echo esc_url( $directory_url ); ?>">
-			<span class="dak-home-hero-search-field">
-				<span class="dak-home-hero-search-icon" aria-hidden="true"><?php echo $dak_home_icons['search']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-				<span>
-					<strong><?php esc_html_e( 'Treatment or Specialist', 'doctor-ak-portal' ); ?></strong>
-					<em><?php esc_html_e( 'Search by condition or doctor', 'doctor-ak-portal' ); ?></em>
-				</span>
-			</span>
+		<button type="button" class="dak-home-hero-search" id="dak-home-hero-search-trigger" aria-haspopup="dialog" aria-controls="dak-home-search-modal">
 			<span class="dak-home-hero-search-field">
 				<span class="dak-home-hero-search-icon" aria-hidden="true"><?php echo $dak_home_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-				<span>
+				<span class="dak-home-hero-search-control">
 					<strong><?php esc_html_e( 'Location', 'doctor-ak-portal' ); ?></strong>
-					<em><?php esc_html_e( 'Any clinic in Karachi', 'doctor-ak-portal' ); ?></em>
+					<em id="dak-home-hero-search-trigger-location"><?php esc_html_e( 'Any city', 'doctor-ak-portal' ); ?></em>
 				</span>
 			</span>
 			<span class="dak-home-hero-search-field">
-				<span class="dak-home-hero-search-icon" aria-hidden="true"><?php echo $dak_home_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-				<span>
-					<strong><?php esc_html_e( 'Date', 'doctor-ak-portal' ); ?></strong>
-					<em><?php esc_html_e( 'Choose a day that works', 'doctor-ak-portal' ); ?></em>
+				<span class="dak-home-hero-search-icon" aria-hidden="true"><?php echo $dak_home_icons['search']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+				<span class="dak-home-hero-search-control">
+					<strong><?php esc_html_e( 'Specialty or Doctor', 'doctor-ak-portal' ); ?></strong>
+					<em><?php esc_html_e( 'Search by condition or doctor name', 'doctor-ak-portal' ); ?></em>
 				</span>
 			</span>
 			<span class="dak-button dak-button-primary dak-home-hero-search-submit">
 				<?php esc_html_e( 'Search', 'doctor-ak-portal' ); ?>
 			</span>
-		</a>
+		</button>
+
+		<div class="dak-home-search-modal" id="dak-home-search-modal" aria-hidden="true">
+			<div class="dak-home-search-modal-overlay" id="dak-home-search-modal-overlay"></div>
+
+			<div class="dak-home-search-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="dak-home-search-modal-title">
+				<div class="dak-home-search-modal-header">
+					<h2 id="dak-home-search-modal-title"><?php esc_html_e( 'Search for doctors', 'doctor-ak-portal' ); ?></h2>
+					<button type="button" class="dak-home-search-modal-close" id="dak-home-search-modal-close" aria-label="<?php esc_attr_e( 'Close', 'doctor-ak-portal' ); ?>">&times;</button>
+				</div>
+
+				<form class="dak-home-search-modal-form" method="get" action="<?php echo esc_url( $directory_url ); ?>">
+					<div class="dak-home-search-modal-row">
+						<div class="dak-home-search-modal-location">
+							<span class="dak-home-hero-search-icon" aria-hidden="true"><?php echo $dak_home_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<input
+								type="text"
+								id="dak-home-search-modal-location-input"
+								placeholder="<?php esc_attr_e( 'Search or select a city', 'doctor-ak-portal' ); ?>"
+								data-detecting-placeholder="<?php esc_attr_e( 'Detecting your city…', 'doctor-ak-portal' ); ?>"
+								autocomplete="off"
+							>
+							<input type="hidden" name="city" id="dak-home-search-modal-city">
+							<button
+								type="button"
+								class="dak-home-hero-search-detect"
+								id="dak-home-search-modal-detect"
+								aria-label="<?php esc_attr_e( 'Detect my location', 'doctor-ak-portal' ); ?>"
+								title="<?php esc_attr_e( 'Detect my location', 'doctor-ak-portal' ); ?>"
+							>
+								<?php echo $dak_home_icons['locate']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+								<?php esc_html_e( 'Detect', 'doctor-ak-portal' ); ?>
+							</button>
+						</div>
+
+						<div class="dak-home-search-modal-query">
+							<span class="dak-home-hero-search-icon" aria-hidden="true"><?php echo $dak_home_icons['search']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<input
+								type="text"
+								name="s"
+								id="dak-home-search-modal-query-input"
+								placeholder="<?php esc_attr_e( 'Search for doctors, specialties, symptoms…', 'doctor-ak-portal' ); ?>"
+								autocomplete="off"
+							>
+							<button
+								type="button"
+								class="dak-home-search-modal-query-clear dak-hidden"
+								id="dak-home-search-modal-query-clear"
+								aria-label="<?php esc_attr_e( 'Clear search', 'doctor-ak-portal' ); ?>"
+							>&times;</button>
+						</div>
+					</div>
+
+					<?php if ( ! empty( $cities ) ) : ?>
+						<div class="dak-home-search-modal-cities" id="dak-home-search-modal-cities">
+							<?php foreach ( $cities as $dak_city ) : ?>
+								<button
+									type="button"
+									class="dak-home-search-modal-city"
+									data-city-slug="<?php echo esc_attr( $dak_city['slug'] ); ?>"
+									data-city-label="<?php echo esc_attr( $dak_city['label'] ); ?>"
+								>
+									<span aria-hidden="true"><?php echo $dak_home_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+									<?php echo esc_html( $dak_city['label'] ); ?>
+								</button>
+							<?php endforeach; ?>
+						</div>
+					<?php endif; ?>
+
+					<div class="dak-home-search-modal-results dak-hidden" id="dak-home-search-modal-results">
+						<span class="dak-home-search-modal-results-heading"><?php esc_html_e( 'Doctors', 'doctor-ak-portal' ); ?></span>
+						<div class="dak-home-search-modal-results-list" id="dak-home-search-modal-results-list"></div>
+						<p class="dak-home-search-modal-no-results dak-hidden" id="dak-home-search-modal-no-results">
+							<?php esc_html_e( 'No doctors matched that search.', 'doctor-ak-portal' ); ?>
+						</p>
+					</div>
+
+					<button type="submit" class="dak-button dak-button-primary dak-home-search-modal-submit">
+						<?php esc_html_e( 'Search', 'doctor-ak-portal' ); ?>
+					</button>
+				</form>
+			</div>
+		</div>
 	<?php endif; ?>
 
 	<?php if ( ! empty( $dak_home_quick_links ) ) : ?>

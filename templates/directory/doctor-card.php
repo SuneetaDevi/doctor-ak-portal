@@ -9,7 +9,7 @@
  * @var string   $avatar_url            Doctor's photo (or fallback avatar) URL.
  * @var string[] $specialization_labels Selected specialization labels.
  * @var int|string $years_experience     Doctor's years of experience, or '' if not set.
- * @var string   $clinic_location       Doctor's primary (first) physical clinic's address/name, or '' if none.
+ * @var string   $clinic_location       Doctor's primary (first) physical clinic's name (falls back to its address if it somehow has none), or '' if no physical clinic at all.
  * @var int      $extra_clinic_count    Number of additional physical clinics beyond the primary one.
  * @var string[] $country_slugs         Country slugs across every physical clinic this doctor has (or their own profile country if none), for the Country filter.
  * @var string[] $city_slugs            City slugs across every physical clinic this doctor has (or their own profile city if none), for the City filter.
