@@ -9,7 +9,7 @@
  * @package DoctorAKPortal\Templates
  *
  * @var string[]   $doctors_html     Pre-rendered directory/doctor-card.php output, one per featured doctor.
- * @var string[]   $services_html    Pre-rendered directory/service-card.php output, one per featured service.
+ * @var string[]   $services_html    Pre-rendered directory/home-service-card.php output, one per featured service.
  * @var array      $specialties      Home_Page::specialties() rows — { slug, label, count, url } — only specializations a registered doctor actually has.
  * @var array      $cities           Home_Page::cities_in_use() rows — { slug, label, count } — only cities a registered doctor actually practises in, for the hero search modal's city quick-picks.
  * @var array      $videos           Home_Videos::get_all() rows — { title, video_url, poster_url } — admin-uploaded videos.

@@ -1,11 +1,9 @@
 <?php
 /**
- * Template: Home page service row — a wide, stacked card with the copy on one
- * side and the service photo on the other.
- *
- * Its own template rather than directory/service-card.php, whose compact
- * portrait card the standalone [services_directory] grid renders; reshaping
- * that shared partial would change the services page too.
+ * Template: Service row — a wide, stacked card with the copy on one side and
+ * the service photo on the other. Used both by the home page's own services
+ * section and by the standalone [services_directory] page
+ * (Services_Directory::render()), so the two match.
  *
  * @package DoctorAKPortal\Templates
  *
