@@ -13,7 +13,7 @@
 		initDayPills();
 		initCheckCards();
 		initProfilePictureUpload();
-		initMultiSelect( document.getElementById( 'dak-specializations' ) );
+		initMultiSelect( document.getElementById( 'dak-specializations' ), { copyCut: true } );
 		initTermsModal();
 		initRegistrationForm();
 
@@ -265,6 +265,46 @@
 	}
 
 	/**
+	 * Writes text to the clipboard — the modern Clipboard API where
+	 * available (requires a secure/HTTPS context), falling back to a
+	 * hidden, off-screen textarea + execCommand('copy') for older or
+	 * plain-HTTP installs where navigator.clipboard doesn't exist at all.
+	 *
+	 * @param {string} text
+	 * @return {void}
+	 */
+	function copyTextToClipboard( text ) {
+		if ( navigator.clipboard && navigator.clipboard.writeText ) {
+			navigator.clipboard.writeText( text ).catch( function () {
+				legacyCopyTextToClipboard( text );
+			} );
+
+			return;
+		}
+
+		legacyCopyTextToClipboard( text );
+	}
+
+	function legacyCopyTextToClipboard( text ) {
+		var textarea = document.createElement( 'textarea' );
+		textarea.value = text;
+		textarea.setAttribute( 'readonly', '' );
+		textarea.style.position = 'fixed';
+		textarea.style.left = '-9999px';
+		document.body.appendChild( textarea );
+		textarea.select();
+
+		try {
+			document.execCommand( 'copy' );
+		} catch ( e ) {
+			// Nothing more to do — the visitor can still select and copy the
+			// chips' text by hand.
+		}
+
+		document.body.removeChild( textarea );
+	}
+
+	/**
 	 * Progressively enhances a native <select multiple> into a searchable,
 	 * chip-based multi-select. Built in-house (no external library) so the
 	 * plugin has no third-party JS dependency; the underlying <select>
@@ -367,6 +407,37 @@
 			select.dispatchEvent( new Event( 'change' ) );
 		}
 
+		/**
+		 * Splits comma-separated text into individual tags — pasting
+		 * "Cardiology, Neurology, Dermatology" (or typing it out and
+		 * committing with Enter/Tab) adds three separate chips instead of
+		 * one chip containing the whole string. Each part reuses a matching
+		 * existing option (case-insensitive, exact) when there is one,
+		 * rather than creating a duplicate custom tag next to it.
+		 *
+		 * @param {string} text Raw text — one or more comma-separated values.
+		 * @return {void}
+		 */
+		function addFromCommaSeparatedText( text ) {
+			text.split( ',' ).forEach( function ( part ) {
+				var value = part.trim();
+
+				if ( '' === value ) {
+					return;
+				}
+
+				var match = Array.prototype.filter.call( optionsList.children, function ( li ) {
+					return ! li.classList.contains( 'is-selected' ) && li.textContent.toLowerCase() === value.toLowerCase();
+				} )[ 0 ];
+
+				if ( match ) {
+					match.click();
+				} else if ( opts.allowCustom ) {
+					addCustomOption( value );
+				}
+			} );
+		}
+
 		dropdown.appendChild( search );
 		dropdown.appendChild( optionsList );
 
@@ -430,6 +501,57 @@
 			}
 		} );
 
+		// Ctrl/Cmd+C (or +X) while the chip area itself has focus (Tab into
+		// it, or click its empty space rather than a chip's own × button)
+		// copies every current chip as one comma-separated string — handy
+		// for pasting the same set into another doctor's field, or outside
+		// the form entirely. Cut does the same and then clears every chip,
+		// same as a real input field's cut would empty it.
+		control.setAttribute(
+			'title',
+			opts.allowCustom
+				? 'Click to search or add. Ctrl+C copies all tags as comma-separated text, Ctrl+X copies and clears them.'
+				: 'Click to select. Ctrl+C copies all tags as comma-separated text, Ctrl+X copies and clears them.'
+		);
+
+		control.addEventListener( 'keydown', function ( event ) {
+			var key = event.key ? event.key.toLowerCase() : '';
+			var isCopy = ( event.ctrlKey || event.metaKey ) && 'c' === key;
+			var isCut = ( event.ctrlKey || event.metaKey ) && 'x' === key;
+
+			if ( ! isCopy && ! isCut ) {
+				return;
+			}
+
+			var selectedOptions = Array.prototype.filter.call( select.options, function ( option ) {
+				return option.selected;
+			} );
+
+			if ( ! selectedOptions.length ) {
+				return;
+			}
+
+			event.preventDefault();
+
+			copyTextToClipboard(
+				selectedOptions.map( function ( option ) {
+					return option.textContent;
+				} ).join( ', ' )
+			);
+
+			if ( ! isCut ) {
+				return;
+			}
+
+			selectedOptions.forEach( function ( option ) {
+				option.selected = false;
+				deselectOptionInList( option.value );
+			} );
+
+			renderChips();
+			select.dispatchEvent( new Event( 'change' ) );
+		} );
+
 		search.addEventListener( 'click', function ( event ) {
 			event.stopPropagation();
 		} );
@@ -443,11 +565,38 @@
 			} );
 		} );
 
+		function resetSearch() {
+			search.value = '';
+			Array.prototype.forEach.call( optionsList.children, function ( li ) {
+				li.classList.remove( 'dak-hidden' );
+			} );
+		}
+
+		// Pasting a comma-separated list ("Cardiology, Neurology,
+		// Dermatology") splits and adds each one as its own chip right
+		// away — no need to also press Enter. A pasted value with no comma
+		// falls through to the default paste behaviour, so it just fills
+		// the search box as normal and Enter/Tab below still commits it.
+		search.addEventListener( 'paste', function ( event ) {
+			var clipboard = event.clipboardData || window.clipboardData;
+			var pasted = clipboard ? clipboard.getData( 'text' ) : '';
+
+			if ( ! pasted || -1 === pasted.indexOf( ',' ) ) {
+				return;
+			}
+
+			event.preventDefault();
+			addFromCommaSeparatedText( pasted );
+			resetSearch();
+		} );
+
 		// Tag-style shortcut: type a few letters, press Tab (or Enter) to
 		// turn the top matching option into a chip immediately, without
 		// having to reach for the mouse — same idea as an email "To:" field.
 		// When opts.allowCustom is set and nothing matches, the typed text
-		// itself becomes a brand-new tag instead of being dropped.
+		// itself becomes a brand-new tag instead of being dropped. Typed (or
+		// pasted-without-triggering-the-paste-handler-above) text containing
+		// a comma is split into one tag per part instead.
 		search.addEventListener( 'keydown', function ( event ) {
 			if ( 'Tab' !== event.key && 'Enter' !== event.key ) {
 				return;
@@ -456,6 +605,14 @@
 			var query = search.value.trim();
 
 			if ( '' === query ) {
+				return;
+			}
+
+			if ( query.indexOf( ',' ) !== -1 ) {
+				event.preventDefault();
+				addFromCommaSeparatedText( query );
+				resetSearch();
+
 				return;
 			}
 
@@ -473,10 +630,7 @@
 				return;
 			}
 
-			search.value = '';
-			Array.prototype.forEach.call( optionsList.children, function ( li ) {
-				li.classList.remove( 'dak-hidden' );
-			} );
+			resetSearch();
 		} );
 
 		document.addEventListener( 'click', function ( event ) {
@@ -484,6 +638,211 @@
 				dropdown.classList.add( 'dak-hidden' );
 			}
 		} );
+
+		/**
+		 * Opt-in (opts.copyCut) Copy/Cut toolbar — two buttons above the chip
+		 * area. Unlike the Ctrl+C/Ctrl+X shortcut further up (which always
+		 * acts on every chip), clicking either one opens a checklist so the
+		 * visitor can pick exactly which tags to copy or cut before
+		 * confirming, then writes them to the clipboard as one
+		 * comma-separated string (chosen tags at a time — see
+		 * copyTextToClipboard() above).
+		 *
+		 * @return {void}
+		 */
+		function initCopyCutToolbar() {
+			var toolbar = document.createElement( 'div' );
+			toolbar.className = 'dak-multiselect-toolbar';
+
+			var copyButton = document.createElement( 'button' );
+			copyButton.type = 'button';
+			copyButton.className = 'dak-multiselect-tool';
+			copyButton.setAttribute( 'aria-label', 'Copy tags' );
+			copyButton.title = 'Copy tags…';
+			copyButton.innerHTML = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M13 7V4.5A1.5 1.5 0 0 0 11.5 3h-8A1.5 1.5 0 0 0 2 4.5v8A1.5 1.5 0 0 0 3.5 14H6"/></svg><span>Copy</span>';
+
+			var cutButton = document.createElement( 'button' );
+			cutButton.type = 'button';
+			cutButton.className = 'dak-multiselect-tool';
+			cutButton.setAttribute( 'aria-label', 'Cut tags' );
+			cutButton.title = 'Cut tags…';
+			cutButton.innerHTML = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2"/><circle cx="6" cy="14" r="2"/><path d="M7.5 7.5L16 16M16 4L7.5 12.5"/></svg><span>Cut</span>';
+
+			toolbar.appendChild( copyButton );
+			toolbar.appendChild( cutButton );
+			wrapper.insertBefore( toolbar, control );
+
+			var panel = document.createElement( 'div' );
+			panel.className = 'dak-multiselect-copycut-panel dak-hidden';
+			wrapper.appendChild( panel );
+
+			copyButton.addEventListener( 'click', function ( event ) {
+				event.stopPropagation();
+				openPanel( 'copy' );
+			} );
+
+			cutButton.addEventListener( 'click', function ( event ) {
+				event.stopPropagation();
+				openPanel( 'cut' );
+			} );
+
+			panel.addEventListener( 'click', function ( event ) {
+				event.stopPropagation();
+			} );
+
+			document.addEventListener( 'click', function ( event ) {
+				if ( event.target !== copyButton && event.target !== cutButton && ! panel.contains( event.target ) ) {
+					closePanel();
+				}
+			} );
+
+			document.addEventListener( 'keydown', function ( event ) {
+				if ( 'Escape' === event.key ) {
+					closePanel();
+				}
+			} );
+
+			function closePanel() {
+				panel.classList.add( 'dak-hidden' );
+			}
+
+			/**
+			 * Rebuilds and shows the checklist against whatever's currently
+			 * selected — built fresh every time rather than kept in sync, since
+			 * chips can change any time the panel isn't open.
+			 *
+			 * @param {'copy'|'cut'} mode
+			 * @return {void}
+			 */
+			function openPanel( mode ) {
+				var selectedOptions = Array.prototype.filter.call( select.options, function ( option ) {
+					return option.selected;
+				} );
+
+				if ( ! selectedOptions.length ) {
+					return;
+				}
+
+				dropdown.classList.add( 'dak-hidden' );
+				panel.innerHTML = '';
+
+				var header = document.createElement( 'p' );
+				header.className = 'dak-multiselect-copycut-header';
+				header.textContent = 'copy' === mode ? 'Select tags to copy:' : 'Select tags to cut:';
+				panel.appendChild( header );
+
+				var list = document.createElement( 'div' );
+				list.className = 'dak-multiselect-copycut-list';
+				panel.appendChild( list );
+
+				var selectAllRow = document.createElement( 'label' );
+				selectAllRow.className = 'dak-multiselect-copycut-row dak-multiselect-copycut-select-all';
+
+				var selectAllCheckbox = document.createElement( 'input' );
+				selectAllCheckbox.type = 'checkbox';
+				selectAllCheckbox.checked = true;
+
+				var selectAllText = document.createElement( 'span' );
+				selectAllText.textContent = 'Select all';
+
+				selectAllRow.appendChild( selectAllCheckbox );
+				selectAllRow.appendChild( selectAllText );
+				list.appendChild( selectAllRow );
+
+				var entries = selectedOptions.map( function ( option ) {
+					var row = document.createElement( 'label' );
+					row.className = 'dak-multiselect-copycut-row';
+
+					var checkbox = document.createElement( 'input' );
+					checkbox.type = 'checkbox';
+					checkbox.checked = true;
+
+					var text = document.createElement( 'span' );
+					text.textContent = option.textContent;
+
+					row.appendChild( checkbox );
+					row.appendChild( text );
+					list.appendChild( row );
+
+					checkbox.addEventListener( 'change', function () {
+						selectAllCheckbox.checked = entries.every( function ( entry ) {
+							return entry.checkbox.checked;
+						} );
+						updateConfirmState();
+					} );
+
+					return { option: option, checkbox: checkbox };
+				} );
+
+				selectAllCheckbox.addEventListener( 'change', function () {
+					entries.forEach( function ( entry ) {
+						entry.checkbox.checked = selectAllCheckbox.checked;
+					} );
+					updateConfirmState();
+				} );
+
+				var actions = document.createElement( 'div' );
+				actions.className = 'dak-multiselect-copycut-actions';
+
+				var cancelButton = document.createElement( 'button' );
+				cancelButton.type = 'button';
+				cancelButton.className = 'dak-button dak-button-secondary dak-button-sm';
+				cancelButton.textContent = 'Cancel';
+				cancelButton.addEventListener( 'click', closePanel );
+
+				var confirmButton = document.createElement( 'button' );
+				confirmButton.type = 'button';
+				confirmButton.className = 'dak-button dak-button-primary dak-button-sm';
+
+				confirmButton.addEventListener( 'click', function () {
+					var chosen = entries.filter( function ( entry ) {
+						return entry.checkbox.checked;
+					} );
+
+					if ( ! chosen.length ) {
+						return;
+					}
+
+					copyTextToClipboard(
+						chosen.map( function ( entry ) {
+							return entry.option.textContent;
+						} ).join( ', ' )
+					);
+
+					if ( 'cut' === mode ) {
+						chosen.forEach( function ( entry ) {
+							entry.option.selected = false;
+							deselectOptionInList( entry.option.value );
+						} );
+
+						renderChips();
+						select.dispatchEvent( new Event( 'change' ) );
+					}
+
+					closePanel();
+				} );
+
+				actions.appendChild( cancelButton );
+				actions.appendChild( confirmButton );
+				panel.appendChild( actions );
+
+				function updateConfirmState() {
+					var checkedCount = entries.filter( function ( entry ) {
+						return entry.checkbox.checked;
+					} ).length;
+
+					confirmButton.textContent = ( 'copy' === mode ? 'Copy ' : 'Cut ' ) + checkedCount;
+					confirmButton.disabled = 0 === checkedCount;
+				}
+
+				updateConfirmState();
+				panel.classList.remove( 'dak-hidden' );
+			}
+		}
+
+		if ( opts.copyCut ) {
+			initCopyCutToolbar();
+		}
 
 		renderChips();
 	}

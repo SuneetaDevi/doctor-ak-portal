@@ -219,6 +219,107 @@
 	position: relative !important;
 }
 
+/* Opt-in (opts.copyCut) Copy/Cut toolbar — see initCopyCutToolbar() in
+   doctor-ak-registration.js. Only specialization/keyword fields pass
+   copyCut: true, so this never appears on e.g. the clinic-locations
+   multi-select. */
+.dak-multiselect-toolbar {
+	display: flex !important;
+	justify-content: flex-end !important;
+	gap: 0.4rem !important;
+	margin-bottom: 0.35rem !important;
+}
+
+.dak-multiselect-tool {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.3rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-muted ) !important;
+	padding: 0.25rem 0.55rem !important;
+	font-size: 0.78rem !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+}
+
+.dak-multiselect-tool:hover {
+	border-color: var( --dak-primary ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-multiselect-tool svg {
+	width: 13px !important;
+	height: 13px !important;
+	flex-shrink: 0 !important;
+}
+
+/* Copy/Cut picker — opened by .dak-multiselect-tool above, lets the visitor
+   choose exactly which chips to act on instead of always all of them. */
+.dak-multiselect-copycut-panel {
+	position: absolute !important;
+	z-index: 21 !important;
+	top: 0 !important;
+	right: 0 !important;
+	width: 240px !important;
+	max-width: calc( 100vw - 2rem ) !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	padding: 0.75rem !important;
+}
+
+.dak-multiselect-copycut-header {
+	margin: 0 0 0.5rem !important;
+	font-size: 0.82rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-multiselect-copycut-list {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.15rem !important;
+	max-height: 200px !important;
+	overflow-y: auto !important;
+	margin-bottom: 0.6rem !important;
+}
+
+.dak-multiselect-copycut-row {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.5rem !important;
+	padding: 0.3rem 0.35rem !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	font-size: 0.85rem !important;
+	color: var( --dak-text ) !important;
+	cursor: pointer !important;
+}
+
+.dak-multiselect-copycut-row:hover {
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-multiselect-copycut-row input[type='checkbox'] {
+	margin: 0 !important;
+	accent-color: var( --dak-primary ) !important;
+}
+
+.dak-multiselect-copycut-select-all {
+	padding-bottom: 0.4rem !important;
+	margin-bottom: 0.2rem !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	font-weight: 600 !important;
+}
+
+.dak-multiselect-copycut-actions {
+	display: flex !important;
+	justify-content: flex-end !important;
+	gap: 0.5rem !important;
+}
+
 .dak-multiselect-control {
 	min-height: 2.6rem !important;
 	display: flex !important;

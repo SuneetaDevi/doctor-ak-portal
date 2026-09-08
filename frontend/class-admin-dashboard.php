@@ -13,6 +13,7 @@ use DoctorAKPortal\Includes\Blogs;
 use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Doctor_Awards;
+use DoctorAKPortal\Includes\Doctor_Keywords;
 use DoctorAKPortal\Includes\Encounters;
 use DoctorAKPortal\Includes\Google_Reviews;
 use DoctorAKPortal\Includes\Home_Testimonials;
@@ -2983,6 +2984,7 @@ class Admin_Dashboard {
 			array(
 				'role'             => $role,
 				'specializations'  => Specializations::get_all(),
+				'keywords'         => Doctor_Keywords::get_all(),
 				'section'          => $section,
 				'list_url'         => $dashboard_url ? add_query_arg( 'section', $section, $dashboard_url ) : '',
 				'editing_user'     => $editing,
@@ -3086,6 +3088,7 @@ class Admin_Dashboard {
 			'specializations'             => $specialization_slugs,
 			'specialization_label'        => implode( ', ', $specialization_labels ),
 			'specialization_labels'       => $specialization_labels,
+			'keywords'                    => (array) get_user_meta( $user->ID, 'doctor_ak_keywords', true ),
 			'clinic_labels'               => $clinic_labels,
 			'receptionist_clinic_location_ids' => $receptionist_clinic_location_ids,
 			'clinic_location_id'          => $clinic_location_id,

@@ -58,7 +58,12 @@
 		var shared = window.DoctorAKPortal || {};
 
 		if ( typeof shared.initMultiSelect === 'function' ) {
-			shared.initMultiSelect( document.getElementById( 'dak-admin-user-specializations' ), { allowCustom: true } );
+			shared.initMultiSelect( document.getElementById( 'dak-admin-user-specializations' ), { allowCustom: true, copyCut: true } );
+			shared.initMultiSelect( document.getElementById( 'dak-admin-user-keywords' ), {
+				allowCustom: true,
+				copyCut: true,
+				placeholder: 'Search or type a keyword…',
+			} );
 			shared.initMultiSelect( document.getElementById( 'dak-admin-user-clinic-locations' ), { placeholder: 'Select clinics…' } );
 		}
 

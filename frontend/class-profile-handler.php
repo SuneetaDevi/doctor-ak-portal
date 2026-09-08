@@ -9,6 +9,7 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Doctor_Awards;
+use DoctorAKPortal\Includes\Doctor_Keywords;
 use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Phone;
@@ -211,6 +212,8 @@ class Profile_Handler {
 			'is_doctor'                  => $is_doctor,
 			'specializations'            => Specializations::get_all(),
 			'current_specializations'    => (array) get_user_meta( $user->ID, 'doctor_ak_specializations', true ),
+			'keywords'                   => Doctor_Keywords::get_all(),
+			'current_keywords'           => (array) get_user_meta( $user->ID, 'doctor_ak_keywords', true ),
 			'current_years_experience'   => get_user_meta( $user->ID, 'doctor_ak_years_experience', true ),
 			'current_qualification'      => get_user_meta( $user->ID, 'doctor_ak_qualification', true ),
 			'current_country'            => get_user_meta( $user->ID, 'doctor_ak_country', true ),
@@ -354,6 +357,10 @@ class Profile_Handler {
 			update_user_meta( $user->ID, $meta_key, $meta_value );
 		}
 
+		if ( isset( $meta['doctor_ak_keywords'] ) ) {
+			Doctor_Keywords::remember( $meta['doctor_ak_keywords'] );
+		}
+
 		if ( $wants_password_change ) {
 			// Changing the password invalidates the auth cookie WordPress just
 			// issued for this request (it's derived from the password hash),
@@ -415,6 +422,26 @@ class Profile_Handler {
 		$short_description = isset( $_POST['short_description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['short_description'] ) ) : '';
 
 		$meta['doctor_ak_short_description'] = $short_description;
+
+		// Free-typed procedure/condition keywords, not restricted to a fixed
+		// list the way Specializations is — Doctor_Keywords::remember()
+		// (called after this saves successfully, see handle_update_profile())
+		// is what grows the site-wide suggestion pool with any new ones.
+		$keywords = array();
+
+		if ( isset( $_POST['keywords'] ) && is_array( $_POST['keywords'] ) ) {
+			foreach ( wp_unslash( $_POST['keywords'] ) as $raw_keyword ) {
+				$keyword = sanitize_text_field( (string) $raw_keyword );
+
+				if ( '' !== $keyword ) {
+					$keywords[] = $keyword;
+				}
+			}
+
+			$keywords = array_values( array_unique( $keywords ) );
+		}
+
+		$meta['doctor_ak_keywords'] = $keywords;
 
 		// wp_kses_post() (not sanitize_textarea_field()) since this field is
 		// now a rich-text editor — keeps safe formatting tags (bold/italic/

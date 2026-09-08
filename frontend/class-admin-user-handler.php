@@ -12,6 +12,7 @@ use DoctorAKPortal\Includes\Authentication;
 use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Doctor_Awards;
+use DoctorAKPortal\Includes\Doctor_Keywords;
 use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Phone;
 use DoctorAKPortal\Includes\Profile_Picture_Uploader;
@@ -164,6 +165,7 @@ class Admin_User_Handler {
 		$awards                     = array();
 		$clinic_fields_list         = array();
 		$specializations            = array();
+		$keywords                   = array();
 		$video_consultation_allowed = true;
 		$revenue_split_fields       = array();
 
@@ -233,6 +235,24 @@ class Admin_User_Handler {
 
 			if ( empty( $specializations ) ) {
 				$errors['specializations'] = __( 'Please select at least one specialization.', 'doctor-ak-portal' );
+			}
+
+			// Procedure/condition search keywords — always free text (there's
+			// no canonical list to fall back to the way Specializations has),
+			// grown site-wide by Doctor_Keywords::remember() below once this
+			// save actually succeeds.
+			$keywords = array();
+
+			if ( isset( $_POST['keywords'] ) && is_array( $_POST['keywords'] ) ) {
+				foreach ( wp_unslash( $_POST['keywords'] ) as $raw_keyword ) {
+					$keyword = sanitize_text_field( (string) $raw_keyword );
+
+					if ( '' !== $keyword ) {
+						$keywords[] = $keyword;
+					}
+				}
+
+				$keywords = array_values( array_unique( $keywords ) );
 			}
 
 			$revenue_split_fields = Revenue_Split::sanitize_fields_from_request( $_POST ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Revenue_Split::sanitize_fields_from_request() unslashes/sanitizes each field itself.
@@ -511,6 +531,8 @@ class Admin_User_Handler {
 
 		if ( $is_for_doctor ) {
 			update_user_meta( $saved_user_id, 'doctor_ak_specializations', $specializations );
+			update_user_meta( $saved_user_id, 'doctor_ak_keywords', $keywords );
+			Doctor_Keywords::remember( $keywords );
 			update_user_meta( $saved_user_id, 'doctor_ak_qualification', $qualification );
 			update_user_meta( $saved_user_id, 'doctor_ak_country', $country );
 			update_user_meta( $saved_user_id, 'doctor_ak_city', $city );

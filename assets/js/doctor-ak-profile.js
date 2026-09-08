@@ -12,7 +12,12 @@
 		var shared = window.DoctorAKPortal || {};
 
 		if ( typeof shared.initMultiSelect === 'function' ) {
-			shared.initMultiSelect( document.getElementById( 'dak-profile-specializations' ) );
+			shared.initMultiSelect( document.getElementById( 'dak-profile-specializations' ), { copyCut: true } );
+			shared.initMultiSelect( document.getElementById( 'dak-profile-keywords' ), {
+				allowCustom: true,
+				copyCut: true,
+				placeholder: 'Search or type a keyword…',
+			} );
 		}
 
 		initProfilePictureUpload();

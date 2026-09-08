@@ -12,6 +12,7 @@
  *
  * @var string     $role            Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE, or Roles::RECEPTIONIST_ROLE for the active section.
  * @var array      $specializations All specialization slug => label.
+ * @var string[]   $keywords        Every procedure/condition keyword any doctor has ever used, see Doctor_Keywords::get_all() — the suggestion list for the Keywords field below.
  * @var string     $section         'doctors', 'patients', or 'receptionist'.
  * @var string     $list_url        Back-to-list URL (the table view of this same section).
  * @var array|null $editing_user    Row view-model (see Admin_Dashboard::row_data()) when editing, null when adding.
@@ -192,6 +193,23 @@ $dak_editing_clinic_location_ids = wp_list_pluck( $editing_clinics, 'clinic_loca
 				<textarea id="dak-admin-user-short-description" name="short_description" rows="3" placeholder="<?php esc_attr_e( 'e.g. Compassionate primary care with 12+ years of experience', 'doctor-ak-portal' ); ?>"><?php echo esc_textarea( $dak_is_editing ? $editing_user['short_description'] : '' ); ?></textarea>
 				<p class="dak-field-hint"><?php esc_html_e( 'A tagline shown on the doctor\'s public profile.', 'doctor-ak-portal' ); ?></p>
 				<span class="dak-field-error" data-field="short_description"></span>
+			</div>
+
+			<?php $dak_admin_user_current_keywords = $dak_is_editing ? (array) $editing_user['keywords'] : array(); ?>
+			<div class="dak-field">
+				<label for="dak-admin-user-keywords"><?php esc_html_e( 'Keywords', 'doctor-ak-portal' ); ?></label>
+				<select id="dak-admin-user-keywords" name="keywords[]" multiple>
+					<?php foreach ( $keywords as $dak_keyword ) : ?>
+						<option value="<?php echo esc_attr( $dak_keyword ); ?>" <?php selected( in_array( $dak_keyword, $dak_admin_user_current_keywords, true ), true ); ?>><?php echo esc_html( $dak_keyword ); ?></option>
+					<?php endforeach; ?>
+					<?php foreach ( $dak_admin_user_current_keywords as $dak_keyword ) : ?>
+						<?php if ( ! in_array( $dak_keyword, $keywords, true ) ) : ?>
+							<option value="<?php echo esc_attr( $dak_keyword ); ?>" selected><?php echo esc_html( $dak_keyword ); ?></option>
+						<?php endif; ?>
+					<?php endforeach; ?>
+				</select>
+				<p class="dak-field-hint"><?php esc_html_e( 'Procedures or conditions patients might search for, e.g. "Colonoscopy", "Gallbladder Removal". Type one and press Enter to add it — new keywords become suggestions for other doctors too.', 'doctor-ak-portal' ); ?></p>
+				<span class="dak-field-error" data-field="keywords"></span>
 			</div>
 
 			<div class="dak-field">
