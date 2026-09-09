@@ -16,7 +16,7 @@
  * @package DoctorAKPortal\Templates
  *
  * @var array      $doctor_options   Doctor user ID => { name, is_disabled }.
- * @var array      $categories       Category slug => label, see Specializations::get_all().
+ * @var array      $categories       Category slug => label, see Service_Categories::get_all().
  * @var array      $clinic_locations Rows from Clinic_Locations::get_all().
  * @var string     $list_url         Back-to-list URL (the Services table).
  * @var array|null $editing_service  Decoded service row (see Services::find()) when editing, null when adding.

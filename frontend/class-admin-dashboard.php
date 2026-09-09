@@ -27,6 +27,7 @@ use DoctorAKPortal\Includes\Revenue_Ledger;
 use DoctorAKPortal\Includes\Revenue_Split;
 use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
+use DoctorAKPortal\Includes\Service_Categories;
 use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Settlement_Manager;
 use DoctorAKPortal\Includes\Specializations;
@@ -403,7 +404,7 @@ class Admin_Dashboard {
 				// are built dynamically, not server-rendered per row.
 				'sessionDays'    => Clinics::session_days(),
 				'sessionPeriods' => Clinics::session_periods(),
-				'serviceCategories' => Specializations::get_all(),
+				'serviceCategories' => Service_Categories::get_all(),
 				'shareOverrideLabel' => __( "Doctor's share override at this clinic (%, optional)", 'doctor-ak-portal' ),
 				'shareOverrideHint'  => __( "Leave blank to use this doctor's default commission below. Only applies to appointments booked at this specific clinic.", 'doctor-ak-portal' ),
 			)
@@ -2284,7 +2285,7 @@ class Admin_Dashboard {
 			'dashboard/partials/admin-service-form-screen.php',
 			array(
 				'doctor_options'   => $this->doctor_options(),
-				'categories'       => Specializations::get_all(),
+				'categories'       => Service_Categories::get_all(),
 				'clinic_locations' => Clinic_Locations::get_all(),
 				'list_url'         => $dashboard_url ? add_query_arg( 'section', $section, $dashboard_url ) : '',
 				'editing_service'  => $editing,

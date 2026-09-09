@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $specializations = \DoctorAKPortal\Includes\Specializations::get_all();
+$keywords         = \DoctorAKPortal\Includes\Doctor_Keywords::get_all();
 $login_url       = \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( 'doctor_login' );
 $home_url        = home_url( '/' );
 
@@ -145,6 +146,24 @@ $dak_icons = array(
 							<select id="dak-area" name="area"></select>
 							<span class="dak-field-error" data-field="area"></span>
 						</div>
+					</div>
+
+					<div class="dak-field">
+						<label for="dak-short-description"><span class="dak-field-icon dak-field-icon-specialization"><?php echo $dak_icons['briefcase']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Short Description', 'doctor-ak-portal' ); ?></label>
+						<textarea id="dak-short-description" name="short_description" rows="3" placeholder="<?php esc_attr_e( 'e.g. Compassionate primary care with 12+ years of experience', 'doctor-ak-portal' ); ?>"></textarea>
+						<p class="dak-field-hint"><?php esc_html_e( 'A tagline shown on your public profile.', 'doctor-ak-portal' ); ?></p>
+						<span class="dak-field-error" data-field="short_description"></span>
+					</div>
+
+					<div class="dak-field">
+						<label for="dak-keywords"><span class="dak-field-icon dak-field-icon-specialization"><?php echo $dak_icons['briefcase']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Keywords', 'doctor-ak-portal' ); ?></label>
+						<select id="dak-keywords" name="keywords[]" multiple>
+							<?php foreach ( $keywords as $dak_keyword ) : ?>
+								<option value="<?php echo esc_attr( $dak_keyword ); ?>"><?php echo esc_html( $dak_keyword ); ?></option>
+							<?php endforeach; ?>
+						</select>
+						<p class="dak-field-hint"><?php esc_html_e( 'Procedures or conditions patients might search for, e.g. "Colonoscopy", "Gallbladder Removal". Type one and press Enter to add it — new keywords become suggestions for other doctors too.', 'doctor-ak-portal' ); ?></p>
+						<span class="dak-field-error" data-field="keywords"></span>
 					</div>
 
 					<div class="dak-field">

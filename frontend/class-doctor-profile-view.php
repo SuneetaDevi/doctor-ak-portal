@@ -138,6 +138,7 @@ class Doctor_Profile_View {
 					'name'                  => $display_name,
 					'avatar_url'            => self::avatar_url( $doctor->ID ),
 					'specialization_labels' => $specialization_labels,
+					'keywords'              => array_filter( (array) get_user_meta( $doctor->ID, 'doctor_ak_keywords', true ) ),
 					'clinics'               => $clinics,
 					'years_experience'      => get_user_meta( $doctor->ID, 'doctor_ak_years_experience', true ),
 					'qualification'         => get_user_meta( $doctor->ID, 'doctor_ak_qualification', true ),

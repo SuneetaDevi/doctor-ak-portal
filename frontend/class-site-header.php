@@ -12,6 +12,7 @@ use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
+use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Template_Loader;
 
 // Prevent direct file access.
@@ -148,6 +149,7 @@ class Site_Header {
 			'clinics_url'        => $home_url . '#dak-home-clinics',
 			'blogs_url'          => Page_Finder::url_for_shortcode( 'blogs_directory' ),
 			'doctor_specialties' => Home_Page::specialties_in_use( $directory_url ),
+			'service_categories' => self::service_categories_for_menu(),
 			'current_path'       => self::current_path(),
 			'is_logged_in'       => is_user_logged_in(),
 			'user'               => $user,
@@ -158,6 +160,39 @@ class Site_Header {
 			'profile_url'        => ( is_user_logged_in() && $profile_allowed ) ? Page_Finder::url_for_shortcode( 'doctor_profile' ) : '',
 			'login_url'          => Page_Finder::url_for_shortcode( 'doctor_login' ),
 			'logout_url'         => wp_logout_url( home_url( '/' ) ),
+		);
+	}
+
+	/**
+	 * The Services mega-menu's columns — one per Service_Categories entry
+	 * that actually has an active service in it, each with its own list of
+	 * { name, url } links straight into [service_profile_view]. Mirrors
+	 * doctor_specialties' role above, just grouped/shaped for a
+	 * multi-column layout instead of a flat card grid (see
+	 * Services::grouped_by_category_for_public_directory()).
+	 *
+	 * @return array List of { slug, label, services: [{ name, url }] }.
+	 */
+	private static function service_categories_for_menu() {
+		$profile_url = Page_Finder::url_for_shortcode( 'service_profile_view' );
+
+		return array_map(
+			function ( $bucket ) use ( $profile_url ) {
+				return array(
+					'slug'     => $bucket['slug'],
+					'label'    => $bucket['label'],
+					'services' => array_map(
+						function ( $service ) use ( $profile_url ) {
+							return array(
+								'name' => $service['name'],
+								'url'  => $profile_url ? add_query_arg( 'service_id', $service['id'], $profile_url ) : '',
+							);
+						},
+						$bucket['services']
+					),
+				);
+			},
+			Services::grouped_by_category_for_public_directory()
 		);
 	}
 

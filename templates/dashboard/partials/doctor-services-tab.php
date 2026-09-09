@@ -7,7 +7,7 @@
  * @package DoctorAKPortal\Templates
  *
  * @var array $services   Doctor's services, see Services::get_for_doctor().
- * @var array $categories Category slug => label, see Specializations::get_all().
+ * @var array $categories Category slug => label, see Service_Categories::get_all().
  */
 
 // Prevent direct file access.

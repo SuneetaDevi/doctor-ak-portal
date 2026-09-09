@@ -444,6 +444,42 @@ a.dak-site-header-utility-item:hover {
 	color: var( --dak-muted ) !important;
 }
 
+/* Services mega-menu — one column per Service_Categories bucket (up to 6),
+   each a heading (reuses .dak-site-header-mega-heading) plus a plain list of
+   service links, instead of Doctors' icon-card grid — a service name is
+   already the whole "what is this" signal, no separate icon needed. */
+.dak-site-header-mega-columns {
+	display: grid !important;
+	grid-template-columns: repeat( 3, minmax( 0, 1fr ) ) !important;
+	gap: var( --dak-space-4 ) var( --dak-space-5 ) !important;
+	max-height: 360px !important;
+	overflow-y: auto !important;
+}
+
+.dak-site-header-mega-column-list {
+	list-style: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.45rem !important;
+}
+
+.dak-site-header-mega-column-list a {
+	display: block !important;
+	padding: 0.3rem 0.5rem !important;
+	margin: 0 -0.5rem !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	font-size: 0.85rem !important;
+	color: var( --dak-text ) !important;
+	text-decoration: none !important;
+}
+
+.dak-site-header-mega-column-list a:hover {
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
 /* Footer strip below the specialty grid — replaces the old "Not sure who to
    see?" side panel with a single, plainer "View All Doctors" link,
    right-aligned in the bottom corner of the dropdown. */
@@ -743,6 +779,12 @@ a.dak-site-header-utility-item:hover {
 	.dak-site-header-mega-cards {
 		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
 	}
+
+	/* Same narrowing as .dak-site-header-mega-cards above, for the Services
+	   mega-menu's category columns. */
+	.dak-site-header-mega-columns {
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+	}
 }
 
 @media ( max-width: 900px ) {
@@ -839,6 +881,10 @@ a.dak-site-header-utility-item:hover {
 	   left indent (see .dak-site-header-mega-panel above) eats into the
 	   width too — back to a single column here. */
 	.dak-site-header-mega-cards {
+		grid-template-columns: 1fr !important;
+	}
+
+	.dak-site-header-mega-columns {
 		grid-template-columns: 1fr !important;
 	}
 }

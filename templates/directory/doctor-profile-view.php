@@ -11,6 +11,7 @@
  *     @type string   $name                  Display name.
  *     @type string   $avatar_url            Photo (or fallback avatar) URL.
  *     @type string[] $specialization_labels Selected specialization labels.
+ *     @type string[] $keywords              Procedure/condition search keywords (see Doctor_Keywords), or an empty array.
  *     @type array    $clinics               Doctor's clinics, each with added 'hours_label'/'fee_label'.
  *     @type string   $years_experience      Years of experience.
  *     @type string   $qualification         Qualification(s), e.g. "MBBS, FCPS".
@@ -137,12 +138,12 @@ $dak_profile_view_icons = array(
 
 		<div class="dak-profile-layout">
 			<div class="dak-profile-main">
-				<?php if ( ! empty( $doctor['specialization_labels'] ) ) : ?>
+				<?php if ( ! empty( $doctor['keywords'] ) ) : ?>
 					<div class="dak-profile-card">
-						<h2><?php esc_html_e( 'Specializations', 'doctor-ak-portal' ); ?></h2>
+						<h2><?php esc_html_e( 'Keywords', 'doctor-ak-portal' ); ?></h2>
 						<div class="dak-specialty-tags">
-							<?php foreach ( $doctor['specialization_labels'] as $label ) : ?>
-								<span class="dak-specialty-tag"><?php echo esc_html( $label ); ?></span>
+							<?php foreach ( $doctor['keywords'] as $dak_keyword ) : ?>
+								<span class="dak-specialty-tag"><?php echo esc_html( $dak_keyword ); ?></span>
 							<?php endforeach; ?>
 						</div>
 					</div>

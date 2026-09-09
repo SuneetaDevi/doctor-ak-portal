@@ -64,7 +64,7 @@ class Services {
 
 		$category = isset( $posted['category'] ) ? sanitize_key( wp_unslash( $posted['category'] ) ) : '';
 
-		if ( '' !== $category && ! Specializations::is_valid( $category ) ) {
+		if ( '' !== $category && ! Service_Categories::is_valid( $category ) ) {
 			return new \WP_Error( 'doctor_ak_service_category_invalid', __( 'Please choose a valid category.', 'doctor-ak-portal' ) );
 		}
 
@@ -444,7 +444,7 @@ class Services {
 	 * identically, so this only matters if they've since diverged); its
 	 * price is the cheapest doctor's, "From "-prefixed when they vary.
 	 *
-	 * @return array List of { id (a representative row's, for the detail-page link), name, description, image_url, price_label }, alphabetical by name.
+	 * @return array List of { id (a representative row's, for the detail-page link), name, description, image_url, category, category_label, price_label }, alphabetical by name.
 	 */
 	public static function grouped_active_for_public_directory() {
 		$groups = array();
@@ -454,11 +454,17 @@ class Services {
 
 			if ( ! isset( $groups[ $key ] ) ) {
 				$groups[ $key ] = array(
-					'id'          => $row['id'],
-					'name'        => $row['name'],
-					'description' => $row['description'],
-					'image_url'   => $row['image_url'],
-					'prices'      => array(),
+					'id'             => $row['id'],
+					'name'           => $row['name'],
+					'description'    => $row['description'],
+					'image_url'      => $row['image_url'],
+					// Bulk-create copies the category identically onto every
+					// doctor's row for the same service, so the first row
+					// seen is as good as any — same assumption description/
+					// image_url already make above.
+					'category'       => $row['category'],
+					'category_label' => $row['category_label'],
+					'prices'         => array(),
 				);
 			}
 
@@ -489,6 +495,47 @@ class Services {
 					return $group;
 				},
 				$groups
+			)
+		);
+	}
+
+	/**
+	 * grouped_active_for_public_directory()'s rows bucketed by
+	 * Service_Categories, one entry per category that actually has at least
+	 * one active service in it (an empty category never gets its own column)
+	 * — feeds the site header's Services mega-menu (see
+	 * Site_Header::prepare_data()), one column per bucket. A service with no
+	 * category set (or, in principle, a legacy value predating
+	 * Service_Categories that no longer validates) falls into
+	 * Service_Categories::fallback_slug() ("Miscellaneous/Other Services")
+	 * rather than being dropped.
+	 *
+	 * @return array List of { slug, label, services: [grouped_active_for_public_directory() rows] }, in Service_Categories::get_all() order.
+	 */
+	public static function grouped_by_category_for_public_directory() {
+		$fallback_slug = Service_Categories::fallback_slug();
+		$buckets       = array();
+
+		foreach ( Service_Categories::get_all() as $slug => $label ) {
+			$buckets[ $slug ] = array(
+				'slug'     => $slug,
+				'label'    => $label,
+				'services' => array(),
+			);
+		}
+
+		foreach ( self::grouped_active_for_public_directory() as $service ) {
+			$slug = isset( $buckets[ $service['category'] ] ) ? $service['category'] : $fallback_slug;
+
+			$buckets[ $slug ]['services'][] = $service;
+		}
+
+		return array_values(
+			array_filter(
+				$buckets,
+				function ( $bucket ) {
+					return ! empty( $bucket['services'] );
+				}
 			)
 		);
 	}
@@ -551,7 +598,7 @@ class Services {
 	 * @return array
 	 */
 	private static function decode_row( array $row ) {
-		$categories = Specializations::get_all();
+		$categories = Service_Categories::get_all();
 		$category   = (string) $row['category'];
 		$charge     = (float) $row['charge'];
 

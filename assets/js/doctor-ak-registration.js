@@ -14,6 +14,11 @@
 		initCheckCards();
 		initProfilePictureUpload();
 		initMultiSelect( document.getElementById( 'dak-specializations' ), { copyCut: true } );
+		initMultiSelect( document.getElementById( 'dak-keywords' ), {
+			allowCustom: true,
+			copyCut: true,
+			placeholder: 'Search or type a keyword…',
+		} );
 		initTermsModal();
 		initRegistrationForm();
 

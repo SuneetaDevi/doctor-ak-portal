@@ -9,6 +9,7 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Authentication;
+use DoctorAKPortal\Includes\Doctor_Keywords;
 use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Phone;
 use DoctorAKPortal\Includes\Profile_Picture_Uploader;
@@ -270,6 +271,10 @@ class Registration_Handler {
 			update_user_meta( $user_id, $meta_key, $meta_value );
 		}
 
+		if ( isset( $meta['doctor_ak_keywords'] ) ) {
+			Doctor_Keywords::remember( $meta['doctor_ak_keywords'] );
+		}
+
 		if ( ! empty( $meta['doctor_ak_profile_picture_id'] ) ) {
 			$this->profile_picture_uploader->claim( $meta['doctor_ak_profile_picture_id'], $user_id );
 		}
@@ -355,6 +360,33 @@ class Registration_Handler {
 		if ( '' !== $expertise ) {
 			$meta['doctor_ak_expertise'] = $expertise;
 		}
+
+		// Optional tagline shown on the public profile.
+		$short_description = isset( $_POST['short_description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['short_description'] ) ) : '';
+
+		if ( '' !== $short_description ) {
+			$meta['doctor_ak_short_description'] = $short_description;
+		}
+
+		// Free-typed procedure/condition search keywords, not restricted to a
+		// fixed list the way Specializations is — grown site-wide by
+		// Doctor_Keywords::remember() once registration actually succeeds
+		// (see handle_register()), same as Profile_Handler/Admin_User_Handler.
+		$keywords = array();
+
+		if ( isset( $_POST['keywords'] ) && is_array( $_POST['keywords'] ) ) {
+			foreach ( wp_unslash( $_POST['keywords'] ) as $raw_keyword ) {
+				$keyword = sanitize_text_field( (string) $raw_keyword );
+
+				if ( '' !== $keyword ) {
+					$keywords[] = $keyword;
+				}
+			}
+
+			$keywords = array_values( array_unique( $keywords ) );
+		}
+
+		$meta['doctor_ak_keywords'] = $keywords;
 
 		$specializations = array();
 

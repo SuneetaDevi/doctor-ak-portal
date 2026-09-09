@@ -18,6 +18,7 @@ use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Revenue_Ledger;
 use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
+use DoctorAKPortal\Includes\Service_Categories;
 use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Settlement_Manager;
 use DoctorAKPortal\Includes\Specializations;
@@ -874,7 +875,7 @@ class Doctor_Dashboard {
 			'dashboard/partials/doctor-services-tab.php',
 			array(
 				'services'   => Services::get_for_doctor( $user->ID ),
-				'categories' => Specializations::get_all(),
+				'categories' => Service_Categories::get_all(),
 			)
 		);
 	}
