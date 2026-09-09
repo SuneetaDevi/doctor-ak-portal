@@ -298,7 +298,12 @@ $dak_header_has_utility_bar = $address || $phone || $email || $facebook_url || $
 													</span>
 													<ul class="dak-site-header-mega-column-list">
 														<?php foreach ( $dak_category['services'] as $dak_category_service ) : ?>
-															<li><a href="<?php echo esc_url( $dak_category_service['url'] ); ?>"><?php echo esc_html( $dak_category_service['name'] ); ?></a></li>
+															<li>
+																<a href="<?php echo esc_url( $dak_category_service['url'] ); ?>">
+																	<span class="dak-site-header-mega-column-list-icon" aria-hidden="true"><?php echo $dak_header_category_icon( $dak_category['slug'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+																	<?php echo esc_html( $dak_category_service['name'] ); ?>
+																</a>
+															</li>
 														<?php endforeach; ?>
 													</ul>
 												</div>

@@ -491,13 +491,36 @@ a.dak-site-header-utility-item:hover {
 }
 
 .dak-site-header-mega-column-list a {
-	display: block !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.5rem !important;
 	padding: 0.3rem 0.5rem !important;
 	margin: 0 -0.5rem !important;
 	border-radius: var( --dak-radius-sm ) !important;
 	font-size: 0.85rem !important;
 	color: var( --dak-text ) !important;
 	text-decoration: none !important;
+}
+
+/* Same round tinted-icon badge as the Doctors mega-menu's per-specialty
+   card icon (.dak-site-header-mega-card-icon), just sized down to fit a
+   denser list of individual service names — every entry in both menus
+   carries its own icon, not just the Services columns' headings. */
+.dak-site-header-mega-column-list-icon {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 22px !important;
+	height: 22px !important;
+	flex: 0 0 auto !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-site-header-mega-column-list-icon svg {
+	width: 12px !important;
+	height: 12px !important;
 }
 
 .dak-site-header-mega-column-list a:hover {
