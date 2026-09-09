@@ -49,6 +49,7 @@ use DoctorAKPortal\Frontend\Dashboard_Layout;
 use DoctorAKPortal\Frontend\Service_Category_Handler;
 use DoctorAKPortal\Frontend\Service_Handler;
 use DoctorAKPortal\Frontend\Service_Profile_View;
+use DoctorAKPortal\Frontend\Service_Request_Handler;
 use DoctorAKPortal\Frontend\Services_Directory;
 use DoctorAKPortal\Frontend\Settlement_Handler;
 use DoctorAKPortal\Frontend\Shortcodes;
@@ -213,6 +214,12 @@ class Plugin {
 		$service_profile_view = new Service_Profile_View( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $services_directory, 'enqueue_assets' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $service_profile_view, 'enqueue_assets' );
+
+		$service_request_handler = new Service_Request_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_service_request_submit', $service_request_handler, 'handle_submit' );
+		$this->loader->add_action( 'wp_ajax_nopriv_doctor_ak_service_request_submit', $service_request_handler, 'handle_submit' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_request_status', $service_request_handler, 'handle_admin_update_status' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_request_delete', $service_request_handler, 'handle_admin_delete' );
 
 		$blogs_directory = new Blogs_Directory( new Template_Loader() );
 		$blog_single      = new Blog_Single( new Template_Loader() );

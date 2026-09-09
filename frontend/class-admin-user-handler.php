@@ -398,6 +398,12 @@ class Admin_User_Handler {
 						'charge'           => isset( $posted_service_charges[ $dak_service_row_index ] ) ? $posted_service_charges[ $dak_service_row_index ] : 0,
 						'duration_minutes' => isset( $posted_service_durations[ $dak_service_row_index ] ) ? $posted_service_durations[ $dak_service_row_index ] : 0,
 						'active'           => $existing_service ? $existing_service['active'] : true,
+						// This onboarding repeater has no "Requires a doctor"
+						// toggle of its own (kept lean, same as Active above) —
+						// an existing row keeps whatever it already had, and a
+						// brand-new one defaults to requiring a doctor (the
+						// admin/doctor-facing forms' own default too).
+						'requires_doctor'  => $existing_service ? $existing_service['requires_doctor'] : true,
 					)
 				);
 

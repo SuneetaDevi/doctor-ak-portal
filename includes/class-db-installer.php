@@ -52,7 +52,7 @@ class Db_Installer {
 	 *
 	 * @var string
 	 */
-	const SERVICES_DB_VERSION = '1.2.0';
+	const SERVICES_DB_VERSION = '1.3.0';
 
 	/**
 	 * Option name tracking the installed notifications-table schema version.
@@ -209,6 +209,20 @@ class Db_Installer {
 	const BLOGS_DB_VERSION = '1.0.0';
 
 	/**
+	 * Option name tracking the installed service-requests-table schema version.
+	 *
+	 * @var string
+	 */
+	const SERVICE_REQUESTS_DB_VERSION_OPTION = 'dak_service_requests_db_version';
+
+	/**
+	 * Current service-requests table schema version.
+	 *
+	 * @var string
+	 */
+	const SERVICE_REQUESTS_DB_VERSION = '1.0.0';
+
+	/**
 	 * Option name guarding the one-time legacy-data migration so it never
 	 * runs more than once.
 	 *
@@ -281,6 +295,9 @@ class Db_Installer {
 		self::create_blogs_table();
 		update_option( self::BLOGS_DB_VERSION_OPTION, self::BLOGS_DB_VERSION );
 
+		self::create_service_requests_table();
+		update_option( self::SERVICE_REQUESTS_DB_VERSION_OPTION, self::SERVICE_REQUESTS_DB_VERSION );
+
 		if ( ! get_option( self::MIGRATION_OPTION ) ) {
 			self::migrate_legacy_data();
 			update_option( self::MIGRATION_OPTION, 'yes' );
@@ -321,6 +338,7 @@ class Db_Installer {
 			&& self::REVENUE_LEDGER_DB_VERSION === get_option( self::REVENUE_LEDGER_DB_VERSION_OPTION )
 			&& self::REVENUE_SETTLEMENTS_DB_VERSION === get_option( self::REVENUE_SETTLEMENTS_DB_VERSION_OPTION )
 			&& self::BLOGS_DB_VERSION === get_option( self::BLOGS_DB_VERSION_OPTION )
+			&& self::SERVICE_REQUESTS_DB_VERSION === get_option( self::SERVICE_REQUESTS_DB_VERSION_OPTION )
 		) {
 			return;
 		}
@@ -423,6 +441,7 @@ class Db_Installer {
 			charge DECIMAL(10,2) NOT NULL DEFAULT 0.00,
 			duration_minutes INT UNSIGNED NOT NULL DEFAULT 0,
 			active TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+			requires_doctor TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
 			description TEXT NULL,
 			image_id BIGINT UNSIGNED NULL DEFAULT NULL,
 			clinic_location_ids TEXT NULL,
@@ -461,6 +480,46 @@ class Db_Installer {
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),
 			KEY author_id (author_id),
+			KEY status (status)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Runs dbDelta() against the service-requests table schema — a patient's
+	 * "book this without a doctor" submission (a Lab test, a Pharmacy order,
+	 * etc.) for a Services row with requires_doctor = 0. Deliberately not an
+	 * Appointments row: nothing here has a date/time slot (there's no doctor
+	 * schedule to pick one from) — it's a lightweight request the clinic
+	 * follows up on to actually schedule, tracked via its own status instead.
+	 * See Service_Requests.
+	 *
+	 * @return void
+	 */
+	private static function create_service_requests_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$table_name      = Service_Requests::table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table_name} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			service_id BIGINT UNSIGNED NOT NULL,
+			service_name VARCHAR(191) NOT NULL DEFAULT '',
+			doctor_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			patient_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			patient_name VARCHAR(191) NOT NULL DEFAULT '',
+			patient_phone VARCHAR(30) NOT NULL DEFAULT '',
+			patient_email VARCHAR(191) NOT NULL DEFAULT '',
+			notes TEXT NULL,
+			status VARCHAR(20) NOT NULL DEFAULT 'pending',
+			created_at DATETIME NOT NULL,
+			updated_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY service_id (service_id),
 			KEY status (status)
 		) {$charset_collate};";
 

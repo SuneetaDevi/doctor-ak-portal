@@ -76,6 +76,9 @@ $dak_service_icons = array(
 						<?php if ( $service['duration_minutes'] > 0 ) : ?>
 							<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( sprintf( /* translators: %d: minutes. */ __( '%d min', 'doctor-ak-portal' ), $service['duration_minutes'] ) ); ?></span>
 						<?php endif; ?>
+						<?php if ( empty( $service['requires_doctor'] ) ) : ?>
+							<span class="dak-status-pill dak-status-pill-outline"><?php esc_html_e( 'No doctor required', 'doctor-ak-portal' ); ?></span>
+						<?php endif; ?>
 					</span>
 
 					<span class="dak-status-pill dak-status-pill-outline <?php echo $service['active'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-disabled'; ?>">
@@ -93,6 +96,7 @@ $dak_service_icons = array(
 							data-charge="<?php echo esc_attr( $service['charge'] ); ?>"
 							data-duration-minutes="<?php echo esc_attr( $service['duration_minutes'] ); ?>"
 							data-active="<?php echo $service['active'] ? '1' : '0'; ?>"
+							data-requires-doctor="<?php echo $service['requires_doctor'] ? '1' : '0'; ?>"
 							title="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
 							aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
 						><?php echo $dak_service_icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
@@ -165,6 +169,13 @@ $dak_service_icons = array(
 			<label class="dak-checkbox">
 				<input type="checkbox" id="dak-service-active" checked>
 				<span><?php esc_html_e( 'Active (visible to patients when booking)', 'doctor-ak-portal' ); ?></span>
+			</label>
+		</div>
+
+		<div class="dak-field">
+			<label class="dak-checkbox">
+				<input type="checkbox" id="dak-service-requires-doctor" checked>
+				<span><?php esc_html_e( 'Requires a doctor (uncheck for a Lab/Pharmacy-style service patients can request without picking a doctor)', 'doctor-ak-portal' ); ?></span>
 			</label>
 		</div>
 

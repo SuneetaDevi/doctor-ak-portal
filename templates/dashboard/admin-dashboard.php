@@ -50,6 +50,7 @@ $dak_admin_icons = array(
 	'person-plus' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="7" r="3"/><path d="M2.5 17c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M15.5 7.5v4M13.5 9.5h4"/></svg>',
 	'money'       => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.2"/><path d="M10 6.2v7.6M12.2 8.1c0-1-1-1.6-2.2-1.6s-2.2.6-2.2 1.5c0 2.2 4.4 1 4.4 3.2 0 .9-1 1.5-2.2 1.5s-2.2-.6-2.2-1.6"/></svg>',
 	'search'      => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg>',
+	'inbox'       => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 11 5 4.5h10L17.5 11"/><path d="M2.5 11v4a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-4h-4.3a2.2 2.2 0 0 1-4.4 0H2.5z"/></svg>',
 );
 
 $dak_admin_section_icons = array(
@@ -64,6 +65,7 @@ $dak_admin_section_icons = array(
 	'receptionist'    => 'headset',
 	'clinic'          => 'pin',
 	'services'        => 'settings',
+	'service-requests' => 'inbox',
 	'doctor-sessions'  => 'clock',
 	'role-permissions' => 'settings',
 	'locations'        => 'pin',

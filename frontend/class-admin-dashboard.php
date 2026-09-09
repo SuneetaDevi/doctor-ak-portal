@@ -28,6 +28,7 @@ use DoctorAKPortal\Includes\Revenue_Split;
 use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Service_Categories;
+use DoctorAKPortal\Includes\Service_Requests;
 use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Settlement_Manager;
 use DoctorAKPortal\Includes\Specializations;
@@ -92,6 +93,7 @@ class Admin_Dashboard {
 		'Clinic'  => array(
 			'clinic'             => 'Clinic',
 			'services'           => 'Services',
+			'service-requests'   => 'Service Requests',
 			'video-consultation' => 'Video Consultation',
 			'doctor-sessions'    => 'Doctor Sessions',
 		),
@@ -120,7 +122,7 @@ class Admin_Dashboard {
 	 *
 	 * @var array
 	 */
-	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'patients', 'doctors', 'clinic', 'services', 'doctor-sessions', 'settings', 'encounter', 'encounters', 'notifications' );
+	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'patients', 'doctors', 'clinic', 'services', 'service-requests', 'doctor-sessions', 'settings', 'encounter', 'encounters', 'notifications' );
 
 	/**
 	 * Section slugs that exist and are reachable, but deliberately have no
@@ -739,6 +741,25 @@ class Admin_Dashboard {
 					)
 				);
 			}
+		}
+
+		if ( 'service-requests' === self::requested_section() ) {
+			wp_enqueue_script(
+				'doctor-ak-portal-admin-service-requests',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-service-requests.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-admin-service-requests.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-admin-service-requests',
+				'dakAdminServiceRequests',
+				array(
+					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+					'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+				)
+			);
 		}
 
 		if ( 'blogs' === self::requested_section() ) {
@@ -1631,6 +1652,8 @@ class Admin_Dashboard {
 					$badge = $unread_notifications_count;
 				} elseif ( 'doctor-requests' === $slug ) {
 					$badge = $pending_doctors_count;
+				} elseif ( 'service-requests' === $slug ) {
+					$badge = Service_Requests::pending_count();
 				}
 
 				$group_items[] = array(
@@ -2171,6 +2194,13 @@ class Admin_Dashboard {
 					'categories_url'   => add_query_arg( 'view', 'categories', $section_url ),
 					'filtered_doctor'  => $filtered_doctor ? self::display_name( $filtered_doctor ) : '',
 				)
+			);
+		}
+
+		if ( 'service-requests' === $section ) {
+			return $this->template_loader->get_template(
+				'dashboard/partials/admin-service-requests.php',
+				array( 'requests' => Service_Requests::all_flat_for_admin() )
 			);
 		}
 

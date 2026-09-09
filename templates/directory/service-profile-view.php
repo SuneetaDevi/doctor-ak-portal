@@ -12,7 +12,9 @@
  *     @type string $name          Service name.
  *     @type string $description   Full description — may contain rich-text HTML (bold/italic/lists/links) from the admin's formatting toolbar, or '' if none set on any doctor's row.
  *     @type string $image_url     Service image URL, or '' if none uploaded on any doctor's row.
- *     @type string $price_label   Overall price range across every doctor, e.g. "PKR 5,000" or "From PKR 5,000".
+ *     @type string $price_label      Overall price range across every doctor, e.g. "PKR 5,000" or "From PKR 5,000".
+ *     @type bool   $requires_doctor  Whether patients pick a doctor/time slot to book this (Services::decode_row()), or just submit a request (see the "request this service" form below when false).
+ *     @type int    $service_id       The specific Services row this page was reached via (?service_id=) — what the request form posts.
  *     @type array  $doctor_offers One entry per doctor offering this service, cheapest first {
  *         @type int    $doctor_id          Doctor's user ID.
  *         @type string $doctor_name        Doctor's display name.
@@ -73,12 +75,18 @@ $dak_service_view_icons = array(
 						<span><?php esc_html_e( 'Price', 'doctor-ak-portal' ); ?></span>
 					</span>
 
-					<?php if ( ! empty( $group['doctor_offers'] ) ) : ?>
+					<?php if ( $group['requires_doctor'] && ! empty( $group['doctor_offers'] ) ) : ?>
 						<a class="dak-profile-stat dak-profile-stat-link" href="#dak-service-doctors">
 							<span class="dak-profile-stat-icon" aria-hidden="true"><?php echo $dak_service_view_icons['person']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 							<strong><?php echo count( $group['doctor_offers'] ); ?></strong>
 							<span><?php echo esc_html( _n( 'Doctor', 'Doctors', count( $group['doctor_offers'] ), 'doctor-ak-portal' ) ); ?></span>
 						</a>
+					<?php elseif ( ! $group['requires_doctor'] ) : ?>
+						<span class="dak-profile-stat">
+							<span class="dak-profile-stat-icon" aria-hidden="true"><?php echo $dak_service_view_icons['badge']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<strong><?php esc_html_e( 'No doctor required', 'doctor-ak-portal' ); ?></strong>
+							<span><?php esc_html_e( 'Just submit a request', 'doctor-ak-portal' ); ?></span>
+						</span>
 					<?php endif; ?>
 				</div>
 			</div>
@@ -93,7 +101,7 @@ $dak_service_view_icons = array(
 					</div>
 				<?php endif; ?>
 
-				<?php if ( ! empty( $group['doctor_offers'] ) ) : ?>
+				<?php if ( $group['requires_doctor'] && ! empty( $group['doctor_offers'] ) ) : ?>
 					<?php
 					$dak_specialization_options = array();
 					$dak_location_options       = array();
@@ -232,19 +240,60 @@ $dak_service_view_icons = array(
 
 			<aside class="dak-profile-sidebar">
 				<div class="dak-profile-card dak-profile-booking-card" id="dak-service-booking-card">
-					<span class="dak-eyebrow"><?php esc_html_e( 'Book Appointment', 'doctor-ak-portal' ); ?></span>
+					<span class="dak-eyebrow"><?php echo esc_html( $group['requires_doctor'] ? __( 'Book Appointment', 'doctor-ak-portal' ) : __( 'Request This Service', 'doctor-ak-portal' ) ); ?></span>
 					<h2><?php echo esc_html( $group['name'] ); ?></h2>
-					<p class="dak-profile-booking-hint" id="dak-service-booking-hint"><?php esc_html_e( 'Select a doctor to see their price and book — you\'ll choose a clinic, date and time on the next step.', 'doctor-ak-portal' ); ?></p>
+					<?php if ( $group['requires_doctor'] ) : ?>
+						<p class="dak-profile-booking-hint" id="dak-service-booking-hint"><?php esc_html_e( 'Select a doctor to see their price and book — you\'ll choose a clinic, date and time on the next step.', 'doctor-ak-portal' ); ?></p>
+					<?php else : ?>
+						<p class="dak-profile-booking-hint" id="dak-service-booking-hint"><?php esc_html_e( 'No doctor selection needed — fill in your details below and we will contact you to arrange it.', 'doctor-ak-portal' ); ?></p>
+					<?php endif; ?>
 
 					<div class="dak-profile-booking-fee">
 						<span id="dak-service-booking-fee-label"><?php esc_html_e( 'Price', 'doctor-ak-portal' ); ?></span>
 						<strong id="dak-service-booking-fee"><?php echo esc_html( $group['price_label'] ); ?></strong>
 					</div>
 
-					<?php if ( ! empty( $group['doctor_offers'] ) ) : ?>
-						<a class="dak-button dak-button-primary dak-button-block dak-button-disabled" href="#dak-service-doctors" id="dak-service-booking-button">
-							<?php esc_html_e( 'Choose a Doctor', 'doctor-ak-portal' ); ?>
-						</a>
+					<?php if ( $group['requires_doctor'] ) : ?>
+						<?php if ( ! empty( $group['doctor_offers'] ) ) : ?>
+							<a class="dak-button dak-button-primary dak-button-block dak-button-disabled" href="#dak-service-doctors" id="dak-service-booking-button">
+								<?php esc_html_e( 'Choose a Doctor', 'doctor-ak-portal' ); ?>
+							</a>
+						<?php endif; ?>
+					<?php else : ?>
+						<div id="dak-service-request-success" class="dak-alert dak-alert-success dak-hidden" role="status"></div>
+						<div id="dak-service-request-general-error" class="dak-alert dak-alert-error dak-hidden" role="alert"></div>
+
+						<form id="dak-service-request-form">
+							<input type="hidden" name="service_id" value="<?php echo esc_attr( $group['service_id'] ); ?>">
+
+							<div class="dak-field">
+								<label for="dak-service-request-name"><?php esc_html_e( 'Your Name', 'doctor-ak-portal' ); ?></label>
+								<input type="text" id="dak-service-request-name" name="patient_name">
+								<span class="dak-field-error" data-field="patient_name"></span>
+							</div>
+
+							<div class="dak-field">
+								<label for="dak-service-request-phone"><?php esc_html_e( 'Phone Number', 'doctor-ak-portal' ); ?></label>
+								<input type="tel" id="dak-service-request-phone" name="patient_phone">
+								<span class="dak-field-error" data-field="patient_phone"></span>
+							</div>
+
+							<div class="dak-field">
+								<label for="dak-service-request-email"><?php esc_html_e( 'Email (optional)', 'doctor-ak-portal' ); ?></label>
+								<input type="email" id="dak-service-request-email" name="patient_email">
+								<span class="dak-field-error" data-field="patient_email"></span>
+							</div>
+
+							<div class="dak-field">
+								<label for="dak-service-request-notes"><?php esc_html_e( 'Notes (optional)', 'doctor-ak-portal' ); ?></label>
+								<textarea id="dak-service-request-notes" name="notes" rows="3"></textarea>
+							</div>
+
+							<button type="submit" class="dak-button dak-button-primary dak-button-block" id="dak-service-request-submit">
+								<?php esc_html_e( 'Request This Service', 'doctor-ak-portal' ); ?>
+							</button>
+							<p class="dak-field-hint"><?php esc_html_e( "No appointment needed — submit your details and our team will contact you to arrange it.", 'doctor-ak-portal' ); ?></p>
+						</form>
 					<?php endif; ?>
 				</div>
 			</aside>

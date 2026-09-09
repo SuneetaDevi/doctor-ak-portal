@@ -29,6 +29,7 @@
 		document.getElementById( 'dak-service-charge' ).value = '0';
 		document.getElementById( 'dak-service-duration' ).value = '0';
 		document.getElementById( 'dak-service-active' ).checked = true;
+		document.getElementById( 'dak-service-requires-doctor' ).checked = true;
 	}
 
 	function wireAdd( modal ) {
@@ -97,6 +98,7 @@
 			document.getElementById( 'dak-service-charge' ).value = trigger.getAttribute( 'data-charge' ) || '0';
 			document.getElementById( 'dak-service-duration' ).value = trigger.getAttribute( 'data-duration-minutes' ) || '0';
 			document.getElementById( 'dak-service-active' ).checked = '1' === trigger.getAttribute( 'data-active' );
+			document.getElementById( 'dak-service-requires-doctor' ).checked = '1' === trigger.getAttribute( 'data-requires-doctor' );
 
 			openModal( modal );
 		} );
@@ -122,6 +124,7 @@
 			formData.append( 'charge', document.getElementById( 'dak-service-charge' ).value );
 			formData.append( 'duration_minutes', document.getElementById( 'dak-service-duration' ).value );
 			formData.append( 'active', document.getElementById( 'dak-service-active' ).checked ? '1' : '' );
+			formData.append( 'requires_doctor', document.getElementById( 'dak-service-requires-doctor' ).checked ? '1' : '' );
 
 			fetch( window.dakServicesTab.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
 				.then( function ( response ) { return response.json(); } )

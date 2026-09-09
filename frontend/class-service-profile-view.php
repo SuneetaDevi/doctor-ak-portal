@@ -94,7 +94,20 @@ class Service_Profile_View {
 				/* translators: %s: doctor's display name, e.g. "Dr. Jane Smith". Keep the literal %s — it's swapped for the name in JS. */
 				'bookingWithLabel'     => __( 'Booking with %s.', 'doctor-ak-portal' ),
 				'bookAppointmentLabel' => __( 'Book Appointment', 'doctor-ak-portal' ),
+				'ajaxUrl'              => admin_url( 'admin-ajax.php' ),
+				'nonce'                => wp_create_nonce( Service_Request_Handler::NONCE_ACTION ),
 			)
+		);
+
+		// The "Request This Service" form (see service-profile-view.php),
+		// shown instead of the doctor-picker/booking flow when the service
+		// has requires_doctor = 0 — reads window.dakServiceProfile above.
+		wp_enqueue_script(
+			'doctor-ak-portal-service-request',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-service-request.js',
+			array( 'doctor-ak-portal-service-profile' ),
+			Assets::version( 'assets/js/doctor-ak-service-request.js' ),
+			true
 		);
 	}
 
@@ -109,7 +122,9 @@ class Service_Profile_View {
 		$group      = null;
 
 		if ( $service ) {
-			$group = $this->build_group( $service['name'] );
+			$group                    = $this->build_group( $service['name'] );
+			$group['requires_doctor'] = $service['requires_doctor'];
+			$group['service_id']      = $service['id'];
 		}
 
 		return $this->template_loader->get_template(

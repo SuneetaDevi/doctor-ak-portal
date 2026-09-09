@@ -92,6 +92,19 @@
 	margin: 0 !important;
 }
 
+/* "Service Requests" list's inline status dropdown (see
+   admin-service-requests.php) — sits in a row's actions strip, not inside a
+   .dak-field, so it needs its own compact version of that field's look. */
+.dak-service-request-status {
+	padding: 0.4rem 0.6rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.85rem !important;
+	font-family: inherit !important;
+}
+
 .dak-admin-users-card {
 	padding: 0 !important;
 	overflow: hidden !important;

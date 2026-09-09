@@ -100,6 +100,9 @@ $dak_service_icons = array(
 						<?php if ( '' !== $service['category_label'] ) : ?>
 							<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( $service['category_label'] ); ?></span>
 						<?php endif; ?>
+						<?php if ( empty( $service['requires_doctor'] ) ) : ?>
+							<span class="dak-status-pill dak-status-pill-outline"><?php esc_html_e( 'No doctor required', 'doctor-ak-portal' ); ?></span>
+						<?php endif; ?>
 						<span class="dak-status-pill dak-status-pill-outline <?php echo $service['active'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-disabled'; ?>">
 							<?php echo $service['active'] ? esc_html__( 'Active', 'doctor-ak-portal' ) : esc_html__( 'Inactive', 'doctor-ak-portal' ); ?>
 						</span>

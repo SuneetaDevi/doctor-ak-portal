@@ -98,6 +98,13 @@ $dak_is_editing = null !== $editing_service;
 		</div>
 
 		<div class="dak-field">
+			<label class="dak-checkbox">
+				<input type="checkbox" id="dak-admin-service-requires-doctor" name="requires_doctor" value="1" <?php checked( ! $dak_is_editing || ! empty( $editing_service['requires_doctor'] ) ); ?>>
+				<span><?php esc_html_e( 'Requires a doctor (patients pick a doctor and a time slot to book — uncheck for a Lab/Pharmacy-style service where they just submit a request instead)', 'doctor-ak-portal' ); ?></span>
+			</label>
+		</div>
+
+		<div class="dak-field">
 			<label for="dak-admin-service-description"><?php esc_html_e( 'Description', 'doctor-ak-portal' ); ?></label>
 			<div class="dak-rich-text" data-rich-text>
 				<?php echo \DoctorAKPortal\Includes\Rich_Text::toolbar_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapes its own output. ?>

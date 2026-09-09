@@ -80,7 +80,8 @@ class Services {
 			return new \WP_Error( 'doctor_ak_service_duration_invalid', __( 'Please provide a valid duration in minutes.', 'doctor-ak-portal' ) );
 		}
 
-		$active = ! empty( $posted['active'] );
+		$active          = ! empty( $posted['active'] );
+		$requires_doctor = ! empty( $posted['requires_doctor'] );
 
 		$fields = array(
 			'type'             => $type,
@@ -89,6 +90,7 @@ class Services {
 			'charge'           => number_format( $charge, 2, '.', '' ),
 			'duration_minutes' => $duration_minutes,
 			'active'           => $active,
+			'requires_doctor'  => $requires_doctor,
 		);
 
 		// Only the admin "Add/Edit Service" modal's form posts a
@@ -151,13 +153,14 @@ class Services {
 				'charge'           => $fields['charge'],
 				'duration_minutes' => $fields['duration_minutes'],
 				'active'           => $fields['active'] ? 1 : 0,
+				'requires_doctor'  => $fields['requires_doctor'] ? 1 : 0,
 				'description'      => isset( $fields['description'] ) ? $fields['description'] : '',
 				'image_id'         => (int) $image_id,
 				'clinic_charges'   => wp_json_encode( isset( $fields['clinic_charges'] ) ? $fields['clinic_charges'] : array() ),
 				'created_at'       => $now,
 				'updated_at'       => $now,
 			),
-			array( '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%d', '%s', '%s', '%s' )
+			array( '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%d', '%s', '%s', '%s' )
 		);
 
 		if ( ! $inserted ) {
@@ -207,9 +210,10 @@ class Services {
 			'charge'           => $fields['charge'],
 			'duration_minutes' => $fields['duration_minutes'],
 			'active'           => $fields['active'] ? 1 : 0,
+			'requires_doctor'  => $fields['requires_doctor'] ? 1 : 0,
 			'updated_at'       => current_time( 'mysql' ),
 		);
-		$types = array( '%s', '%s', '%s', '%s', '%d', '%d', '%s' );
+		$types = array( '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s' );
 
 		if ( array_key_exists( 'description', $fields ) ) {
 			$data['description'] = $fields['description'];
@@ -465,7 +469,7 @@ class Services {
 	 * identically, so this only matters if they've since diverged); its
 	 * price is the cheapest doctor's, "From "-prefixed when they vary.
 	 *
-	 * @return array List of { id (a representative row's, for the detail-page link), name, description, image_url, category, category_label, price_label }, alphabetical by name.
+	 * @return array List of { id (a representative row's, for the detail-page link), name, description, image_url, category, category_label, requires_doctor, price_label }, alphabetical by name.
 	 */
 	public static function grouped_active_for_public_directory() {
 		$groups = array();
@@ -485,6 +489,9 @@ class Services {
 					// image_url already make above.
 					'category'       => $row['category'],
 					'category_label' => $row['category_label'],
+					// Same "first row seen" assumption as category/description
+					// above — bulk-create copies it identically onto every row.
+					'requires_doctor' => $row['requires_doctor'],
 					'prices'         => array(),
 				);
 			}
@@ -691,6 +698,7 @@ class Services {
 			'price_label'      => $price_label,
 			'duration_minutes' => (int) $row['duration_minutes'],
 			'active'           => ! empty( $row['active'] ),
+			'requires_doctor'  => ! isset( $row['requires_doctor'] ) || ! empty( $row['requires_doctor'] ),
 			'description'      => isset( $row['description'] ) ? (string) $row['description'] : '',
 			'image_id'         => $image_id,
 			'image_url'        => $image_url,
