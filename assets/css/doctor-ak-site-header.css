@@ -445,15 +445,40 @@ a.dak-site-header-utility-item:hover {
 }
 
 /* Services mega-menu — one column per Service_Categories bucket (up to 6),
-   each a heading (reuses .dak-site-header-mega-heading) plus a plain list of
-   service links, instead of Doctors' icon-card grid — a service name is
-   already the whole "what is this" signal, no separate icon needed. */
+   each a heading (reuses .dak-site-header-mega-heading, with a small round
+   category icon — see $dak_header_category_icon in templates/site-header.php
+   — mirroring Doctors' per-card icon at the column level, since category is
+   the discrete browsable unit here, not the individual service) plus a plain
+   list of service links. */
 .dak-site-header-mega-columns {
 	display: grid !important;
 	grid-template-columns: repeat( 3, minmax( 0, 1fr ) ) !important;
 	gap: var( --dak-space-4 ) var( --dak-space-5 ) !important;
 	max-height: 360px !important;
 	overflow-y: auto !important;
+}
+
+.dak-site-header-mega-column .dak-site-header-mega-heading {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+}
+
+.dak-site-header-mega-heading-icon {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 22px !important;
+	height: 22px !important;
+	flex: 0 0 auto !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-site-header-mega-heading-icon svg {
+	width: 12px !important;
+	height: 12px !important;
 }
 
 .dak-site-header-mega-column-list {

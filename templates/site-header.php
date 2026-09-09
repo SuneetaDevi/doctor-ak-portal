@@ -59,6 +59,10 @@ $dak_header_icons = array(
 	'tag'      => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5l6.5 6.5-7.5 7.5-6.5-6.5V3.5z"/><circle cx="6.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>',
 	'flask'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5h4M8.4 2.5v4.6L4.3 14a1.6 1.6 0 0 0 1.4 2.5h8.6a1.6 1.6 0 0 0 1.4-2.5l-4.1-6.9V2.5"/><path d="M6.2 12.3h7.6"/></svg>',
 	'pill'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="7.2" width="14.4" height="7.6" rx="3.8" transform="rotate(-45 10 10)"/><path d="M8.3 11.7l3.4-3.4"/></svg>',
+	'scalpel'  => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16.2 3.8L8.5 11.5a2 2 0 0 0-.5.9L7.2 15l2.6-.8a2 2 0 0 0 .9-.5l7.7-7.7a1.4 1.4 0 0 0-2.2-2.2z"/><path d="M3.5 16.5l3-3"/></svg>',
+	'cross'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.5v13M3.5 10h13"/></svg>',
+	'chat'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.7h14v9H8.6L5 16.8v-3.1H3z"/></svg>',
+	'grid'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><rect x="11" y="11" width="6" height="6" rx="1"/></svg>',
 );
 
 // Message shown when tapping the not-yet-built Lab/Pharmacy booking items —
@@ -126,6 +130,24 @@ $dak_header_specialty_icon = function ( $slug ) use ( $dak_header_specialty_icon
 	}
 
 	return $dak_header_specialty_icons['stethoscope'];
+};
+
+// One icon per Services mega-menu column heading — unlike doctor specialties
+// above, Service categories are a small fixed set (see
+// Service_Categories::get_all()), so a direct slug => icon map is enough;
+// anything unrecognised (shouldn't happen, but keeps this in step with that
+// list's own "Miscellaneous" catch-all pattern) falls back to the grid glyph.
+$dak_header_category_icons = array(
+	'surgeries-and-procedures'     => $dak_header_icons['scalpel'],
+	'pharmacy'                     => $dak_header_icons['pill'],
+	'labs'                         => $dak_header_icons['flask'],
+	'nursing'                      => $dak_header_icons['cross'],
+	'second-opinion-services'      => $dak_header_icons['chat'],
+	'miscellaneous-other-services' => $dak_header_icons['grid'],
+);
+
+$dak_header_category_icon = function ( $slug ) use ( $dak_header_category_icons, $dak_header_icons ) {
+	return isset( $dak_header_category_icons[ $slug ] ) ? $dak_header_category_icons[ $slug ] : $dak_header_icons['grid'];
 };
 
 $dak_header_social_icons = array(
@@ -270,7 +292,10 @@ $dak_header_has_utility_bar = $address || $phone || $email || $facebook_url || $
 										<div class="dak-site-header-mega-columns">
 											<?php foreach ( $service_categories as $dak_category ) : ?>
 												<div class="dak-site-header-mega-column">
-													<span class="dak-site-header-mega-heading"><?php echo esc_html( $dak_category['label'] ); ?></span>
+													<span class="dak-site-header-mega-heading">
+														<span class="dak-site-header-mega-heading-icon" aria-hidden="true"><?php echo $dak_header_category_icon( $dak_category['slug'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+														<?php echo esc_html( $dak_category['label'] ); ?>
+													</span>
 													<ul class="dak-site-header-mega-column-list">
 														<?php foreach ( $dak_category['services'] as $dak_category_service ) : ?>
 															<li><a href="<?php echo esc_url( $dak_category_service['url'] ); ?>"><?php echo esc_html( $dak_category_service['name'] ); ?></a></li>
