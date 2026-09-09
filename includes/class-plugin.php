@@ -46,6 +46,7 @@ use DoctorAKPortal\Frontend\Profile_Handler;
 use DoctorAKPortal\Frontend\Registration_Handler;
 use DoctorAKPortal\Frontend\Clinic_Location_Handler;
 use DoctorAKPortal\Frontend\Dashboard_Layout;
+use DoctorAKPortal\Frontend\Service_Category_Handler;
 use DoctorAKPortal\Frontend\Service_Handler;
 use DoctorAKPortal\Frontend\Service_Profile_View;
 use DoctorAKPortal\Frontend\Services_Directory;
@@ -346,6 +347,10 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_service_delete', $service_handler, 'handle_delete_service' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_save', $service_handler, 'handle_admin_save_service' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_delete', $service_handler, 'handle_admin_delete_service' );
+
+		$service_category_handler = new Service_Category_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_category_save', $service_category_handler, 'handle_admin_save' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_category_delete', $service_category_handler, 'handle_admin_delete' );
 
 		$clinic_location_handler = new Clinic_Location_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_clinic_location_save', $clinic_location_handler, 'handle_admin_save' );

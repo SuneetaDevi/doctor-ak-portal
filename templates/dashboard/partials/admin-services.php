@@ -8,6 +8,7 @@
  *
  * @var array  $services        Rows from Services::all_flat_for_admin(), each with an added 'doctor' sub-array. Also carries 'description'/'image_url'/'clinic_locations' — this same list feeds the public [services_directory]/[service_profile_view] pages (see the Services class), so an admin adding those here is all it takes.
  * @var string $section_url     This section's own URL (?section=services), for the "Clear filter" link and the Add/Edit form's `?view=form` links.
+ * @var string $categories_url  URL of this section's "Categories" tab (?section=services&view=categories), see admin-service-categories.php.
  * @var string $filtered_doctor Name of the doctor being filtered to (via the Doctors directory's "View Services" action), or '' if unfiltered.
  */
 
@@ -28,6 +29,11 @@ $dak_service_icons = array(
 		<p><?php esc_html_e( 'Every service doctors offer, with its charge and duration, ready for patients to book.', 'doctor-ak-portal' ); ?></p>
 	</div>
 	<a class="dak-button dak-button-primary" href="<?php echo esc_url( add_query_arg( 'view', 'form', $section_url ) ); ?>"><?php esc_html_e( '+ Add Service', 'doctor-ak-portal' ); ?></a>
+</div>
+
+<div class="dak-tabs">
+	<a class="dak-tab is-active" href="<?php echo esc_url( $section_url ); ?>"><?php esc_html_e( 'All Services', 'doctor-ak-portal' ); ?></a>
+	<a class="dak-tab" href="<?php echo esc_url( $categories_url ); ?>"><?php esc_html_e( 'Categories', 'doctor-ak-portal' ); ?></a>
 </div>
 
 <?php if ( '' !== $filtered_doctor ) : ?>

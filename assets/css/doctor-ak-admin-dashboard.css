@@ -44,6 +44,54 @@
 	flex-wrap: wrap !important;
 }
 
+/* Simple in-page tab bar — currently just the Services section's "All
+   Services" / "Categories" toggle (see admin-services.php and
+   admin-service-categories.php), sitting between the header and the card. */
+.dak-tabs {
+	display: flex !important;
+	gap: 1.25rem !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	margin: 1.25rem 0 !important;
+}
+
+.dak-tab {
+	display: inline-flex !important;
+	align-items: center !important;
+	padding: 0 0 0.7rem !important;
+	margin-bottom: -1px !important;
+	font-size: 0.9rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-muted ) !important;
+	text-decoration: none !important;
+	border-bottom: 2px solid transparent !important;
+}
+
+.dak-tab:hover {
+	color: var( --dak-text ) !important;
+}
+
+.dak-tab.is-active {
+	color: var( --dak-primary-dark ) !important;
+	border-bottom-color: var( --dak-primary ) !important;
+}
+
+/* Services -> "Categories" tab's inline "+ Add Category" row (see
+   admin-service-categories.php) — a single text field + button, no modal
+   needed for a one-field form. */
+.dak-service-category-add-row {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 0.75rem !important;
+	padding: 1.25rem !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+.dak-service-category-add-row .dak-field {
+	flex: 1 1 auto !important;
+	max-width: 320px !important;
+	margin: 0 !important;
+}
+
 .dak-admin-users-card {
 	padding: 0 !important;
 	overflow: hidden !important;

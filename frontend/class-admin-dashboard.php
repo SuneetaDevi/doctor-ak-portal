@@ -720,6 +720,25 @@ class Admin_Dashboard {
 					true
 				);
 			}
+
+			if ( self::is_categories_view() ) {
+				wp_enqueue_script(
+					'doctor-ak-portal-admin-service-categories',
+					DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-service-categories.js',
+					array(),
+					Assets::version( 'assets/js/doctor-ak-admin-service-categories.js' ),
+					true
+				);
+
+				wp_localize_script(
+					'doctor-ak-portal-admin-service-categories',
+					'dakAdminServiceCategories',
+					array(
+						'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+						'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+					)
+				);
+			}
 		}
 
 		if ( 'blogs' === self::requested_section() ) {
@@ -1724,6 +1743,17 @@ class Admin_Dashboard {
 	}
 
 	/**
+	 * Whether the current request wants the Services section's "Categories"
+	 * tab instead of the Services table (`?view=categories`). Mirrors
+	 * is_service_form_view() for the same 'services' section.
+	 *
+	 * @return bool
+	 */
+	private static function is_categories_view() {
+		return isset( $_GET['view'] ) && 'categories' === sanitize_key( wp_unslash( $_GET['view'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+	}
+
+	/**
 	 * Whether the current request wants the full-screen Add/Edit Blog Post
 	 * form instead of the Blogs table (`?view=form`, optionally with
 	 * `&blog_id=X` to edit). Mirrors is_service_form_view() for the 'blogs' section.
@@ -2116,6 +2146,20 @@ class Admin_Dashboard {
 				return $this->service_form_screen_html( $section );
 			}
 
+			$section_url = add_query_arg( 'section', $section, Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ) );
+
+			if ( self::is_categories_view() ) {
+				return $this->template_loader->get_template(
+					'dashboard/partials/admin-service-categories.php',
+					array(
+						'category_rows'      => Service_Categories::get_rows(),
+						'category_counts'    => Services::count_by_category(),
+						'services_list_url'  => $section_url,
+						'categories_url'     => add_query_arg( 'view', 'categories', $section_url ),
+					)
+				);
+			}
+
 			$doctor_id       = isset( $_GET['doctor_id'] ) ? absint( wp_unslash( $_GET['doctor_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			$filtered_doctor = $doctor_id > 0 ? get_user_by( 'id', $doctor_id ) : false;
 
@@ -2123,7 +2167,8 @@ class Admin_Dashboard {
 				'dashboard/partials/admin-services.php',
 				array(
 					'services'         => Services::all_flat_for_admin( array( 'doctor_id' => $doctor_id ) ),
-					'section_url'      => add_query_arg( 'section', $section, Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ) ),
+					'section_url'      => $section_url,
+					'categories_url'   => add_query_arg( 'view', 'categories', $section_url ),
 					'filtered_doctor'  => $filtered_doctor ? self::display_name( $filtered_doctor ) : '',
 				)
 			);

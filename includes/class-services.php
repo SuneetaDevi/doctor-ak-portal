@@ -325,6 +325,27 @@ class Services {
 	}
 
 	/**
+	 * Number of services (across every doctor, active or not) currently
+	 * tagged with each category — used by the admin "Categories" screen to
+	 * show usage and warn before deleting one that's still in use.
+	 *
+	 * @return array Category slug => count, only for slugs with at least one service.
+	 */
+	public static function count_by_category() {
+		global $wpdb;
+
+		$rows = $wpdb->get_results( 'SELECT category, COUNT(*) AS total FROM ' . self::table_name() . " WHERE category != '' GROUP BY category", ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
+
+		$counts = array();
+
+		foreach ( $rows as $row ) {
+			$counts[ $row['category'] ] = (int) $row['total'];
+		}
+
+		return $counts;
+	}
+
+	/**
 	 * Gets every service across every doctor, for the admin "Services"
 	 * table, joined with the doctor's display name/email.
 	 *
