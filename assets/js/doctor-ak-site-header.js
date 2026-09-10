@@ -18,9 +18,7 @@
 		initDropdown( 'dak-site-header-account', 'dak-site-header-account-menu' );
 		initDropdown( 'dak-site-header-book-trigger', 'dak-site-header-book-menu' );
 		initMegaMenuAutoFocus( '.dak-site-header-doctors-item' );
-		initMegaMenuAutoFocus( '.dak-site-header-services-item' );
 		initMegaMenuSearch( 'dak-site-header-mega-search-input', '.dak-site-header-mega-card' );
-		initServicesMegaMenuSearch( 'dak-site-header-services-search-input' );
 		initComingSoonToast();
 	} );
 
@@ -68,9 +66,8 @@
 	 * — it opens on :hover (pure CSS, no JS event of its own to hang this
 	 * off), so `mouseenter` on the menu item stands in for that. The
 	 * tap-to-open path on mobile (initSubmenuToggles() above) covers the
-	 * other way these menus open. Called once per mega-menu item (Doctors,
-	 * Services) — a no-op wherever the selector matches nothing, e.g. before
-	 * a services_url/directory_url exists yet.
+	 * other way these menus open. A no-op wherever the selector matches
+	 * nothing, e.g. before a directory_url exists yet.
 	 *
 	 * @param {string} itemSelector CSS selector for the `<li
 	 *                              class="menu-item-has-children">`.
@@ -89,11 +86,9 @@
 
 	/**
 	 * Focuses a mega-menu's own search input, if the given menu item has one
-	 * — a no-op everywhere else (e.g. a mega-menu with no search box), so
-	 * this is safe to call generically from both the ways any given submenu
-	 * can open. Scoped to whichever search box lives inside `menuItem`
-	 * itself, so this works correctly with more than one mega-menu on the
-	 * page (Doctors, Services) without cross-focusing the wrong one.
+	 * — a no-op everywhere else (e.g. a mega-menu with no search box, like
+	 * the Services nav item's plain cascading dropdown), so this is safe to
+	 * call generically from both the ways any given submenu can open.
 	 *
 	 * The call is deferred a tick: it runs inside the very same mouseenter/
 	 * click handler that triggers the CSS which reveals the menu (hover ->
@@ -129,8 +124,7 @@
 	 *
 	 * Scoped to the search input's own dropdown panel (via `.closest()`),
 	 * not the whole document, so a second mega-menu's search/cards/no-
-	 * results elsewhere on the page (see initServicesMegaMenuSearch()) can't
-	 * cross-interfere with this one.
+	 * results elsewhere on the page can't cross-interfere with this one.
 	 *
 	 * @param {string} inputId      Element id of this menu's search `<input>`.
 	 * @param {string} itemSelector CSS selector (scoped within the panel) for the filterable items.
@@ -162,57 +156,6 @@
 
 			if ( noResults ) {
 				noResults.classList.toggle( 'dak-hidden', '' === query || visibleCount > 0 );
-			}
-		} );
-	}
-
-	/**
-	 * Services mega-menu's search box — same live-filter idea as
-	 * initMegaMenuSearch(), but the Services panel is laid out as columns of
-	 * plain service links grouped by category (not a flat card grid), so
-	 * filtering happens per-link within each column, and a whole column
-	 * hides itself once none of its links match — otherwise a category with
-	 * zero matches would still show its (now-empty-looking) heading.
-	 *
-	 * @param {string} inputId Element id of the Services search `<input>`.
-	 */
-	function initServicesMegaMenuSearch( inputId ) {
-		var input = document.getElementById( inputId );
-		var panel = input ? input.closest( '.dak-site-header-mega-panel' ) : null;
-
-		if ( ! panel ) {
-			return;
-		}
-
-		var columns = panel.querySelectorAll( '.dak-site-header-mega-column' );
-		var noResults = panel.querySelector( '.dak-site-header-mega-no-results' );
-
-		input.addEventListener( 'input', function () {
-			var query = input.value.trim().toLowerCase();
-			var anyVisible = false;
-
-			columns.forEach( function ( column ) {
-				var columnHasMatch = false;
-
-				column.querySelectorAll( 'li' ).forEach( function ( row ) {
-					var isVisible = '' === query || row.textContent.toLowerCase().indexOf( query ) !== -1;
-
-					row.classList.toggle( 'dak-hidden', ! isVisible );
-
-					if ( isVisible ) {
-						columnHasMatch = true;
-					}
-				} );
-
-				column.classList.toggle( 'dak-hidden', ! columnHasMatch );
-
-				if ( columnHasMatch ) {
-					anyVisible = true;
-				}
-			} );
-
-			if ( noResults ) {
-				noResults.classList.toggle( 'dak-hidden', '' === query || anyVisible );
 			}
 		} );
 	}

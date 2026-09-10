@@ -18,7 +18,7 @@
  * @var string   $clinics_url     Home page's "Visit Us" section anchor.
  * @var string   $blogs_url       URL of the [blogs_directory] page, or '' if not found.
  * @var array    $doctor_specialties All rows from Home_Page::specialties_in_use() — { slug, label, count, url } — real specialties at least one doctor has.
- * @var array    $service_categories Site_Header::service_categories_for_menu() — { slug, label, services: [{ name, url }] } — one entry per Service_Categories bucket with at least one active service, for the Services mega-menu's columns.
+ * @var array    $service_categories Site_Header::service_categories_for_menu() — { slug, label, services: [{ name, url }] } — one entry per Service_Categories bucket with at least one active service, for the Services nav item's cascading dropdown (category list, each opening its own services flyout on hover).
  * @var string   $current_path    Site_Header::current_path() — current request's URL path, for the active-page nav underline.
  * @var bool     $is_logged_in    Whether a user is currently logged in.
  * @var \WP_User $user            Current user (id 0 when logged out).
@@ -280,45 +280,35 @@ $dak_header_has_utility_bar = $address || $phone || $email || $facebook_url || $
 						</a>
 
 						<?php if ( ! empty( $service_categories ) ) : ?>
-							<div class="sub-menu dak-site-header-mega dak-site-header-mega-services">
-								<div class="dak-site-header-mega-panel">
-									<form class="dak-site-header-mega-search" method="get" action="<?php echo esc_url( $services_url ); ?>">
-										<span aria-hidden="true"><?php echo $dak_header_icons['search']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-										<input type="text" name="s" id="dak-site-header-services-search-input" placeholder="<?php esc_attr_e( 'Search services…', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search services', 'doctor-ak-portal' ); ?>" autocomplete="off">
-									</form>
-									<p class="dak-site-header-mega-no-results dak-hidden"><?php esc_html_e( 'No matches — press Enter to search the full services directory instead.', 'doctor-ak-portal' ); ?></p>
-
-									<div class="dak-site-header-mega-body">
-										<div class="dak-site-header-mega-columns">
-											<?php foreach ( $service_categories as $dak_category ) : ?>
-												<div class="dak-site-header-mega-column">
-													<span class="dak-site-header-mega-heading">
-														<span class="dak-site-header-mega-heading-icon" aria-hidden="true"><?php echo $dak_header_category_icon( $dak_category['slug'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-														<?php echo esc_html( $dak_category['label'] ); ?>
-													</span>
-													<ul class="dak-site-header-mega-column-list">
-														<?php foreach ( $dak_category['services'] as $dak_category_service ) : ?>
-															<li>
-																<a href="<?php echo esc_url( $dak_category_service['url'] ); ?>">
-																	<span class="dak-site-header-mega-column-list-icon" aria-hidden="true"><?php echo $dak_header_category_icon( $dak_category['slug'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-																	<?php echo esc_html( $dak_category_service['name'] ); ?>
-																</a>
-															</li>
-														<?php endforeach; ?>
-													</ul>
-												</div>
-											<?php endforeach; ?>
-										</div>
-									</div>
-
-									<div class="dak-site-header-mega-footer">
-										<a class="dak-button dak-button-primary dak-button-sm" href="<?php echo esc_url( $services_url ); ?>">
-											<?php esc_html_e( 'View All Services', 'doctor-ak-portal' ); ?>
-											<span aria-hidden="true"><?php echo $dak_header_icons['arrow']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<ul class="sub-menu dak-site-header-services-menu">
+								<?php foreach ( $service_categories as $dak_category ) : ?>
+									<?php $dak_category_has_services = ! empty( $dak_category['services'] ); ?>
+									<li class="dak-site-header-services-menu-item<?php echo $dak_category_has_services ? ' menu-item-has-children' : ''; ?>">
+										<a href="<?php echo esc_url( $services_url ); ?>">
+											<span class="dak-site-header-services-menu-icon" aria-hidden="true"><?php echo $dak_header_category_icon( $dak_category['slug'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+											<span class="dak-site-header-services-menu-label"><?php echo esc_html( $dak_category['label'] ); ?></span>
+											<?php if ( $dak_category_has_services ) : ?>
+												<span class="dak-site-header-services-menu-caret" aria-hidden="true"><?php echo $dak_header_icons['chevron']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+											<?php endif; ?>
 										</a>
-									</div>
-								</div>
-							</div>
+
+										<?php if ( $dak_category_has_services ) : ?>
+											<ul class="sub-menu dak-site-header-services-submenu">
+												<?php foreach ( $dak_category['services'] as $dak_category_service ) : ?>
+													<li><a href="<?php echo esc_url( $dak_category_service['url'] ); ?>"><?php echo esc_html( $dak_category_service['name'] ); ?></a></li>
+												<?php endforeach; ?>
+											</ul>
+										<?php endif; ?>
+									</li>
+								<?php endforeach; ?>
+
+								<li class="dak-site-header-services-menu-footer">
+									<a href="<?php echo esc_url( $services_url ); ?>">
+										<?php esc_html_e( 'View All Services', 'doctor-ak-portal' ); ?>
+										<span aria-hidden="true"><?php echo $dak_header_icons['arrow']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+									</a>
+								</li>
+							</ul>
 						<?php endif; ?>
 					</li>
 				<?php endif; ?>
