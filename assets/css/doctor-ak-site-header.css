@@ -519,8 +519,13 @@ a.dak-site-header-utility-item:hover {
 /* The services flyout — overrides the generic .dak-site-header-menu
    .sub-menu's top:100%/left:0/translateY() (which would otherwise stack it
    below the category row) so it opens to the right of it instead, in line
-   with the row rather than dropping further down the page. */
-.dak-site-header-services-submenu {
+   with the row rather than dropping further down the page. Needs the
+   compound selector (matching that generic rule's own two-class
+   specificity) rather than just `.dak-site-header-services-submenu` alone —
+   a single class loses the specificity tie against `!important` on both
+   sides, so top/left would silently fall back to the generic rule's
+   below-and-flush-left position no matter which one is later in the file. */
+.dak-site-header-services-menu-item > .dak-site-header-services-submenu {
 	top: -0.4rem !important;
 	left: 100% !important;
 	margin-left: 0.4rem !important;
@@ -553,34 +558,6 @@ a.dak-site-header-utility-item:hover {
 .dak-site-header-services-submenu a:hover {
 	background: var( --dak-bg-subtle ) !important;
 	color: var( --dak-primary-dark ) !important;
-}
-
-.dak-site-header-services-menu-footer {
-	margin-top: 0.3rem !important;
-	padding-top: 0.5rem !important;
-	border-top: 1px solid var( --dak-border ) !important;
-}
-
-.dak-site-header-services-menu-footer a {
-	display: flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	gap: 0.4rem !important;
-	padding: 0.5rem 0.65rem !important;
-	border-radius: var( --dak-radius-sm ) !important;
-	font-size: 0.85rem !important;
-	font-weight: 700 !important;
-	color: var( --dak-primary-dark ) !important;
-	text-decoration: none !important;
-}
-
-.dak-site-header-services-menu-footer a:hover {
-	background: var( --dak-bg-subtle ) !important;
-}
-
-.dak-site-header-services-menu-footer svg {
-	width: 14px !important;
-	height: 14px !important;
 }
 
 /* Footer strip below the specialty grid — replaces the old "Not sure who to

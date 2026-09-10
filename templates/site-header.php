@@ -301,13 +301,6 @@ $dak_header_has_utility_bar = $address || $phone || $email || $facebook_url || $
 										<?php endif; ?>
 									</li>
 								<?php endforeach; ?>
-
-								<li class="dak-site-header-services-menu-footer">
-									<a href="<?php echo esc_url( $services_url ); ?>">
-										<?php esc_html_e( 'View All Services', 'doctor-ak-portal' ); ?>
-										<span aria-hidden="true"><?php echo $dak_header_icons['arrow']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-									</a>
-								</li>
 							</ul>
 						<?php endif; ?>
 					</li>
