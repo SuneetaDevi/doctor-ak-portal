@@ -8,7 +8,7 @@
  *
  * @package DoctorAKPortal\Templates
  *
- * @var string[]   $doctors_html     Pre-rendered directory/doctor-card.php output, one per featured doctor.
+ * @var string[]   $doctors_html     Pre-rendered directory/home-doctor-card.php output, one per featured doctor.
  * @var string[]   $services_html    Pre-rendered directory/home-service-card.php output, one per featured service.
  * @var array      $specialties      Home_Page::specialties() rows — { slug, label, count, url } — only specializations a registered doctor actually has.
  * @var array      $cities           Home_Page::cities_in_use() rows — { slug, label, count } — only cities a registered doctor actually practises in, for the hero search modal's city quick-picks.
@@ -495,7 +495,7 @@ $dak_home_testimonials = ! empty( $testimonials )
 			<div class="dak-featured-doctors-header">
 				<div>
 					<span class="dak-eyebrow"><?php esc_html_e( 'Our Specialists', 'doctor-ak-portal' ); ?></span>
-					<h2><?php esc_html_e( 'Doctors Patients Come Back To', 'doctor-ak-portal' ); ?></h2>
+					<h2><?php esc_html_e( 'Doctors Available Now', 'doctor-ak-portal' ); ?></h2>
 				</div>
 
 				<?php if ( $directory_url ) : ?>
@@ -504,6 +504,21 @@ $dak_home_testimonials = ! empty( $testimonials )
 						<?php echo $dak_home_icons['chevron']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 					</a>
 				<?php endif; ?>
+			</div>
+
+			<!--
+				Reuses the doctors directory's own quick-filter pill (.dak-
+				directory-pill, .dak-directory-quick-filters — see
+				doctors-directory.php) rather than inventing new styles: this
+				page already enqueues doctor-ak-directory.css for the featured
+				doctor cards themselves (see Home_Page::enqueue_assets()), so
+				the classes are already loaded.
+			-->
+			<div class="dak-directory-quick-filters">
+				<button type="button" class="dak-directory-pill" id="dak-featured-doctors-video-toggle" aria-pressed="false">
+					<?php echo $dak_home_icons['video']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+					<?php esc_html_e( 'Video Consultation', 'doctor-ak-portal' ); ?>
+				</button>
 			</div>
 
 			<div class="dak-featured-doctors-slider">
@@ -523,6 +538,8 @@ $dak_home_testimonials = ! empty( $testimonials )
 					<?php echo $dak_home_icons['chevron']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				</button>
 			</div>
+
+			<p class="dak-empty-state dak-hidden" id="dak-featured-doctors-no-results"><?php esc_html_e( 'No doctors currently offer video consultation.', 'doctor-ak-portal' ); ?></p>
 
 			<?php if ( $directory_url ) : ?>
 				<a class="dak-button dak-button-primary dak-featured-doctors-view-more-mobile" href="<?php echo esc_url( $directory_url ); ?>">

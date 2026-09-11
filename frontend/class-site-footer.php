@@ -60,15 +60,6 @@ class Site_Footer {
 	const BRAND_DOMAIN = 'drakhlana.com';
 
 	/**
-	 * Max doctors listed in the footer's "Doctors" column before pointing
-	 * the rest at the full directory — keeps the column tidy regardless of
-	 * how many doctors are registered.
-	 *
-	 * @var int
-	 */
-	const FOOTER_DOCTORS_LIMIT = 8;
-
-	/**
 	 * Template loader.
 	 *
 	 * @var Template_Loader
@@ -143,8 +134,7 @@ class Site_Footer {
 		return array(
 			'logo_url'          => self::bundled_logo_url(),
 			'brand_domain'      => self::BRAND_DOMAIN,
-			'brand_tagline'     => __( 'Gastroenterology & Endoscopy · Karachi', 'doctor-ak-portal' ),
-			'description'       => get_option( self::OPTION_DESCRIPTION, 'At Dr. A.K. Lohana Clinics And Endoscopy Services, We Provide Comprehensive Care For Digestive, Liver, And Gastrointestinal Conditions.' ),
+			'description'       => get_option( self::OPTION_DESCRIPTION, 'Your trusted platform to find doctors, book appointments, and manage your healthcare — all in one place.' ),
 			'phone'             => get_option( self::OPTION_PHONE, '0303-3638304' ),
 			'facebook_url'      => get_option( self::OPTION_FACEBOOK_URL, '' ),
 			'twitter_url'       => get_option( self::OPTION_TWITTER_URL, '' ),
@@ -152,6 +142,7 @@ class Site_Footer {
 			'linkedin_url'      => get_option( self::OPTION_LINKEDIN_URL, '' ),
 			'doctors'           => self::doctors_for_footer( $directory_url ),
 			'directory_url'     => $directory_url,
+			'specialties'       => self::specialties_for_footer( $directory_url ),
 			'services'          => self::services_for_footer(),
 			'clinics_by_city'   => self::clinics_by_city_for_footer( $directory_url ),
 			'policy_links'      => self::policy_links(),
@@ -159,10 +150,8 @@ class Site_Footer {
 	}
 
 	/**
-	 * Real, active doctors for the footer's "Doctors" column — same card
-	 * data the directory grid/featured-doctors slider use, capped at
-	 * FOOTER_DOCTORS_LIMIT with the full directory linked separately for
-	 * "see all".
+	 * Every real, active doctor for the footer's "Doctors" column — same
+	 * card data the directory grid/featured-doctors slider use.
 	 *
 	 * @param string $directory_url URL of the [doctors_directory] page, or '' if not found.
 	 * @return array [{name, url}, ...]
@@ -175,8 +164,32 @@ class Site_Footer {
 					'url'  => $card['profile_url'],
 				);
 			},
-			$this->doctors_directory->doctor_cards_data( self::FOOTER_DOCTORS_LIMIT )
+			$this->doctors_directory->doctor_cards_data()
 		);
+	}
+
+	/**
+	 * Every specialization at least one doctor actually has, for the
+	 * footer's "Specialities" column — reuses Home_Page::specialties_in_use()
+	 * (same data the site header's Doctors mega-menu groups by), just
+	 * re-sorted alphabetically here to match the "Clinics / Locations"
+	 * column's own alphabetical convention rather than that method's
+	 * most-doctors-first order.
+	 *
+	 * @param string $directory_url URL of the [doctors_directory] page, or '' if not found.
+	 * @return array [{label, url}, ...], alphabetical by label.
+	 */
+	private static function specialties_for_footer( $directory_url ) {
+		$specialties = Home_Page::specialties_in_use( $directory_url );
+
+		usort(
+			$specialties,
+			function ( $a, $b ) {
+				return strcasecmp( $a['label'], $b['label'] );
+			}
+		);
+
+		return $specialties;
 	}
 
 	/**

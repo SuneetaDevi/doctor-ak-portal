@@ -5,10 +5,9 @@
  * tokens (--dak-primary, --dak-border, etc.) and the defensive
  * text-transform/letter-spacing reset scoped to .dak-portal.
  *
- * Two tiers: a thin "utility" bar (address/phone/email, social icons) above
- * the main bar (logo, nav, theme toggle, Schedule Appointment, account) —
- * the whole header (both tiers) stays pinned to the top of the viewport
- * while scrolling.
+ * Two tiers: a top "utility" bar (logo, Call Us/Email Us) above the main bar
+ * (nav, theme toggle, Book Now, account) — the whole header (both tiers)
+ * stays pinned to the top of the viewport while scrolling.
  */
 
 /* position: sticky lives here, on the OUTER wrapper, not on
@@ -52,7 +51,11 @@
 	}
 }
 
-/* Utility bar */
+/* Utility bar — now the header's TOP row: logo on the left, Call Us/Email Us
+   on the right, each as a round icon badge + two-line (label, then value)
+   block. Address and social links used to live here too; both are already
+   shown in the site footer (Site_Footer), so dropping them here just avoids
+   showing the same information twice. */
 
 .dak-site-header-utility {
 	background: var( --dak-bg-subtle ) !important;
@@ -62,84 +65,80 @@
 .dak-site-header-utility-inner {
 	max-width: 1280px !important;
 	margin: 0 auto !important;
-	padding: 0.5rem 1.5rem !important;
+	padding: 0.85rem 1.5rem !important;
 	display: flex !important;
 	align-items: center !important;
 	justify-content: space-between !important;
-	gap: 1rem !important;
+	gap: 1.5rem !important;
 	flex-wrap: wrap !important;
 }
 
 .dak-site-header-utility-contact {
 	display: flex !important;
 	align-items: center !important;
-	gap: 1.25rem !important;
+	gap: 1.75rem !important;
 	flex-wrap: wrap !important;
 }
 
-.dak-site-header-utility-item {
+.dak-site-header-contact-item {
 	display: inline-flex !important;
 	align-items: center !important;
-	gap: 0.4rem !important;
-	font-size: 0.78rem !important;
-	font-weight: 500 !important;
-	color: var( --dak-muted ) !important;
+	gap: 0.65rem !important;
 	text-decoration: none !important;
-	white-space: nowrap !important;
 }
 
-a.dak-site-header-utility-item:hover {
-	color: var( --dak-primary-dark ) !important;
-}
-
-.dak-site-header-utility-item svg {
-	width: 13px !important;
-	height: 13px !important;
-	flex: 0 0 auto !important;
-}
-
-.dak-site-header-utility-social {
-	display: flex !important;
-	align-items: center !important;
-	gap: 0.6rem !important;
-	flex: 0 0 auto !important;
-}
-
-.dak-site-header-utility-social a {
+.dak-site-header-contact-icon {
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: center !important;
-	width: 26px !important;
-	height: 26px !important;
+	width: 40px !important;
+	height: 40px !important;
+	flex: 0 0 auto !important;
 	border-radius: 50% !important;
-	background: var( --dak-bg-card ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	color: var( --dak-muted ) !important;
-}
-
-.dak-site-header-utility-social a:hover {
 	background: var( --dak-primary ) !important;
-	border-color: var( --dak-primary ) !important;
 	color: #fff !important;
 }
 
-.dak-site-header-utility-social svg {
-	width: 13px !important;
-	height: 13px !important;
+.dak-site-header-contact-icon svg {
+	width: 18px !important;
+	height: 18px !important;
 }
 
-/* Main bar — a rounded, floating pill (not a full-width rectangle) with a
-   soft shadow standing in for the border/hard edge the old bar used.
-   Stickiness itself lives on .dak-site-header (the outer wrapper) now, not
-   here — see the comment there. Logo / nav / auth actions split into three
-   flex groups so the nav can center itself in the middle regardless of how
-   wide the outer two end up. */
+.dak-site-header-contact-text {
+	display: flex !important;
+	flex-direction: column !important;
+	line-height: 1.3 !important;
+}
+
+.dak-site-header-contact-label {
+	font-size: 0.72rem !important;
+	font-weight: 500 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-site-header-contact-value {
+	font-size: 0.92rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	white-space: nowrap !important;
+}
+
+.dak-site-header-contact-item:hover .dak-site-header-contact-value {
+	color: var( --dak-primary-dark ) !important;
+}
+
+/* Main bar — the nav row underneath the logo/contact bar above. Same
+   max-width/centering as .dak-site-header-utility-inner so both rows' content
+   lines up, with a soft shadow of its own standing in for a border. Nav /
+   auth actions split into two flex groups (no logo here any more — it moved
+   up to the utility bar, see templates/site-header.php) so the nav can sit
+   flush left and the auth actions flush right, matching the reference. */
 
 .dak-site-header-inner {
+	max-width: 1280px !important;
 	margin: 0 auto !important;
-	padding: 0.65rem 0.75rem 0.65rem 1.5rem !important;
+	padding: 0.65rem 1.5rem !important;
 	background: var( --dak-bg-card ) !important;
-	box-shadow: 0 8px 28px rgba( 20, 30, 40, 0.1 ) !important;
 	display: flex !important;
 	align-items: center !important;
 	justify-content: space-between !important;
@@ -196,10 +195,9 @@ a.dak-site-header-utility-item:hover {
 	padding: 0 !important;
 	display: flex !important;
 	align-items: center !important;
-	/* Centered between the logo and the auth actions, like the reference —
-	   .dak-site-header-nav's flex: 1 1 auto (above) is what gives this <ul>
-	   the full middle width to center within. */
-	justify-content: center !important;
+	/* Flush left, like the reference — the logo isn't in this row any more
+	   (it moved up to the utility bar), so there's nothing to center against. */
+	justify-content: flex-start !important;
 	gap: 0.2rem !important;
 }
 
@@ -956,14 +954,12 @@ a.dak-site-header-utility-item:hover {
 	}
 }
 
+/* Below this width the two-line Call Us/Email Us blocks don't have room next
+   to the logo — hide them, leaving just the logo on this row (the numbers
+   are still one tap away from the nav's own Book Now button). */
 @media ( max-width: 640px ) {
-	.dak-site-header-utility-item span:last-child,
 	.dak-site-header-utility-contact {
 		display: none !important;
-	}
-
-	.dak-site-header-utility-inner {
-		justify-content: flex-end !important;
 	}
 }
 

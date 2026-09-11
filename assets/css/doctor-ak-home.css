@@ -166,8 +166,11 @@
    self and this banner needs no extra room for it. */
 @media ( min-width: 901px ) {
 
+	/* The fixed header grew a second row (logo + Call Us/Email Us above the
+	   nav — see the `body.front-page` rules in doctor-ak-site-header.css),
+	   so this needs more clearance than before to stay clear of it. */
 	.dak-home-hero-banner-stats {
-		top: 150px !important;
+		top: 190px !important;
 	}
 }
 

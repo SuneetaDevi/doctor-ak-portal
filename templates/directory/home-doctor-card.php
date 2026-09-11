@@ -16,6 +16,7 @@
  * @var string[] $specialization_labels Selected specialization labels.
  * @var int|string $years_experience    Doctor's years of experience, or '' if not set.
  * @var bool     $is_available          Whether the doctor has any clinic with an enabled session day.
+ * @var bool     $video_consultation    Whether the doctor offers online video consultations — read by the home page's own "Video Consultation" quick-filter pill (see doctor-ak-featured-doctors.js), same data-search-video attribute directory/doctor-card.php carries for the same purpose.
  * @var string   $profile_url           URL of this doctor's [doctor_profile_view] page.
  */
 
@@ -28,7 +29,7 @@ $dak_home_doctor_specialty = ! empty( $specialization_labels )
 	? $specialization_labels[0]
 	: __( 'General Physician', 'doctor-ak-portal' );
 ?>
-<div class="dak-home-doctor-card">
+<div class="dak-home-doctor-card" data-search-video="<?php echo esc_attr( $video_consultation ? '1' : '0' ); ?>">
 	<a class="dak-home-doctor-card-photo" href="<?php echo esc_url( $profile_url ); ?>">
 		<?php if ( $avatar_url ) : ?>
 			<img src="<?php echo esc_url( $avatar_url ); ?>" alt="">

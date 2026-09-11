@@ -6,15 +6,15 @@
  *
  * @var string $logo_url          Bundled logo URL (assets/images/logo.*), or '' if none was placed there.
  * @var string $brand_domain      Site_Footer::BRAND_DOMAIN — shown in place of the logo when none is uploaded.
- * @var string $brand_tagline     Short tagline shown under the brand — same one used on the home hero.
  * @var string $description       Clinic description paragraph.
  * @var string $phone             Booking phone number.
  * @var string $facebook_url      Facebook page URL, or '' to hide the icon.
  * @var string $twitter_url       X (Twitter) profile URL, or '' to hide the icon.
  * @var string $instagram_url     Instagram profile URL, or '' to hide the icon.
  * @var string $linkedin_url      LinkedIn profile URL, or '' to hide the icon.
- * @var array  $doctors           Site_Footer::doctors_for_footer() rows — { name, url } — a handful of real, active doctors.
+ * @var array  $doctors           Site_Footer::doctors_for_footer() rows — { name, url } — every real, active doctor.
  * @var string $directory_url     URL of the [doctors_directory] page, or '' if not found — the "Doctors" column's "All Doctors" link.
+ * @var array  $specialties       Site_Footer::specialties_for_footer() rows — { slug, label, count, url } — every specialization at least one doctor has, alphabetical.
  * @var array  $services          Site_Footer::services_for_footer() rows — { name, url } — real, bookable services.
  * @var array  $clinics_by_city   Site_Footer::clinics_by_city_for_footer() rows — { label, url } — one per distinct clinic city.
  * @var array  $policy_links      Site_Footer::policy_links() rows — { label, url } — legal pages found by title, only those that exist.
@@ -42,10 +42,6 @@ $dak_footer_social_icons = array(
 					<span class="dak-site-footer-logo-text"><?php echo esc_html( $brand_domain ); ?></span>
 				<?php endif; ?>
 			</a>
-
-			<?php if ( $brand_tagline ) : ?>
-				<p class="dak-site-footer-tagline"><?php echo esc_html( $brand_tagline ); ?></p>
-			<?php endif; ?>
 
 			<?php if ( $description ) : ?>
 				<p class="dak-site-footer-description"><?php echo esc_html( $description ); ?></p>
@@ -85,6 +81,19 @@ $dak_footer_social_icons = array(
 					<li class="menu-item"><a href="<?php echo esc_url( $dak_doctor['url'] ); ?>"><?php echo esc_html( $dak_doctor['name'] ); ?></a></li>
 				<?php endforeach; ?>
 			</ul>
+		</div>
+
+		<div class="dak-site-footer-col">
+			<h3><?php esc_html_e( 'Specialities', 'doctor-ak-portal' ); ?></h3>
+			<?php if ( empty( $specialties ) ) : ?>
+				<p class="dak-site-footer-empty"><?php esc_html_e( 'Coming soon.', 'doctor-ak-portal' ); ?></p>
+			<?php else : ?>
+				<ul class="dak-site-footer-menu">
+					<?php foreach ( $specialties as $dak_specialty ) : ?>
+						<li class="menu-item"><a href="<?php echo esc_url( $dak_specialty['url'] ); ?>"><?php echo esc_html( $dak_specialty['label'] ); ?></a></li>
+					<?php endforeach; ?>
+				</ul>
+			<?php endif; ?>
 		</div>
 
 		<div class="dak-site-footer-col">

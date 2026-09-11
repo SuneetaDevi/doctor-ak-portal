@@ -7,11 +7,6 @@
  * @var string   $logo_url        Bundled logo URL (assets/images/logo.*), or '' if none was placed there.
  * @var string   $phone           Contact phone number (first clinic location with one on file), or '' if none.
  * @var string   $email           Contact email (first clinic location with one on file), or '' if none.
- * @var string   $address         Clinic address (Settings -> Footer), or '' if not set.
- * @var string   $facebook_url    Facebook page URL, or '' to hide the icon.
- * @var string   $twitter_url     X (Twitter) profile URL, or '' to hide the icon.
- * @var string   $instagram_url   Instagram profile URL, or '' to hide the icon.
- * @var string   $linkedin_url    LinkedIn profile URL, or '' to hide the icon.
  * @var string   $directory_url   URL of the [doctors_directory] page, or '' if not found.
  * @var string   $services_url    URL of the [services_directory] page, or '' if not found.
  * @var string   $videos_url      Home page's "More From Our Clinic" section anchor.
@@ -150,75 +145,59 @@ $dak_header_category_icon = function ( $slug ) use ( $dak_header_category_icons,
 	return isset( $dak_header_category_icons[ $slug ] ) ? $dak_header_category_icons[ $slug ] : $dak_header_icons['grid'];
 };
 
-$dak_header_social_icons = array(
-	'facebook'  => array( $facebook_url, '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M12.5 6.5H11c-.3 0-.5.2-.5.5v1.5H12.5l-.3 2H10.5V17h-2v-6.5H7V8.5h1.5V7c0-1.7 1.3-3 3-3H12.5v2.5z"/></svg>' ),
-	'twitter'   => array( $twitter_url, '<svg viewBox="0 0 20 20" fill="currentColor"><path d="M15.5 4h1.9l-4.2 4.8L18 16h-3.9l-3-4-3.5 4H5.7l4.5-5.1L4.5 4h4l2.7 3.6L15.5 4z"/></svg>' ),
-	'instagram' => array( $instagram_url, '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="14" height="14" rx="4"/><circle cx="10" cy="10" r="3.2"/><circle cx="14" cy="6" r="0.8" fill="currentColor" stroke="none"/></svg>' ),
-	'linkedin'  => array( $linkedin_url, '<svg viewBox="0 0 20 20" fill="currentColor"><rect x="3" y="8" width="3" height="9"/><circle cx="4.5" cy="4.5" r="1.6"/><path d="M9 8h3v1.4c.5-.9 1.5-1.6 3-1.6 2.3 0 3 1.4 3 3.7V17h-3v-4.8c0-1.1-.4-1.9-1.4-1.9-1.1 0-1.6.7-1.6 1.9V17H9V8z"/></svg>' ),
-);
-
-$dak_header_has_utility_bar = $address || $phone || $email || $facebook_url || $twitter_url || $instagram_url || $linkedin_url;
+$dak_home_url = home_url( '/' );
+$dak_is_home  = '' === $current_path;
 ?>
 <header class="dak-portal dak-site-header">
-	<?php if ( $dak_header_has_utility_bar ) : ?>
-		<div class="dak-site-header-utility">
-			<div class="dak-site-header-utility-inner">
-				<div class="dak-site-header-utility-contact">
-					<?php if ( $address ) : ?>
-						<span class="dak-site-header-utility-item">
-							<span aria-hidden="true"><?php echo $dak_header_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-							<?php echo esc_html( $address ); ?>
-						</span>
-					<?php endif; ?>
+	<div class="dak-site-header-utility">
+		<div class="dak-site-header-utility-inner">
+			<a class="dak-site-header-logo" href="<?php echo esc_url( $dak_home_url ); ?>">
+				<?php if ( $logo_url ) : ?>
+					<img src="<?php echo esc_url( $logo_url ); ?>" alt="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>">
+				<?php elseif ( has_custom_logo() ) : ?>
+					<?php the_custom_logo(); ?>
+				<?php else : ?>
+					<span class="dak-site-header-logo-text"><?php echo esc_html( get_bloginfo( 'name' ) ); ?></span>
+				<?php endif; ?>
+			</a>
 
+			<?php if ( $phone || $email ) : ?>
+				<div class="dak-site-header-utility-contact">
 					<?php if ( $phone ) : ?>
-						<a class="dak-site-header-utility-item" href="tel:<?php echo esc_attr( preg_replace( '/[^0-9+]/', '', $phone ) ); ?>">
-							<span aria-hidden="true"><?php echo $dak_header_icons['phone']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-							<?php echo esc_html( $phone ); ?>
+						<a class="dak-site-header-contact-item" href="tel:<?php echo esc_attr( preg_replace( '/[^0-9+]/', '', $phone ) ); ?>">
+							<span class="dak-site-header-contact-icon" aria-hidden="true"><?php echo $dak_header_icons['phone']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<span class="dak-site-header-contact-text">
+								<span class="dak-site-header-contact-label"><?php esc_html_e( 'Call Us', 'doctor-ak-portal' ); ?></span>
+								<span class="dak-site-header-contact-value"><?php echo esc_html( $phone ); ?></span>
+							</span>
 						</a>
 					<?php endif; ?>
 
 					<?php if ( $email ) : ?>
-						<a class="dak-site-header-utility-item" href="mailto:<?php echo esc_attr( $email ); ?>">
-							<span aria-hidden="true"><?php echo $dak_header_icons['mail']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-							<?php echo esc_html( $email ); ?>
+						<a class="dak-site-header-contact-item" href="mailto:<?php echo esc_attr( $email ); ?>">
+							<span class="dak-site-header-contact-icon" aria-hidden="true"><?php echo $dak_header_icons['mail']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<span class="dak-site-header-contact-text">
+								<span class="dak-site-header-contact-label"><?php esc_html_e( 'Email Us', 'doctor-ak-portal' ); ?></span>
+								<span class="dak-site-header-contact-value"><?php echo esc_html( $email ); ?></span>
+							</span>
 						</a>
 					<?php endif; ?>
 				</div>
-
-				<?php if ( $facebook_url || $twitter_url || $instagram_url || $linkedin_url ) : ?>
-					<div class="dak-site-header-utility-social">
-						<?php foreach ( $dak_header_social_icons as $dak_network => $dak_social ) : ?>
-							<?php list( $dak_social_url, $dak_social_icon ) = $dak_social; ?>
-							<?php if ( $dak_social_url ) : ?>
-								<a href="<?php echo esc_url( $dak_social_url ); ?>" target="_blank" rel="noopener noreferrer" aria-label="<?php echo esc_attr( ucfirst( $dak_network ) ); ?>">
-									<?php echo $dak_social_icon; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-								</a>
-							<?php endif; ?>
-						<?php endforeach; ?>
-					</div>
-				<?php endif; ?>
-			</div>
+			<?php endif; ?>
 		</div>
-	<?php endif; ?>
+	</div>
 
 	<div class="dak-site-header-inner">
-		<a class="dak-site-header-logo" href="<?php echo esc_url( home_url( '/' ) ); ?>">
-			<?php if ( $logo_url ) : ?>
-				<img src="<?php echo esc_url( $logo_url ); ?>" alt="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>">
-			<?php elseif ( has_custom_logo() ) : ?>
-				<?php the_custom_logo(); ?>
-			<?php else : ?>
-				<span class="dak-site-header-logo-text"><?php echo esc_html( get_bloginfo( 'name' ) ); ?></span>
-			<?php endif; ?>
-		</a>
-
 		<button type="button" class="dak-site-header-toggle" id="dak-site-header-toggle" aria-label="<?php esc_attr_e( 'Toggle menu', 'doctor-ak-portal' ); ?>" aria-expanded="false" aria-controls="dak-site-header-nav">
 			<span></span><span></span><span></span>
 		</button>
 
 		<nav class="dak-site-header-nav" id="dak-site-header-nav">
 			<ul class="dak-site-header-menu">
+				<li class="menu-item<?php echo $dak_is_home ? ' dak-site-header-menu-current' : ''; ?>">
+					<a href="<?php echo esc_url( $dak_home_url ); ?>"><?php esc_html_e( 'Home', 'doctor-ak-portal' ); ?></a>
+				</li>
+
 				<?php if ( $directory_url ) : ?>
 					<li class="menu-item menu-item-has-children dak-site-header-doctors-item<?php echo $dak_is_current_page( $directory_url ) ? ' dak-site-header-menu-current' : ''; ?>">
 						<a href="<?php echo esc_url( $directory_url ); ?>">
