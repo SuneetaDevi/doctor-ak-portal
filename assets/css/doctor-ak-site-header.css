@@ -6,8 +6,11 @@
  * text-transform/letter-spacing reset scoped to .dak-portal.
  *
  * Two tiers: a top "utility" bar (logo, Call Us/Email Us) above the main bar
- * (nav, theme toggle, Book Now, account) — the whole header (both tiers)
- * stays pinned to the top of the viewport while scrolling.
+ * (nav, theme toggle, Book Now, account). Only the main bar stays frozen at
+ * the top while scrolling — the utility bar collapses away as soon as
+ * scrolling starts (see .is-scrolled below, toggled by
+ * assets/js/doctor-ak-site-header.js), rather than the older behavior where
+ * the whole two-tier header stayed pinned together.
  */
 
 /* position: sticky lives here, on the OUTER wrapper, not on
@@ -60,6 +63,23 @@
 .dak-site-header-utility {
 	background: var( --dak-bg-subtle ) !important;
 	border-bottom: 1px solid var( --dak-border ) !important;
+	max-height: 120px !important;
+	overflow: hidden !important;
+	opacity: 1 !important;
+	transition: max-height 0.25s ease, opacity 0.2s ease, border-color 0.25s ease !important;
+}
+
+/* Only the main bar (nav links + Book Now) needs to stay frozen at the top
+   while scrolling — this top "utility" bar (logo, Call Us/Email Us) should
+   scroll away instead, matching a normal in-flow strip above the frozen nav.
+   .dak-site-header itself already stays position: sticky against <body> (see
+   below) no matter what, so simply collapsing this row once scrolled — via
+   the .is-scrolled class doctor-ak-site-header.js toggles on scroll — is
+   what actually makes only the main bar visibly "freeze". */
+.dak-site-header.is-scrolled .dak-site-header-utility {
+	max-height: 0 !important;
+	opacity: 0 !important;
+	border-bottom-color: transparent !important;
 }
 
 .dak-site-header-utility-inner {

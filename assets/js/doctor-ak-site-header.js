@@ -20,7 +20,44 @@
 		initMegaMenuAutoFocus( '.dak-site-header-doctors-item' );
 		initMegaMenuSearch( 'dak-site-header-mega-search-input', '.dak-site-header-mega-card' );
 		initComingSoonToast();
+		initHeaderScrollState();
 	} );
+
+	/**
+	 * Toggles `.is-scrolled` on the header the moment the page scrolls away
+	 * from the very top — CSS (doctor-ak-site-header.css) uses that class to
+	 * collapse the utility bar (logo/Call Us/Email Us) away, leaving only
+	 * the main nav bar (already kept pinned via .dak-site-header's own
+	 * position: sticky) visibly frozen at the top. A rAF flag coalesces
+	 * rapid scroll events into at most one class toggle per frame.
+	 */
+	function initHeaderScrollState() {
+		var header = document.querySelector( '.dak-site-header' );
+
+		if ( ! header ) {
+			return;
+		}
+
+		var ticking = false;
+
+		function applyState() {
+			header.classList.toggle( 'is-scrolled', window.scrollY > 4 );
+			ticking = false;
+		}
+
+		window.addEventListener(
+			'scroll',
+			function () {
+				if ( ! ticking ) {
+					window.requestAnimationFrame( applyState );
+					ticking = true;
+				}
+			},
+			{ passive: true }
+		);
+
+		applyState();
+	}
 
 	/**
 	 * Shows/hides the nav on small screens.
