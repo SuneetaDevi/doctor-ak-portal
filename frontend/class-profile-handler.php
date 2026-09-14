@@ -12,6 +12,7 @@ use DoctorAKPortal\Includes\Doctor_Awards;
 use DoctorAKPortal\Includes\Doctor_Keywords;
 use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Page_Finder;
+use DoctorAKPortal\Includes\Patient_Age;
 use DoctorAKPortal\Includes\Phone;
 use DoctorAKPortal\Includes\Profile_Picture_Uploader;
 use DoctorAKPortal\Includes\Role_Permissions;
@@ -223,6 +224,7 @@ class Profile_Handler {
 			'current_expertise'          => get_user_meta( $user->ID, 'doctor_ak_expertise', true ),
 			'current_awards'             => Doctor_Awards::get_for_doctor( $user->ID ),
 			'current_phone_number'       => get_user_meta( $user->ID, 'doctor_ak_phone_number', true ),
+			'current_date_of_birth'      => get_user_meta( $user->ID, Patient_Age::META_KEY, true ),
 			'current_profile_picture_id' => (int) get_user_meta( $user->ID, 'doctor_ak_profile_picture_id', true ),
 		);
 	}
@@ -488,6 +490,14 @@ class Profile_Handler {
 			$errors['phone_number'] = $phone->get_error_message();
 		} else {
 			$meta['doctor_ak_phone_number'] = $phone;
+		}
+
+		$date_of_birth = Patient_Age::sanitize_from_request( isset( $_POST['date_of_birth'] ) ? wp_unslash( $_POST['date_of_birth'] ) : '' );
+
+		if ( is_wp_error( $date_of_birth ) ) {
+			$errors['date_of_birth'] = $date_of_birth->get_error_message();
+		} else {
+			$meta[ Patient_Age::META_KEY ] = $date_of_birth;
 		}
 
 		return $meta;

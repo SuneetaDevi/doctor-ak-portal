@@ -1455,6 +1455,8 @@
 	display: flex !important;
 	flex-direction: column !important;
 	gap: var( --dak-space-2 ) !important;
+	color: inherit !important;
+	text-decoration: none !important;
 	background: var( --dak-bg-card ) !important;
 	border: 1px solid var( --dak-border ) !important;
 	border-radius: var( --dak-radius-md ) !important;

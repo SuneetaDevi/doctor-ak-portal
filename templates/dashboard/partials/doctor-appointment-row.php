@@ -57,6 +57,12 @@ $datetime_label     = $datetime_timestamp ? date_i18n( 'd/m/Y h:i A', $datetime_
 				<strong><?php echo esc_html( $appointment['patient_name'] ); ?></strong>
 				<span class="dak-patient-appt-specialty">
 					<?php echo esc_html( $appointment['is_guest'] ? __( 'Guest booking', 'doctor-ak-portal' ) : $appointment['type_label'] ); ?>
+					<?php if ( '' !== $appointment['patient_phone'] ) : ?>
+						&middot; <?php echo esc_html( $appointment['patient_phone'] ); ?>
+					<?php endif; ?>
+					<?php if ( '' !== $appointment['patient_age'] ) : ?>
+						&middot; <?php echo esc_html( sprintf( /* translators: %d: patient's age in years. */ __( '%d yrs', 'doctor-ak-portal' ), $appointment['patient_age'] ) ); ?>
+					<?php endif; ?>
 				</span>
 			</span>
 		</div>

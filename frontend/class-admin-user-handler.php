@@ -14,6 +14,7 @@ use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Doctor_Awards;
 use DoctorAKPortal\Includes\Doctor_Keywords;
 use DoctorAKPortal\Includes\Locations;
+use DoctorAKPortal\Includes\Patient_Age;
 use DoctorAKPortal\Includes\Phone;
 use DoctorAKPortal\Includes\Profile_Picture_Uploader;
 use DoctorAKPortal\Includes\Revenue_Split;
@@ -365,6 +366,17 @@ class Admin_User_Handler {
 			if ( is_wp_error( $phone_number ) ) {
 				$errors['phone_number'] = $phone_number->get_error_message();
 			}
+
+			// Only a patient's own appointments show an age (see
+			// Appointments::admin_row_data()) — a receptionist account has
+			// no such use for a date of birth, so this only applies there.
+			if ( Roles::PATIENT_ROLE === $target_role ) {
+				$date_of_birth = Patient_Age::sanitize_from_request( isset( $_POST['date_of_birth'] ) ? wp_unslash( $_POST['date_of_birth'] ) : '' );
+
+				if ( is_wp_error( $date_of_birth ) ) {
+					$errors['date_of_birth'] = $date_of_birth->get_error_message();
+				}
+			}
 		}
 
 		// Optional "add/edit services" repeater from the onboarding form
@@ -570,6 +582,7 @@ class Admin_User_Handler {
 
 			if ( Roles::PATIENT_ROLE === $target_role ) {
 				update_user_meta( $saved_user_id, Clinic_Locations::PATIENT_META_KEY, $patient_clinic_location_id );
+				update_user_meta( $saved_user_id, Patient_Age::META_KEY, $date_of_birth );
 			}
 
 			if ( Roles::RECEPTIONIST_ROLE === $target_role ) {

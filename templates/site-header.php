@@ -10,7 +10,7 @@
  * @var string   $directory_url   URL of the [doctors_directory] page, or '' if not found.
  * @var string   $services_url    URL of the [services_directory] page, or '' if not found.
  * @var string   $videos_url      Home page's "More From Our Clinic" section anchor.
- * @var string   $clinics_url     Home page's "Visit Us" section anchor.
+ * @var string   $clinics_url     URL of the [clinics_directory] page, or '' if not found.
  * @var string   $blogs_url       URL of the [blogs_directory] page, or '' if not found.
  * @var array    $doctor_specialties All rows from Home_Page::specialties_in_use() — { slug, label, count, url } — real specialties at least one doctor has.
  * @var array    $service_categories Site_Header::service_categories_for_menu() — { slug, label, services: [{ name, url }] } — one entry per Service_Categories bucket with at least one active service, for the Services nav item's cascading dropdown (category list, each opening its own services flyout on hover).
@@ -285,7 +285,9 @@ $dak_is_home  = '' === $current_path;
 					</li>
 				<?php endif; ?>
 
-				<li class="menu-item"><a href="<?php echo esc_url( $clinics_url ); ?>"><?php esc_html_e( 'Clinics', 'doctor-ak-portal' ); ?></a></li>
+				<?php if ( $clinics_url ) : ?>
+					<li class="menu-item<?php echo $dak_is_current_page( $clinics_url ) ? ' dak-site-header-menu-current' : ''; ?>"><a href="<?php echo esc_url( $clinics_url ); ?>"><?php esc_html_e( 'Clinics', 'doctor-ak-portal' ); ?></a></li>
+				<?php endif; ?>
 				<li class="menu-item"><a href="<?php echo esc_url( $videos_url ); ?>"><?php esc_html_e( 'Videos', 'doctor-ak-portal' ); ?></a></li>
 
 				<!--

@@ -51,6 +51,8 @@ class Page_Finder {
 		'service_profile_view',
 		'blogs_directory',
 		'blog_single',
+		'clinics_directory',
+		'clinic_profile_view',
 	);
 
 	/**

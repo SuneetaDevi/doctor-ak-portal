@@ -21,6 +21,8 @@ use DoctorAKPortal\Frontend\Booking_Trigger;
 use DoctorAKPortal\Frontend\Blog_Handler;
 use DoctorAKPortal\Frontend\Blog_Single;
 use DoctorAKPortal\Frontend\Blogs_Directory;
+use DoctorAKPortal\Frontend\Clinic_Profile_View;
+use DoctorAKPortal\Frontend\Clinics_Directory;
 use DoctorAKPortal\Frontend\Clinic_Handler;
 use DoctorAKPortal\Frontend\Doctor_Appointment_Handler;
 use DoctorAKPortal\Frontend\Clinic_Branding_Handler;
@@ -230,6 +232,11 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_blog_save', $blog_handler, 'handle_admin_save_blog' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_blog_delete', $blog_handler, 'handle_admin_delete_blog' );
 
+		$clinics_directory   = new Clinics_Directory( new Template_Loader() );
+		$clinic_profile_view = new Clinic_Profile_View( new Template_Loader(), $doctors_directory );
+		$this->loader->add_action( 'wp_enqueue_scripts', $clinics_directory, 'enqueue_assets' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $clinic_profile_view, 'enqueue_assets' );
+
 		$booking_page = new Booking_Page( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $booking_page, 'enqueue_assets' );
 
@@ -438,7 +445,7 @@ class Plugin {
 		// rather than scheduling a second event just for this.
 		$this->loader->add_action( Notifications::CRON_HOOK, 'DoctorAKPortal\\Includes\\Appointments', 'auto_complete_past_appointments' );
 
-		$shortcodes = new Shortcodes( $doctor_dashboard, $patient_dashboard, $profile_handler, $doctors_directory, $doctor_profile_view, $admin_dashboard, $booking_page, $featured_doctors, $services_directory, $service_profile_view, $home_page, $blogs_directory, $blog_single );
+		$shortcodes = new Shortcodes( $doctor_dashboard, $patient_dashboard, $profile_handler, $doctors_directory, $doctor_profile_view, $admin_dashboard, $booking_page, $featured_doctors, $services_directory, $service_profile_view, $home_page, $blogs_directory, $blog_single, $clinics_directory, $clinic_profile_view );
 		$this->loader->add_action( 'init', $shortcodes, 'register' );
 
 		$specialization_requests = new Specialization_Request();

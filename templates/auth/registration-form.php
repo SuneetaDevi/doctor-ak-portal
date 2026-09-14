@@ -265,6 +265,14 @@ $dak_icons = array(
 							<span class="dak-field-error" data-field="phone_number"></span>
 						</div>
 					</div>
+
+					<div class="dak-field-row">
+						<div class="dak-field">
+							<label for="dak-patient-dob"><?php esc_html_e( 'Date of Birth', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
+							<input type="date" id="dak-patient-dob" name="date_of_birth" max="<?php echo esc_attr( gmdate( 'Y-m-d' ) ); ?>" required>
+							<span class="dak-field-error" data-field="date_of_birth"></span>
+						</div>
+					</div>
 				</div>
 			</div>
 

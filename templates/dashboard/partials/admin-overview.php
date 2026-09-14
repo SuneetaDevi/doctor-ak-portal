@@ -213,6 +213,16 @@ endif;
 											$dak_row['datetime_label']
 										)
 									);
+
+									if ( '' !== $dak_row['patient_phone'] ) {
+										echo ' &middot; ';
+										echo esc_html( $dak_row['patient_phone'] );
+									}
+
+									if ( '' !== $dak_row['patient_age'] ) {
+										echo ' &middot; ';
+										echo esc_html( sprintf( /* translators: %d: patient's age in years. */ __( '%d yrs', 'doctor-ak-portal' ), $dak_row['patient_age'] ) );
+									}
 									?>
 								</span>
 							</span>

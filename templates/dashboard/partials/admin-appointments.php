@@ -299,6 +299,12 @@ foreach ( $appointments as $dak_stat_row ) {
 					<span class="dak-admin-record-row-info">
 						<strong><?php echo esc_html( $row['patient_name'] ); ?></strong>
 						<span class="dak-admin-record-row-id"><?php echo esc_html( sprintf( 'APT-%04d', $row['id'] ) ); ?></span>
+						<span class="dak-admin-record-row-id">
+							<?php echo esc_html( '' !== $row['patient_phone'] ? $row['patient_phone'] : '—' ); ?>
+							<?php if ( '' !== $row['patient_age'] ) : ?>
+								&middot; <?php echo esc_html( sprintf( /* translators: %d: patient's age in years. */ __( '%d yrs', 'doctor-ak-portal' ), $row['patient_age'] ) ); ?>
+							<?php endif; ?>
+						</span>
 					</span>
 					<span class="dak-admin-record-row-meta">
 						<?php echo esc_html( sprintf( /* translators: %s: doctor name. */ __( 'Dr. %s', 'doctor-ak-portal' ), $row['doctor_name'] ) ); ?><br>

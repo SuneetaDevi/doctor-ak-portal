@@ -52,6 +52,8 @@ class Dashboard_Layout {
 		'service_profile_view',
 		'blogs_directory',
 		'blog_single',
+		'clinics_directory',
+		'clinic_profile_view',
 		'book_appointment',
 		'doctor_register',
 		'doctor_login',

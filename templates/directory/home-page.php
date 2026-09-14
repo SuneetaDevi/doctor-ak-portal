@@ -21,6 +21,8 @@
  * @var string   $directory_url    URL of the [doctors_directory] page, or '' if not found.
  * @var string   $doctor_register_url URL of the [doctor_register] page, or '' if not found — for the "Join as a Doctor" section.
  * @var string   $services_url     URL of the [services_directory] page, or '' if not found.
+ * @var string   $clinics_url      URL of the [clinics_directory] page, or '' if not found.
+ * @var string   $clinic_profile_url Base URL of the [clinic_profile_view] page, or '' if not found — each "Visit Us" card links here with `?clinic_id=`.
  * @var array    $stats            { doctors_count, patients_count, appointments_count, max_years_experience, clinics_count }.
  * @var array    $clinic_locations Clinic_Locations::get_all() rows (capped), for the "Visit Us" section.
  *
@@ -621,7 +623,12 @@ $dak_home_testimonials = ! empty( $testimonials )
 
 			<div class="dak-home-clinics-grid">
 				<?php foreach ( $clinic_locations as $dak_clinic ) : ?>
-					<div class="dak-home-clinic-card">
+					<?php $dak_clinic_card_url = $clinic_profile_url ? add_query_arg( 'clinic_id', $dak_clinic['id'], $clinic_profile_url ) : ''; ?>
+					<?php if ( $dak_clinic_card_url ) : ?>
+						<a class="dak-home-clinic-card" href="<?php echo esc_url( $dak_clinic_card_url ); ?>">
+					<?php else : ?>
+						<div class="dak-home-clinic-card">
+					<?php endif; ?>
 						<strong><?php echo esc_html( $dak_clinic['name'] ); ?></strong>
 						<?php if ( '' !== $dak_clinic['address'] || '' !== $dak_clinic['area_label'] || '' !== $dak_clinic['city_label'] ) : ?>
 							<span class="dak-home-clinic-meta">
@@ -635,7 +642,7 @@ $dak_home_testimonials = ! empty( $testimonials )
 								<?php echo esc_html( $dak_clinic['phone'] ); ?>
 							</span>
 						<?php endif; ?>
-					</div>
+					<?php echo $dak_clinic_card_url ? '</a>' : '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				<?php endforeach; ?>
 			</div>
 		</section>

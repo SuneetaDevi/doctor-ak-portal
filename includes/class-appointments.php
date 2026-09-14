@@ -1314,6 +1314,10 @@ class Appointments {
 			'id'                 => $appointment['id'],
 			'patient_name'       => '' !== $patient_name ? $patient_name : __( 'Unknown Patient', 'doctor-ak-portal' ),
 			'patient_avatar_url' => $avatar_url,
+			'patient_phone'      => $appointment['patient_id'] > 0
+				? get_user_meta( $appointment['patient_id'], 'doctor_ak_phone_number', true )
+				: $appointment['guest_phone'],
+			'patient_age'        => Patient_Age::age_for( $appointment['patient_id'] ),
 			'is_guest'           => 0 === (int) $appointment['patient_id'],
 			'type'               => $appointment['type'],
 			'type_label'         => self::type_label( $appointment['type'] ),
@@ -2775,6 +2779,19 @@ class Appointments {
 			'patient_name'      => $patient_name,
 			'patient_initials'  => self::initials( $patient_name ),
 			'patient_avatar_url' => $appointment['patient_id'] > 0 ? self::avatar_url_for_user( $appointment['patient_id'] ) : '',
+			// A registered patient's phone lives on their user profile, not
+			// this appointment row — a guest booking has no profile to look
+			// up, so falls back to whatever phone they typed at booking time
+			// (same resolution Swich_Payment::patient_phone() uses for
+			// charging, just guest/registered order flipped since a
+			// registered patient's own guest_phone is always empty anyway —
+			// the two are mutually exclusive per booking).
+			'patient_phone'     => $appointment['patient_id'] > 0
+				? get_user_meta( $appointment['patient_id'], 'doctor_ak_phone_number', true )
+				: $appointment['guest_phone'],
+			// '' for a guest booking (no user account to store a date of
+			// birth on) or a registered patient who hasn't set one yet.
+			'patient_age'       => Patient_Age::age_for( $appointment['patient_id'] ),
 			'guest_name'        => $appointment['guest_name'],
 			'guest_email'       => $appointment['guest_email'],
 			'guest_phone'       => $appointment['guest_phone'],

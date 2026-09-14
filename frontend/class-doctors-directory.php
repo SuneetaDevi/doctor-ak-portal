@@ -191,6 +191,47 @@ class Doctors_Directory {
 	}
 
 	/**
+	 * The same directory-card view-model as doctor_cards_data(), but for a
+	 * specific, already-known set of doctor IDs instead of every doctor —
+	 * used by Clinic_Profile_View to list the doctors practicing at one
+	 * clinic (see Clinics::get_by_clinic_location()) without the N+1-query
+	 * cost of fetching every doctor site-wide just to filter them down
+	 * afterward.
+	 *
+	 * @param int[] $doctor_ids Doctor user IDs.
+	 * @return array Same shape as doctor_cards_data(), ordered by display name — doctors not found, not the Doctor role, or deactivated are silently dropped.
+	 */
+	public function doctor_cards_data_for_ids( array $doctor_ids ) {
+		$doctor_ids = array_values( array_unique( array_filter( array_map( 'absint', $doctor_ids ) ) ) );
+
+		if ( empty( $doctor_ids ) ) {
+			return array();
+		}
+
+		$query = new \WP_User_Query(
+			array(
+				'include'    => $doctor_ids,
+				'role'       => Roles::DOCTOR_ROLE,
+				'orderby'    => 'display_name',
+				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- no better lookup available; excludes deactivated doctors from every public listing.
+					'relation' => 'OR',
+					array(
+						'key'     => 'doctor_ak_account_disabled',
+						'compare' => 'NOT EXISTS',
+					),
+					array(
+						'key'     => 'doctor_ak_account_disabled',
+						'value'   => 'yes',
+						'compare' => '!=',
+					),
+				),
+			)
+		);
+
+		return array_map( array( $this, 'card_data' ), $query->get_results() );
+	}
+
+	/**
 	 * Builds a single doctor card's view-model.
 	 *
 	 * @param \WP_User $doctor Doctor user.

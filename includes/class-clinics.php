@@ -413,6 +413,34 @@ class Clinics {
 	}
 
 	/**
+	 * Every doctor's Clinics row aligned to one Clinic_Locations entry — the
+	 * "other direction" of clinic_location_id from get_for_doctor(), for the
+	 * public [clinic_profile_view] page's "Doctors at this clinic" list.
+	 * Video rows never have a clinic_location_id (see decode_row()'s
+	 * docblock), so this only ever returns physical clinics. A doctor whose
+	 * clinic address was typed freehand rather than aligned to a real
+	 * Clinic_Locations row (clinic_location_id = 0) never appears here —
+	 * there's nothing to align it to.
+	 *
+	 * @param int $clinic_location_id Clinic_Locations row ID.
+	 * @return array List of decoded clinic rows (see decode_row()), one per doctor practicing there.
+	 */
+	public static function get_by_clinic_location( $clinic_location_id ) {
+		global $wpdb;
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT * FROM ' . self::table_name() . ' WHERE clinic_location_id = %d AND type = %s ORDER BY doctor_id ASC', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
+				(int) $clinic_location_id,
+				self::TYPE_PHYSICAL
+			),
+			ARRAY_A
+		);
+
+		return array_map( array( __CLASS__, 'decode_row' ), $rows );
+	}
+
+	/**
 	 * Every clinic for a batch of doctors in one query, grouped by doctor_id
 	 * — avoids the N+1 pattern of calling get_for_doctor() once per row when
 	 * rendering a table of many doctors at once (see Admin_Dashboard::row_data()).

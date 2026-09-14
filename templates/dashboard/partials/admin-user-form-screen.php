@@ -405,6 +405,13 @@ $dak_editing_clinic_location_ids = wp_list_pluck( $editing_clinics, 'clinic_loca
 						<p class="dak-field-hint"><?php esc_html_e( 'No clinics added yet — add one first from the admin "Clinic" section.', 'doctor-ak-portal' ); ?></p>
 					<?php endif; ?>
 				</div>
+
+				<div class="dak-field">
+					<label for="dak-admin-user-dob"><?php esc_html_e( 'Date of Birth', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
+					<input type="date" id="dak-admin-user-dob" name="date_of_birth" max="<?php echo esc_attr( gmdate( 'Y-m-d' ) ); ?>" value="<?php echo esc_attr( $dak_is_editing ? $editing_user['date_of_birth'] : '' ); ?>" required>
+					<p class="dak-field-hint"><?php esc_html_e( 'Used to show the patient\'s age on their appointments.', 'doctor-ak-portal' ); ?></p>
+					<span class="dak-field-error" data-field="date_of_birth"></span>
+				</div>
 			<?php endif; ?>
 
 			<?php if ( 'receptionist' === $section ) : ?>

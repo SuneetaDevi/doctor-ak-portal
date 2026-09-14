@@ -22,6 +22,7 @@ use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Notifications;
 use DoctorAKPortal\Includes\Page_Finder;
+use DoctorAKPortal\Includes\Patient_Age;
 use DoctorAKPortal\Includes\Revenue_Calculator;
 use DoctorAKPortal\Includes\Revenue_Ledger;
 use DoctorAKPortal\Includes\Revenue_Split;
@@ -3161,6 +3162,7 @@ class Admin_Dashboard {
 			'email'                       => $user->user_email,
 			'location'                    => $location,
 			'phone'                       => get_user_meta( $user->ID, 'doctor_ak_phone_number', true ),
+			'date_of_birth'               => get_user_meta( $user->ID, Patient_Age::META_KEY, true ),
 			'specializations'             => $specialization_slugs,
 			'specialization_label'        => implode( ', ', $specialization_labels ),
 			'specialization_labels'       => $specialization_labels,

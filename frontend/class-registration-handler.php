@@ -11,6 +11,7 @@ use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Authentication;
 use DoctorAKPortal\Includes\Doctor_Keywords;
 use DoctorAKPortal\Includes\Locations;
+use DoctorAKPortal\Includes\Patient_Age;
 use DoctorAKPortal\Includes\Phone;
 use DoctorAKPortal\Includes\Profile_Picture_Uploader;
 use DoctorAKPortal\Includes\Roles;
@@ -470,6 +471,14 @@ class Registration_Handler {
 			$errors['phone_number'] = $phone->get_error_message();
 		} else {
 			$meta['doctor_ak_phone_number'] = $phone;
+		}
+
+		$date_of_birth = Patient_Age::sanitize_from_request( isset( $_POST['date_of_birth'] ) ? wp_unslash( $_POST['date_of_birth'] ) : '' );
+
+		if ( is_wp_error( $date_of_birth ) ) {
+			$errors['date_of_birth'] = $date_of_birth->get_error_message();
+		} else {
+			$meta[ Patient_Age::META_KEY ] = $date_of_birth;
 		}
 
 		return $meta;

@@ -124,6 +124,16 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] ||
 								echo esc_html( $row['datetime_label'] );
 								echo ' &middot; ';
 								echo esc_html( $row['type_label'] );
+
+								if ( '' !== $row['patient_phone'] ) {
+									echo ' &middot; ';
+									echo esc_html( $row['patient_phone'] );
+								}
+
+								if ( '' !== $row['patient_age'] ) {
+									echo ' &middot; ';
+									echo esc_html( sprintf( /* translators: %d: patient's age in years. */ __( '%d yrs', 'doctor-ak-portal' ), $row['patient_age'] ) );
+								}
 								?>
 							</span>
 						</span>

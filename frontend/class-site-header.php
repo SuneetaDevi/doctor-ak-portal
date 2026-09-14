@@ -141,7 +141,7 @@ class Site_Header {
 			'directory_url'      => $directory_url,
 			'services_url'       => Page_Finder::url_for_shortcode( 'services_directory' ),
 			'videos_url'         => $home_url . '#dak-home-videos',
-			'clinics_url'        => $home_url . '#dak-home-clinics',
+			'clinics_url'        => Page_Finder::url_for_shortcode( 'clinics_directory' ),
 			'blogs_url'          => Page_Finder::url_for_shortcode( 'blogs_directory' ),
 			'doctor_specialties' => Home_Page::specialties_in_use( $directory_url ),
 			'service_categories' => self::service_categories_for_menu(),

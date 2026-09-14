@@ -241,6 +241,8 @@ class Home_Page {
 				'directory_url'    => $directory_url,
 				'doctor_register_url' => Page_Finder::url_for_shortcode( 'doctor_register' ),
 				'services_url'     => Page_Finder::url_for_shortcode( 'services_directory' ),
+				'clinics_url'      => Page_Finder::url_for_shortcode( 'clinics_directory' ),
+				'clinic_profile_url' => Page_Finder::url_for_shortcode( 'clinic_profile_view' ),
 				'stats'            => $this->stats( $doctor_cards ),
 				'clinic_locations' => array_slice( Clinic_Locations::get_all(), 0, self::FEATURED_CLINICS_LIMIT ),
 			)

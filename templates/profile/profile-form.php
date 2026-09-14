@@ -26,6 +26,7 @@
  * @var string   $current_expertise          Doctor's current other-expertise free text, or ''.
  * @var array    $current_awards             Doctor's current awards, see Doctor_Awards::get_for_doctor().
  * @var string   $current_phone_number       Patient's current phone number.
+ * @var string   $current_date_of_birth      Patient's current date of birth ('Y-m-d'), or '' if not set yet.
  * @var int      $current_profile_picture_id Current profile picture attachment ID.
  */
 
@@ -195,6 +196,12 @@ $current_picture_url = $current_profile_picture_id ? wp_get_attachment_image_url
 			);
 			?>
 			<span class="dak-field-error" data-field="phone_number"></span>
+		</div>
+
+		<div class="dak-field">
+			<label for="dak-profile-dob"><?php esc_html_e( 'Date of Birth', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
+			<input type="date" id="dak-profile-dob" name="date_of_birth" max="<?php echo esc_attr( gmdate( 'Y-m-d' ) ); ?>" value="<?php echo esc_attr( $current_date_of_birth ); ?>" required>
+			<span class="dak-field-error" data-field="date_of_birth"></span>
 		</div>
 
 	<?php endif; ?>
