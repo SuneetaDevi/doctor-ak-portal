@@ -19,6 +19,10 @@
 		initDropdown( 'dak-site-header-book-trigger', 'dak-site-header-book-menu' );
 		initMegaMenuAutoFocus( '.dak-site-header-doctors-item' );
 		initMegaMenuSearch( 'dak-site-header-mega-search-input', '.dak-site-header-mega-card' );
+		initMegaMenuAutoFocus( '.dak-site-header-clinics-item' );
+		initMegaMenuSearch( 'dak-site-header-clinics-mega-search-input', '.dak-site-header-mega-column-item', '.dak-site-header-mega-column' );
+		initMegaMenuAutoFocus( '.dak-site-header-services-item' );
+		initMegaMenuSearch( 'dak-site-header-services-mega-search-input', '.dak-site-header-mega-column-item', '.dak-site-header-mega-column' );
 		initComingSoonToast();
 		initHeaderScrollState();
 	} );
@@ -163,10 +167,14 @@
 	 * not the whole document, so a second mega-menu's search/cards/no-
 	 * results elsewhere on the page can't cross-interfere with this one.
 	 *
-	 * @param {string} inputId      Element id of this menu's search `<input>`.
-	 * @param {string} itemSelector CSS selector (scoped within the panel) for the filterable items.
+	 * @param {string} inputId       Element id of this menu's search `<input>`.
+	 * @param {string} itemSelector  CSS selector (scoped within the panel) for the filterable items.
+	 * @param {string} [groupSelector] CSS selector (scoped within the panel) for an optional wrapper
+	 *                                 around each group of items (e.g. a city column) — hidden along with
+	 *                                 its items when every item inside it is filtered out, so a search
+	 *                                 never leaves an empty heading with nothing underneath it.
 	 */
-	function initMegaMenuSearch( inputId, itemSelector ) {
+	function initMegaMenuSearch( inputId, itemSelector, groupSelector ) {
 		var input = document.getElementById( inputId );
 		var panel = input ? input.closest( '.dak-site-header-mega-panel' ) : null;
 
@@ -175,6 +183,7 @@
 		}
 
 		var items = panel.querySelectorAll( itemSelector );
+		var groups = groupSelector ? panel.querySelectorAll( groupSelector ) : null;
 		var noResults = panel.querySelector( '.dak-site-header-mega-no-results' );
 
 		input.addEventListener( 'input', function () {
@@ -190,6 +199,13 @@
 					visibleCount++;
 				}
 			} );
+
+			if ( groups ) {
+				groups.forEach( function ( group ) {
+					var hasVisibleItem = !! group.querySelector( itemSelector + ':not(.dak-hidden)' );
+					group.classList.toggle( 'dak-hidden', ! hasVisibleItem );
+				} );
+			}
 
 			if ( noResults ) {
 				noResults.classList.toggle( 'dak-hidden', '' === query || visibleCount > 0 );

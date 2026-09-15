@@ -4,20 +4,18 @@
  *
  * @package DoctorAKPortal\Templates
  *
- * @var string $logo_url          Bundled logo URL (assets/images/logo.*), or '' if none was placed there.
- * @var string $brand_domain      Site_Footer::BRAND_DOMAIN — shown in place of the logo when none is uploaded.
- * @var string $description       Clinic description paragraph.
- * @var string $phone             Booking phone number.
- * @var string $facebook_url      Facebook page URL, or '' to hide the icon.
- * @var string $twitter_url       X (Twitter) profile URL, or '' to hide the icon.
- * @var string $instagram_url     Instagram profile URL, or '' to hide the icon.
- * @var string $linkedin_url      LinkedIn profile URL, or '' to hide the icon.
- * @var array  $doctors           Site_Footer::doctors_for_footer() rows — { name, url } — every real, active doctor.
- * @var string $directory_url     URL of the [doctors_directory] page, or '' if not found — the "Doctors" column's "All Doctors" link.
- * @var array  $specialties       Site_Footer::specialties_for_footer() rows — { slug, label, count, url } — every specialization at least one doctor has, alphabetical.
- * @var array  $services          Site_Footer::services_for_footer() rows — { name, url } — real, bookable services.
- * @var array  $clinics_by_city   Site_Footer::clinics_by_city_for_footer() rows — { label, url } — one per distinct clinic city.
- * @var array  $policy_links      Site_Footer::policy_links() rows — { label, url } — legal pages found by title, only those that exist.
+ * @var string $logo_url      Bundled logo URL (assets/images/logo.*), or '' if none was placed there.
+ * @var string $brand_domain  Site_Footer::BRAND_DOMAIN — shown in place of the logo when none is uploaded.
+ * @var string $description   Clinic description paragraph.
+ * @var string $phone         Booking phone number.
+ * @var string $email         Contact email, see Site_Footer::primary_email() — or '' if none on file.
+ * @var string $address       Postal address, see Site_Footer::primary_address() — or '' if none on file.
+ * @var string $facebook_url  Facebook page URL, or '' to hide the icon.
+ * @var string $twitter_url   X (Twitter) profile URL, or '' to hide the icon.
+ * @var string $instagram_url Instagram profile URL, or '' to hide the icon.
+ * @var string $linkedin_url  LinkedIn profile URL, or '' to hide the icon.
+ * @var array  $quick_links   Site_Footer::quick_links() rows — { label, url } — one per major site section, numbered in the template.
+ * @var array  $policy_links  Site_Footer::policy_links() rows — { label, url } — legal pages found by title, only those that exist.
  */
 
 // Prevent direct file access.
@@ -31,6 +29,13 @@ $dak_footer_social_icons = array(
 	'instagram' => array( $instagram_url, '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="14" height="14" rx="4"/><circle cx="10" cy="10" r="3.2"/><circle cx="14" cy="6" r="0.8" fill="currentColor" stroke="none"/></svg>' ),
 	'linkedin'  => array( $linkedin_url, '<svg viewBox="0 0 20 20" fill="currentColor"><rect x="3" y="8" width="3" height="9"/><circle cx="4.5" cy="4.5" r="1.6"/><path d="M9 8h3v1.4c.5-.9 1.5-1.6 3-1.6 2.3 0 3 1.4 3 3.7V17h-3v-4.8c0-1.1-.4-1.9-1.4-1.9-1.1 0-1.6.7-1.6 1.9V17H9V8z"/></svg>' ),
 );
+
+$dak_numbered_quick_links = array();
+foreach ( $quick_links as $dak_link_index => $dak_link ) {
+	$dak_link['number']         = $dak_link_index + 1;
+	$dak_numbered_quick_links[] = $dak_link;
+}
+$dak_footer_link_columns = array_chunk( $dak_numbered_quick_links, (int) ceil( count( $dak_numbered_quick_links ) / 2 ) );
 ?>
 <footer class="dak-portal dak-site-footer">
 	<div class="dak-site-footer-inner">
@@ -47,6 +52,11 @@ $dak_footer_social_icons = array(
 				<p class="dak-site-footer-description"><?php echo esc_html( $description ); ?></p>
 			<?php endif; ?>
 
+			<form class="dak-site-footer-subscribe" data-dak-coming-soon="<?php esc_attr_e( 'Email updates are launching soon.', 'doctor-ak-portal' ); ?>">
+				<input type="email" placeholder="<?php esc_attr_e( 'Email Address', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Email Address', 'doctor-ak-portal' ); ?>">
+				<button type="submit"><?php esc_html_e( 'Subscribe', 'doctor-ak-portal' ); ?></button>
+			</form>
+
 			<div class="dak-site-footer-social">
 				<?php foreach ( $dak_footer_social_icons as $network => $data ) : ?>
 					<?php list( $url, $icon ) = $data; ?>
@@ -57,80 +67,50 @@ $dak_footer_social_icons = array(
 					<?php endif; ?>
 				<?php endforeach; ?>
 			</div>
+		</div>
 
-			<?php if ( $phone ) : ?>
-				<div class="dak-site-footer-phone">
-					<span class="dak-site-footer-phone-icon" aria-hidden="true">
-						<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5c0-.6.4-1 1-1h2.2c.5 0 .9.3 1 .8l.7 2.8c.1.4 0 .8-.3 1.1L7.2 9.5c.9 2 2.5 3.6 4.5 4.5l1.3-1.4c.3-.3.7-.4 1.1-.3l2.8.7c.5.1.8.5.8 1v2.2c0 .6-.4 1-1 1h-1C9.4 16.7 3.3 10.6 3.3 3.5v-1"/></svg>
-					</span>
-					<span>
-						<strong><?php esc_html_e( 'For Booking', 'doctor-ak-portal' ); ?></strong><br>
-						<a href="tel:<?php echo esc_attr( preg_replace( '/[^0-9+]/', '', $phone ) ); ?>"><?php echo esc_html( $phone ); ?></a>
-					</span>
+		<?php foreach ( $dak_footer_link_columns as $dak_column_links ) : ?>
+			<div class="dak-site-footer-col dak-site-footer-links-col">
+				<ul class="dak-site-footer-menu">
+					<?php foreach ( $dak_column_links as $dak_link ) : ?>
+						<li class="menu-item">
+							<span class="dak-site-footer-menu-index"><?php echo esc_html( sprintf( '%02d', $dak_link['number'] ) ); ?></span>
+							<a href="<?php echo esc_url( $dak_link['url'] ); ?>"><?php echo esc_html( $dak_link['label'] ); ?></a>
+						</li>
+					<?php endforeach; ?>
+				</ul>
+			</div>
+		<?php endforeach; ?>
+
+		<div class="dak-site-footer-col dak-site-footer-contact-col">
+			<?php if ( $address ) : ?>
+				<div class="dak-site-footer-contact-group">
+					<h3><?php esc_html_e( 'Address', 'doctor-ak-portal' ); ?></h3>
+					<p><?php echo esc_html( $address ); ?></p>
 				</div>
 			<?php endif; ?>
-		</div>
 
-		<div class="dak-site-footer-col">
-			<h3><?php esc_html_e( 'Doctors', 'doctor-ak-portal' ); ?></h3>
-			<ul class="dak-site-footer-menu">
-				<?php if ( $directory_url ) : ?>
-					<li class="menu-item dak-site-footer-menu-highlight"><a href="<?php echo esc_url( $directory_url ); ?>"><?php esc_html_e( 'All Doctors', 'doctor-ak-portal' ); ?></a></li>
-				<?php endif; ?>
-				<?php foreach ( $doctors as $dak_doctor ) : ?>
-					<li class="menu-item"><a href="<?php echo esc_url( $dak_doctor['url'] ); ?>"><?php echo esc_html( $dak_doctor['name'] ); ?></a></li>
-				<?php endforeach; ?>
-			</ul>
-		</div>
-
-		<div class="dak-site-footer-col">
-			<h3><?php esc_html_e( 'Specialities', 'doctor-ak-portal' ); ?></h3>
-			<?php if ( empty( $specialties ) ) : ?>
-				<p class="dak-site-footer-empty"><?php esc_html_e( 'Coming soon.', 'doctor-ak-portal' ); ?></p>
-			<?php else : ?>
-				<ul class="dak-site-footer-menu">
-					<?php foreach ( $specialties as $dak_specialty ) : ?>
-						<li class="menu-item"><a href="<?php echo esc_url( $dak_specialty['url'] ); ?>"><?php echo esc_html( $dak_specialty['label'] ); ?></a></li>
-					<?php endforeach; ?>
-				</ul>
-			<?php endif; ?>
-		</div>
-
-		<div class="dak-site-footer-col">
-			<h3><?php esc_html_e( 'Services', 'doctor-ak-portal' ); ?></h3>
-			<?php if ( empty( $services ) ) : ?>
-				<p class="dak-site-footer-empty"><?php esc_html_e( 'Coming soon.', 'doctor-ak-portal' ); ?></p>
-			<?php else : ?>
-				<ul class="dak-site-footer-menu">
-					<?php foreach ( $services as $dak_service ) : ?>
-						<li class="menu-item"><a href="<?php echo esc_url( $dak_service['url'] ); ?>"><?php echo esc_html( $dak_service['name'] ); ?></a></li>
-					<?php endforeach; ?>
-				</ul>
-			<?php endif; ?>
-		</div>
-
-		<div class="dak-site-footer-col">
-			<h3><?php esc_html_e( 'Clinics / Locations', 'doctor-ak-portal' ); ?></h3>
-			<?php if ( empty( $clinics_by_city ) ) : ?>
-				<p class="dak-site-footer-empty"><?php esc_html_e( 'Coming soon.', 'doctor-ak-portal' ); ?></p>
-			<?php else : ?>
-				<ul class="dak-site-footer-menu">
-					<?php foreach ( $clinics_by_city as $dak_city ) : ?>
-						<li class="menu-item"><a href="<?php echo esc_url( $dak_city['url'] ); ?>"><?php echo esc_html( $dak_city['label'] ); ?></a></li>
-					<?php endforeach; ?>
-				</ul>
+			<?php if ( $phone || $email ) : ?>
+				<div class="dak-site-footer-contact-group">
+					<h3><?php esc_html_e( 'Contact', 'doctor-ak-portal' ); ?></h3>
+					<?php if ( $phone ) : ?>
+						<a class="dak-site-footer-contact-line" href="tel:<?php echo esc_attr( preg_replace( '/[^0-9+]/', '', $phone ) ); ?>">
+							<span aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5c0-.6.4-1 1-1h2.2c.5 0 .9.3 1 .8l.7 2.8c.1.4 0 .8-.3 1.1L7.2 9.5c.9 2 2.5 3.6 4.5 4.5l1.3-1.4c.3-.3.7-.4 1.1-.3l2.8.7c.5.1.8.5.8 1v2.2c0 .6-.4 1-1 1h-1C9.4 16.7 3.3 10.6 3.3 3.5v-1"/></svg></span>
+							<?php echo esc_html( $phone ); ?>
+						</a>
+					<?php endif; ?>
+					<?php if ( $email ) : ?>
+						<a class="dak-site-footer-contact-line" href="mailto:<?php echo esc_attr( $email ); ?>">
+							<span aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="15" height="11" rx="1.5"/><path d="M3 5.5l7 5.5 7-5.5"/></svg></span>
+							<?php echo esc_html( $email ); ?>
+						</a>
+					<?php endif; ?>
+				</div>
 			<?php endif; ?>
 		</div>
 	</div>
 
 	<div class="dak-site-footer-bottom">
-		<?php if ( ! empty( $policy_links ) ) : ?>
-			<ul class="dak-site-footer-policy-links">
-				<?php foreach ( $policy_links as $dak_policy_link ) : ?>
-					<li><a href="<?php echo esc_url( $dak_policy_link['url'] ); ?>"><?php echo esc_html( $dak_policy_link['label'] ); ?></a></li>
-				<?php endforeach; ?>
-			</ul>
-		<?php endif; ?>
 		<p>
 			<?php
 			echo esc_html(
@@ -142,5 +122,15 @@ $dak_footer_social_icons = array(
 			);
 			?>
 		</p>
+		<?php if ( ! empty( $policy_links ) ) : ?>
+			<ul class="dak-site-footer-policy-links">
+				<?php foreach ( $policy_links as $dak_policy_index => $dak_policy_link ) : ?>
+					<?php if ( $dak_policy_index > 0 ) : ?>
+						<li class="dak-site-footer-policy-sep" aria-hidden="true">|</li>
+					<?php endif; ?>
+					<li><a href="<?php echo esc_url( $dak_policy_link['url'] ); ?>"><?php echo esc_html( $dak_policy_link['label'] ); ?></a></li>
+				<?php endforeach; ?>
+			</ul>
+		<?php endif; ?>
 	</div>
 </footer>

@@ -400,7 +400,6 @@
 	position: relative !important;
 	z-index: 1 !important;
 	width: 100% !important;
-	max-width: 640px !important;
 	background: var( --dak-bg-card ) !important;
 	border-radius: var( --dak-radius-lg ) !important;
 	box-shadow: var( --dak-shadow-lg ) !important;

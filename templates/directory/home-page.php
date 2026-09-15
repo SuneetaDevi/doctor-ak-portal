@@ -243,10 +243,10 @@ $dak_home_testimonials = ! empty( $testimonials )
 		<div class="dak-home-hero-banner-content">
 			<span class="dak-eyebrow"><?php esc_html_e( 'Gastroenterology & Endoscopy · Karachi', 'doctor-ak-portal' ); ?></span>
 			<h1>
-				<?php esc_html_e( 'Digestive health care that listens', 'doctor-ak-portal' ); ?>
-				<em class="dak-home-hero-accent"><?php esc_html_e( 'first.', 'doctor-ak-portal' ); ?></em>
+				<?php esc_html_e( 'Book your doctor,', 'doctor-ak-portal' ); ?>
+				<em class="dak-home-hero-accent"><?php esc_html_e( 'in minutes.', 'doctor-ak-portal' ); ?></em>
 			</h1>
-			<p><?php esc_html_e( 'Dr. AK Lohana Clinic brings specialist gastroenterology, hepatology and advanced endoscopy under one roof — with unhurried, plain-spoken consultations.', 'doctor-ak-portal' ); ?></p>
+			<p><?php esc_html_e( 'Find specialist gastroenterology, hepatology and advanced endoscopy care under one roof, and book your appointment online in a few clicks — no calls, no waiting.', 'doctor-ak-portal' ); ?></p>
 
 			<div class="dak-home-hero-actions">
 			<?php if ( $directory_url ) : ?>

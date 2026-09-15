@@ -202,7 +202,7 @@ class Plugin {
 		$this->loader->add_action( 'wp_enqueue_scripts', $doctors_directory, 'enqueue_assets' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $doctor_profile_view, 'enqueue_assets' );
 
-		$site_footer = new Site_Footer( new Template_Loader(), $doctors_directory );
+		$site_footer = new Site_Footer( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $site_footer, 'enqueue_assets' );
 		$this->loader->add_action( 'wp_footer', $site_footer, 'render' );
 

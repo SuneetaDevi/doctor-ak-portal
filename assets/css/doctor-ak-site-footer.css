@@ -7,9 +7,9 @@
  */
 
 .dak-site-footer {
-	background: #0a0a0a !important;
-	color: #e5e7eb !important;
-	padding: 3rem 1.5rem 0 !important;
+	background: #0b1220 !important;
+	color: #cbd5e1 !important;
+	padding: 3.5rem 1.5rem 0 !important;
 }
 
 .dak-site-footer a {
@@ -21,26 +21,28 @@
 	max-width: 1200px !important;
 	margin: 0 auto !important;
 	display: grid !important;
-	/* Brand, Doctors, Specialities, Services, Clinics / Locations. */
-	grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr !important;
-	gap: 2rem !important;
+	/* Brand, Quick Links col 1, Quick Links col 2, Address/Contact. */
+	grid-template-columns: 1.6fr 1fr 1fr 1.1fr !important;
+	gap: 2.5rem !important;
 	padding-bottom: 2.5rem !important;
 }
 
 .dak-site-footer-col h3 {
-	font-size: 1.05rem !important;
+	font-size: 1rem !important;
 	font-weight: 700 !important;
 	color: #ffffff !important;
-	margin: 0 0 1.1rem !important;
+	margin: 0 0 0.6rem !important;
 }
 
 .dak-site-footer-logo {
 	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.5rem !important;
 	margin-bottom: 1rem !important;
 }
 
 .dak-site-footer-logo img {
-	max-height: 64px !important;
+	max-height: 44px !important;
 	width: auto !important;
 }
 
@@ -51,66 +53,84 @@
 }
 
 .dak-site-footer-description {
-	color: #d1d5db !important;
-	font-size: 0.9rem !important;
-	line-height: 1.6 !important;
-	margin: 0 0 1.25rem !important;
-	max-width: 32rem !important;
+	color: #94a3b8 !important;
+	font-size: 0.88rem !important;
+	line-height: 1.65 !important;
+	margin: 0 0 1.5rem !important;
+	max-width: 30rem !important;
+}
+
+.dak-site-footer-subscribe {
+	display: flex !important;
+	align-items: stretch !important;
+	max-width: 26rem !important;
+	margin: 0 0 1.5rem !important;
+	background: #131c2e !important;
+	border: 1px solid #263047 !important;
+	border-radius: 999px !important;
+	padding: 0.3rem !important;
+}
+
+.dak-site-footer-subscribe input {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+	background: none !important;
+	border: 0 !important;
+	padding: 0.55rem 1rem !important;
+	color: #e2e8f0 !important;
+	font-size: 0.85rem !important;
+}
+
+.dak-site-footer-subscribe input::placeholder {
+	color: #64748b !important;
+}
+
+.dak-site-footer-subscribe input:focus {
+	outline: none !important;
+}
+
+.dak-site-footer-subscribe button {
+	flex: 0 0 auto !important;
+	background: var( --dak-primary, #2563eb ) !important;
+	color: #ffffff !important;
+	border: 0 !important;
+	border-radius: 999px !important;
+	padding: 0.55rem 1.3rem !important;
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+}
+
+.dak-site-footer-subscribe button:hover {
+	background: var( --dak-primary-dark, #1d4ed8 ) !important;
 }
 
 .dak-site-footer-social {
 	display: flex !important;
 	gap: 0.6rem !important;
-	margin-bottom: 1.5rem !important;
 }
 
 .dak-site-footer-social-icon {
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: center !important;
-	width: 2.2rem !important;
-	height: 2.2rem !important;
+	width: 2.3rem !important;
+	height: 2.3rem !important;
 	border-radius: 999px !important;
-	background: var( --dak-primary, #7fb52d ) !important;
-	color: #ffffff !important;
+	background: #131c2e !important;
+	border: 1px solid #263047 !important;
+	color: #cbd5e1 !important;
 }
 
 .dak-site-footer-social-icon svg {
-	width: 1.05rem !important;
-	height: 1.05rem !important;
+	width: 1rem !important;
+	height: 1rem !important;
 }
 
 .dak-site-footer-social-icon:hover {
-	background: var( --dak-primary-dark, #6a9a24 ) !important;
-}
-
-.dak-site-footer-phone {
-	display: flex !important;
-	align-items: center !important;
-	gap: 0.75rem !important;
-	font-size: 0.9rem !important;
-}
-
-.dak-site-footer-phone-icon {
-	display: inline-flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	width: 2.4rem !important;
-	height: 2.4rem !important;
-	flex-shrink: 0 !important;
-	border-radius: 999px !important;
-	background: var( --dak-primary, #7fb52d ) !important;
+	background: var( --dak-primary, #2563eb ) !important;
+	border-color: var( --dak-primary, #2563eb ) !important;
 	color: #ffffff !important;
-}
-
-.dak-site-footer-phone-icon svg {
-	width: 1.1rem !important;
-	height: 1.1rem !important;
-}
-
-.dak-site-footer-phone strong {
-	color: #ffffff !important;
-	font-size: 0.85rem !important;
 }
 
 .dak-site-footer-menu {
@@ -119,59 +139,103 @@
 	padding: 0 !important;
 	display: flex !important;
 	flex-direction: column !important;
-	gap: 0.85rem !important;
+}
+
+.dak-site-footer-menu .menu-item {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.75rem !important;
+	padding: 0.9rem 0 !important;
+	border-bottom: 1px solid #1c2536 !important;
+}
+
+.dak-site-footer-menu .menu-item:first-child {
+	padding-top: 0 !important;
+}
+
+.dak-site-footer-menu-index {
+	font-size: 0.72rem !important;
+	font-weight: 700 !important;
+	color: #64748b !important;
 }
 
 .dak-site-footer-menu a {
-	font-size: 0.85rem !important;
+	font-size: 0.98rem !important;
 	font-weight: 600 !important;
-	letter-spacing: 0.01em !important;
-	color: #d1d5db !important;
+	color: #ffffff !important;
 }
 
 .dak-site-footer-menu a:hover {
-	color: var( --dak-primary, #7fb52d ) !important;
+	color: var( --dak-primary, #2563eb ) !important;
 }
 
-.dak-site-footer-menu-highlight a {
-	color: var( --dak-primary, #7fb52d ) !important;
+.dak-site-footer-contact-group {
+	margin-bottom: 1.5rem !important;
 }
 
-.dak-site-footer-empty {
-	font-size: 0.85rem !important;
-	color: #6b7280 !important;
+.dak-site-footer-contact-group p {
 	margin: 0 !important;
+	font-size: 0.88rem !important;
+	color: #94a3b8 !important;
+	line-height: 1.6 !important;
+}
+
+.dak-site-footer-contact-line {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.55rem !important;
+	font-size: 0.88rem !important;
+	color: #94a3b8 !important;
+	margin-top: 0.5rem !important;
+}
+
+.dak-site-footer-contact-line:hover {
+	color: var( --dak-primary, #2563eb ) !important;
+}
+
+.dak-site-footer-contact-line svg {
+	width: 1rem !important;
+	height: 1rem !important;
+	flex-shrink: 0 !important;
 }
 
 .dak-site-footer-bottom {
-	border-top: 1px solid rgba( 255, 255, 255, 0.1 ) !important;
+	border-top: 1px solid #1c2536 !important;
 	padding: 1.25rem 0 !important;
-	text-align: center !important;
-}
-
-.dak-site-footer-policy-links {
-	list-style: none !important;
-	margin: 0 0 0.85rem !important;
-	padding: 0 !important;
 	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 1rem 1.5rem !important;
 	flex-wrap: wrap !important;
-	justify-content: center !important;
-	gap: 0.4rem 1.25rem !important;
-}
-
-.dak-site-footer-policy-links a {
-	font-size: 0.82rem !important;
-	color: #9ca3af !important;
-}
-
-.dak-site-footer-policy-links a:hover {
-	color: var( --dak-primary, #7fb52d ) !important;
 }
 
 .dak-site-footer-bottom p {
 	margin: 0 !important;
 	font-size: 0.85rem !important;
-	color: #9ca3af !important;
+	color: #94a3b8 !important;
+}
+
+.dak-site-footer-policy-links {
+	list-style: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.6rem !important;
+}
+
+.dak-site-footer-policy-links a {
+	font-size: 0.82rem !important;
+	color: #94a3b8 !important;
+}
+
+.dak-site-footer-policy-links a:hover {
+	color: var( --dak-primary, #2563eb ) !important;
+}
+
+.dak-site-footer-policy-sep {
+	color: #334155 !important;
+	font-size: 0.8rem !important;
 }
 
 @media ( max-width: 900px ) {
@@ -183,5 +247,10 @@
 @media ( max-width: 560px ) {
 	.dak-site-footer-inner {
 		grid-template-columns: 1fr !important;
+	}
+
+	.dak-site-footer-bottom {
+		justify-content: center !important;
+		text-align: center !important;
 	}
 }

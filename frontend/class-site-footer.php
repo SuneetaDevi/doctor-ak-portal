@@ -10,7 +10,6 @@ namespace DoctorAKPortal\Frontend;
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Page_Finder;
-use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Template_Loader;
 
 // Prevent direct file access.
@@ -22,16 +21,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Class Site_Footer
  *
  * Mirrors Site_Header: renders on every front-end request (via wp_footer)
- * rather than only on shortcode pages. Its link columns (Doctors, Services,
- * Clinics) are generated straight from the same real data the rest of the
- * public site already uses (Doctors_Directory, Services, Clinic_Locations) — not
- * site-owner-edited WordPress menus, since a stale hand-built menu could
- * easily point at a doctor/specialty/clinic that no longer exists. The
- * legal/policy links (Privacy Policy, Terms, etc.) that used to live in the
- * old "Quick Links" menu are still real WordPress pages, found by title —
- * see policy_links(). Everything else (description, phone, social links,
- * clinic branding used elsewhere in the plugin) comes from Footer_Settings
- * (Settings -> Footer Settings), defaulting to this clinic's real, current
+ * rather than only on shortcode pages. Its "Quick Links" nav points at each
+ * major site section's real page (Doctors, Services, Clinics/Locations,
+ * Book Appointment, Blogs, About Us), resolved via Page_Finder rather than a
+ * site-owner-edited WordPress menu — see quick_links(). Legal/policy links
+ * (Privacy Policy, Terms, etc.) are real WordPress pages found by title —
+ * see policy_links(). Everything else (description, phone, address, social
+ * links) comes from Footer_Settings (Settings -> Footer Settings) or the
+ * first clinic location on file, defaulting to this clinic's real, current
  * content rather than a placeholder.
  */
 class Site_Footer {
@@ -67,22 +64,12 @@ class Site_Footer {
 	private $template_loader;
 
 	/**
-	 * Doctors directory controller — supplies the footer's "Doctors" column
-	 * (same card data the directory grid/featured-doctors slider use).
-	 *
-	 * @var Doctors_Directory
-	 */
-	private $doctors_directory;
-
-	/**
 	 * Sets up collaborators.
 	 *
-	 * @param Template_Loader   $template_loader   Template loader.
-	 * @param Doctors_Directory $doctors_directory Doctors directory controller.
+	 * @param Template_Loader $template_loader Template loader.
 	 */
-	public function __construct( Template_Loader $template_loader, Doctors_Directory $doctors_directory ) {
-		$this->template_loader   = $template_loader;
-		$this->doctors_directory = $doctors_directory;
+	public function __construct( Template_Loader $template_loader ) {
+		$this->template_loader = $template_loader;
 	}
 
 	/**
@@ -132,118 +119,88 @@ class Site_Footer {
 		$directory_url = Page_Finder::url_for_shortcode( 'doctors_directory' );
 
 		return array(
-			'logo_url'          => self::bundled_logo_url(),
-			'brand_domain'      => self::BRAND_DOMAIN,
-			'description'       => get_option( self::OPTION_DESCRIPTION, 'Your trusted platform to find doctors, book appointments, and manage your healthcare — all in one place.' ),
-			'phone'             => get_option( self::OPTION_PHONE, '0303-3638304' ),
-			'facebook_url'      => get_option( self::OPTION_FACEBOOK_URL, '' ),
-			'twitter_url'       => get_option( self::OPTION_TWITTER_URL, '' ),
-			'instagram_url'     => get_option( self::OPTION_INSTAGRAM_URL, '' ),
-			'linkedin_url'      => get_option( self::OPTION_LINKEDIN_URL, '' ),
-			'doctors'           => self::doctors_for_footer( $directory_url ),
-			'directory_url'     => $directory_url,
-			'specialties'       => self::specialties_for_footer( $directory_url ),
-			'services'          => self::services_for_footer(),
-			'clinics_by_city'   => self::clinics_by_city_for_footer( $directory_url ),
-			'policy_links'      => self::policy_links(),
+			'logo_url'       => self::bundled_logo_url(),
+			'brand_domain'   => self::BRAND_DOMAIN,
+			'description'    => get_option( self::OPTION_DESCRIPTION, 'Your trusted platform to find doctors, book appointments, and manage your healthcare — all in one place.' ),
+			'phone'          => get_option( self::OPTION_PHONE, '0303-3638304' ),
+			'email'          => self::primary_email(),
+			'address'        => self::primary_address(),
+			'facebook_url'   => get_option( self::OPTION_FACEBOOK_URL, '' ),
+			'twitter_url'    => get_option( self::OPTION_TWITTER_URL, '' ),
+			'instagram_url'  => get_option( self::OPTION_INSTAGRAM_URL, '' ),
+			'linkedin_url'   => get_option( self::OPTION_LINKEDIN_URL, '' ),
+			'quick_links'    => self::quick_links( $directory_url ),
+			'policy_links'   => self::policy_links(),
 		);
 	}
 
 	/**
-	 * Every real, active doctor for the footer's "Doctors" column — same
-	 * card data the directory grid/featured-doctors slider use.
+	 * The footer's compact "Quick Links" nav — one link per major site
+	 * section (not an exhaustive per-doctor/per-service/per-city listing,
+	 * see the numbered 2-column layout in templates/site-footer.php), each
+	 * dropped silently when its page isn't found rather than shown as a
+	 * dead link.
 	 *
 	 * @param string $directory_url URL of the [doctors_directory] page, or '' if not found.
-	 * @return array [{name, url}, ...]
+	 * @return array [{label, url}, ...]
 	 */
-	private function doctors_for_footer( $directory_url ) {
-		return array_map(
-			function ( $card ) {
-				return array(
-					'name' => sprintf( 'Dr. %s', $card['name'] ),
-					'url'  => $card['profile_url'],
+	private static function quick_links( $directory_url ) {
+		$candidates = array(
+			array( __( 'About Us', 'doctor-ak-portal' ), home_url( '/' ) ),
+			array( __( 'Doctors', 'doctor-ak-portal' ), $directory_url ),
+			array( __( 'Services', 'doctor-ak-portal' ), Page_Finder::url_for_shortcode( 'services_directory' ) ),
+			array( __( 'Clinics / Locations', 'doctor-ak-portal' ), Page_Finder::url_for_shortcode( 'clinics_directory' ) ),
+			array( __( 'Book Appointment', 'doctor-ak-portal' ), Page_Finder::url_for_shortcode( 'book_appointment' ) ),
+			array( __( 'Blogs', 'doctor-ak-portal' ), Page_Finder::url_for_shortcode( 'blogs_directory' ) ),
+		);
+
+		$links = array();
+
+		foreach ( $candidates as $candidate ) {
+			list( $label, $url ) = $candidate;
+
+			if ( $url ) {
+				$links[] = array(
+					'label' => $label,
+					'url'   => $url,
 				);
-			},
-			$this->doctors_directory->doctor_cards_data()
-		);
-	}
-
-	/**
-	 * Every specialization at least one doctor actually has, for the
-	 * footer's "Specialities" column — reuses Home_Page::specialties_in_use()
-	 * (same data the site header's Doctors mega-menu groups by), just
-	 * re-sorted alphabetically here to match the "Clinics / Locations"
-	 * column's own alphabetical convention rather than that method's
-	 * most-doctors-first order.
-	 *
-	 * @param string $directory_url URL of the [doctors_directory] page, or '' if not found.
-	 * @return array [{label, url}, ...], alphabetical by label.
-	 */
-	private static function specialties_for_footer( $directory_url ) {
-		$specialties = Home_Page::specialties_in_use( $directory_url );
-
-		usort(
-			$specialties,
-			function ( $a, $b ) {
-				return strcasecmp( $a['label'], $b['label'] );
 			}
-		);
-
-		return $specialties;
-	}
-
-	/**
-	 * Real, bookable services for the footer's "Services" column — the same
-	 * grouped-by-name rows the [services_directory] grid uses, each linking
-	 * to that service's own detail page.
-	 *
-	 * @return array [{name, url}, ...]
-	 */
-	private static function services_for_footer() {
-		$service_profile_url = Page_Finder::url_for_shortcode( 'service_profile_view' );
-
-		return array_map(
-			function ( $group ) use ( $service_profile_url ) {
-				return array(
-					'name' => $group['name'],
-					'url'  => $service_profile_url ? add_query_arg( 'service_id', $group['id'], $service_profile_url ) : '',
-				);
-			},
-			Services::grouped_active_for_public_directory()
-		);
-	}
-
-	/**
-	 * Physical clinic locations grouped by city for the footer's "Clinics"
-	 * column — one row per distinct city, each linking to the doctors
-	 * directory pre-filtered to it (?city=<slug>, the same deep link
-	 * assets/js/doctor-ak-directory.js's presetCity handling already reads).
-	 *
-	 * @param string $directory_url URL of the [doctors_directory] page, or '' if not found.
-	 * @return array [{label, url}, ...], alphabetical by city.
-	 */
-	private static function clinics_by_city_for_footer( $directory_url ) {
-		$cities = array();
-
-		foreach ( Clinic_Locations::get_all() as $clinic_location ) {
-			if ( '' === $clinic_location['city'] || isset( $cities[ $clinic_location['city'] ] ) ) {
-				continue;
-			}
-
-			$cities[ $clinic_location['city'] ] = array(
-				'label' => $clinic_location['city_label'],
-				'url'   => $directory_url ? add_query_arg( 'city', $clinic_location['city'], $directory_url ) : '',
-			);
 		}
 
-		uasort(
-			$cities,
-			function ( $a, $b ) {
-				return strcasecmp( $a['label'], $b['label'] );
-			}
-		);
+		return $links;
+	}
 
-		return array_values( $cities );
+	/**
+	 * Resolves a contact email for the footer — the first clinic location
+	 * with one on file, mirroring Site_Header::primary_email() (the plugin
+	 * has no separate site-wide "contact email" setting).
+	 *
+	 * @return string Email address, or '' if no clinic has one set.
+	 */
+	private static function primary_email() {
+		foreach ( Clinic_Locations::get_all() as $clinic_location ) {
+			if ( '' !== $clinic_location['contact_email'] ) {
+				return $clinic_location['contact_email'];
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Resolves a postal address for the footer — the first clinic location
+	 * with one on file, mirroring Site_Header::primary_phone()/primary_email().
+	 *
+	 * @return string Address, or '' if no clinic has one set.
+	 */
+	private static function primary_address() {
+		foreach ( Clinic_Locations::get_all() as $clinic_location ) {
+			if ( '' !== $clinic_location['address'] ) {
+				return $clinic_location['address'];
+			}
+		}
+
+		return '';
 	}
 
 	/**

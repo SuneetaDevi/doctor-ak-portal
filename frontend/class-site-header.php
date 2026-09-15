@@ -145,6 +145,7 @@ class Site_Header {
 			'blogs_url'          => Page_Finder::url_for_shortcode( 'blogs_directory' ),
 			'doctor_specialties' => Home_Page::specialties_in_use( $directory_url ),
 			'service_categories' => self::service_categories_for_menu(),
+			'clinic_columns'     => self::clinic_locations_for_menu(),
 			'current_path'       => self::current_path(),
 			'is_logged_in'       => is_user_logged_in(),
 			'user'               => $user,
@@ -166,12 +167,12 @@ class Site_Header {
 	 * multi-column layout instead of a flat card grid (see
 	 * Services::grouped_by_category_for_public_directory()).
 	 *
-	 * @return array List of { slug, label, services: [{ name, url }] }.
+	 * @return array List of { slug, label, services: [{ name, url }] }, sorted by service count descending (the category with the most services first) so the busiest category always lands in the first column.
 	 */
 	private static function service_categories_for_menu() {
 		$profile_url = Page_Finder::url_for_shortcode( 'service_profile_view' );
 
-		return array_map(
+		$columns = array_map(
 			function ( $bucket ) use ( $profile_url ) {
 				return array(
 					'slug'     => $bucket['slug'],
@@ -189,6 +190,59 @@ class Site_Header {
 			},
 			Services::grouped_by_category_for_public_directory()
 		);
+
+		usort(
+			$columns,
+			function ( $a, $b ) {
+				return count( $b['services'] ) - count( $a['services'] );
+			}
+		);
+
+		return $columns;
+	}
+
+	/**
+	 * The Clinics mega-menu's columns — one per city that has at least one
+	 * clinic location, each with its own list of { name, url } links
+	 * straight into [clinic_profile_view]. Mirrors service_categories_for_menu()
+	 * above, just grouped by city instead of Service_Categories (see
+	 * Clinic_Locations::get_all()).
+	 *
+	 * @return array List of { city, clinics: [{ name, url }] }, sorted by clinic count descending (the city with the most clinics first) so the busiest city always lands in the first column.
+	 */
+	private static function clinic_locations_for_menu() {
+		$profile_url = Page_Finder::url_for_shortcode( 'clinic_profile_view' );
+		$grouped     = array();
+
+		foreach ( Clinic_Locations::get_all() as $clinic ) {
+			$city = $clinic['city_label'] ? $clinic['city_label'] : __( 'Other', 'doctor-ak-portal' );
+
+			if ( ! isset( $grouped[ $city ] ) ) {
+				$grouped[ $city ] = array();
+			}
+
+			$grouped[ $city ][] = array(
+				'name' => $clinic['name'],
+				'url'  => $profile_url ? add_query_arg( 'clinic_id', $clinic['id'], $profile_url ) : '',
+			);
+		}
+
+		uasort(
+			$grouped,
+			function ( $a, $b ) {
+				return count( $b ) - count( $a );
+			}
+		);
+
+		$columns = array();
+		foreach ( $grouped as $city => $clinics ) {
+			$columns[] = array(
+				'city'    => $city,
+				'clinics' => $clinics,
+			);
+		}
+
+		return $columns;
 	}
 
 	/**
