@@ -8,7 +8,7 @@
  * `[data-services-rows]` child to hold the rows and a
  * `[data-services-add-row]` button to add a new blank row. The container's
  * `data-categories` attribute carries the Category <select>'s options as a
- * JSON `{ slug: label }` map (same list Specializations::get_all() feeds
+ * JSON `{ slug: label }` map (same list Service_Categories::get_all() feeds
  * the standalone Services form).
  */
 ( function () {

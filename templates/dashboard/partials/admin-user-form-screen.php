@@ -12,6 +12,7 @@
  *
  * @var string     $role            Roles::DOCTOR_ROLE, Roles::PATIENT_ROLE, or Roles::RECEPTIONIST_ROLE for the active section.
  * @var array      $specializations All specialization slug => label.
+ * @var array      $service_categories Service category slug => label, see Service_Categories::get_all() — used for the Services repeater's Category field (not $specializations).
  * @var string[]   $keywords        Every procedure/condition keyword any doctor has ever used, see Doctor_Keywords::get_all() — the suggestion list for the Keywords field below.
  * @var string     $section         'doctors', 'patients', or 'receptionist'.
  * @var string     $list_url        Back-to-list URL (the table view of this same section).
@@ -301,7 +302,7 @@ $dak_editing_clinic_location_ids = wp_list_pluck( $editing_clinics, 'clinic_loca
 				</div>
 
 			<div class="dak-field">
-				<div class="dak-services-editor" data-services-editor data-categories="<?php echo esc_attr( wp_json_encode( $specializations ) ); ?>">
+				<div class="dak-services-editor" data-services-editor data-categories="<?php echo esc_attr( wp_json_encode( $service_categories ) ); ?>">
 					<div class="dak-services-row-header<?php echo empty( $editing_services ) ? ' dak-hidden' : ''; ?>" data-services-row-header>
 						<span><?php esc_html_e( 'Service Name', 'doctor-ak-portal' ); ?></span>
 						<span><?php esc_html_e( 'Category', 'doctor-ak-portal' ); ?></span>
@@ -316,7 +317,7 @@ $dak_editing_clinic_location_ids = wp_list_pluck( $editing_clinics, 'clinic_loca
 								<input type="text" name="service_name[]" value="<?php echo esc_attr( $dak_editing_service['name'] ); ?>" placeholder="<?php esc_attr_e( 'e.g. OPD Consultation', 'doctor-ak-portal' ); ?>">
 								<select name="service_category[]">
 									<option value=""><?php esc_html_e( 'No category', 'doctor-ak-portal' ); ?></option>
-									<?php foreach ( $specializations as $dak_service_cat_slug => $dak_service_cat_label ) : ?>
+									<?php foreach ( $service_categories as $dak_service_cat_slug => $dak_service_cat_label ) : ?>
 										<option value="<?php echo esc_attr( $dak_service_cat_slug ); ?>" <?php selected( $dak_editing_service['category'], $dak_service_cat_slug ); ?>><?php echo esc_html( $dak_service_cat_label ); ?></option>
 									<?php endforeach; ?>
 								</select>

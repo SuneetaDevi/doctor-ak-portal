@@ -3061,6 +3061,7 @@ class Admin_Dashboard {
 			array(
 				'role'             => $role,
 				'specializations'  => Specializations::get_all(),
+				'service_categories' => Service_Categories::get_all(),
 				'keywords'         => Doctor_Keywords::get_all(),
 				'section'          => $section,
 				'list_url'         => $dashboard_url ? add_query_arg( 'section', $section, $dashboard_url ) : '',
