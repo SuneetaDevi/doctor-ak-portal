@@ -638,6 +638,26 @@
 	object-fit: cover !important;
 }
 
+/* Service/Speciality/Clinic result rows reuse this same circle badge (see
+   buildSimpleResultRow() in doctor-ak-home.js) with a small icon in place
+   of a photo/initials. */
+.dak-home-search-modal-result-avatar svg {
+	width: 17px !important;
+	height: 17px !important;
+}
+
+/* Spacing between each category's heading+list block (Doctors, Services,
+   Specialities, Clinics) once more than one has matches — the heading
+   itself already carries its own bottom margin, so only the gap AFTER a
+   group's list needs adding here. */
+.dak-home-search-modal-result-group {
+	margin-bottom: var( --dak-space-3 ) !important;
+}
+
+.dak-home-search-modal-result-group:last-child {
+	margin-bottom: 0 !important;
+}
+
 .dak-home-search-modal-result-body {
 	display: flex !important;
 	flex-direction: column !important;

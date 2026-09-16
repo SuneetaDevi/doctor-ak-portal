@@ -68,6 +68,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</div>
 		</div>
 
+		<div class="dak-field">
+			<label for="dak-admin-clinic-location-keywords"><?php esc_html_e( 'Search Keywords (optional)', 'doctor-ak-portal' ); ?></label>
+			<input type="text" id="dak-admin-clinic-location-keywords" placeholder="<?php esc_attr_e( 'e.g. free parking, wheelchair accessible, near metro station', 'doctor-ak-portal' ); ?>">
+			<p class="dak-field-hint"><?php esc_html_e( 'Comma-separated. Never shown to patients — only used so this clinic turns up when someone searches the site for one of these words.', 'doctor-ak-portal' ); ?></p>
+		</div>
+
 		<button type="button" class="dak-button dak-button-primary dak-button-block" id="dak-admin-clinic-location-save">
 			<span class="dak-button-label"><?php esc_html_e( 'Save Clinic', 'doctor-ak-portal' ); ?></span>
 		</button>

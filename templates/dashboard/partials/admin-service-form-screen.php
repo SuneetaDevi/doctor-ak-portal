@@ -105,6 +105,12 @@ $dak_is_editing = null !== $editing_service;
 		</div>
 
 		<div class="dak-field">
+			<label for="dak-admin-service-keywords"><?php esc_html_e( 'Search Keywords (optional)', 'doctor-ak-portal' ); ?></label>
+			<input type="text" id="dak-admin-service-keywords" name="keywords" placeholder="<?php esc_attr_e( 'e.g. stomach pain, tummy ache, GI scope', 'doctor-ak-portal' ); ?>" value="<?php echo esc_attr( $dak_is_editing ? $editing_service['keywords'] : '' ); ?>">
+			<p class="dak-field-hint"><?php esc_html_e( 'Comma-separated. Never shown to patients — only used so this service turns up when someone searches the site for one of these words.', 'doctor-ak-portal' ); ?></p>
+		</div>
+
+		<div class="dak-field">
 			<label for="dak-admin-service-description"><?php esc_html_e( 'Description', 'doctor-ak-portal' ); ?></label>
 			<div class="dak-rich-text" data-rich-text>
 				<?php echo \DoctorAKPortal\Includes\Rich_Text::toolbar_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapes its own output. ?>

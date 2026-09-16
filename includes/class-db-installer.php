@@ -52,7 +52,7 @@ class Db_Installer {
 	 *
 	 * @var string
 	 */
-	const SERVICES_DB_VERSION = '1.3.0';
+	const SERVICES_DB_VERSION = '1.4.0';
 
 	/**
 	 * Option name tracking the installed notifications-table schema version.
@@ -80,7 +80,7 @@ class Db_Installer {
 	 *
 	 * @var string
 	 */
-	const CLINIC_LOCATIONS_DB_VERSION = '1.0.0';
+	const CLINIC_LOCATIONS_DB_VERSION = '1.1.0';
 
 	/**
 	 * Option name tracking the installed encounters-table schema version.
@@ -410,6 +410,7 @@ class Db_Installer {
 			address VARCHAR(255) NOT NULL DEFAULT '',
 			phone VARCHAR(30) NOT NULL DEFAULT '',
 			contact_email VARCHAR(191) NOT NULL DEFAULT '',
+			keywords TEXT NOT NULL DEFAULT '',
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),
@@ -442,6 +443,7 @@ class Db_Installer {
 			duration_minutes INT UNSIGNED NOT NULL DEFAULT 0,
 			active TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
 			requires_doctor TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
+			keywords TEXT NOT NULL DEFAULT '',
 			description TEXT NULL,
 			image_id BIGINT UNSIGNED NULL DEFAULT NULL,
 			clinic_location_ids TEXT NULL,

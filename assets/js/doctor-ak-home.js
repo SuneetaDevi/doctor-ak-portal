@@ -2,16 +2,18 @@
  * Doctor AK Portal — Home page ([dak_home]):
  *  - opens the video grid's lightbox modal when a `[data-dak-home-video]`
  *    card is clicked.
- *  - the hero search bar: clicking it opens a "Search for doctors" popup
+ *  - the hero search bar: clicking it opens a "Search everything" popup
  *    (matching the reference design) with a Location row (auto-detected via
  *    the browser's Geolocation API, with a manual "Detect" fallback and a
  *    quick-pick list of the clinic's registered cities) and a free-text
- *    search box that lists matching doctors live, right in the popup, as you
- *    type — window.dakHomeSearch.doctors (wp_localize_script(), see
- *    Home_Page::render()) is the full doctor list this filters client-side.
- *    Enter never submits/navigates from here; picking a result (or the
- *    Search button, for a full directory search with both filters applied)
- *    are the only ways this popup sends you anywhere.
+ *    search box that lists matching doctors, services, specialities, and
+ *    clinics live, right in the popup, as you type — one grouped-by-category
+ *    result list per keystroke, built from window.dakHomeSearch
+ *    (wp_localize_script(), see Home_Page::render()), which carries the
+ *    full list of each. Enter never submits/navigates from here; picking a
+ *    result (or the Search button, for a full directory search with the
+ *    typed query/city applied) are the only ways this popup sends you
+ *    anywhere.
  */
 ( function () {
 	'use strict';
@@ -120,6 +122,17 @@
 		{ name: 'Kohat', lat: 33.5900, lng: 71.4400 }
 	];
 
+	// Static, hardcoded icon glyphs for the hero search popup's Service/
+	// Speciality/Clinic result rows (see buildSimpleResultRow()) — matches
+	// the same tag/stethoscope/pin icons used elsewhere on this page
+	// ($dak_home_icons in home-page.php), just duplicated here since this
+	// file has no server-rendered markup to read them from.
+	var RESULT_ICONS = {
+		service: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5l6.5 6.5-7.5 7.5-6.5-6.5V3.5z"/><circle cx="6.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>',
+		specialty: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.6 3.4v3.9a3 3 0 0 0 6 0V3.4"/><path d="M4.2 3.4h2.6M10.4 3.4H13"/><path d="M8.6 10.3v1.9a3.6 3.6 0 0 0 7.2 0v-1.4"/><circle cx="15.8" cy="9" r="1.6"/></svg>',
+		clinic: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18s6-5.2 6-9.8A6 6 0 0 0 4 8.2C4 12.8 10 18 10 18z"/><circle cx="10" cy="8" r="2"/></svg>'
+	};
+
 	/**
 	 * Wires the hero search trigger to the "Search for doctors" popup: opens
 	 * it (and runs the first location detection) on click, closes on the
@@ -147,9 +160,13 @@
 		var citiesContainer = document.getElementById( 'dak-home-search-modal-cities' );
 		var cityButtons = document.querySelectorAll( '.dak-home-search-modal-city' );
 		var resultsContainer = document.getElementById( 'dak-home-search-modal-results' );
-		var resultsList = document.getElementById( 'dak-home-search-modal-results-list' );
+		var resultsGroups = document.getElementById( 'dak-home-search-modal-results-groups' );
 		var noResultsEl = document.getElementById( 'dak-home-search-modal-no-results' );
 		var allDoctors = ( window.dakHomeSearch && window.dakHomeSearch.doctors ) || [];
+		var allServices = ( window.dakHomeSearch && window.dakHomeSearch.services ) || [];
+		var allSpecialties = ( window.dakHomeSearch && window.dakHomeSearch.specialties ) || [];
+		var allClinics = ( window.dakHomeSearch && window.dakHomeSearch.clinics ) || [];
+		var searchLabels = ( window.dakHomeSearch && window.dakHomeSearch.labels ) || {};
 		var hasDetectedOnce = false;
 		// Whatever the Location field showed before any typing/detecting —
 		// the server-rendered (and already-translated) "Any city" — restored
@@ -412,11 +429,13 @@
 		}
 
 		/**
-		 * Filters window.dakHomeSearch.doctors by name/specialty — and, if a
-		 * city is currently selected in the Location field, to just the
-		 * doctors practising there — and renders the "Doctors" results list.
-		 * Swaps out the city quick-picks while a search is in progress, and
-		 * back once the query is cleared.
+		 * Filters everything window.dakHomeSearch carries — doctors,
+		 * services, specialities, clinics — by the typed query, and renders
+		 * one result group per category that has a match (Doctors also
+		 * narrows to whichever city is currently selected in the Location
+		 * field; the other three aren't location-specific, so aren't
+		 * filtered by it). Swaps out the city quick-picks while a search is
+		 * in progress, and back once the query is cleared.
 		 *
 		 * @param {string} rawQuery Current value of the search input.
 		 */
@@ -444,14 +463,14 @@
 				citiesContainer.classList.add( 'dak-hidden' );
 			}
 
-			if ( ! resultsContainer || ! resultsList ) {
+			if ( ! resultsContainer || ! resultsGroups ) {
 				return;
 			}
 
 			resultsContainer.classList.remove( 'dak-hidden' );
-			resultsList.innerHTML = '';
+			resultsGroups.innerHTML = '';
 
-			var matches = allDoctors.filter( function ( doctor ) {
+			var doctorMatches = allDoctors.filter( function ( doctor ) {
 				var name = ( doctor.name || '' ).toLowerCase();
 				var specialty = ( doctor.specialty || '' ).toLowerCase();
 				var matchesQuery = name.indexOf( query ) !== -1 || specialty.indexOf( query ) !== -1;
@@ -460,26 +479,97 @@
 				return matchesQuery && matchesCity;
 			} ).slice( 0, RESULTS_LIMIT );
 
+			// 'keywords' is admin-only free text, matched against here but
+			// never shown — buildSimpleResultRow() below is only ever passed
+			// name/category, never it.
+			var serviceMatches = allServices.filter( function ( service ) {
+				var name = ( service.name || '' ).toLowerCase();
+				var category = ( service.category || '' ).toLowerCase();
+				var keywords = ( service.keywords || '' ).toLowerCase();
+
+				return name.indexOf( query ) !== -1 || category.indexOf( query ) !== -1 || keywords.indexOf( query ) !== -1;
+			} ).slice( 0, RESULTS_LIMIT );
+
+			var specialtyMatches = allSpecialties.filter( function ( specialty ) {
+				return ( specialty.label || '' ).toLowerCase().indexOf( query ) !== -1;
+			} ).slice( 0, RESULTS_LIMIT );
+
+			// Same admin-only, never-displayed 'keywords' as services above.
+			var clinicMatches = allClinics.filter( function ( clinic ) {
+				var name = ( clinic.name || '' ).toLowerCase();
+				var location = ( clinic.location || '' ).toLowerCase();
+				var keywords = ( clinic.keywords || '' ).toLowerCase();
+
+				return name.indexOf( query ) !== -1 || location.indexOf( query ) !== -1 || keywords.indexOf( query ) !== -1;
+			} ).slice( 0, RESULTS_LIMIT );
+
 			if ( noResultsEl ) {
-				noResultsEl.classList.toggle( 'dak-hidden', matches.length > 0 );
+				var totalMatches = doctorMatches.length + serviceMatches.length + specialtyMatches.length + clinicMatches.length;
+				noResultsEl.classList.toggle( 'dak-hidden', totalMatches > 0 );
 			}
 
-			matches.forEach( function ( doctor ) {
-				resultsList.appendChild( buildResultRow( doctor, query ) );
+			appendResultGroup( searchLabels.doctors, doctorMatches, function ( doctor ) {
+				return buildDoctorResultRow( doctor, query );
+			} );
+
+			appendResultGroup( searchLabels.services, serviceMatches, function ( service ) {
+				return buildSimpleResultRow( RESULT_ICONS.service, service.name, service.category, service.url, query );
+			} );
+
+			appendResultGroup( searchLabels.specialties, specialtyMatches, function ( specialty ) {
+				return buildSimpleResultRow( RESULT_ICONS.specialty, specialty.label, '', specialty.url, query );
+			} );
+
+			appendResultGroup( searchLabels.clinics, clinicMatches, function ( clinic ) {
+				return buildSimpleResultRow( RESULT_ICONS.clinic, clinic.name, clinic.location, clinic.url, query );
 			} );
 		}
 
 		/**
-		 * Builds one clickable result row — avatar (or initials), name with
-		 * the matched substring highlighted, specialty underneath. Built with
-		 * DOM nodes rather than innerHTML string-building since doctor names
-		 * are real user-submitted data, not markup this file should trust.
+		 * Appends one category's results as its own heading + list, skipped
+		 * entirely when that category has no matches (rather than showing an
+		 * empty heading).
+		 *
+		 * @param {string}   heading    Category heading text (from window.dakHomeSearch.labels).
+		 * @param {Object[]} items      Matched rows for this category.
+		 * @param {Function} buildRow   Turns one item into its result-row element.
+		 */
+		function appendResultGroup( heading, items, buildRow ) {
+			if ( ! items.length || ! resultsGroups ) {
+				return;
+			}
+
+			var group = document.createElement( 'div' );
+			group.className = 'dak-home-search-modal-result-group';
+
+			var headingEl = document.createElement( 'span' );
+			headingEl.className = 'dak-home-search-modal-results-heading';
+			headingEl.textContent = heading || '';
+			group.appendChild( headingEl );
+
+			var list = document.createElement( 'div' );
+			list.className = 'dak-home-search-modal-results-list';
+
+			items.forEach( function ( item ) {
+				list.appendChild( buildRow( item ) );
+			} );
+
+			group.appendChild( list );
+			resultsGroups.appendChild( group );
+		}
+
+		/**
+		 * Builds one clickable Doctor result row — avatar (or initials), name
+		 * with the matched substring highlighted, specialty underneath. Built
+		 * with DOM nodes rather than innerHTML string-building since doctor
+		 * names are real user-submitted data, not markup this file should
+		 * trust.
 		 *
 		 * @param {Object} doctor { name, specialty, avatarUrl, url }.
 		 * @param {string} query  Lowercased search query to highlight within the name.
 		 * @return {HTMLElement}
 		 */
-		function buildResultRow( doctor, query ) {
+		function buildDoctorResultRow( doctor, query ) {
 			var row = document.createElement( 'button' );
 			row.type = 'button';
 			row.className = 'dak-home-search-modal-result';
@@ -516,6 +606,54 @@
 			}
 
 			row.appendChild( avatar );
+			row.appendChild( body );
+
+			return row;
+		}
+
+		/**
+		 * Builds one clickable Service/Speciality/Clinic result row — a small
+		 * icon (in place of the Doctor row's avatar) instead of a photo,
+		 * title with the matched substring highlighted, optional subtitle
+		 * underneath (a service's category, or a clinic's area/city).
+		 *
+		 * @param {string} iconSvg  Static, hardcoded SVG markup (see RESULT_ICONS) — never from server/user data, so safe to set via innerHTML.
+		 * @param {string} title    Row's main text (service/specialty/clinic name).
+		 * @param {string} subtitle Optional secondary text, or '' for none.
+		 * @param {string} url      Where clicking the row navigates to.
+		 * @param {string} query    Lowercased search query to highlight within the title.
+		 * @return {HTMLElement}
+		 */
+		function buildSimpleResultRow( iconSvg, title, subtitle, url, query ) {
+			var row = document.createElement( 'button' );
+			row.type = 'button';
+			row.className = 'dak-home-search-modal-result';
+
+			row.addEventListener( 'click', function () {
+				if ( url ) {
+					window.location.href = url;
+				}
+			} );
+
+			var icon = document.createElement( 'span' );
+			icon.className = 'dak-home-search-modal-result-avatar';
+			icon.setAttribute( 'aria-hidden', 'true' );
+			icon.innerHTML = iconSvg;
+
+			var body = document.createElement( 'span' );
+			body.className = 'dak-home-search-modal-result-body';
+
+			var titleEl = document.createElement( 'strong' );
+			appendHighlighted( titleEl, title || '', query );
+			body.appendChild( titleEl );
+
+			if ( subtitle ) {
+				var subtitleEl = document.createElement( 'span' );
+				subtitleEl.textContent = subtitle;
+				body.appendChild( subtitleEl );
+			}
+
+			row.appendChild( icon );
 			row.appendChild( body );
 
 			return row;

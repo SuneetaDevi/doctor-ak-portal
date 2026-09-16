@@ -206,31 +206,93 @@ class Home_Page {
 			$all_doctor_cards
 		);
 
-		wp_localize_script(
-			'doctor-ak-portal-home',
-			'dakHomeSearch',
-			array( 'doctors' => $doctor_search_index )
-		);
+		$directory_url       = Page_Finder::url_for_shortcode( 'doctors_directory' );
+		$service_profile_url = Page_Finder::url_for_shortcode( 'service_profile_view' );
+		$clinic_profile_url  = Page_Finder::url_for_shortcode( 'clinic_profile_view' );
+		$specialties_in_use  = self::specialties_in_use( $directory_url );
 
-		$service_groups = array_slice( Services::grouped_active_for_public_directory(), 0, self::FEATURED_SERVICES_LIMIT );
+		// Unsliced — the hero search popup's "Services" results should cover
+		// every bookable service, not just the handful the page's own
+		// Services section shows below the fold (see FEATURED_SERVICES_LIMIT).
+		$all_service_groups = Services::grouped_active_for_public_directory();
+		$service_groups     = array_slice( $all_service_groups, 0, self::FEATURED_SERVICES_LIMIT );
 
 		$services_html = array_map(
-			function ( $group ) {
-				$group['profile_url'] = add_query_arg( 'service_id', $group['id'], Page_Finder::url_for_shortcode( 'service_profile_view' ) );
+			function ( $group ) use ( $service_profile_url ) {
+				$group['profile_url'] = add_query_arg( 'service_id', $group['id'], $service_profile_url );
 
 				return $this->template_loader->get_template( 'directory/home-service-card.php', $group );
 			},
 			$service_groups
 		);
 
-		$directory_url = Page_Finder::url_for_shortcode( 'doctors_directory' );
+		// Same "everything, not just what's featured on this page" reasoning
+		// as $all_service_groups above — every registered clinic, not just
+		// the "Visit Us" section's own FEATURED_CLINICS_LIMIT slice.
+		$all_clinic_locations = Clinic_Locations::get_all();
+
+		wp_localize_script(
+			'doctor-ak-portal-home',
+			'dakHomeSearch',
+			array(
+				'doctors'     => $doctor_search_index,
+				// 'keywords' is admin-only free text (Services::sanitize_
+				// fields_from_request()) — matched against below but never
+				// rendered anywhere (see buildSimpleResultRow() in
+				// doctor-ak-home.js, which is never passed this field).
+				'services'    => array_map(
+					function ( $group ) use ( $service_profile_url ) {
+						return array(
+							'name'     => $group['name'],
+							'category' => isset( $group['category_label'] ) ? $group['category_label'] : '',
+							'keywords' => isset( $group['keywords'] ) ? $group['keywords'] : '',
+							'url'      => $service_profile_url ? add_query_arg( 'service_id', $group['id'], $service_profile_url ) : '',
+						);
+					},
+					$all_service_groups
+				),
+				'specialties' => array_map(
+					function ( $specialty ) {
+						return array(
+							'label' => $specialty['label'],
+							'count' => $specialty['count'],
+							'url'   => $specialty['url'],
+						);
+					},
+					$specialties_in_use
+				),
+				// Same admin-only, never-rendered 'keywords' as 'services'
+				// above (Clinic_Locations::sanitize_keywords()).
+				'clinics'     => array_map(
+					function ( $clinic_location ) use ( $clinic_profile_url ) {
+						return array(
+							'name'     => $clinic_location['name'],
+							'location' => trim( implode( ', ', array_filter( array( $clinic_location['area_label'], $clinic_location['city_label'] ) ) ), ', ' ),
+							'keywords' => isset( $clinic_location['keywords'] ) ? $clinic_location['keywords'] : '',
+							'url'      => $clinic_profile_url ? add_query_arg( 'clinic_id', $clinic_location['id'], $clinic_profile_url ) : '',
+						);
+					},
+					$all_clinic_locations
+				),
+				// Category headings for the popup's grouped results (see
+				// renderResults()/appendResultGroup() in doctor-ak-home.js) —
+				// localized here since that file has no server-rendered
+				// markup of its own to read translated strings from.
+				'labels'      => array(
+					'doctors'     => __( 'Doctors', 'doctor-ak-portal' ),
+					'services'    => __( 'Services', 'doctor-ak-portal' ),
+					'specialties' => __( 'Specialities', 'doctor-ak-portal' ),
+					'clinics'     => __( 'Clinics', 'doctor-ak-portal' ),
+				),
+			)
+		);
 
 		return $this->template_loader->get_template(
 			'directory/home-page.php',
 			array(
 				'doctors_html'     => $doctors_html,
 				'services_html'    => $services_html,
-				'specialties'      => self::specialties_in_use( $directory_url ),
+				'specialties'      => $specialties_in_use,
 				'cities'           => self::cities_in_use( $all_doctor_cards ),
 				'videos'           => Home_Videos::get_all(),
 				'testimonials'     => array_merge( Home_Testimonials::get_all(), Google_Reviews::get_reviews() ),
@@ -242,9 +304,9 @@ class Home_Page {
 				'doctor_register_url' => Page_Finder::url_for_shortcode( 'doctor_register' ),
 				'services_url'     => Page_Finder::url_for_shortcode( 'services_directory' ),
 				'clinics_url'      => Page_Finder::url_for_shortcode( 'clinics_directory' ),
-				'clinic_profile_url' => Page_Finder::url_for_shortcode( 'clinic_profile_view' ),
+				'clinic_profile_url' => $clinic_profile_url,
 				'stats'            => $this->stats( $doctor_cards ),
-				'clinic_locations' => array_slice( Clinic_Locations::get_all(), 0, self::FEATURED_CLINICS_LIMIT ),
+				'clinic_locations' => array_slice( $all_clinic_locations, 0, self::FEATURED_CLINICS_LIMIT ),
 			)
 		);
 	}

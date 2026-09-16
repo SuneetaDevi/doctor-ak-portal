@@ -22,6 +22,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  * see Clinic_Handler::process_save(), which copies a chosen clinic's fields
  * onto the doctor's own `dak_clinics` row (which still owns that doctor's
  * weekly session schedule at the clinic).
+ *
+ * Also carries an admin-only `keywords` field (see sanitize_keywords()) —
+ * free text an admin types when adding/editing a clinic, never rendered
+ * anywhere public. It only exists so the hero search popup's "Clinics"
+ * results (see Home_Page::render()/doctor-ak-home.js) can match a visitor's
+ * search against things they'd actually type that the clinic's own
+ * name/address don't cover, without adding visible clutter to the listing.
  */
 class Clinic_Locations {
 
@@ -118,7 +125,27 @@ class Clinic_Locations {
 			'area'          => $area,
 			'phone'         => $phone,
 			'contact_email' => $contact_email,
+			'keywords'      => self::sanitize_keywords( isset( $posted['keywords'] ) ? wp_unslash( $posted['keywords'] ) : '' ),
 		);
+	}
+
+	/**
+	 * Sanitizes the admin-only "Search Keywords" field into a clean,
+	 * comma-separated string — never shown to patients (see the class
+	 * docblock's keywords note and templates/modal/admin-clinic-location-
+	 * modal.php), only matched against in the public hero search popup's
+	 * "Clinics" results (see Home_Page::render()/doctor-ak-home.js) so an
+	 * admin can make a clinic findable by things visitors would actually
+	 * type ("parking", "wheelchair accessible", a nearby landmark, an old
+	 * clinic name) without cluttering the clinic's own public listing.
+	 *
+	 * @param string $raw Raw comma-separated input.
+	 * @return string
+	 */
+	private static function sanitize_keywords( $raw ) {
+		$pieces = array_filter( array_map( 'trim', explode( ',', (string) $raw ) ) );
+
+		return implode( ', ', array_map( 'sanitize_text_field', $pieces ) );
 	}
 
 	/**
@@ -142,10 +169,11 @@ class Clinic_Locations {
 				'area'          => $fields['area'],
 				'phone'         => $fields['phone'],
 				'contact_email' => $fields['contact_email'],
+				'keywords'      => isset( $fields['keywords'] ) ? $fields['keywords'] : '',
 				'created_at'    => $now,
 				'updated_at'    => $now,
 			),
-			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
+			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
 		);
 
 		return $inserted ? (int) $wpdb->insert_id : false;
@@ -171,10 +199,11 @@ class Clinic_Locations {
 				'area'          => $fields['area'],
 				'phone'         => $fields['phone'],
 				'contact_email' => $fields['contact_email'],
+				'keywords'      => isset( $fields['keywords'] ) ? $fields['keywords'] : '',
 				'updated_at'    => current_time( 'mysql' ),
 			),
 			array( 'id' => (int) $id ),
-			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ),
+			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' ),
 			array( '%d' )
 		);
 
@@ -261,6 +290,7 @@ class Clinic_Locations {
 			'area_label'    => '' !== $area ? Locations::area_label( $country, $city, $area ) : '',
 			'phone'         => $row['phone'],
 			'contact_email' => $row['contact_email'],
+			'keywords'      => isset( $row['keywords'] ) ? $row['keywords'] : '',
 		);
 	}
 }

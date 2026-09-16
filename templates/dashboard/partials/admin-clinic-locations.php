@@ -70,6 +70,7 @@ $dak_clinic_location_icons = array(
 							data-area="<?php echo esc_attr( $clinic_location['area'] ); ?>"
 							data-phone="<?php echo esc_attr( $clinic_location['phone'] ); ?>"
 							data-contact-email="<?php echo esc_attr( $clinic_location['contact_email'] ); ?>"
+							data-keywords="<?php echo esc_attr( $clinic_location['keywords'] ); ?>"
 							title="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
 							aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
 						><?php echo $dak_clinic_location_icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>

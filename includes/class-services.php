@@ -125,9 +125,31 @@ class Services {
 			}
 
 			$fields['clinic_charges'] = $clinic_charges;
+
+			// Admin-only, like description/clinic_charges above — never
+			// rendered anywhere public, only matched against in the hero
+			// search popup's "Services" results (see Home_Page::render()/
+			// doctor-ak-home.js) so an admin can make a service findable by
+			// things a patient would actually type (a symptom, an old/
+			// colloquial name for it) that the service's own name/category
+			// don't cover.
+			$fields['keywords'] = self::sanitize_keywords( isset( $posted['keywords'] ) ? wp_unslash( $posted['keywords'] ) : '' );
 		}
 
 		return $fields;
+	}
+
+	/**
+	 * Sanitizes the admin-only "Search Keywords" field into a clean,
+	 * comma-separated string.
+	 *
+	 * @param string $raw Raw comma-separated input.
+	 * @return string
+	 */
+	private static function sanitize_keywords( $raw ) {
+		$pieces = array_filter( array_map( 'trim', explode( ',', (string) $raw ) ) );
+
+		return implode( ', ', array_map( 'sanitize_text_field', $pieces ) );
 	}
 
 	/**
@@ -154,13 +176,14 @@ class Services {
 				'duration_minutes' => $fields['duration_minutes'],
 				'active'           => $fields['active'] ? 1 : 0,
 				'requires_doctor'  => $fields['requires_doctor'] ? 1 : 0,
+				'keywords'         => isset( $fields['keywords'] ) ? $fields['keywords'] : '',
 				'description'      => isset( $fields['description'] ) ? $fields['description'] : '',
 				'image_id'         => (int) $image_id,
 				'clinic_charges'   => wp_json_encode( isset( $fields['clinic_charges'] ) ? $fields['clinic_charges'] : array() ),
 				'created_at'       => $now,
 				'updated_at'       => $now,
 			),
-			array( '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%d', '%s', '%s', '%s' )
+			array( '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%d', '%s', '%s', '%s' )
 		);
 
 		if ( ! $inserted ) {
@@ -187,7 +210,7 @@ class Services {
 	 * Updates an existing service row.
 	 *
 	 * @param int      $service_id Service ID.
-	 * @param array    $fields     Sanitized service fields. 'description'/'clinic_charges' only get written when present (see sanitize_fields_from_request()'s docblock) — a doctor's own save, which never posts either, leaves whatever an admin already set on them untouched.
+	 * @param array    $fields     Sanitized service fields. 'description'/'clinic_charges'/'keywords' only get written when present (see sanitize_fields_from_request()'s docblock) — a doctor's own save, which never posts any of them, leaves whatever an admin already set on them untouched.
 	 * @param int|null $doctor_id  If given, the update only applies when the service belongs to this doctor; pass null to skip the check (admin context).
 	 * @param int|null $image_id   Attachment ID for the public portfolio's image, or null to leave the existing one untouched (a doctor's own save never posts this field either).
 	 * @return bool
@@ -218,6 +241,11 @@ class Services {
 		if ( array_key_exists( 'description', $fields ) ) {
 			$data['description'] = $fields['description'];
 			$types[]              = '%s';
+		}
+
+		if ( array_key_exists( 'keywords', $fields ) ) {
+			$data['keywords'] = $fields['keywords'];
+			$types[]           = '%s';
 		}
 
 		if ( array_key_exists( 'clinic_charges', $fields ) ) {
@@ -469,7 +497,7 @@ class Services {
 	 * identically, so this only matters if they've since diverged); its
 	 * price is the cheapest doctor's, "From "-prefixed when they vary.
 	 *
-	 * @return array List of { id (a representative row's, for the detail-page link), name, description, image_url, category, category_label, requires_doctor, price_label }, alphabetical by name.
+	 * @return array List of { id (a representative row's, for the detail-page link), name, description, image_url, category, category_label, requires_doctor, keywords, price_label }, alphabetical by name.
 	 */
 	public static function grouped_active_for_public_directory() {
 		$groups = array();
@@ -492,6 +520,14 @@ class Services {
 					// Same "first row seen" assumption as category/description
 					// above — bulk-create copies it identically onto every row.
 					'requires_doctor' => $row['requires_doctor'],
+					// Unlike category/description above, keywords are admin-
+					// editable per row and may genuinely diverge across
+					// doctors offering the "same" service — unioned (not
+					// first-wins) below so this group is findable by any
+					// keyword set on ANY of its rows. Keyed by lowercase to
+					// de-duplicate case-insensitively, value keeps whichever
+					// casing was seen first.
+					'keywords_set'   => array(),
 					'prices'         => array(),
 				);
 			}
@@ -502,6 +538,20 @@ class Services {
 
 			if ( '' === $groups[ $key ]['image_url'] && '' !== $row['image_url'] ) {
 				$groups[ $key ]['image_url'] = $row['image_url'];
+			}
+
+			foreach ( explode( ',', $row['keywords'] ) as $dak_keyword ) {
+				$dak_keyword = trim( $dak_keyword );
+
+				if ( '' === $dak_keyword ) {
+					continue;
+				}
+
+				$dak_keyword_key = mb_strtolower( $dak_keyword );
+
+				if ( ! isset( $groups[ $key ]['keywords_set'][ $dak_keyword_key ] ) ) {
+					$groups[ $key ]['keywords_set'][ $dak_keyword_key ] = $dak_keyword;
+				}
 			}
 
 			$groups[ $key ]['prices'][] = $row['effective_price'];
@@ -519,6 +569,9 @@ class Services {
 					// so the count of them is the number of doctors it can be
 					// booked with.
 					$group['doctor_count'] = count( $prices );
+
+					$group['keywords'] = implode( ', ', $group['keywords_set'] );
+					unset( $group['keywords_set'] );
 
 					return $group;
 				},
@@ -699,6 +752,7 @@ class Services {
 			'duration_minutes' => (int) $row['duration_minutes'],
 			'active'           => ! empty( $row['active'] ),
 			'requires_doctor'  => ! isset( $row['requires_doctor'] ) || ! empty( $row['requires_doctor'] ),
+			'keywords'         => isset( $row['keywords'] ) ? (string) $row['keywords'] : '',
 			'description'      => isset( $row['description'] ) ? (string) $row['description'] : '',
 			'image_id'         => $image_id,
 			'image_url'        => $image_url,

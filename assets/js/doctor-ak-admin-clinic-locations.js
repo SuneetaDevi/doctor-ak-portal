@@ -68,6 +68,7 @@
 			document.getElementById( 'dak-admin-clinic-location-address' ).value = '';
 			document.getElementById( 'dak-admin-clinic-location-phone' ).value = '';
 			document.getElementById( 'dak-admin-clinic-location-email' ).value = '';
+			document.getElementById( 'dak-admin-clinic-location-keywords' ).value = '';
 			wireLocationSelects();
 		}
 
@@ -136,6 +137,7 @@
 				document.getElementById( 'dak-admin-clinic-location-address' ).value = trigger.getAttribute( 'data-address' ) || '';
 				document.getElementById( 'dak-admin-clinic-location-phone' ).value = trigger.getAttribute( 'data-phone' ) || '';
 				document.getElementById( 'dak-admin-clinic-location-email' ).value = trigger.getAttribute( 'data-contact-email' ) || '';
+				document.getElementById( 'dak-admin-clinic-location-keywords' ).value = trigger.getAttribute( 'data-keywords' ) || '';
 
 				wireLocationSelects(
 					trigger.getAttribute( 'data-country' ),
@@ -169,6 +171,7 @@
 				formData.append( 'address', document.getElementById( 'dak-admin-clinic-location-address' ).value );
 				formData.append( 'phone', document.getElementById( 'dak-admin-clinic-location-phone' ).value );
 				formData.append( 'contact_email', document.getElementById( 'dak-admin-clinic-location-email' ).value );
+				formData.append( 'keywords', document.getElementById( 'dak-admin-clinic-location-keywords' ).value );
 
 				fetch( window.dakAdminClinicLocations.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
 					.then( function ( response ) { return response.json(); } )

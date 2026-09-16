@@ -26,12 +26,18 @@
  * @var array    $stats            { doctors_count, patients_count, appointments_count, max_years_experience, clinics_count }.
  * @var array    $clinic_locations Clinic_Locations::get_all() rows (capped), for the "Visit Us" section.
  *
- * Every registered doctor is also available client-side as
- * window.dakHomeSearch.doctors — { name, specialty, avatarUrl, url, citySlugs }
- * rows — via wp_localize_script() in Home_Page::render(), for the hero
- * search modal's live "Doctors" results (see initHeroSearch() in
- * doctor-ak-home.js), filtered there by both the typed query and whichever
- * city is currently selected in the Location field.
+ * The hero search modal's live results search across everything at once —
+ * doctors, services, specialities, and clinics — via window.dakHomeSearch
+ * (wp_localize_script() in Home_Page::render()), filtered client-side (see
+ * initHeroSearch() in doctor-ak-home.js):
+ *   .doctors     — { name, specialty, avatarUrl, url, citySlugs } — every registered doctor; citySlugs also narrows this list by whichever city is selected in the Location field (the other three aren't location-specific, so aren't filtered by it).
+ *   .services    — { name, category, keywords, url } — every active, bookable service.
+ *   .specialties — { label, count, url } — every specialization at least one doctor has.
+ *   .clinics     — { name, location, keywords, url } — every registered clinic location.
+ * `keywords` on services/clinics is admin-only free text (never shown to
+ * patients — see Services::sanitize_fields_from_request()/Clinic_Locations
+ * ::sanitize_keywords()), matched against in renderResults() but never
+ * passed into a result row's display.
  */
 
 // Prevent direct file access.
@@ -295,7 +301,7 @@ $dak_home_testimonials = ! empty( $testimonials )
 
 			<div class="dak-home-search-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="dak-home-search-modal-title">
 				<div class="dak-home-search-modal-header">
-					<h2 id="dak-home-search-modal-title"><?php esc_html_e( 'Search for doctors', 'doctor-ak-portal' ); ?></h2>
+					<h2 id="dak-home-search-modal-title"><?php esc_html_e( 'Search doctors, services & more', 'doctor-ak-portal' ); ?></h2>
 					<button type="button" class="dak-home-search-modal-close" id="dak-home-search-modal-close" aria-label="<?php esc_attr_e( 'Close', 'doctor-ak-portal' ); ?>">&times;</button>
 				</div>
 
@@ -329,7 +335,7 @@ $dak_home_testimonials = ! empty( $testimonials )
 								type="text"
 								name="s"
 								id="dak-home-search-modal-query-input"
-								placeholder="<?php esc_attr_e( 'Search for doctors, specialties, symptoms…', 'doctor-ak-portal' ); ?>"
+								placeholder="<?php esc_attr_e( 'Search doctors, services, specialities, clinics…', 'doctor-ak-portal' ); ?>"
 								autocomplete="off"
 							>
 							<button
@@ -358,10 +364,9 @@ $dak_home_testimonials = ! empty( $testimonials )
 					<?php endif; ?>
 
 					<div class="dak-home-search-modal-results dak-hidden" id="dak-home-search-modal-results">
-						<span class="dak-home-search-modal-results-heading"><?php esc_html_e( 'Doctors', 'doctor-ak-portal' ); ?></span>
-						<div class="dak-home-search-modal-results-list" id="dak-home-search-modal-results-list"></div>
+						<div id="dak-home-search-modal-results-groups"></div>
 						<p class="dak-home-search-modal-no-results dak-hidden" id="dak-home-search-modal-no-results">
-							<?php esc_html_e( 'No doctors matched that search.', 'doctor-ak-portal' ); ?>
+							<?php esc_html_e( 'No matches — try a different name, specialty, service, or clinic.', 'doctor-ak-portal' ); ?>
 						</p>
 					</div>
 
