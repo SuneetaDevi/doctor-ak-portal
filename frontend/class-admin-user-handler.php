@@ -12,6 +12,7 @@ use DoctorAKPortal\Includes\Authentication;
 use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Doctor_Awards;
+use DoctorAKPortal\Includes\Doctor_Gender;
 use DoctorAKPortal\Includes\Doctor_Keywords;
 use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Patient_Age;
@@ -163,6 +164,7 @@ class Admin_User_Handler {
 		$short_description          = '';
 		$expertise                  = '';
 		$years_experience           = null;
+		$gender                     = '';
 		$awards                     = array();
 		$clinic_fields_list         = array();
 		$specializations            = array();
@@ -184,6 +186,8 @@ class Admin_User_Handler {
 			if ( null === $years_experience || $years_experience > 80 ) {
 				$errors['years_experience'] = __( 'Please provide a valid number of years of experience.', 'doctor-ak-portal' );
 			}
+
+			$gender = Doctor_Gender::sanitize_from_request();
 
 			$country = isset( $_POST['country'] ) ? sanitize_text_field( wp_unslash( $_POST['country'] ) ) : '';
 			$city    = isset( $_POST['city'] ) ? sanitize_text_field( wp_unslash( $_POST['city'] ) ) : '';
@@ -556,6 +560,7 @@ class Admin_User_Handler {
 			update_user_meta( $saved_user_id, 'doctor_ak_city', $city );
 			update_user_meta( $saved_user_id, 'doctor_ak_area', $area );
 			update_user_meta( $saved_user_id, 'doctor_ak_years_experience', $years_experience );
+			update_user_meta( $saved_user_id, Doctor_Gender::META_KEY, $gender );
 			update_user_meta( $saved_user_id, 'doctor_ak_short_description', $short_description );
 			update_user_meta( $saved_user_id, 'doctor_ak_expertise', $expertise );
 			update_user_meta( $saved_user_id, Clinics::VIDEO_CONSULTATION_ALLOWED_META_KEY, $video_consultation_allowed ? '1' : '0' );

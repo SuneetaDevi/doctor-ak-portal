@@ -13,6 +13,12 @@
  * non-matching slides client-side; every card here (directory/
  * home-doctor-card.php, not the same partial the directory grid uses) still
  * carries its own data-search-video attribute for exactly this.
+ *
+ * A track with `data-loop` (the home page's) becomes an endless loop: its
+ * slides are cloned once, and whenever the view reaches the clones it jumps
+ * (instantly, invisibly — they're identical) back onto the originals. So it
+ * keeps moving the same way forever — after the last doctor the first one
+ * follows — instead of rewinding backwards.
  */
 ( function () {
 	'use strict';
@@ -31,6 +37,59 @@
 			return;
 		}
 
+		var loop = track.hasAttribute( 'data-loop' );
+		var loopWidth = 0;
+		var firstSlide = null;
+		var firstClone = null;
+		var normaliseTimer = null;
+
+		// Appends one identical, inert copy of every slide, so scrolling past
+		// the last original just runs on into the first doctor again.
+		function setupLoop() {
+			if ( ! loop ) {
+				return;
+			}
+
+			var slides = Array.prototype.slice.call( track.querySelectorAll( '.dak-featured-doctors-slide' ) );
+
+			if ( slides.length < 2 || track.scrollWidth <= track.clientWidth + 4 ) {
+				loop = false;
+				return;
+			}
+
+			firstSlide = slides[ 0 ];
+
+			slides.forEach( function ( slide, index ) {
+				var clone = slide.cloneNode( true );
+
+				clone.setAttribute( 'aria-hidden', 'true' );
+				clone.querySelectorAll( 'a, button' ).forEach( function ( el ) {
+					el.tabIndex = -1;
+				} );
+				track.appendChild( clone );
+
+				if ( 0 === index ) {
+					firstClone = clone;
+				}
+			} );
+
+			measureLoop();
+		}
+
+		function measureLoop() {
+			if ( loop && firstSlide && firstClone ) {
+				loopWidth = firstClone.offsetLeft - firstSlide.offsetLeft;
+			}
+		}
+
+		// Once the view has run into the clones, drop back onto the
+		// originals — the same picture, so nobody sees it happen.
+		function normalise() {
+			if ( loop && loopWidth && track.scrollLeft >= loopWidth - 2 ) {
+				track.scrollTo( { left: track.scrollLeft - loopWidth, behavior: 'instant' } );
+			}
+		}
+
 		function slideWidth() {
 			var slide = track.querySelector( '.dak-featured-doctors-slide' );
 
@@ -44,21 +103,88 @@
 		}
 
 		function atEnd() {
+			if ( loop ) {
+				return false;
+			}
+
 			return track.scrollLeft >= track.scrollWidth - track.clientWidth - 4;
 		}
 
+		var dotsEl = document.getElementById( 'dak-featured-doctors-dots' );
+		var pageCount = 0;
+
+		// Optional pager dots (the home page's doctors section): one per
+		// screenful of slides, the current one tracking the scroll position;
+		// clicking one jumps there.
+		function buildDots() {
+			if ( ! dotsEl ) {
+				return;
+			}
+
+			var maxScroll = track.scrollWidth - track.clientWidth;
+
+			if ( loop && loopWidth ) {
+				pageCount = Math.ceil( loopWidth / track.clientWidth );
+			} else {
+				pageCount = maxScroll <= 4 ? 0 : Math.ceil( track.scrollWidth / track.clientWidth );
+			}
+			dotsEl.innerHTML = '';
+
+			for ( var i = 0; i < pageCount; i++ ) {
+				( function ( index ) {
+					var dot = document.createElement( 'button' );
+					dot.type = 'button';
+					dot.className = 'dak-home-doctors-dot';
+					dot.tabIndex = -1;
+					dot.addEventListener( 'click', function () {
+						var max = track.scrollWidth - track.clientWidth;
+						var target = loop && loopWidth ? loopWidth * ( index / pageCount ) : ( pageCount > 1 ? max * ( index / ( pageCount - 1 ) ) : 0 );
+
+						normalise();
+						track.scrollTo( { left: target, behavior: 'smooth' } );
+						restartAutoplay();
+					} );
+					dotsEl.appendChild( dot );
+				}( i ) );
+			}
+		}
+
+		function updateDots() {
+			if ( ! dotsEl || ! pageCount ) {
+				return;
+			}
+
+			var maxScroll = Math.max( 1, track.scrollWidth - track.clientWidth );
+			var active = pageCount > 1 ? Math.round( ( track.scrollLeft / maxScroll ) * ( pageCount - 1 ) ) : 0;
+
+			if ( loop && loopWidth ) {
+				active = Math.round( ( ( track.scrollLeft % loopWidth ) / loopWidth ) * pageCount ) % pageCount;
+			}
+
+			Array.prototype.forEach.call( dotsEl.children, function ( dot, index ) {
+				dot.classList.toggle( 'is-active', index === active );
+			} );
+		}
+
 		function updateNavState() {
-			prev.disabled = track.scrollLeft <= 4;
+			prev.disabled = ! loop && track.scrollLeft <= 4;
 			next.disabled = atEnd();
 
 			track.classList.toggle( 'dak-fade-end', ! next.disabled );
+			updateDots();
 		}
 
 		function goToPrev() {
+			if ( loop && track.scrollLeft < 4 ) {
+				track.scrollTo( { left: loopWidth, behavior: 'instant' } );
+			}
+
 			track.scrollBy( { left: -slideWidth(), behavior: 'smooth' } );
 		}
 
 		function goToNext() {
+			normalise();
+
 			// Rewinds to the start once it can't advance a further whole
 			// slide, rather than stalling there until a visitor scrolls it
 			// back manually — that's what keeps autoplay "always moving".
@@ -80,9 +206,22 @@
 			restartAutoplay();
 		} );
 
-		track.addEventListener( 'scroll', updateNavState );
-		window.addEventListener( 'resize', updateNavState );
+		track.addEventListener( 'scroll', function () {
+			updateNavState();
 
+			if ( loop ) {
+				window.clearTimeout( normaliseTimer );
+				normaliseTimer = window.setTimeout( normalise, 150 );
+			}
+		} );
+		window.addEventListener( 'resize', function () {
+			measureLoop();
+			buildDots();
+			updateNavState();
+		} );
+
+		setupLoop();
+		buildDots();
 		updateNavState();
 
 		/**
@@ -114,6 +253,7 @@
 			}
 
 			track.scrollTo( { left: 0 } );
+			buildDots();
 			updateNavState();
 			restartAutoplay();
 		}

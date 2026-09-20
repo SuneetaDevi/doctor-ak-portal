@@ -9,6 +9,7 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Doctor_Awards;
+use DoctorAKPortal\Includes\Doctor_Gender;
 use DoctorAKPortal\Includes\Doctor_Keywords;
 use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Page_Finder;
@@ -216,6 +217,7 @@ class Profile_Handler {
 			'keywords'                   => Doctor_Keywords::get_all(),
 			'current_keywords'           => (array) get_user_meta( $user->ID, 'doctor_ak_keywords', true ),
 			'current_years_experience'   => get_user_meta( $user->ID, 'doctor_ak_years_experience', true ),
+			'current_gender'             => get_user_meta( $user->ID, Doctor_Gender::META_KEY, true ),
 			'current_qualification'      => get_user_meta( $user->ID, 'doctor_ak_qualification', true ),
 			'current_country'            => get_user_meta( $user->ID, 'doctor_ak_country', true ),
 			'current_city'               => get_user_meta( $user->ID, 'doctor_ak_city', true ),
@@ -396,6 +398,10 @@ class Profile_Handler {
 		} else {
 			$meta['doctor_ak_years_experience'] = $years_experience;
 		}
+
+		// Optional here (existing doctors may not have one yet) — an empty
+		// pick just clears it.
+		$meta[ Doctor_Gender::META_KEY ] = Doctor_Gender::sanitize_from_request();
 
 		$qualification = isset( $_POST['qualification'] ) ? sanitize_text_field( wp_unslash( $_POST['qualification'] ) ) : '';
 

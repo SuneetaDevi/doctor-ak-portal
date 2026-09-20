@@ -9,6 +9,7 @@
  * @var string   $avatar_url            Doctor's photo (or fallback avatar) URL.
  * @var string[] $specialization_labels Selected specialization labels.
  * @var int|string $years_experience     Doctor's years of experience, or '' if not set.
+ * @var string     $gender               Doctor's gender slug ('male'/'female'), or '' — read by the directory's Male/Female Doctor filter chips.
  * @var string   $clinic_location       Doctor's primary (first) physical clinic's name (falls back to its address if it somehow has none), or '' if no physical clinic at all.
  * @var string   $clinic_city_label     That same primary clinic's city label, or '' if it has none set.
  * @var string   $clinic_country_label  That same primary clinic's country label, or '' if it has none set.
@@ -54,6 +55,7 @@ $dak_card_display_name      = sprintf( 'Dr. %s', $name );
 	data-search-area="<?php echo esc_attr( implode( ',', $area_slugs ) ); ?>"
 	data-search-clinics="<?php echo esc_attr( mb_strtolower( implode( ',', $clinic_labels ) ) ); ?>"
 	data-search-available="<?php echo esc_attr( $is_available ? '1' : '0' ); ?>"
+	data-search-gender="<?php echo esc_attr( isset( $gender ) ? $gender : '' ); ?>"
 	data-search-video="<?php echo esc_attr( $video_consultation ? '1' : '0' ); ?>"
 	data-sort-name="<?php echo esc_attr( $name ); ?>"
 	data-sort-experience="<?php echo esc_attr( '' !== $years_experience ? (int) $years_experience : 0 ); ?>"

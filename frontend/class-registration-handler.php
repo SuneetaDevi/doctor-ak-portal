@@ -9,6 +9,7 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Authentication;
+use DoctorAKPortal\Includes\Doctor_Gender;
 use DoctorAKPortal\Includes\Doctor_Keywords;
 use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Patient_Age;
@@ -326,6 +327,14 @@ class Registration_Handler {
 			$errors['years_experience'] = __( 'Please provide a valid number of years of experience.', 'doctor-ak-portal' );
 		} else {
 			$meta['doctor_ak_years_experience'] = $years_experience;
+		}
+
+		$gender = Doctor_Gender::sanitize_from_request();
+
+		if ( '' === $gender ) {
+			$errors['gender'] = __( 'Please select your gender.', 'doctor-ak-portal' );
+		} else {
+			$meta[ Doctor_Gender::META_KEY ] = $gender;
 		}
 
 		$qualification = isset( $_POST['qualification'] ) ? sanitize_text_field( wp_unslash( $_POST['qualification'] ) ) : '';

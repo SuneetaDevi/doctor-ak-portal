@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $dak_directory_icons = array(
 	'pin'      => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18s6-5.2 6-9.8A6 6 0 0 0 4 8.2C4 12.8 10 18 10 18z"/><circle cx="10" cy="8" r="2"/></svg>',
+	'user'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.2"/><path d="M3.5 17c1-3.5 4-5 6.5-5s5.5 1.5 6.5 5"/></svg>',
 	'video'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="10" height="10" rx="1.5"/><path d="M17.5 7.5 12.5 10l5 2.5z"/></svg>',
 	'clock'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.2"/><path d="M10 6v4l3 2"/></svg>',
 	'chevron'  => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8l4 4 4-4"/></svg>',
@@ -69,6 +70,16 @@ $dak_directory_icons = array(
 			>
 				<?php echo $dak_directory_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				<span data-nearme-label><?php esc_html_e( 'Near me', 'doctor-ak-portal' ); ?></span>
+			</button>
+
+			<button type="button" class="dak-directory-pill" id="dak-directory-male-toggle" aria-pressed="false">
+				<?php echo $dak_directory_icons['user']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				<?php esc_html_e( 'Male Doctor', 'doctor-ak-portal' ); ?>
+			</button>
+
+			<button type="button" class="dak-directory-pill" id="dak-directory-female-toggle" aria-pressed="false">
+				<?php echo $dak_directory_icons['user']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				<?php esc_html_e( 'Female Doctor', 'doctor-ak-portal' ); ?>
 			</button>
 
 			<button type="button" class="dak-directory-pill" id="dak-directory-video-toggle" aria-pressed="false">

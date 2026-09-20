@@ -18,6 +18,7 @@
  * @var string[] $keywords                   Every procedure/condition keyword any doctor has ever used, see Doctor_Keywords::get_all() — the suggestion list for the Keywords field below.
  * @var string[] $current_keywords           Doctor's currently saved keywords (free text, not slugs).
  * @var string   $current_years_experience   Doctor's current years of experience.
+ * @var string   $current_gender             Doctor's gender slug (see Doctor_Gender), or ''.
  * @var string   $current_qualification      Doctor's current qualification(s), e.g. "MBBS, FCPS".
  * @var string   $current_country            Doctor's current country slug, or ''.
  * @var string   $current_city               Doctor's current city slug, or ''.
@@ -83,6 +84,17 @@ $current_picture_url = $current_profile_picture_id ? wp_get_attachment_image_url
 			<label for="dak-profile-years-experience"><?php esc_html_e( 'Years of Experience', 'doctor-ak-portal' ); ?></label>
 			<input type="number" min="0" max="80" id="dak-profile-years-experience" name="years_experience" value="<?php echo esc_attr( $current_years_experience ); ?>">
 			<span class="dak-field-error" data-field="years_experience"></span>
+		</div>
+
+		<div class="dak-field">
+			<label for="dak-profile-gender"><?php esc_html_e( 'Gender', 'doctor-ak-portal' ); ?></label>
+			<select id="dak-profile-gender" name="gender">
+								<option value=""><?php esc_html_e( 'Select gender', 'doctor-ak-portal' ); ?></option>
+								<?php foreach ( \DoctorAKPortal\Includes\Doctor_Gender::get_all() as $dak_gender_slug => $dak_gender_label ) : ?>
+									<option value="<?php echo esc_attr( $dak_gender_slug ); ?>" <?php selected( $current_gender, $dak_gender_slug ); ?>><?php echo esc_html( $dak_gender_label ); ?></option>
+								<?php endforeach; ?>
+							</select>
+			<span class="dak-field-error" data-field="gender"></span>
 		</div>
 
 		<div class="dak-field">

@@ -13,8 +13,6 @@
  * @var array      $specialties      Home_Page::specialties() rows — { slug, label, count, url } — only specializations a registered doctor actually has.
  * @var array      $cities           Home_Page::cities_in_use() rows — { slug, label, count } — only cities a registered doctor actually practises in, for the hero search modal's city quick-picks.
  * @var array      $videos           Home_Videos::get_all() rows — { title, video_url, poster_url } — admin-uploaded videos.
- * @var array      $testimonials     Home_Testimonials::get_all() rows merged with Google_Reviews::get_reviews() — { quote, name, attribution, rating? } — 'rating' (1-5) is only present on a Google review.
- * @var array      $google_rating    Google_Reviews::overall_rating() — { rating, total } — zeroed out if Google reviews aren't configured.
  * @var string   $hero_video_url   Bundled hero tour video URL (assets/videos/thumbnail.mp4), or '' if missing.
  * @var string   $hero_banner_url  Bundled hero banner photo URL (assets/images/doctor-banner.avif), or '' if missing.
  * @var string[] $marketing_videos Bundled marketing reel video URLs (assets/videos/video-1..3.mp4).
@@ -211,7 +209,7 @@ $dak_home_trust_points = array(
 );
 
 // The tile row shows the best-represented handful.
-$dak_home_specialty_tiles = array_slice( $specialties, 0, 6 );
+$dak_home_specialty_tiles = array_slice( $specialties, 0, 14 );
 
 // Best-effort clinic phone for the "call us" block — the first location that
 // has one, since the plugin has no separate global contact-number setting.
@@ -223,19 +221,6 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 		break;
 	}
 }
-
-// Sample/example copy shown only until the admin adds their own testimonials
-// (Settings -> Home page testimonials) — see the same fallback pattern
-// $marketing_videos/$hero_video_url use for the bundled sample clips.
-$dak_home_testimonials = ! empty( $testimonials )
-	? $testimonials
-	: array(
-		array(
-			'quote'       => __( 'Booking was effortless and the doctor was incredibly thorough. Clear pricing and a genuinely caring team.', 'doctor-ak-portal' ),
-			'name'        => __( 'A recent patient', 'doctor-ak-portal' ),
-			'attribution' => '',
-		),
-	);
 
 ?>
 <div class="dak-portal dak-home">
@@ -455,10 +440,11 @@ $dak_home_testimonials = ! empty( $testimonials )
 
 	<?php if ( ! empty( $dak_home_specialty_tiles ) ) : ?>
 		<section class="dak-home-section dak-home-specialties">
-			<div class="dak-directory-header dak-home-specialties-header">
-				<span class="dak-eyebrow"><?php esc_html_e( 'Online Consultation', 'doctor-ak-portal' ); ?></span>
-				<h2><?php esc_html_e( 'Consult Top Doctors Online For Any Health Concern', 'doctor-ak-portal' ); ?></h2>
-				<p><?php esc_html_e( 'Private video consultations with verified specialists — pick a specialty to see who is available.', 'doctor-ak-portal' ); ?></p>
+			<div class="dak-home-specialties-header">
+				<h2><?php esc_html_e( 'Consult best doctors online', 'doctor-ak-portal' ); ?></h2>
+				<?php if ( $directory_url ) : ?>
+					<a class="dak-home-specialties-viewall" href="<?php echo esc_url( $directory_url ); ?>"><?php esc_html_e( 'View All', 'doctor-ak-portal' ); ?></a>
+				<?php endif; ?>
 			</div>
 
 			<div class="dak-home-specialties-grid">
@@ -466,30 +452,17 @@ $dak_home_testimonials = ! empty( $testimonials )
 					<a class="dak-home-specialty-card" href="<?php echo esc_url( $dak_specialty['url'] ); ?>">
 						<span class="dak-home-specialty-icon" aria-hidden="true"><?php echo $dak_home_specialty_icon( $dak_specialty['slug'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						<span class="dak-home-specialty-label"><?php echo esc_html( $dak_specialty['label'] ); ?></span>
-						<span class="dak-home-specialty-action"><?php esc_html_e( 'Consult Now', 'doctor-ak-portal' ); ?></span>
 					</a>
 				<?php endforeach; ?>
 			</div>
-
-			<?php if ( $directory_url ) : ?>
-				<div class="dak-home-section-footer">
-					<a class="dak-button dak-button-primary" href="<?php echo esc_url( $directory_url ); ?>">
-						<?php esc_html_e( 'See All Specialities', 'doctor-ak-portal' ); ?>
-					</a>
-				</div>
-			<?php endif; ?>
 		</section>
 	<?php endif; ?>
 
 	<?php if ( ! empty( $services_html ) ) : ?>
 		<section class="dak-home-section dak-home-services">
 			<div class="dak-directory-header dak-home-services-header">
-				<span class="dak-eyebrow">
-					<?php echo $dak_home_icons['pulse']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-					<?php esc_html_e( 'Our Services', 'doctor-ak-portal' ); ?>
-				</span>
-				<h2><?php esc_html_e( 'Focused Care for Every Part of the Digestive System', 'doctor-ak-portal' ); ?></h2>
-				<p><?php esc_html_e( 'From common concerns to complex conditions, our specialized gastroenterology services provide accurate diagnosis and personalized treatment for your digestive health.', 'doctor-ak-portal' ); ?></p>
+				<h2><?php esc_html_e( 'Our', 'doctor-ak-portal' ); ?> <span class="dak-home-services-accent"><?php esc_html_e( 'Healthcare', 'doctor-ak-portal' ); ?></span> <?php esc_html_e( 'Services', 'doctor-ak-portal' ); ?></h2>
+				<p><?php esc_html_e( 'Comprehensive healthcare solutions for you and your family.', 'doctor-ak-portal' ); ?></p>
 			</div>
 
 			<div class="dak-home-services-list">
@@ -513,31 +486,20 @@ $dak_home_testimonials = ! empty( $testimonials )
 		<section class="dak-home-section dak-home-doctors">
 			<div class="dak-featured-doctors-header">
 				<div>
-					<span class="dak-eyebrow"><?php esc_html_e( 'Our Specialists', 'doctor-ak-portal' ); ?></span>
+					<span class="dak-eyebrow">
+						<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.6 3.4v3.9a3 3 0 0 0 6 0V3.4"/><path d="M4.2 3.4h2.6M10.4 3.4H13"/><path d="M8.6 10.3v1.9a3.6 3.6 0 0 0 7.2 0v-1.4"/><circle cx="15.8" cy="9" r="1.6"/></svg>
+						<?php esc_html_e( 'Our Specialists', 'doctor-ak-portal' ); ?>
+					</span>
 					<h2><?php esc_html_e( 'Doctors Available Now', 'doctor-ak-portal' ); ?></h2>
+					<p><?php esc_html_e( 'Our experienced and compassionate doctors are here to provide you with high-quality care and personalized treatment.', 'doctor-ak-portal' ); ?></p>
 				</div>
 
 				<?php if ( $directory_url ) : ?>
 					<a class="dak-button dak-button-secondary dak-featured-doctors-view-more" href="<?php echo esc_url( $directory_url ); ?>">
 						<?php esc_html_e( 'View All Doctors', 'doctor-ak-portal' ); ?>
-						<?php echo $dak_home_icons['chevron']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+						<?php echo $dak_home_icons['arrow']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 					</a>
 				<?php endif; ?>
-			</div>
-
-			<!--
-				Reuses the doctors directory's own quick-filter pill (.dak-
-				directory-pill, .dak-directory-quick-filters — see
-				doctors-directory.php) rather than inventing new styles: this
-				page already enqueues doctor-ak-directory.css for the featured
-				doctor cards themselves (see Home_Page::enqueue_assets()), so
-				the classes are already loaded.
-			-->
-			<div class="dak-directory-quick-filters">
-				<button type="button" class="dak-directory-pill" id="dak-featured-doctors-video-toggle" aria-pressed="false">
-					<?php echo $dak_home_icons['video']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-					<?php esc_html_e( 'Video Consultation', 'doctor-ak-portal' ); ?>
-				</button>
 			</div>
 
 			<div class="dak-featured-doctors-slider">
@@ -545,7 +507,7 @@ $dak_home_testimonials = ! empty( $testimonials )
 					<?php echo $dak_home_icons['chevron_left']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				</button>
 
-				<div class="dak-featured-doctors-track" id="dak-featured-doctors-track">
+				<div class="dak-featured-doctors-track" id="dak-featured-doctors-track" data-loop>
 					<?php foreach ( $doctors_html as $dak_card_html ) : ?>
 						<div class="dak-featured-doctors-slide">
 							<?php echo $dak_card_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- card partial escapes its own output. ?>
@@ -558,7 +520,7 @@ $dak_home_testimonials = ! empty( $testimonials )
 				</button>
 			</div>
 
-			<p class="dak-empty-state dak-hidden" id="dak-featured-doctors-no-results"><?php esc_html_e( 'No doctors currently offer video consultation.', 'doctor-ak-portal' ); ?></p>
+			<div class="dak-home-doctors-dots" id="dak-featured-doctors-dots" aria-hidden="true"></div>
 
 			<?php if ( $directory_url ) : ?>
 				<a class="dak-button dak-button-primary dak-featured-doctors-view-more-mobile" href="<?php echo esc_url( $directory_url ); ?>">
@@ -567,69 +529,6 @@ $dak_home_testimonials = ! empty( $testimonials )
 			<?php endif; ?>
 		</section>
 	<?php endif; ?>
-
-	<section class="dak-home-testimonial-band">
-		<div class="dak-home-testimonial-band-inner">
-			<div class="dak-home-testimonial-band-quotes">
-				<div class="dak-home-testimonial-band-eyebrow-row">
-					<span class="dak-eyebrow"><?php esc_html_e( 'Patient Stories', 'doctor-ak-portal' ); ?></span>
-
-					<?php if ( $google_rating['total'] > 0 ) : ?>
-						<span class="dak-home-google-rating-badge">
-							<?php echo $dak_home_icons['star']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-							<?php
-							echo esc_html(
-								sprintf(
-									/* translators: 1: rating out of 5, e.g. "4.8". 2: number of reviews. */
-									__( '%1$s on Google (%2$s reviews)', 'doctor-ak-portal' ),
-									number_format_i18n( $google_rating['rating'], 1 ),
-									number_format_i18n( $google_rating['total'] )
-								)
-							);
-							?>
-						</span>
-					<?php endif; ?>
-				</div>
-
-				<?php foreach ( $dak_home_testimonials as $dak_testimonial ) : ?>
-					<div class="dak-home-testimonial-card">
-						<?php if ( ! empty( $dak_testimonial['rating'] ) ) : ?>
-							<span class="dak-home-testimonial-stars" aria-hidden="true">
-								<?php for ( $dak_star = 0; $dak_star < 5; $dak_star++ ) : ?>
-									<span class="<?php echo $dak_star < (int) $dak_testimonial['rating'] ? 'is-filled' : ''; ?>"><?php echo $dak_home_icons['star']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-								<?php endfor; ?>
-							</span>
-						<?php endif; ?>
-						<p>&ldquo;<?php echo esc_html( $dak_testimonial['quote'] ); ?>&rdquo;</p>
-						<span class="dak-home-testimonial-band-author">
-							<?php
-							echo esc_html(
-								! empty( $dak_testimonial['attribution'] )
-									? sprintf( '— %1$s, %2$s', $dak_testimonial['name'], $dak_testimonial['attribution'] )
-									: '— ' . $dak_testimonial['name']
-							);
-							?>
-						</span>
-					</div>
-				<?php endforeach; ?>
-			</div>
-
-			<div class="dak-home-testimonial-band-stats">
-				<div>
-					<strong><?php echo esc_html( number_format_i18n( $stats['patients_count'] ) ); ?>+</strong>
-					<span><?php esc_html_e( 'Patients cared for', 'doctor-ak-portal' ); ?></span>
-				</div>
-				<div>
-					<strong><?php echo esc_html( number_format_i18n( $stats['max_years_experience'] ) ); ?>+</strong>
-					<span><?php esc_html_e( 'Years serving Karachi', 'doctor-ak-portal' ); ?></span>
-				</div>
-				<div>
-					<strong><?php echo esc_html( number_format_i18n( $stats['appointments_count'] ) ); ?>+</strong>
-					<span><?php esc_html_e( 'Appointments completed', 'doctor-ak-portal' ); ?></span>
-				</div>
-			</div>
-		</div>
-	</section>
 
 	<?php if ( ! empty( $clinic_locations ) ) : ?>
 		<section class="dak-home-section dak-home-clinics" id="dak-home-clinics">

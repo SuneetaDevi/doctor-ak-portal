@@ -32,7 +32,7 @@ $dak_home_service_icons = array(
 // $description may contain rich-text HTML (bold/italic/lists/links) from the
 // admin's formatting toolbar — strip it down to plain text before trimming
 // to a word count, so the excerpt never mid-cuts a tag.
-$dak_home_service_excerpt = wp_trim_words( wp_strip_all_tags( $description ), 22 );
+$dak_home_service_excerpt = wp_trim_words( wp_strip_all_tags( str_replace( '<', ' <', $description ) ), 22 );
 ?>
 <article class="dak-home-service-row">
 	<div class="dak-home-service-row-body">
@@ -66,7 +66,7 @@ $dak_home_service_excerpt = wp_trim_words( wp_strip_all_tags( $description ), 22
 		</div>
 
 		<a class="dak-home-service-row-link" href="<?php echo esc_url( $profile_url ); ?>">
-			<?php esc_html_e( 'Learn more', 'doctor-ak-portal' ); ?>
+			<span class="dak-home-service-row-link-text"><?php esc_html_e( 'Learn more', 'doctor-ak-portal' ); ?></span>
 			<?php echo $dak_home_service_icons['arrow']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		</a>
 	</div>

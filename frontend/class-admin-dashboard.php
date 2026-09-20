@@ -3175,6 +3175,7 @@ class Admin_Dashboard {
 			'is_disabled'                 => 'yes' === get_user_meta( $user->ID, 'doctor_ak_account_disabled', true ),
 			'is_discharged'               => 'yes' === get_user_meta( $user->ID, 'doctor_ak_patient_discharged', true ),
 			'years_experience'            => get_user_meta( $user->ID, 'doctor_ak_years_experience', true ),
+			'gender'                      => get_user_meta( $user->ID, 'doctor_ak_gender', true ),
 			'qualification'               => get_user_meta( $user->ID, 'doctor_ak_qualification', true ),
 			'country'                     => get_user_meta( $user->ID, 'doctor_ak_country', true ),
 			'city'                        => get_user_meta( $user->ID, 'doctor_ak_city', true ),

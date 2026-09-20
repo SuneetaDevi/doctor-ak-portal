@@ -24,14 +24,14 @@
    follows. It steps down on narrower screens so the content doesn't get
    squeezed into a sliver on tablets/phones. */
 .dak-home {
-	--dak-home-gutter: 11.5rem;
+	--dak-home-gutter: 3.5rem;
 	margin: 0 auto !important;
 	padding: 0 var( --dak-home-gutter ) var( --dak-space-8 ) !important;
 }
 
 @media ( max-width: 1600px ) {
 	.dak-home {
-		--dak-home-gutter: 6rem;
+		--dak-home-gutter: 2rem;
 	}
 }
 
@@ -958,11 +958,10 @@
 		rgba( 0, 0, 0, 0.12 ) !important;
 }
 
-/* Services — three side-by-side cards (photo left, copy right), each with its
-   own accent colour (green / purple / coral, cycling) driving the icon badge,
-   chips and "Learn more" link. Its own directory/home-service-card.php
-   template renders these. auto-fit gives 3 across on a wide screen and drops to
-   2, then 1, as the page narrows — no breakpoint needed for the column count. */
+/* Services — a row of tall cards: photo on top, then the title, a short
+   description and a round arrow button in the bottom-right corner (the whole
+   card is the link). Its own directory/home-service-card.php template renders
+   these; auto-fit gives up to 5 across and wraps to fewer as the page narrows. */
 
 .dak-home-services-header p {
 	max-width: 62ch !important;
@@ -972,146 +971,45 @@
 	line-height: 1.6 !important;
 }
 
-.dak-home-services-header .dak-eyebrow {
-	display: inline-flex !important;
-	align-items: center !important;
-	gap: 0.45rem !important;
-}
-
-.dak-home-services-header .dak-eyebrow svg {
-	width: 18px !important;
-	height: 18px !important;
+.dak-home-services-header h2 .dak-home-services-accent {
+	color: var( --dak-primary ) !important;
 }
 
 .dak-home-services-list {
 	display: grid !important;
-	grid-template-columns: repeat( auto-fit, minmax( min( 420px, 100% ), 1fr ) ) !important;
-	gap: var( --dak-space-5 ) !important;
+	grid-template-columns: repeat( auto-fit, minmax( min( 200px, 100% ), 1fr ) ) !important;
+	gap: var( --dak-space-4 ) !important;
 	margin-top: var( --dak-space-6 ) !important;
 }
 
 .dak-home-service-row {
-	--dak-svc-accent: var( --dak-primary-dark );
-	--dak-svc-tint: color-mix( in srgb, var( --dak-svc-accent ) 14%, transparent );
-	display: grid !important;
-	grid-template-columns: minmax( 0, 42% ) minmax( 0, 1fr ) !important;
-	gap: var( --dak-space-4 ) !important;
+	position: relative !important;
+	display: flex !important;
+	flex-direction: column !important;
 	align-items: stretch !important;
+	gap: 0 !important;
 	background: var( --dak-bg-card ) !important;
 	border: 1px solid var( --dak-border ) !important;
 	border-radius: var( --dak-radius-lg ) !important;
-	padding: var( --dak-space-4 ) !important;
+	padding: var( --dak-space-3 ) !important;
 	box-shadow: var( --dak-shadow ) !important;
 	transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease !important;
 }
 
-.dak-home-services-list > .dak-home-service-row:nth-child( 3n + 2 ) {
-	--dak-svc-accent: #7c6cf0;
-}
-
-.dak-home-services-list > .dak-home-service-row:nth-child( 3n + 3 ) {
-	--dak-svc-accent: #ee6a67;
-}
-
 .dak-home-service-row:hover {
 	transform: translateY( -3px ) !important;
-	border-color: var( --dak-svc-accent ) !important;
+	border-color: var( --dak-primary ) !important;
 	box-shadow: var( --dak-shadow-hover ) !important;
 }
 
-.dak-home-service-row-body {
-	display: flex !important;
-	flex-direction: column !important;
-	align-items: flex-start !important;
-	justify-content: center !important;
-	gap: var( --dak-space-2 ) !important;
-	min-width: 0 !important;
-}
-
-.dak-home-service-row-icon {
-	display: inline-flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	width: 48px !important;
-	height: 48px !important;
-	border-radius: 50% !important;
-	background: var( --dak-svc-tint ) !important;
-	color: var( --dak-svc-accent ) !important;
-}
-
-.dak-home-service-row-icon svg {
-	width: 24px !important;
-	height: 24px !important;
-}
-
-.dak-home-service-row-body h3 {
-	margin: 0 !important;
-	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
-	font-size: var( --dak-text-lg ) !important;
-	font-weight: 700 !important;
-	line-height: 1.25 !important;
-	color: var( --dak-text ) !important;
-}
-
-.dak-home-service-row-body > p {
-	margin: 0 !important;
-	font-size: var( --dak-text-sm ) !important;
-	line-height: 1.55 !important;
-	color: var( --dak-muted ) !important;
-}
-
-.dak-home-service-row-meta {
-	display: flex !important;
-	flex-wrap: wrap !important;
-	gap: var( --dak-space-2 ) !important;
-	margin-top: var( --dak-space-2 ) !important;
-}
-
-.dak-home-service-row-chip {
-	display: inline-flex !important;
-	align-items: center !important;
-	gap: 0.4rem !important;
-	padding: 0.35rem 0.8rem !important;
-	border-radius: 999px !important;
-	background: var( --dak-svc-tint ) !important;
-	color: var( --dak-svc-accent ) !important;
-	font-size: var( --dak-text-xs ) !important;
-	font-weight: 700 !important;
-}
-
-.dak-home-service-row-chip svg {
-	display: block !important;
-	width: 14px !important;
-	height: 14px !important;
-}
-
-.dak-home-service-row-link {
-	display: inline-flex !important;
-	align-items: center !important;
-	gap: 0.45rem !important;
-	margin-top: var( --dak-space-2 ) !important;
-	color: var( --dak-svc-accent ) !important;
-	font-size: var( --dak-text-sm ) !important;
-	font-weight: 700 !important;
-	text-decoration: none !important;
-}
-
-.dak-home-service-row-link svg {
-	width: 16px !important;
-	height: 16px !important;
-	transition: transform 0.18s ease !important;
-}
-
-.dak-home-service-row:hover .dak-home-service-row-link svg {
-	transform: translateX( 3px ) !important;
-}
-
+/* Photo first, whatever the markup order. */
 .dak-home-service-row-media {
+	order: -1 !important;
 	position: relative !important;
 	overflow: hidden !important;
-	min-height: 220px !important;
+	height: 150px !important;
 	border-radius: var( --dak-radius-md ) !important;
-	background: linear-gradient( 165deg, var( --dak-svc-tint ) 0%, var( --dak-bg-subtle ) 100% ) !important;
+	background: linear-gradient( 165deg, var( --dak-primary-tint ) 0%, var( --dak-bg-subtle ) 100% ) !important;
 }
 
 .dak-home-service-row-media img {
@@ -1128,13 +1026,95 @@
 	display: flex !important;
 	align-items: center !important;
 	justify-content: center !important;
-	color: var( --dak-svc-accent ) !important;
+	color: var( --dak-primary-dark ) !important;
 	opacity: 0.4 !important;
 }
 
 .dak-home-service-row-placeholder svg {
-	width: 56px !important;
-	height: 56px !important;
+	width: 48px !important;
+	height: 48px !important;
+}
+
+.dak-home-service-row-body {
+	display: flex !important;
+	flex: 1 1 auto !important;
+	flex-direction: column !important;
+	align-items: flex-start !important;
+	gap: var( --dak-space-1 ) !important;
+	min-width: 0 !important;
+	padding: var( --dak-space-3 ) var( --dak-space-1 ) var( --dak-space-1 ) !important;
+}
+
+.dak-home-service-row-body h3 {
+	margin: 0 !important;
+	font-family: inherit !important;
+	font-size: var( --dak-text-md ) !important;
+	font-weight: 700 !important;
+	line-height: 1.25 !important;
+	overflow-wrap: anywhere !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-home-service-row-body > p {
+	margin: 0 !important;
+	padding-right: 3rem !important;
+	overflow-wrap: anywhere !important;
+	display: -webkit-box !important;
+	-webkit-line-clamp: 3 !important;
+	-webkit-box-orient: vertical !important;
+	overflow: hidden !important;
+	font-size: var( --dak-text-sm ) !important;
+	line-height: 1.5 !important;
+	color: var( --dak-muted ) !important;
+}
+
+/* Price/specialist chips and the badge icon aren't part of this card. */
+.dak-home-service-row-icon,
+.dak-home-service-row-meta {
+	display: none !important;
+}
+
+/* The link stays in flow (text for screen readers only) but its ::after
+   stretches over the whole card so the entire card is clickable; the arrow
+   itself is drawn as a round button in the card's bottom-right corner. */
+.dak-home-service-row-link {
+	position: static !important;
+	display: block !important;
+	text-decoration: none !important;
+}
+
+.dak-home-service-row-link::after {
+	content: '' !important;
+	position: absolute !important;
+	inset: 0 !important;
+	border-radius: var( --dak-radius-lg ) !important;
+}
+
+.dak-home-service-row-link-text {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	overflow: hidden !important;
+	clip: rect( 0, 0, 0, 0 ) !important;
+	white-space: nowrap !important;
+}
+
+.dak-home-service-row-link svg {
+	position: absolute !important;
+	right: var( --dak-space-3 ) !important;
+	bottom: var( --dak-space-3 ) !important;
+	box-sizing: border-box !important;
+	width: 38px !important;
+	height: 38px !important;
+	padding: 10px !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary ) !important;
+	stroke: #fff !important;
+	transition: transform 0.18s ease !important;
+}
+
+.dak-home-service-row:hover .dak-home-service-row-link svg {
+	transform: translateX( 2px ) !important;
 }
 
 /* "View All Services" — an outlined pill rather than the shared secondary
@@ -1149,27 +1129,45 @@
 	background: var( --dak-primary-tint ) !important;
 }
 
-/* Specialty tiles — "Consult Top Doctors Online". Each tile links into the
-   doctors directory with that specialty preselected in its filter, so only
-   specialties a registered doctor actually has are ever listed. */
+/* Specialty tiles — "Consult best doctors online". A plain grid of round
+   icon badges with the specialty name underneath (no card boxes), seven per
+   row on a wide screen. Each tile links into the doctors directory with that
+   specialty preselected in its filter, so only specialties a registered
+   doctor actually has are ever listed. */
 
 .dak-home-specialties-header {
-	text-align: center !important;
+	display: flex !important;
+	align-items: baseline !important;
+	justify-content: space-between !important;
+	gap: var( --dak-space-4 ) !important;
 }
 
-.dak-home-specialties-header p {
-	max-width: 54ch !important;
-	margin: 0 auto !important;
+.dak-home-specialties-header h2 {
+	margin: 0 !important;
+	font-family: inherit !important;
+	font-size: var( --dak-text-xl ) !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-home-specialties-viewall {
+	flex: 0 0 auto !important;
 	font-size: var( --dak-text-md ) !important;
-	color: var( --dak-muted ) !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	text-decoration: underline !important;
+	text-underline-offset: 3px !important;
+}
+
+.dak-home-specialties-viewall:hover {
+	color: var( --dak-primary-dark ) !important;
 }
 
 .dak-home-specialties-grid {
 	display: grid !important;
-	grid-template-columns: repeat( auto-fit, minmax( 140px, 1fr ) ) !important;
-	gap: var( --dak-space-4 ) !important;
-	max-width: 1040px !important;
-	margin: var( --dak-space-6 ) auto 0 !important;
+	grid-template-columns: repeat( 7, minmax( 0, 1fr ) ) !important;
+	gap: var( --dak-space-6 ) var( --dak-space-3 ) !important;
+	margin-top: var( --dak-space-5 ) !important;
 }
 
 .dak-home-specialty-card {
@@ -1177,128 +1175,131 @@
 	flex-direction: column !important;
 	align-items: center !important;
 	gap: var( --dak-space-3 ) !important;
-	padding: var( --dak-space-5 ) var( --dak-space-3 ) var( --dak-space-4 ) !important;
-	background: var( --dak-bg-card ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-md ) !important;
-	box-shadow: var( --dak-shadow ) !important;
 	text-align: center !important;
 	text-decoration: none !important;
-	transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease !important;
-}
-
-.dak-home-specialty-card:hover {
-	transform: translateY( -4px ) !important;
-	border-color: var( --dak-primary ) !important;
-	box-shadow: var( --dak-shadow-hover ) !important;
 }
 
 .dak-home-specialty-icon {
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: center !important;
-	width: 48px !important;
-	height: 48px !important;
-	flex: 0 0 auto !important;
-	border-radius: 14px !important;
-	background: var( --dak-primary-tint ) !important;
+	width: min( 148px, 100% ) !important;
+	aspect-ratio: 1 !important;
+	border-radius: 50% !important;
+	background: linear-gradient( 180deg, var( --dak-primary-tint ) 0%, var( --dak-bg-subtle ) 100% ) !important;
+	box-shadow: 0 0 0 4px var( --dak-bg-card ), var( --dak-shadow ) !important;
 	color: var( --dak-primary-dark ) !important;
+	transition: transform 0.18s ease, box-shadow 0.18s ease !important;
 }
 
 .dak-home-specialty-icon svg {
-	width: 24px !important;
-	height: 24px !important;
+	width: 46% !important;
+	height: 46% !important;
 }
 
-/* Rotating tints so the row reads as colourful without pinning a colour to
-   each specialty name (the list is admin-driven, not fixed). */
-.dak-home-specialty-card:nth-child( 6n + 2 ) .dak-home-specialty-icon {
-	background: var( --dak-tint-teal ) !important;
-	color: var( --dak-secondary ) !important;
-}
-
-.dak-home-specialty-card:nth-child( 6n + 3 ) .dak-home-specialty-icon {
-	background: var( --dak-tint-amber ) !important;
-	color: var( --dak-tint-amber-text ) !important;
-}
-
-.dak-home-specialty-card:nth-child( 6n + 4 ) .dak-home-specialty-icon {
-	background: var( --dak-tint-purple ) !important;
-	color: var( --dak-tint-purple-text ) !important;
-}
-
-.dak-home-specialty-card:nth-child( 6n + 5 ) .dak-home-specialty-icon {
-	background: var( --dak-tint-info ) !important;
-	color: var( --dak-tint-info-text ) !important;
-}
-
-.dak-home-specialty-card:nth-child( 6n ) .dak-home-specialty-icon {
-	background: var( --dak-tint-success ) !important;
-	color: var( --dak-tint-success-text ) !important;
+.dak-home-specialty-card:hover .dak-home-specialty-icon,
+.dak-home-specialty-card:focus-visible .dak-home-specialty-icon {
+	transform: translateY( -4px ) !important;
+	box-shadow: 0 0 0 4px var( --dak-bg-card ), var( --dak-shadow-hover ) !important;
 }
 
 .dak-home-specialty-label {
-	font-size: var( --dak-text-sm ) !important;
-	font-weight: 700 !important;
-	line-height: 1.35 !important;
+	font-size: var( --dak-text-md ) !important;
+	font-weight: 400 !important;
+	line-height: 1.5 !important;
 	color: var( --dak-text ) !important;
 }
 
-/* Revealed on hover/keyboard focus — the whole tile is the link, so this is
-   an affordance rather than a second control. */
-.dak-home-specialty-action {
-	max-height: 0 !important;
-	padding: 0 var( --dak-space-3 ) !important;
-	overflow: hidden !important;
-	opacity: 0 !important;
-	border-radius: 999px !important;
-	background: var( --dak-primary ) !important;
-	color: #fff !important;
-	font-size: var( --dak-text-xs ) !important;
-	font-weight: 700 !important;
-	line-height: 1.9 !important;
-	transition: max-height 0.18s ease, opacity 0.18s ease !important;
+.dak-home-specialty-card:hover .dak-home-specialty-label {
+	color: var( --dak-primary-dark ) !important;
 }
 
-.dak-home-specialty-card:hover .dak-home-specialty-action,
-.dak-home-specialty-card:focus-visible .dak-home-specialty-action {
-	max-height: 32px !important;
-	opacity: 1 !important;
+@media ( max-width: 1100px ) {
+	.dak-home-specialties-grid {
+		grid-template-columns: repeat( 5, minmax( 0, 1fr ) ) !important;
+	}
+}
+
+@media ( max-width: 700px ) {
+	.dak-home-specialties-grid {
+		grid-template-columns: repeat( 3, minmax( 0, 1fr ) ) !important;
+	}
 }
 
 /* Doctors — reuses the [featured_doctors] shortcode's own horizontal-scroll
-   slider markup/CSS/JS (dak-featured-doctors-slider/-track/-slide/-nav,
-   already enqueued alongside the home page's own styles) instead of a
-   second carousel implementation, but with the home page's own full-photo
-   card (directory/home-doctor-card.php) — a big photo with the name/
-   specialty always legible over a permanent bottom scrim, and the years-
-   experience line + action buttons revealed on hover/focus. Deliberately a
-   separate template + these dak-home-doctor-card-* classes rather than
-   restyling the shared .dak-doctor-card partial, which the standalone
-   doctors directory grid and the [featured_doctors] widget also render. */
+   slider markup/CSS/JS (dak-featured-doctors-slider/-track/-slide/-nav) rather
+   than a second carousel implementation, but with the home page's own card
+   (directory/home-doctor-card.php): a tall photo with a status badge, and a
+   white info panel overlapping its bottom edge (name, specialty, experience,
+   and a round arrow button into the profile). Scoped under .dak-home-doctors
+   so the shared slider look everywhere else is untouched. */
+
+.dak-home-doctors .dak-featured-doctors-header {
+	align-items: center !important;
+	margin-bottom: var( --dak-space-5 ) !important;
+}
+
+.dak-home-doctors .dak-eyebrow {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.45rem !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.06em !important;
+}
+
+.dak-home-doctors .dak-eyebrow svg {
+	width: 18px !important;
+	height: 18px !important;
+}
+
+.dak-home-doctors .dak-featured-doctors-header h2 {
+	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+	font-size: 2.6rem !important;
+	font-weight: 700 !important;
+	line-height: 1.15 !important;
+}
+
+.dak-home-doctors .dak-featured-doctors-header p {
+	max-width: 56ch !important;
+	font-size: var( --dak-text-md ) !important;
+	line-height: 1.6 !important;
+}
+
+.dak-home-doctors .dak-featured-doctors-view-more {
+	background: transparent !important;
+	border: 1.5px solid var( --dak-primary ) !important;
+	color: var( --dak-primary-dark ) !important;
+	text-decoration: none !important;
+}
+
+.dak-home-doctors .dak-featured-doctors-view-more:hover {
+	background: var( --dak-primary-tint ) !important;
+}
+
+.dak-home-doctors .dak-featured-doctors-slide {
+	width: 300px !important;
+}
 
 .dak-home-doctor-card {
-	position: relative !important;
-	height: 400px !important;
-	border-radius: var( --dak-radius-lg ) !important;
-	overflow: hidden !important;
-	background: var( --dak-bg-subtle ) !important;
-	box-shadow: var( --dak-shadow ) !important;
-	transition: box-shadow 0.25s ease, transform 0.25s ease !important;
+	display: flex !important;
+	flex-direction: column !important;
+	height: 100% !important;
+	transition: transform 0.25s ease !important;
 }
 
 .dak-home-doctor-card:hover,
 .dak-home-doctor-card:focus-within {
 	transform: translateY( -4px ) !important;
-	box-shadow: var( --dak-shadow-lg ) !important;
 }
 
 .dak-home-doctor-card-photo {
-	position: absolute !important;
-	inset: 0 !important;
+	position: relative !important;
 	display: block !important;
+	height: 290px !important;
 	overflow: hidden !important;
+	border-radius: var( --dak-radius-lg ) !important;
 	background: linear-gradient( 165deg, var( --dak-primary-tint ) 0%, var( --dak-bg-subtle ) 100% ) !important;
+	box-shadow: var( --dak-shadow ) !important;
 }
 
 .dak-home-doctor-card-photo img {
@@ -1307,12 +1308,12 @@
 	width: 100% !important;
 	height: 100% !important;
 	object-fit: cover !important;
+	object-position: center top !important;
 	transition: transform 0.35s ease !important;
 }
 
-.dak-home-doctor-card:hover .dak-home-doctor-card-photo img,
-.dak-home-doctor-card:focus-within .dak-home-doctor-card-photo img {
-	transform: scale( 1.06 ) !important;
+.dak-home-doctor-card:hover .dak-home-doctor-card-photo img {
+	transform: scale( 1.05 ) !important;
 }
 
 .dak-home-doctor-card-placeholder {
@@ -1335,91 +1336,121 @@
 	z-index: 1 !important;
 	top: var( --dak-space-3 ) !important;
 	left: var( --dak-space-3 ) !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
 	padding: 0.3rem 0.75rem !important;
 	border-radius: 999px !important;
-	background: var( --dak-tint-success ) !important;
-	color: var( --dak-tint-success-text ) !important;
+	background: #d8f5e7 !important;
+	color: #0a7a4d !important;
 	font-size: var( --dak-text-xs ) !important;
 	font-weight: 700 !important;
-	box-shadow: 0 2px 8px rgba( 0, 0, 0, 0.18 ) !important;
 }
 
-/* Name/specialty sit over a permanent scrim so every card is identifiable
-   without hovering; the panel grows taller on hover/focus to also reveal
-   the years-experience line and action buttons underneath. */
+.dak-home-doctor-card-badge::before {
+	content: '' !important;
+	width: 7px !important;
+	height: 7px !important;
+	border-radius: 50% !important;
+	background: currentColor !important;
+}
 
+.dak-home-doctor-card-badge-consult {
+	background: #e3e6ff !important;
+	color: #4450c9 !important;
+}
+
+/* The white panel that overlaps the photo's bottom edge. */
 .dak-home-doctor-card-info {
-	position: absolute !important;
+	position: relative !important;
+	color: inherit !important;
+	text-decoration: none !important;
 	z-index: 1 !important;
-	left: 0 !important;
-	right: 0 !important;
-	bottom: 0 !important;
-	padding: var( --dak-space-4 ) var( --dak-space-4 ) var( --dak-space-3 ) !important;
+	margin: -2.2rem var( --dak-space-1 ) 0 !important;
+	padding: var( --dak-space-4 ) 4.2rem var( --dak-space-4 ) var( --dak-space-4 ) !important;
 	display: flex !important;
 	flex-direction: column !important;
-	background: linear-gradient( 0deg, rgba( 0, 0, 0, 0.82 ) 0%, rgba( 0, 0, 0, 0.55 ) 60%, rgba( 0, 0, 0, 0 ) 100% ) !important;
+	gap: 0.4rem !important;
+	background: var( --dak-bg-card ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	box-shadow: var( --dak-shadow ) !important;
 }
 
 .dak-home-doctor-card-info h3 {
-	margin: 0 !important;
+	margin: 0 0 0.15rem !important;
 	font-size: var( --dak-text-md ) !important;
 	font-weight: 700 !important;
-	color: #fff !important;
+	line-height: 1.25 !important;
+	color: var( --dak-text ) !important;
 }
 
-.dak-home-doctor-card-specialty {
-	font-size: var( --dak-text-sm ) !important;
-	font-weight: 600 !important;
-	color: #d9f0c4 !important;
-}
-
-.dak-home-doctor-card-more {
-	max-height: 0 !important;
-	overflow: hidden !important;
-	opacity: 0 !important;
-	transition: max-height 0.25s ease, opacity 0.2s ease !important;
-}
-
-.dak-home-doctor-card:hover .dak-home-doctor-card-more,
-.dak-home-doctor-card:focus-within .dak-home-doctor-card-more {
-	max-height: 120px !important;
-	opacity: 1 !important;
-}
-
-.dak-home-doctor-card-meta {
-	display: block !important;
-	font-size: var( --dak-text-xs ) !important;
-	color: rgba( 255, 255, 255, 0.8 ) !important;
-	margin-top: 0.35rem !important;
-}
-
-.dak-home-doctor-card-actions {
+.dak-home-doctor-card-line {
 	display: flex !important;
-	gap: var( --dak-space-2 ) !important;
+	align-items: center !important;
+	gap: 0.55rem !important;
+	font-size: var( --dak-text-sm ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-home-doctor-card-line svg {
+	flex: 0 0 auto !important;
+	width: 16px !important;
+	height: 16px !important;
+	stroke: var( --dak-primary-dark ) !important;
+}
+
+.dak-home-doctor-card-go {
+	position: absolute !important;
+	right: var( --dak-space-4 ) !important;
+	bottom: var( --dak-space-4 ) !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 38px !important;
+	height: 38px !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary-tint ) !important;
+	transition: background-color 0.18s ease !important;
+}
+
+.dak-home-doctor-card-go svg {
+	width: 18px !important;
+	height: 18px !important;
+	stroke: var( --dak-text ) !important;
+}
+
+.dak-home-doctor-card:hover .dak-home-doctor-card-go {
+	background: var( --dak-primary ) !important;
+}
+
+.dak-home-doctor-card:hover .dak-home-doctor-card-go svg {
+	stroke: #fff !important;
+}
+
+.dak-home-doctors-dots {
+	display: flex !important;
+	justify-content: center !important;
+	gap: 0.5rem !important;
 	margin-top: var( --dak-space-3 ) !important;
 }
 
-.dak-home-doctor-card-actions .dak-button {
-	flex: 1 1 0 !important;
-	justify-content: center !important;
+.dak-home-doctors-dot {
+	width: 9px !important;
+	height: 9px !important;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary-tint ) !important;
+	cursor: pointer !important;
 }
 
-.dak-home-doctor-card-actions .dak-button-secondary {
-	background: rgba( 255, 255, 255, 0.12 ) !important;
-	border-color: rgba( 255, 255, 255, 0.4 ) !important;
-	color: #fff !important;
+.dak-home-doctors-dot.is-active {
+	background: var( --dak-primary ) !important;
 }
 
-.dak-home-doctor-card-actions .dak-button-secondary:hover {
-	background: rgba( 255, 255, 255, 0.22 ) !important;
-}
-
-@media ( hover: none ) {
-	/* Touch devices have no hover — keep the extra details/buttons visible so
-	   they're always reachable, not hidden behind a tap. */
-	.dak-home-doctor-card-more {
-		max-height: 120px !important;
-		opacity: 1 !important;
+@media ( max-width: 640px ) {
+	.dak-home-doctors .dak-featured-doctors-header h2 {
+		font-size: 2rem !important;
 	}
 }
 
@@ -2010,17 +2041,6 @@
 
 	.dak-home-video-tour-heading {
 		grid-template-columns: 1fr !important;
-	}
-
-	/* Photo above the copy rather than a cramped side column. */
-	.dak-home-service-row {
-		grid-template-columns: 1fr !important;
-		gap: var( --dak-space-4 ) !important;
-	}
-
-	.dak-home-service-row-media {
-		order: -1 !important;
-		min-height: 200px !important;
 	}
 
 	/* Video above the cards rather than side by side — there isn't enough

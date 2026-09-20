@@ -125,6 +125,17 @@ $dak_icons = array(
 					</div>
 
 					<div class="dak-field">
+						<label for="dak-gender"><span class="dak-field-icon dak-field-icon-experience"><?php echo $dak_icons['user']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Gender', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
+						<select id="dak-gender" name="gender" required>
+								<option value=""><?php esc_html_e( 'Select gender', 'doctor-ak-portal' ); ?></option>
+								<?php foreach ( \DoctorAKPortal\Includes\Doctor_Gender::get_all() as $dak_gender_slug => $dak_gender_label ) : ?>
+									<option value="<?php echo esc_attr( $dak_gender_slug ); ?>"><?php echo esc_html( $dak_gender_label ); ?></option>
+								<?php endforeach; ?>
+							</select>
+						<span class="dak-field-error" data-field="gender"></span>
+					</div>
+
+					<div class="dak-field">
 						<label for="dak-qualification"><span class="dak-field-icon dak-field-icon-specialization"><?php echo $dak_icons['graduation']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Qualification', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
 						<input type="text" id="dak-qualification" name="qualification" placeholder="<?php esc_attr_e( 'e.g. MBBS, FCPS (Gastroenterology)', 'doctor-ak-portal' ); ?>" required>
 						<span class="dak-field-error" data-field="qualification"></span>

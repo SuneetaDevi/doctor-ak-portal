@@ -153,6 +153,17 @@ $dak_editing_clinic_location_ids = wp_list_pluck( $editing_clinics, 'clinic_loca
 				</div>
 			</div>
 
+			<div class="dak-field">
+				<label for="dak-admin-user-gender"><?php esc_html_e( 'Gender', 'doctor-ak-portal' ); ?></label>
+				<select id="dak-admin-user-gender" name="gender">
+								<option value=""><?php esc_html_e( 'Select gender', 'doctor-ak-portal' ); ?></option>
+								<?php foreach ( \DoctorAKPortal\Includes\Doctor_Gender::get_all() as $dak_gender_slug => $dak_gender_label ) : ?>
+									<option value="<?php echo esc_attr( $dak_gender_slug ); ?>" <?php selected( $dak_is_editing ? $editing_user['gender'] : '', $dak_gender_slug ); ?>><?php echo esc_html( $dak_gender_label ); ?></option>
+								<?php endforeach; ?>
+							</select>
+				<span class="dak-field-error" data-field="gender"></span>
+			</div>
+
 			<div class="dak-field-row">
 				<div class="dak-field">
 					<label for="dak-admin-user-country"><?php esc_html_e( 'Country', 'doctor-ak-portal' ); ?></label>

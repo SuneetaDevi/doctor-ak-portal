@@ -71,6 +71,8 @@
 		var sortSelect = document.getElementById( 'dak-directory-sort' );
 		var videoToggle = document.getElementById( 'dak-directory-video-toggle' );
 		var availabilityToggle = document.getElementById( 'dak-directory-availability-toggle' );
+		var maleToggle = document.getElementById( 'dak-directory-male-toggle' );
+		var femaleToggle = document.getElementById( 'dak-directory-female-toggle' );
 		var nearMeButton = document.getElementById( 'dak-directory-nearme-toggle' );
 		var nearMeStatus = document.getElementById( 'dak-directory-nearme-status' );
 
@@ -100,6 +102,8 @@
 		initNearMe();
 		initTogglePill( videoToggle, applyFilters );
 		initTogglePill( availabilityToggle, applyFilters );
+		initTogglePill( maleToggle, applyFilters );
+		initTogglePill( femaleToggle, applyFilters );
 		initSort( grid, sortSelect, applyFilters );
 		initPagination( function ( page ) {
 			currentPage = page;
@@ -134,6 +138,16 @@
 			var city = nearCity || presetCity;
 			var videoOnly = videoToggle ? videoToggle.classList.contains( 'is-active' ) : false;
 			var availableOnly = availabilityToggle ? availabilityToggle.classList.contains( 'is-active' ) : false;
+			// Male/Female Doctor chips: neither lit = everyone, one = that gender, both = both.
+			var genders = [];
+
+			if ( maleToggle && maleToggle.classList.contains( 'is-active' ) ) {
+				genders.push( 'male' );
+			}
+
+			if ( femaleToggle && femaleToggle.classList.contains( 'is-active' ) ) {
+				genders.push( 'female' );
+			}
 
 			var matching = cards.filter( function ( card ) {
 				var name = card.getAttribute( 'data-search-name' ) || '';
@@ -144,10 +158,11 @@
 				var matchesSpecialization = '' === specialization || specializations.indexOf( specialization ) !== -1;
 				var matchesCity = '' === city || cities.split( ',' ).indexOf( city ) !== -1;
 				var matchesVideo = ! videoOnly || '1' === card.getAttribute( 'data-search-video' );
+				var matchesGender = 0 === genders.length || genders.indexOf( card.getAttribute( 'data-search-gender' ) || '' ) !== -1;
 				var matchesAvailable = ! availableOnly || '1' === card.getAttribute( 'data-search-available' );
 
 				return matchesQuery && matchesSpecialization && matchesCity
-					&& matchesVideo && matchesAvailable;
+					&& matchesGender && matchesVideo && matchesAvailable;
 			} );
 
 			var totalPages = Math.max( 1, Math.ceil( matching.length / PAGE_SIZE ) );

@@ -317,6 +317,7 @@ class Doctors_Directory {
 			'specialization_slugs'  => $specialization_slugs,
 			'specialization_labels' => $specialization_labels,
 			'years_experience'      => get_user_meta( $doctor->ID, 'doctor_ak_years_experience', true ),
+			'gender'                => (string) get_user_meta( $doctor->ID, 'doctor_ak_gender', true ),
 			'clinic_location'       => $primary_clinic_location,
 			'clinic_city_label'     => $primary_clinic_city_label,
 			'clinic_country_label'  => $primary_clinic_country_label,
