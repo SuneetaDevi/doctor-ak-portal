@@ -20,8 +20,57 @@
 
 	document.addEventListener( 'DOMContentLoaded', function () {
 		initVideoModal();
+		initVideoGallery();
 		initHeroSearch();
 	} );
+
+	/**
+	 * The video gallery's clips play by themselves (muted, looping) — but only
+	 * while they're actually on screen, so a page with several 10 MB clips isn't
+	 * decoding all of them at once, and only starts downloading them as the
+	 * visitor scrolls near. Clicking one still opens the lightbox (with sound).
+	 * Visitors who ask for reduced motion get still frames instead.
+	 */
+	function initVideoGallery() {
+		var videos = document.querySelectorAll( '[data-gallery-video]' );
+
+		if ( ! videos.length ) {
+			return;
+		}
+
+		if ( window.matchMedia && window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches ) {
+			return;
+		}
+
+		function play( video ) {
+			var promise = video.play();
+
+			if ( promise && promise.catch ) {
+				promise.catch( function () {
+					// Autoplay blocked — the still first frame and the click-to-watch chip remain.
+				} );
+			}
+		}
+
+		if ( ! ( 'IntersectionObserver' in window ) ) {
+			videos.forEach( play );
+			return;
+		}
+
+		var observer = new IntersectionObserver( function ( entries ) {
+			entries.forEach( function ( entry ) {
+				if ( entry.isIntersecting ) {
+					play( entry.target );
+				} else {
+					entry.target.pause();
+				}
+			} );
+		}, { threshold: 0.35 } );
+
+		videos.forEach( function ( video ) {
+			observer.observe( video );
+		} );
+	}
 
 	function initVideoModal() {
 		var modal = document.getElementById( 'dak-home-video-modal' );

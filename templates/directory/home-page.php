@@ -250,45 +250,72 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 			</div>
 		</div>
 
-		<div class="dak-home-hero-banner-stats dak-home-hero-banner-stats-2">
-			<div class="dak-home-hero-stat">
-				<span class="dak-home-hero-stat-icon" aria-hidden="true"><?php echo $dak_home_icons['user']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-				<span class="dak-home-hero-stat-text">
-					<strong><?php echo esc_html( number_format_i18n( 100000 ) ); ?>+</strong>
-					<span><?php esc_html_e( 'Patients Cared For', 'doctor-ak-portal' ); ?></span>
-				</span>
-			</div>
-			<div class="dak-home-hero-stat">
-				<span class="dak-home-hero-stat-icon" aria-hidden="true"><?php echo $dak_home_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-				<span class="dak-home-hero-stat-text">
-					<strong><?php echo esc_html( number_format_i18n( 100 ) ); ?>+</strong>
-					<span><?php esc_html_e( 'Clinics Across Pakistan', 'doctor-ak-portal' ); ?></span>
-				</span>
+		<div class="dak-home-hero-side">
+			<?php if ( $directory_url ) : ?>
+				<div class="dak-home-hero-form">
+					<h2><?php esc_html_e( 'How can we help you?', 'doctor-ak-portal' ); ?></h2>
+					<p><?php esc_html_e( 'Find a doctor, service or clinic near you.', 'doctor-ak-portal' ); ?></p>
+
+					<button type="button" class="dak-home-hero-search" id="dak-home-hero-search-trigger" aria-haspopup="dialog" aria-controls="dak-home-search-modal">
+						<span class="dak-home-hero-search-field">
+							<span class="dak-home-hero-search-icon" aria-hidden="true"><?php echo $dak_home_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<span class="dak-home-hero-search-control">
+								<strong><?php esc_html_e( 'Location', 'doctor-ak-portal' ); ?></strong>
+								<em id="dak-home-hero-search-trigger-location"><?php esc_html_e( 'Any city', 'doctor-ak-portal' ); ?></em>
+							</span>
+						</span>
+						<span class="dak-home-hero-search-field">
+							<span class="dak-home-hero-search-icon" aria-hidden="true"><?php echo $dak_home_icons['search']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<span class="dak-home-hero-search-control">
+								<strong><?php esc_html_e( 'Specialty or Doctor', 'doctor-ak-portal' ); ?></strong>
+								<em><?php esc_html_e( 'Search by condition or doctor name', 'doctor-ak-portal' ); ?></em>
+							</span>
+						</span>
+						<span class="dak-button dak-button-primary dak-home-hero-search-submit">
+							<?php esc_html_e( 'Search', 'doctor-ak-portal' ); ?>
+						</span>
+					</button>
+				</div>
+			<?php endif; ?>
+
+			<div class="dak-home-hero-stats">
+				<div class="dak-home-hero-stat is-left">
+					<span class="dak-home-hero-stat-icon" aria-hidden="true"><?php echo $dak_home_icons['user']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+					<span class="dak-home-hero-stat-text">
+						<strong><?php echo esc_html( number_format_i18n( 100000 ) ); ?>+</strong>
+						<span><?php esc_html_e( 'Patients Cared For', 'doctor-ak-portal' ); ?></span>
+					</span>
+				</div>
+				<?php if ( $stats['doctors_count'] > 0 ) : ?>
+					<div class="dak-home-hero-stat is-left-low">
+						<span class="dak-home-hero-stat-icon" aria-hidden="true"><?php echo $dak_home_specialty_icons['stethoscope']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<span class="dak-home-hero-stat-text">
+							<strong><?php echo esc_html( number_format_i18n( $stats['doctors_count'] ) ); ?></strong>
+							<span><?php esc_html_e( 'Verified Doctors', 'doctor-ak-portal' ); ?></span>
+						</span>
+					</div>
+				<?php endif; ?>
+				<?php if ( ! empty( $specialties ) ) : ?>
+					<div class="dak-home-hero-stat is-bl">
+						<span class="dak-home-hero-stat-icon" aria-hidden="true"><?php echo $dak_home_icons['pulse']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<span class="dak-home-hero-stat-text">
+							<strong><?php echo esc_html( number_format_i18n( count( $specialties ) ) ); ?></strong>
+							<span><?php esc_html_e( 'Specialities Covered', 'doctor-ak-portal' ); ?></span>
+						</span>
+					</div>
+				<?php endif; ?>
+				<div class="dak-home-hero-stat is-br">
+					<span class="dak-home-hero-stat-icon" aria-hidden="true"><?php echo $dak_home_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+					<span class="dak-home-hero-stat-text">
+						<strong><?php echo esc_html( number_format_i18n( 100 ) ); ?>+</strong>
+						<span><?php esc_html_e( 'Clinics Across Pakistan', 'doctor-ak-portal' ); ?></span>
+					</span>
+				</div>
 			</div>
 		</div>
 	</section>
 
 	<?php if ( $directory_url ) : ?>
-		<button type="button" class="dak-home-hero-search" id="dak-home-hero-search-trigger" aria-haspopup="dialog" aria-controls="dak-home-search-modal">
-			<span class="dak-home-hero-search-field">
-				<span class="dak-home-hero-search-icon" aria-hidden="true"><?php echo $dak_home_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-				<span class="dak-home-hero-search-control">
-					<strong><?php esc_html_e( 'Location', 'doctor-ak-portal' ); ?></strong>
-					<em id="dak-home-hero-search-trigger-location"><?php esc_html_e( 'Any city', 'doctor-ak-portal' ); ?></em>
-				</span>
-			</span>
-			<span class="dak-home-hero-search-field">
-				<span class="dak-home-hero-search-icon" aria-hidden="true"><?php echo $dak_home_icons['search']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-				<span class="dak-home-hero-search-control">
-					<strong><?php esc_html_e( 'Specialty or Doctor', 'doctor-ak-portal' ); ?></strong>
-					<em><?php esc_html_e( 'Search by condition or doctor name', 'doctor-ak-portal' ); ?></em>
-				</span>
-			</span>
-			<span class="dak-button dak-button-primary dak-home-hero-search-submit">
-				<?php esc_html_e( 'Search', 'doctor-ak-portal' ); ?>
-			</span>
-		</button>
-
 		<div class="dak-home-search-modal" id="dak-home-search-modal" aria-hidden="true">
 			<div class="dak-home-search-modal-overlay" id="dak-home-search-modal-overlay"></div>
 
@@ -373,6 +400,7 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 
 	<?php if ( ! empty( $dak_home_quick_links ) ) : ?>
 		<section class="dak-home-section dak-home-quick-links">
+			<h2 class="dak-home-quick-links-title"><?php esc_html_e( 'What Would You Like To Do?', 'doctor-ak-portal' ); ?></h2>
 			<div class="dak-home-quick-links-grid">
 				<?php foreach ( $dak_home_quick_links as $dak_link ) : ?>
 					<?php if ( $dak_link['is_book'] ) : ?>
@@ -380,12 +408,14 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 							<span class="dak-home-quick-link-icon dak-home-quick-link-icon-<?php echo esc_attr( $dak_link['color'] ); ?>" aria-hidden="true"><?php echo $dak_home_icons[ $dak_link['icon'] ]; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 							<span class="dak-home-quick-link-title"><?php echo esc_html( $dak_link['title'] ); ?></span>
 							<span class="dak-home-quick-link-text"><?php echo esc_html( $dak_link['text'] ); ?></span>
+							<span class="dak-home-quick-link-arrow" aria-hidden="true"><?php echo $dak_home_icons['arrow']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						</button>
 					<?php else : ?>
 						<a class="dak-home-quick-link-card" href="<?php echo esc_url( $dak_link['url'] ); ?>">
 							<span class="dak-home-quick-link-icon dak-home-quick-link-icon-<?php echo esc_attr( $dak_link['color'] ); ?>" aria-hidden="true"><?php echo $dak_home_icons[ $dak_link['icon'] ]; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 							<span class="dak-home-quick-link-title"><?php echo esc_html( $dak_link['title'] ); ?></span>
 							<span class="dak-home-quick-link-text"><?php echo esc_html( $dak_link['text'] ); ?></span>
+							<span class="dak-home-quick-link-arrow" aria-hidden="true"><?php echo $dak_home_icons['arrow']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						</a>
 					<?php endif; ?>
 				<?php endforeach; ?>
@@ -441,7 +471,7 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 	<?php if ( ! empty( $dak_home_specialty_tiles ) ) : ?>
 		<section class="dak-home-section dak-home-specialties">
 			<div class="dak-home-specialties-header">
-				<h2><?php esc_html_e( 'Consult best doctors online', 'doctor-ak-portal' ); ?></h2>
+				<h2><?php esc_html_e( 'Specialities our doctors practise', 'doctor-ak-portal' ); ?></h2>
 				<?php if ( $directory_url ) : ?>
 					<a class="dak-home-specialties-viewall" href="<?php echo esc_url( $directory_url ); ?>"><?php esc_html_e( 'View All', 'doctor-ak-portal' ); ?></a>
 				<?php endif; ?>
@@ -591,9 +621,11 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 
 	<?php if ( ! empty( $marketing_videos ) || ! empty( $videos ) ) : ?>
 		<section class="dak-home-section dak-home-videos" id="dak-home-videos">
-			<div class="dak-directory-header">
-				<span class="dak-eyebrow"><?php esc_html_e( 'See More', 'doctor-ak-portal' ); ?></span>
-				<h2><?php esc_html_e( 'More From Our Clinic', 'doctor-ak-portal' ); ?></h2>
+			<div class="dak-home-videos-inner">
+			<div class="dak-home-videos-header">
+				<span class="dak-home-videos-live"><?php esc_html_e( 'Inside our clinics', 'doctor-ak-portal' ); ?></span>
+				<h2><?php esc_html_e( 'More From', 'doctor-ak-portal' ); ?> <em><?php esc_html_e( 'Our Clinic', 'doctor-ak-portal' ); ?></em></h2>
+				<p><?php esc_html_e( 'Real moments from our clinics. Tap any clip to watch it full screen, with sound.', 'doctor-ak-portal' ); ?></p>
 			</div>
 
 			<div class="dak-home-videos-grid">
@@ -606,8 +638,8 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 						data-video-title="<?php echo esc_attr( sprintf( /* translators: %d: video number. */ __( 'Marketing Video %d', 'doctor-ak-portal' ), $dak_marketing_video_index + 1 ) ); ?>"
 						aria-label="<?php echo esc_attr( sprintf( /* translators: %d: video number. */ __( 'Play marketing video %d', 'doctor-ak-portal' ), $dak_marketing_video_index + 1 ) ); ?>"
 					>
-						<video src="<?php echo esc_url( $dak_marketing_video_url ); ?>" muted playsinline preload="metadata"></video>
-						<span class="dak-home-video-play" aria-hidden="true"><?php echo $dak_home_icons['play']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<video src="<?php echo esc_url( $dak_marketing_video_url ); ?>" muted loop playsinline preload="metadata" data-gallery-video></video>
+						<span class="dak-home-video-play" data-label="<?php esc_attr_e( 'Watch with sound', 'doctor-ak-portal' ); ?>" aria-hidden="true"><?php echo $dak_home_icons['play']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 					</button>
 				<?php endforeach; ?>
 
@@ -620,13 +652,14 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 						data-video-title="<?php echo esc_attr( $dak_video['title'] ); ?>"
 						aria-label="<?php echo esc_attr( '' !== $dak_video['title'] ? $dak_video['title'] : __( 'Play video', 'doctor-ak-portal' ) ); ?>"
 					>
-						<video src="<?php echo esc_url( $dak_video['video_url'] ); ?>" muted playsinline preload="metadata"></video>
-						<span class="dak-home-video-play" aria-hidden="true"><?php echo $dak_home_icons['play']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<video src="<?php echo esc_url( $dak_video['video_url'] ); ?>" muted loop playsinline preload="metadata" data-gallery-video></video>
+						<span class="dak-home-video-play" data-label="<?php esc_attr_e( 'Watch with sound', 'doctor-ak-portal' ); ?>" aria-hidden="true"><?php echo $dak_home_icons['play']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						<?php if ( '' !== $dak_video['title'] ) : ?>
 							<span class="dak-home-video-title"><?php echo esc_html( $dak_video['title'] ); ?></span>
 						<?php endif; ?>
 					</button>
 				<?php endforeach; ?>
+			</div>
 			</div>
 		</section>
 
