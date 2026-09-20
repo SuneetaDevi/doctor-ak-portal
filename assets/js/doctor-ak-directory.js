@@ -16,17 +16,63 @@
 
 	var PAGE_SIZE = 12;
 
+	// Approximate city-centre coordinates for Pakistan's major cities — the
+	// "Near me" pill picks the nearest one of these that a listed doctor
+	// practises in (same list the home page's location detection uses).
+	var PK_CITIES = [
+		{ name: 'Karachi', lat: 24.8607, lng: 67.0011 },
+		{ name: 'Lahore', lat: 31.5497, lng: 74.3436 },
+		{ name: 'Islamabad', lat: 33.6844, lng: 73.0479 },
+		{ name: 'Rawalpindi', lat: 33.5651, lng: 73.0169 },
+		{ name: 'Faisalabad', lat: 31.4504, lng: 73.1350 },
+		{ name: 'Multan', lat: 30.1575, lng: 71.5249 },
+		{ name: 'Peshawar', lat: 34.0151, lng: 71.5249 },
+		{ name: 'Quetta', lat: 30.1798, lng: 66.9750 },
+		{ name: 'Hyderabad', lat: 25.3960, lng: 68.3578 },
+		{ name: 'Sialkot', lat: 32.4945, lng: 74.5229 },
+		{ name: 'Gujranwala', lat: 32.1877, lng: 74.1945 },
+		{ name: 'Sukkur', lat: 27.7052, lng: 68.8574 },
+		{ name: 'Bahawalpur', lat: 29.3956, lng: 71.6836 },
+		{ name: 'Sargodha', lat: 32.0836, lng: 72.6711 },
+		{ name: 'Abbottabad', lat: 34.1463, lng: 73.2117 },
+		{ name: 'Mardan', lat: 34.1986, lng: 72.0404 },
+		{ name: 'Sahiwal', lat: 30.6682, lng: 73.1114 },
+		{ name: 'Larkana', lat: 27.5590, lng: 68.2120 },
+		{ name: 'Gujrat', lat: 32.5740, lng: 74.0789 },
+		{ name: 'Rahim Yar Khan', lat: 28.4202, lng: 70.2952 },
+		{ name: 'Sheikhupura', lat: 31.7130, lng: 73.9783 },
+		{ name: 'Jhang', lat: 31.2781, lng: 72.3317 },
+		{ name: 'Dera Ghazi Khan', lat: 30.0561, lng: 70.6345 },
+		{ name: 'Nawabshah', lat: 26.2442, lng: 68.4100 },
+		{ name: 'Okara', lat: 30.8081, lng: 73.4460 },
+		{ name: 'Mirpur Khas', lat: 25.5268, lng: 69.0113 },
+		{ name: 'Kasur', lat: 31.1156, lng: 74.4502 },
+		{ name: 'Jhelum', lat: 32.9425, lng: 73.7257 },
+		{ name: 'Attock', lat: 33.7666, lng: 72.3667 },
+		{ name: 'Kohat', lat: 33.5900, lng: 71.4400 }
+	];
+
+	/**
+	 * Great-circle distance in km (haversine).
+	 */
+	function distanceKm( lat1, lng1, lat2, lng2 ) {
+		var toRad = Math.PI / 180;
+		var dLat = ( lat2 - lat1 ) * toRad;
+		var dLng = ( lng2 - lng1 ) * toRad;
+		var a = Math.sin( dLat / 2 ) * Math.sin( dLat / 2 )
+			+ Math.cos( lat1 * toRad ) * Math.cos( lat2 * toRad ) * Math.sin( dLng / 2 ) * Math.sin( dLng / 2 );
+
+		return 6371 * 2 * Math.atan2( Math.sqrt( a ), Math.sqrt( 1 - a ) );
+	}
+
 	document.addEventListener( 'DOMContentLoaded', function () {
 		var grid = document.getElementById( 'dak-directory-grid' );
 		var searchInput = document.getElementById( 'dak-directory-search-input' );
-		var specializationSelect = document.getElementById( 'dak-directory-specialization-filter' );
-		var countrySelect = document.getElementById( 'dak-directory-country-filter' );
-		var citySelect = document.getElementById( 'dak-directory-city-filter' );
-		var areaSelect = document.getElementById( 'dak-directory-area-filter' );
-		var clinicSelect = document.getElementById( 'dak-directory-clinic-filter' );
 		var sortSelect = document.getElementById( 'dak-directory-sort' );
 		var videoToggle = document.getElementById( 'dak-directory-video-toggle' );
 		var availabilityToggle = document.getElementById( 'dak-directory-availability-toggle' );
+		var nearMeButton = document.getElementById( 'dak-directory-nearme-toggle' );
+		var nearMeStatus = document.getElementById( 'dak-directory-nearme-status' );
 
 		if ( ! grid || ! searchInput ) {
 			return;
@@ -35,22 +81,23 @@
 		var noResults = document.getElementById( 'dak-directory-no-results' );
 		var currentPage = 1;
 
-		// A `?city=<slug>` link (the site header's Doctors -> By Location
-		// menu) matches directly against each card's own data-search-city —
-		// see applyFilters() below — rather than driving the Country -> City
-		// cascade, which only populates City once a Country is chosen and so
-		// can't be preselected by a single deep link. Captured once here;
-		// the moment the visitor actually touches the City <select>
-		// themselves, its own value takes over (see matchesCity below).
+		// A `?city=<slug>` link (footer/header deep links) matches directly
+		// against each card's own data-search-city — see applyFilters() below.
+		// The "Near me" pill (initNearMe()) overrides it once used.
 		var presetCity = window.URLSearchParams
 			? ( new URLSearchParams( window.location.search ).get( 'city' ) || '' ).toLowerCase()
 			: '';
 
-		wireLocationCascade( countrySelect, citySelect, areaSelect );
-		wireClinicAreaDependency( areaSelect, clinicSelect );
-		initColumnsToggle( grid );
-		initViewToggle( grid );
-		initLocationPanel();
+		// City resolved by the "Near me" pill from the visitor's location, '' when off.
+		var nearCity = '';
+
+		// No specialization dropdown on this page — the `?specialization=` deep
+		// links (home specialty tiles, header Doctors menu) still filter, via this.
+		var presetSpecialization = window.URLSearchParams
+			? ( new URLSearchParams( window.location.search ).get( 'specialization' ) || '' ).toLowerCase()
+			: '';
+
+		initNearMe();
 		initTogglePill( videoToggle, applyFilters );
 		initTogglePill( availabilityToggle, applyFilters );
 		initSort( grid, sortSelect, applyFilters );
@@ -83,33 +130,24 @@
 			var cards = Array.prototype.slice.call( grid.querySelectorAll( '[data-doctor-card]' ) );
 
 			var query = searchInput.value.trim().toLowerCase();
-			var specialization = specializationSelect ? specializationSelect.value : '';
-			var country = countrySelect ? countrySelect.value : '';
-			var city = ( citySelect && citySelect.value ) ? citySelect.value : presetCity;
-			var area = areaSelect ? areaSelect.value : '';
-			var clinic = clinicSelect ? clinicSelect.value : '';
+			var specialization = presetSpecialization;
+			var city = nearCity || presetCity;
 			var videoOnly = videoToggle ? videoToggle.classList.contains( 'is-active' ) : false;
 			var availableOnly = availabilityToggle ? availabilityToggle.classList.contains( 'is-active' ) : false;
 
 			var matching = cards.filter( function ( card ) {
 				var name = card.getAttribute( 'data-search-name' ) || '';
 				var specializations = card.getAttribute( 'data-search-specializations' ) || '';
-				var countries = card.getAttribute( 'data-search-country' ) || '';
 				var cities = card.getAttribute( 'data-search-city' ) || '';
-				var areas = card.getAttribute( 'data-search-area' ) || '';
-				var clinics = card.getAttribute( 'data-search-clinics' ) || '';
 
 				var matchesQuery = '' === query || name.indexOf( query ) !== -1 || specializations.indexOf( query ) !== -1;
 				var matchesSpecialization = '' === specialization || specializations.indexOf( specialization ) !== -1;
-				var matchesCountry = '' === country || countries.split( ',' ).indexOf( country ) !== -1;
 				var matchesCity = '' === city || cities.split( ',' ).indexOf( city ) !== -1;
-				var matchesArea = '' === area || areas.split( ',' ).indexOf( area ) !== -1;
-				var matchesClinic = '' === clinic || clinics.indexOf( clinic ) !== -1;
 				var matchesVideo = ! videoOnly || '1' === card.getAttribute( 'data-search-video' );
 				var matchesAvailable = ! availableOnly || '1' === card.getAttribute( 'data-search-available' );
 
-				return matchesQuery && matchesSpecialization && matchesCountry && matchesCity
-					&& matchesArea && matchesClinic && matchesVideo && matchesAvailable;
+				return matchesQuery && matchesSpecialization && matchesCity
+					&& matchesVideo && matchesAvailable;
 			} );
 
 			var totalPages = Math.max( 1, Math.ceil( matching.length / PAGE_SIZE ) );
@@ -135,24 +173,9 @@
 
 		searchInput.addEventListener( 'input', applyFilters );
 
-		// A manual pick in the City <select> itself should always win over
-		// the `?city=` deep link from here on — clearing presetCity means
-		// matchesCity above falls through to citySelect's own (possibly
-		// empty, i.e. "All cities") value instead of re-applying the preset.
-		if ( citySelect ) {
-			citySelect.addEventListener( 'change', function () {
-				presetCity = '';
-			} );
+		if ( presetSpecialization ) {
+			applyFilters();
 		}
-
-		[ specializationSelect, countrySelect, citySelect, areaSelect, clinicSelect ].forEach( function ( select ) {
-			if ( select ) {
-				select.addEventListener( 'change', applyFilters );
-			}
-		} );
-
-		applyPreselectedFilter( specializationSelect, 'specialization', applyFilters );
-		applyPreselectedFilter( clinicSelect, 'clinic', applyFilters );
 		applyPreselectedSearch( searchInput, applyFilters );
 
 		// Always run once on load, preset filters or not — unlike the old
@@ -163,67 +186,118 @@
 		applyFilters();
 
 		/**
-		 * Expand/collapse for the Location quick-filter's Country/City/Area
-		 * panel (templates/directory/doctors-directory.php). The <select>s
-		 * inside already drive applyFilters() via the
-		 * [specializationSelect, countrySelect, ...].forEach() above; this
-		 * only owns the disclosure itself plus the pill's own state.
-		 *
-		 * Note the pill's `is-active` class means "a location filter is
-		 * applied", NOT "the panel is open" — collapsing the panel would
-		 * otherwise hide the fact that the grid is still filtered down to one
-		 * city. Open/closed is carried by aria-expanded alone (which is also
-		 * what flips the chevron, see doctor-ak-directory.css).
+		 * The "Near me" quick-filter pill: on click asks the browser for the
+		 * visitor's position, finds the nearest city (from PK_CITIES below) that
+		 * at least one listed doctor actually practises in, and narrows the list
+		 * to it; clicking again turns it off. Fails quietly with a short message
+		 * when permission is denied or nothing can be matched.
 		 */
-		function initLocationPanel() {
-			var toggle = document.getElementById( 'dak-directory-location-toggle' );
-			var panel = document.getElementById( 'dak-directory-location-panel' );
-
-			if ( ! toggle || ! panel ) {
+		function initNearMe() {
+			if ( ! nearMeButton ) {
 				return;
 			}
 
-			toggle.addEventListener( 'click', function ( event ) {
-				event.stopPropagation();
-				setOpen( panel.classList.contains( 'dak-hidden' ) );
-			} );
+			var labelEl = nearMeButton.querySelector( '[data-nearme-label]' );
+			var defaultLabel = labelEl ? labelEl.textContent : '';
 
-			document.addEventListener( 'click', function ( event ) {
-				if ( ! panel.classList.contains( 'dak-hidden' ) && ! panel.contains( event.target ) ) {
-					setOpen( false );
+			nearMeButton.addEventListener( 'click', function () {
+				if ( nearCity ) {
+					setNearCity( '', '' );
+					return;
 				}
-			} );
 
-			document.addEventListener( 'keydown', function ( event ) {
-				if ( 'Escape' === event.key && ! panel.classList.contains( 'dak-hidden' ) ) {
-					setOpen( false );
+				if ( ! navigator.geolocation ) {
+					showStatus( nearMeButton.getAttribute( 'data-msg-unsupported' ) );
+					return;
 				}
-			} );
 
-			// Keep the pill lit for as long as any level of the cascade is
-			// narrowed, whatever the panel is doing.
-			[ countrySelect, citySelect, areaSelect ].forEach( function ( select ) {
-				if ( select ) {
-					select.addEventListener( 'change', updatePillState );
-				}
-			} );
+				showStatus( '' );
+				nearMeButton.classList.add( 'is-detecting' );
 
-			updatePillState();
+				navigator.geolocation.getCurrentPosition(
+					function ( position ) {
+						nearMeButton.classList.remove( 'is-detecting' );
 
-			function updatePillState() {
-				var isFiltered = Boolean(
-					( countrySelect && countrySelect.value )
-					|| ( citySelect && citySelect.value )
-					|| ( areaSelect && areaSelect.value )
+						var nearest = findNearestCity( position.coords.latitude, position.coords.longitude );
+
+						if ( ! nearest ) {
+							showStatus( nearMeButton.getAttribute( 'data-msg-none' ) );
+							return;
+						}
+
+						setNearCity( nearest.slug, nearest.label );
+					},
+					function () {
+						nearMeButton.classList.remove( 'is-detecting' );
+						showStatus( nearMeButton.getAttribute( 'data-msg-denied' ) );
+					},
+					{ enableHighAccuracy: false, timeout: 8000, maximumAge: 600000 }
 				);
+			} );
 
-				toggle.classList.toggle( 'is-active', isFiltered );
+			function setNearCity( slug, label ) {
+				nearCity = slug;
+				presetCity = '';
+				nearMeButton.classList.toggle( 'is-active', '' !== slug );
+				nearMeButton.setAttribute( 'aria-pressed', '' !== slug ? 'true' : 'false' );
+
+				if ( labelEl ) {
+					labelEl.textContent = '' !== slug ? nearMeButton.getAttribute( 'data-label-near' ) + ' ' + label : defaultLabel;
+				}
+
+				showStatus( '' );
+				applyFilters();
 			}
 
-			function setOpen( open ) {
-				panel.classList.toggle( 'dak-hidden', ! open );
-				toggle.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
+			function showStatus( message ) {
+				if ( ! nearMeStatus ) {
+					return;
+				}
+
+				nearMeStatus.textContent = message || '';
+				nearMeStatus.classList.toggle( 'dak-hidden', ! message );
 			}
+		}
+
+		/**
+		 * Nearest city — among those a listed doctor practises in AND that
+		 * PK_CITIES has coordinates for — to the given point.
+		 *
+		 * @param {number} lat Visitor latitude.
+		 * @param {number} lng Visitor longitude.
+		 * @return {{slug: string, label: string}|null}
+		 */
+		function findNearestCity( lat, lng ) {
+			var labels = {};
+
+			( ( window.dakDirectory && window.dakDirectory.locations ) || [] ).forEach( function ( country ) {
+				( country.cities || [] ).forEach( function ( city ) {
+					labels[ city.slug ] = city.name;
+				} );
+			} );
+
+			var inUse = {};
+
+			grid.querySelectorAll( '[data-doctor-card]' ).forEach( function ( card ) {
+				( card.getAttribute( 'data-search-city' ) || '' ).split( ',' ).forEach( function ( slug ) {
+					if ( slug ) {
+						inUse[ slug ] = true;
+					}
+				} );
+			} );
+
+			var candidates = Object.keys( inUse ).map( function ( slug ) {
+				var label = labels[ slug ] || slug;
+				var known = PK_CITIES.filter( function ( city ) {
+					return city.name.toLowerCase() === label.toLowerCase();
+				} )[ 0 ];
+
+				return known ? { slug: slug, label: label, distance: distanceKm( lat, lng, known.lat, known.lng ) } : null;
+			} ).filter( Boolean ).sort( function ( a, b ) {
+				return a.distance - b.distance;
+			} );
+
+			return candidates.length ? candidates[ 0 ] : null;
 		}
 
 		/**
@@ -337,37 +411,6 @@
 	} );
 
 	/**
-	 * Lands on this page with a filter already chosen — the home page's
-	 * "Consult Top Doctors Online" tiles link here as `?specialization=<lowercased
-	 * label>`, and the site header's "Doctors -> By Location" menu as
-	 * `?clinic=<lowercased name>`, both matching the filter's own option
-	 * values. Anything that isn't an option (nothing listed under it, or a
-	 * hand-edited URL) is ignored, leaving the unfiltered grid rather than an
-	 * empty one.
-	 *
-	 * @param {HTMLSelectElement} select       The filter <select> (specialization or clinic).
-	 * @param {string}            param        Its matching URL query parameter name.
-	 * @param {Function}          applyFilters Re-runs the grid filtering.
-	 */
-	function applyPreselectedFilter( select, param, applyFilters ) {
-		if ( ! select || ! window.URLSearchParams ) {
-			return;
-		}
-
-		var requested = new URLSearchParams( window.location.search ).get( param );
-
-		if ( ! requested ) {
-			return;
-		}
-
-		select.value = requested.toLowerCase();
-
-		if ( '' !== select.value ) {
-			applyFilters();
-		}
-	}
-
-	/**
 	 * Lands on this page with a search term already typed — the site
 	 * header's Doctors mega-menu search box links here as `?s=<term>`.
 	 *
@@ -387,262 +430,6 @@
 
 		input.value = requested;
 		applyFilters();
-	}
-
-	function findBySlug( list, slug ) {
-		return ( list || [] ).filter( function ( entry ) {
-			return entry.slug === slug;
-		} )[ 0 ];
-	}
-
-	/**
-	 * Fills a filter <select> with an "All X" first option plus one option
-	 * per entry.
-	 *
-	 * @param {HTMLSelectElement} select      The <select> to fill.
-	 * @param {Object[]}          entries     List of `{ slug, name }`.
-	 * @param {string}            allLabel    First option's label (e.g. "All cities").
-	 * @return {void}
-	 */
-	function fillFilterSelect( select, entries, allLabel ) {
-		select.innerHTML = '';
-
-		var allOption = document.createElement( 'option' );
-		allOption.value = '';
-		allOption.textContent = allLabel;
-		select.appendChild( allOption );
-
-		entries.forEach( function ( entry ) {
-			var option = document.createElement( 'option' );
-			option.value = entry.slug;
-			option.textContent = entry.name;
-			select.appendChild( option );
-		} );
-	}
-
-	/**
-	 * Populates the Country filter from the full Locations list, and wires
-	 * Country -> City -> Area cascading: picking a Country repopulates City,
-	 * picking a City repopulates Area.
-	 *
-	 * City and Area are *hidden* rather than shown-but-disabled until the
-	 * level above them is chosen and actually has entries under it — a
-	 * greyed-out control the visitor can't use (and can't tell how to make
-	 * usable) is just noise, so each level only appears once it has
-	 * something real to offer.
-	 *
-	 * @param {HTMLSelectElement} countrySelect The Country filter <select>.
-	 * @param {HTMLSelectElement} citySelect    The City filter <select>.
-	 * @param {HTMLSelectElement} areaSelect    The Area filter <select>.
-	 * @return {void}
-	 */
-	function wireLocationCascade( countrySelect, citySelect, areaSelect ) {
-		if ( ! countrySelect || ! citySelect || ! areaSelect || ! window.dakDirectory ) {
-			return;
-		}
-
-		var locations = window.dakDirectory.locations || [];
-
-		fillFilterSelect( countrySelect, locations, 'All Countries' );
-
-		countrySelect.addEventListener( 'change', function () {
-			var country = findBySlug( locations, countrySelect.value );
-			var cities = country ? country.cities : [];
-
-			fillFilterSelect( citySelect, cities, 'All Cities' );
-			showLevel( citySelect, cities.length > 0 );
-
-			fillFilterSelect( areaSelect, [], 'All Areas' );
-			showLevel( areaSelect, false );
-
-			citySelect.dispatchEvent( new Event( 'change' ) );
-		} );
-
-		citySelect.addEventListener( 'change', function () {
-			var country = findBySlug( locations, countrySelect.value );
-			var city = country ? findBySlug( country.cities, citySelect.value ) : null;
-			var areas = city ? city.areas : [];
-
-			fillFilterSelect( areaSelect, areas, 'All Areas' );
-			showLevel( areaSelect, areas.length > 0 );
-
-			areaSelect.dispatchEvent( new Event( 'change' ) );
-		} );
-	}
-
-	/**
-	 * Shows or hides one level of the location cascade. Kept in sync with
-	 * `disabled` as well as visibility so a hidden level can never still be
-	 * submitting a stale value or picked up by keyboard/AT navigation.
-	 *
-	 * @param {HTMLSelectElement} select    The City or Area <select>.
-	 * @param {boolean}           available Whether it has real options to offer.
-	 * @return {void}
-	 */
-	function showLevel( select, available ) {
-		select.classList.toggle( 'dak-hidden', ! available );
-		select.disabled = ! available;
-	}
-
-	/**
-	 * Narrows the Clinic filter down to only clinics in the selected Area —
-	 * clinics with no area on file always stay listed (nothing to exclude
-	 * them by). Rebuilds from the server-rendered option list captured once
-	 * at load, since the Clinic <select>'s options (and each one's
-	 * `data-area`) already come from the page's PHP-rendered markup rather
-	 * than window.dakDirectory.locations.
-	 *
-	 * @param {HTMLSelectElement} areaSelect   The Area filter <select>.
-	 * @param {HTMLSelectElement} clinicSelect The Clinic filter <select>.
-	 * @return {void}
-	 */
-	function wireClinicAreaDependency( areaSelect, clinicSelect ) {
-		if ( ! areaSelect || ! clinicSelect ) {
-			return;
-		}
-
-		var allClinics = Array.prototype.slice.call( clinicSelect.options ).map( function ( option ) {
-			return { value: option.value, label: option.textContent, area: option.getAttribute( 'data-area' ) || '' };
-		} );
-
-		areaSelect.addEventListener( 'change', function () {
-			var area = areaSelect.value;
-			var previousValue = clinicSelect.value;
-			var matches = allClinics.filter( function ( clinic ) {
-				return '' === clinic.value || '' === area || clinic.area === area;
-			} );
-
-			clinicSelect.innerHTML = '';
-
-			matches.forEach( function ( clinic ) {
-				var option = document.createElement( 'option' );
-				option.value = clinic.value;
-				option.textContent = clinic.label;
-				clinicSelect.appendChild( option );
-			} );
-
-			clinicSelect.value = matches.some( function ( clinic ) { return clinic.value === previousValue; } ) ? previousValue : '';
-			clinicSelect.dispatchEvent( new Event( 'change' ) );
-		} );
-	}
-
-	/**
-	 * Wires the Grid/List view toggle buttons (templates/directory/doctors-directory.php)
-	 * — swaps a modifier class on the grid so CSS re-flows each existing card
-	 * (see .dak-directory-grid-list in doctor-ak-directory.css), no re-render
-	 * needed. Remembers the visitor's last choice in localStorage so it
-	 * sticks across visits.
-	 *
-	 * @param {HTMLElement} grid The doctors grid ("dak-directory-grid").
-	 * @return {void}
-	 */
-	function initViewToggle( grid ) {
-		var buttons = document.querySelectorAll( '[data-directory-view]' );
-
-		if ( ! buttons.length ) {
-			return;
-		}
-
-		var STORAGE_KEY = 'dakDirectoryView';
-		var savedView = '';
-
-		try {
-			savedView = window.localStorage.getItem( STORAGE_KEY ) || '';
-		} catch ( e ) {
-			savedView = '';
-		}
-
-		if ( 'list' === savedView ) {
-			setView( 'list' );
-		}
-
-		buttons.forEach( function ( button ) {
-			button.addEventListener( 'click', function () {
-				setView( button.getAttribute( 'data-directory-view' ) );
-			} );
-		} );
-
-		function setView( view ) {
-			grid.classList.toggle( 'dak-directory-grid-list', 'list' === view );
-
-			buttons.forEach( function ( button ) {
-				var isActive = button.getAttribute( 'data-directory-view' ) === view;
-				button.classList.toggle( 'is-active', isActive );
-				button.setAttribute( 'aria-pressed', isActive ? 'true' : 'false' );
-			} );
-
-			// "Cards per row" means nothing in list view (it's always one per
-			// row there), so it goes away rather than sitting there inert.
-			var columnsToggle = document.getElementById( 'dak-directory-columns-toggle' );
-
-			if ( columnsToggle ) {
-				columnsToggle.classList.toggle( 'dak-hidden', 'list' === view );
-			}
-
-			try {
-				window.localStorage.setItem( STORAGE_KEY, view );
-			} catch ( e ) {
-				// Private browsing / storage disabled — the choice just won't persist.
-			}
-		}
-	}
-
-	/**
-	 * Wires the "cards per row" control (2 / 4 / 6) for grid view — swaps a
-	 * modifier class on the grid that CSS turns into that many columns (see
-	 * .dak-directory-grid-cols-* in doctor-ak-directory.css, which also caps
-	 * the count on narrower screens so 6 never squeezes into a phone), and
-	 * remembers the choice across visits the same way the Grid/List toggle
-	 * does.
-	 *
-	 * Worth noting: PAGE_SIZE is 12, which divides evenly by 2, 4 and 6, so
-	 * every choice fills complete rows rather than leaving a ragged last one.
-	 *
-	 * @param {HTMLElement} grid The doctors grid ("dak-directory-grid").
-	 * @return {void}
-	 */
-	function initColumnsToggle( grid ) {
-		var buttons = document.querySelectorAll( '[data-directory-columns]' );
-
-		if ( ! buttons.length ) {
-			return;
-		}
-
-		var STORAGE_KEY = 'dakDirectoryColumns';
-		var OPTIONS = [ '2', '4', '6' ];
-		var saved = '';
-
-		try {
-			saved = window.localStorage.getItem( STORAGE_KEY ) || '';
-		} catch ( e ) {
-			saved = '';
-		}
-
-		setColumns( OPTIONS.indexOf( saved ) === -1 ? '4' : saved );
-
-		buttons.forEach( function ( button ) {
-			button.addEventListener( 'click', function () {
-				setColumns( button.getAttribute( 'data-directory-columns' ) );
-			} );
-		} );
-
-		function setColumns( columns ) {
-			OPTIONS.forEach( function ( option ) {
-				grid.classList.toggle( 'dak-directory-grid-cols-' + option, option === columns );
-			} );
-
-			buttons.forEach( function ( button ) {
-				var isActive = button.getAttribute( 'data-directory-columns' ) === columns;
-				button.classList.toggle( 'is-active', isActive );
-				button.setAttribute( 'aria-pressed', isActive ? 'true' : 'false' );
-			} );
-
-			try {
-				window.localStorage.setItem( STORAGE_KEY, columns );
-			} catch ( e ) {
-				// Private browsing / storage disabled — the choice just won't persist.
-			}
-		}
 	}
 
 	/**

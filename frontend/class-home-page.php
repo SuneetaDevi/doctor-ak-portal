@@ -51,7 +51,7 @@ class Home_Page {
 	 */
 	const FEATURED_DOCTORS_LIMIT  = 8;
 	const FEATURED_SERVICES_LIMIT = 3;
-	const FEATURED_CLINICS_LIMIT  = 6;
+	const FEATURED_CLINICS_LIMIT  = 12;
 
 	/**
 	 * Bundled hero preview video shipped with the plugin (assets/videos/) —
@@ -330,10 +330,14 @@ class Home_Page {
 	 */
 	public static function specialties_in_use( $directory_url ) {
 		$counts = array();
+		$all    = Specializations::get_all();
 
 		foreach ( get_users( array( 'role' => Roles::DOCTOR_ROLE, 'fields' => 'ID' ) ) as $doctor_id ) {
 			foreach ( (array) get_user_meta( $doctor_id, 'doctor_ak_specializations', true ) as $slug ) {
-				if ( '' === $slug ) {
+				// Only real specializations — a stray free-typed value in a
+				// doctor's meta (e.g. a procedure/condition) isn't one, and
+				// would otherwise show up as its own entry.
+				if ( '' === $slug || ! isset( $all[ $slug ] ) ) {
 					continue;
 				}
 
@@ -343,11 +347,10 @@ class Home_Page {
 
 		arsort( $counts );
 
-		$all         = Specializations::get_all();
 		$specialties = array();
 
 		foreach ( $counts as $slug => $count ) {
-			$label = isset( $all[ $slug ] ) ? $all[ $slug ] : $slug;
+			$label = $all[ $slug ];
 
 			$specialties[] = array(
 				'slug'  => $slug,

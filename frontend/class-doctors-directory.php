@@ -114,41 +114,17 @@ class Doctors_Directory {
 	 * @return string
 	 */
 	public function render() {
-		$cards                = $this->doctor_cards_data();
-		$doctors_html         = array();
-		$used_specializations = array();
-		$all_specializations  = Specializations::get_all();
-		$used_clinics         = array();
+		$cards        = $this->doctor_cards_data();
+		$doctors_html = array();
 
 		foreach ( $cards as $card ) {
 			$doctors_html[] = $this->template_loader->get_template( 'directory/doctor-card.php', $card );
-
-			foreach ( $card['specialization_slugs'] as $slug ) {
-				$used_specializations[ $slug ] = isset( $all_specializations[ $slug ] ) ? $all_specializations[ $slug ] : $slug;
-			}
-
-			foreach ( $card['clinic_areas'] as $label => $area ) {
-				if ( ! isset( $used_clinics[ $label ] ) || '' === $used_clinics[ $label ] ) {
-					$used_clinics[ $label ] = $area;
-				}
-			}
 		}
 
-		asort( $used_specializations );
-		ksort( $used_clinics );
-
-		// Country/City/Area are rendered as empty <select>s and populated/
-		// cascaded client-side from the full admin-managed Locations list
-		// (see enqueue_assets()'s 'locations' localization and
-		// assets/js/doctor-ak-directory.js), the same pattern every other
-		// location picker in the plugin uses — rather than pre-filtering to
-		// only locations a listed doctor happens to have.
 		return $this->template_loader->get_template(
 			'directory/doctors-directory.php',
 			array(
 				'doctors_html'    => $doctors_html,
-				'specializations' => $used_specializations,
-				'clinics'         => $used_clinics,
 				// This page's own bundled banner photo — reuses Home_Page's
 				// now-public helper for the file_exists()/cache-busting
 				// logic rather than duplicating it, but points at this
