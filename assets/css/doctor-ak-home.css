@@ -1192,44 +1192,24 @@
 	background: var( --dak-primary-tint ) !important;
 }
 
-/* Specialty tiles — "Consult best doctors online". A plain grid of round
-   icon badges with the specialty name underneath (no card boxes), seven per
-   row on a wide screen. Each tile links into the doctors directory with that
-   specialty preselected in its filter, so only specialties a registered
-   doctor actually has are ever listed. */
+/* Specialty tiles — "Consult top doctors online". A grid of white, bordered
+   cards (icon badge + name), each tile linking into the doctors directory
+   with that specialty preselected in its filter, so only specialties a
+   registered doctor actually has are ever listed. Reuses .dak-directory-
+   header (doctor-ak-directory.css) for the centered eyebrow/heading/intro —
+   the same plain centered header the "Our Healthcare Services" section
+   below uses. */
 
 .dak-home-specialties-header {
-	display: flex !important;
-	align-items: baseline !important;
-	justify-content: space-between !important;
-	gap: var( --dak-space-4 ) !important;
-}
-
-.dak-home-specialties-header h2 {
-	margin: 0 !important;
-	font-family: inherit !important;
-	font-size: var( --dak-text-xl ) !important;
-	font-weight: 700 !important;
-	color: var( --dak-text ) !important;
-}
-
-.dak-home-specialties-viewall {
-	flex: 0 0 auto !important;
-	font-size: var( --dak-text-md ) !important;
-	font-weight: 700 !important;
-	color: var( --dak-text ) !important;
-	text-decoration: underline !important;
-	text-underline-offset: 3px !important;
-}
-
-.dak-home-specialties-viewall:hover {
-	color: var( --dak-primary-dark ) !important;
+	max-width: 640px !important;
+	margin-left: auto !important;
+	margin-right: auto !important;
 }
 
 .dak-home-specialties-grid {
 	display: grid !important;
-	grid-template-columns: repeat( 7, minmax( 0, 1fr ) ) !important;
-	gap: var( --dak-space-6 ) var( --dak-space-3 ) !important;
+	grid-template-columns: repeat( 3, minmax( 0, 1fr ) ) !important;
+	gap: var( --dak-space-4 ) !important;
 	margin-top: var( --dak-space-5 ) !important;
 }
 
@@ -1237,55 +1217,99 @@
 	display: flex !important;
 	flex-direction: column !important;
 	align-items: center !important;
-	gap: var( --dak-space-3 ) !important;
+	gap: var( --dak-space-2 ) !important;
+	padding: var( --dak-space-5 ) var( --dak-space-3 ) !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
 	text-align: center !important;
 	text-decoration: none !important;
+	transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease !important;
+}
+
+.dak-home-specialty-card:hover,
+.dak-home-specialty-card:focus-visible {
+	border-color: var( --dak-primary ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+	transform: translateY( -3px ) !important;
 }
 
 .dak-home-specialty-icon {
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: center !important;
-	width: min( 148px, 100% ) !important;
-	aspect-ratio: 1 !important;
-	border-radius: 50% !important;
-	background: linear-gradient( 180deg, var( --dak-primary-tint ) 0%, var( --dak-bg-subtle ) 100% ) !important;
-	box-shadow: 0 0 0 4px var( --dak-bg-card ), var( --dak-shadow ) !important;
+	width: 60px !important;
+	height: 60px !important;
+	flex: 0 0 auto !important;
+	border-radius: 16px !important;
+	background: var( --dak-primary-tint ) !important;
 	color: var( --dak-primary-dark ) !important;
-	transition: transform 0.18s ease, box-shadow 0.18s ease !important;
 }
 
 .dak-home-specialty-icon svg {
-	width: 46% !important;
-	height: 46% !important;
+	width: 28px !important;
+	height: 28px !important;
 }
 
-.dak-home-specialty-card:hover .dak-home-specialty-icon,
-.dak-home-specialty-card:focus-visible .dak-home-specialty-icon {
-	transform: translateY( -4px ) !important;
-	box-shadow: 0 0 0 4px var( --dak-bg-card ), var( --dak-shadow-hover ) !important;
+/* A small rotating palette (repeats every 5 cards) rather than every badge
+   being the same brand-green tint — matches the reference design's mixed
+   pastel icon colors. Purely decorative, so this is the one place on the
+   page that reaches for hardcoded colors instead of the shared --dak-*
+   tokens (which only carry the single brand green). */
+.dak-home-specialty-card:nth-child( 5n + 1 ) .dak-home-specialty-icon {
+	background: #dcf5dd !important;
+	color: #2f9e44 !important;
+}
+
+.dak-home-specialty-card:nth-child( 5n + 2 ) .dak-home-specialty-icon {
+	background: #d7f3f0 !important;
+	color: #128a86 !important;
+}
+
+.dak-home-specialty-card:nth-child( 5n + 3 ) .dak-home-specialty-icon {
+	background: #fdf0d5 !important;
+	color: #b8790f !important;
+}
+
+.dak-home-specialty-card:nth-child( 5n + 4 ) .dak-home-specialty-icon {
+	background: #eee3fb !important;
+	color: #7c4ddb !important;
+}
+
+.dak-home-specialty-card:nth-child( 5n + 5 ) .dak-home-specialty-icon {
+	background: #dceefb !important;
+	color: #2f80c7 !important;
 }
 
 .dak-home-specialty-label {
 	font-size: var( --dak-text-md ) !important;
-	font-weight: 400 !important;
-	line-height: 1.5 !important;
+	font-weight: 700 !important;
+	line-height: 1.4 !important;
 	color: var( --dak-text ) !important;
 }
 
-.dak-home-specialty-card:hover .dak-home-specialty-label {
-	color: var( --dak-primary-dark ) !important;
+/* Hidden until the card is hovered/focused (see .dak-home-specialty-card
+   above) — a quieter default than showing a CTA on every single card. */
+.dak-home-specialty-action {
+	display: none !important;
+	align-items: center !important;
+	justify-content: center !important;
+	padding: 0.4rem 1rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+	font-size: 0.78rem !important;
+	font-weight: 700 !important;
 }
 
-@media ( max-width: 1100px ) {
-	.dak-home-specialties-grid {
-		grid-template-columns: repeat( 5, minmax( 0, 1fr ) ) !important;
-	}
+.dak-home-specialty-card:hover .dak-home-specialty-action,
+.dak-home-specialty-card:focus-visible .dak-home-specialty-action {
+	display: inline-flex !important;
 }
 
 @media ( max-width: 700px ) {
 	.dak-home-specialties-grid {
-		grid-template-columns: repeat( 3, minmax( 0, 1fr ) ) !important;
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
 	}
 }
 

@@ -99,6 +99,34 @@ class Site_Header {
 	}
 
 	/**
+	 * Outputs a `<meta name="viewport">` tag, hooked to `wp_head` at
+	 * priority 1 (ahead of the active theme's own `wp_head()` output).
+	 *
+	 * This plugin's whole layout — the two-row site header, the mega-menus,
+	 * every responsive breakpoint in doctor-ak-*.css — assumes a real mobile
+	 * viewport width is being reported. Whether the active theme's own
+	 * header.php already outputs one varies (most modern themes do; a bare/
+	 * blank "canvas" theme installed just to host this plugin's own
+	 * fully-custom front end might not) — since a missing one makes a phone
+	 * browser render the page at desktop width and scale it down (nav never
+	 * collapses to the hamburger, the hero's absolutely-positioned stat
+	 * cards/search panel overlap the copy — exactly what a "squished
+	 * desktop site" looks like on a phone), this plugin ensures one is
+	 * always present rather than depending on the theme for it. Two
+	 * viewport tags on a page is harmless (browsers use whichever comes
+	 * first), so this doesn't check whether the theme already added one.
+	 *
+	 * @return void
+	 */
+	public function render_viewport_meta() {
+		if ( is_admin() ) {
+			return;
+		}
+
+		echo '<meta name="viewport" content="width=device-width, initial-scale=1">' . "\n";
+	}
+
+	/**
 	 * Renders the header markup. Hooked to wp_body_open so it appears
 	 * immediately inside <body>, ahead of whatever the active theme
 	 * otherwise renders.

@@ -172,6 +172,10 @@ class Plugin {
 		$site_header = new Site_Header( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $site_header, 'enqueue_assets' );
 		$this->loader->add_action( 'wp_body_open', $site_header, 'render' );
+		// Priority 1 — as early as possible in <head>, so this wins if the
+		// active theme's own viewport tag (if any) is missing or broken;
+		// see render_viewport_meta()'s own docblock for why this exists.
+		$this->loader->add_action( 'wp_head', $site_header, 'render_viewport_meta', 1 );
 
 		$doctor_dashboard  = new Doctor_Dashboard( new Template_Loader() );
 		$patient_dashboard = new Patient_Dashboard( new Template_Loader() );

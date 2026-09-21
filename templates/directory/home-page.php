@@ -470,11 +470,10 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 
 	<?php if ( ! empty( $dak_home_specialty_tiles ) ) : ?>
 		<section class="dak-home-section dak-home-specialties">
-			<div class="dak-home-specialties-header">
-				<h2><?php esc_html_e( 'Specialities our doctors practise', 'doctor-ak-portal' ); ?></h2>
-				<?php if ( $directory_url ) : ?>
-					<a class="dak-home-specialties-viewall" href="<?php echo esc_url( $directory_url ); ?>"><?php esc_html_e( 'View All', 'doctor-ak-portal' ); ?></a>
-				<?php endif; ?>
+			<div class="dak-directory-header dak-home-specialties-header">
+				<span class="dak-eyebrow"><?php esc_html_e( 'Online Consultation', 'doctor-ak-portal' ); ?></span>
+				<h2><?php esc_html_e( 'Consult Top Doctors Online For Any Health Concern', 'doctor-ak-portal' ); ?></h2>
+				<p><?php esc_html_e( 'Private video consultations with verified specialists — pick a specialty to see who is available.', 'doctor-ak-portal' ); ?></p>
 			</div>
 
 			<div class="dak-home-specialties-grid">
@@ -482,9 +481,18 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 					<a class="dak-home-specialty-card" href="<?php echo esc_url( $dak_specialty['url'] ); ?>">
 						<span class="dak-home-specialty-icon" aria-hidden="true"><?php echo $dak_home_specialty_icon( $dak_specialty['slug'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						<span class="dak-home-specialty-label"><?php echo esc_html( $dak_specialty['label'] ); ?></span>
+						<span class="dak-home-specialty-action"><?php esc_html_e( 'Consult Now', 'doctor-ak-portal' ); ?></span>
 					</a>
 				<?php endforeach; ?>
 			</div>
+
+			<?php if ( $directory_url ) : ?>
+				<div class="dak-home-section-footer">
+					<a class="dak-button dak-button-primary" href="<?php echo esc_url( $directory_url ); ?>">
+						<?php esc_html_e( 'See All Specialities', 'doctor-ak-portal' ); ?>
+					</a>
+				</div>
+			<?php endif; ?>
 		</section>
 	<?php endif; ?>
 
