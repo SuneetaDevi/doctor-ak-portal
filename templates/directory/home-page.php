@@ -23,6 +23,8 @@
  * @var string   $clinic_profile_url Base URL of the [clinic_profile_view] page, or '' if not found — each "Visit Us" card links here with `?clinic_id=`.
  * @var array    $stats            { doctors_count, patients_count, appointments_count, max_years_experience, clinics_count }.
  * @var array    $clinic_locations Clinic_Locations::get_all() rows (capped), for the "Visit Us" section.
+ * @var string[] $blogs_html       Pre-rendered directory/blog-card.php output for the three newest published posts.
+ * @var string   $blogs_url        URL of the [blogs_directory] page, or '' if not found.
  *
  * The hero search modal's live results search across everything at once —
  * doctors, services, specialities, and clinics — via window.dakHomeSearch
@@ -692,6 +694,26 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 				<video id="dak-home-video-modal-player" controls playsinline></video>
 			</div>
 		</div>
+	<?php endif; ?>
+
+	<?php if ( ! empty( $blogs_html ) ) : ?>
+		<section class="dak-home-section dak-home-blogs">
+			<div class="dak-home-blogs-header">
+				<div>
+					<h2><?php esc_html_e( 'From Our Blog', 'doctor-ak-portal' ); ?></h2>
+					<p><?php esc_html_e( 'Health tips, clinic news and articles from our doctors.', 'doctor-ak-portal' ); ?></p>
+				</div>
+				<?php if ( $blogs_url ) : ?>
+					<a class="dak-home-blogs-viewall" href="<?php echo esc_url( $blogs_url ); ?>"><?php esc_html_e( 'View All', 'doctor-ak-portal' ); ?></a>
+				<?php endif; ?>
+			</div>
+
+			<div class="dak-blog-grid">
+				<?php foreach ( $blogs_html as $dak_blog_card_html ) : ?>
+					<?php echo $dak_blog_card_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- card partial escapes its own output. ?>
+				<?php endforeach; ?>
+			</div>
+		</section>
 	<?php endif; ?>
 
 	<?php if ( $doctor_register_url ) : ?>

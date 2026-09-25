@@ -72,6 +72,14 @@ class Blogs_Directory {
 			array( 'doctor-ak-portal-auth' ),
 			Assets::version( 'assets/css/doctor-ak-directory.css' )
 		);
+
+		wp_enqueue_script(
+			'doctor-ak-portal-blogs-directory',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-blogs-directory.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-blogs-directory.js' ),
+			true
+		);
 	}
 
 	/**
@@ -93,7 +101,10 @@ class Blogs_Directory {
 
 		return $this->template_loader->get_template(
 			'directory/blogs-directory.php',
-			array( 'blogs_html' => $blogs_html )
+			array(
+				'blogs_html' => $blogs_html,
+				'topics'     => Blogs::topics( true ),
+			)
 		);
 	}
 

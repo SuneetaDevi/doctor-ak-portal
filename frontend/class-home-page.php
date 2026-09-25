@@ -9,6 +9,7 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
+use DoctorAKPortal\Includes\Blogs;
 use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Home_Videos;
 use DoctorAKPortal\Includes\Page_Finder;
@@ -50,6 +51,7 @@ class Home_Page {
 	const FEATURED_DOCTORS_LIMIT  = 8;
 	const FEATURED_SERVICES_LIMIT = 5;
 	const FEATURED_CLINICS_LIMIT  = 12;
+	const FEATURED_BLOGS_LIMIT    = 3;
 
 	/**
 	 * Bundled hero preview video shipped with the plugin (assets/videos/) —
@@ -232,6 +234,17 @@ class Home_Page {
 		// the "Visit Us" section's own FEATURED_CLINICS_LIMIT slice.
 		$all_clinic_locations = Clinic_Locations::get_all();
 
+		// The three newest published posts, in the same card the Blog page uses.
+		$blog_single_url = Page_Finder::url_for_shortcode( 'blog_single' );
+		$blogs_html      = array_map(
+			function ( $blog ) use ( $blog_single_url ) {
+				$blog['view_url'] = $blog_single_url ? add_query_arg( 'blog_id', $blog['id'], $blog_single_url ) : '';
+
+				return $this->template_loader->get_template( 'directory/blog-card.php', $blog );
+			},
+			Blogs::published_for_public_directory( self::FEATURED_BLOGS_LIMIT )
+		);
+
 		wp_localize_script(
 			'doctor-ak-portal-home',
 			'dakHomeSearch',
@@ -304,6 +317,8 @@ class Home_Page {
 				'services_url'     => Page_Finder::url_for_shortcode( 'services_directory' ),
 				'clinics_url'      => Page_Finder::url_for_shortcode( 'clinics_directory' ),
 				'clinic_profile_url' => $clinic_profile_url,
+				'blogs_html'       => $blogs_html,
+				'blogs_url'        => Page_Finder::url_for_shortcode( 'blogs_directory' ),
 				'stats'            => $this->stats( $doctor_cards ),
 				'clinic_locations' => array_slice( $all_clinic_locations, 0, self::FEATURED_CLINICS_LIMIT ),
 			)

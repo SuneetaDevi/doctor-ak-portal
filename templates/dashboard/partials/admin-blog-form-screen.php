@@ -41,6 +41,18 @@ $dak_is_editing = null !== $editing_blog;
 		</div>
 
 		<div class="dak-field">
+			<label for="dak-admin-blog-topic"><?php esc_html_e( 'Topic', 'doctor-ak-portal' ); ?></label>
+			<input type="text" id="dak-admin-blog-topic" name="topic" maxlength="60" list="dak-admin-blog-topic-list" placeholder="<?php esc_attr_e( 'e.g. Gut health', 'doctor-ak-portal' ); ?>" value="<?php echo esc_attr( $dak_is_editing ? $editing_blog['topic'] : '' ); ?>">
+			<datalist id="dak-admin-blog-topic-list">
+				<?php foreach ( \DoctorAKPortal\Includes\Blogs::topics() as $dak_topic_suggestion ) : ?>
+					<option value="<?php echo esc_attr( $dak_topic_suggestion ); ?>"></option>
+				<?php endforeach; ?>
+			</datalist>
+			<p class="dak-field-hint"><?php esc_html_e( 'Optional. Posts with the same topic are grouped under one filter chip on the public Blog page.', 'doctor-ak-portal' ); ?></p>
+			<span class="dak-field-error" data-field="topic"></span>
+		</div>
+
+		<div class="dak-field">
 			<label for="dak-admin-blog-status"><?php esc_html_e( 'Status', 'doctor-ak-portal' ); ?></label>
 			<select id="dak-admin-blog-status" name="status">
 				<?php foreach ( $status_options as $slug => $label ) : ?>

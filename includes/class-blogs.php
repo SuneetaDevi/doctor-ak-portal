@@ -43,6 +43,13 @@ class Blogs {
 	const EXCERPT_WORD_COUNT = 30;
 
 	/**
+	 * Longest a topic label may be (matches the `topic` column).
+	 *
+	 * @var int
+	 */
+	const TOPIC_MAX_LENGTH = 60;
+
+	/**
 	 * Returns the fully prefixed table name.
 	 *
 	 * @return string
@@ -84,6 +91,11 @@ class Blogs {
 		// safe formatting tags and strips anything else.
 		$content = isset( $posted['content'] ) ? wp_kses_post( wp_unslash( $posted['content'] ) ) : '';
 
+		// Optional short topic ("Gut health", "Procedures") — the public Blog
+		// page turns the distinct ones into its filter chips.
+		$topic = isset( $posted['topic'] ) ? sanitize_text_field( wp_unslash( $posted['topic'] ) ) : '';
+		$topic = mb_substr( $topic, 0, self::TOPIC_MAX_LENGTH );
+
 		$status = isset( $posted['status'] ) ? sanitize_key( wp_unslash( $posted['status'] ) ) : self::STATUS_DRAFT;
 
 		if ( ! array_key_exists( $status, self::status_options() ) ) {
@@ -92,6 +104,7 @@ class Blogs {
 
 		return array(
 			'title'   => $title,
+			'topic'   => $topic,
 			'content' => $content,
 			'status'  => $status,
 		);
@@ -115,6 +128,7 @@ class Blogs {
 			array(
 				'author_id'    => (int) $author_id,
 				'title'        => $fields['title'],
+				'topic'        => $fields['topic'],
 				'content'      => $fields['content'],
 				'image_id'     => (int) $image_id,
 				'status'       => $fields['status'],
@@ -122,7 +136,7 @@ class Blogs {
 				'created_at'   => $now,
 				'updated_at'   => $now,
 			),
-			array( '%d', '%s', '%s', '%d', '%s', '%s', '%s', '%s' )
+			array( '%d', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s' )
 		);
 
 		return $inserted ? (int) $wpdb->insert_id : false;
@@ -143,11 +157,12 @@ class Blogs {
 
 		$data  = array(
 			'title'      => $fields['title'],
+			'topic'      => $fields['topic'],
 			'content'    => $fields['content'],
 			'status'     => $fields['status'],
 			'updated_at' => current_time( 'mysql' ),
 		);
-		$types = array( '%s', '%s', '%s', '%s' );
+		$types = array( '%s', '%s', '%s', '%s', '%s' );
 
 		// Only stamp published_at the first time a post becomes Published —
 		// re-saving an already-published post (or editing a still-draft one)
@@ -322,7 +337,9 @@ class Blogs {
 			'author_id'    => (int) $row['author_id'],
 			'author_name'  => $author_name,
 			'title'        => $row['title'],
+			'topic'        => isset( $row['topic'] ) ? (string) $row['topic'] : '',
 			'content'      => $content,
+			'read_minutes' => self::read_minutes( $content ),
 			'excerpt'      => wp_trim_words( wp_strip_all_tags( $content ), self::EXCERPT_WORD_COUNT ),
 			'image_id'     => $image_id,
 			'image_url'    => $image_url,
@@ -331,5 +348,47 @@ class Blogs {
 			'published_at' => isset( $row['published_at'] ) ? $row['published_at'] : null,
 			'created_at'   => $row['created_at'],
 		);
+	}
+
+	/**
+	 * Estimated reading time for a post's HTML content, at ~200 words a
+	 * minute, never less than a minute. Splits on whitespace (not
+	 * str_word_count()) so non-Latin scripts count too.
+	 *
+	 * @param string $content Post content (may contain rich-text HTML).
+	 * @return int Whole minutes.
+	 */
+	public static function read_minutes( $content ) {
+		$words = preg_split( '/\s+/u', trim( wp_strip_all_tags( (string) $content ) ), -1, PREG_SPLIT_NO_EMPTY );
+
+		return max( 1, (int) ceil( count( (array) $words ) / 200 ) );
+	}
+
+	/**
+	 * Every distinct, non-empty topic in use, alphabetical — the Add/Edit Post
+	 * form's suggestions, and (published-only) the public Blog page's filter
+	 * chips.
+	 *
+	 * @param bool $published_only Whether to count only Published posts that are live.
+	 * @return string[]
+	 */
+	public static function topics( $published_only = false ) {
+		global $wpdb;
+
+		$sql    = "SELECT DISTINCT topic FROM " . self::table_name() . " WHERE topic <> ''";
+		$params = array();
+
+		if ( $published_only ) {
+			$sql    .= ' AND status = %s AND published_at IS NOT NULL AND published_at <= %s';
+			$params  = array( self::STATUS_PUBLISHED, current_time( 'mysql' ) );
+		}
+
+		$sql .= ' ORDER BY topic ASC';
+
+		$topics = $params
+			? $wpdb->get_col( $wpdb->prepare( $sql, $params ) ) // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table name, not user input.
+			: $wpdb->get_col( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- table name, not user input.
+
+		return array_values( array_filter( (array) $topics ) );
 	}
 }

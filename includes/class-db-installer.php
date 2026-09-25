@@ -206,7 +206,7 @@ class Db_Installer {
 	 *
 	 * @var string
 	 */
-	const BLOGS_DB_VERSION = '1.0.0';
+	const BLOGS_DB_VERSION = '1.1.0';
 
 	/**
 	 * Option name tracking the installed service-requests-table schema version.
@@ -474,6 +474,7 @@ class Db_Installer {
 			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 			author_id BIGINT UNSIGNED NOT NULL,
 			title VARCHAR(191) NOT NULL,
+			topic VARCHAR(60) NOT NULL DEFAULT '',
 			content LONGTEXT NULL,
 			image_id BIGINT UNSIGNED NULL DEFAULT NULL,
 			status VARCHAR(20) NOT NULL DEFAULT 'draft',

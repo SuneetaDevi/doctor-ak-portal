@@ -1214,6 +1214,44 @@
 	background: var( --dak-primary-tint ) !important;
 }
 
+/* Blog — the three newest posts (the same flat card as the Blog page, styled
+   in doctor-ak-directory.css), with a "View All" link in the header. */
+
+.dak-home-blogs-header {
+	display: flex !important;
+	align-items: flex-end !important;
+	justify-content: space-between !important;
+	gap: var( --dak-space-4 ) !important;
+	margin-bottom: var( --dak-space-5 ) !important;
+}
+
+.dak-home-blogs-header h2 {
+	margin: 0 !important;
+	font-family: inherit !important;
+	font-size: var( --dak-text-xl ) !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-home-blogs-header p {
+	margin: 0.25rem 0 0 !important;
+	font-size: var( --dak-text-sm ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-home-blogs-viewall {
+	flex: 0 0 auto !important;
+	font-size: var( --dak-text-md ) !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	text-decoration: underline !important;
+	text-underline-offset: 3px !important;
+}
+
+.dak-home-blogs-viewall:hover {
+	color: var( --dak-primary-dark ) !important;
+}
+
 /* Specialty tiles — "Consult top doctors online". A grid of white, bordered
    cards (icon badge + name), each tile linking into the doctors directory
    with that specialty preselected in its filter, so only specialties a

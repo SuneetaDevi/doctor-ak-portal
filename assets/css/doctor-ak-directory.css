@@ -1511,3 +1511,160 @@
 		height: 200px !important;
 	}
 }
+
+/* Blog page ([blogs_directory]) — topic chips over a flat three-column grid. */
+
+.dak-blog-chips {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0.5rem !important;
+	margin-bottom: var( --dak-space-5 ) !important;
+}
+
+.dak-blog-chip {
+	padding: 0.35rem 0.9rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.78rem !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+	transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease !important;
+}
+
+.dak-blog-chip:hover {
+	border-color: var( --dak-primary-dark ) !important;
+}
+
+.dak-blog-chip.is-active {
+	background: var( --dak-primary-dark ) !important;
+	border-color: var( --dak-primary-dark ) !important;
+	color: #fff !important;
+}
+
+.dak-blog-grid {
+	display: grid !important;
+	grid-template-columns: repeat( 3, minmax( 0, 1fr ) ) !important;
+	gap: var( --dak-space-6 ) var( --dak-space-5 ) !important;
+}
+
+.dak-blog-card {
+	position: relative !important;
+	display: flex !important;
+	flex-direction: column !important;
+	gap: var( --dak-space-2 ) !important;
+	min-width: 0 !important;
+}
+
+.dak-blog-card.dak-hidden {
+	display: none !important;
+}
+
+.dak-blog-card-image {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	aspect-ratio: 16 / 10 !important;
+	margin-bottom: var( --dak-space-2 ) !important;
+	overflow: hidden !important;
+	border-radius: var( --dak-radius-md ) !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-blog-card-image img {
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+	transition: transform 0.4s ease !important;
+}
+
+.dak-blog-card:hover .dak-blog-card-image img {
+	transform: scale( 1.04 ) !important;
+}
+
+.dak-blog-card-image svg {
+	width: 40px !important;
+	height: 40px !important;
+}
+
+.dak-blog-card-meta {
+	display: flex !important;
+	justify-content: space-between !important;
+	gap: var( --dak-space-3 ) !important;
+	font-size: 0.66rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-muted ) !important;
+}
+
+/* On the spans themselves: the shared `.dak-portal *` reset sets
+   text-transform/letter-spacing on every element, so inheriting from the row
+   isn't enough. */
+.dak-blog-card-topic,
+.dak-blog-card-read {
+	text-transform: uppercase !important;
+	letter-spacing: 0.06em !important;
+}
+
+.dak-blog-card-topic {
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-blog-card-title {
+	margin: 0 !important;
+	font-size: 1.15rem !important;
+	font-weight: 700 !important;
+	line-height: 1.3 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-blog-card-title a {
+	color: inherit !important;
+	text-decoration: none !important;
+}
+
+/* Stretches the title's link over the whole card. */
+.dak-blog-card-title a::after {
+	content: '' !important;
+	position: absolute !important;
+	inset: 0 !important;
+}
+
+.dak-blog-card:hover .dak-blog-card-title a {
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-blog-card-excerpt {
+	margin: 0 !important;
+	font-size: 0.85rem !important;
+	line-height: 1.55 !important;
+	color: var( --dak-muted ) !important;
+	display: -webkit-box !important;
+	-webkit-line-clamp: 3 !important;
+	-webkit-box-orient: vertical !important;
+	overflow: hidden !important;
+}
+
+.dak-blog-card-foot {
+	display: flex !important;
+	justify-content: space-between !important;
+	gap: var( --dak-space-3 ) !important;
+	margin-top: auto !important;
+	padding-top: var( --dak-space-3 ) !important;
+	border-top: 1px solid var( --dak-border ) !important;
+	font-size: 0.72rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+@media ( max-width: 900px ) {
+	.dak-blog-grid {
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+	}
+}
+
+@media ( max-width: 560px ) {
+	.dak-blog-grid {
+		grid-template-columns: 1fr !important;
+	}
+}
