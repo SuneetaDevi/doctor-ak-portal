@@ -613,6 +613,12 @@
 			container.appendChild( card );
 		} );
 
+		var emptyClinicHint = document.createElement( 'p' );
+		emptyClinicHint.className = 'dak-field-hint dak-hidden';
+		emptyClinicHint.id = 'dak-booking-service-clinic-empty-hint';
+		emptyClinicHint.textContent = 'This doctor doesn\'t offer any services at the selected clinic — try a different clinic.';
+		container.appendChild( emptyClinicHint );
+
 		refreshServiceCardPrices();
 		syncSelectedServiceIds();
 		clearFieldError( 'service_id' );
@@ -829,6 +835,49 @@
 	}
 
 	/**
+	 * A service card's clinic_charges map (Clinic_Locations id => this
+	 * doctor's own override price for this service at that clinic — see
+	 * Services::decode_row()). An empty map means the service is offered
+	 * doctor-wide, at every clinic the doctor practices at; a non-empty map
+	 * means it's only offered at exactly the clinics listed there — see
+	 * isServiceOfferedAtClinic() below, which is what actually enforces
+	 * that restriction.
+	 *
+	 * @param {HTMLElement} card A service card (data-service-clinic-charges already set).
+	 * @return {Object}
+	 */
+	function parseClinicCharges( card ) {
+		try {
+			return JSON.parse( card.getAttribute( 'data-service-clinic-charges' ) || '{}' );
+		} catch ( e ) {
+			return {};
+		}
+	}
+
+	/**
+	 * Whether a service card should be offered at all at the given clinic —
+	 * a service with no clinic_charges entries is doctor-wide (offered
+	 * everywhere, same as before per-clinic services existed); one with any
+	 * entries is only offered at exactly the clinics listed there. This is
+	 * what lets one doctor provide different services at different clinics
+	 * (see admin-service-form-screen.php's "Clinic Pricing" rows, which
+	 * double as the per-clinic availability list, not just price overrides).
+	 *
+	 * @param {HTMLElement} card             A service card.
+	 * @param {string}      clinicLocationId Currently selected clinic's shared Clinic_Locations id, or '' when no clinic is selected/relevant.
+	 * @return {boolean}
+	 */
+	function isServiceOfferedAtClinic( card, clinicLocationId ) {
+		var clinicCharges = parseClinicCharges( card );
+
+		if ( ! clinicLocationId || ! Object.keys( clinicCharges ).length ) {
+			return true;
+		}
+
+		return Object.prototype.hasOwnProperty.call( clinicCharges, clinicLocationId );
+	}
+
+	/**
 	 * A service card's price at the currently selected clinic — its
 	 * clinic_charges override when the selected clinic has one configured,
 	 * otherwise its flat charge.
@@ -839,14 +888,7 @@
 	 */
 	function effectiveChargeForCard( card ) {
 		var base = parseFloat( card.getAttribute( 'data-service-charge' ) ) || 0;
-		var clinicCharges = {};
-
-		try {
-			clinicCharges = JSON.parse( card.getAttribute( 'data-service-clinic-charges' ) || '{}' );
-		} catch ( e ) {
-			clinicCharges = {};
-		}
-
+		var clinicCharges = parseClinicCharges( card );
 		var clinicLocationId = getSelectedClinicLocationId();
 
 		if ( clinicLocationId && Object.prototype.hasOwnProperty.call( clinicCharges, clinicLocationId ) ) {
@@ -859,15 +901,38 @@
 	/**
 	 * Re-renders every service card's displayed price/meta text and its
 	 * cached `data-service-effective-charge` (what updateSummary() actually
-	 * sums) — called whenever the selected clinic changes, or right after
-	 * the cards are first built.
+	 * sums), and shows/hides each card according to whether it's actually
+	 * offered at the now-selected clinic (see isServiceOfferedAtClinic()) —
+	 * called whenever the selected clinic changes, or right after the cards
+	 * are first built. A card hidden by this clinic switch is also
+	 * unchecked, so a service the patient can no longer see never stays
+	 * silently selected; if that leaves nothing checked, the first
+	 * still-visible card is checked instead, mirroring updateServiceCards()'
+	 * own "nothing preselected" default.
 	 */
 	function refreshServiceCardPrices() {
+		var clinicLocationId = getSelectedClinicLocationId();
+		var visibleCards = [];
+		var anyChecked = false;
+
 		document.querySelectorAll( '#dak-booking-service-cards .dak-booking-service-card[data-service-id]' ).forEach( function ( card ) {
 			var metaEl = card.querySelector( '.dak-booking-service-card-meta' );
 
 			if ( ! metaEl ) {
 				return;
+			}
+
+			var offered = isServiceOfferedAtClinic( card, clinicLocationId );
+			card.classList.toggle( 'dak-hidden', ! offered );
+
+			var checkbox = card.querySelector( '.dak-booking-service-checkbox' );
+
+			if ( offered ) {
+				visibleCards.push( card );
+				anyChecked = anyChecked || ( checkbox && checkbox.checked );
+			} else if ( checkbox && checkbox.checked ) {
+				checkbox.checked = false;
+				card.classList.remove( 'is-selected' );
 			}
 
 			var duration = parseInt( card.getAttribute( 'data-service-duration' ), 10 ) || 0;
@@ -882,6 +947,23 @@
 			metaEl.textContent = metaParts.join( ' · ' );
 			card.setAttribute( 'data-service-effective-charge', charge );
 		} );
+
+		if ( visibleCards.length && ! anyChecked ) {
+			var firstCheckbox = visibleCards[ 0 ].querySelector( '.dak-booking-service-checkbox' );
+
+			if ( firstCheckbox ) {
+				firstCheckbox.checked = true;
+				visibleCards[ 0 ].classList.add( 'is-selected' );
+			}
+		}
+
+		var emptyClinicHint = document.getElementById( 'dak-booking-service-clinic-empty-hint' );
+
+		if ( emptyClinicHint ) {
+			emptyClinicHint.classList.toggle( 'dak-hidden', visibleCards.length > 0 );
+		}
+
+		syncSelectedServiceIds();
 	}
 
 	/**

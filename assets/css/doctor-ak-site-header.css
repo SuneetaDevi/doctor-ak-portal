@@ -37,13 +37,13 @@
    the active theme's body_class() call) is what scopes this, since only the
    home page actually has a hero banner behind it; everywhere else this
    plugin's header keeps its normal, plain, in-flow appearance.
-   Desktop-only (matches the >900px breakpoint the rest of this file already
+   Desktop-only (matches the >1024px breakpoint the rest of this file already
    treats as "the non-mobile nav"): a floating-over-a-photo header competes
    with the hamburger menu's own affordances at narrow widths, and the hero
    itself reflows a lot there, making a hand-tuned clearance offset (below)
    unreliable — simpler and safer to leave mobile as the plain header it
    already was. */
-@media ( min-width: 901px ) {
+@media ( min-width: 1025px ) {
 	body.front-page .dak-site-header {
 		position: fixed !important;
 		top: 0 !important;
@@ -397,6 +397,16 @@
 	overflow-y: auto !important;
 }
 
+/* Without this, a grid item defaults to min-width: auto — sized to fit its
+   content's min-content (here, effectively the widest unwrapped service/
+   clinic name) rather than shrinking to its 1fr track. A handful of long
+   names (e.g. "ESOPHAGEAL VARICEAL BAND LIGATION") was enough to blow the
+   whole grid past the panel's own width, forcing a horizontal scrollbar
+   inside the dropdown instead of each name just wrapping onto two lines. */
+.dak-site-header-mega-column {
+	min-width: 0 !important;
+}
+
 .dak-site-header-mega-column-list {
 	margin: 0 !important;
 	padding: 0 !important;
@@ -419,11 +429,13 @@
 	display: flex !important;
 	align-items: center !important;
 	gap: 0.5rem !important;
+	min-width: 0 !important;
 	padding: 0.4rem 0.5rem !important;
 	border-radius: var( --dak-radius-sm ) !important;
 	color: var( --dak-text ) !important;
 	text-decoration: none !important;
 	font-size: 0.88rem !important;
+	overflow-wrap: break-word !important;
 }
 
 .dak-site-header-mega-column-item a:hover {
@@ -832,7 +844,7 @@
 	}
 }
 
-@media ( max-width: 900px ) {
+@media ( max-width: 1024px ) {
 	.dak-site-header-utility-contact {
 		gap: 0.75rem !important;
 	}

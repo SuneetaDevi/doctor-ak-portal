@@ -189,6 +189,27 @@ class Admin_User_Handler {
 
 			$gender = Doctor_Gender::sanitize_from_request();
 
+			// Optional — unlike the patient/receptionist phone field (always
+			// required), a blank submission here just means "no phone on
+			// file yet" rather than an error. The field is always pre-filled
+			// with whatever's already stored (see admin-user-form-screen.php),
+			// so a blank submission also correctly represents an admin
+			// explicitly clearing it, not an accidentally-skipped field.
+			$doctor_phone_number    = '';
+			$posted_phone_number_raw = isset( $_POST['phone_number'] ) ? preg_replace( '/\D/', '', wp_unslash( $_POST['phone_number'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- wp_unslash() applied above before preg_replace().
+
+			if ( '' !== $posted_phone_number_raw ) {
+				$doctor_phone_number = Phone::sanitize_from_request(
+					isset( $_POST['phone_country_code'] ) ? wp_unslash( $_POST['phone_country_code'] ) : '',
+					wp_unslash( $_POST['phone_number'] )
+				);
+
+				if ( is_wp_error( $doctor_phone_number ) ) {
+					$errors['phone_number'] = $doctor_phone_number->get_error_message();
+					$doctor_phone_number     = '';
+				}
+			}
+
 			$country = isset( $_POST['country'] ) ? sanitize_text_field( wp_unslash( $_POST['country'] ) ) : '';
 			$city    = isset( $_POST['city'] ) ? sanitize_text_field( wp_unslash( $_POST['city'] ) ) : '';
 			$area    = isset( $_POST['area'] ) ? sanitize_text_field( wp_unslash( $_POST['area'] ) ) : '';
@@ -361,6 +382,29 @@ class Admin_User_Handler {
 					'sessions' => $clinic_sessions,
 				);
 			}
+
+			// Video Consultation Hours, from the onboarding form's always-
+			// present video sessions card (see doctor-ak-onboarding-sessions.js)
+			// — a doctor has at most one video clinic row, keyed by the
+			// hidden video_clinic_row_id field rather than a clinic_location_id
+			// (video has no physical location to align to). Saved
+			// unconditionally, independent of the "Allow this doctor to offer
+			// video consultations" checkbox above, so hours already set stay
+			// intact if that's ever toggled off and back on later.
+			$posted_video_sessions = isset( $_POST['video_sessions'] ) && is_array( $_POST['video_sessions'] ) ? $_POST['video_sessions'] : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Clinics::sanitize_sessions_from_request() unslashes/sanitizes each field itself.
+			$video_sessions        = Clinics::sanitize_sessions_from_request( $posted_video_sessions );
+
+			if ( is_wp_error( $video_sessions ) ) {
+				$errors['video_sessions'] = $video_sessions->get_error_message();
+				$video_sessions           = Clinics::empty_sessions();
+			}
+
+			$video_clinic_row_id = isset( $_POST['video_clinic_row_id'] ) ? absint( wp_unslash( $_POST['video_clinic_row_id'] ) ) : 0;
+
+			$video_clinic_fields = Clinics::sanitize_clinic_fields_from_request(
+				array( 'name' => __( 'Video Consultation', 'doctor-ak-portal' ) ),
+				Clinics::TYPE_VIDEO
+			);
 		} else {
 			$phone_number = Phone::sanitize_from_request(
 				isset( $_POST['phone_country_code'] ) ? wp_unslash( $_POST['phone_country_code'] ) : '',
@@ -561,6 +605,7 @@ class Admin_User_Handler {
 			update_user_meta( $saved_user_id, 'doctor_ak_area', $area );
 			update_user_meta( $saved_user_id, 'doctor_ak_years_experience', $years_experience );
 			update_user_meta( $saved_user_id, Doctor_Gender::META_KEY, $gender );
+			update_user_meta( $saved_user_id, 'doctor_ak_phone_number', $doctor_phone_number );
 			update_user_meta( $saved_user_id, 'doctor_ak_short_description', $short_description );
 			update_user_meta( $saved_user_id, 'doctor_ak_expertise', $expertise );
 			update_user_meta( $saved_user_id, Clinics::VIDEO_CONSULTATION_ALLOWED_META_KEY, $video_consultation_allowed ? '1' : '0' );
@@ -573,6 +618,19 @@ class Admin_User_Handler {
 				} else {
 					Clinics::create( $saved_user_id, $clinic_entry['fields'], $clinic_entry['sessions'] );
 				}
+			}
+
+			// Only ever creates a brand-new video clinic row once at least one
+			// session period is actually turned on — otherwise every doctor
+			// would get an empty, unused row just from this card always being
+			// present on the form. An already-existing row is still updated
+			// unconditionally (even back to all-closed), since that's a
+			// legitimate "temporarily pause video hours" state, same as any
+			// physical clinic's own sessions can be left all-closed.
+			if ( $video_clinic_row_id > 0 ) {
+				Clinics::update( $video_clinic_row_id, $video_clinic_fields, $video_sessions, $saved_user_id );
+			} elseif ( self::has_any_enabled_session( $video_sessions ) ) {
+				Clinics::create( $saved_user_id, $video_clinic_fields, $video_sessions );
 			}
 
 			foreach ( $services_to_create as $service_entry ) {
@@ -848,5 +906,25 @@ class Admin_User_Handler {
 		}
 
 		return $username;
+	}
+
+	/**
+	 * Whether a sanitized sessions structure (see Clinics::sanitize_sessions_from_request())
+	 * has at least one enabled day/period — used to skip creating a brand-new
+	 * video clinic row when its Weekly Hours card was left entirely blank.
+	 *
+	 * @param array $sessions Sanitized sessions, day => period => { enabled, ... }.
+	 * @return bool
+	 */
+	private static function has_any_enabled_session( array $sessions ) {
+		foreach ( $sessions as $day ) {
+			foreach ( $day as $period ) {
+				if ( ! empty( $period['enabled'] ) ) {
+					return true;
+				}
+			}
+		}
+
+		return false;
 	}
 }

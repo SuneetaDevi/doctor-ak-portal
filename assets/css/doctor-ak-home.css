@@ -41,7 +41,7 @@
 	}
 }
 
-@media ( max-width: 900px ) {
+@media ( max-width: 1024px ) {
 	.dak-home {
 		--dak-home-gutter: 1.5rem;
 	}
@@ -162,9 +162,26 @@
    above it — the photo itself is meant to run right up to the top of the
    viewport behind the header, but the actual headline/stat-badge need extra
    clearance so the header doesn't sit on top of them. Matches that same
-   >900px breakpoint: below it the header goes back to its plain, in-flow
-   self and this banner needs no extra room for it. */
+   >1024px breakpoint: below it the header goes back to its plain, in-flow
+   self and this banner needs no extra room for it.
+   ~150px covers both header rows (utility bar + main nav bar) as they render
+   before the visitor has scrolled — the moment they do, .is-scrolled
+   collapses the utility bar away, but the extra clearance reserved here just
+   becomes a bit of breathing room above the heading rather than a problem. */
+@media ( min-width: 1025px ) {
+	/* The banner's own height has to grow by the same amount the content/
+	   side are pushed down by below — otherwise min-height stays at 520px
+	   while the search card + stat badges (pushed lower to clear the header)
+	   now extend past that shorter box, spilling into the section below
+	   instead of being contained inside the hero. */
+	.dak-home-hero-banner {
+		min-height: calc( 520px + 150px ) !important;
+	}
 
+	.dak-home-hero-banner-content {
+		padding-top: calc( var( --dak-space-7 ) + 150px ) !important;
+	}
+}
 
 .dak-home-hero-banner-content h1 {
 	font-size: 2.75rem !important;
@@ -205,9 +222,14 @@
 	width: 531px !important;
 }
 
-/* Clears the fixed site header's two rows. Declared after the base rule above
-   (same specificity — the later one wins). */
-
+/* Clears the fixed site header's two rows (see the matching
+   .dak-home-hero-banner-content padding-top override above). Declared after
+   the base rule above (same specificity — the later one wins). */
+@media ( min-width: 1025px ) {
+	.dak-home-hero-side {
+		top: calc( var( --dak-space-5 ) + 150px ) !important;
+	}
+}
 
 .dak-home-hero-form {
 	padding: var( --dak-space-5 ) !important;
@@ -1208,7 +1230,7 @@
 
 .dak-home-specialties-grid {
 	display: grid !important;
-	grid-template-columns: repeat( 3, minmax( 0, 1fr ) ) !important;
+	grid-template-columns: repeat( 6, minmax( 0, 1fr ) ) !important;
 	gap: var( --dak-space-4 ) !important;
 	margin-top: var( --dak-space-5 ) !important;
 }
@@ -2045,6 +2067,84 @@
 	display: none !important;
 }
 
+.dak-home-videos-slider {
+	position: relative !important;
+}
+
+/* Floating glass buttons over the reel, matching the .dak-home-video-play
+   chip's own translucent-white-on-dark treatment rather than the doctors
+   slider's light-background nav style (this section is a dark band). */
+.dak-home-videos-nav {
+	position: absolute !important;
+	top: 50% !important;
+	transform: translateY( -50% ) !important;
+	z-index: 3 !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 2.75rem !important;
+	height: 2.75rem !important;
+	border: 1px solid rgba( 255, 255, 255, 0.24 ) !important;
+	border-radius: 999px !important;
+	background: rgba( 8, 19, 13, 0.6 ) !important;
+	backdrop-filter: blur( 6px ) !important;
+	color: #fff !important;
+	cursor: pointer !important;
+	transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease !important;
+}
+
+.dak-home-videos-prev {
+	left: var( --dak-space-2 ) !important;
+}
+
+.dak-home-videos-next {
+	right: var( --dak-space-2 ) !important;
+}
+
+.dak-home-videos-nav svg {
+	width: 1.1rem !important;
+	height: 1.1rem !important;
+	flex-shrink: 0 !important;
+	display: block !important;
+	stroke: #fff !important;
+	fill: none !important;
+}
+
+.dak-home-videos-nav:hover:not( :disabled ) {
+	border-color: #b8e27a !important;
+	background: rgba( 8, 19, 13, 0.85 ) !important;
+	transform: translateY( -50% ) scale( 1.06 ) !important;
+}
+
+.dak-home-videos-nav:disabled {
+	opacity: 0.35 !important;
+	cursor: not-allowed !important;
+}
+
+.dak-home-videos-dots {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 0.5rem !important;
+	margin-top: var( --dak-space-2 ) !important;
+}
+
+.dak-home-videos-dot {
+	width: 8px !important;
+	height: 8px !important;
+	padding: 0 !important;
+	border: none !important;
+	border-radius: 50% !important;
+	background: rgba( 255, 255, 255, 0.28 ) !important;
+	cursor: pointer !important;
+	transition: background 0.2s ease, transform 0.2s ease !important;
+}
+
+.dak-home-videos-dot.is-active {
+	background: #b8e27a !important;
+	transform: scale( 1.2 ) !important;
+}
+
 .dak-home-video-card {
 	position: relative !important;
 	flex: 0 0 clamp( 210px, 16vw, 300px ) !important;
@@ -2215,7 +2315,7 @@
 	cursor: pointer !important;
 }
 
-@media ( max-width: 900px ) {
+@media ( max-width: 1024px ) {
 	.dak-home-hero-banner {
 		min-height: 0 !important;
 	}
@@ -2324,6 +2424,11 @@
 
 	.dak-home-video-card:nth-child( even ) {
 		margin-top: 1.5rem !important;
+	}
+
+	.dak-home-videos-nav {
+		width: 2.25rem !important;
+		height: 2.25rem !important;
 	}
 
 	.dak-home-hero-banner-content h1 {

@@ -169,8 +169,20 @@ class Appointments {
 				return new \WP_Error( 'doctor_ak_invalid_service', __( 'Please choose valid, active services.', 'doctor-ak-portal' ) );
 			}
 
+			$clinic_charges = isset( $service['clinic_charges'] ) ? $service['clinic_charges'] : array();
+
+			// An empty clinic_charges map means this service is offered
+			// doctor-wide (every clinic); a non-empty one restricts it to
+			// exactly the clinics listed there (see Services::decode_row())
+			// — same rule the wizard's own Selection step JS enforces (see
+			// isServiceOfferedAtClinic() in doctor-ak-booking-page.js).
+			// Re-checked here since the client only hides/unchecks cards, it
+			// never removes the field from the submitted form.
+			if ( $clinic_location_id > 0 && ! empty( $clinic_charges ) && ! isset( $clinic_charges[ $clinic_location_id ] ) ) {
+				return new \WP_Error( 'doctor_ak_service_not_at_clinic', __( 'One of the selected services is not offered at the chosen clinic.', 'doctor-ak-portal' ) );
+			}
+
 			$names[]         = $service['name'];
-			$clinic_charges  = isset( $service['clinic_charges'] ) ? $service['clinic_charges'] : array();
 			$effective_price = ( $clinic_location_id > 0 && isset( $clinic_charges[ $clinic_location_id ] ) )
 				? (float) $clinic_charges[ $clinic_location_id ]
 				: (float) $service['charge'];

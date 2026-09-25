@@ -15,7 +15,7 @@
  * @var array      $videos           Home_Videos::get_all() rows — { title, video_url, poster_url } — admin-uploaded videos.
  * @var string   $hero_video_url   Bundled hero tour video URL (assets/videos/thumbnail.mp4), or '' if missing.
  * @var string   $hero_banner_url  Bundled hero banner photo URL (assets/images/doctor-banner.avif), or '' if missing.
- * @var string[] $marketing_videos Bundled marketing reel video URLs (assets/videos/video-1..3.mp4).
+ * @var string[] $marketing_videos Bundled marketing reel video URLs (assets/videos/video-1..6.mp4).
  * @var string   $directory_url    URL of the [doctors_directory] page, or '' if not found.
  * @var string   $doctor_register_url URL of the [doctor_register] page, or '' if not found — for the "Join as a Doctor" section.
  * @var string   $services_url     URL of the [services_directory] page, or '' if not found.
@@ -636,38 +636,50 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 				<p><?php esc_html_e( 'Real moments from our clinics. Tap any clip to watch it full screen, with sound.', 'doctor-ak-portal' ); ?></p>
 			</div>
 
-			<div class="dak-home-videos-grid">
-				<?php foreach ( $marketing_videos as $dak_marketing_video_index => $dak_marketing_video_url ) : ?>
-					<button
-						type="button"
-						class="dak-home-video-card"
-						data-dak-home-video
-						data-video-url="<?php echo esc_url( $dak_marketing_video_url ); ?>"
-						data-video-title="<?php echo esc_attr( sprintf( /* translators: %d: video number. */ __( 'Marketing Video %d', 'doctor-ak-portal' ), $dak_marketing_video_index + 1 ) ); ?>"
-						aria-label="<?php echo esc_attr( sprintf( /* translators: %d: video number. */ __( 'Play marketing video %d', 'doctor-ak-portal' ), $dak_marketing_video_index + 1 ) ); ?>"
-					>
-						<video src="<?php echo esc_url( $dak_marketing_video_url ); ?>" muted loop playsinline preload="metadata" data-gallery-video></video>
-						<span class="dak-home-video-play" data-label="<?php esc_attr_e( 'Watch with sound', 'doctor-ak-portal' ); ?>" aria-hidden="true"><?php echo $dak_home_icons['play']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-					</button>
-				<?php endforeach; ?>
+			<div class="dak-home-videos-slider">
+				<button type="button" class="dak-home-videos-nav dak-home-videos-prev" id="dak-home-videos-prev" aria-label="<?php esc_attr_e( 'Previous videos', 'doctor-ak-portal' ); ?>">
+					<?php echo $dak_home_icons['chevron_left']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				</button>
 
-				<?php foreach ( $videos as $dak_video ) : ?>
-					<button
-						type="button"
-						class="dak-home-video-card"
-						data-dak-home-video
-						data-video-url="<?php echo esc_url( $dak_video['video_url'] ); ?>"
-						data-video-title="<?php echo esc_attr( $dak_video['title'] ); ?>"
-						aria-label="<?php echo esc_attr( '' !== $dak_video['title'] ? $dak_video['title'] : __( 'Play video', 'doctor-ak-portal' ) ); ?>"
-					>
-						<video src="<?php echo esc_url( $dak_video['video_url'] ); ?>" muted loop playsinline preload="metadata" data-gallery-video></video>
-						<span class="dak-home-video-play" data-label="<?php esc_attr_e( 'Watch with sound', 'doctor-ak-portal' ); ?>" aria-hidden="true"><?php echo $dak_home_icons['play']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-						<?php if ( '' !== $dak_video['title'] ) : ?>
-							<span class="dak-home-video-title"><?php echo esc_html( $dak_video['title'] ); ?></span>
-						<?php endif; ?>
-					</button>
-				<?php endforeach; ?>
+				<div class="dak-home-videos-grid" id="dak-home-videos-track" data-loop>
+					<?php foreach ( $marketing_videos as $dak_marketing_video_index => $dak_marketing_video_url ) : ?>
+						<button
+							type="button"
+							class="dak-home-video-card"
+							data-dak-home-video
+							data-video-url="<?php echo esc_url( $dak_marketing_video_url ); ?>"
+							data-video-title="<?php echo esc_attr( sprintf( /* translators: %d: video number. */ __( 'Marketing Video %d', 'doctor-ak-portal' ), $dak_marketing_video_index + 1 ) ); ?>"
+							aria-label="<?php echo esc_attr( sprintf( /* translators: %d: video number. */ __( 'Play marketing video %d', 'doctor-ak-portal' ), $dak_marketing_video_index + 1 ) ); ?>"
+						>
+							<video src="<?php echo esc_url( $dak_marketing_video_url ); ?>" muted loop playsinline preload="metadata" data-gallery-video></video>
+							<span class="dak-home-video-play" data-label="<?php esc_attr_e( 'Watch with sound', 'doctor-ak-portal' ); ?>" aria-hidden="true"><?php echo $dak_home_icons['play']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						</button>
+					<?php endforeach; ?>
+
+					<?php foreach ( $videos as $dak_video ) : ?>
+						<button
+							type="button"
+							class="dak-home-video-card"
+							data-dak-home-video
+							data-video-url="<?php echo esc_url( $dak_video['video_url'] ); ?>"
+							data-video-title="<?php echo esc_attr( $dak_video['title'] ); ?>"
+							aria-label="<?php echo esc_attr( '' !== $dak_video['title'] ? $dak_video['title'] : __( 'Play video', 'doctor-ak-portal' ) ); ?>"
+						>
+							<video src="<?php echo esc_url( $dak_video['video_url'] ); ?>" muted loop playsinline preload="metadata" data-gallery-video></video>
+							<span class="dak-home-video-play" data-label="<?php esc_attr_e( 'Watch with sound', 'doctor-ak-portal' ); ?>" aria-hidden="true"><?php echo $dak_home_icons['play']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<?php if ( '' !== $dak_video['title'] ) : ?>
+								<span class="dak-home-video-title"><?php echo esc_html( $dak_video['title'] ); ?></span>
+							<?php endif; ?>
+						</button>
+					<?php endforeach; ?>
+				</div>
+
+				<button type="button" class="dak-home-videos-nav dak-home-videos-next" id="dak-home-videos-next" aria-label="<?php esc_attr_e( 'Next videos', 'doctor-ak-portal' ); ?>">
+					<?php echo $dak_home_icons['chevron']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				</button>
 			</div>
+
+			<div class="dak-home-videos-dots" id="dak-home-videos-dots" aria-hidden="true"></div>
 			</div>
 		</section>
 

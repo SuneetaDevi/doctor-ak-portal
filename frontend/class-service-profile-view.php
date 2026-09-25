@@ -8,6 +8,7 @@
 namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
+use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Template_Loader;
@@ -171,6 +172,39 @@ class Service_Profile_View {
 
 			$prices[] = $row['effective_price'];
 
+			// A clinic id only gets added to the booking link below when this
+			// doctor offers the service at exactly one clinic — with more
+			// than one, there's genuinely no unambiguous choice to make for
+			// the patient, so Selection still needs to show the clinic
+			// picker in that case (see Booking_Page::resolved_selection()).
+			//
+			// $row['clinic_locations'] holds Clinic_Locations rows (the admin
+			// master clinic list), but Booking_Page::resolved_selection()
+			// validates a booking link's clinic_id against this doctor's own
+			// Clinics rows instead — so the Clinic_Locations id has to be
+			// translated to this doctor's matching Clinics row id via its
+			// clinic_location_id foreign key before it's usable here.
+			$dak_unambiguous_clinic_location_id = 1 === count( $row['clinic_locations'] ) ? (int) $row['clinic_locations'][0]['id'] : 0;
+			$dak_unambiguous_clinic_id          = 0;
+
+			if ( $dak_unambiguous_clinic_location_id > 0 ) {
+				foreach ( Clinics::get_for_doctor( $doctor->ID ) as $doctor_clinic ) {
+					if ( $dak_unambiguous_clinic_location_id === (int) $doctor_clinic['clinic_location_id'] ) {
+						$dak_unambiguous_clinic_id = $doctor_clinic['id'];
+						break;
+					}
+				}
+			}
+
+			$dak_booking_query_args = array(
+				'doctor_id'  => $doctor->ID,
+				'service_id' => $row['id'],
+			);
+
+			if ( $dak_unambiguous_clinic_id > 0 ) {
+				$dak_booking_query_args['clinic_id'] = $dak_unambiguous_clinic_id;
+			}
+
 			$doctor_name = trim( $doctor->first_name . ' ' . $doctor->last_name );
 			$doctor_name = '' !== $doctor_name ? $doctor_name : $doctor->display_name;
 
@@ -201,22 +235,12 @@ class Service_Profile_View {
 				'category_label'     => $row['category_label'],
 				'location_labels'    => $location_labels,
 				'clinic_locations'   => $row['clinic_locations'],
-				// Carries the exact service the patient just picked here
-				// straight into the booking wizard's Selection step, so it
-				// doesn't have to be re-picked (see
-				// Booking_Page::resolved_selection()). Deliberately doesn't
-				// also carry a clinic id — this service can list more than
-				// one clinic location for this doctor (see
-				// 'clinic_locations' above), so there's no single
-				// unambiguous one to preselect; Selection still shows the
-				// clinic picker in that case.
-				'booking_url'        => $base_booking_url ? add_query_arg(
-					array(
-						'doctor_id'  => $doctor->ID,
-						'service_id' => $row['id'],
-					),
-					$base_booking_url
-				) : '',
+				// Carries the exact service (and, when unambiguous, clinic)
+				// the patient just picked here straight into the booking
+				// wizard, so Selection can be skipped entirely (see
+				// Booking_Page::resolved_selection()'s selection_fully_known)
+				// straight to Identity/Payment.
+				'booking_url'        => $base_booking_url ? add_query_arg( $dak_booking_query_args, $base_booking_url ) : '',
 			);
 		}
 

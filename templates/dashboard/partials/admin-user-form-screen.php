@@ -19,6 +19,7 @@
  * @var array|null $editing_user    Row view-model (see Admin_Dashboard::row_data()) when editing, null when adding.
  * @var array      $clinic_locations Master clinic list, see Clinic_Locations::get_all().
  * @var array      $editing_clinics  Doctor's own physical Clinics rows already aligned to a Clinic_Locations record (see Clinics::get_for_doctor()) — empty outside doctor-editing.
+ * @var array|null $editing_video_clinic Doctor's own video-consultation Clinics row (see Clinics::get_for_doctor()), or null if they don't have one yet / outside doctor-editing.
  * @var array      $editing_services Doctor's own existing Services rows (see Services::get_for_doctor()) — empty outside doctor-editing.
  */
 
@@ -57,6 +58,14 @@ foreach ( $editing_clinics as $dak_editing_clinic ) {
 }
 
 $dak_editing_clinic_location_ids = wp_list_pluck( $editing_clinics, 'clinic_location_id' );
+
+// For the Weekly Hours step's video sessions card (see
+// doctor-ak-onboarding-sessions.js) — this doctor's single existing video
+// clinic row (id + sessions), or null when they don't have one yet.
+$dak_editing_video_clinic_for_js = $editing_video_clinic ? array(
+	'id'       => $editing_video_clinic['id'],
+	'sessions' => $editing_video_clinic['sessions'],
+) : null;
 ?>
 <div class="dak-dashboard-greeting dak-admin-users-header">
 	<div>
@@ -162,6 +171,23 @@ $dak_editing_clinic_location_ids = wp_list_pluck( $editing_clinics, 'clinic_loca
 								<?php endforeach; ?>
 							</select>
 				<span class="dak-field-error" data-field="gender"></span>
+			</div>
+
+			<div class="dak-field">
+				<label for="dak-admin-user-doctor-phone-code"><?php esc_html_e( 'Phone Number (optional)', 'doctor-ak-portal' ); ?></label>
+				<?php
+				$dak_admin_doctor_phone_parts = \DoctorAKPortal\Includes\Phone::split( $dak_is_editing ? $editing_user['phone'] : '' );
+				echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- template escapes its own output.
+					'partials/phone-field.php',
+					array(
+						'id_prefix' => 'dak-admin-user-doctor-phone',
+						'dial_code' => $dak_admin_doctor_phone_parts['dial_code'],
+						'number'    => $dak_admin_doctor_phone_parts['number'],
+						'required'  => false,
+					)
+				);
+				?>
+				<span class="dak-field-error" data-field="phone_number"></span>
 			</div>
 
 			<div class="dak-field-row">
@@ -299,6 +325,13 @@ $dak_editing_clinic_location_ids = wp_list_pluck( $editing_clinics, 'clinic_loca
 				<p class="dak-field-hint" id="dak-admin-user-sessions-empty"><?php esc_html_e( 'Pick a clinic above to set its hours here.', 'doctor-ak-portal' ); ?></p>
 				<div id="dak-admin-user-sessions-groups" data-existing="<?php echo esc_attr( wp_json_encode( $dak_editing_clinics_by_location_id ) ); ?>"></div>
 				<span class="dak-field-error" data-field="clinic_sessions"></span>
+			</div>
+
+			<div class="dak-field" id="dak-admin-user-video-sessions-section">
+				<span class="dak-field-label"><?php esc_html_e( 'Video Consultation Hours', 'doctor-ak-portal' ); ?></span>
+				<p class="dak-field-hint"><?php esc_html_e( 'Weekly hours patients can book this doctor for an online video consultation.', 'doctor-ak-portal' ); ?></p>
+				<div id="dak-admin-user-video-sessions-group" data-existing="<?php echo esc_attr( wp_json_encode( $dak_editing_video_clinic_for_js ) ); ?>"></div>
+				<span class="dak-field-error" data-field="video_sessions"></span>
 			</div>
 
 			</div>

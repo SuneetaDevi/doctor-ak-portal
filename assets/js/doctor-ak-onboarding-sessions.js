@@ -23,6 +23,14 @@
  * blank grid. Each group also carries a hidden clinic_row_id[...] field
  * ('0' for a not-yet-created clinic) so the save handler knows whether to
  * update that existing row or create a new one.
+ *
+ * Alongside the per-clinic cards, a single "Video Consultation Hours" card
+ * (#dak-admin-user-video-sessions-group) is always built the same way —
+ * there's only ever one video "clinic" per doctor, so it isn't tied to the
+ * clinic multi-select at all. Its inputs are named `video_sessions[day]
+ * [period][field]`, plus a hidden `video_clinic_row_id` ('0' when this
+ * doctor has no video clinic row yet), read the same way on save (see
+ * Admin_User_Handler::handle_save_user()).
  */
 ( function () {
 	'use strict';
@@ -109,7 +117,28 @@
 			group.appendChild( rowIdInput );
 			group.appendChild( buildShareOverride( clinicLocationId, existing ) );
 			group.appendChild( buildQuickFill( group ) );
-			group.appendChild( buildGrid( clinicLocationId, existing ) );
+			group.appendChild( buildGrid( 'clinic_sessions[' + clinicLocationId + ']', existing ? existing.sessions : null ) );
+
+			return group;
+		}
+
+		/**
+		 * Builds the always-present "Video Consultation Hours" card — same
+		 * grid/quick-fill markup as a per-clinic card, just not tied to the
+		 * clinic multi-select (a doctor has at most one video clinic row).
+		 */
+		function buildVideoGroup( existingVideoClinic ) {
+			var group = document.createElement( 'div' );
+			group.className = 'dak-onboarding-clinic-sessions';
+
+			var rowIdInput = document.createElement( 'input' );
+			rowIdInput.type = 'hidden';
+			rowIdInput.name = 'video_clinic_row_id';
+			rowIdInput.value = existingVideoClinic ? existingVideoClinic.id : 0;
+
+			group.appendChild( rowIdInput );
+			group.appendChild( buildQuickFill( group ) );
+			group.appendChild( buildGrid( 'video_sessions', existingVideoClinic ? existingVideoClinic.sessions : null ) );
 
 			return group;
 		}
@@ -260,10 +289,9 @@
 			} );
 		}
 
-		function buildGrid( clinicLocationId, existing ) {
+		function buildGrid( namePrefix, existingSessions ) {
 			var grid = document.createElement( 'div' );
 			grid.className = 'dak-clinic-sessions-days';
-			var existingSessions = existing ? existing.sessions : null;
 
 			Object.keys( sessionDays ).forEach( function ( daySlug ) {
 				var dayEl = document.createElement( 'div' );
@@ -282,7 +310,7 @@
 
 				Object.keys( sessionPeriods ).forEach( function ( periodSlug ) {
 					var existingPeriod = existingDay && existingDay[ periodSlug ] ? existingDay[ periodSlug ] : null;
-					periodsEl.appendChild( buildPeriodRow( clinicLocationId, daySlug, periodSlug, sessionPeriods[ periodSlug ], existingPeriod ) );
+					periodsEl.appendChild( buildPeriodRow( namePrefix, daySlug, periodSlug, sessionPeriods[ periodSlug ], existingPeriod ) );
 				} );
 
 				dayEl.appendChild( periodsEl );
@@ -292,12 +320,12 @@
 			return grid;
 		}
 
-		function buildPeriodRow( clinicLocationId, daySlug, periodSlug, periodLabel, existingPeriod ) {
+		function buildPeriodRow( fieldNamePrefix, daySlug, periodSlug, periodLabel, existingPeriod ) {
 			var row = document.createElement( 'div' );
 			row.className = 'dak-availability-row';
 			row.setAttribute( 'data-period', periodSlug );
 
-			var namePrefix = 'clinic_sessions[' + clinicLocationId + '][' + daySlug + '][' + periodSlug + ']';
+			var namePrefix = fieldNamePrefix + '[' + daySlug + '][' + periodSlug + ']';
 
 			// A hidden field sharing the checkbox's exact name, placed
 			// before it in the DOM — an unchecked checkbox submits nothing
@@ -382,5 +410,19 @@
 
 		select.addEventListener( 'change', refresh );
 		refresh();
+
+		var videoGroupContainer = document.getElementById( 'dak-admin-user-video-sessions-group' );
+
+		if ( videoGroupContainer ) {
+			var existingVideoClinic = null;
+
+			try {
+				existingVideoClinic = JSON.parse( videoGroupContainer.getAttribute( 'data-existing' ) || 'null' );
+			} catch ( e ) {
+				existingVideoClinic = null;
+			}
+
+			videoGroupContainer.appendChild( buildVideoGroup( existingVideoClinic ) );
+		}
 	} );
 } )();

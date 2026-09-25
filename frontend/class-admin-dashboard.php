@@ -3038,18 +3038,34 @@ class Admin_Dashboard {
 		// this doctor's actual existing rows to pre-fill from — otherwise
 		// editing an existing doctor shows those sections empty even though
 		// clinics/sessions/services are already set up for them.
-		$editing_clinics  = array();
-		$editing_services = array();
+		$editing_clinics       = array();
+		$editing_services      = array();
+		$editing_video_clinic  = null;
 
 		if ( $editing && Roles::DOCTOR_ROLE === $role ) {
+			$doctor_clinics = Clinics::get_for_doctor( $user->ID );
+
 			$editing_clinics = array_values(
 				array_filter(
-					Clinics::get_for_doctor( $user->ID ),
+					$doctor_clinics,
 					function ( $clinic ) {
 						return Clinics::TYPE_PHYSICAL === $clinic['type'] && $clinic['clinic_location_id'] > 0;
 					}
 				)
 			);
+
+			// A doctor has at most one video-consultation "clinic" row — see
+			// doctor-ak-onboarding-sessions.js's single video sessions card.
+			$existing_video_clinics = array_values(
+				array_filter(
+					$doctor_clinics,
+					function ( $clinic ) {
+						return Clinics::TYPE_VIDEO === $clinic['type'];
+					}
+				)
+			);
+
+			$editing_video_clinic = ! empty( $existing_video_clinics ) ? $existing_video_clinics[0] : null;
 
 			$editing_services = Services::get_for_doctor( $user->ID );
 		}
@@ -3068,6 +3084,7 @@ class Admin_Dashboard {
 				'editing_user'     => $editing,
 				'clinic_locations' => Clinic_Locations::get_all(),
 				'editing_clinics'  => $editing_clinics,
+				'editing_video_clinic' => $editing_video_clinic,
 				'editing_services' => $editing_services,
 			)
 		);

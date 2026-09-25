@@ -140,7 +140,7 @@ $dak_profile_view_icons = array(
 			<div class="dak-profile-main">
 				<?php if ( ! empty( $doctor['keywords'] ) ) : ?>
 					<div class="dak-profile-card">
-						<h2><?php esc_html_e( 'Keywords', 'doctor-ak-portal' ); ?></h2>
+						<h2><?php esc_html_e( 'Procedure', 'doctor-ak-portal' ); ?></h2>
 						<div class="dak-specialty-tags">
 							<?php foreach ( $doctor['keywords'] as $dak_keyword ) : ?>
 								<span class="dak-specialty-tag"><?php echo esc_html( $dak_keyword ); ?></span>

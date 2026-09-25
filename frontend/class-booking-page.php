@@ -259,7 +259,8 @@ class Booking_Page {
 				$requested_service_ids = array( absint( $_GET['service_id'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			}
 
-			$valid_service_ids = wp_list_pluck( Services::active_for_doctor( $doctor->ID, 'clinic' ), 'id' );
+			$doctor_services   = Services::active_for_doctor( $doctor->ID, 'clinic' );
+			$valid_service_ids = wp_list_pluck( $doctor_services, 'id' );
 
 			foreach ( $requested_service_ids as $requested_service_id ) {
 				if ( $requested_service_id > 0 && in_array( $requested_service_id, $valid_service_ids, true ) ) {
@@ -269,21 +270,53 @@ class Booking_Page {
 
 			$selected_service_ids = array_values( array_unique( $selected_service_ids ) );
 
-			$doctor_clinic_ids = wp_list_pluck(
-				array_filter(
-					Clinics::get_for_doctor( $doctor->ID ),
-					function ( $clinic ) {
-						return Clinics::TYPE_PHYSICAL === $clinic['type'];
-					}
-				),
-				'id'
+			$doctor_clinics    = array_filter(
+				Clinics::get_for_doctor( $doctor->ID ),
+				function ( $clinic ) {
+					return Clinics::TYPE_PHYSICAL === $clinic['type'];
+				}
 			);
+			$doctor_clinic_ids = wp_list_pluck( $doctor_clinics, 'id' );
 
 			$requested_clinic_id = isset( $_GET['clinic_id'] ) ? absint( $_GET['clinic_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			$clinic_valid        = empty( $doctor_clinic_ids ) || in_array( $requested_clinic_id, $doctor_clinic_ids, true );
 
 			if ( $clinic_valid && ! empty( $doctor_clinic_ids ) ) {
 				$selected_clinic_id = $requested_clinic_id;
+			}
+
+			// A service can be restricted to specific clinics (see
+			// Services::decode_row()'s clinic_charges — a non-empty map means
+			// "only offered at these clinics", same rule the booking wizard's
+			// own JS enforces when the patient picks a clinic by hand, see
+			// isServiceOfferedAtClinic() in doctor-ak-booking-page.js). A
+			// service that isn't actually offered at the resolved clinic
+			// can't be trusted as a valid preselection, so it's dropped here
+			// too — if that empties the list, Selection still shows instead
+			// of silently booking a service the clinic doesn't offer.
+			if ( $selected_clinic_id > 0 && ! empty( $selected_service_ids ) ) {
+				$selected_clinic     = Clinics::find( $selected_clinic_id );
+				$clinic_location_id = $selected_clinic ? $selected_clinic['clinic_location_id'] : 0;
+				$services_by_id      = array();
+
+				foreach ( $doctor_services as $doctor_service ) {
+					$services_by_id[ $doctor_service['id'] ] = $doctor_service;
+				}
+
+				$selected_service_ids = array_values(
+					array_filter(
+						$selected_service_ids,
+						function ( $service_id ) use ( $services_by_id, $clinic_location_id ) {
+							$service = isset( $services_by_id[ $service_id ] ) ? $services_by_id[ $service_id ] : null;
+
+							if ( ! $service || empty( $service['clinic_charges'] ) ) {
+								return true;
+							}
+
+							return array_key_exists( $clinic_location_id, $service['clinic_charges'] );
+						}
+					)
+				);
 			}
 
 			$selection_fully_known = ! empty( $selected_service_ids ) && $clinic_valid;

@@ -20,9 +20,251 @@
 
 	document.addEventListener( 'DOMContentLoaded', function () {
 		initVideoModal();
+		// Builds the carousel's loop clones before the gallery's
+		// IntersectionObserver below queries every [data-gallery-video], so
+		// the cloned cards' <video>s get the same scroll-into-view autoplay
+		// as the originals.
+		initVideoCarousel();
 		initVideoGallery();
 		initHeroSearch();
 	} );
+
+	/**
+	 * The video reel's carousel controls — Prev/Next buttons and a dot pager
+	 * around the existing scroll-snap track (see .dak-home-videos-grid),
+	 * mirroring the homepage doctors slider's own loop/autoplay behavior
+	 * (see doctor-ak-featured-doctors.js) rather than a second dependency:
+	 * the track's `data-loop` clones every card once so scrolling past the
+	 * last one keeps going into the first again, Prev/Next step by exactly
+	 * one card, dots jump to a page, and it all autoplays — paused while a
+	 * visitor is hovering or has focus inside it, skipped for
+	 * prefers-reduced-motion.
+	 */
+	function initVideoCarousel() {
+		var track = document.getElementById( 'dak-home-videos-track' );
+		var prev = document.getElementById( 'dak-home-videos-prev' );
+		var next = document.getElementById( 'dak-home-videos-next' );
+		var slider = track ? track.closest( '.dak-home-videos-slider' ) : null;
+		var dotsEl = document.getElementById( 'dak-home-videos-dots' );
+
+		if ( ! track || ! prev || ! next || ! slider ) {
+			return;
+		}
+
+		var AUTOPLAY_INTERVAL_MS = 4000;
+		var loop = track.hasAttribute( 'data-loop' );
+		var loopWidth = 0;
+		var firstCard = null;
+		var firstClone = null;
+		var normaliseTimer = null;
+		var pageCount = 0;
+
+		// Appends one identical, inert copy of every card, so scrolling past
+		// the last original just runs on into the first video again.
+		function setupLoop() {
+			if ( ! loop ) {
+				return;
+			}
+
+			var cards = Array.prototype.slice.call( track.querySelectorAll( '.dak-home-video-card' ) );
+
+			if ( cards.length < 2 || track.scrollWidth <= track.clientWidth + 4 ) {
+				loop = false;
+				return;
+			}
+
+			firstCard = cards[ 0 ];
+
+			cards.forEach( function ( card, index ) {
+				var clone = card.cloneNode( true );
+
+				clone.setAttribute( 'aria-hidden', 'true' );
+				clone.tabIndex = -1;
+				track.appendChild( clone );
+
+				if ( 0 === index ) {
+					firstClone = clone;
+				}
+			} );
+
+			measureLoop();
+		}
+
+		function measureLoop() {
+			if ( loop && firstCard && firstClone ) {
+				loopWidth = firstClone.offsetLeft - firstCard.offsetLeft;
+			}
+		}
+
+		// Once the view has run into the clones, drop back onto the
+		// originals — the same picture, so nobody sees it happen.
+		function normalise() {
+			if ( loop && loopWidth && track.scrollLeft >= loopWidth - 2 ) {
+				track.scrollTo( { left: track.scrollLeft - loopWidth, behavior: 'instant' } );
+			}
+		}
+
+		function cardWidth() {
+			var card = track.querySelector( '.dak-home-video-card' );
+
+			if ( ! card ) {
+				return track.clientWidth;
+			}
+
+			var trackGap = parseFloat( window.getComputedStyle( track ).columnGap || '0' );
+
+			return card.getBoundingClientRect().width + trackGap;
+		}
+
+		function atEnd() {
+			if ( loop ) {
+				return false;
+			}
+
+			return track.scrollLeft >= track.scrollWidth - track.clientWidth - 4;
+		}
+
+		// Decorative pager dots (the container itself is aria-hidden, same
+		// as the doctors slider's) — one per screenful, current one tracking
+		// scroll position, clicking one jumps there.
+		function buildDots() {
+			if ( ! dotsEl ) {
+				return;
+			}
+
+			var maxScroll = track.scrollWidth - track.clientWidth;
+
+			if ( loop && loopWidth ) {
+				pageCount = Math.ceil( loopWidth / track.clientWidth );
+			} else {
+				pageCount = maxScroll <= 4 ? 0 : Math.ceil( track.scrollWidth / track.clientWidth );
+			}
+
+			dotsEl.innerHTML = '';
+
+			for ( var i = 0; i < pageCount; i++ ) {
+				( function ( index ) {
+					var dot = document.createElement( 'button' );
+					dot.type = 'button';
+					dot.className = 'dak-home-videos-dot';
+					dot.tabIndex = -1;
+					dot.addEventListener( 'click', function () {
+						var max = track.scrollWidth - track.clientWidth;
+						var target = loop && loopWidth ? loopWidth * ( index / pageCount ) : ( pageCount > 1 ? max * ( index / ( pageCount - 1 ) ) : 0 );
+
+						normalise();
+						track.scrollTo( { left: target, behavior: 'smooth' } );
+						restartAutoplay();
+					} );
+					dotsEl.appendChild( dot );
+				}( i ) );
+			}
+		}
+
+		function updateDots() {
+			if ( ! dotsEl || ! pageCount ) {
+				return;
+			}
+
+			var maxScroll = Math.max( 1, track.scrollWidth - track.clientWidth );
+			var active = pageCount > 1 ? Math.round( ( track.scrollLeft / maxScroll ) * ( pageCount - 1 ) ) : 0;
+
+			if ( loop && loopWidth ) {
+				active = Math.round( ( ( track.scrollLeft % loopWidth ) / loopWidth ) * pageCount ) % pageCount;
+			}
+
+			Array.prototype.forEach.call( dotsEl.children, function ( dot, index ) {
+				dot.classList.toggle( 'is-active', index === active );
+			} );
+		}
+
+		function updateNavState() {
+			prev.disabled = ! loop && track.scrollLeft <= 4;
+			next.disabled = atEnd();
+			updateDots();
+		}
+
+		function goToPrev() {
+			if ( loop && track.scrollLeft < 4 ) {
+				track.scrollTo( { left: loopWidth, behavior: 'instant' } );
+			}
+
+			track.scrollBy( { left: -cardWidth(), behavior: 'smooth' } );
+		}
+
+		function goToNext() {
+			normalise();
+
+			// Rewinds to the start once it can't advance a further whole
+			// card, rather than stalling there until a visitor scrolls it
+			// back manually — that's what keeps autoplay "always moving".
+			if ( atEnd() ) {
+				track.scrollTo( { left: 0, behavior: 'smooth' } );
+				return;
+			}
+
+			track.scrollBy( { left: cardWidth(), behavior: 'smooth' } );
+		}
+
+		prev.addEventListener( 'click', function () {
+			goToPrev();
+			restartAutoplay();
+		} );
+
+		next.addEventListener( 'click', function () {
+			goToNext();
+			restartAutoplay();
+		} );
+
+		track.addEventListener( 'scroll', function () {
+			updateNavState();
+
+			if ( loop ) {
+				window.clearTimeout( normaliseTimer );
+				normaliseTimer = window.setTimeout( normalise, 150 );
+			}
+		} );
+
+		window.addEventListener( 'resize', function () {
+			measureLoop();
+			buildDots();
+			updateNavState();
+		} );
+
+		setupLoop();
+		buildDots();
+		updateNavState();
+
+		var prefersReducedMotion = window.matchMedia && window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
+		var autoplayTimer = null;
+
+		function startAutoplay() {
+			if ( prefersReducedMotion || autoplayTimer || pageCount < 2 ) {
+				return;
+			}
+
+			autoplayTimer = window.setInterval( goToNext, AUTOPLAY_INTERVAL_MS );
+		}
+
+		function stopAutoplay() {
+			if ( autoplayTimer ) {
+				window.clearInterval( autoplayTimer );
+				autoplayTimer = null;
+			}
+		}
+
+		function restartAutoplay() {
+			stopAutoplay();
+			startAutoplay();
+		}
+
+		slider.addEventListener( 'mouseenter', stopAutoplay );
+		slider.addEventListener( 'mouseleave', startAutoplay );
+		slider.addEventListener( 'focusin', stopAutoplay );
+		slider.addEventListener( 'focusout', startAutoplay );
+
+		startAutoplay();
+	}
 
 	/**
 	 * The video gallery's clips play by themselves (muted, looping) — but only
