@@ -50,6 +50,7 @@
 
 .dak-featured-doctors-view-more-mobile {
 	display: none !important;
+	box-sizing: border-box !important;
 	width: 100% !important;
 	margin-top: 1.25rem !important;
 	text-align: center !important;

@@ -74,6 +74,14 @@ class Blog_Single {
 			array( 'doctor-ak-portal-auth' ),
 			Assets::version( 'assets/css/doctor-ak-directory.css' )
 		);
+
+		wp_enqueue_script(
+			'doctor-ak-portal-blog-single',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-blog-single.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-blog-single.js' ),
+			true
+		);
 	}
 
 	/**
@@ -85,12 +93,56 @@ class Blog_Single {
 		$blog_id = isset( $_GET['blog_id'] ) ? absint( $_GET['blog_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only public lookup.
 		$blog    = $blog_id > 0 ? Blogs::find_for_public_view( $blog_id ) : null;
 
+		$single_url = Page_Finder::url_for_shortcode( 'blog_single' );
+		$share_url  = ( $blog && $single_url ) ? add_query_arg( 'blog_id', $blog['id'], $single_url ) : '';
+
 		return $this->template_loader->get_template(
 			'directory/blog-single-view.php',
 			array(
 				'blog'          => $blog,
 				'directory_url' => Page_Finder::url_for_shortcode( 'blogs_directory' ),
+				'share_url'     => $share_url,
+				'related_html'  => $blog ? $this->related_cards_html( $blog, $single_url ) : array(),
 			)
+		);
+	}
+
+	/**
+	 * Up to three other published posts for the "Related articles" row —
+	 * same-category posts first, then the newest of the rest — rendered with
+	 * the same card the Blog page uses.
+	 *
+	 * @param array  $blog       The post being viewed.
+	 * @param string $single_url URL of the [blog_single] page, or ''.
+	 * @return string[]
+	 */
+	private function related_cards_html( array $blog, $single_url ) {
+		$others = array_values(
+			array_filter(
+				Blogs::published_for_public_directory(),
+				function ( $other ) use ( $blog ) {
+					return (int) $other['id'] !== (int) $blog['id'];
+				}
+			)
+		);
+
+		usort(
+			$others,
+			function ( $a, $b ) use ( $blog ) {
+				$a_same = '' !== $blog['topic'] && $a['topic'] === $blog['topic'] ? 1 : 0;
+				$b_same = '' !== $blog['topic'] && $b['topic'] === $blog['topic'] ? 1 : 0;
+
+				return $b_same - $a_same;
+			}
+		);
+
+		return array_map(
+			function ( $other ) use ( $single_url ) {
+				$other['view_url'] = $single_url ? add_query_arg( 'blog_id', $other['id'], $single_url ) : '';
+
+				return $this->template_loader->get_template( 'directory/blog-card.php', $other );
+			},
+			array_slice( $others, 0, 3 )
 		);
 	}
 

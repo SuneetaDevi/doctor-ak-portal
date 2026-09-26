@@ -6,6 +6,7 @@
  *
  * @var string   $logo_url        Bundled logo URL (assets/images/logo.*), or '' if none was placed there.
  * @var string   $phone           Contact phone number (first clinic location with one on file), or '' if none.
+ * @var string   $location       "City, Country" of the first clinic location with a city on file, or '' — shown in the utility strip.
  * @var string   $email           Contact email (first clinic location with one on file), or '' if none.
  * @var string   $directory_url   URL of the [doctors_directory] page, or '' if not found.
  * @var string   $services_url    URL of the [services_directory] page, or '' if not found.
@@ -152,6 +153,60 @@ $dak_is_home  = '' === $current_path;
 <header class="dak-portal dak-site-header">
 	<div class="dak-site-header-utility">
 		<div class="dak-site-header-utility-inner">
+
+			<div class="dak-site-header-utility-contact">
+				<?php if ( $phone ) : ?>
+					<a class="dak-site-header-contact-item" href="tel:<?php echo esc_attr( preg_replace( '/[^0-9+]/', '', $phone ) ); ?>">
+						<span class="dak-site-header-contact-icon" aria-hidden="true"><?php echo $dak_header_icons['phone']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<span class="dak-site-header-contact-value"><?php echo esc_html( $phone ); ?></span>
+					</a>
+				<?php endif; ?>
+				<?php if ( $email ) : ?>
+					<a class="dak-site-header-contact-item dak-site-header-contact-email" href="mailto:<?php echo esc_attr( $email ); ?>">
+						<span class="dak-site-header-contact-icon" aria-hidden="true"><?php echo $dak_header_icons['mail']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<span class="dak-site-header-contact-value"><?php echo esc_html( $email ); ?></span>
+					</a>
+				<?php endif; ?>
+			</div>
+
+			<div class="dak-site-header-utility-actions">
+				<?php if ( $location ) : ?>
+					<span class="dak-site-header-contact-item dak-site-header-location">
+						<span class="dak-site-header-contact-icon" aria-hidden="true"><?php echo $dak_header_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<span class="dak-site-header-contact-value"><?php echo esc_html( $location ); ?></span>
+					</span>
+				<?php endif; ?>
+			<button type="button" class="dak-public-theme-toggle" data-dak-public-theme-toggle aria-pressed="false" title="<?php esc_attr_e( 'Toggle dark mode', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Toggle dark mode', 'doctor-ak-portal' ); ?>">
+				<span class="dak-theme-icon dak-theme-icon-sun" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="3.5"/><path d="M10 2.5v2M10 15.5v2M17.5 10h-2M4.5 10h-2M15.1 4.9l-1.4 1.4M6.3 13.7l-1.4 1.4M15.1 15.1l-1.4-1.4M6.3 6.3 4.9 4.9"/></svg></span>
+				<span class="dak-theme-icon dak-theme-icon-moon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 12.3A6.8 6.8 0 0 1 7.7 3.5a6.8 6.8 0 1 0 8.8 8.8z"/></svg></span>
+			</button>
+
+				<div class="dak-site-header-account-wrap">
+			<?php if ( $is_logged_in ) : ?>
+				<button type="button" class="dak-site-header-account" id="dak-site-header-account" aria-haspopup="true" aria-expanded="false" aria-label="<?php echo esc_attr( $display_name ); ?>">
+					<img src="<?php echo esc_url( $user_avatar_url ); ?>" alt="" class="dak-site-header-avatar">
+				</button>
+				<div class="dak-site-header-account-menu" id="dak-site-header-account-menu">
+					<?php if ( $dashboard_url ) : ?>
+						<a href="<?php echo esc_url( $dashboard_url ); ?>"><?php esc_html_e( 'Dashboard', 'doctor-ak-portal' ); ?></a>
+					<?php endif; ?>
+					<?php if ( $profile_url ) : ?>
+						<a href="<?php echo esc_url( $profile_url ); ?>"><?php esc_html_e( 'Edit Profile', 'doctor-ak-portal' ); ?></a>
+					<?php endif; ?>
+					<a href="<?php echo esc_url( $logout_url ); ?>"><?php esc_html_e( 'Logout', 'doctor-ak-portal' ); ?></a>
+				</div>
+			<?php elseif ( $login_url ) : ?>
+				<a class="dak-site-header-account-link" href="<?php echo esc_url( $login_url ); ?>">
+					<span class="dak-site-header-account-icon" aria-hidden="true"><?php echo $dak_header_icons['user']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+					<?php esc_html_e( 'Login / Register', 'doctor-ak-portal' ); ?>
+				</a>
+			<?php endif; ?>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="dak-site-header-inner">
 			<a class="dak-site-header-logo" href="<?php echo esc_url( $dak_home_url ); ?>">
 				<?php if ( $logo_url ) : ?>
 					<img src="<?php echo esc_url( $logo_url ); ?>" alt="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>">
@@ -161,34 +216,6 @@ $dak_is_home  = '' === $current_path;
 					<span class="dak-site-header-logo-text"><?php echo esc_html( get_bloginfo( 'name' ) ); ?></span>
 				<?php endif; ?>
 			</a>
-
-			<?php if ( $phone || $email ) : ?>
-				<div class="dak-site-header-utility-contact">
-					<?php if ( $phone ) : ?>
-						<a class="dak-site-header-contact-item" href="tel:<?php echo esc_attr( preg_replace( '/[^0-9+]/', '', $phone ) ); ?>">
-							<span class="dak-site-header-contact-icon" aria-hidden="true"><?php echo $dak_header_icons['phone']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-							<span class="dak-site-header-contact-text">
-								<span class="dak-site-header-contact-label"><?php esc_html_e( 'Call Us', 'doctor-ak-portal' ); ?></span>
-								<span class="dak-site-header-contact-value"><?php echo esc_html( $phone ); ?></span>
-							</span>
-						</a>
-					<?php endif; ?>
-
-					<?php if ( $email ) : ?>
-						<a class="dak-site-header-contact-item" href="mailto:<?php echo esc_attr( $email ); ?>">
-							<span class="dak-site-header-contact-icon" aria-hidden="true"><?php echo $dak_header_icons['mail']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-							<span class="dak-site-header-contact-text">
-								<span class="dak-site-header-contact-label"><?php esc_html_e( 'Email Us', 'doctor-ak-portal' ); ?></span>
-								<span class="dak-site-header-contact-value"><?php echo esc_html( $email ); ?></span>
-							</span>
-						</a>
-					<?php endif; ?>
-				</div>
-			<?php endif; ?>
-		</div>
-	</div>
-
-	<div class="dak-site-header-inner">
 		<button type="button" class="dak-site-header-toggle" id="dak-site-header-toggle" aria-label="<?php esc_attr_e( 'Toggle menu', 'doctor-ak-portal' ); ?>" aria-expanded="false" aria-controls="dak-site-header-nav">
 			<span></span><span></span><span></span>
 		</button>
@@ -368,10 +395,6 @@ $dak_is_home  = '' === $current_path;
 		</nav>
 
 		<div class="dak-site-header-auth">
-			<button type="button" class="dak-public-theme-toggle" data-dak-public-theme-toggle aria-pressed="false" title="<?php esc_attr_e( 'Toggle dark mode', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Toggle dark mode', 'doctor-ak-portal' ); ?>">
-				<span class="dak-theme-icon dak-theme-icon-sun" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="3.5"/><path d="M10 2.5v2M10 15.5v2M17.5 10h-2M4.5 10h-2M15.1 4.9l-1.4 1.4M6.3 13.7l-1.4 1.4M15.1 15.1l-1.4-1.4M6.3 6.3 4.9 4.9"/></svg></span>
-				<span class="dak-theme-icon dak-theme-icon-moon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 12.3A6.8 6.8 0 0 1 7.7 3.5a6.8 6.8 0 1 0 8.8 8.8z"/></svg></span>
-			</button>
 
 			<div class="dak-site-header-book">
 				<button type="button" class="dak-button dak-button-primary dak-site-header-cta" id="dak-site-header-book-trigger" aria-haspopup="true" aria-expanded="false">
@@ -400,25 +423,6 @@ $dak_is_home  = '' === $current_path;
 				</div>
 			</div>
 
-			<?php if ( $is_logged_in ) : ?>
-				<button type="button" class="dak-site-header-account" id="dak-site-header-account" aria-haspopup="true" aria-expanded="false" aria-label="<?php echo esc_attr( $display_name ); ?>">
-					<img src="<?php echo esc_url( $user_avatar_url ); ?>" alt="" class="dak-site-header-avatar">
-				</button>
-				<div class="dak-site-header-account-menu" id="dak-site-header-account-menu">
-					<?php if ( $dashboard_url ) : ?>
-						<a href="<?php echo esc_url( $dashboard_url ); ?>"><?php esc_html_e( 'Dashboard', 'doctor-ak-portal' ); ?></a>
-					<?php endif; ?>
-					<?php if ( $profile_url ) : ?>
-						<a href="<?php echo esc_url( $profile_url ); ?>"><?php esc_html_e( 'Edit Profile', 'doctor-ak-portal' ); ?></a>
-					<?php endif; ?>
-					<a href="<?php echo esc_url( $logout_url ); ?>"><?php esc_html_e( 'Logout', 'doctor-ak-portal' ); ?></a>
-				</div>
-			<?php elseif ( $login_url ) : ?>
-				<a class="dak-site-header-account-link" href="<?php echo esc_url( $login_url ); ?>">
-					<span class="dak-site-header-account-icon" aria-hidden="true"><?php echo $dak_header_icons['user']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-					<?php esc_html_e( 'Login / Register', 'doctor-ak-portal' ); ?>
-				</a>
-			<?php endif; ?>
 		</div>
 	</div>
 </header>

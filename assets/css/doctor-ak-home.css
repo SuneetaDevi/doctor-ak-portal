@@ -114,20 +114,21 @@
 	margin-top: var( --dak-space-5 ) !important;
 }
 
-/* Hero — full-width photo banner with the headline/CTAs overlaid directly on
-   the image (a fixed dark gradient tint, not a --dak-* token, so headline
-   text stays legible over a photo regardless of the light/dark toggle). */
+/* Hero — full-width photo banner under the site header: the headline, blurb
+   and buttons on the left, a frosted-glass stats panel on the right, and the
+   search bar lifting over the banner's bottom edge (see .dak-home-hero-
+   searchbar). A fixed dark tint over the photo, not a --dak-* token, so the
+   white text stays legible whatever the light/dark toggle says. */
 
-/* Full-bleed: negative margins cancel the page gutter so the banner runs
-   edge to edge, with square corners and no top gap under the site header. */
 .dak-home-hero-banner {
 	position: relative !important;
+	display: flex !important;
+	align-items: center !important;
+	min-height: 580px !important;
 	margin: 0 calc( -1 * var( --dak-home-gutter ) ) !important;
-	min-height: 520px !important;
-	border-radius: 0 !important;
+	padding: var( --dak-space-7 ) var( --dak-home-gutter ) 7rem !important;
 	overflow: hidden !important;
 	background: linear-gradient( 135deg, var( --dak-secondary ) 0%, var( --dak-primary-dark ) 100% ) !important;
-	box-shadow: var( --dak-shadow-lg ) !important;
 }
 
 .dak-home-hero-banner-media {
@@ -141,239 +142,126 @@
 	width: 100% !important;
 	height: 100% !important;
 	object-fit: cover !important;
-	object-position: 78% 25% !important;
+	object-position: 62% 25% !important;
 }
 
 .dak-home-hero-banner-overlay {
 	position: absolute !important;
 	inset: 0 !important;
-	background: linear-gradient( 100deg, rgba( 6, 20, 12, 0.94 ) 0%, rgba( 8, 28, 17, 0.88 ) 30%, rgba( 15, 46, 30, 0.6 ) 52%, rgba( 22, 182, 165, 0.32 ) 78%, rgba( 22, 182, 165, 0.22 ) 100% ) !important;
+	background: linear-gradient( 100deg, rgba( 8, 34, 20, 0.92 ) 0%, rgba( 10, 42, 26, 0.78 ) 34%, rgba( 14, 58, 36, 0.4 ) 62%, rgba( 14, 58, 36, 0.28 ) 100% ) !important;
 }
 
 .dak-home-hero-banner-content {
 	position: relative !important;
 	z-index: 1 !important;
-	max-width: calc( 560px + var( --dak-home-gutter ) ) !important;
-	padding: var( --dak-space-7 ) var( --dak-space-6 ) var( --dak-space-7 ) var( --dak-home-gutter ) !important;
+	max-width: 40rem !important;
 }
 
-/* The site header now floats fixed over this banner's photo (see the
-   `body.front-page` rules in doctor-ak-site-header.css) rather than sitting
-   above it — the photo itself is meant to run right up to the top of the
-   viewport behind the header, but the actual headline/stat-badge need extra
-   clearance so the header doesn't sit on top of them. Matches that same
-   >1024px breakpoint: below it the header goes back to its plain, in-flow
-   self and this banner needs no extra room for it.
-   ~150px covers both header rows (utility bar + main nav bar) as they render
-   before the visitor has scrolled — the moment they do, .is-scrolled
-   collapses the utility bar away, but the extra clearance reserved here just
-   becomes a bit of breathing room above the heading rather than a problem. */
-@media ( min-width: 1025px ) {
-	/* The banner's own height has to grow by the same amount the content/
-	   side are pushed down by below — otherwise min-height stays at 520px
-	   while the search card + stat badges (pushed lower to clear the header)
-	   now extend past that shorter box, spilling into the section below
-	   instead of being contained inside the hero. */
-	.dak-home-hero-banner {
-		min-height: calc( 520px + 150px ) !important;
-	}
+.dak-home-hero-eyebrow {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.6rem !important;
+	padding: 0.55rem 1.1rem 0.55rem 0.9rem !important;
+	border-radius: 999px !important;
+	background: #eaf5dc !important;
+	color: #3f6a16 !important;
+	font-size: 0.8rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.06em !important;
+}
 
-	.dak-home-hero-banner-content {
-		padding-top: calc( var( --dak-space-7 ) + 150px ) !important;
-	}
+.dak-home-hero-eyebrow svg {
+	width: 20px !important;
+	height: 20px !important;
 }
 
 .dak-home-hero-banner-content h1 {
-	font-size: 2.75rem !important;
+	margin: var( --dak-space-4 ) 0 var( --dak-space-4 ) !important;
+	font-size: clamp( 2.4rem, 5vw, 4.25rem ) !important;
 	font-weight: 600 !important;
-	line-height: 1.12 !important;
-	margin: var( --dak-space-3 ) 0 var( --dak-space-3 ) !important;
+	line-height: 1.05 !important;
 	color: #fff !important;
-	text-shadow: 0 2px 10px rgba( 0, 0, 0, 0.5 ) !important;
+	text-shadow: 0 2px 14px rgba( 0, 0, 0, 0.35 ) !important;
 }
 
 .dak-home-hero-banner-content .dak-home-hero-accent {
-	color: #d9f0c4 !important;
+	display: block !important;
+	font-style: normal !important;
+	color: #c4ec8c !important;
 }
 
 .dak-home-hero-banner-content > p {
-	font-size: var( --dak-text-lg ) !important;
-	color: rgba( 255, 255, 255, 0.92 ) !important;
-	text-shadow: 0 1px 6px rgba( 0, 0, 0, 0.45 ) !important;
 	margin: 0 0 var( --dak-space-5 ) !important;
-	max-width: 46ch !important;
+	max-width: 34rem !important;
+	font-size: var( --dak-text-lg ) !important;
+	line-height: 1.55 !important;
+	color: rgba( 255, 255, 255, 0.92 ) !important;
+	text-shadow: 0 1px 6px rgba( 0, 0, 0, 0.4 ) !important;
 }
 
-.dak-home-hero-banner-outline {
-	text-shadow: 0 1px 4px rgba( 0, 0, 0, 0.35 ) !important;
-}
-
-/* Search card — sits top-right over the photo, with the two stat cards hanging
-   off it (one on its left edge, one on its bottom-right corner). The card is
-   just a trigger: clicking the field block opens the "Search for doctors"
-   popup below (initHeroSearch() in doctor-ak-home.js), which holds the real
-   form — see .dak-home-search-modal further down. */
-
-.dak-home-hero-side {
-	position: absolute !important;
-	z-index: 2 !important;
-	top: var( --dak-space-5 ) !important;
-	right: var( --dak-home-gutter ) !important;
-	width: 531px !important;
-}
-
-/* Clears the fixed site header's two rows (see the matching
-   .dak-home-hero-banner-content padding-top override above). Declared after
-   the base rule above (same specificity — the later one wins). */
-@media ( min-width: 1025px ) {
-	.dak-home-hero-side {
-		top: calc( var( --dak-space-5 ) + 150px ) !important;
-	}
-}
-
-.dak-home-hero-form {
-	padding: var( --dak-space-5 ) !important;
-	background: var( --dak-bg-card ) !important;
-	border-radius: var( --dak-radius-lg ) !important;
-	box-shadow: var( --dak-shadow-lg ) !important;
-}
-
-.dak-home-hero-form h2 {
-	margin: 0 0 0.25rem !important;
-	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
-	font-size: var( --dak-text-xl ) !important;
-	font-weight: 600 !important;
-	color: var( --dak-text ) !important;
-}
-
-.dak-home-hero-form > p {
-	margin: 0 0 var( --dak-space-4 ) !important;
-	font-size: var( --dak-text-sm ) !important;
-	color: var( --dak-muted ) !important;
-}
-
-/* The trigger button: a vertical stack of two boxed fields and a full-width
-   Search pill. */
-.dak-home-hero-search {
-	width: 100% !important;
+.dak-home-hero-actions {
 	display: flex !important;
-	flex-direction: column !important;
-	align-items: stretch !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
 	gap: var( --dak-space-3 ) !important;
-	margin: 0 !important;
-	padding: 0 !important;
-	background: none !important;
-	border: none !important;
-	box-shadow: none !important;
-	font: inherit !important;
-	text-align: left !important;
+}
+
+.dak-home-hero-watch {
+	background: rgba( 255, 255, 255, 0.06 ) !important;
+	border: 1.5px solid rgba( 255, 255, 255, 0.75 ) !important;
+	color: #fff !important;
 	cursor: pointer !important;
 }
 
-.dak-home-hero-search-field {
-	display: flex !important;
-	align-items: center !important;
-	gap: var( --dak-space-3 ) !important;
-	min-width: 0 !important;
-	padding: var( --dak-space-3 ) var( --dak-space-4 ) !important;
-	background: var( --dak-bg-subtle ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-md ) !important;
+.dak-home-hero-watch:hover {
+	background: rgba( 255, 255, 255, 0.18 ) !important;
 }
 
-.dak-home-hero-search-control {
-	display: flex !important;
-	flex-direction: column !important;
-	min-width: 0 !important;
-	flex: 1 1 auto !important;
+.dak-home-hero-watch svg {
+	stroke: #fff !important;
 }
 
-.dak-home-hero-search-control strong {
-	font-size: var( --dak-text-sm ) !important;
-	font-weight: 700 !important;
-	color: var( --dak-text ) !important;
-}
-
-.dak-home-hero-search-control em {
-	font-style: normal !important;
-	font-size: var( --dak-text-xs ) !important;
-	color: var( --dak-muted ) !important;
-	white-space: nowrap !important;
-	overflow: hidden !important;
-	text-overflow: ellipsis !important;
-}
-
-.dak-home-hero-search-icon {
-	display: inline-flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	width: 34px !important;
-	height: 34px !important;
-	flex: 0 0 auto !important;
-	border-radius: 50% !important;
-	background: var( --dak-primary-tint ) !important;
-	color: var( --dak-primary-dark ) !important;
-}
-
-.dak-home-hero-search-icon svg {
-	width: 16px !important;
-	height: 16px !important;
-}
-
-.dak-home-hero-search-submit {
-	justify-content: center !important;
-	padding: 0.85rem 1.75rem !important;
-}
-
-/* Stat cards — an icon badge beside a bold number and its label. On desktop
-   the wrapper vanishes (display: contents) so each card positions against the
-   search card's column instead. */
+/* Frosted-glass stats panel: four rows, icon + number + label, hairline
+   dividers between them. */
 .dak-home-hero-stats {
-	display: contents !important;
+	position: absolute !important;
+	z-index: 2 !important;
+	right: var( --dak-home-gutter ) !important;
+	top: 50% !important;
+	transform: translateY( -56% ) !important;
+	width: 270px !important;
+	padding: var( --dak-space-2 ) var( --dak-space-5 ) !important;
+	border: 1px solid rgba( 255, 255, 255, 0.28 ) !important;
+	border-radius: 22px !important;
+	background: rgba( 255, 255, 255, 0.12 ) !important;
+	-webkit-backdrop-filter: blur( 14px ) !important;
+	backdrop-filter: blur( 14px ) !important;
+	box-shadow: 0 18px 44px rgba( 0, 0, 0, 0.22 ) !important;
 }
 
 .dak-home-hero-stat {
-	position: absolute !important;
-	z-index: 3 !important;
 	display: flex !important;
 	align-items: center !important;
 	gap: var( --dak-space-3 ) !important;
-	padding: var( --dak-space-3 ) var( --dak-space-4 ) !important;
-	border-radius: var( --dak-radius-md ) !important;
-	background: var( --dak-bg-card ) !important;
-	box-shadow: var( --dak-shadow-lg ) !important;
+	padding: var( --dak-space-3 ) 0 !important;
+	border-bottom: 1px solid rgba( 255, 255, 255, 0.22 ) !important;
 }
 
-.dak-home-hero-stat.is-left {
-	left: -11rem !important;
-	top: 3rem !important;
-}
-
-.dak-home-hero-stat.is-left-low {
-	left: -11rem !important;
-	top: 9.5rem !important;
-}
-
-.dak-home-hero-stat.is-bl {
-	left: -2.2rem !important;
-	bottom: -2.5rem !important;
-}
-
-.dak-home-hero-stat.is-br {
-	right: -0.9rem !important;
-	bottom: -2.5rem !important;
+.dak-home-hero-stat:last-child {
+	border-bottom: 0 !important;
 }
 
 .dak-home-hero-stat-icon {
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: center !important;
-	width: 42px !important;
-	height: 42px !important;
+	width: 46px !important;
+	height: 46px !important;
 	flex: 0 0 auto !important;
 	border-radius: 50% !important;
-	background: var( --dak-primary-tint ) !important;
-	color: var( --dak-primary-dark ) !important;
+	background: rgba( 255, 255, 255, 0.16 ) !important;
+	color: #eaf5dc !important;
 }
 
 .dak-home-hero-stat-icon svg {
@@ -384,19 +272,113 @@
 .dak-home-hero-stat-text {
 	display: flex !important;
 	flex-direction: column !important;
+	min-width: 0 !important;
 }
 
 .dak-home-hero-stat-text strong {
-	font-size: var( --dak-text-lg ) !important;
+	font-size: 1.3rem !important;
 	font-weight: 700 !important;
 	line-height: 1.15 !important;
-	color: var( --dak-text ) !important;
+	color: #fff !important;
 }
 
 .dak-home-hero-stat-text span {
-	font-size: 0.75rem !important;
-	color: var( --dak-muted ) !important;
+	font-size: 0.82rem !important;
 	line-height: 1.3 !important;
+	color: rgba( 255, 255, 255, 0.85 ) !important;
+}
+
+/* The search bar — a white card centred under the banner, overlapping its
+   bottom edge. Just a trigger: clicking it opens the "Search for doctors"
+   popup (initHeroSearch() in doctor-ak-home.js), which holds the real form —
+   see .dak-home-search-modal further down. */
+.dak-home-hero-searchbar {
+	position: relative !important;
+	z-index: 3 !important;
+	max-width: 62rem !important;
+	margin: -3.75rem auto 0 !important;
+}
+
+.dak-home-hero-search {
+	width: 100% !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: var( --dak-space-4 ) !important;
+	margin: 0 !important;
+	padding: var( --dak-space-4 ) var( --dak-space-5 ) !important;
+	background: var( --dak-bg-card ) !important;
+	border: 0 !important;
+	border-radius: 20px !important;
+	box-shadow: 0 16px 44px rgba( 20, 30, 40, 0.14 ) !important;
+	font: inherit !important;
+	text-align: left !important;
+	cursor: pointer !important;
+}
+
+.dak-home-hero-search-field {
+	display: flex !important;
+	align-items: center !important;
+	gap: var( --dak-space-3 ) !important;
+	flex: 1 1 0 !important;
+	min-width: 0 !important;
+	padding-right: var( --dak-space-4 ) !important;
+	border-right: 1px solid var( --dak-border ) !important;
+}
+
+.dak-home-hero-search-field:last-of-type {
+	border-right: 0 !important;
+}
+
+.dak-home-hero-search-control {
+	display: flex !important;
+	flex-direction: column !important;
+	min-width: 0 !important;
+	flex: 1 1 auto !important;
+}
+
+.dak-home-hero-search-control strong {
+	font-size: 0.8rem !important;
+	font-weight: 500 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-home-hero-search-control em {
+	font-style: normal !important;
+	font-size: 0.95rem !important;
+	font-weight: 500 !important;
+	color: var( --dak-text ) !important;
+	white-space: nowrap !important;
+	overflow: hidden !important;
+	text-overflow: ellipsis !important;
+}
+
+.dak-home-hero-search-field:last-of-type em {
+	color: var( --dak-muted ) !important;
+	font-weight: 400 !important;
+}
+
+.dak-home-hero-search-icon {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 44px !important;
+	height: 44px !important;
+	flex: 0 0 auto !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-home-hero-search-icon svg {
+	width: 20px !important;
+	height: 20px !important;
+}
+
+.dak-home-hero-search-submit {
+	flex: 0 0 auto !important;
+	justify-content: center !important;
+	padding: 0.95rem 2.6rem !important;
+	font-size: var( --dak-text-md ) !important;
 }
 
 /* Detect-my-location button, inside the popup's Location row — see
@@ -772,27 +754,32 @@
 	margin-top: var( --dak-space-1 ) !important;
 }
 
-/* Quick-access panel — one white panel that lifts over the hero's bottom edge,
-   with a centred title and four soft tiles: icon on the left, title and
-   description beside it, a small arrow underneath. */
+/* Quick access — a ruled centred heading over four bordered tiles: icon on
+   the left, title and description beside it, a small arrow underneath. */
 
 .dak-home-quick-links {
-	position: relative !important;
-	z-index: 3 !important;
-	margin-top: -3.5rem !important;
-	padding: var( --dak-space-5 ) var( --dak-space-5 ) var( --dak-space-5 ) !important;
-	background: var( --dak-bg-card ) !important;
-	border-radius: var( --dak-radius-lg ) !important;
-	box-shadow: var( --dak-shadow-lg ) !important;
+	margin-top: var( --dak-space-7 ) !important;
 }
 
 .dak-home-quick-links-title {
-	margin: 0 0 var( --dak-space-4 ) !important;
-	font-family: inherit !important;
-	font-size: var( --dak-text-xl ) !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: var( --dak-space-4 ) !important;
+	margin: 0 0 var( --dak-space-5 ) !important;
+	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+	font-size: var( --dak-text-2xl ) !important;
 	font-weight: 700 !important;
 	text-align: center !important;
 	color: var( --dak-text ) !important;
+}
+
+.dak-home-quick-links-title::before,
+.dak-home-quick-links-title::after {
+	content: '' !important;
+	flex: 0 0 3.5rem !important;
+	height: 2px !important;
+	background: var( --dak-primary ) !important;
 }
 
 .dak-home-quick-links-grid {
@@ -811,8 +798,8 @@
 	align-content: start !important;
 	column-gap: var( --dak-space-3 ) !important;
 	row-gap: 0.15rem !important;
-	background: var( --dak-bg-subtle ) !important;
-	border: 0 !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
 	border-radius: var( --dak-radius-md ) !important;
 	padding: var( --dak-space-4 ) !important;
 	box-shadow: none !important;
@@ -1212,6 +1199,171 @@
 
 .dak-home-services .dak-home-section-footer .dak-button:hover {
 	background: var( --dak-primary-tint ) !important;
+}
+
+/* FAQ — heading block on top (call card to its right), then a full-width
+   <details> accordion underneath (no script: the browser handles open/close). */
+
+.dak-home-faq {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: var( --dak-space-6 ) !important;
+}
+
+.dak-home-faq-intro {
+	display: grid !important;
+	grid-template-columns: minmax( 0, 1fr ) auto !important;
+	column-gap: var( --dak-space-6 ) !important;
+	align-items: center !important;
+	justify-items: start !important;
+}
+
+.dak-home-faq-intro > * {
+	grid-column: 1 !important;
+}
+
+.dak-home-faq-intro .dak-home-faq-call {
+	grid-column: 2 !important;
+	grid-row: 1 / span 3 !important;
+}
+
+.dak-home-faq-intro h2 {
+	margin: var( --dak-space-3 ) 0 var( --dak-space-3 ) !important;
+	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+	font-size: 2.2rem !important;
+	font-weight: 700 !important;
+	line-height: 1.15 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-home-faq-intro > p {
+	margin: 0 !important;
+	max-width: 60ch !important;
+	color: var( --dak-muted ) !important;
+	font-size: var( --dak-text-md ) !important;
+	line-height: 1.6 !important;
+}
+
+.dak-home-faq-call {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: var( --dak-space-3 ) !important;
+	padding: var( --dak-space-3 ) var( --dak-space-4 ) !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: var( --dak-text-sm ) !important;
+	text-decoration: none !important;
+}
+
+.dak-home-faq-call strong {
+	display: block !important;
+	color: var( --dak-text ) !important;
+	font-size: var( --dak-text-md ) !important;
+}
+
+.dak-home-faq-call-icon {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 40px !important;
+	height: 40px !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-home-faq-call-icon svg {
+	width: 18px !important;
+	height: 18px !important;
+}
+
+.dak-home-faq-list {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: var( --dak-space-3 ) !important;
+}
+
+.dak-home-faq-item {
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.dak-home-faq-item[open] {
+	border-color: var( --dak-primary ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+}
+
+.dak-home-faq-item summary {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: var( --dak-space-4 ) !important;
+	padding: var( --dak-space-4 ) var( --dak-space-5 ) !important;
+	font-size: var( --dak-text-md ) !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	cursor: pointer !important;
+	list-style: none !important;
+}
+
+.dak-home-faq-item summary::-webkit-details-marker {
+	display: none !important;
+}
+
+/* Plus that turns into a minus when open. */
+.dak-home-faq-toggle {
+	position: relative !important;
+	flex: 0 0 auto !important;
+	width: 26px !important;
+	height: 26px !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary-tint ) !important;
+}
+
+.dak-home-faq-toggle::before,
+.dak-home-faq-toggle::after {
+	content: '' !important;
+	position: absolute !important;
+	top: 50% !important;
+	left: 50% !important;
+	width: 10px !important;
+	height: 2px !important;
+	background: var( --dak-primary-dark ) !important;
+	transform: translate( -50%, -50% ) !important;
+	transition: transform 0.2s ease !important;
+}
+
+.dak-home-faq-toggle::after {
+	transform: translate( -50%, -50% ) rotate( 90deg ) !important;
+}
+
+.dak-home-faq-item[open] .dak-home-faq-toggle::after {
+	transform: translate( -50%, -50% ) rotate( 0deg ) !important;
+}
+
+.dak-home-faq-item p {
+	margin: 0 !important;
+	padding: 0 var( --dak-space-5 ) var( --dak-space-4 ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: var( --dak-text-md ) !important;
+	line-height: 1.65 !important;
+}
+
+@media ( max-width: 700px ) {
+	.dak-home-faq-intro {
+		grid-template-columns: 1fr !important;
+		row-gap: var( --dak-space-3 ) !important;
+	}
+
+	.dak-home-faq-intro .dak-home-faq-call {
+		grid-column: 1 !important;
+		grid-row: auto !important;
+		margin-top: var( --dak-space-2 ) !important;
+	}
 }
 
 /* Blog — the three newest posts (the same flat card as the Blog page, styled
@@ -2107,6 +2259,7 @@
 
 .dak-home-videos-slider {
 	position: relative !important;
+	min-width: 0 !important;
 }
 
 /* Floating glass buttons over the reel, matching the .dak-home-video-play
@@ -2363,25 +2516,58 @@
 		padding: var( --dak-space-6 ) var( --dak-space-5 ) !important;
 	}
 
-	/* Stacked under the copy: the form card, then the stats in a row. */
-	.dak-home-hero-side {
-		position: relative !important;
-		top: auto !important;
-		right: auto !important;
-		width: auto !important;
-		margin: 0 var( --dak-space-5 ) var( --dak-space-6 ) !important;
+	/* Under the header there is nothing to clear here. The stats panel becomes
+	   a 2x2 block under the copy, and the search bar stacks its parts. */
+	.dak-home-hero-banner {
+		display: block !important;
+		padding-bottom: 6.5rem !important;
 	}
 
 	.dak-home-hero-stats {
-		display: flex !important;
-		flex-wrap: wrap !important;
-		gap: var( --dak-space-3 ) !important;
-		margin-top: var( --dak-space-3 ) !important;
+		position: relative !important;
+		top: auto !important;
+		right: auto !important;
+		transform: none !important;
+		width: auto !important;
+		margin-top: var( --dak-space-5 ) !important;
+		display: grid !important;
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+		column-gap: var( --dak-space-3 ) !important;
+		padding: var( --dak-space-2 ) var( --dak-space-4 ) !important;
 	}
 
-	.dak-home-hero-stat {
-		position: static !important;
-		flex: 1 1 200px !important;
+	.dak-home-hero-stat:nth-last-child( -n + 2 ) {
+		border-bottom: 0 !important;
+	}
+
+	.dak-home-hero-stat-icon {
+		width: 38px !important;
+		height: 38px !important;
+	}
+
+	.dak-home-hero-stat-text strong {
+		font-size: 1.05rem !important;
+	}
+
+	.dak-home-hero-searchbar {
+		margin: -3.5rem var( --dak-space-4 ) 0 !important;
+	}
+
+	.dak-home-hero-search {
+		flex-direction: column !important;
+		align-items: stretch !important;
+		gap: var( --dak-space-3 ) !important;
+	}
+
+	.dak-home-hero-search-field {
+		padding: 0 0 var( --dak-space-3 ) !important;
+		border-right: 0 !important;
+		border-bottom: 1px solid var( --dak-border ) !important;
+	}
+
+	.dak-home-hero-search-field:last-of-type {
+		border-bottom: 0 !important;
+		padding-bottom: 0 !important;
 	}
 
 	.dak-home-search-modal {
@@ -2447,8 +2633,11 @@
 		padding-block: var( --dak-space-7 ) !important;
 	}
 
+	/* minmax(0, 1fr), not 1fr: a bare 1fr column can't shrink below its
+	   content, so the clip strip would stretch the whole section to the width
+	   of every clip end to end instead of scrolling inside it. */
 	.dak-home-videos-inner {
-		grid-template-columns: 1fr !important;
+		grid-template-columns: minmax( 0, 1fr ) !important;
 		gap: var( --dak-space-5 ) !important;
 	}
 

@@ -32,28 +32,6 @@
 	background: var( --dak-bg-page ) !important;
 }
 
-/* Home page only: the header floats over the hero photo instead of sitting
-   in a plain strip above it — WordPress's own `front-page` body class (from
-   the active theme's body_class() call) is what scopes this, since only the
-   home page actually has a hero banner behind it; everywhere else this
-   plugin's header keeps its normal, plain, in-flow appearance.
-   Desktop-only (matches the >1024px breakpoint the rest of this file already
-   treats as "the non-mobile nav"): a floating-over-a-photo header competes
-   with the hamburger menu's own affordances at narrow widths, and the hero
-   itself reflows a lot there, making a hand-tuned clearance offset (below)
-   unreliable — simpler and safer to leave mobile as the plain header it
-   already was. */
-@media ( min-width: 1025px ) {
-	body.front-page .dak-site-header {
-		position: fixed !important;
-		top: 0 !important;
-		left: 0 !important;
-		right: 0 !important;
-		z-index: 250 !important;
-		background: transparent !important;
-	}
-}
-
 /* Utility bar — now the header's TOP row: logo on the left, Call Us/Email Us
    on the right, each as a round icon badge + two-line (label, then value)
    block. Address and social links used to live here too; both are already
@@ -64,7 +42,9 @@
 	background: var( --dak-bg-subtle ) !important;
 	border-bottom: 1px solid var( --dak-border ) !important;
 	max-height: 120px !important;
-	overflow: hidden !important;
+	/* Visible (not hidden) so the account dropdown, which now lives in this
+	   strip, isn't clipped by it — it only clips while collapsed (below). */
+	overflow: visible !important;
 	opacity: 1 !important;
 	transition: max-height 0.25s ease, opacity 0.2s ease, border-color 0.25s ease !important;
 }
@@ -77,6 +57,7 @@
    the .is-scrolled class doctor-ak-site-header.js toggles on scroll — is
    what actually makes only the main bar visibly "freeze". */
 .dak-site-header.is-scrolled .dak-site-header-utility {
+	overflow: hidden !important;
 	max-height: 0 !important;
 	opacity: 0 !important;
 	border-bottom-color: transparent !important;
@@ -974,4 +955,133 @@
 .dak-coming-soon-toast.is-visible {
 	opacity: 1 !important;
 	transform: translate( -50%, 0 ) !important;
+}
+
+/* ------------------------------------------------------------------------
+   Header layout v2 — a slim contact strip on top (phone/email on the left;
+   location, dark-mode toggle and the account on the right), then a full-width
+   white bar: logo, centred menu, Book Now. Declared last so it wins over the
+   earlier, pill-style rules above. */
+
+.dak-site-header {
+	background: var( --dak-bg-card ) !important;
+	box-shadow: 0 1px 0 var( --dak-border ), 0 6px 20px rgba( 20, 30, 40, 0.05 ) !important;
+}
+
+.dak-site-header-utility {
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-site-header-utility-inner {
+	padding: 0.4rem 1.5rem !important;
+	flex-wrap: nowrap !important;
+}
+
+.dak-site-header-utility-contact,
+.dak-site-header-utility-actions {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0 !important;
+	flex-wrap: nowrap !important;
+	min-width: 0 !important;
+}
+
+.dak-site-header-utility-actions {
+	gap: 1rem !important;
+	margin-left: auto !important;
+}
+
+/* Phone / email / location: small icon + plain text, divided by thin rules. */
+.dak-site-header-contact-item {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.5rem !important;
+	padding: 0 1rem !important;
+	text-decoration: none !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-site-header-utility-contact .dak-site-header-contact-item:first-child {
+	padding-left: 0 !important;
+}
+
+.dak-site-header-utility-contact .dak-site-header-contact-item + .dak-site-header-contact-item {
+	border-left: 1px solid var( --dak-border ) !important;
+}
+
+.dak-site-header-contact-icon {
+	display: inline-flex !important;
+	width: auto !important;
+	height: auto !important;
+	border-radius: 0 !important;
+	background: none !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-site-header-contact-icon svg {
+	width: 16px !important;
+	height: 16px !important;
+}
+
+.dak-site-header-contact-value {
+	font-size: 0.82rem !important;
+	font-weight: 500 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-site-header-contact-item:hover .dak-site-header-contact-value {
+	color: var( --dak-primary-dark ) !important;
+}
+
+/* Account: avatar / "Login / Register" sits in a wrapper so its dropdown can
+   anchor to it. */
+.dak-site-header-account-wrap {
+	position: relative !important;
+	display: flex !important;
+	align-items: center !important;
+}
+
+/* The full-width white bar. */
+.dak-site-header-inner {
+	padding: 0.85rem 1.5rem !important;
+	gap: var( --dak-space-6 ) !important;
+}
+
+.dak-site-header-logo img {
+	max-height: 52px !important;
+}
+
+/* Centre the menu on desktop only — the nav's own display is left alone so the
+   mobile rules (hidden until the hamburger opens it) keep working. */
+@media ( min-width: 1025px ) {
+	.dak-site-header-menu {
+		justify-content: center !important;
+	}
+}
+
+.dak-site-header-auth {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.75rem !important;
+	flex: 0 0 auto !important;
+}
+
+@media ( max-width: 1024px ) {
+	.dak-site-header-location,
+	.dak-site-header-contact-email {
+		display: none !important;
+	}
+
+}
+
+@media ( max-width: 640px ) {
+	/* The phone/email pair no longer disappears here — the strip is only one
+	   line tall now, so the phone number stays. */
+	.dak-site-header-utility-contact {
+		display: flex !important;
+	}
+
+	.dak-site-header-account-link {
+		font-size: 0.8rem !important;
+	}
 }

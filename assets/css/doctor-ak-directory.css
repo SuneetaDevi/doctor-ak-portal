@@ -1668,3 +1668,276 @@
 		grid-template-columns: 1fr !important;
 	}
 }
+
+/* Single blog post ([blog_single]) — header, wide photo, byline, then a sticky
+   sidebar (share + table of contents) beside the article, and related posts. */
+
+.dak-blog-single-head {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: var( --dak-space-3 ) !important;
+	max-width: 62rem !important;
+	margin-bottom: var( --dak-space-5 ) !important;
+}
+
+.dak-blog-single-category {
+	align-self: flex-start !important;
+	font-size: 0.72rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.08em !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-blog-single-head h1 {
+	margin: 0 !important;
+	font-size: 2.4rem !important;
+	font-weight: 800 !important;
+	line-height: 1.15 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-blog-single-summary {
+	margin: 0 !important;
+	font-size: var( --dak-text-lg, 1.1rem ) !important;
+	line-height: 1.6 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-blog-single-hero {
+	display: block !important;
+	width: 100% !important;
+	max-height: 520px !important;
+	object-fit: cover !important;
+	border-radius: var( --dak-radius-lg ) !important;
+}
+
+.dak-blog-single-byline {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: var( --dak-space-4 ) var( --dak-space-6 ) !important;
+	padding: var( --dak-space-4 ) 0 !important;
+	margin-bottom: var( --dak-space-5 ) !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+.dak-blog-single-avatar {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 44px !important;
+	height: 44px !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+	font-weight: 700 !important;
+}
+
+.dak-blog-single-byline-text {
+	display: flex !important;
+	flex-direction: column !important;
+	font-size: 0.72rem !important;
+	color: var( --dak-muted ) !important;
+	line-height: 1.35 !important;
+}
+
+.dak-blog-single-byline-text strong {
+	font-size: 0.9rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-blog-single-layout {
+	display: grid !important;
+	grid-template-columns: 280px minmax( 0, 1fr ) !important;
+	gap: var( --dak-space-7 ) !important;
+	align-items: start !important;
+}
+
+.dak-blog-single-sidebar {
+	position: sticky !important;
+	top: 150px !important;
+	display: flex !important;
+	flex-direction: column !important;
+	gap: var( --dak-space-4 ) !important;
+}
+
+.dak-blog-side-card {
+	padding: var( --dak-space-4 ) !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+}
+
+.dak-blog-side-card.dak-hidden {
+	display: none !important;
+}
+
+.dak-blog-side-card h2 {
+	margin: 0 0 var( --dak-space-3 ) !important;
+	font-size: 0.95rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-blog-share {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0.4rem !important;
+	margin-bottom: var( --dak-space-3 ) !important;
+}
+
+.dak-blog-share-btn {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 34px !important;
+	height: 34px !important;
+	border-radius: 50% !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-text ) !important;
+	text-decoration: none !important;
+	transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease !important;
+}
+
+.dak-blog-share-btn svg {
+	width: 16px !important;
+	height: 16px !important;
+}
+
+.dak-blog-share-btn:hover {
+	color: #fff !important;
+	transform: translateY( -2px ) !important;
+}
+
+.dak-blog-share-whatsapp:hover { background: #25d366 !important; }
+.dak-blog-share-facebook:hover { background: #1877f2 !important; }
+.dak-blog-share-x:hover { background: #111 !important; }
+.dak-blog-share-linkedin:hover { background: #0a66c2 !important; }
+.dak-blog-share-telegram:hover { background: #229ed9 !important; }
+.dak-blog-share-email:hover { background: var( --dak-primary-dark ) !important; }
+
+.dak-blog-copy {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 0.5rem !important;
+	width: 100% !important;
+	padding: 0.55rem 0.8rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+}
+
+.dak-blog-copy svg {
+	width: 16px !important;
+	height: 16px !important;
+}
+
+.dak-blog-copy:hover {
+	border-color: var( --dak-primary-dark ) !important;
+}
+
+.dak-blog-copy.is-done {
+	background: var( --dak-primary-tint ) !important;
+	border-color: var( --dak-primary-dark ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-blog-toc ul {
+	list-style: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.15rem !important;
+}
+
+.dak-blog-toc a {
+	display: block !important;
+	padding: 0.4rem 0.6rem !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	font-size: 0.82rem !important;
+	line-height: 1.35 !important;
+	color: var( --dak-muted ) !important;
+	text-decoration: none !important;
+}
+
+.dak-blog-toc a:hover {
+	color: var( --dak-text ) !important;
+}
+
+.dak-blog-toc a.is-active {
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+	font-weight: 600 !important;
+}
+
+.dak-blog-single-body {
+	min-width: 0 !important;
+	max-width: 46rem !important;
+	font-size: 1.02rem !important;
+	line-height: 1.75 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-blog-single-body h2,
+.dak-blog-single-body h3 {
+	margin: 2rem 0 0.75rem !important;
+	line-height: 1.25 !important;
+	scroll-margin-top: 150px !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-blog-single-body img {
+	max-width: 100% !important;
+	height: auto !important;
+	border-radius: var( --dak-radius-md ) !important;
+}
+
+.dak-blog-related {
+	margin-top: var( --dak-space-8 ) !important;
+	padding-top: var( --dak-space-6 ) !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+.dak-blog-related-head {
+	display: flex !important;
+	align-items: baseline !important;
+	justify-content: space-between !important;
+	gap: var( --dak-space-4 ) !important;
+	margin-bottom: var( --dak-space-5 ) !important;
+}
+
+.dak-blog-related-head h2 {
+	margin: 0 !important;
+	font-size: 1.5rem !important;
+	font-weight: 800 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-blog-related-head a {
+	font-weight: 700 !important;
+	color: var( --dak-primary-dark ) !important;
+	text-decoration: underline !important;
+	text-underline-offset: 3px !important;
+}
+
+@media ( max-width: 900px ) {
+	.dak-blog-single-head h1 {
+		font-size: 1.9rem !important;
+	}
+
+	.dak-blog-single-layout {
+		grid-template-columns: 1fr !important;
+		gap: var( --dak-space-5 ) !important;
+	}
+
+	.dak-blog-single-sidebar {
+		position: static !important;
+	}
+}

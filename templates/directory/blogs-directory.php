@@ -24,8 +24,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<p class="dak-empty-state"><?php esc_html_e( 'No posts are available yet. Please check back soon.', 'doctor-ak-portal' ); ?></p>
 	<?php else : ?>
 		<?php if ( ! empty( $topics ) ) : ?>
-			<div class="dak-blog-chips" id="dak-blog-chips" role="group" aria-label="<?php esc_attr_e( 'Filter posts by topic', 'doctor-ak-portal' ); ?>">
-				<button type="button" class="dak-blog-chip is-active" data-topic-filter="" aria-pressed="true"><?php esc_html_e( 'All topics', 'doctor-ak-portal' ); ?></button>
+			<div class="dak-blog-chips" id="dak-blog-chips" role="group" aria-label="<?php esc_attr_e( 'Filter posts by category', 'doctor-ak-portal' ); ?>">
+				<button type="button" class="dak-blog-chip is-active" data-topic-filter="" aria-pressed="true"><?php esc_html_e( 'All categories', 'doctor-ak-portal' ); ?></button>
 				<?php foreach ( $topics as $dak_topic ) : ?>
 					<button type="button" class="dak-blog-chip" data-topic-filter="<?php echo esc_attr( sanitize_title( $dak_topic ) ); ?>" aria-pressed="false"><?php echo esc_html( $dak_topic ); ?></button>
 				<?php endforeach; ?>

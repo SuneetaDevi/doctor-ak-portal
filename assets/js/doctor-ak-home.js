@@ -258,8 +258,13 @@
 			startAutoplay();
 		}
 
-		slider.addEventListener( 'mouseenter', stopAutoplay );
-		slider.addEventListener( 'mouseleave', startAutoplay );
+		// Only on devices with a real hover: a phone fires a synthetic
+		// mouseenter on tap but never a mouseleave, which would stop the
+		// autoplay for good after the first touch.
+		if ( window.matchMedia && window.matchMedia( '(hover: hover)' ).matches ) {
+			slider.addEventListener( 'mouseenter', stopAutoplay );
+			slider.addEventListener( 'mouseleave', startAutoplay );
+		}
 		slider.addEventListener( 'focusin', stopAutoplay );
 		slider.addEventListener( 'focusout', startAutoplay );
 

@@ -166,6 +166,7 @@ class Site_Header {
 			'logo_url'           => self::bundled_logo_url(),
 			'phone'              => self::primary_phone(),
 			'email'              => self::primary_email(),
+			'location'           => self::primary_location(),
 			'directory_url'      => $directory_url,
 			'services_url'       => Page_Finder::url_for_shortcode( 'services_directory' ),
 			'videos_url'         => $home_url . '#dak-home-videos',
@@ -340,6 +341,22 @@ class Site_Header {
 		foreach ( Clinic_Locations::get_all() as $clinic_location ) {
 			if ( '' !== $clinic_location['contact_email'] ) {
 				return $clinic_location['contact_email'];
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * "City, Country" of the first clinic location that has a city on file, for
+	 * the utility strip's location line — '' when none does.
+	 *
+	 * @return string
+	 */
+	private static function primary_location() {
+		foreach ( Clinic_Locations::get_all() as $clinic_location ) {
+			if ( '' !== $clinic_location['city_label'] ) {
+				return implode( ', ', array_filter( array( $clinic_location['city_label'], $clinic_location['country_label'] ) ) );
 			}
 		}
 

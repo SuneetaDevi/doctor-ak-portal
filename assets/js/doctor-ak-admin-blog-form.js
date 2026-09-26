@@ -19,8 +19,38 @@
 		}
 
 		wireImagePicker();
+		wireCategoryChips( form );
 		wireSubmit( form );
 	} );
+
+	// Clicking an existing category chip fills the Category field with it (and
+	// lights that chip); typing anything else there clears the highlight.
+	function wireCategoryChips( form ) {
+		var input = document.getElementById( 'dak-admin-blog-topic' );
+		var chips = form.querySelectorAll( '[data-category-chip]' );
+
+		if ( ! input || ! chips.length ) {
+			return;
+		}
+
+		function sync() {
+			var current = input.value.trim().toLowerCase();
+
+			chips.forEach( function ( chip ) {
+				chip.classList.toggle( 'is-active', chip.getAttribute( 'data-category-chip' ).toLowerCase() === current );
+			} );
+		}
+
+		chips.forEach( function ( chip ) {
+			chip.addEventListener( 'click', function () {
+				input.value = chip.getAttribute( 'data-category-chip' );
+				sync();
+			} );
+		} );
+
+		input.addEventListener( 'input', sync );
+		sync();
+	}
 
 	function setImagePreview( url ) {
 		var preview = document.getElementById( 'dak-admin-blog-image-preview' );

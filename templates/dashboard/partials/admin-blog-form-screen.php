@@ -41,14 +41,17 @@ $dak_is_editing = null !== $editing_blog;
 		</div>
 
 		<div class="dak-field">
-			<label for="dak-admin-blog-topic"><?php esc_html_e( 'Topic', 'doctor-ak-portal' ); ?></label>
-			<input type="text" id="dak-admin-blog-topic" name="topic" maxlength="60" list="dak-admin-blog-topic-list" placeholder="<?php esc_attr_e( 'e.g. Gut health', 'doctor-ak-portal' ); ?>" value="<?php echo esc_attr( $dak_is_editing ? $editing_blog['topic'] : '' ); ?>">
-			<datalist id="dak-admin-blog-topic-list">
-				<?php foreach ( \DoctorAKPortal\Includes\Blogs::topics() as $dak_topic_suggestion ) : ?>
-					<option value="<?php echo esc_attr( $dak_topic_suggestion ); ?>"></option>
-				<?php endforeach; ?>
-			</datalist>
-			<p class="dak-field-hint"><?php esc_html_e( 'Optional. Posts with the same topic are grouped under one filter chip on the public Blog page.', 'doctor-ak-portal' ); ?></p>
+			<label for="dak-admin-blog-topic"><?php esc_html_e( 'Category', 'doctor-ak-portal' ); ?></label>
+			<input type="text" id="dak-admin-blog-topic" name="topic" maxlength="60" placeholder="<?php esc_attr_e( 'Pick one below, or type a new category', 'doctor-ak-portal' ); ?>" value="<?php echo esc_attr( $dak_is_editing ? $editing_blog['topic'] : '' ); ?>">
+			<?php $dak_existing_categories = \DoctorAKPortal\Includes\Blogs::topics(); ?>
+			<?php if ( ! empty( $dak_existing_categories ) ) : ?>
+				<div class="dak-category-picker" role="group" aria-label="<?php esc_attr_e( 'Existing categories', 'doctor-ak-portal' ); ?>">
+					<?php foreach ( $dak_existing_categories as $dak_existing_category ) : ?>
+						<button type="button" class="dak-category-chip" data-category-chip="<?php echo esc_attr( $dak_existing_category ); ?>"><?php echo esc_html( $dak_existing_category ); ?></button>
+					<?php endforeach; ?>
+				</div>
+			<?php endif; ?>
+			<p class="dak-field-hint"><?php esc_html_e( 'Optional. Shown as a chip on the public Blog page, where visitors can filter posts by category.', 'doctor-ak-portal' ); ?></p>
 			<span class="dak-field-error" data-field="topic"></span>
 		</div>
 

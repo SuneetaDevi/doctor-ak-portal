@@ -2609,3 +2609,32 @@ a.dak-notification-row-link:hover {
 	color: var( --dak-danger ) !important;
 	border-color: var( --dak-danger ) !important;
 }
+
+/* Blog form — existing categories shown as clickable chips under the field. */
+.dak-category-picker {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0.4rem !important;
+	margin-top: 0.5rem !important;
+}
+
+.dak-category-chip {
+	padding: 0.3rem 0.8rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.78rem !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+}
+
+.dak-category-chip:hover {
+	border-color: var( --dak-primary-dark ) !important;
+}
+
+.dak-category-chip.is-active {
+	background: var( --dak-primary-dark ) !important;
+	border-color: var( --dak-primary-dark ) !important;
+	color: #fff !important;
+}
