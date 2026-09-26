@@ -390,3 +390,39 @@
 			} );
 	}
 } )();
+
+/* Overview "Recent activities": live search + status filter. */
+( function () {
+	'use strict';
+
+	var search = document.querySelector( '[data-activity-search]' );
+	var filter = document.querySelector( '[data-activity-filter]' );
+
+	if ( ! search || ! filter ) {
+		return;
+	}
+
+	var rows = document.querySelectorAll( '[data-activity-row]' );
+	var empty = document.querySelector( '[data-activity-empty]' );
+
+	function apply() {
+		var term = search.value.trim().toLowerCase();
+		var status = filter.value;
+		var shown = 0;
+
+		rows.forEach( function ( row ) {
+			var ok = ( ! term || row.getAttribute( 'data-text' ).indexOf( term ) !== -1 ) &&
+				( ! status || row.getAttribute( 'data-status' ) === status );
+
+			row.hidden = ! ok;
+			shown += ok ? 1 : 0;
+		} );
+
+		if ( empty ) {
+			empty.classList.toggle( 'dak-hidden', shown > 0 );
+		}
+	}
+
+	search.addEventListener( 'input', apply );
+	filter.addEventListener( 'change', apply );
+}() );

@@ -23,7 +23,7 @@ $dak_service_icons = array(
 	'delete' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h12M8 6V4.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V6M6 6l.6 9a1.5 1.5 0 0 0 1.5 1.4h3.8a1.5 1.5 0 0 0 1.5-1.4L14 6"/></svg>',
 );
 ?>
-<div class="dak-dashboard-greeting dak-admin-users-header">
+<div class="dak-page-head">
 	<div>
 		<h1><?php esc_html_e( 'Services', 'doctor-ak-portal' ); ?></h1>
 		<p><?php esc_html_e( 'Every service doctors offer, with its charge and duration, ready for patients to book.', 'doctor-ak-portal' ); ?></p>

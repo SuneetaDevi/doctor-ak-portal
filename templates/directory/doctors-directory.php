@@ -4,6 +4,7 @@
  *
  * @package DoctorAKPortal\Templates
  *
+ * @var string[] $specialities Specialities at least one listed doctor has (display labels, alphabetical) — the filter chips.
  * @var string[] $doctors_html    Pre-rendered directory/doctor-card.php output, one per doctor.
  * @var string   $hero_banner_url Bundled hero banner photo URL (Doctors_Directory::HERO_BANNER_IMAGE_PATH), or '' if missing.
  */
@@ -43,6 +44,15 @@ $dak_directory_icons = array(
 	</section>
 
 	<?php if ( ! empty( $doctors_html ) ) : ?>
+		<?php if ( ! empty( $specialities ) ) : ?>
+			<div class="dak-blog-chips" id="dak-directory-spec-chips" role="group" aria-label="<?php esc_attr_e( 'Filter doctors by speciality', 'doctor-ak-portal' ); ?>">
+				<button type="button" class="dak-blog-chip is-active" data-spec-filter="" aria-pressed="true"><?php esc_html_e( 'All specialities', 'doctor-ak-portal' ); ?></button>
+				<?php foreach ( $specialities as $dak_speciality ) : ?>
+					<button type="button" class="dak-blog-chip" data-spec-filter="<?php echo esc_attr( mb_strtolower( $dak_speciality ) ); ?>" aria-pressed="false"><?php echo esc_html( $dak_speciality ); ?></button>
+				<?php endforeach; ?>
+			</div>
+		<?php endif; ?>
+
 		<div class="dak-directory-filters">
 			<div class="dak-directory-search">
 				<span class="dak-directory-search-icon" aria-hidden="true">

@@ -38,7 +38,7 @@ if ( ! function_exists( 'dak_video_pricing_initials' ) ) :
 	}
 endif;
 ?>
-<div class="dak-dashboard-greeting dak-admin-users-header">
+<div class="dak-page-head">
 	<div>
 		<h1><?php esc_html_e( 'Video Consultation', 'doctor-ak-portal' ); ?></h1>
 		<p><?php esc_html_e( 'Pricing across all doctors', 'doctor-ak-portal' ); ?></p>

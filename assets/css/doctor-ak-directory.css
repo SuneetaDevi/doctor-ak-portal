@@ -1941,3 +1941,27 @@
 		position: static !important;
 	}
 }
+
+/* ---- Doctor reviews ------------------------------------------------------ */
+.dak-reviews-summary { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.dak-reviews-score { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; min-width: 110px; }
+.dak-reviews-score strong { font-size: 2.4rem; line-height: 1; color: var( --dak-text ); }
+.dak-reviews-score small { color: var( --dak-muted ); }
+.dak-reviews-stars .dak-star { color: var( --dak-border ); font-size: 1rem; }
+.dak-reviews-stars .dak-star.is-on { color: #f5a623; }
+.dak-reviews-bars { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 200px; display: grid; gap: 0.3rem; }
+.dak-reviews-bars li { display: grid; grid-template-columns: 2.2rem 1fr 1.6rem; gap: 0.5rem; align-items: center; font-size: 0.8rem; color: var( --dak-muted ); }
+.dak-reviews-bar { height: 6px; border-radius: 999px; background: var( --dak-bg-subtle ); overflow: hidden; }
+.dak-reviews-bar i { display: block; height: 100%; background: #f5a623; }
+.dak-review-form { display: grid; gap: 0.6rem; padding: 1rem; margin-bottom: 1.25rem; border: 1px solid var( --dak-border ); border-radius: 12px; background: var( --dak-bg-subtle ); }
+.dak-review-picker { display: flex; gap: 0.15rem; }
+.dak-review-star { border: 0; background: none; padding: 0; font-size: 1.8rem; line-height: 1; cursor: pointer; color: var( --dak-border ); }
+.dak-review-star.is-on { color: #f5a623; }
+.dak-review-form textarea { width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem; border: 1px solid var( --dak-border ); border-radius: 8px; background: var( --dak-bg-card ); font: inherit; resize: vertical; }
+.dak-review-form .dak-button { justify-self: start; }
+.dak-reviews-note { margin: 0 0 1rem; color: var( --dak-muted ); font-size: 0.9rem; }
+.dak-reviews-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.dak-reviews-list li { padding: 0.9rem 0; border-top: 1px solid var( --dak-border ); }
+.dak-reviews-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.dak-reviews-head time { margin-left: auto; font-size: 0.78rem; color: var( --dak-muted ); }
+.dak-reviews-list p { margin: 0.35rem 0 0; line-height: 1.55; overflow-wrap: anywhere; }

@@ -1093,3 +1093,19 @@
 		font-size: 0.8rem !important;
 	}
 }
+
+/* Stacking: the utility strip (with the account dropdown) sits above the main
+   bar, so that dropdown opens over the Book Now button instead of under it. */
+.dak-site-header-utility {
+	position: relative !important;
+	z-index: 3 !important;
+}
+
+.dak-site-header-inner {
+	position: relative !important;
+	z-index: 2 !important;
+}
+
+.dak-site-header-account-menu {
+	z-index: 300 !important;
+}

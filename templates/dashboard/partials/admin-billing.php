@@ -48,42 +48,104 @@ foreach ( $clinics_by_doctor as $dak_doctor_id => $dak_doctor_clinics ) {
 	}
 }
 ?>
-<div class="dak-dashboard-greeting">
-	<h1><?php esc_html_e( 'Billing', 'doctor-ak-portal' ); ?></h1>
-	<p><?php esc_html_e( "Doctor + clinic-wise revenue ledger — each clinic's earnings stay separate, even for the same doctor, and video consultations are always accounted on their own.", 'doctor-ak-portal' ); ?></p>
+<div class="dak-page-head">
+	<div>
+		<h1><?php esc_html_e( 'Billing', 'doctor-ak-portal' ); ?></h1>
+		<p><?php esc_html_e( "Doctor + clinic-wise revenue ledger — each clinic's earnings stay separate, even for the same doctor, and video consultations are always accounted on their own.", 'doctor-ak-portal' ); ?></p>
+	</div>
 </div>
 
 <section class="dak-dashboard-statistics">
 	<div class="dak-stat-card">
-		<span class="dak-stat-icon dak-stat-icon-green" aria-hidden="true"><?php echo $dak_icons['money']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+		<div class="dak-kpi-top">
+			<span class="dak-stat-label"><?php esc_html_e( 'Gross collected', 'doctor-ak-portal' ); ?></span>
+			<span class="dak-stat-icon" aria-hidden="true"><?php echo $dak_icons['money']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+		</div>
 		<span class="dak-stat-value">PKR <?php echo esc_html( number_format_i18n( $summary['gross_total'] ) ); ?></span>
-		<span class="dak-stat-label"><?php esc_html_e( 'Gross collected', 'doctor-ak-portal' ); ?></span>
 	</div>
 	<div class="dak-stat-card">
-		<span class="dak-stat-icon dak-stat-icon-green" aria-hidden="true"><?php echo $dak_icons['video']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+		<div class="dak-kpi-top">
+			<span class="dak-stat-label"><?php esc_html_e( 'Video consultations', 'doctor-ak-portal' ); ?></span>
+			<span class="dak-stat-icon" aria-hidden="true"><?php echo $dak_icons['video']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+		</div>
 		<span class="dak-stat-value">PKR <?php echo esc_html( number_format_i18n( $summary['video_gross'] ) ); ?></span>
-		<span class="dak-stat-label"><?php esc_html_e( 'Video consultations', 'doctor-ak-portal' ); ?></span>
 	</div>
 	<div class="dak-stat-card">
-		<span class="dak-stat-icon dak-stat-icon-green" aria-hidden="true"><?php echo $dak_icons['clinic']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+		<div class="dak-kpi-top">
+			<span class="dak-stat-label"><?php esc_html_e( 'Physical clinic visits', 'doctor-ak-portal' ); ?></span>
+			<span class="dak-stat-icon" aria-hidden="true"><?php echo $dak_icons['clinic']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+		</div>
 		<span class="dak-stat-value">PKR <?php echo esc_html( number_format_i18n( $summary['clinic_gross'] ) ); ?></span>
-		<span class="dak-stat-label"><?php esc_html_e( 'Physical clinic visits', 'doctor-ak-portal' ); ?></span>
 	</div>
 	<div class="dak-stat-card">
-		<span class="dak-stat-icon dak-stat-icon-green" aria-hidden="true"><?php echo $dak_icons['money']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+		<div class="dak-kpi-top">
+			<span class="dak-stat-label"><?php esc_html_e( 'Platform/gateway fees', 'doctor-ak-portal' ); ?></span>
+			<span class="dak-stat-icon" aria-hidden="true"><?php echo $dak_icons['money']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+		</div>
 		<span class="dak-stat-value">PKR <?php echo esc_html( number_format_i18n( $summary['platform_fees'] ) ); ?></span>
-		<span class="dak-stat-label"><?php esc_html_e( 'Platform/gateway fees', 'doctor-ak-portal' ); ?></span>
 	</div>
 	<div class="dak-stat-card">
-		<span class="dak-stat-icon dak-stat-icon-green" aria-hidden="true"><?php echo $dak_icons['money']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+		<div class="dak-kpi-top">
+			<span class="dak-stat-label"><?php esc_html_e( "Doctors' total share", 'doctor-ak-portal' ); ?></span>
+			<span class="dak-stat-icon" aria-hidden="true"><?php echo $dak_icons['money']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+		</div>
 		<span class="dak-stat-value">PKR <?php echo esc_html( number_format_i18n( $summary['doctor_earnings'] ) ); ?></span>
-		<span class="dak-stat-label"><?php esc_html_e( "Doctors' total share", 'doctor-ak-portal' ); ?></span>
 	</div>
 	<div class="dak-stat-card">
-		<span class="dak-stat-icon dak-stat-icon-green" aria-hidden="true"><?php echo $dak_icons['balance']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+		<div class="dak-kpi-top">
+			<span class="dak-stat-label"><?php echo esc_html( $summary['outstanding_balance'] >= 0 ? __( 'Outstanding — payable to doctors', 'doctor-ak-portal' ) : __( 'Outstanding — receivable from doctors', 'doctor-ak-portal' ) ); ?></span>
+			<span class="dak-stat-icon" aria-hidden="true"><?php echo $dak_icons['balance']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+		</div>
 		<span class="dak-stat-value">PKR <?php echo esc_html( number_format_i18n( abs( $summary['outstanding_balance'] ) ) ); ?></span>
-		<span class="dak-stat-label"><?php echo esc_html( $summary['outstanding_balance'] >= 0 ? __( 'Outstanding — payable to doctors', 'doctor-ak-portal' ) : __( 'Outstanding — receivable from doctors', 'doctor-ak-portal' ) ); ?></span>
 	</div>
+</section>
+
+<section class="dak-dashboard-card dak-appt-filters-card">
+	<div class="dak-dashboard-card-header">
+		<h2><?php esc_html_e( 'Filters', 'doctor-ak-portal' ); ?></h2>
+	</div>
+
+	<form method="get" action="<?php echo esc_url( $billing_url ); ?>" class="dak-appt-filters-form">
+		<input type="hidden" name="section" value="billing">
+
+		<div class="dak-field">
+			<label for="dak-billing-doctor"><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></label>
+			<select id="dak-billing-doctor" name="doctor_id" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search doctors…', 'doctor-ak-portal' ); ?>">
+				<option value=""><?php esc_html_e( 'All doctors', 'doctor-ak-portal' ); ?></option>
+				<?php foreach ( $doctor_options as $dak_doctor_id => $dak_doctor_option ) : ?>
+					<option value="<?php echo esc_attr( $dak_doctor_id ); ?>" <?php selected( (int) $filters['doctor_id'] === (int) $dak_doctor_id ); ?>><?php echo esc_html( $dak_doctor_option['name'] ); ?></option>
+				<?php endforeach; ?>
+			</select>
+		</div>
+
+		<div class="dak-field">
+			<label for="dak-billing-clinic"><?php esc_html_e( 'Clinic', 'doctor-ak-portal' ); ?></label>
+			<select id="dak-billing-clinic" name="clinic_id">
+				<option value=""><?php esc_html_e( 'All clinics', 'doctor-ak-portal' ); ?></option>
+				<option value="-1" <?php selected( '-1' === (string) $filters['clinic_id'] ); ?>><?php esc_html_e( 'Video consultations only', 'doctor-ak-portal' ); ?></option>
+				<?php foreach ( $dak_clinic_choices as $dak_clinic_id => $dak_clinic_label ) : ?>
+					<option value="<?php echo esc_attr( $dak_clinic_id ); ?>" <?php selected( (string) $filters['clinic_id'] === (string) $dak_clinic_id ); ?>><?php echo esc_html( $dak_clinic_label ); ?></option>
+				<?php endforeach; ?>
+			</select>
+		</div>
+
+		<div class="dak-field">
+			<label for="dak-billing-date-from"><?php esc_html_e( 'From', 'doctor-ak-portal' ); ?></label>
+			<input type="date" id="dak-billing-date-from" name="date_from" value="<?php echo esc_attr( $filters['date_from'] ); ?>">
+		</div>
+
+		<div class="dak-field">
+			<label for="dak-billing-date-to"><?php esc_html_e( 'To', 'doctor-ak-portal' ); ?></label>
+			<input type="date" id="dak-billing-date-to" name="date_to" value="<?php echo esc_attr( $filters['date_to'] ); ?>">
+		</div>
+
+		<div class="dak-admin-filter-actions">
+			<button type="submit" class="dak-button dak-button-primary"><?php esc_html_e( 'Apply', 'doctor-ak-portal' ); ?></button>
+			<?php if ( ! empty( $dak_has_filters ) ) : ?>
+				<a class="dak-button dak-button-secondary" href="<?php echo esc_url( $billing_url ); ?>"><?php esc_html_e( 'Clear', 'doctor-ak-portal' ); ?></a>
+			<?php endif; ?>
+		</div>
+	</form>
 </section>
 
 <?php
@@ -247,54 +309,6 @@ $dak_view_base_args = array_filter(
 		</div>
 	</div>
 </div>
-
-<section class="dak-dashboard-card dak-appt-filters-card">
-	<div class="dak-dashboard-card-header">
-		<h2><?php esc_html_e( 'Filters', 'doctor-ak-portal' ); ?></h2>
-	</div>
-
-	<form method="get" action="<?php echo esc_url( $billing_url ); ?>" class="dak-appt-filters-form">
-		<input type="hidden" name="section" value="billing">
-
-		<div class="dak-field">
-			<label for="dak-billing-doctor"><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></label>
-			<select id="dak-billing-doctor" name="doctor_id" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search doctors…', 'doctor-ak-portal' ); ?>">
-				<option value=""><?php esc_html_e( 'All doctors', 'doctor-ak-portal' ); ?></option>
-				<?php foreach ( $doctor_options as $dak_doctor_id => $dak_doctor_option ) : ?>
-					<option value="<?php echo esc_attr( $dak_doctor_id ); ?>" <?php selected( (int) $filters['doctor_id'] === (int) $dak_doctor_id ); ?>><?php echo esc_html( $dak_doctor_option['name'] ); ?></option>
-				<?php endforeach; ?>
-			</select>
-		</div>
-
-		<div class="dak-field">
-			<label for="dak-billing-clinic"><?php esc_html_e( 'Clinic', 'doctor-ak-portal' ); ?></label>
-			<select id="dak-billing-clinic" name="clinic_id">
-				<option value=""><?php esc_html_e( 'All clinics', 'doctor-ak-portal' ); ?></option>
-				<option value="-1" <?php selected( '-1' === (string) $filters['clinic_id'] ); ?>><?php esc_html_e( 'Video consultations only', 'doctor-ak-portal' ); ?></option>
-				<?php foreach ( $dak_clinic_choices as $dak_clinic_id => $dak_clinic_label ) : ?>
-					<option value="<?php echo esc_attr( $dak_clinic_id ); ?>" <?php selected( (string) $filters['clinic_id'] === (string) $dak_clinic_id ); ?>><?php echo esc_html( $dak_clinic_label ); ?></option>
-				<?php endforeach; ?>
-			</select>
-		</div>
-
-		<div class="dak-field">
-			<label for="dak-billing-date-from"><?php esc_html_e( 'From', 'doctor-ak-portal' ); ?></label>
-			<input type="date" id="dak-billing-date-from" name="date_from" value="<?php echo esc_attr( $filters['date_from'] ); ?>">
-		</div>
-
-		<div class="dak-field">
-			<label for="dak-billing-date-to"><?php esc_html_e( 'To', 'doctor-ak-portal' ); ?></label>
-			<input type="date" id="dak-billing-date-to" name="date_to" value="<?php echo esc_attr( $filters['date_to'] ); ?>">
-		</div>
-
-		<div class="dak-admin-filter-actions">
-			<button type="submit" class="dak-button dak-button-primary"><?php esc_html_e( 'Apply', 'doctor-ak-portal' ); ?></button>
-			<?php if ( ! empty( $dak_has_filters ) ) : ?>
-				<a class="dak-button dak-button-secondary" href="<?php echo esc_url( $billing_url ); ?>"><?php esc_html_e( 'Clear', 'doctor-ak-portal' ); ?></a>
-			<?php endif; ?>
-		</div>
-	</form>
-</section>
 
 <?php if ( $dak_selected_doctor > 0 && null !== $outstanding ) : ?>
 	<section class="dak-dashboard-card" id="dak-billing-settlement-panel" data-doctor-id="<?php echo esc_attr( $dak_selected_doctor ); ?>">

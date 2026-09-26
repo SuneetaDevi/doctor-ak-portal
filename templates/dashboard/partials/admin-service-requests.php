@@ -23,7 +23,7 @@ $dak_request_icons = array(
 
 $dak_request_statuses = \DoctorAKPortal\Includes\Service_Requests::statuses();
 ?>
-<div class="dak-dashboard-greeting dak-admin-users-header">
+<div class="dak-page-head">
 	<div>
 		<h1><?php esc_html_e( 'Service Requests', 'doctor-ak-portal' ); ?></h1>
 		<p><?php esc_html_e( 'Patients who requested a "without doctor" service (Labs, Pharmacy, etc.) — follow up by phone to arrange it.', 'doctor-ak-portal' ); ?></p>

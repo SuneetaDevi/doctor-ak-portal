@@ -242,6 +242,77 @@ $dak_profile_view_icons = array(
 						</div>
 					</div>
 				<?php endif; ?>
+
+				<?php
+				$dak_rs    = $doctor['review_summary'];
+				$dak_my    = $doctor['my_review'];
+				$dak_stars = function ( $n ) {
+					$out = '';
+					for ( $i = 1; $i <= 5; $i++ ) {
+						$out .= '<span class="dak-star' . ( $i <= $n ? ' is-on' : '' ) . '" aria-hidden="true">&#9733;</span>';
+					}
+					return $out;
+				};
+				?>
+				<div class="dak-profile-card dak-reviews" id="dak-profile-reviews">
+					<h2><?php esc_html_e( 'Patient Reviews', 'doctor-ak-portal' ); ?></h2>
+
+					<?php if ( $dak_rs['count'] > 0 ) : ?>
+						<div class="dak-reviews-summary">
+							<div class="dak-reviews-score">
+								<strong><?php echo esc_html( number_format_i18n( $dak_rs['average'], 1 ) ); ?></strong>
+								<span class="dak-reviews-stars"><?php echo $dak_stars( (int) round( $dak_rs['average'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static markup. ?></span>
+								<small><?php echo esc_html( sprintf( _n( '%d review', '%d reviews', $dak_rs['count'], 'doctor-ak-portal' ), $dak_rs['count'] ) ); ?></small>
+							</div>
+							<ul class="dak-reviews-bars">
+								<?php foreach ( $dak_rs['stars'] as $dak_n => $dak_c ) : ?>
+									<li>
+										<span><?php echo esc_html( $dak_n ); ?>&#9733;</span>
+										<span class="dak-reviews-bar"><i style="width:<?php echo esc_attr( round( $dak_c / $dak_rs['count'] * 100 ) ); ?>%"></i></span>
+										<span><?php echo esc_html( $dak_c ); ?></span>
+									</li>
+								<?php endforeach; ?>
+							</ul>
+						</div>
+					<?php endif; ?>
+
+					<?php if ( $doctor['can_review'] ) : ?>
+						<form class="dak-review-form" id="dak-review-form" data-doctor-id="<?php echo esc_attr( $doctor['id'] ); ?>" data-rating="<?php echo esc_attr( $dak_my ? $dak_my['rating'] : 0 ); ?>">
+							<strong><?php echo esc_html( $dak_my ? __( 'Update your review', 'doctor-ak-portal' ) : __( 'Rate your experience', 'doctor-ak-portal' ) ); ?></strong>
+							<div class="dak-review-picker" role="radiogroup" aria-label="<?php esc_attr_e( 'Rating', 'doctor-ak-portal' ); ?>">
+								<?php for ( $dak_i = 1; $dak_i <= 5; $dak_i++ ) : ?>
+									<button type="button" class="dak-review-star<?php echo ( $dak_my && $dak_my['rating'] >= $dak_i ) ? ' is-on' : ''; ?>" data-value="<?php echo esc_attr( $dak_i ); ?>" aria-label="<?php echo esc_attr( sprintf( _n( '%d star', '%d stars', $dak_i, 'doctor-ak-portal' ), $dak_i ) ); ?>">&#9733;</button>
+								<?php endfor; ?>
+							</div>
+							<textarea name="comment" rows="3" maxlength="1000" placeholder="<?php esc_attr_e( 'Share details of your visit (optional)', 'doctor-ak-portal' ); ?>"><?php echo esc_textarea( $dak_my ? $dak_my['comment'] : '' ); ?></textarea>
+							<div class="dak-alert dak-alert-error dak-hidden" id="dak-review-error" role="alert"></div>
+							<button type="submit" class="dak-button dak-button-primary"><?php esc_html_e( 'Submit review', 'doctor-ak-portal' ); ?></button>
+						</form>
+					<?php elseif ( ! $doctor['is_logged_in'] ) : ?>
+						<p class="dak-reviews-note"><?php esc_html_e( 'Log in as a patient to review this doctor after your appointment.', 'doctor-ak-portal' ); ?></p>
+					<?php else : ?>
+						<p class="dak-reviews-note"><?php esc_html_e( 'You can leave a review after a completed appointment with this doctor.', 'doctor-ak-portal' ); ?></p>
+					<?php endif; ?>
+
+					<?php if ( empty( $doctor['reviews'] ) ) : ?>
+						<p class="dak-reviews-note"><?php esc_html_e( 'No reviews yet.', 'doctor-ak-portal' ); ?></p>
+					<?php else : ?>
+						<ul class="dak-reviews-list">
+							<?php foreach ( $doctor['reviews'] as $dak_review ) : ?>
+								<li>
+									<div class="dak-reviews-head">
+										<strong><?php echo esc_html( $dak_review['name'] ); ?></strong>
+										<span class="dak-reviews-stars"><?php echo $dak_stars( $dak_review['rating'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static markup. ?></span>
+										<time><?php echo esc_html( $dak_review['date'] ); ?></time>
+									</div>
+									<?php if ( '' !== $dak_review['comment'] ) : ?>
+										<p><?php echo esc_html( $dak_review['comment'] ); ?></p>
+									<?php endif; ?>
+								</li>
+							<?php endforeach; ?>
+						</ul>
+					<?php endif; ?>
+				</div>
 			</div>
 
 			<aside class="dak-profile-sidebar">

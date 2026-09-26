@@ -866,4 +866,46 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 		</section>
 	<?php endif; ?>
 
+	<?php if ( ! empty( $best_by_speciality ) ) : ?>
+		<section class="dak-home-section dak-home-best">
+			<div class="dak-directory-header dak-home-best-header">
+				<h2><?php esc_html_e( 'Best Doctors by Speciality', 'doctor-ak-portal' ); ?></h2>
+				<p><?php esc_html_e( 'Pick a speciality to see our most experienced specialists in that field.', 'doctor-ak-portal' ); ?></p>
+			</div>
+
+			<div class="dak-home-best-links">
+				<?php foreach ( $best_by_speciality as $dak_best_group ) : ?>
+					<a class="dak-home-best-link" href="<?php echo esc_url( $dak_best_group['url'] ? $dak_best_group['url'] : '#' ); ?>">
+						<span class="dak-home-best-link-icon" aria-hidden="true"><?php echo $dak_home_icons['user']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<span class="dak-home-best-link-text">
+							<span class="dak-home-best-link-title">
+								<?php
+								echo esc_html(
+									sprintf(
+										/* translators: %s: a speciality, e.g. "Gastroenterologist". */
+										__( 'Best %s', 'doctor-ak-portal' ),
+										$dak_best_group['label']
+									)
+								);
+								?>
+							</span>
+							<span class="dak-home-best-link-count">
+								<?php
+								echo esc_html(
+									sprintf(
+										/* translators: %d: number of doctors. */
+										_n( '%d doctor', '%d doctors', $dak_best_group['count'], 'doctor-ak-portal' ),
+										$dak_best_group['count']
+									)
+								);
+								?>
+							</span>
+						</span>
+						<span class="dak-home-best-link-arrow" aria-hidden="true">&rarr;</span>
+					</a>
+				<?php endforeach; ?>
+			</div>
+		</section>
+	<?php endif; ?>
+
 </div>

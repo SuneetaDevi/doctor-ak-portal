@@ -169,7 +169,7 @@ $dak_admin_section_icons = array(
 		<?php endif; ?>
 
 		<?php if ( $is_users_section && ! $is_user_form_view ) : ?>
-			<div class="dak-dashboard-greeting dak-admin-users-header">
+			<div class="dak-page-head">
 				<div>
 					<h1><?php echo esc_html( $section_label ); ?></h1>
 					<p>

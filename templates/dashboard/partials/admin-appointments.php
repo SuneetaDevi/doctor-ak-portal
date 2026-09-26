@@ -100,6 +100,24 @@ foreach ( $appointments as $dak_stat_row ) {
 }
 ?>
 
+<div class="dak-page-head">
+	<div>
+		<h1><?php esc_html_e( 'Appointments', 'doctor-ak-portal' ); ?></h1>
+		<p>
+			<?php
+			echo esc_html(
+				sprintf(
+					/* translators: %d: number of appointments. */
+					_n( '%d appointment', '%d appointments', count( $appointments ), 'doctor-ak-portal' ),
+					count( $appointments )
+				)
+			);
+			?>
+		</p>
+	</div>
+	<button type="button" class="dak-button dak-button-primary" id="dak-admin-appointment-add"><?php esc_html_e( '+ Add Appointment', 'doctor-ak-portal' ); ?></button>
+</div>
+
 <div class="dak-appt-stats-grid">
 	<div class="dak-appt-stat-card">
 		<span class="dak-appt-stat-label"><?php esc_html_e( 'Today', 'doctor-ak-portal' ); ?></span>
@@ -144,23 +162,6 @@ foreach ( $appointments as $dak_stat_row ) {
 	</div>
 </div>
 
-<div class="dak-dashboard-greeting dak-admin-users-header">
-	<div>
-		<h1><?php esc_html_e( 'Appointments', 'doctor-ak-portal' ); ?></h1>
-		<p>
-			<?php
-			echo esc_html(
-				sprintf(
-					/* translators: %d: number of appointments. */
-					_n( '%d appointment', '%d appointments', count( $appointments ), 'doctor-ak-portal' ),
-					count( $appointments )
-				)
-			);
-			?>
-		</p>
-	</div>
-	<button type="button" class="dak-button dak-button-primary" id="dak-admin-appointment-add"><?php esc_html_e( '+ Add Appointment', 'doctor-ak-portal' ); ?></button>
-</div>
 
 <?php if ( '' !== $filtered_patient ) : ?>
 	<div class="dak-alert dak-alert-success">

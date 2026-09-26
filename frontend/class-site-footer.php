@@ -103,7 +103,7 @@ class Site_Footer {
 	 * @return void
 	 */
 	public function render() {
-		if ( is_admin() ) {
+		if ( is_admin() || Site_Header::is_dashboard_app_page() ) {
 			return;
 		}
 

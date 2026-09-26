@@ -42,7 +42,7 @@ endif;
 
 $dak_has_filters = '' !== $filters['role'] || '' !== $filters['search'];
 ?>
-<div class="dak-dashboard-greeting dak-admin-users-header">
+<div class="dak-page-head">
 	<div>
 		<h1><?php esc_html_e( 'All Users', 'doctor-ak-portal' ); ?></h1>
 		<p>

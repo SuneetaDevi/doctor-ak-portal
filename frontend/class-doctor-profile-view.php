@@ -10,6 +10,7 @@ namespace DoctorAKPortal\Frontend;
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Doctor_Awards;
+use DoctorAKPortal\Includes\Doctor_Reviews;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
@@ -86,6 +87,23 @@ class Doctor_Profile_View {
 			Assets::version( 'assets/js/doctor-ak-doctor-profile-clinics.js' ),
 			true
 		);
+
+		wp_enqueue_script(
+			'doctor-ak-portal-doctor-reviews',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-doctor-reviews.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-doctor-reviews.js' ),
+			true
+		);
+
+		wp_localize_script(
+			'doctor-ak-portal-doctor-reviews',
+			'dakDoctorReviews',
+			array(
+				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+				'nonce'   => wp_create_nonce( Doctor_Review_Handler::NONCE_ACTION ),
+			)
+		);
 	}
 
 	/**
@@ -148,6 +166,11 @@ class Doctor_Profile_View {
 					'video_consultation'    => Clinics::doctor_has_active_video_clinic( $doctor->ID ),
 					'phone'                 => $phone,
 				),
+				'reviews'                => Doctor_Reviews::get_for_doctor( $doctor->ID ),
+				'review_summary'         => Doctor_Reviews::summary( $doctor->ID ),
+				'can_review'             => is_user_logged_in() && Doctor_Reviews::can_review( get_current_user_id(), $doctor->ID ),
+				'my_review'              => is_user_logged_in() ? Doctor_Reviews::find_for_patient( get_current_user_id(), $doctor->ID ) : null,
+				'is_logged_in'           => is_user_logged_in(),
 				'directory_url'          => Page_Finder::url_for_shortcode( 'doctors_directory' ),
 				'starting_fee_label'     => $this->starting_fee_label( $doctor->ID ),
 				'cancellation_note'      => $this->cancellation_note( $doctor->ID ),

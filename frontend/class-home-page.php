@@ -54,6 +54,14 @@ class Home_Page {
 	const FEATURED_BLOGS_LIMIT    = 3;
 
 	/**
+	 * "Best doctors by speciality": how many specialities to show, and how many
+	 * doctors under each.
+	 *
+	 * @var int
+	 */
+	const BEST_SPECIALITIES_LIMIT = 8;
+
+	/**
 	 * Bundled hero preview video shipped with the plugin (assets/videos/) —
 	 * distinct from the admin-uploaded Home_Videos list: this one plays
 	 * inline in the hero itself, not the "Marketing Videos" grid below.
@@ -319,6 +327,7 @@ class Home_Page {
 				'clinic_profile_url' => $clinic_profile_url,
 				'blogs_html'       => $blogs_html,
 				'blogs_url'        => Page_Finder::url_for_shortcode( 'blogs_directory' ),
+				'best_by_speciality' => self::best_doctors_by_speciality( $all_doctor_cards, $directory_url ),
 				'stats'            => $this->stats( $doctor_cards ),
 				'clinic_locations' => array_slice( $all_clinic_locations, 0, self::FEATURED_CLINICS_LIMIT ),
 			)
@@ -375,6 +384,44 @@ class Home_Page {
 		}
 
 		return $specialties;
+	}
+
+	/**
+	 * The specialities with the most doctors, each with its most experienced
+	 * doctors — for the "Best doctors by speciality" section. There is no
+	 * rating data to rank by, so "best" here means most years of experience.
+	 *
+	 * @param array  $doctor_cards  Full (uncapped) Doctors_Directory::doctor_cards_data() rows.
+	 * @param string $directory_url URL of the [doctors_directory] page, or ''.
+	 * @return array List of { label, url, count }.
+	 */
+	private static function best_doctors_by_speciality( array $doctor_cards, $directory_url ) {
+		$groups = array();
+
+		foreach ( $doctor_cards as $card ) {
+			foreach ( $card['specialization_labels'] as $label ) {
+				$groups[ $label ][] = $card;
+			}
+		}
+
+		uasort(
+			$groups,
+			function ( $a, $b ) {
+				return count( $b ) - count( $a );
+			}
+		);
+
+		$best = array();
+
+		foreach ( array_slice( $groups, 0, self::BEST_SPECIALITIES_LIMIT, true ) as $label => $cards ) {
+			$best[] = array(
+				'label' => $label,
+				'url'   => $directory_url ? add_query_arg( 'specialization', mb_strtolower( $label ), $directory_url ) : '',
+				'count' => count( $cards ),
+			);
+		}
+
+		return $best;
 	}
 
 	/**

@@ -2680,3 +2680,99 @@
 		padding: var( --dak-space-4 ) var( --dak-space-3 ) !important;
 	}
 }
+
+/* Best doctors by speciality — link tiles, one per speciality. Each opens
+   the Doctors page filtered to that speciality. Last section before the footer. */
+
+.dak-home-best-header p {
+	margin: 0.25rem 0 0 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-home-best-links {
+	display: grid !important;
+	grid-template-columns: repeat( 4, minmax( 0, 1fr ) ) !important;
+	gap: var( --dak-space-4 ) !important;
+	margin-top: var( --dak-space-5 ) !important;
+}
+
+.dak-home-best-link {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.85rem !important;
+	min-width: 0 !important;
+	padding: 1rem 1.1rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: inherit !important;
+	text-decoration: none !important;
+	transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.dak-home-best-link:hover {
+	border-color: var( --dak-primary ) !important;
+	transform: translateY( -2px ) !important;
+	box-shadow: 0 8px 20px rgba( 22, 39, 24, 0.08 ) !important;
+}
+
+.dak-home-best-link-icon {
+	display: inline-flex !important;
+	flex: 0 0 auto !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 44px !important;
+	height: 44px !important;
+	border-radius: 12px !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-home-best-link-icon svg {
+	width: 22px !important;
+	height: 22px !important;
+}
+
+.dak-home-best-link-text {
+	display: flex !important;
+	flex: 1 !important;
+	flex-direction: column !important;
+	gap: 0.1rem !important;
+	min-width: 0 !important;
+}
+
+.dak-home-best-link-title {
+	font-size: var( --dak-text-md ) !important;
+	font-weight: 700 !important;
+	line-height: 1.3 !important;
+	color: var( --dak-text ) !important;
+	overflow-wrap: anywhere !important;
+}
+
+.dak-home-best-link-count {
+	font-size: var( --dak-text-sm ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-home-best-link-arrow {
+	flex: 0 0 auto !important;
+	color: var( --dak-muted ) !important;
+	transition: transform 0.2s ease, color 0.2s ease !important;
+}
+
+.dak-home-best-link:hover .dak-home-best-link-arrow {
+	color: var( --dak-primary-dark ) !important;
+	transform: translateX( 3px ) !important;
+}
+
+@media ( max-width: 1024px ) {
+	.dak-home-best-links {
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+	}
+}
+
+@media ( max-width: 560px ) {
+	.dak-home-best-links {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+	}
+}

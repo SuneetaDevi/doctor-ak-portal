@@ -208,6 +208,9 @@ class Db_Installer {
 	 */
 	const BLOGS_DB_VERSION = '1.1.0';
 
+	const REVIEWS_DB_VERSION_OPTION = 'dak_doctor_reviews_db_version';
+	const REVIEWS_DB_VERSION        = '1.0.0';
+
 	/**
 	 * Option name tracking the installed service-requests-table schema version.
 	 *
@@ -295,6 +298,9 @@ class Db_Installer {
 		self::create_blogs_table();
 		update_option( self::BLOGS_DB_VERSION_OPTION, self::BLOGS_DB_VERSION );
 
+		self::create_doctor_reviews_table();
+		update_option( self::REVIEWS_DB_VERSION_OPTION, self::REVIEWS_DB_VERSION );
+
 		self::create_service_requests_table();
 		update_option( self::SERVICE_REQUESTS_DB_VERSION_OPTION, self::SERVICE_REQUESTS_DB_VERSION );
 
@@ -338,6 +344,7 @@ class Db_Installer {
 			&& self::REVENUE_LEDGER_DB_VERSION === get_option( self::REVENUE_LEDGER_DB_VERSION_OPTION )
 			&& self::REVENUE_SETTLEMENTS_DB_VERSION === get_option( self::REVENUE_SETTLEMENTS_DB_VERSION_OPTION )
 			&& self::BLOGS_DB_VERSION === get_option( self::BLOGS_DB_VERSION_OPTION )
+			&& self::REVIEWS_DB_VERSION === get_option( self::REVIEWS_DB_VERSION_OPTION )
 			&& self::SERVICE_REQUESTS_DB_VERSION === get_option( self::SERVICE_REQUESTS_DB_VERSION_OPTION )
 		) {
 			return;
@@ -451,6 +458,35 @@ class Db_Installer {
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),
+			KEY doctor_id (doctor_id)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Runs dbDelta() against the doctor-reviews table schema.
+	 *
+	 * @return void
+	 */
+	private static function create_doctor_reviews_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$table_name      = Doctor_Reviews::table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table_name} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			doctor_id BIGINT UNSIGNED NOT NULL,
+			patient_id BIGINT UNSIGNED NOT NULL,
+			rating TINYINT UNSIGNED NOT NULL,
+			comment TEXT NULL,
+			created_at DATETIME NOT NULL,
+			updated_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			UNIQUE KEY doctor_patient (doctor_id,patient_id),
 			KEY doctor_id (doctor_id)
 		) {$charset_collate};";
 

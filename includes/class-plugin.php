@@ -21,6 +21,7 @@ use DoctorAKPortal\Frontend\Booking_Trigger;
 use DoctorAKPortal\Frontend\Blog_Handler;
 use DoctorAKPortal\Frontend\Blog_Single;
 use DoctorAKPortal\Frontend\Blogs_Directory;
+use DoctorAKPortal\Frontend\Doctor_Review_Handler;
 use DoctorAKPortal\Frontend\Clinic_Profile_View;
 use DoctorAKPortal\Frontend\Clinics_Directory;
 use DoctorAKPortal\Frontend\Clinic_Handler;
@@ -172,6 +173,7 @@ class Plugin {
 		$site_header = new Site_Header( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $site_header, 'enqueue_assets' );
 		$this->loader->add_action( 'wp_body_open', $site_header, 'render' );
+		$this->loader->add_filter( 'body_class', $site_header, 'add_body_class' );
 		// Priority 1 — as early as possible in <head>, so this wins if the
 		// active theme's own viewport tag (if any) is missing or broken;
 		// see render_viewport_meta()'s own docblock for why this exists.
@@ -226,6 +228,9 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_nopriv_doctor_ak_service_request_submit', $service_request_handler, 'handle_submit' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_request_status', $service_request_handler, 'handle_admin_update_status' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_service_request_delete', $service_request_handler, 'handle_admin_delete' );
+
+		$review_handler = new Doctor_Review_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_submit_review', $review_handler, 'handle_submit' );
 
 		$blogs_directory = new Blogs_Directory( new Template_Loader() );
 		$blog_single      = new Blog_Single( new Template_Loader() );

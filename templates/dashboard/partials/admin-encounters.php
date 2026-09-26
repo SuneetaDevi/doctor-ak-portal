@@ -27,7 +27,7 @@ $dak_status_labels = array(
 	\DoctorAKPortal\Includes\Encounters::STATUS_CLOSED => __( 'Closed', 'doctor-ak-portal' ),
 );
 ?>
-<div class="dak-dashboard-greeting dak-admin-users-header">
+<div class="dak-page-head">
 	<div>
 		<h1><?php esc_html_e( 'Encounters', 'doctor-ak-portal' ); ?></h1>
 		<p>

@@ -127,14 +127,50 @@ class Site_Header {
 	}
 
 	/**
-	 * Renders the header markup. Hooked to wp_body_open so it appears
-	 * immediately inside <body>, ahead of whatever the active theme
-	 * otherwise renders.
+	 * Whether the current page holds one of the three dashboards. Those are
+	 * full-screen app shells with their own sidebar and top bar, so the public
+	 * site header and footer are left out.
+	 *
+	 * @return bool
+	 */
+	public static function is_dashboard_app_page() {
+		global $post;
+
+		if ( ! ( $post instanceof \WP_Post ) ) {
+			return false;
+		}
+
+		foreach ( array( 'admin_dashboard', 'doctor_dashboard', 'patient_dashboard' ) as $tag ) {
+			if ( has_shortcode( $post->post_content, $tag ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Adds `dak-app-page` to <body> on dashboard pages so CSS can hide any
+	 * theme header/footer around them.
+	 *
+	 * @param string[] $classes Body classes.
+	 * @return string[]
+	 */
+	public function add_body_class( $classes ) {
+		if ( self::is_dashboard_app_page() ) {
+			$classes[] = 'dak-app-page';
+		}
+
+		return $classes;
+	}
+
+	/**
+	 * Renders the header markup. Hooked to wp_body_open.
 	 *
 	 * @return void
 	 */
 	public function render() {
-		if ( is_admin() ) {
+		if ( is_admin() || self::is_dashboard_app_page() ) {
 			return;
 		}
 

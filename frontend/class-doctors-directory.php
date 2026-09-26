@@ -114,17 +114,26 @@ class Doctors_Directory {
 	 * @return string
 	 */
 	public function render() {
-		$cards        = $this->doctor_cards_data();
-		$doctors_html = array();
+		$cards          = $this->doctor_cards_data();
+		$doctors_html   = array();
+		$specialities   = array();
 
 		foreach ( $cards as $card ) {
 			$doctors_html[] = $this->template_loader->get_template( 'directory/doctor-card.php', $card );
+
+			foreach ( $card['specialization_labels'] as $label ) {
+				$specialities[ mb_strtolower( $label ) ] = $label;
+			}
 		}
+
+		// Alphabetical — the page's speciality filter chips.
+		asort( $specialities );
 
 		return $this->template_loader->get_template(
 			'directory/doctors-directory.php',
 			array(
 				'doctors_html'    => $doctors_html,
+				'specialities'    => array_values( $specialities ),
 				// This page's own bundled banner photo — reuses Home_Page's
 				// now-public helper for the file_exists()/cache-busting
 				// logic rather than duplicating it, but points at this

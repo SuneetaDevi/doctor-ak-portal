@@ -188,6 +188,29 @@
 
 		searchInput.addEventListener( 'input', applyFilters );
 
+		// Speciality chips: one active at a time ("All" clears it). A
+		// `?specialization=` deep link lights the matching chip on load.
+		var specChips = document.querySelectorAll( '[data-spec-filter]' );
+
+		function syncSpecChips() {
+			specChips.forEach( function ( chip ) {
+				var isActive = chip.getAttribute( 'data-spec-filter' ) === presetSpecialization;
+
+				chip.classList.toggle( 'is-active', isActive );
+				chip.setAttribute( 'aria-pressed', isActive ? 'true' : 'false' );
+			} );
+		}
+
+		specChips.forEach( function ( chip ) {
+			chip.addEventListener( 'click', function () {
+				presetSpecialization = chip.getAttribute( 'data-spec-filter' );
+				syncSpecChips();
+				applyFilters();
+			} );
+		} );
+
+		syncSpecChips();
+
 		if ( presetSpecialization ) {
 			applyFilters();
 		}
