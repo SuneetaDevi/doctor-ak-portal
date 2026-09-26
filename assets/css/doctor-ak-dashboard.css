@@ -3759,3 +3759,65 @@ body.dak-app-page .wp-site-blocks > footer,
 body.dak-app-page .wp-block-template-part {
 	display: none !important;
 }
+
+/* Activity table clean-up: real table cells, no grid borders or zebra. */
+.dak-admin-dashboard .dak-activity-scroll {
+	border-radius: 12px !important;
+	background: var( --dak-bg-card ) !important;
+}
+
+.dak-admin-dashboard .dak-activity-table,
+.dak-admin-dashboard .dak-activity-table thead,
+.dak-admin-dashboard .dak-activity-table tbody,
+.dak-admin-dashboard .dak-activity-table tr {
+	border: 0 !important;
+	background: transparent !important;
+}
+
+.dak-admin-dashboard .dak-activity-table th,
+.dak-admin-dashboard .dak-activity-table td {
+	border: 0 !important;
+	border-top: 1px solid var( --dak-border ) !important;
+	background: transparent !important;
+	text-align: left !important;
+}
+
+.dak-admin-dashboard .dak-activity-table thead th {
+	border-top: 0 !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-admin-dashboard .dak-activity-table tbody tr:first-child td {
+	border-top: 0 !important;
+}
+
+.dak-admin-dashboard .dak-activity-table td.dak-activity-actions {
+	display: table-cell !important;
+	text-align: right !important;
+	white-space: nowrap !important;
+}
+
+.dak-admin-dashboard .dak-activity-table .dak-activity-actions .dak-patient-appt-row-actions {
+	display: inline-flex !important;
+	justify-content: flex-end !important;
+}
+
+.dak-admin-dashboard .dak-activity-table td .dak-status-pill + .dak-status-pill {
+	margin-left: 0.3rem !important;
+}
+
+/* Sidebar logo: a home link pinned to the top of the sidebar while the menu scrolls. */
+.dak-admin-dashboard a.dak-sidebar-brand {
+	position: sticky !important;
+	top: -1rem !important;
+	z-index: 5 !important;
+	margin-top: -1rem !important;
+	padding-top: 1rem !important;
+	background: var( --dak-bg-card ) !important;
+	color: inherit !important;
+	text-decoration: none !important;
+}
+
+.dak-admin-dashboard a.dak-sidebar-brand:hover strong {
+	color: var( --dak-primary-dark ) !important;
+}

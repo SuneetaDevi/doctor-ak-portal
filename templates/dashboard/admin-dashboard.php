@@ -84,7 +84,7 @@ $dak_admin_section_icons = array(
 			</button>
 		</div>
 
-		<div class="dak-sidebar-brand">
+		<a class="dak-sidebar-brand" href="<?php echo esc_url( home_url( '/' ) ); ?>" title="<?php esc_attr_e( 'Go to home page', 'doctor-ak-portal' ); ?>">
 			<span class="dak-sidebar-brand-logo">
 				<?php
 				$dak_brand_logo_url = \DoctorAKPortal\Frontend\Site_Footer::bundled_logo_url();
@@ -100,7 +100,7 @@ $dak_admin_section_icons = array(
 				<strong><?php esc_html_e( 'Doctor AK Portal', 'doctor-ak-portal' ); ?></strong>
 				<span><?php esc_html_e( 'Admin portal', 'doctor-ak-portal' ); ?></span>
 			</span>
-		</div>
+		</a>
 
 		<div class="dak-sidebar-doctor-card">
 			<span class="dak-avatar dak-avatar-md">
