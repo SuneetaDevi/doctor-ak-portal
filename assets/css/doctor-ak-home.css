@@ -295,7 +295,6 @@
 .dak-home-hero-searchbar {
 	position: relative !important;
 	z-index: 3 !important;
-	max-width: 62rem !important;
 	margin: -3.75rem auto 0 !important;
 }
 
