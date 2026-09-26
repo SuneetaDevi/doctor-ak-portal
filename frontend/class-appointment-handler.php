@@ -78,6 +78,10 @@ class Appointment_Handler {
 			'payment_mode'   => isset( $_POST['payment_mode'] ) ? sanitize_key( wp_unslash( $_POST['payment_mode'] ) ) : Appointments::PAYMENT_MODE_MANUAL,
 		);
 
+		if ( empty( array_filter( $data['service_ids'] ) ) && $data['service_id'] < 1 ) {
+			wp_send_json_error( array( 'message' => __( 'Please select at least one service.', 'doctor-ak-portal' ) ) );
+		}
+
 		if ( $appointment_id > 0 ) {
 			$result = Appointments::update( $appointment_id, $data );
 		} else {

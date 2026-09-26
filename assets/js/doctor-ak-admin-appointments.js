@@ -608,6 +608,16 @@
 				return;
 			}
 
+			if ( ! document.getElementById( 'dak-admin-appointment-service' ).selectedOptions.length ) {
+				var serviceError = document.querySelector( '.dak-field-error[data-field="service_ids"]' );
+
+				if ( serviceError ) {
+					serviceError.textContent = 'Please select at least one service.';
+				}
+
+				return;
+			}
+
 			saveButton.disabled = true;
 
 			var formData = new FormData();

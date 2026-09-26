@@ -53,8 +53,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 
 		<div class="dak-field">
-			<label for="dak-admin-appointment-service"><?php esc_html_e( 'Services (optional)', 'doctor-ak-portal' ); ?></label>
-			<select id="dak-admin-appointment-service" class="dak-select-searchable" multiple data-placeholder="<?php esc_attr_e( 'No service / free booking — search to add…', 'doctor-ak-portal' ); ?>"></select>
+			<label for="dak-admin-appointment-service"><?php esc_html_e( 'Services', 'doctor-ak-portal' ); ?></label>
+			<select id="dak-admin-appointment-service" class="dak-select-searchable" multiple data-placeholder="<?php esc_attr_e( 'Select at least one service…', 'doctor-ak-portal' ); ?>"></select>
+			<span class="dak-field-error" data-field="service_ids"></span>
 			<span class="dak-field-hint" id="dak-admin-appointment-service-total"></span>
 		</div>
 
