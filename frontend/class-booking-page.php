@@ -119,7 +119,11 @@ class Booking_Page {
 				'isLoggedIn'  => is_user_logged_in() && $this->is_patient(),
 				'isStaff'     => self::is_staff(),
 				'user'        => $this->logged_in_patient_data(),
-				'loginUrl'    => Page_Finder::url_for_shortcode( 'doctor_login' ),
+				// Carries the visitor straight back to this exact booking
+				// URL (doctor/service/clinic and all) after they log in,
+				// instead of Login_Handler's usual "send them to their
+				// dashboard" default — see redirect_to handling there.
+				'loginUrl'    => add_query_arg( 'redirect_to', rawurlencode( self::current_url() ), Page_Finder::url_for_shortcode( 'doctor_login' ) ),
 				'registerUrl' => Page_Finder::url_for_shortcode( 'doctor_register' ),
 				'profileUrl'  => Page_Finder::url_for_shortcode( 'doctor_profile' ),
 				'pageUrl'     => Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ),
@@ -623,6 +627,18 @@ class Booking_Page {
 		}
 
 		return $map;
+	}
+
+	/**
+	 * This exact request's full URL (path + query string) — every doctor_id/
+	 * service_id/clinic_id/type param the visitor arrived with, so a
+	 * `redirect_to` built from it lands them back on the same booking
+	 * context after logging in, not just the bare booking page.
+	 *
+	 * @return string
+	 */
+	private static function current_url() {
+		return esc_url_raw( home_url( add_query_arg( null, null ) ) );
 	}
 
 	/**

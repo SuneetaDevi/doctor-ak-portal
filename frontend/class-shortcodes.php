@@ -215,7 +215,15 @@ class Shortcodes {
 	 * @return string
 	 */
 	public function render_doctor_login() {
-		return $this->template_loader->get_template( 'auth/login-form.php' );
+		// Where a caller (e.g. the booking page's "Log In" link) wants the
+		// visitor sent back to after they log in, instead of Login_Handler's
+		// usual role-based dashboard default. wp_validate_redirect() (also
+		// re-checked server-side in Login_Handler::handle_login() before
+		// it's ever used) keeps this to a same-site URL, so it can't be
+		// abused as an open redirect.
+		$redirect_to = isset( $_GET['redirect_to'] ) ? wp_validate_redirect( wp_unslash( $_GET['redirect_to'] ), '' ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- read-only redirect target, validated by wp_validate_redirect() same-site check on the next line and again before use.
+
+		return $this->template_loader->get_template( 'auth/login-form.php', array( 'redirect_to' => $redirect_to ) );
 	}
 
 	/**

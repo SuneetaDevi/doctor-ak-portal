@@ -20,19 +20,14 @@
 
 /* The hero and video-gallery bands below break out to the true viewport
    width (100vw) so they reach the page edges regardless of any theme
-   container wrapped around the shortcode's output. `100vw` can overshoot
-   the actually-visible width by a vertical scrollbar's thickness, which
-   would otherwise add a page-level horizontal scrollbar on this one page.
-   `html` (not `body`, and not `.dak-home` — clipping overflow on either of
-   those would clip the full-bleed sections themselves, defeating the
-   breakout) is the standard place to absorb that overshoot: the site
-   header's sticky positioning is explicitly anchored to <body> (see
-   doctor-ak-site-header.css), and only <body>'s own overflow affects that,
-   so this leaves it untouched. Scoped to this stylesheet, so it only
-   applies while the home page itself is loaded. */
-html {
-	overflow-x: hidden !important;
-}
+   container wrapped around the shortcode's output — which can overshoot the
+   actually-visible width by a scrollbar's thickness. The `html { overflow-x:
+   hidden }` that absorbs that overshoot now lives in doctor-ak-site-header.css
+   instead of here — that stylesheet loads on every page (this one only
+   loads on the home page), and the same overshoot risk turned out not to be
+   unique to the hero: the header's own mega-menus can cause it too, on
+   pages this stylesheet never touches. One rule, loaded everywhere, rather
+   than two copies drifting apart. */
 
 /* Side gutter for the page's contained sections. The full-bleed hero cancels
    it out with a matching negative margin and aligns its own text to it, so

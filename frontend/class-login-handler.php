@@ -106,9 +106,10 @@ class Login_Handler {
 			wp_send_json_error( array( 'message' => __( 'You are already logged in.', 'doctor-ak-portal' ) ) );
 		}
 
-		$login    = isset( $_POST['login'] ) ? sanitize_text_field( wp_unslash( $_POST['login'] ) ) : '';
-		$password = isset( $_POST['password'] ) ? (string) $_POST['password'] : '';
-		$remember = ! empty( $_POST['remember'] );
+		$login       = isset( $_POST['login'] ) ? sanitize_text_field( wp_unslash( $_POST['login'] ) ) : '';
+		$password    = isset( $_POST['password'] ) ? (string) $_POST['password'] : '';
+		$remember    = ! empty( $_POST['remember'] );
+		$redirect_to = isset( $_POST['redirect_to'] ) ? sanitize_text_field( wp_unslash( $_POST['redirect_to'] ) ) : '';
 
 		if ( '' === $login || '' === $password ) {
 			wp_send_json_error( array( 'message' => __( 'Please enter your username/email and password.', 'doctor-ak-portal' ) ) );
@@ -132,18 +133,44 @@ class Login_Handler {
 		wp_send_json_success(
 			array(
 				'message'  => __( 'Login successful. Redirecting…', 'doctor-ak-portal' ),
-				'redirect' => $this->redirect_url_for_user( $user ),
+				'redirect' => $this->redirect_url_for_user( $user, $redirect_to ),
 			)
 		);
 	}
 
 	/**
-	 * Determines which dashboard page to send a freshly logged-in user to.
+	 * Determines which page to send a freshly logged-in user to: back to
+	 * where they came from (a booking page mid-flow, most notably — see
+	 * Booking_Page's 'loginUrl') when the login form carried a same-site
+	 * `redirect_to`, otherwise their role's dashboard as before.
+	 *
+	 * @param \WP_User $user        Authenticated user.
+	 * @param string   $redirect_to Requested redirect target, or ''.
+	 * @return string Permalink, or an empty string if no matching page was found.
+	 */
+	private function redirect_url_for_user( \WP_User $user, $redirect_to = '' ) {
+		if ( '' !== $redirect_to ) {
+			// wp_validate_redirect() only accepts a URL on this same site
+			// (same host), falling back to '' otherwise — never trust a
+			// visitor-supplied redirect target as-is, however it got here.
+			$validated = wp_validate_redirect( $redirect_to, '' );
+
+			if ( '' !== $validated ) {
+				return $validated;
+			}
+		}
+
+		return $this->default_redirect_url_for_user( $user );
+	}
+
+	/**
+	 * The dashboard page matching a user's role — the fallback when no (or
+	 * no valid) `redirect_to` was requested.
 	 *
 	 * @param \WP_User $user Authenticated user.
 	 * @return string Permalink, or an empty string if no matching page was found.
 	 */
-	private function redirect_url_for_user( \WP_User $user ) {
+	private function default_redirect_url_for_user( \WP_User $user ) {
 		if ( user_can( $user, 'manage_options' ) ) {
 			return Page_Finder::url_for_shortcode( 'admin_dashboard' );
 		}

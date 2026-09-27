@@ -13,6 +13,24 @@
  * the whole two-tier header stayed pinned together.
  */
 
+/* The mega-menus below (Doctors/Services/Clinics) are ~900px wide panels,
+   absolutely positioned against their own nav item. Even while closed
+   (opacity/visibility hidden, never `display: none`), a positioned box still
+   counts toward the page's scrollable width — so on plenty of ordinary
+   desktop widths, whichever panel's anchor happens to place it past the
+   right edge quietly turns the ENTIRE site into one that scrolls
+   horizontally. This stylesheet is loaded on every front-end page
+   (Site_Header renders site-wide), so this one rule protects all of them,
+   not just whichever page a particular menu's overflow happened to show up
+   on.
+   `html`, not `body` — the header's own sticky positioning further down is
+   explicitly anchored to <body>, and clipping overflow on an ancestor of a
+   `position: sticky` element can break it; `html` sits above body, so this
+   leaves that untouched. */
+html {
+	overflow-x: hidden !important;
+}
+
 /* position: sticky lives here, on the OUTER wrapper, not on
    .dak-site-header-inner — a sticky element only stays pinned while its own
    parent box is still in view, and .dak-site-header-inner's parent used to
@@ -277,6 +295,18 @@
 	visibility: hidden !important;
 	transform: translateY( 6px ) !important;
 	transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s !important;
+}
+
+/* Services and Clinics sit near the right end of the nav — their 900px-wide
+   mega panel, anchored `left: 0` like Doctors', would run off the right edge
+   of the viewport on an ordinary desktop screen. Anchoring these two from
+   their own right edge instead keeps the panel growing leftward, under the
+   nav, so it stays on-screen; Doctors (the left-most item) keeps the
+   default left anchor since it never has this problem. */
+.dak-site-header-services-item .sub-menu,
+.dak-site-header-clinics-item .sub-menu {
+	left: auto !important;
+	right: 0 !important;
 }
 
 .menu-item-has-children:hover > .sub-menu,

@@ -6,12 +6,16 @@
  * and footer around this markup.
  *
  * @package DoctorAKPortal\Templates
+ *
+ * @var string $redirect_to Same-site URL to send the visitor to after login instead of their role's dashboard (e.g. back to a booking page they came from), or '' for the usual default — see Shortcodes::render_doctor_login()/Login_Handler::handle_login().
  */
 
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+$redirect_to = isset( $redirect_to ) ? $redirect_to : '';
 
 $forgot_password_url = \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( 'doctor_forgot_password' );
 $register_url         = \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( 'doctor_register' );
@@ -47,6 +51,9 @@ $register_url         = \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode(
 		<div class="dak-alert dak-alert-error dak-hidden" id="dak-login-error" role="alert"></div>
 
 		<form id="dak-login-form" novalidate>
+			<?php if ( '' !== $redirect_to ) : ?>
+				<input type="hidden" name="redirect_to" value="<?php echo esc_attr( $redirect_to ); ?>">
+			<?php endif; ?>
 			<div class="dak-field">
 				<label for="dak-login-username"><?php esc_html_e( 'Username or Email', 'doctor-ak-portal' ); ?></label>
 				<input type="text" id="dak-login-username" name="login" required autocomplete="username">
