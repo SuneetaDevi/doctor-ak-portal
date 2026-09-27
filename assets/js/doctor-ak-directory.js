@@ -75,6 +75,8 @@
 		var femaleToggle = document.getElementById( 'dak-directory-female-toggle' );
 		var nearMeButton = document.getElementById( 'dak-directory-nearme-toggle' );
 		var nearMeStatus = document.getElementById( 'dak-directory-nearme-status' );
+		var resultsCount = document.getElementById( 'dak-directory-results-count' );
+		var resultsCountTemplate = resultsCount ? resultsCount.getAttribute( 'data-template' ) : '';
 
 		if ( ! grid || ! searchInput ) {
 			return;
@@ -100,6 +102,7 @@
 			: '';
 
 		initNearMe();
+		initSpecialtiesToggle();
 		initTogglePill( videoToggle, applyFilters );
 		initTogglePill( availabilityToggle, applyFilters );
 		initTogglePill( maleToggle, applyFilters );
@@ -181,6 +184,12 @@
 
 			if ( noResults ) {
 				noResults.classList.toggle( 'dak-hidden', matching.length > 0 );
+			}
+
+			if ( resultsCount && resultsCountTemplate ) {
+				resultsCount.textContent = resultsCountTemplate
+					.replace( '%1$d', matching.length )
+					.replace( '%2$d', cards.length );
 			}
 
 			renderPagination( currentPage, totalPages );
@@ -490,6 +499,41 @@
 			button.classList.toggle( 'is-active', isActive );
 			button.setAttribute( 'aria-pressed', isActive ? 'true' : 'false' );
 			applyFilters();
+		} );
+	}
+
+	/**
+	 * Sidebar specialities list: everything past the first few sits behind a
+	 * "+N more" toggle (purely a display collapse — every item, shown or
+	 * not, is still a real element the filter click-handler above already
+	 * bound to, so hiding one here never affects filtering itself).
+	 *
+	 * @return {void}
+	 */
+	function initSpecialtiesToggle() {
+		var toggle = document.getElementById( 'dak-directory-specialties-toggle' );
+
+		if ( ! toggle ) {
+			return;
+		}
+
+		var extraItems = document.querySelectorAll( '.dak-directory-specialty-extra' );
+
+		toggle.addEventListener( 'click', function () {
+			var expand = ! toggle.classList.contains( 'is-expanded' );
+
+			extraItems.forEach( function ( item ) {
+				item.classList.toggle( 'dak-hidden', ! expand );
+			} );
+
+			toggle.classList.toggle( 'is-expanded', expand );
+			toggle.setAttribute( 'aria-expanded', expand ? 'true' : 'false' );
+
+			var label = expand ? toggle.getAttribute( 'data-label-less' ) : toggle.getAttribute( 'data-label-more' );
+
+			if ( label ) {
+				toggle.childNodes[ 0 ].nodeValue = label + ' ';
+			}
 		} );
 	}
 

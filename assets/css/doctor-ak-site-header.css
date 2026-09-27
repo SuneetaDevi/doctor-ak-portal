@@ -220,7 +220,14 @@ html {
 }
 
 .dak-site-header-menu .menu-item {
-	position: relative !important;
+	/* Explicitly static, not just "unset" — the active theme/Elementor's own
+	   generic `.menu-item` styling sets position: relative (a common
+	   WordPress nav convention), which would otherwise still win and make
+	   this <li> the sub-menu's containing block again regardless of what
+	   this stylesheet does or doesn't declare for the same selector. See
+	   the comment on .dak-site-header-menu .sub-menu below for why its
+	   containing block needs to be the sticky header itself instead. */
+	position: static !important;
 }
 
 .dak-site-header-menu a {
@@ -284,36 +291,38 @@ html {
    directory with that filter preselected (assets/js/doctor-ak-directory.js),
    and the search bar submits there as a real `?s=` search. */
 
+/* Centered on the whole header, not anchored under whichever nav item
+   opened it. Anchoring a 900px-wide panel to an individual item's own edge
+   (a Doctors-style `left: 0`, or a Services/Clinics-style `right: 0`) only
+   fits when that item happens to sit far enough from the opposite viewport
+   edge — true at very wide viewports, false at plenty of ordinary desktop
+   ones (anywhere from ~1024px up to ~1700px, measured against this nav's
+   real item widths), where the panel quietly ran off one side and got
+   clipped instead. Centering on the header is anchor-position-independent:
+   it only ever depends on the panel's own width vs. the viewport's, which
+   `max-width: calc(100vw - 3rem)` below already guarantees fits. That's why
+   `.dak-site-header-menu .menu-item` above deliberately isn't
+   `position: relative` any more — this needs its containing block to be
+   `.dak-site-header` itself (a valid one: `position: sticky` counts, no
+   extra property needed there), not the individual <li>. */
 .dak-site-header-menu .sub-menu {
 	margin: 0 !important;
 	padding: 0 !important;
 	position: absolute !important;
 	top: 100% !important;
-	left: 0 !important;
+	left: 50% !important;
 	z-index: 1 !important;
 	opacity: 0 !important;
 	visibility: hidden !important;
-	transform: translateY( 6px ) !important;
+	transform: translateX( -50% ) translateY( 6px ) !important;
 	transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s !important;
-}
-
-/* Services and Clinics sit near the right end of the nav — their 900px-wide
-   mega panel, anchored `left: 0` like Doctors', would run off the right edge
-   of the viewport on an ordinary desktop screen. Anchoring these two from
-   their own right edge instead keeps the panel growing leftward, under the
-   nav, so it stays on-screen; Doctors (the left-most item) keeps the
-   default left anchor since it never has this problem. */
-.dak-site-header-services-item .sub-menu,
-.dak-site-header-clinics-item .sub-menu {
-	left: auto !important;
-	right: 0 !important;
 }
 
 .menu-item-has-children:hover > .sub-menu,
 .menu-item-has-children.is-open > .sub-menu {
 	opacity: 1 !important;
 	visibility: visible !important;
-	transform: translateY( 0 ) !important;
+	transform: translateX( -50% ) translateY( 0 ) !important;
 }
 
 .dak-site-header-mega {

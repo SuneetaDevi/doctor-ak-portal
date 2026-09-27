@@ -114,26 +114,44 @@ class Doctors_Directory {
 	 * @return string
 	 */
 	public function render() {
-		$cards          = $this->doctor_cards_data();
-		$doctors_html   = array();
-		$specialities   = array();
+		$cards             = $this->doctor_cards_data();
+		$doctors_html      = array();
+		$speciality_labels = array();
+		$speciality_counts = array();
 
 		foreach ( $cards as $card ) {
 			$doctors_html[] = $this->template_loader->get_template( 'directory/doctor-card.php', $card );
 
+			// A doctor with several specialities is counted once per
+			// speciality here (matches what the filter itself does — picking
+			// "Gynecologist" shows every doctor who has it, including one who
+			// also has other specialities), not once per doctor overall.
 			foreach ( $card['specialization_labels'] as $label ) {
-				$specialities[ mb_strtolower( $label ) ] = $label;
+				$key                       = mb_strtolower( $label );
+				$speciality_labels[ $key ] = $label;
+				$speciality_counts[ $key ] = isset( $speciality_counts[ $key ] ) ? $speciality_counts[ $key ] + 1 : 1;
 			}
 		}
 
-		// Alphabetical — the page's speciality filter chips.
-		asort( $specialities );
+		// Alphabetical — the page's speciality filter list.
+		asort( $speciality_labels );
+
+		$specialities = array();
+
+		foreach ( $speciality_labels as $key => $label ) {
+			$specialities[] = array(
+				'slug'  => $key,
+				'label' => $label,
+				'count' => $speciality_counts[ $key ],
+			);
+		}
 
 		return $this->template_loader->get_template(
 			'directory/doctors-directory.php',
 			array(
 				'doctors_html'    => $doctors_html,
-				'specialities'    => array_values( $specialities ),
+				'specialities'    => $specialities,
+				'doctors_count'   => count( $cards ),
 				// This page's own bundled banner photo — reuses Home_Page's
 				// now-public helper for the file_exists()/cache-busting
 				// logic rather than duplicating it, but points at this

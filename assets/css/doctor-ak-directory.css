@@ -113,25 +113,206 @@
 	}
 }
 
-/* Flexbox rather than the grid this used to be: with City/Area now living
-   in the separate Location panel (see .dak-directory-quick-filters further
-   down) there are few enough items left here — search + up to 4 selects +
-   the view toggle — to fit one line at typical desktop widths, and a flex
-   item can shrink to its content instead of being forced into an equal
-   170px-minimum grid column the way the view toggle was, which is what was
-   pushing it onto its own row before. Still wraps to a stacked column on
-   narrow screens — see the breakpoint below. */
-.dak-directory-filters {
+/* Sidebar (Specialties + Availability filters) + main column (toolbar,
+   results count, doctor list) layout. Sidebar is a fixed column since its
+   content (a short specialities list and four checkboxes) never needs to
+   flex; the main column takes whatever's left and can shrink below its
+   content's natural width (min-width: 0) — without that, the search input
+   and doctor cards inside it would force the whole layout wider than the
+   viewport instead of wrapping/eliding. Stacks on narrow screens (see the
+   breakpoint below), sidebar first. */
+.dak-directory-layout {
+	display: grid !important;
+	grid-template-columns: 240px 1fr !important;
+	align-items: start !important;
+	gap: 2rem !important;
+}
+
+.dak-directory-sidebar {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 1.75rem !important;
+	position: sticky !important;
+	top: 1.5rem !important;
+}
+
+.dak-directory-main {
+	min-width: 0 !important;
+}
+
+@media ( max-width: 900px ) {
+	.dak-directory-layout {
+		grid-template-columns: 1fr !important;
+	}
+
+	.dak-directory-sidebar {
+		position: static !important;
+	}
+}
+
+.dak-directory-sidebar-heading {
+	display: block !important;
+	margin-bottom: 0.85rem !important;
+	font-size: 0.72rem !important;
+	font-weight: 700 !important;
+	letter-spacing: 0.08em !important;
+	text-transform: uppercase !important;
+	color: var( --dak-muted ) !important;
+}
+
+/* Specialties list — one button per speciality (data-spec-filter, see
+   initSpecChips-equivalent wiring in doctor-ak-directory.js), styled as a
+   vertical filter list instead of the old horizontal chip row. */
+.dak-directory-specialty-list {
+	list-style: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.15rem !important;
+}
+
+.dak-directory-specialty-item {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 0.5rem !important;
+	width: 100% !important;
+	box-sizing: border-box !important;
+	padding: 0.55rem 0.7rem !important;
+	border: 0 !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: none !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.9rem !important;
+	font-weight: 500 !important;
+	text-align: left !important;
+	cursor: pointer !important;
+	transition: background-color 0.15s ease, color 0.15s ease !important;
+}
+
+.dak-directory-specialty-item:hover {
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-directory-specialty-item.is-active {
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+	font-weight: 700 !important;
+}
+
+.dak-directory-specialty-count {
+	flex: 0 0 auto !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.82rem !important;
+	font-weight: 600 !important;
+}
+
+.dak-directory-specialty-item.is-active .dak-directory-specialty-count {
+	color: rgba( 255, 255, 255, 0.85 ) !important;
+}
+
+.dak-directory-specialty-extra.dak-hidden {
+	display: none !important;
+}
+
+.dak-directory-specialties-toggle {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.3rem !important;
+	margin-top: 0.4rem !important;
+	padding: 0.3rem 0.7rem 0.3rem 0 !important;
+	border: 0 !important;
+	background: none !important;
+	color: var( --dak-primary-dark ) !important;
+	font-size: 0.85rem !important;
+	font-weight: 700 !important;
+	cursor: pointer !important;
+}
+
+.dak-directory-specialties-toggle svg {
+	width: 13px !important;
+	height: 13px !important;
+	transition: transform 0.15s ease !important;
+}
+
+.dak-directory-specialties-toggle.is-expanded svg {
+	transform: rotate( 180deg ) !important;
+}
+
+/* Availability/gender filters — real checkbox visuals over the existing
+   button-based on/off toggles (initTogglePill() in doctor-ak-directory.js
+   already flips these between aria-pressed="true"/"false"; only the visual
+   language changed here, not the interaction). */
+.dak-directory-filter-checkbox {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.65rem !important;
+	margin-bottom: 0.75rem !important;
+	font-size: 0.9rem !important;
+	color: var( --dak-text ) !important;
+	cursor: pointer !important;
+}
+
+.dak-directory-filter-checkbox:last-child {
+	margin-bottom: 0 !important;
+}
+
+.dak-directory-checkbox-box {
+	display: inline-flex !important;
+	flex: 0 0 auto !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 18px !important;
+	height: 18px !important;
+	padding: 0 !important;
+	border: 1.5px solid var( --dak-border ) !important;
+	border-radius: 4px !important;
+	background: var( --dak-bg-card ) !important;
+	color: transparent !important;
+	cursor: pointer !important;
+	transition: background-color 0.15s ease, border-color 0.15s ease !important;
+}
+
+.dak-directory-checkbox-box svg {
+	width: 11px !important;
+	height: 11px !important;
+	transform: none !important;
+}
+
+.dak-directory-checkbox-box[aria-pressed='true'] {
+	background: var( --dak-primary ) !important;
+	border-color: var( --dak-primary ) !important;
+	color: #fff !important;
+}
+
+/* Toolbar: search + Near me + sort, all on one row at typical desktop
+   widths, wrapping to a stacked column on narrower ones. */
+.dak-directory-toolbar {
 	display: flex !important;
 	flex-wrap: wrap !important;
 	align-items: center !important;
 	gap: 0.75rem !important;
-	margin-bottom: 1.75rem !important;
-	padding: 1rem !important;
-	background: var( --dak-bg-card ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-md ) !important;
-	box-shadow: var( --dak-shadow ) !important;
+	margin-bottom: 1rem !important;
+}
+
+.dak-directory-results-count {
+	margin: 0 0 1.25rem !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.9rem !important;
+}
+
+.dak-directory-sort-field {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.5rem !important;
+	flex: 0 0 auto !important;
+}
+
+.dak-directory-sort-label {
+	color: var( --dak-muted ) !important;
+	font-size: 0.9rem !important;
+	white-space: nowrap !important;
 }
 
 .dak-directory-search {
@@ -142,7 +323,6 @@
 
 #dak-directory-sort {
 	width: auto !important;
-	flex: 1 1 150px !important;
 	min-width: 0 !important;
 }
 
@@ -186,22 +366,15 @@
 
 @media ( max-width: 640px ) {
 	.dak-directory-search,
-	#dak-directory-sort {
+	.dak-directory-sort-field {
 		flex-basis: 100% !important;
 	}
 }
 
-/* Quick-filter pills row — Near me (detects the visitor's location),
-   Video Consultation and Availability (all plain on/off toggles, see
-   initTogglePill() in doctor-ak-directory.js). */
-.dak-directory-quick-filters {
-	display: flex !important;
-	flex-wrap: wrap !important;
-	align-items: center !important;
-	gap: 0.6rem !important;
-	margin-bottom: 1.75rem !important;
-}
-
+/* Near me — the one quick-filter pill still styled this way (Video
+   Consultation and Availability moved into the sidebar as checkboxes above;
+   see initTogglePill() in doctor-ak-directory.js for all of their shared
+   on/off wiring). */
 .dak-directory-pill {
 	display: inline-flex !important;
 	align-items: center !important;
