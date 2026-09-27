@@ -12,6 +12,7 @@
  * @var string $phone         Contact phone, or ''.
  * @var int    $doctor_count  Number of doctors aligned to this clinic.
  * @var string $profile_url   URL of this clinic's [clinic_profile_view] page.
+ * @var string $map_url       Google Maps search link for this clinic's location, or '' if nothing is known about where it is (see Clinic_Locations::decode_row()).
  */
 
 // Prevent direct file access.
@@ -22,6 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 $dak_clinic_card_icons = array(
 	'pin'      => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18s6-5.2 6-9.8A6 6 0 0 0 4 8.2C4 12.8 10 18 10 18z"/><circle cx="10" cy="8" r="2"/></svg>',
 	'person'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.2"/><path d="M4 17c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/></svg>',
+	'map'      => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5 3 5v11.5l4-1.5 6 1.5 4-1.5V3.5l-4 1.5-6-1.5z"/><path d="M7 3.5v11.5M13 5v11.5"/></svg>',
 );
 
 $dak_clinic_card_location_line = implode( ', ', array_filter( array( $address, $area_label, $city_label ) ) );
@@ -60,6 +62,12 @@ $dak_clinic_card_location_line = implode( ', ', array_filter( array( $address, $
 			<a class="dak-button dak-button-primary dak-button-block" href="<?php echo esc_url( $profile_url ); ?>">
 				<?php esc_html_e( 'View Doctors', 'doctor-ak-portal' ); ?>
 			</a>
+			<?php if ( '' !== $map_url ) : ?>
+				<a class="dak-button dak-button-secondary dak-button-block" href="<?php echo esc_url( $map_url ); ?>" target="_blank" rel="noopener noreferrer">
+					<span class="dak-nav-icon" aria-hidden="true"><?php echo $dak_clinic_card_icons['map']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+					<?php esc_html_e( 'View on Map', 'doctor-ak-portal' ); ?>
+				</a>
+			<?php endif; ?>
 		</div>
 	</div>
 </div>

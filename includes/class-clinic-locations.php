@@ -278,19 +278,49 @@ class Clinic_Locations {
 		$city    = $row['city'];
 		$area    = $row['area'];
 
+		$country_label = '' !== $country ? Locations::country_label( $country ) : '';
+		$city_label    = '' !== $city ? Locations::city_label( $country, $city ) : '';
+		$area_label    = '' !== $area ? Locations::area_label( $country, $city, $area ) : '';
+
 		return array(
 			'id'            => (int) $row['id'],
 			'name'          => $row['name'],
 			'address'       => $row['address'],
 			'country'       => $country,
-			'country_label' => '' !== $country ? Locations::country_label( $country ) : '',
+			'country_label' => $country_label,
 			'city'          => $city,
-			'city_label'    => '' !== $city ? Locations::city_label( $country, $city ) : '',
+			'city_label'    => $city_label,
 			'area'          => $area,
-			'area_label'    => '' !== $area ? Locations::area_label( $country, $city, $area ) : '',
+			'area_label'    => $area_label,
 			'phone'         => $row['phone'],
 			'contact_email' => $row['contact_email'],
 			'keywords'      => isset( $row['keywords'] ) ? $row['keywords'] : '',
+			'map_url'       => self::map_url( $row['name'], $row['address'], $area_label, $city_label, $country_label ),
 		);
+	}
+
+	/**
+	 * A Google Maps search link for a clinic — no stored coordinates, just
+	 * everything we know about where it is, so a visitor can tap through to
+	 * see it on a map/get directions. Google's search endpoint geocodes the
+	 * free-text query itself; no API key needed.
+	 *
+	 * @param string $name          Clinic name.
+	 * @param string $address       Street address, or ''.
+	 * @param string $area_label    Area label, or ''.
+	 * @param string $city_label    City label, or ''.
+	 * @param string $country_label Country label, or ''.
+	 * @return string Empty when there's nothing usable to search for (bare name only, no location at all).
+	 */
+	private static function map_url( $name, $address, $area_label, $city_label, $country_label ) {
+		$location_parts = array_filter( array( $address, $area_label, $city_label, $country_label ) );
+
+		if ( empty( $location_parts ) ) {
+			return '';
+		}
+
+		$query = trim( $name . ' ' . implode( ', ', $location_parts ) );
+
+		return 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode( $query );
 	}
 }

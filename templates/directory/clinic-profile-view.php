@@ -5,7 +5,7 @@
  *
  * @package DoctorAKPortal\Templates
  *
- * @var array|null $clinic Clinic_Locations::find() row, or null if no valid clinic_id was given.
+ * @var array|null $clinic Clinic_Locations::find() row (includes 'map_url', a Google Maps search link, or '' — see Clinic_Locations::decode_row()), or null if no valid clinic_id was given.
  * @var string[]   $doctors_html Pre-rendered directory/doctor-card.php output, one per doctor at this clinic.
  * @var string     $directory_url "All Clinics" breadcrumb link.
  */
@@ -19,6 +19,7 @@ $dak_clinic_view_icons = array(
 	'pin'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18s6-5.2 6-9.8A6 6 0 0 0 4 8.2C4 12.8 10 18 10 18z"/><circle cx="10" cy="8" r="2"/></svg>',
 	'phone' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3.5h2.3l1 3.3-1.6 1.4a9 9 0 0 0 4.1 4.1l1.4-1.6 3.3 1v2.3c0 .8-.7 1.4-1.5 1.3C8.7 15 5 11.3 4.2 6c-.1-.8.5-1.5 1.3-1.5z"/></svg>',
 	'mail'  => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="15" height="11" rx="1.5"/><path d="M3 5.5l7 5.5 7-5.5"/></svg>',
+	'map'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5 3 5v11.5l4-1.5 6 1.5 4-1.5V3.5l-4 1.5-6-1.5z"/><path d="M7 3.5v11.5M13 5v11.5"/></svg>',
 );
 
 $dak_clinic_location_line = $clinic ? implode( ', ', array_filter( array( $clinic['address'], $clinic['area_label'], $clinic['city_label'] ) ) ) : '';
@@ -64,6 +65,14 @@ $dak_clinic_location_line = $clinic ? implode( ', ', array_filter( array( $clini
 							<span class="dak-profile-stat-icon" aria-hidden="true"><?php echo $dak_clinic_view_icons['mail']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 							<strong><?php esc_html_e( 'Email', 'doctor-ak-portal' ); ?></strong>
 							<span><?php echo esc_html( $clinic['contact_email'] ); ?></span>
+						</a>
+					<?php endif; ?>
+
+					<?php if ( '' !== $clinic['map_url'] ) : ?>
+						<a class="dak-profile-stat dak-profile-stat-link" href="<?php echo esc_url( $clinic['map_url'] ); ?>" target="_blank" rel="noopener noreferrer">
+							<span class="dak-profile-stat-icon" aria-hidden="true"><?php echo $dak_clinic_view_icons['map']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<strong><?php esc_html_e( 'View on Map', 'doctor-ak-portal' ); ?></strong>
+							<span><?php esc_html_e( 'Open in Google Maps', 'doctor-ak-portal' ); ?></span>
 						</a>
 					<?php endif; ?>
 

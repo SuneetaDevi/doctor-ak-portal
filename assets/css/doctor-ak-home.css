@@ -18,6 +18,22 @@
  * same button/card components.
  */
 
+/* The hero and video-gallery bands below break out to the true viewport
+   width (100vw) so they reach the page edges regardless of any theme
+   container wrapped around the shortcode's output. `100vw` can overshoot
+   the actually-visible width by a vertical scrollbar's thickness, which
+   would otherwise add a page-level horizontal scrollbar on this one page.
+   `html` (not `body`, and not `.dak-home` — clipping overflow on either of
+   those would clip the full-bleed sections themselves, defeating the
+   breakout) is the standard place to absorb that overshoot: the site
+   header's sticky positioning is explicitly anchored to <body> (see
+   doctor-ak-site-header.css), and only <body>'s own overflow affects that,
+   so this leaves it untouched. Scoped to this stylesheet, so it only
+   applies while the home page itself is loaded. */
+html {
+	overflow-x: hidden !important;
+}
+
 /* Side gutter for the page's contained sections. The full-bleed hero cancels
    it out with a matching negative margin and aligns its own text to it, so
    everything reads from this one value — change the gutter here and the hero
@@ -124,8 +140,21 @@
 	position: relative !important;
 	display: flex !important;
 	align-items: center !important;
+	width: 100vw !important;
 	min-height: 580px !important;
-	margin: 0 calc( -1 * var( --dak-home-gutter ) ) !important;
+	/* True viewport-edge full bleed, not just "cancel this page's own
+	   gutter" — a WordPress theme's page template commonly wraps shortcode
+	   output in its own centered/padded container, which the old
+	   calc(-1 * var(--dak-home-gutter)) margin never accounted for, leaving
+	   a visible sliver of the theme's background on both sides.
+	   `calc(50% - 50vw)` (not `left: 50%` + `margin-left: -50vw` — that pair
+	   only cancels out when the parent is already viewport-width, and
+	   visibly misaligns/clips the content otherwise) re-centers a
+	   100vw-wide box on the viewport no matter how narrow or padded the
+	   surrounding theme container is, as long as that container is itself
+	   horizontally centered — true of every ordinary centered page layout. */
+	margin-left: calc( 50% - 50vw ) !important;
+	margin-right: calc( 50% - 50vw ) !important;
 	padding: var( --dak-space-7 ) var( --dak-home-gutter ) 7rem !important;
 	overflow: hidden !important;
 	background: linear-gradient( 135deg, var( --dak-secondary ) 0%, var( --dak-primary-dark ) 100% ) !important;
@@ -2150,13 +2179,17 @@
    opens it with sound in the lightbox below. A fixed dark treatment in both
    themes, like the other dark bands on this page. */
 
-/* Full-bleed: negative margins cancel the page gutter, and the padding puts
-   the content back on the same gutter (same trick as the hero). */
+/* Full-bleed to the true viewport edge (same trick as the hero, see
+   .dak-home-hero-banner above) — not just cancelling this page's own
+   gutter, which left a sliver of the theme's background showing whenever
+   the page content sits inside a narrower theme container. The padding
+   puts the content back on the same gutter. */
 .dak-home-videos {
 	position: relative !important;
+	width: 100vw !important;
 	overflow: hidden !important;
-	margin-left: calc( -1 * var( --dak-home-gutter ) ) !important;
-	margin-right: calc( -1 * var( --dak-home-gutter ) ) !important;
+	margin-left: calc( 50% - 50vw ) !important;
+	margin-right: calc( 50% - 50vw ) !important;
 	padding: var( --dak-space-8 ) var( --dak-home-gutter ) !important;
 	border-radius: 0 !important;
 	background:
