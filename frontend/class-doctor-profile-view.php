@@ -122,11 +122,18 @@ class Doctor_Profile_View {
 		$specialization_slugs = (array) get_user_meta( $doctor->ID, 'doctor_ak_specializations', true );
 		$all_specializations   = Specializations::get_all();
 
-		$specialization_labels = array_map(
-			function ( $slug ) use ( $all_specializations ) {
-				return isset( $all_specializations[ $slug ] ) ? $all_specializations[ $slug ] : $slug;
-			},
-			$specialization_slugs
+		// Only real specializations — a stray free-typed value in a
+		// doctor's meta (e.g. a procedure/condition) isn't one, and would
+		// otherwise show up as its own tag on the profile.
+		$specialization_labels = array_values(
+			array_filter(
+				array_map(
+					function ( $slug ) use ( $all_specializations ) {
+						return isset( $all_specializations[ $slug ] ) ? $all_specializations[ $slug ] : '';
+					},
+					$specialization_slugs
+				)
+			)
 		);
 
 		$display_name = trim( $doctor->first_name . ' ' . $doctor->last_name );

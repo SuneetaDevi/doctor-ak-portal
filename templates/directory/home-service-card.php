@@ -14,7 +14,15 @@
  * @var int    $doctor_count How many doctors offer this service.
  * @var string $image_url    Service image URL, or '' if none uploaded.
  * @var string $profile_url  URL of this service's [service_profile_view] page.
+ * @var string $category       Service category slug, or '' if uncategorized. Only present when rendered by Services_Directory (the home page's own services section doesn't pass it).
+ * @var string $category_label Service category display label, or ''. Same availability note as $category.
  */
+
+// Not every caller of this shared card partial passes category data (the
+// home page's own services section doesn't) — default so this stays a
+// plain listing there instead of a notice.
+$category       = isset( $category ) ? $category : '';
+$category_label = isset( $category_label ) ? $category_label : '';
 
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -34,7 +42,7 @@ $dak_home_service_icons = array(
 // to a word count, so the excerpt never mid-cuts a tag.
 $dak_home_service_excerpt = wp_trim_words( wp_strip_all_tags( str_replace( '<', ' <', $description ) ), 22 );
 ?>
-<article class="dak-home-service-row">
+<article class="dak-home-service-row" data-search-name="<?php echo esc_attr( mb_strtolower( $name ) ); ?>" data-search-category="<?php echo esc_attr( $category ); ?>">
 	<div class="dak-home-service-row-body">
 		<span class="dak-home-service-row-icon" aria-hidden="true"><?php echo $dak_home_service_icons['pulse']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 		<h3><?php echo esc_html( $name ); ?></h3>
@@ -44,6 +52,10 @@ $dak_home_service_excerpt = wp_trim_words( wp_strip_all_tags( str_replace( '<', 
 		<?php endif; ?>
 
 		<div class="dak-home-service-row-meta">
+			<?php if ( '' !== $category_label ) : ?>
+				<span class="dak-home-service-row-chip dak-home-service-row-chip-category"><?php echo esc_html( $category_label ); ?></span>
+			<?php endif; ?>
+
 			<span class="dak-home-service-row-chip">
 				<span aria-hidden="true"><?php echo $dak_home_service_icons['tag']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 				<?php echo esc_html( $price_label ); ?>

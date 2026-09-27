@@ -1449,6 +1449,15 @@
 	height: 14px !important;
 }
 
+.dak-home-service-row-chip-category {
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-services-directory-search {
+	margin-bottom: var( --dak-space-5, 2rem ) !important;
+}
+
 .dak-home-service-row-link {
 	display: inline-flex !important;
 	align-items: center !important;
