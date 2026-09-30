@@ -41,7 +41,6 @@ $dak_profile_view_icons = array(
 	'phone'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3.5h2.3l1 3.3-1.6 1.4a9 9 0 0 0 4.1 4.1l1.4-1.6 3.3 1v2.3c0 .8-.7 1.4-1.5 1.3C8.7 15 5 11.3 4.2 6c-.1-.8.5-1.5 1.3-1.5z"/></svg>',
 	'video'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="10" height="10" rx="1.5"/><path d="M12.5 8.5l5-2.5v8l-5-2.5"/></svg>',
 	'award'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7.5" r="4.5"/><path d="M7.3 11.4L6 17.5l4-2 4 2-1.3-6.1"/></svg>',
-	'chevron' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8l4 4 4-4"/></svg>',
 );
 ?>
 <div class="dak-portal dak-directory">
@@ -186,7 +185,7 @@ $dak_profile_view_icons = array(
 							<span class="dak-profile-card-title-icon" aria-hidden="true"><?php echo $dak_profile_view_icons['badge']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 							<?php esc_html_e( 'Services', 'doctor-ak-portal' ); ?>
 						</h2>
-						<p class="dak-field-hint"><?php esc_html_e( 'Pick a service to see which of this doctor\'s clinics offer it and its fee there.', 'doctor-ak-portal' ); ?></p>
+						<p class="dak-field-hint"><?php esc_html_e( 'Select a clinic to see its fee and book — you\'ll choose a date and time on the next step.', 'doctor-ak-portal' ); ?></p>
 
 						<div class="dak-profile-services" id="dak-profile-services-list">
 							<?php if ( $doctor['video_consultation'] ) : ?>
@@ -225,8 +224,8 @@ $dak_profile_view_icons = array(
 							<?php endif; ?>
 
 							<?php foreach ( $doctor['services'] as $dak_service ) : ?>
-								<div class="dak-profile-service-row" data-service-row>
-									<button type="button" class="dak-profile-service-header" data-service-expand aria-expanded="false">
+								<div class="dak-profile-service-row">
+									<div class="dak-profile-service-header">
 										<span class="dak-profile-clinic-info">
 											<strong><?php echo esc_html( $dak_service['name'] ); ?></strong>
 											<span class="dak-profile-clinic-meta">
@@ -242,10 +241,9 @@ $dak_profile_view_icons = array(
 											</span>
 										</span>
 										<span class="dak-profile-service-header-price"><?php echo esc_html( $dak_service['price_label'] ); ?></span>
-										<span class="dak-profile-service-chevron" aria-hidden="true"><?php echo $dak_profile_view_icons['chevron']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-									</button>
+									</div>
 
-									<div class="dak-profile-service-clinics dak-hidden" data-service-clinics>
+									<div class="dak-profile-service-clinics">
 										<?php foreach ( $dak_service['clinics'] as $dak_service_clinic ) : ?>
 											<div
 												class="dak-profile-clinic-row"

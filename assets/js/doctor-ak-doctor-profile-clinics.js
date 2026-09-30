@@ -1,21 +1,20 @@
 /**
  * Doctor AK Portal — public doctor profile page's selectable Services list.
  *
- * Two behaviours (see templates/directory/doctor-profile-view.php):
- *
- * - Clicking a service's header expands/collapses its clinic list below it
- *   (accordion-style — expanding one collapses whichever other was open).
- * - Clicking a clinic row (nested under a service, or the standalone
- *   "Online Video Consultation" row) selects it (single-select across the
- *   whole list) and updates the sidebar booking card to that row's own fee,
- *   enabling the (initially disabled) "Book Appointment" button there. That
- *   button carries `data-dak-book-appointment` like every other one on the
- *   site, so once enabled the site-wide doctor-ak-booking-redirect.js still
- *   handles the actual click-through, reading whichever
- *   `data-booking-type`/`data-service-id`/`data-clinic-id` this file has
- *   just set on it — carrying the service (and clinic, when one applies)
- *   the patient just picked here straight into the booking wizard, instead
- *   of being asked again there (see Booking_Page::resolved_selection()).
+ * Every service is listed with all of its clinics always visible
+ * underneath it (see templates/directory/doctor-profile-view.php) — no
+ * expand/collapse. Clicking a clinic row (nested under a service, or the
+ * standalone "Online Video Consultation" row) selects it (single-select
+ * across the whole list) and updates the sidebar booking card to that row's
+ * own fee, enabling the (initially disabled) "Book Appointment" button
+ * there. That button carries `data-dak-book-appointment` like every other
+ * one on the site, so once enabled the site-wide
+ * doctor-ak-booking-redirect.js still handles the actual click-through,
+ * reading whichever `data-booking-type`/`data-service-id`/`data-clinic-id`
+ * this file has just set on it — carrying the service (and clinic, when one
+ * applies) the patient just picked here straight into the booking wizard,
+ * instead of being asked again there (see
+ * Booking_Page::resolved_selection()).
  */
 ( function () {
 	'use strict';
@@ -29,58 +28,19 @@
 		}
 
 		var rows = Array.prototype.slice.call( list.querySelectorAll( '[data-clinic-select]' ) );
-		var serviceRows = Array.prototype.slice.call( list.querySelectorAll( '[data-service-row]' ) );
 
-		wireExpand();
-		wireSelect();
-
-		function wireExpand() {
-			serviceRows.forEach( function ( serviceRow ) {
-				var header = serviceRow.querySelector( '[data-service-expand]' );
-				var clinics = serviceRow.querySelector( '[data-service-clinics]' );
-
-				if ( ! header || ! clinics ) {
-					return;
-				}
-
-				header.addEventListener( 'click', function () {
-					var isOpen = ! clinics.classList.contains( 'dak-hidden' );
-
-					serviceRows.forEach( function ( otherRow ) {
-						var otherHeader = otherRow.querySelector( '[data-service-expand]' );
-						var otherClinics = otherRow.querySelector( '[data-service-clinics]' );
-
-						if ( otherClinics ) {
-							otherClinics.classList.add( 'dak-hidden' );
-						}
-
-						if ( otherHeader ) {
-							otherHeader.setAttribute( 'aria-expanded', 'false' );
-						}
-					} );
-
-					if ( ! isOpen ) {
-						clinics.classList.remove( 'dak-hidden' );
-						header.setAttribute( 'aria-expanded', 'true' );
-					}
-				} );
+		rows.forEach( function ( row ) {
+			row.addEventListener( 'click', function () {
+				selectClinic( row );
 			} );
-		}
 
-		function wireSelect() {
-			rows.forEach( function ( row ) {
-				row.addEventListener( 'click', function () {
+			row.addEventListener( 'keydown', function ( event ) {
+				if ( 'Enter' === event.key || ' ' === event.key ) {
+					event.preventDefault();
 					selectClinic( row );
-				} );
-
-				row.addEventListener( 'keydown', function ( event ) {
-					if ( 'Enter' === event.key || ' ' === event.key ) {
-						event.preventDefault();
-						selectClinic( row );
-					}
-				} );
+				}
 			} );
-		}
+		} );
 
 		function selectClinic( selectedRow ) {
 			rows.forEach( function ( row ) {
