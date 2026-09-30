@@ -438,10 +438,16 @@ class Admin_User_Handler {
 
 		if ( $is_for_doctor ) {
 			$posted_service_ids         = isset( $_POST['service_id'] ) && is_array( $_POST['service_id'] ) ? $_POST['service_id'] : array();
+			$posted_service_row_keys    = isset( $_POST['service_row_key'] ) && is_array( $_POST['service_row_key'] ) ? $_POST['service_row_key'] : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- looked up (not output) below, and only ever used as an array key into $posted_service_clinic_ids.
 			$posted_service_names       = isset( $_POST['service_name'] ) && is_array( $_POST['service_name'] ) ? $_POST['service_name'] : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Services::sanitize_fields_from_request() unslashes/sanitizes each field itself.
 			$posted_service_categories  = isset( $_POST['service_category'] ) && is_array( $_POST['service_category'] ) ? $_POST['service_category'] : array();
 			$posted_service_charges     = isset( $_POST['service_charge'] ) && is_array( $_POST['service_charge'] ) ? $_POST['service_charge'] : array();
 			$posted_service_durations   = isset( $_POST['service_duration_minutes'] ) && is_array( $_POST['service_duration_minutes'] ) ? $_POST['service_duration_minutes'] : array();
+			// { row_key => [clinic_location_id, ...] } — which clinics each
+			// row's "Available at" checkboxes had checked (see
+			// doctor-ak-services-editor.js); a row with none checked means
+			// "every clinic this doctor practices at", not "no clinics".
+			$posted_service_clinic_ids  = isset( $_POST['service_clinic_ids'] ) && is_array( $_POST['service_clinic_ids'] ) ? $_POST['service_clinic_ids'] : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- every ID absint()'d and re-validated against Clinic_Locations::find() below before use.
 
 			foreach ( $posted_service_names as $dak_service_row_index => $posted_service_name ) {
 				if ( '' === trim( (string) $posted_service_name ) ) {
@@ -471,6 +477,29 @@ class Admin_User_Handler {
 					$errors['services'] = $service_fields->get_error_message();
 					continue;
 				}
+
+				// Set directly on the sanitized $fields (rather than routed
+				// through sanitize_fields_from_request()'s own
+				// 'has_portfolio_fields' gate, which bundles clinic_charges
+				// together with description/keywords) — this repeater has no
+				// description/keywords fields of its own, and gating on that
+				// marker here would make every save blank out whatever
+				// description an admin had already set on this service from
+				// the separate Services section. Always set, even empty:
+				// Services::update() writes it whenever the key is merely
+				// present, so a deliberate "every box unchecked" needs to
+				// arrive as an explicit empty array here, not be left unset.
+				$dak_row_key             = isset( $posted_service_row_keys[ $dak_service_row_index ] ) ? sanitize_text_field( wp_unslash( $posted_service_row_keys[ $dak_service_row_index ] ) ) : '';
+				$dak_row_clinic_ids      = isset( $posted_service_clinic_ids[ $dak_row_key ] ) && is_array( $posted_service_clinic_ids[ $dak_row_key ] ) ? array_map( 'absint', wp_unslash( $posted_service_clinic_ids[ $dak_row_key ] ) ) : array();
+				$dak_row_clinic_charges  = array();
+
+				foreach ( $dak_row_clinic_ids as $dak_clinic_location_id ) {
+					if ( $dak_clinic_location_id > 0 && Clinic_Locations::find( $dak_clinic_location_id ) ) {
+						$dak_row_clinic_charges[ $dak_clinic_location_id ] = number_format( (float) $service_fields['charge'], 2, '.', '' );
+					}
+				}
+
+				$service_fields['clinic_charges'] = $dak_row_clinic_charges;
 
 				$services_to_create[] = array(
 					'id'     => $posted_service_id,

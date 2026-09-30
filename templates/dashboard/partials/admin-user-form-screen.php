@@ -346,7 +346,7 @@ $dak_editing_video_clinic_for_js = $editing_video_clinic ? array(
 				</div>
 
 			<div class="dak-field">
-				<div class="dak-services-editor" data-services-editor data-categories="<?php echo esc_attr( wp_json_encode( $service_categories ) ); ?>">
+				<div class="dak-services-editor" data-services-editor data-categories="<?php echo esc_attr( wp_json_encode( $service_categories ) ); ?>" data-clinic-select-id="dak-admin-user-clinic-locations">
 					<div class="dak-services-row-header<?php echo empty( $editing_services ) ? ' dak-hidden' : ''; ?>" data-services-row-header>
 						<span><?php esc_html_e( 'Service Name', 'doctor-ak-portal' ); ?></span>
 						<span><?php esc_html_e( 'Category', 'doctor-ak-portal' ); ?></span>
@@ -356,18 +356,22 @@ $dak_editing_video_clinic_for_js = $editing_video_clinic ? array(
 					</div>
 					<div class="dak-services-rows" data-services-rows>
 						<?php foreach ( $editing_services as $dak_editing_service ) : ?>
-							<div class="dak-services-row" data-services-row>
-								<input type="hidden" name="service_id[]" value="<?php echo esc_attr( $dak_editing_service['id'] ); ?>">
-								<input type="text" name="service_name[]" value="<?php echo esc_attr( $dak_editing_service['name'] ); ?>" placeholder="<?php esc_attr_e( 'e.g. OPD Consultation', 'doctor-ak-portal' ); ?>">
-								<select name="service_category[]">
-									<option value=""><?php esc_html_e( 'No category', 'doctor-ak-portal' ); ?></option>
-									<?php foreach ( $service_categories as $dak_service_cat_slug => $dak_service_cat_label ) : ?>
-										<option value="<?php echo esc_attr( $dak_service_cat_slug ); ?>" <?php selected( $dak_editing_service['category'], $dak_service_cat_slug ); ?>><?php echo esc_html( $dak_service_cat_label ); ?></option>
-									<?php endforeach; ?>
-								</select>
-								<input type="number" name="service_charge[]" value="<?php echo esc_attr( $dak_editing_service['charge'] ); ?>" min="0" step="0.01">
-								<input type="number" name="service_duration_minutes[]" value="<?php echo esc_attr( $dak_editing_service['duration_minutes'] ); ?>" min="0" max="480">
-								<button type="button" class="dak-services-remove" data-services-remove-row aria-label="<?php esc_attr_e( 'Remove service', 'doctor-ak-portal' ); ?>" title="<?php esc_attr_e( 'Removes it from this form only — this existing service stays as-is unless you delete it from the Services section.', 'doctor-ak-portal' ); ?>">&times;</button>
+							<div class="dak-services-row" data-services-row data-row-key="<?php echo esc_attr( $dak_editing_service['id'] ); ?>" data-checked-clinic-ids="<?php echo esc_attr( implode( ',', array_keys( $dak_editing_service['clinic_charges'] ) ) ); ?>">
+								<div class="dak-services-row-fields">
+									<input type="hidden" name="service_id[]" value="<?php echo esc_attr( $dak_editing_service['id'] ); ?>">
+									<input type="hidden" name="service_row_key[]" value="<?php echo esc_attr( $dak_editing_service['id'] ); ?>">
+									<input type="text" name="service_name[]" value="<?php echo esc_attr( $dak_editing_service['name'] ); ?>" placeholder="<?php esc_attr_e( 'e.g. OPD Consultation', 'doctor-ak-portal' ); ?>">
+									<select name="service_category[]">
+										<option value=""><?php esc_html_e( 'No category', 'doctor-ak-portal' ); ?></option>
+										<?php foreach ( $service_categories as $dak_service_cat_slug => $dak_service_cat_label ) : ?>
+											<option value="<?php echo esc_attr( $dak_service_cat_slug ); ?>" <?php selected( $dak_editing_service['category'], $dak_service_cat_slug ); ?>><?php echo esc_html( $dak_service_cat_label ); ?></option>
+										<?php endforeach; ?>
+									</select>
+									<input type="number" name="service_charge[]" value="<?php echo esc_attr( $dak_editing_service['charge'] ); ?>" min="0" step="0.01">
+									<input type="number" name="service_duration_minutes[]" value="<?php echo esc_attr( $dak_editing_service['duration_minutes'] ); ?>" min="0" max="480">
+									<button type="button" class="dak-services-remove" data-services-remove-row aria-label="<?php esc_attr_e( 'Remove service', 'doctor-ak-portal' ); ?>" title="<?php esc_attr_e( 'Removes it from this form only — this existing service stays as-is unless you delete it from the Services section.', 'doctor-ak-portal' ); ?>">&times;</button>
+								</div>
+								<div class="dak-services-row-clinics dak-hidden" data-services-row-clinics></div>
 							</div>
 						<?php endforeach; ?>
 					</div>
@@ -375,7 +379,7 @@ $dak_editing_video_clinic_for_js = $editing_video_clinic ? array(
 						<?php esc_html_e( '+ Add Service', 'doctor-ak-portal' ); ?>
 					</button>
 				</div>
-				<p class="dak-field-hint"><?php esc_html_e( 'Optional — more services can always be added later from the admin "Services" section. Removing a row here only skips it on Save; delete a service permanently from the Services section.', 'doctor-ak-portal' ); ?></p>
+				<p class="dak-field-hint"><?php esc_html_e( 'Optional — more services can always be added later from the admin "Services" section. Removing a row here only skips it on Save; delete a service permanently from the Services section. Pick clinics per service below to offer it only at specific clinics — leave all unchecked to offer it at every clinic this doctor practices at.', 'doctor-ak-portal' ); ?></p>
 				<span class="dak-field-error" data-field="services"></span>
 			</div>
 

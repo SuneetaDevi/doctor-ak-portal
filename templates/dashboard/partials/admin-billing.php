@@ -12,11 +12,12 @@
  * @var array      $summary           Revenue_Ledger::summary() for the active filters.
  * @var array      $doctor_options    Doctor user ID => { name, is_disabled }.
  * @var array      $clinics_by_doctor Doctor user ID => list of decoded Clinics rows.
+ * @var array      $clinic_location_groups Clinic filter options — location key ('loc:<clinic_location_id>' or 'row:<clinics id>') => { label, clinic_ids }, alphabetical by label. One entry per physical clinic regardless of how many doctors practise there (see Admin_Dashboard's billing section) — the Doctor filter next to it already covers "by doctor".
  * @var array      $settlements       Settlement_Manager::all_flat_for_admin() rows (filtered to the selected doctor, if any).
  * @var array|null $outstanding       Revenue_Ledger::outstanding_for_doctor() for the selected doctor, or null if no doctor filter is active.
  * @var string     $billing_url       Unfiltered URL of this section, for the filter form and "Clear" link.
  * @var string     $view              Active grouping for the balances list: 'doctor' (default) or 'clinic'.
- * @var array      $filters           Active filter values: doctor_id, clinic_id, date_from, date_to.
+ * @var array      $filters           Active filter values: doctor_id, clinic_id (a $clinic_location_groups key, '-1' for video-only, or ''), date_from, date_to.
  */
 
 // Prevent direct file access.
@@ -33,20 +34,6 @@ $dak_icons = array(
 
 $dak_has_filters = array_filter( $filters, function ( $value ) { return '' !== $value && 0 !== $value; } );
 $dak_selected_doctor = ! empty( $filters['doctor_id'] ) ? (int) $filters['doctor_id'] : 0;
-
-$dak_clinic_choices = array();
-foreach ( $clinics_by_doctor as $dak_doctor_id => $dak_doctor_clinics ) {
-	foreach ( $dak_doctor_clinics as $dak_clinic_row ) {
-		if ( 'physical' !== $dak_clinic_row['type'] ) {
-			continue;
-		}
-		$dak_clinic_choices[ $dak_clinic_row['id'] ] = sprintf(
-			'%1$s — %2$s',
-			isset( $doctor_options[ $dak_doctor_id ] ) ? $doctor_options[ $dak_doctor_id ]['name'] : '',
-			$dak_clinic_row['name']
-		);
-	}
-}
 ?>
 <div class="dak-page-head">
 	<div>
@@ -123,8 +110,8 @@ foreach ( $clinics_by_doctor as $dak_doctor_id => $dak_doctor_clinics ) {
 			<select id="dak-billing-clinic" name="clinic_id">
 				<option value=""><?php esc_html_e( 'All clinics', 'doctor-ak-portal' ); ?></option>
 				<option value="-1" <?php selected( '-1' === (string) $filters['clinic_id'] ); ?>><?php esc_html_e( 'Video consultations only', 'doctor-ak-portal' ); ?></option>
-				<?php foreach ( $dak_clinic_choices as $dak_clinic_id => $dak_clinic_label ) : ?>
-					<option value="<?php echo esc_attr( $dak_clinic_id ); ?>" <?php selected( (string) $filters['clinic_id'] === (string) $dak_clinic_id ); ?>><?php echo esc_html( $dak_clinic_label ); ?></option>
+				<?php foreach ( $clinic_location_groups as $dak_location_key => $dak_clinic_group ) : ?>
+					<option value="<?php echo esc_attr( $dak_location_key ); ?>" <?php selected( (string) $filters['clinic_id'] === $dak_location_key ); ?>><?php echo esc_html( $dak_clinic_group['label'] ); ?></option>
 				<?php endforeach; ?>
 			</select>
 		</div>
@@ -175,7 +162,7 @@ $dak_view_base_args = array_filter(
 			><?php esc_html_e( 'Clinic wise', 'doctor-ak-portal' ); ?></a>
 		</div>
 	</div>
-	<p class="dak-field-hint"><?php esc_html_e( "Each doctor's clinics (and video consultations) are kept separate — never merged into one figure. Positive = clinic owes the doctor, negative = doctor owes the clinic.", 'doctor-ak-portal' ); ?></p>
+	<p class="dak-field-hint"><?php esc_html_e( "Each doctor's clinics (and video consultations) are kept separate — never merged into one figure. Positive = platform owes the doctor, negative = doctor owes the platform.", 'doctor-ak-portal' ); ?></p>
 
 	<?php if ( empty( $balances ) ) : ?>
 		<p class="dak-empty-state"><?php esc_html_e( 'No outstanding balances match these filters.', 'doctor-ak-portal' ); ?></p>
@@ -202,9 +189,9 @@ $dak_view_base_args = array_filter(
 
 							<span class="dak-admin-record-row-tags">
 								<?php if ( $dak_row['balance'] > 0.01 ) : ?>
-									<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-active"><?php esc_html_e( 'Clinic owes doctor', 'doctor-ak-portal' ); ?></span>
+									<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-active"><?php esc_html_e( 'Platform owes doctor', 'doctor-ak-portal' ); ?></span>
 								<?php elseif ( $dak_row['balance'] < -0.01 ) : ?>
-									<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-disabled"><?php esc_html_e( 'Doctor owes clinic', 'doctor-ak-portal' ); ?></span>
+									<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-disabled"><?php esc_html_e( 'Doctor owes platform', 'doctor-ak-portal' ); ?></span>
 								<?php else : ?>
 									<span class="dak-status-pill dak-status-pill-outline"><?php esc_html_e( 'Settled', 'doctor-ak-portal' ); ?></span>
 								<?php endif; ?>
@@ -266,9 +253,9 @@ $dak_view_base_args = array_filter(
 
 							<span class="dak-admin-record-row-tags">
 								<?php if ( $dak_row['balance'] > 0.01 ) : ?>
-									<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-active"><?php esc_html_e( 'Clinic owes doctor', 'doctor-ak-portal' ); ?></span>
+									<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-active"><?php esc_html_e( 'Platform owes doctor', 'doctor-ak-portal' ); ?></span>
 								<?php elseif ( $dak_row['balance'] < -0.01 ) : ?>
-									<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-disabled"><?php esc_html_e( 'Doctor owes clinic', 'doctor-ak-portal' ); ?></span>
+									<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-disabled"><?php esc_html_e( 'Doctor owes platform', 'doctor-ak-portal' ); ?></span>
 								<?php else : ?>
 									<span class="dak-status-pill dak-status-pill-outline"><?php esc_html_e( 'Settled', 'doctor-ak-portal' ); ?></span>
 								<?php endif; ?>

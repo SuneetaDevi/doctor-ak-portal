@@ -736,7 +736,16 @@
 	gap: 0.5rem !important;
 }
 
-.dak-services-row,
+.dak-services-row {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.5rem !important;
+	padding: 0.6rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+}
+
+.dak-services-row-fields,
 .dak-services-row-header {
 	display: grid !important;
 	grid-template-columns: 1.6fr 1.2fr 0.8fr 0.8fr auto !important;
@@ -746,6 +755,43 @@
 
 .dak-services-row-header {
 	padding: 0 0.6rem !important;
+}
+
+/* "Available at" clinic checkboxes — which of this doctor's clinics a
+   service is offered at (see doctor-ak-services-editor.js). Hidden until
+   the doctor has at least one clinic selected in the step above, since
+   there's nothing to pick from before that. */
+.dak-services-row-clinics {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.4rem !important;
+	padding-top: 0.5rem !important;
+	border-top: 1px dashed var( --dak-border ) !important;
+}
+
+.dak-services-row-clinics-label {
+	font-size: 0.78rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-services-row-clinics-list {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0.4rem 0.9rem !important;
+}
+
+.dak-services-clinic-chip {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+	font-size: 0.85rem !important;
+	color: var( --dak-text ) !important;
+	cursor: pointer !important;
+}
+
+.dak-services-clinic-chip input {
+	width: auto !important;
+	margin: 0 !important;
 }
 
 .dak-services-row-header span {
@@ -795,7 +841,7 @@
 		display: none !important;
 	}
 
-	.dak-services-row {
+	.dak-services-row-fields {
 		grid-template-columns: 1fr 1fr !important;
 	}
 

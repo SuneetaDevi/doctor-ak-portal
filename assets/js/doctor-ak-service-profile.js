@@ -1,11 +1,15 @@
 /**
  * Doctor AK Portal — public Service profile page ([service_profile_view]).
  *
- * Wires the "Doctors & Pricing" list: filtering (Specialization/Location),
- * sorting (Price/Name), selecting a doctor (updates the sidebar's price and
- * "Book Appointment" button), and clicking a card (anywhere except the
- * radio or the doctor-name link) to open that doctor's profile — see
- * templates/directory/service-profile-view.php for the markup this expects.
+ * Wires the "Doctors & Pricing" list — grouped by clinic, each with the
+ * doctors who offer this service there nested underneath (see
+ * Service_Profile_View::build_clinic_groups() and
+ * templates/directory/service-profile-view.php for the markup this
+ * expects): filtering (Specialization), sorting doctor rows within each
+ * clinic group (Price/Name), selecting a doctor (updates the sidebar's
+ * price and "Book Appointment" button), and clicking a row (anywhere except
+ * the radio or the doctor-name link) to open that doctor's profile. A
+ * clinic group with no rows left after filtering hides itself too.
  */
 ( function () {
 	'use strict';
@@ -17,10 +21,10 @@
 			return;
 		}
 
+		var groups = Array.prototype.slice.call( container.querySelectorAll( '[data-service-clinic-group]' ) );
 		var cards = Array.prototype.slice.call( container.querySelectorAll( '[data-service-doctor-offer]' ) );
 		var emptyState = document.getElementById( 'dak-service-doctor-offers-empty' );
 		var specializationFilter = document.getElementById( 'dak-service-filter-specialization' );
-		var locationFilter = document.getElementById( 'dak-service-filter-location' );
 		var sortSelect = document.getElementById( 'dak-service-filter-sort' );
 
 		var bookingFee = document.getElementById( 'dak-service-booking-fee' );
@@ -30,13 +34,14 @@
 		wireCardClicks();
 		wireSelection();
 		wireFilters();
+		sortCards();
 
 		function wireCardClicks() {
 			cards.forEach( function ( card ) {
 				card.addEventListener( 'click', function ( event ) {
 					// Let the radio and the doctor-name link handle their
 					// own clicks (selecting / navigating) — anywhere else
-					// on the card opens the doctor's profile.
+					// on the row opens the doctor's profile.
 					if ( event.target.closest( 'a, label, input' ) ) {
 						return;
 					}
@@ -109,7 +114,7 @@
 		}
 
 		function wireFilters() {
-			[ specializationFilter, locationFilter, sortSelect ].forEach( function ( select ) {
+			[ specializationFilter, sortSelect ].forEach( function ( select ) {
 				if ( select ) {
 					select.addEventListener( 'change', applyFiltersAndSort );
 				}
@@ -118,20 +123,21 @@
 
 		function applyFiltersAndSort() {
 			var specialization = specializationFilter ? specializationFilter.value : '';
-			var location = locationFilter ? locationFilter.value : '';
 			var visibleCount = 0;
 
 			cards.forEach( function ( card ) {
-				var matchesSpecialization = ! specialization || card.getAttribute( 'data-category' ) === specialization;
-				var locations = ( card.getAttribute( 'data-locations' ) || '' ).split( '|' );
-				var matchesLocation = ! location || locations.indexOf( location ) !== -1;
-				var matches = matchesSpecialization && matchesLocation;
+				var matches = ! specialization || card.getAttribute( 'data-category' ) === specialization;
 
 				card.classList.toggle( 'dak-hidden', ! matches );
 
 				if ( matches ) {
 					visibleCount++;
 				}
+			} );
+
+			groups.forEach( function ( group ) {
+				var anyVisible = group.querySelector( '[data-service-doctor-offer]:not(.dak-hidden)' );
+				group.classList.toggle( 'dak-hidden', ! anyVisible );
 			} );
 
 			if ( emptyState ) {
@@ -141,22 +147,31 @@
 			sortCards();
 		}
 
+		/**
+		 * Reorders the doctor rows WITHIN each clinic group (never across
+		 * groups — a clinic group's own position stays alphabetical, set
+		 * server-side).
+		 */
 		function sortCards() {
 			var sortBy = sortSelect ? sortSelect.value : 'price-asc';
 
-			var sorted = cards.slice().sort( function ( a, b ) {
-				if ( 'name' === sortBy ) {
-					return a.getAttribute( 'data-doctor-name' ).localeCompare( b.getAttribute( 'data-doctor-name' ) );
-				}
+			groups.forEach( function ( group ) {
+				var groupCards = Array.prototype.slice.call( group.querySelectorAll( '[data-service-doctor-offer]' ) );
 
-				var priceA = parseFloat( a.getAttribute( 'data-price' ) ) || 0;
-				var priceB = parseFloat( b.getAttribute( 'data-price' ) ) || 0;
+				var sorted = groupCards.sort( function ( a, b ) {
+					if ( 'name' === sortBy ) {
+						return a.getAttribute( 'data-doctor-name' ).localeCompare( b.getAttribute( 'data-doctor-name' ) );
+					}
 
-				return 'price-desc' === sortBy ? priceB - priceA : priceA - priceB;
-			} );
+					var priceA = parseFloat( a.getAttribute( 'data-price' ) ) || 0;
+					var priceB = parseFloat( b.getAttribute( 'data-price' ) ) || 0;
 
-			sorted.forEach( function ( card ) {
-				container.appendChild( card );
+					return 'price-desc' === sortBy ? priceB - priceA : priceA - priceB;
+				} );
+
+				sorted.forEach( function ( card ) {
+					group.appendChild( card );
+				} );
 			} );
 		}
 	} );

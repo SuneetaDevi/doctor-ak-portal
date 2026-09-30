@@ -414,7 +414,22 @@ class Revenue_Ledger {
 		}
 
 		if ( isset( $filters['clinic_id'] ) && '' !== $filters['clinic_id'] ) {
-			if ( -1 === (int) $filters['clinic_id'] ) {
+			if ( is_array( $filters['clinic_id'] ) ) {
+				// The same physical clinic (Clinic_Locations) can have a
+				// separate Clinics row — and so a separate clinic_id here —
+				// per doctor who practises there. The admin billing filter
+				// picks one physical clinic regardless of doctor, so it
+				// passes every one of that clinic's Clinics row IDs here
+				// (see Admin_Dashboard's billing section) rather than a
+				// single ID.
+				$clinic_ids = array_values( array_filter( array_map( 'absint', $filters['clinic_id'] ) ) );
+
+				if ( ! empty( $clinic_ids ) ) {
+					$placeholders = implode( ',', array_fill( 0, count( $clinic_ids ), '%d' ) );
+					$where[]      = "clinic_id IN ({$placeholders})"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- placeholders only, values bound via $params below.
+					$params       = array_merge( $params, $clinic_ids );
+				}
+			} elseif ( -1 === (int) $filters['clinic_id'] ) {
 				$where[] = 'clinic_id = 0';
 			} elseif ( (int) $filters['clinic_id'] > 0 ) {
 				$where[]  = 'clinic_id = %d';

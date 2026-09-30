@@ -2074,32 +2074,85 @@ class Admin_Dashboard {
 		}
 
 		if ( 'billing' === $section ) {
-			$doctor_id = isset( $_GET['doctor_id'] ) ? absint( wp_unslash( $_GET['doctor_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
-			$clinic_id = isset( $_GET['clinic_id'] ) && '' !== $_GET['clinic_id'] ? (int) wp_unslash( $_GET['clinic_id'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- read-only navigation state; cast to int below.
-			$date_from = isset( $_GET['date_from'] ) ? sanitize_text_field( wp_unslash( $_GET['date_from'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
-			$date_to   = isset( $_GET['date_to'] ) ? sanitize_text_field( wp_unslash( $_GET['date_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
-			$view      = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : 'doctor'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
-			$view      = in_array( $view, array( 'doctor', 'clinic' ), true ) ? $view : 'doctor';
+			$doctor_id       = isset( $_GET['doctor_id'] ) ? absint( wp_unslash( $_GET['doctor_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$clinic_filter   = isset( $_GET['clinic_id'] ) ? sanitize_text_field( wp_unslash( $_GET['clinic_id'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission; re-validated against $clinic_location_groups below before use.
+			$date_from       = isset( $_GET['date_from'] ) ? sanitize_text_field( wp_unslash( $_GET['date_from'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$date_to         = isset( $_GET['date_to'] ) ? sanitize_text_field( wp_unslash( $_GET['date_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$view            = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : 'doctor'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$view            = in_array( $view, array( 'doctor', 'clinic' ), true ) ? $view : 'doctor';
 
 			$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
 			$billing_url   = $dashboard_url ? add_query_arg( 'section', 'billing', $dashboard_url ) : '';
 
-			$ledger_filters = array(
-				'doctor_id' => $doctor_id,
-				'clinic_id' => $clinic_id,
-				'date_from' => $date_from,
-				'date_to'   => $date_to,
-			);
-
 			$doctor_options    = $this->doctor_options();
 			$clinics_by_doctor = Clinics::get_for_doctors( array_keys( $doctor_options ) );
 
-			$clinic_names_by_id = array();
+			// The Clinic filter picks one physical clinic, not one doctor's
+			// visiting slot at it — the Doctor filter next to it already
+			// covers "by doctor". The same physical clinic (Clinic_Locations)
+			// has a separate Clinics row, and so a separate clinic_id, per
+			// doctor who practises there, so each filter option here groups
+			// every one of those rows under a single key: 'loc:<clinic_location_id>'
+			// when the clinic is linked to a shared Clinic_Locations entry, or
+			// 'row:<id>' for an older/standalone clinic that isn't (treated as
+			// its own single-doctor "location" rather than merged with
+			// unrelated ones that also happen to have no location link).
+			$clinic_names_by_id     = array();
+			$clinic_location_groups = array();
+
 			foreach ( $clinics_by_doctor as $dak_doctor_clinics ) {
 				foreach ( $dak_doctor_clinics as $dak_clinic ) {
 					$clinic_names_by_id[ $dak_clinic['id'] ] = $dak_clinic['name'];
+
+					if ( 'physical' !== $dak_clinic['type'] ) {
+						continue;
+					}
+
+					$dak_location_key = $dak_clinic['clinic_location_id'] > 0
+						? 'loc:' . $dak_clinic['clinic_location_id']
+						: 'row:' . $dak_clinic['id'];
+
+					if ( ! isset( $clinic_location_groups[ $dak_location_key ] ) ) {
+						$clinic_location_groups[ $dak_location_key ] = array(
+							'label'      => $dak_clinic['name'],
+							'clinic_ids' => array(),
+						);
+					}
+
+					$clinic_location_groups[ $dak_location_key ]['clinic_ids'][] = $dak_clinic['id'];
 				}
 			}
+
+			uasort(
+				$clinic_location_groups,
+				function ( $a, $b ) {
+					return strcasecmp( $a['label'], $b['label'] );
+				}
+			);
+
+			// Resolve the requested filter to the actual Clinics row IDs
+			// Revenue_Ledger needs — every doctor's row at the chosen
+			// physical clinic, so nobody's revenue there goes missing just
+			// because a different doctor's row happened to be the one this
+			// dropdown's value pointed at.
+			$clinic_id_filter = '';
+
+			if ( '-1' === $clinic_filter ) {
+				$clinic_id_filter = -1;
+			} elseif ( isset( $clinic_location_groups[ $clinic_filter ] ) ) {
+				$clinic_id_filter = $clinic_location_groups[ $clinic_filter ]['clinic_ids'];
+			} else {
+				// Invalid/tampered value (or one from before this filter
+				// became clinic-wide) — same as "All clinics".
+				$clinic_filter = '';
+			}
+
+			$ledger_filters = array(
+				'doctor_id' => $doctor_id,
+				'clinic_id' => $clinic_id_filter,
+				'date_from' => $date_from,
+				'date_to'   => $date_to,
+			);
 
 			$balances = Revenue_Ledger::balances_by_doctor_and_clinic(
 				array(
@@ -2122,17 +2175,18 @@ class Admin_Dashboard {
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-billing.php',
 				array(
-					'balances'          => $balances,
-					'summary'         => Revenue_Ledger::summary( $ledger_filters ),
-					'doctor_options'  => $doctor_options,
-					'clinics_by_doctor' => $clinics_by_doctor,
-					'settlements'     => Settlement_Manager::all_flat_for_admin( $doctor_id > 0 ? array( 'doctor_id' => $doctor_id ) : array() ),
-					'outstanding'     => $doctor_id > 0 ? Revenue_Ledger::outstanding_for_doctor( $doctor_id, $date_from, $date_to ) : null,
-					'billing_url'     => $billing_url,
-					'view'            => $view,
-					'filters'         => array(
+					'balances'               => $balances,
+					'summary'                => Revenue_Ledger::summary( $ledger_filters ),
+					'doctor_options'         => $doctor_options,
+					'clinics_by_doctor'      => $clinics_by_doctor,
+					'clinic_location_groups' => $clinic_location_groups,
+					'settlements'            => Settlement_Manager::all_flat_for_admin( $doctor_id > 0 ? array( 'doctor_id' => $doctor_id ) : array() ),
+					'outstanding'            => $doctor_id > 0 ? Revenue_Ledger::outstanding_for_doctor( $doctor_id, $date_from, $date_to ) : null,
+					'billing_url'            => $billing_url,
+					'view'                   => $view,
+					'filters'                => array(
 						'doctor_id' => $doctor_id,
-						'clinic_id' => $clinic_id,
+						'clinic_id' => $clinic_filter,
 						'date_from' => $date_from,
 						'date_to'   => $date_to,
 					),

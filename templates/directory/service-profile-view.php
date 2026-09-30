@@ -15,7 +15,7 @@
  *     @type string $price_label      Overall price range across every doctor, e.g. "PKR 5,000" or "From PKR 5,000".
  *     @type bool   $requires_doctor  Whether patients pick a doctor/time slot to book this (Services::decode_row()), or just submit a request (see the "request this service" form below when false).
  *     @type int    $service_id       The specific Services row this page was reached via (?service_id=) — what the request form posts.
- *     @type array  $doctor_offers One entry per doctor offering this service, cheapest first {
+ *     @type array  $doctor_offers One entry per doctor offering this service, cheapest first — only used here for the specialization filter's options and the top "N Doctors" stat; the "Doctors & Pricing" list itself is $clinic_groups below {
  *         @type int    $doctor_id          Doctor's user ID.
  *         @type string $doctor_name        Doctor's display name.
  *         @type string $doctor_avatar_url  Doctor's photo (or fallback avatar) URL.
@@ -24,9 +24,14 @@
  *         @type string $price_label        This doctor's own price (or price range across their clinics).
  *         @type string $category           Specialization slug this service is filed under (see Specializations), '' if none.
  *         @type string $category_label     Human-readable label for $category.
- *         @type array  $location_labels    Area labels across this doctor's clinics offering it, for the "Location" filter.
+ *         @type array  $location_labels    Area labels across this doctor's clinics offering it.
  *         @type array  $clinic_locations   This doctor's clinics offering it, each with an added 'price'/'price_label'.
  *         @type string $booking_url        "Book Appointment" link, pre-selecting this doctor.
+ *     }
+ *     @type array  $clinic_groups The "Doctors & Pricing" list itself, one entry per physical clinic, alphabetical by clinic name ("Other Locations" last) — see Service_Profile_View::build_clinic_groups() {
+ *         @type string $label   Clinic name (or "Other Locations" for the catch-all group).
+ *         @type string $meta    Address/area/city line, or '' for the catch-all group.
+ *         @type array  $doctors Doctors offering this service at this clinic, cheapest first — same shape as $doctor_offers above, minus location_labels/clinic_locations (this entry's own 'price'/'price_label' already reflect this specific clinic).
  *     }
  * }
  * @var string $directory_url "All Services" breadcrumb link.
@@ -101,30 +106,24 @@ $dak_service_view_icons = array(
 					</div>
 				<?php endif; ?>
 
-				<?php if ( $group['requires_doctor'] && ! empty( $group['doctor_offers'] ) ) : ?>
+				<?php if ( $group['requires_doctor'] && ! empty( $group['clinic_groups'] ) ) : ?>
 					<?php
 					$dak_specialization_options = array();
-					$dak_location_options       = array();
 
 					foreach ( $group['doctor_offers'] as $dak_offer ) {
 						if ( '' !== $dak_offer['category'] ) {
 							$dak_specialization_options[ $dak_offer['category'] ] = $dak_offer['category_label'];
 						}
-
-						foreach ( $dak_offer['location_labels'] as $dak_offer_location_label ) {
-							$dak_location_options[ $dak_offer_location_label ] = $dak_offer_location_label;
-						}
 					}
 
 					asort( $dak_specialization_options );
-					ksort( $dak_location_options );
 					?>
 					<div class="dak-profile-card" id="dak-service-doctors">
 						<h2>
 							<span class="dak-profile-card-title-icon" aria-hidden="true"><?php echo $dak_service_view_icons['person']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 							<?php esc_html_e( 'Doctors & Pricing', 'doctor-ak-portal' ); ?>
 						</h2>
-						<p class="dak-field-hint"><?php esc_html_e( 'Select a doctor to see their price on the right, or click their name for their full profile.', 'doctor-ak-portal' ); ?></p>
+						<p class="dak-field-hint"><?php esc_html_e( 'Grouped by clinic — select a doctor to see their price on the right, or click their name for their full profile.', 'doctor-ak-portal' ); ?></p>
 
 						<?php if ( count( $group['doctor_offers'] ) > 1 ) : ?>
 							<div class="dak-service-doctor-filters" id="dak-service-doctor-filters">
@@ -135,18 +134,6 @@ $dak_service_view_icons = array(
 											<option value=""><?php esc_html_e( 'All specializations', 'doctor-ak-portal' ); ?></option>
 											<?php foreach ( $dak_specialization_options as $dak_spec_slug => $dak_spec_label ) : ?>
 												<option value="<?php echo esc_attr( $dak_spec_slug ); ?>"><?php echo esc_html( $dak_spec_label ); ?></option>
-											<?php endforeach; ?>
-										</select>
-									</div>
-								<?php endif; ?>
-
-								<?php if ( count( $dak_location_options ) > 1 ) : ?>
-									<div class="dak-field">
-										<label for="dak-service-filter-location"><?php esc_html_e( 'Location', 'doctor-ak-portal' ); ?></label>
-										<select id="dak-service-filter-location">
-											<option value=""><?php esc_html_e( 'All locations', 'doctor-ak-portal' ); ?></option>
-											<?php foreach ( $dak_location_options as $dak_location_label ) : ?>
-												<option value="<?php echo esc_attr( $dak_location_label ); ?>"><?php echo esc_html( $dak_location_label ); ?></option>
 											<?php endforeach; ?>
 										</select>
 									</div>
@@ -165,72 +152,64 @@ $dak_service_view_icons = array(
 
 						<p class="dak-empty-state dak-hidden" id="dak-service-doctor-offers-empty"><?php esc_html_e( 'No doctors match these filters.', 'doctor-ak-portal' ); ?></p>
 
-						<div class="dak-service-doctor-offers" id="dak-service-doctor-offers">
-							<?php foreach ( $group['doctor_offers'] as $dak_offer ) : ?>
-								<div
-									class="dak-service-doctor-offer"
-									data-service-doctor-offer
-									data-doctor-id="<?php echo esc_attr( $dak_offer['doctor_id'] ); ?>"
-									data-doctor-name="<?php echo esc_attr( sprintf( 'Dr. %s', $dak_offer['doctor_name'] ) ); ?>"
-									data-price="<?php echo esc_attr( $dak_offer['price'] ); ?>"
-									data-price-label="<?php echo esc_attr( $dak_offer['price_label'] ); ?>"
-									data-category="<?php echo esc_attr( $dak_offer['category'] ); ?>"
-									data-locations="<?php echo esc_attr( implode( '|', $dak_offer['location_labels'] ) ); ?>"
-									data-profile-url="<?php echo esc_attr( $dak_offer['doctor_profile_url'] ); ?>"
-									data-booking-url="<?php echo esc_attr( $dak_offer['booking_url'] ); ?>"
-									tabindex="0"
-									role="button"
-									aria-label="<?php echo esc_attr( sprintf( /* translators: %s: doctor's display name. */ __( 'View Dr. %s\'s profile', 'doctor-ak-portal' ), $dak_offer['doctor_name'] ) ); ?>"
-								>
-									<div class="dak-service-doctor-offer-header">
-										<label class="dak-service-doctor-offer-select" data-service-doctor-select-label>
-											<input type="radio" name="dak-service-doctor-select" value="<?php echo esc_attr( $dak_offer['doctor_id'] ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: doctor's display name. */ __( 'Select Dr. %s to compare pricing', 'doctor-ak-portal' ), $dak_offer['doctor_name'] ) ); ?>">
-										</label>
-
-										<span class="dak-avatar dak-avatar-sm" aria-hidden="true">
-											<?php if ( $dak_offer['doctor_avatar_url'] ) : ?>
-												<img src="<?php echo esc_url( $dak_offer['doctor_avatar_url'] ); ?>" alt="">
-											<?php else : ?>
-												<?php echo $dak_service_view_icons['person']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-											<?php endif; ?>
-										</span>
-
-										<div class="dak-service-doctor-offer-info">
-											<?php if ( $dak_offer['doctor_profile_url'] ) : ?>
-												<a class="dak-profile-clinic-info-link" href="<?php echo esc_url( $dak_offer['doctor_profile_url'] ); ?>"><strong><?php echo esc_html( sprintf( 'Dr. %s', $dak_offer['doctor_name'] ) ); ?></strong></a>
-											<?php else : ?>
-												<strong><?php echo esc_html( sprintf( 'Dr. %s', $dak_offer['doctor_name'] ) ); ?></strong>
-											<?php endif; ?>
-											<?php if ( '' !== $dak_offer['category_label'] ) : ?>
-												<span class="dak-service-doctor-offer-specialty"><?php echo esc_html( $dak_offer['category_label'] ); ?></span>
+						<div class="dak-service-clinic-groups" id="dak-service-doctor-offers">
+							<?php foreach ( $group['clinic_groups'] as $dak_clinic_group ) : ?>
+								<div class="dak-service-clinic-group" data-service-clinic-group>
+									<div class="dak-service-clinic-group-header">
+										<span class="dak-location-icon" aria-hidden="true"><?php echo $dak_service_view_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+										<div class="dak-service-clinic-group-info">
+											<strong><?php echo esc_html( $dak_clinic_group['label'] ); ?></strong>
+											<?php if ( '' !== $dak_clinic_group['meta'] ) : ?>
+												<span class="dak-profile-clinic-meta"><?php echo esc_html( $dak_clinic_group['meta'] ); ?></span>
 											<?php endif; ?>
 										</div>
-
-										<span class="dak-service-doctor-offer-price"><?php echo esc_html( $dak_offer['price_label'] ); ?></span>
 									</div>
 
-									<?php if ( ! empty( $dak_offer['clinic_locations'] ) ) : ?>
-										<div class="dak-profile-clinics dak-service-doctor-offer-clinics">
-											<?php foreach ( $dak_offer['clinic_locations'] as $clinic_location ) : ?>
-												<div class="dak-profile-clinic-row">
-													<div class="dak-profile-clinic-info">
-														<strong><?php echo esc_html( $clinic_location['name'] ); ?></strong>
-														<?php if ( '' !== $clinic_location['address'] || '' !== $clinic_location['area_label'] || '' !== $clinic_location['city_label'] ) : ?>
-															<span class="dak-profile-clinic-meta">
-																<span class="dak-location-icon" aria-hidden="true"><?php echo $dak_service_view_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-																<?php echo esc_html( implode( ', ', array_filter( array( $clinic_location['address'], $clinic_location['area_label'], $clinic_location['city_label'] ) ) ) ); ?>
-															</span>
+									<div class="dak-service-clinic-group-doctors">
+										<?php foreach ( $dak_clinic_group['doctors'] as $dak_offer ) : ?>
+											<div
+												class="dak-service-doctor-offer"
+												data-service-doctor-offer
+												data-doctor-id="<?php echo esc_attr( $dak_offer['doctor_id'] ); ?>"
+												data-doctor-name="<?php echo esc_attr( sprintf( 'Dr. %s', $dak_offer['doctor_name'] ) ); ?>"
+												data-price="<?php echo esc_attr( $dak_offer['price'] ); ?>"
+												data-price-label="<?php echo esc_attr( $dak_offer['price_label'] ); ?>"
+												data-category="<?php echo esc_attr( $dak_offer['category'] ); ?>"
+												data-profile-url="<?php echo esc_attr( $dak_offer['doctor_profile_url'] ); ?>"
+												data-booking-url="<?php echo esc_attr( $dak_offer['booking_url'] ); ?>"
+												tabindex="0"
+												role="button"
+												aria-label="<?php echo esc_attr( sprintf( /* translators: %s: doctor's display name. */ __( 'View Dr. %s\'s profile', 'doctor-ak-portal' ), $dak_offer['doctor_name'] ) ); ?>"
+											>
+												<div class="dak-service-doctor-offer-header">
+													<label class="dak-service-doctor-offer-select" data-service-doctor-select-label>
+														<input type="radio" name="dak-service-doctor-select" value="<?php echo esc_attr( $dak_offer['doctor_id'] ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: doctor's display name. */ __( 'Select Dr. %s to compare pricing', 'doctor-ak-portal' ), $dak_offer['doctor_name'] ) ); ?>">
+													</label>
+
+													<span class="dak-avatar dak-avatar-sm" aria-hidden="true">
+														<?php if ( $dak_offer['doctor_avatar_url'] ) : ?>
+															<img src="<?php echo esc_url( $dak_offer['doctor_avatar_url'] ); ?>" alt="">
+														<?php else : ?>
+															<?php echo $dak_service_view_icons['person']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+														<?php endif; ?>
+													</span>
+
+													<div class="dak-service-doctor-offer-info">
+														<?php if ( $dak_offer['doctor_profile_url'] ) : ?>
+															<a class="dak-profile-clinic-info-link" href="<?php echo esc_url( $dak_offer['doctor_profile_url'] ); ?>"><strong><?php echo esc_html( sprintf( 'Dr. %s', $dak_offer['doctor_name'] ) ); ?></strong></a>
+														<?php else : ?>
+															<strong><?php echo esc_html( sprintf( 'Dr. %s', $dak_offer['doctor_name'] ) ); ?></strong>
+														<?php endif; ?>
+														<?php if ( '' !== $dak_offer['category_label'] ) : ?>
+															<span class="dak-service-doctor-offer-specialty"><?php echo esc_html( $dak_offer['category_label'] ); ?></span>
 														<?php endif; ?>
 													</div>
 
-													<div class="dak-profile-clinic-fee">
-														<span><?php esc_html_e( 'Price', 'doctor-ak-portal' ); ?></span>
-														<strong><?php echo esc_html( $clinic_location['price_label'] ); ?></strong>
-													</div>
+													<span class="dak-service-doctor-offer-price"><?php echo esc_html( $dak_offer['price_label'] ); ?></span>
 												</div>
-											<?php endforeach; ?>
-										</div>
-									<?php endif; ?>
+											</div>
+										<?php endforeach; ?>
+									</div>
 								</div>
 							<?php endforeach; ?>
 						</div>

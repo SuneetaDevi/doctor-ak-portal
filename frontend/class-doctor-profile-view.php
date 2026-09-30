@@ -155,6 +155,8 @@ class Doctor_Profile_View {
 			}
 		}
 
+		$services = $this->services_with_clinics( $doctor->ID, $raw_clinics );
+
 		return $this->template_loader->get_template(
 			'directory/doctor-profile-view.php',
 			array(
@@ -165,6 +167,8 @@ class Doctor_Profile_View {
 					'specialization_labels' => $specialization_labels,
 					'keywords'              => array_filter( (array) get_user_meta( $doctor->ID, 'doctor_ak_keywords', true ) ),
 					'clinics'               => $clinics,
+					'services'              => $services,
+					'video_fee_label'       => self::video_fee_label( $doctor->ID ),
 					'years_experience'      => get_user_meta( $doctor->ID, 'doctor_ak_years_experience', true ),
 					'qualification'         => get_user_meta( $doctor->ID, 'doctor_ak_qualification', true ),
 					'short_description'     => get_user_meta( $doctor->ID, 'doctor_ak_short_description', true ),
@@ -198,9 +202,85 @@ class Doctor_Profile_View {
 		$clinic['hours_label'] = self::sessions_hours_label( $clinic['sessions'] );
 		$clinic['fee_label']   = Clinics::TYPE_VIDEO === $clinic['type']
 			? self::video_fee_label( $doctor_id )
-			: self::clinic_fee_label( $doctor_id );
+			: self::clinic_fee_label( $doctor_id, $clinic['clinic_location_id'] );
 
 		return $clinic;
+	}
+
+	/**
+	 * This doctor's clinic-type services, each with its own clinic
+	 * breakdown — "Services" replaces the old flat "Clinics" list on the
+	 * public profile with a service-first one, since a patient usually
+	 * comes here already knowing what they want done, not which building
+	 * they want to visit; picking a service then narrows down to exactly
+	 * the clinic(s) it's offered at. A service scoped to specific clinics
+	 * (see Services::decode_row()'s 'clinic_locations') only lists those,
+	 * each at its own override price; one with no clinics picked (the
+	 * common case) falls back to every one of this doctor's own physical
+	 * clinics, at the service's flat charge — same convention
+	 * clinic_fee_label() above already uses.
+	 *
+	 * @param int   $doctor_id   Doctor's user ID.
+	 * @param array $raw_clinics Clinics::get_for_doctor( $doctor_id ) — passed in rather than re-queried, render() already has it.
+	 * @return array List of { id, name, price_label, clinics: [ { clinic_id (this doctor's own Clinics row ID, for the booking link), name, meta, hours_label, price_label } ] }.
+	 */
+	private function services_with_clinics( $doctor_id, array $raw_clinics ) {
+		$services = Services::active_for_doctor( $doctor_id, 'clinic' );
+		$out      = array();
+
+		foreach ( $services as $service ) {
+			$clinic_rows = array();
+
+			if ( ! empty( $service['clinic_locations'] ) ) {
+				foreach ( $service['clinic_locations'] as $dak_clinic_location ) {
+					$dak_doctor_clinic_id = 0;
+					$dak_hours_label      = '';
+
+					foreach ( $raw_clinics as $dak_doctor_clinic ) {
+						if ( (int) $dak_doctor_clinic['clinic_location_id'] === (int) $dak_clinic_location['id'] ) {
+							$dak_doctor_clinic_id = $dak_doctor_clinic['id'];
+							$dak_hours_label      = self::sessions_hours_label( $dak_doctor_clinic['sessions'] );
+							break;
+						}
+					}
+
+					$clinic_rows[] = array(
+						'clinic_id'   => $dak_doctor_clinic_id,
+						'name'        => $dak_clinic_location['name'],
+						'meta'        => implode( ', ', array_filter( array( $dak_clinic_location['address'], $dak_clinic_location['area_label'], $dak_clinic_location['city_label'] ) ) ),
+						'hours_label' => $dak_hours_label,
+						'price_label' => $dak_clinic_location['price_label'],
+					);
+				}
+			} else {
+				foreach ( $raw_clinics as $dak_doctor_clinic ) {
+					if ( Clinics::TYPE_PHYSICAL !== $dak_doctor_clinic['type'] ) {
+						continue;
+					}
+
+					$clinic_rows[] = array(
+						'clinic_id'   => $dak_doctor_clinic['id'],
+						'name'        => $dak_doctor_clinic['name'],
+						'meta'        => implode( ', ', array_filter( array( $dak_doctor_clinic['address'], $dak_doctor_clinic['area_label'], $dak_doctor_clinic['city_label'] ) ) ),
+						'hours_label' => self::sessions_hours_label( $dak_doctor_clinic['sessions'] ),
+						'price_label' => $service['price_label'],
+					);
+				}
+			}
+
+			if ( empty( $clinic_rows ) ) {
+				continue;
+			}
+
+			$out[] = array(
+				'id'          => $service['id'],
+				'name'        => $service['name'],
+				'price_label' => $service['price_label'],
+				'clinics'     => $clinic_rows,
+			);
+		}
+
+		return $out;
 	}
 
 	/**
@@ -250,26 +330,43 @@ class Doctor_Profile_View {
 	}
 
 	/**
-	 * A clinic (onsite) visit's fee, from the doctor's real configured
-	 * services — never a fabricated placeholder. Empty string if the doctor
-	 * hasn't configured any clinic services yet.
+	 * A clinic (onsite) visit's fee at one specific physical clinic, from
+	 * the doctor's real configured services — never a fabricated
+	 * placeholder. A service with no clinics picked in its own "Available
+	 * at" list (see Services::decode_row()'s 'clinic_charges') counts at
+	 * every clinic, at its flat charge; a service scoped to specific
+	 * clinics only counts here when this one is among them, at that
+	 * clinic's own override price. Empty string if nothing configured
+	 * applies to this clinic at all.
 	 *
-	 * @param int $doctor_id Doctor's user ID.
+	 * @param int $doctor_id          Doctor's user ID.
+	 * @param int $clinic_location_id This clinic's Clinic_Locations ID (0 for a legacy clinic not linked to one — only unscoped services count there).
 	 * @return string
 	 */
-	private static function clinic_fee_label( $doctor_id ) {
+	private static function clinic_fee_label( $doctor_id, $clinic_location_id ) {
 		$services = Services::active_for_doctor( $doctor_id, 'clinic' );
 
 		if ( empty( $services ) ) {
 			return '';
 		}
 
-		$charges = array_map(
-			function ( $service ) {
-				return (float) $service['charge'];
-			},
-			$services
-		);
+		$charges = array();
+
+		foreach ( $services as $service ) {
+			if ( ! empty( $service['clinic_charges'] ) ) {
+				if ( isset( $service['clinic_charges'][ $clinic_location_id ] ) ) {
+					$charges[] = (float) $service['clinic_charges'][ $clinic_location_id ];
+				}
+
+				continue;
+			}
+
+			$charges[] = (float) $service['charge'];
+		}
+
+		if ( empty( $charges ) ) {
+			return '';
+		}
 
 		$min = min( $charges );
 

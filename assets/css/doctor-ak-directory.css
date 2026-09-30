@@ -1057,14 +1057,81 @@
 	height: 100% !important;
 }
 
-#dak-profile-clinics {
+#dak-profile-services {
 	scroll-margin-top: 1.5rem !important;
 }
 
-.dak-profile-clinics {
+.dak-profile-clinics,
+.dak-profile-services {
 	display: flex !important;
 	flex-direction: column !important;
 	gap: 0.75rem !important;
+}
+
+/* "Services" list on the doctor profile page (replaces the old flat
+   "Clinics" list — see doctor-profile-view.php +
+   doctor-ak-doctor-profile-clinics.js): each service is a collapsed header
+   row that expands to its own clinic list (reusing
+   .dak-profile-clinic-row's existing selectable-row styling above for
+   those, and for the standalone "Online Video Consultation" row). */
+.dak-profile-service-row + .dak-profile-service-row {
+	margin-top: 0.75rem !important;
+}
+
+.dak-profile-service-header {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.75rem !important;
+	width: 100% !important;
+	box-sizing: border-box !important;
+	padding: 1rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font: inherit !important;
+	text-align: left !important;
+	cursor: pointer !important;
+	transition: border-color 0.15s ease !important;
+}
+
+.dak-profile-service-header:hover {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-profile-service-header .dak-profile-clinic-info {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+}
+
+.dak-profile-service-header-price {
+	flex: 0 0 auto !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-profile-service-chevron {
+	flex: 0 0 auto !important;
+	width: 16px !important;
+	height: 16px !important;
+	color: var( --dak-muted ) !important;
+	transition: transform 0.15s ease !important;
+}
+
+.dak-profile-service-header[aria-expanded='true'] .dak-profile-service-chevron {
+	transform: rotate( 180deg ) !important;
+}
+
+.dak-profile-service-clinics {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.6rem !important;
+	margin-top: 0.6rem !important;
+	padding-left: 1rem !important;
+}
+
+.dak-profile-service-clinics.dak-hidden {
+	display: none !important;
 }
 
 .dak-profile-clinic-row {
@@ -1160,13 +1227,50 @@
 /* "Provided By" card on the [service_profile_view] page (see
    templates/directory/service-profile-view.php) — a horizontal
    avatar+name row instead of .dak-profile-clinic-info's default stack. */
-/* "Doctors & Pricing" list on the [service_profile_view] page — one block
-   per doctor offering the service, each with its own clinics/prices below
-   its header row (see templates/directory/service-profile-view.php). */
-.dak-service-doctor-offers {
+/* "Doctors & Pricing" list on the [service_profile_view] page — grouped by
+   clinic (see Service_Profile_View::build_clinic_groups()), each clinic
+   with the doctors offering the service there nested underneath. */
+.dak-service-clinic-groups {
 	display: flex !important;
 	flex-direction: column !important;
-	gap: 1rem !important;
+	gap: 1.5rem !important;
+}
+
+.dak-service-clinic-group.dak-hidden {
+	display: none !important;
+}
+
+.dak-service-clinic-group-header {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 0.6rem !important;
+	margin-bottom: 0.75rem !important;
+	padding-bottom: 0.5rem !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+.dak-service-clinic-group-header .dak-location-icon {
+	flex: 0 0 auto !important;
+	margin-top: 0.15rem !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-service-clinic-group-info {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.1rem !important;
+	min-width: 0 !important;
+}
+
+.dak-service-clinic-group-info strong {
+	font-size: 1rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-service-clinic-group-doctors {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.75rem !important;
 }
 
 .dak-service-doctor-offer {
