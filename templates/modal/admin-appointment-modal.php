@@ -21,123 +21,127 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="dak-portal dak-modal" id="dak-admin-appointment-modal" aria-hidden="true" data-services="<?php echo esc_attr( wp_json_encode( $services ) ); ?>">
 	<div class="dak-modal-overlay" data-dak-admin-appointment-modal-close></div>
 
-	<div class="dak-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="dak-admin-appointment-modal-title">
+	<div class="dak-modal-dialog dak-modal-dialog-form" role="dialog" aria-modal="true" aria-labelledby="dak-admin-appointment-modal-title">
 		<button type="button" class="dak-modal-close" data-dak-admin-appointment-modal-close aria-label="<?php esc_attr_e( 'Close', 'doctor-ak-portal' ); ?>">&times;</button>
-
 		<div class="dak-modal-header">
 			<h2 id="dak-admin-appointment-modal-title"><?php esc_html_e( 'Add Appointment', 'doctor-ak-portal' ); ?></h2>
 		</div>
-
-		<div class="dak-alert dak-alert-error dak-hidden" id="dak-admin-appointment-general-error" role="alert"></div>
-
-		<input type="hidden" id="dak-admin-appointment-id" value="0">
-
-		<div class="dak-field-row">
-			<div class="dak-field">
-				<label for="dak-admin-appointment-doctor"><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></label>
-				<select id="dak-admin-appointment-doctor" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search doctors…', 'doctor-ak-portal' ); ?>">
-					<option value=""><?php esc_html_e( 'Select a doctor…', 'doctor-ak-portal' ); ?></option>
-					<?php foreach ( $doctor_options as $doctor_id => $doctor_option ) : ?>
-						<option value="<?php echo esc_attr( $doctor_id ); ?>" <?php disabled( $doctor_option['is_disabled'] ); ?>><?php echo esc_html( $doctor_option['is_disabled'] ? sprintf( __( '%s (deactivated)', 'doctor-ak-portal' ), $doctor_option['name'] ) : $doctor_option['name'] ); ?></option>
-					<?php endforeach; ?>
-				</select>
-				<span class="dak-field-error" data-field="doctor_id"></span>
-			</div>
-			<div class="dak-field">
-				<label for="dak-admin-appointment-type"><?php esc_html_e( 'Type', 'doctor-ak-portal' ); ?></label>
-				<select id="dak-admin-appointment-type">
-					<option value="clinic"><?php esc_html_e( 'Onsite (Clinic)', 'doctor-ak-portal' ); ?></option>
-					<option value="video"><?php esc_html_e( 'Online (Video)', 'doctor-ak-portal' ); ?></option>
-				</select>
-			</div>
-		</div>
-
-		<div class="dak-field">
-			<label for="dak-admin-appointment-service"><?php esc_html_e( 'Services', 'doctor-ak-portal' ); ?></label>
-			<select id="dak-admin-appointment-service" class="dak-select-searchable" multiple data-placeholder="<?php esc_attr_e( 'Select at least one service…', 'doctor-ak-portal' ); ?>"></select>
-			<span class="dak-field-error" data-field="service_ids"></span>
-			<span class="dak-field-hint" id="dak-admin-appointment-service-total"></span>
-		</div>
-
-		<div class="dak-field">
-			<label for="dak-admin-appointment-patient"><?php esc_html_e( 'Registered Patient (optional)', 'doctor-ak-portal' ); ?></label>
-			<select id="dak-admin-appointment-patient" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search patients…', 'doctor-ak-portal' ); ?>">
-				<option value=""><?php esc_html_e( '— Guest (enter details below) —', 'doctor-ak-portal' ); ?></option>
-				<?php foreach ( $patient_options as $patient_id => $patient_name ) : ?>
-					<option value="<?php echo esc_attr( $patient_id ); ?>"><?php echo esc_html( $patient_name ); ?></option>
-				<?php endforeach; ?>
-			</select>
-		</div>
-
-		<div id="dak-admin-appointment-guest-fields">
-			<div class="dak-field">
-				<label for="dak-admin-appointment-guest-name"><?php esc_html_e( 'Guest Name', 'doctor-ak-portal' ); ?></label>
-				<input type="text" id="dak-admin-appointment-guest-name">
-				<span class="dak-field-error" data-field="guest_name"></span>
-			</div>
-			<div class="dak-field-row">
+		<div class="dak-modal-body">
+			<div class="dak-alert dak-alert-error dak-hidden" id="dak-admin-appointment-general-error" role="alert"></div>
+			<input type="hidden" id="dak-admin-appointment-id" value="0">
+			<fieldset class="dak-form-section">
+				<legend><?php esc_html_e( 'Patient', 'doctor-ak-portal' ); ?></legend>
 				<div class="dak-field">
-					<label for="dak-admin-appointment-guest-email"><?php esc_html_e( 'Guest Email', 'doctor-ak-portal' ); ?></label>
-					<input type="email" id="dak-admin-appointment-guest-email">
-					<span class="dak-field-error" data-field="guest_email"></span>
+					<label for="dak-admin-appointment-patient"><?php esc_html_e( 'Registered patient', 'doctor-ak-portal' ); ?> <span class="dak-optional"><?php esc_html_e( '(optional)', 'doctor-ak-portal' ); ?></label>
+					<select id="dak-admin-appointment-patient" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search patients…', 'doctor-ak-portal' ); ?>">
+						<option value=""><?php esc_html_e( '— Guest (enter details below) —', 'doctor-ak-portal' ); ?></option>
+						<?php foreach ( $patient_options as $patient_id => $patient_name ) : ?>
+							<option value="<?php echo esc_attr( $patient_id ); ?>"><?php echo esc_html( $patient_name ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</div>
+				<div id="dak-admin-appointment-guest-fields">
+					<div class="dak-field">
+						<label for="dak-admin-appointment-guest-name"><?php esc_html_e( 'Guest Name', 'doctor-ak-portal' ); ?></label>
+						<input type="text" id="dak-admin-appointment-guest-name">
+						<span class="dak-field-error" data-field="guest_name"></span>
+					</div>
+					<div class="dak-field-row">
+						<div class="dak-field">
+							<label for="dak-admin-appointment-guest-email"><?php esc_html_e( 'Guest Email', 'doctor-ak-portal' ); ?></label>
+							<input type="email" id="dak-admin-appointment-guest-email">
+							<span class="dak-field-error" data-field="guest_email"></span>
+						</div>
+						<div class="dak-field">
+							<label for="dak-admin-appointment-guest-phone"><?php esc_html_e( 'Guest Phone', 'doctor-ak-portal' ); ?></label>
+							<input type="tel" id="dak-admin-appointment-guest-phone">
+						</div>
+					</div>
+				</div>
+			</fieldset>
+			<fieldset class="dak-form-section">
+				<legend><?php esc_html_e( 'Doctor and services', 'doctor-ak-portal' ); ?></legend>
+				<div class="dak-field-row">
+					<div class="dak-field">
+						<label for="dak-admin-appointment-doctor"><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></label>
+						<select id="dak-admin-appointment-doctor" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search doctors…', 'doctor-ak-portal' ); ?>">
+							<option value=""><?php esc_html_e( 'Select a doctor…', 'doctor-ak-portal' ); ?></option>
+							<?php foreach ( $doctor_options as $doctor_id => $doctor_option ) : ?>
+								<option value="<?php echo esc_attr( $doctor_id ); ?>" <?php disabled( $doctor_option['is_disabled'] ); ?>><?php echo esc_html( $doctor_option['is_disabled'] ? sprintf( __( '%s (deactivated)', 'doctor-ak-portal' ), $doctor_option['name'] ) : $doctor_option['name'] ); ?></option>
+							<?php endforeach; ?>
+						</select>
+						<span class="dak-field-error" data-field="doctor_id"></span>
+					</div>
+					<div class="dak-field">
+						<label for="dak-admin-appointment-type"><?php esc_html_e( 'Type', 'doctor-ak-portal' ); ?></label>
+						<select id="dak-admin-appointment-type">
+							<option value="clinic"><?php esc_html_e( 'Onsite (Clinic)', 'doctor-ak-portal' ); ?></option>
+							<option value="video"><?php esc_html_e( 'Online (Video)', 'doctor-ak-portal' ); ?></option>
+						</select>
+					</div>
 				</div>
 				<div class="dak-field">
-					<label for="dak-admin-appointment-guest-phone"><?php esc_html_e( 'Guest Phone', 'doctor-ak-portal' ); ?></label>
-					<input type="tel" id="dak-admin-appointment-guest-phone">
+					<label for="dak-admin-appointment-service"><?php esc_html_e( 'Services', 'doctor-ak-portal' ); ?></label>
+					<select id="dak-admin-appointment-service" class="dak-select-searchable" multiple data-placeholder="<?php esc_attr_e( 'Select at least one service…', 'doctor-ak-portal' ); ?>"></select>
+					<span class="dak-field-error" data-field="service_ids"></span>
+					<span class="dak-field-hint" id="dak-admin-appointment-service-total"></span>
 				</div>
-			</div>
+			</fieldset>
+			<fieldset class="dak-form-section">
+				<legend><?php esc_html_e( 'Date and time', 'doctor-ak-portal' ); ?></legend>
+				<div class="dak-field">
+					<label for="dak-admin-appointment-date"><?php esc_html_e( 'Date', 'doctor-ak-portal' ); ?></label>
+					<input type="date" id="dak-admin-appointment-date">
+					<span class="dak-field-error" data-field="date"></span>
+				</div>
+				<div class="dak-field">
+					<span class="dak-field-label" id="dak-admin-appointment-time-label"><?php esc_html_e( 'Time', 'doctor-ak-portal' ); ?></span>
+					<input type="hidden" id="dak-admin-appointment-time">
+					<p class="dak-field-hint dak-hidden" id="dak-admin-appointment-slots-hint"><?php esc_html_e( 'Choose a doctor and date to see open slots.', 'doctor-ak-portal' ); ?></p>
+					<div id="dak-admin-appointment-slots-groups" role="group" aria-labelledby="dak-admin-appointment-time-label"></div>
+					<p class="dak-empty-state dak-hidden" id="dak-admin-appointment-no-slots"><?php esc_html_e( 'No time slots are configured for this doctor on this date.', 'doctor-ak-portal' ); ?></p>
+					<span class="dak-field-error" data-field="time"></span>
+				</div>
+			</fieldset>
+			<fieldset class="dak-form-section">
+				<legend><?php esc_html_e( 'Status and payment', 'doctor-ak-portal' ); ?></legend>
+				<div class="dak-field-row">
+					<div class="dak-field">
+						<label for="dak-admin-appointment-status"><?php esc_html_e( 'Status', 'doctor-ak-portal' ); ?></label>
+						<select id="dak-admin-appointment-status">
+							<?php foreach ( $status_options as $slug => $label ) : ?>
+								<option value="<?php echo esc_attr( $slug ); ?>"><?php echo esc_html( $label ); ?></option>
+							<?php endforeach; ?>
+						</select>
+					</div>
+					<div class="dak-field">
+						<label for="dak-admin-appointment-payment-status"><?php esc_html_e( 'Payment', 'doctor-ak-portal' ); ?></label>
+						<select id="dak-admin-appointment-payment-status">
+							<option value="pending"><?php esc_html_e( 'Ask the patient to pay (Pending)', 'doctor-ak-portal' ); ?></option>
+							<option value="paid"><?php esc_html_e( "I've collected payment (Paid)", 'doctor-ak-portal' ); ?></option>
+						</select>
+						<span class="dak-field-error" data-field="payment_status"></span>
+					</div>
+				</div>
+				<div class="dak-field">
+					<label for="dak-admin-appointment-payment-mode"><?php esc_html_e( 'Payment Mode', 'doctor-ak-portal' ); ?></label>
+					<select id="dak-admin-appointment-payment-mode">
+						<option value="manual"><?php esc_html_e( 'Manual', 'doctor-ak-portal' ); ?></option>
+						<option value="online"><?php esc_html_e( 'Online', 'doctor-ak-portal' ); ?></option>
+					</select>
+				</div>
+				<div class="dak-field">
+					<label for="dak-admin-appointment-notes"><?php esc_html_e( 'Notes', 'doctor-ak-portal' ); ?> <span class="dak-optional"><?php esc_html_e( '(optional)', 'doctor-ak-portal' ); ?></label>
+					<textarea id="dak-admin-appointment-notes" rows="2"></textarea>
+				</div>
+			</fieldset>
 		</div>
-
-		<div class="dak-field">
-			<label for="dak-admin-appointment-date"><?php esc_html_e( 'Date', 'doctor-ak-portal' ); ?></label>
-			<input type="date" id="dak-admin-appointment-date">
-			<span class="dak-field-error" data-field="date"></span>
+		<div class="dak-modal-footer">
+			<button type="button" class="dak-button dak-button-secondary" data-dak-admin-appointment-modal-close><?php esc_html_e( 'Cancel', 'doctor-ak-portal' ); ?></button>
+			<button type="button" class="dak-button dak-button-primary" id="dak-admin-appointment-save">
+				<span class="dak-button-label"><?php esc_html_e( 'Save Appointment', 'doctor-ak-portal' ); ?></span>
+			</button>
 		</div>
-
-		<div class="dak-field">
-			<label><?php esc_html_e( 'Time', 'doctor-ak-portal' ); ?></label>
-			<input type="hidden" id="dak-admin-appointment-time">
-			<p class="dak-field-hint dak-hidden" id="dak-admin-appointment-slots-hint"><?php esc_html_e( 'Choose a doctor and date to see open slots.', 'doctor-ak-portal' ); ?></p>
-			<div id="dak-admin-appointment-slots-groups"></div>
-			<p class="dak-empty-state dak-hidden" id="dak-admin-appointment-no-slots"><?php esc_html_e( 'No time slots are configured for this doctor on this date.', 'doctor-ak-portal' ); ?></p>
-			<span class="dak-field-error" data-field="time"></span>
-		</div>
-
-		<div class="dak-field-row">
-			<div class="dak-field">
-				<label for="dak-admin-appointment-status"><?php esc_html_e( 'Status', 'doctor-ak-portal' ); ?></label>
-				<select id="dak-admin-appointment-status">
-					<?php foreach ( $status_options as $slug => $label ) : ?>
-						<option value="<?php echo esc_attr( $slug ); ?>"><?php echo esc_html( $label ); ?></option>
-					<?php endforeach; ?>
-				</select>
-			</div>
-			<div class="dak-field">
-				<label for="dak-admin-appointment-payment-status"><?php esc_html_e( 'Payment', 'doctor-ak-portal' ); ?></label>
-				<select id="dak-admin-appointment-payment-status">
-					<option value="pending"><?php esc_html_e( 'Ask the patient to pay (Pending)', 'doctor-ak-portal' ); ?></option>
-					<option value="paid"><?php esc_html_e( "I've collected payment (Paid)", 'doctor-ak-portal' ); ?></option>
-				</select>
-				<span class="dak-field-error" data-field="payment_status"></span>
-			</div>
-		</div>
-
-		<div class="dak-field">
-			<label for="dak-admin-appointment-payment-mode"><?php esc_html_e( 'Payment Mode', 'doctor-ak-portal' ); ?></label>
-			<select id="dak-admin-appointment-payment-mode">
-				<option value="manual"><?php esc_html_e( 'Manual', 'doctor-ak-portal' ); ?></option>
-				<option value="online"><?php esc_html_e( 'Online', 'doctor-ak-portal' ); ?></option>
-			</select>
-		</div>
-
-		<div class="dak-field">
-			<label for="dak-admin-appointment-notes"><?php esc_html_e( 'Notes (optional)', 'doctor-ak-portal' ); ?></label>
-			<textarea id="dak-admin-appointment-notes" rows="2"></textarea>
-		</div>
-
-		<button type="button" class="dak-button dak-button-primary dak-button-block" id="dak-admin-appointment-save">
-			<span class="dak-button-label"><?php esc_html_e( 'Save Appointment', 'doctor-ak-portal' ); ?></span>
-		</button>
 	</div>
 </div>
 

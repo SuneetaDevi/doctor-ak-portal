@@ -92,17 +92,34 @@ $appointment_group_labels = array(
 			</button>
 		</div>
 
-		<div class="dak-sidebar-patient-card">
-			<span class="dak-avatar dak-avatar-md">
-				<?php if ( $avatar_url ) : ?>
-					<img src="<?php echo esc_url( $avatar_url ); ?>" alt="">
+		<a class="dak-sidebar-brand" href="<?php echo esc_url( home_url( '/' ) ); ?>" title="<?php esc_attr_e( 'Go to home page', 'doctor-ak-portal' ); ?>">
+			<span class="dak-sidebar-brand-logo">
+				<?php
+				$dak_brand_logo_url = \DoctorAKPortal\Frontend\Site_Footer::bundled_logo_url();
+				$dak_brand_initials = mb_strtoupper( mb_substr( get_bloginfo( 'name' ), 0, 2 ) );
+				?>
+				<?php if ( '' !== $dak_brand_logo_url ) : ?>
+					<img src="<?php echo esc_url( $dak_brand_logo_url ); ?>" alt="">
 				<?php else : ?>
-					<?php echo $dak_patient_icons['person']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+					<?php echo esc_html( '' !== $dak_brand_initials ? $dak_brand_initials : 'AK' ); ?>
 				<?php endif; ?>
 			</span>
-			<span class="dak-sidebar-patient-name"><?php echo esc_html( $display_name ); ?></span>
-			<span class="dak-sidebar-patient-badge"><?php esc_html_e( 'Patient', 'doctor-ak-portal' ); ?></span>
-		</div>
+			<span class="dak-sidebar-brand-text">
+				<strong><?php esc_html_e( 'Doctor AK Portal', 'doctor-ak-portal' ); ?></strong>
+				<span><?php esc_html_e( 'Patient portal', 'doctor-ak-portal' ); ?></span>
+			</span>
+		</a>
+
+		<?php
+		echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- partial escapes its own output.
+			'dashboard/partials/sidebar-identity.php',
+			array(
+				'name'       => $display_name,
+				'role_label' => __( 'Patient', 'doctor-ak-portal' ),
+				'avatar_url' => $avatar_url,
+			)
+		);
+		?>
 
 		<nav class="dak-dashboard-nav">
 			<ul>
@@ -119,7 +136,7 @@ $appointment_group_labels = array(
 				<?php endif; ?>
 				<?php if ( $notifications_url ) : ?>
 					<li class="<?php echo 'notifications' === $active_tab ? 'is-active' : ''; ?>">
-						<a href="<?php echo esc_url( $notifications_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_patient_icons['bell']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Notifications', 'doctor-ak-portal' ); ?><?php if ( $unread_notifications_count > 0 ) : ?><span class="dak-nav-badge" id="dak-notifications-badge"><?php echo esc_html( $unread_notifications_count ); ?></span><?php endif; ?></a>
+						<a href="<?php echo esc_url( $notifications_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_patient_icons['bell']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Notifications', 'doctor-ak-portal' ); ?><?php if ( $unread_notifications_count > 0 ) : ?><?php echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( 'dashboard/partials/unread-badge.php', array( 'count' => $unread_notifications_count, 'class' => 'dak-nav-badge', 'id' => 'dak-notifications-badge' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- partial escapes its own output. ?><?php endif; ?></a>
 					</li>
 				<?php endif; ?>
 				<?php if ( $profile_url ) : ?>
@@ -138,16 +155,10 @@ $appointment_group_labels = array(
 				<?php if ( $settings_url ) : ?>
 					<li class="<?php echo 'settings' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $settings_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_patient_icons['settings']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Settings', 'doctor-ak-portal' ); ?></a></li>
 				<?php endif; ?>
-				<li><a href="<?php echo esc_url( $logout_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_patient_icons['logout']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Logout', 'doctor-ak-portal' ); ?></a></li>
 			</ul>
 		</nav>
 
-		<div class="dak-sidebar-help-card">
-			<span class="dak-sidebar-help-icon"><?php echo $dak_patient_icons['headset']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-			<strong><?php esc_html_e( 'Need Help?', 'doctor-ak-portal' ); ?></strong>
-			<p><?php esc_html_e( 'We are here to assist you', 'doctor-ak-portal' ); ?></p>
-			<a class="dak-button dak-button-primary dak-button-block" href="<?php echo esc_url( $contact_url ); ?>"><?php esc_html_e( 'Contact Support', 'doctor-ak-portal' ); ?></a>
-		</div>
+		<?php echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( 'dashboard/partials/sidebar-footer.php', array( 'logout_url' => $logout_url ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- partial escapes its own output. ?>
 	</aside>
 
 	<main class="dak-dashboard-main">
@@ -242,67 +253,68 @@ $appointment_group_labels = array(
 
 		<?php else : ?>
 
-		<header class="dak-dashboard-header dak-patient-dashboard-header dak-hero-banner">
+		<div class="dak-page-head">
 			<div>
-				<h1><?php echo esc_html( sprintf( /* translators: %s: patient's first name or display name. */ __( 'Welcome back, %s', 'doctor-ak-portal' ), $first_name ) ); ?> <span aria-hidden="true">&#128075;</span></h1>
-				<p><?php esc_html_e( "Here's what's happening with your health today.", 'doctor-ak-portal' ); ?></p>
+				<h1><?php echo esc_html( sprintf( /* translators: %s: patient's first name or display name. */ __( 'Hello, %s', 'doctor-ak-portal' ), $first_name ) ); ?></h1>
+				<p><?php esc_html_e( 'Your appointments, payments and visit records in one place.', 'doctor-ak-portal' ); ?></p>
 			</div>
 			<button type="button" class="dak-button dak-button-primary dak-patient-book-cta" data-dak-book-appointment>
-				<span class="dak-nav-icon"><?php echo $dak_patient_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-				<?php esc_html_e( 'Book Appointment', 'doctor-ak-portal' ); ?>
+				<?php esc_html_e( 'Book appointment', 'doctor-ak-portal' ); ?>
 			</button>
-		</header>
+		</div>
 
-		<section class="dak-patient-stat-row">
-			<div class="dak-patient-stat-card">
-				<span class="dak-patient-stat-icon is-green"><?php echo $dak_patient_icons['calendar']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-				<div class="dak-patient-stat-body">
-					<span class="dak-patient-stat-label"><?php esc_html_e( 'Next Appointment', 'doctor-ak-portal' ); ?></span>
-					<?php if ( $next_appointment ) : ?>
-						<span class="dak-patient-stat-value"><?php echo esc_html( $next_appointment['countdown_label'] ); ?></span>
-						<span class="dak-patient-stat-sub"><?php echo esc_html( $next_appointment['datetime_label'] ); ?></span>
-						<span class="dak-patient-stat-link"><?php echo esc_html( sprintf( 'Dr. %s', $next_appointment['doctor_name'] ) ); ?></span>
-					<?php else : ?>
-						<span class="dak-patient-stat-value">&mdash;</span>
-						<span class="dak-patient-stat-sub"><?php esc_html_e( 'No upcoming appointments', 'doctor-ak-portal' ); ?></span>
+		<?php if ( $next_appointment ) : ?>
+			<section class="dak-next-appointment" aria-labelledby="dak-next-appointment-title">
+				<div class="dak-next-appointment-when">
+					<span class="dak-next-appointment-eyebrow" id="dak-next-appointment-title"><?php esc_html_e( 'Next appointment', 'doctor-ak-portal' ); ?></span>
+					<strong class="dak-next-appointment-date"><?php echo esc_html( $next_appointment['datetime_label'] ); ?></strong>
+					<span class="dak-next-appointment-countdown"><?php echo esc_html( $next_appointment['countdown_label'] ); ?> &middot; <?php echo esc_html( wp_timezone_string() ); ?></span>
+				</div>
+				<div class="dak-next-appointment-who">
+					<strong><?php echo esc_html( sprintf( 'Dr. %s', $next_appointment['doctor_name'] ) ); ?></strong>
+					<?php if ( '' !== $next_appointment['doctor_specialization'] ) : ?>
+						<span><?php echo esc_html( $next_appointment['doctor_specialization'] ); ?></span>
+					<?php endif; ?>
+					<span>
+						<?php
+						echo esc_html(
+							'video' === $next_appointment['type']
+								? __( 'Video visit', 'doctor-ak-portal' )
+								: ( '' !== $next_appointment['clinic_name'] ? $next_appointment['clinic_name'] : $next_appointment['type_label'] )
+						);
+						?>
+					</span>
+				</div>
+				<div class="dak-next-appointment-status">
+					<span class="dak-status-pill dak-status-pill-outline dak-status-pill-<?php echo esc_attr( $next_appointment['status_badge_class'] ); ?>"><?php echo esc_html( $next_appointment['status_label'] ); ?></span>
+					<?php if ( ! empty( $next_appointment['video_call']['can_join'] ) ) : ?>
+						<button type="button" class="dak-button dak-button-primary dak-button-sm" data-join-video-call data-room-url="<?php echo esc_url( $next_appointment['video_call']['room_url'] ); ?>"><?php esc_html_e( 'Join video visit', 'doctor-ak-portal' ); ?></button>
+					<?php elseif ( $appointments_url ) : ?>
+						<a class="dak-button dak-button-secondary dak-button-sm" href="<?php echo esc_url( $appointments_url ); ?>"><?php esc_html_e( 'View details', 'doctor-ak-portal' ); ?></a>
 					<?php endif; ?>
 				</div>
-			</div>
+			</section>
+		<?php endif; ?>
 
-			<div class="dak-patient-stat-card">
-				<span class="dak-patient-stat-icon is-purple"><?php echo $dak_patient_icons['wallet']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-				<div class="dak-patient-stat-body">
-					<span class="dak-patient-stat-label"><?php esc_html_e( 'Outstanding', 'doctor-ak-portal' ); ?></span>
-					<?php if ( $unpaid_count > 0 ) : ?>
-						<span class="dak-patient-stat-value"><?php echo esc_html( 'PKR ' . number_format( $unpaid_total, 0 ) ); ?></span>
-						<span class="dak-patient-stat-sub">
-							<?php
-							echo esc_html(
-								sprintf(
-									/* translators: %d: number of unpaid appointments. */
-									_n( '%d unpaid bill', '%d unpaid bills', $unpaid_count, 'doctor-ak-portal' ),
-									$unpaid_count
-								)
-							);
-							?>
-						</span>
-						<a class="dak-patient-stat-link" href="<?php echo esc_url( $payments_url ); ?>"><?php esc_html_e( 'View payments', 'doctor-ak-portal' ); ?> &rarr;</a>
-					<?php else : ?>
-						<span class="dak-patient-stat-value">PKR 0</span>
-						<span class="dak-patient-stat-sub"><?php esc_html_e( 'All paid up', 'doctor-ak-portal' ); ?></span>
-					<?php endif; ?>
-				</div>
+		<?php if ( $unpaid_count > 0 ) : ?>
+			<div class="dak-inline-notice is-warning" role="status">
+				<span>
+					<strong><?php echo esc_html( sprintf( /* translators: %s: amount due, e.g. "PKR 2,500". */ __( 'Amount due: %s', 'doctor-ak-portal' ), 'PKR ' . number_format_i18n( $unpaid_total ) ) ); ?></strong>
+					<?php
+					echo esc_html(
+						sprintf(
+							/* translators: %d: number of unpaid appointments. */
+							_n( '%d appointment is awaiting payment.', '%d appointments are awaiting payment.', $unpaid_count, 'doctor-ak-portal' ),
+							$unpaid_count
+						)
+					);
+					?>
+				</span>
+				<?php if ( $payments_url ) : ?>
+					<a class="dak-button dak-button-secondary dak-button-sm" href="<?php echo esc_url( $payments_url ); ?>"><?php esc_html_e( 'View payments', 'doctor-ak-portal' ); ?></a>
+				<?php endif; ?>
 			</div>
-
-			<div class="dak-patient-stat-card">
-				<span class="dak-patient-stat-icon is-blue"><?php echo $dak_patient_icons['shield']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-				<div class="dak-patient-stat-body">
-					<span class="dak-patient-stat-label"><?php esc_html_e( 'Member Since', 'doctor-ak-portal' ); ?></span>
-					<span class="dak-patient-stat-value"><?php echo esc_html( mysql2date( 'F j, Y', $user->user_registered ) ); ?></span>
-					<span class="dak-patient-stat-sub"><?php esc_html_e( 'Thank you for being with us', 'doctor-ak-portal' ); ?></span>
-				</div>
-			</div>
-		</section>
+		<?php endif; ?>
 
 		<div class="dak-patient-dashboard-grid">
 			<div class="dak-patient-dashboard-main-col">
@@ -343,53 +355,22 @@ $appointment_group_labels = array(
 			</div>
 
 			<div class="dak-patient-dashboard-side-col">
-				<section class="dak-dashboard-card dak-patient-profile-summary">
-					<div class="dak-dashboard-card-header">
-						<h2><?php esc_html_e( 'My Profile', 'doctor-ak-portal' ); ?></h2>
-						<?php if ( $profile_url ) : ?>
-							<a class="dak-link" href="<?php echo esc_url( $profile_url ); ?>"><?php esc_html_e( 'Edit', 'doctor-ak-portal' ); ?></a>
-						<?php endif; ?>
-					</div>
-					<div class="dak-patient-profile-summary-body">
-						<span class="dak-avatar dak-avatar-md">
-							<?php if ( $avatar_url ) : ?>
-								<img src="<?php echo esc_url( $avatar_url ); ?>" alt="">
-							<?php else : ?>
-								<?php echo $dak_patient_icons['person']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-							<?php endif; ?>
-						</span>
-						<div>
-							<strong><?php echo esc_html( $display_name ); ?></strong><br>
-							<span class="dak-patient-profile-detail"><?php echo esc_html( $user->user_email ); ?></span><br>
-							<?php if ( $phone_number ) : ?>
-								<span class="dak-patient-profile-detail"><?php echo esc_html( $phone_number ); ?></span><br>
-							<?php endif; ?>
-							<span class="dak-patient-profile-detail"><?php echo esc_html( sprintf( /* translators: %s: date. */ __( 'Member since %s', 'doctor-ak-portal' ), mysql2date( get_option( 'date_format' ), $user->user_registered ) ) ); ?></span>
+				<?php if ( ! empty( $required_profile_items ) ) : ?>
+					<section class="dak-dashboard-card dak-patient-profile-summary">
+						<div class="dak-dashboard-card-header">
+							<h2><?php esc_html_e( 'Complete your details', 'doctor-ak-portal' ); ?></h2>
 						</div>
-					</div>
-
-					<div class="dak-patient-profile-completion-row">
-						<span class="dak-status-pill dak-status-pill-outline <?php echo 100 === $profile_completion ? 'dak-status-pill-is-active' : 'dak-status-pill-is-pending'; ?>">
-							<?php echo 100 === $profile_completion ? esc_html__( 'Profile complete', 'doctor-ak-portal' ) : esc_html__( 'Profile incomplete', 'doctor-ak-portal' ); ?>
-						</span>
-						<span class="dak-patient-profile-percent"><?php echo esc_html( $profile_completion ); ?>%</span>
-					</div>
-					<div class="dak-progress-bar">
-						<div class="dak-progress-bar-fill" style="width: <?php echo esc_attr( $profile_completion ); ?>%;"></div>
-					</div>
-
-					<?php if ( $profile_completion < 100 && ! empty( $missing_profile_items ) ) : ?>
+						<p class="dak-field-hint"><?php esc_html_e( 'The clinic uses these to confirm and contact you about appointments.', 'doctor-ak-portal' ); ?></p>
 						<ul class="dak-patient-missing-list">
-							<?php foreach ( $missing_profile_items as $missing_item ) : ?>
-								<li><?php echo esc_html( $missing_item ); ?></li>
+							<?php foreach ( $required_profile_items as $dak_required_item ) : ?>
+								<li><?php echo esc_html( $dak_required_item ); ?></li>
 							<?php endforeach; ?>
 						</ul>
-					<?php endif; ?>
-
-					<?php if ( $profile_url ) : ?>
-						<a class="dak-link" href="<?php echo esc_url( $profile_url ); ?>"><?php echo 100 === $profile_completion ? esc_html__( 'View full profile', 'doctor-ak-portal' ) : esc_html__( 'Complete your profile', 'doctor-ak-portal' ); ?> &rarr;</a>
-					<?php endif; ?>
-				</section>
+						<?php if ( $profile_url ) : ?>
+							<a class="dak-button dak-button-secondary dak-button-sm" href="<?php echo esc_url( $profile_url ); ?>"><?php esc_html_e( 'Update profile', 'doctor-ak-portal' ); ?></a>
+						<?php endif; ?>
+					</section>
+				<?php endif; ?>
 
 				<section class="dak-dashboard-card dak-dashboard-notifications">
 					<div class="dak-dashboard-card-header">

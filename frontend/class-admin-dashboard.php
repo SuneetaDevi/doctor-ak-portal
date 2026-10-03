@@ -165,6 +165,24 @@ class Admin_Dashboard {
 	}
 
 	/**
+	 * Whichever of receptionist_can_access()/admin_can_access() applies to
+	 * the current viewer — for overview shortcuts that link into another
+	 * section, so a shortcut only appears when its destination would
+	 * actually let this viewer in (same check requested_section() applies
+	 * on arrival).
+	 *
+	 * @param string $slug Section slug.
+	 * @return bool
+	 */
+	private static function current_user_can_access_section( $slug ) {
+		if ( self::is_receptionist() ) {
+			return self::receptionist_can_access( $slug );
+		}
+
+		return current_user_can( 'manage_options' ) && self::admin_can_access( $slug );
+	}
+
+	/**
 	 * Template loader.
 	 *
 	 * @var Template_Loader
@@ -2666,8 +2684,13 @@ class Admin_Dashboard {
 			'appointments_chart_html' => $this->appointments_chart_html( 'day' ),
 			'clinic_name'          => get_option( Site_Footer::OPTION_CLINIC_NAME, 'Main Clinic' ),
 			'clinic_address'       => get_option( Site_Footer::OPTION_CLINIC_ADDRESS, '' ),
-			'appointments_url'     => $dashboard_url ? add_query_arg( 'section', 'appointments', $dashboard_url ) : '',
-			'doctor_requests_url'  => $dashboard_url ? add_query_arg( 'section', 'doctor-requests', $dashboard_url ) : '',
+			// Each shortcut is only handed to the template when its
+			// destination section would actually admit this viewer — e.g. a
+			// Receptionist never gets a "Review requests" link into the
+			// Administrator-only Doctor Requests section.
+			'appointments_url'     => ( $dashboard_url && self::current_user_can_access_section( 'appointments' ) ) ? add_query_arg( 'section', 'appointments', $dashboard_url ) : '',
+			'doctor_requests_url'  => ( $dashboard_url && self::current_user_can_access_section( 'doctor-requests' ) ) ? add_query_arg( 'section', 'doctor-requests', $dashboard_url ) : '',
+			'can_review_doctor_requests' => self::current_user_can_access_section( 'doctor-requests' ),
 			'is_receptionist'      => $is_receptionist,
 		);
 	}

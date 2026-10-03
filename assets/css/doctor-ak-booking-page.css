@@ -1,1027 +1,1848 @@
 /**
- * Doctor AK Portal — Booking page ([book_appointment] shortcode).
+ * Doctor AK Portal — Booking page ([book_appointment]).
  *
- * Loaded together with doctor-ak-auth.css (design tokens, .dak-field*,
- * .dak-button*, .dak-alert*). Layout: a persistent vertical step sidebar
- * (Doctor / Service / Personal Details / Date & Time / Payment /
- * Confirmation) + a content column that shows exactly one step card at a
- * time, navigated with explicit Back/Next buttons.
+ * Same palette, type scale, controls and states as the redesigned dashboards
+ * (doctor-ak-dashboard-ui.css), re-declared here because this is a public
+ * page and must not load dashboard styles. Everything is scoped to
+ * `.dak-booking-page`, so no other page — dashboards included — is affected.
+ *
+ * Sections: 1 tokens · 2 page + progress · 3 layout + steps · 4 controls ·
+ * 5 doctor picker · 6 options (clinics/services/payment) · 7 calendar +
+ * slots · 8 details · 9 review · 10 summary · 11 result · 12 responsive ·
+ * 13 widgets + motion.
  */
 
+/* ==========================================================================
+   1. Tokens
+   ========================================================================== */
+
 .dak-booking-page {
-	max-width: 1100px !important;
-	margin: 0 auto !important;
-	padding: 2.5rem 1.5rem 4rem !important;
+	--bk-primary: #16634b;
+	--bk-primary-hover: #104d3a;
+	--bk-primary-tint: #eaf4ef;
+	--bk-on-primary: #ffffff;
+	--bk-text: #182b3a;
+	--bk-muted: #526273;
+	--bk-border: #dfe5eb;
+	--bk-border-strong: #c3ccd5;
+	--bk-canvas: #f6f8fa;
+	--bk-surface: #ffffff;
+	--bk-subtle: #f1f4f7;
+	--bk-info: #245fa8;
+	--bk-info-tint: #e8f0fa;
+	--bk-warn-text: #8a4b08;
+	--bk-warn-tint: #fff4d8;
+	--bk-danger: #b42318;
+	--bk-danger-tint: #feeceb;
+	--bk-focus: #245fa8;
+	--bk-radius: 12px;
+	--bk-radius-sm: 8px;
+	--bk-offset: 88px; /* Sticky site header + breathing room. */
+
+	--dak-primary: var( --bk-primary );
+	--dak-text: var( --bk-text );
+	--dak-muted: var( --bk-muted );
+	--dak-border: var( --bk-border );
+	--dak-danger: var( --bk-danger );
+
+	box-sizing: border-box;
+	max-width: 1180px;
+	margin: 0 auto;
+	padding: 24px 24px 56px;
+	color: var( --bk-text );
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	font-size: 15px;
+	line-height: 1.5;
 }
 
-.dak-booking-page-header {
-	margin-bottom: 1.5rem !important;
+html[data-theme='dark'] .dak-booking-page {
+	--bk-primary: #3aa679;
+	--bk-primary-hover: #7fd3ab;
+	--bk-primary-tint: #12261d;
+	--bk-on-primary: #ffffff;
+	--bk-text: #e6ebef;
+	--bk-muted: #a3afba;
+	--bk-border: #2a3139;
+	--bk-border-strong: #3a434d;
+	--bk-canvas: #0b0d10;
+	--bk-surface: #13171b;
+	--bk-subtle: #1a1f25;
+	--bk-info: #8db8f2;
+	--bk-info-tint: #13213a;
+	--bk-warn-text: #f2c26b;
+	--bk-warn-tint: #2b2310;
+	--bk-danger: #f4a29b;
+	--bk-danger-tint: #2c1516;
+	--bk-focus: #8db8f2;
 }
 
-.dak-booking-page-header h1 {
-	margin: 0.35rem 0 0.5rem !important;
+.dak-booking-page *,
+.dak-booking-page *::before,
+.dak-booking-page *::after {
+	box-sizing: border-box;
 }
 
-.dak-booking-page-header p {
-	color: var( --dak-muted ) !important;
-	margin: 0 !important;
+/* Beats same-specificity `display: … !important` rules declared later in
+   doctor-ak-auth.css (e.g. .dak-link-button), so hidden always means hidden. */
+.dak-booking-page .dak-hidden,
+.dak-booking-page [hidden] {
+	display: none !important;
 }
 
-.dak-required {
-	color: #c0362c !important;
+.dak-booking-page :focus-visible {
+	outline: 2px solid var( --bk-focus ) !important;
+	outline-offset: 2px !important;
 }
 
-.dak-field-row {
-	display: grid !important;
-	grid-template-columns: 1fr 1fr !important;
-	gap: 1rem !important;
+.dak-booking-page h1,
+.dak-booking-page h2,
+.dak-booking-page h3,
+.dak-booking-page p {
+	color: var( --bk-text );
 }
 
-/* Wizard layout: sidebar + content */
-
-.dak-booking-wizard-layout {
-	display: grid !important;
-	grid-template-columns: 220px 1fr !important;
-	gap: 2rem !important;
-	align-items: start !important;
+.dak-booking-page .dak-bk-step-head h2,
+.dak-booking-page .dak-alert,
+.dak-booking-page .dak-field,
+.dak-booking-page .dak-bk-fieldset,
+.dak-booking-page .dak-bk-slots {
+	scroll-margin-top: var( --bk-offset );
 }
 
-.dak-booking-wizard-content {
-	min-width: 0 !important;
+/* ==========================================================================
+   2. Page head + progress
+   ========================================================================== */
+
+.dak-booking-page .dak-bk-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 8px 16px;
+	margin: 0 0 16px;
 }
 
-.dak-booking-wizard-sidebar {
-	position: sticky !important;
-	top: 1.5rem !important;
-	background: var( --dak-bg-card ) !important;
-	border-radius: var( --dak-radius-lg ) !important;
-	box-shadow: var( --dak-shadow ) !important;
-	padding: 1.5rem 1.25rem !important;
+.dak-booking-page .dak-bk-head h1 {
+	margin: 0;
+	font-size: 26px;
+	font-weight: 700;
+	line-height: 1.25;
+	letter-spacing: -0.01em;
 }
 
-.dak-booking-wizard-steps {
-	list-style: none !important;
-	margin: 0 !important;
-	padding: 0 !important;
+.dak-booking-page .dak-bk-head p {
+	margin: 4px 0 0;
+	font-size: 14px;
+	color: var( --bk-muted );
 }
 
-.dak-booking-wizard-step {
-	position: relative !important;
-	display: flex !important;
-	align-items: center !important;
-	gap: 0.75rem !important;
-	padding-bottom: 1.75rem !important;
-	font-size: 0.85rem !important;
+.dak-booking-page .dak-bk-help {
+	font-size: 14px;
+	font-weight: 600;
+	color: var( --bk-primary );
+	text-decoration: none;
+}
+
+.dak-booking-page .dak-bk-help:hover {
+	text-decoration: underline;
+}
+
+.dak-booking-page .dak-bk-progress-wrap {
+	margin: 0 0 20px;
+	scroll-margin-top: var( --bk-offset );
+}
+
+.dak-booking-page .dak-bk-progress {
+	display: grid;
+	grid-template-columns: repeat( 4, minmax( 0, 1fr ) );
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	counter-reset: none;
+}
+
+.dak-booking-page .dak-bk-progress-step {
+	position: relative;
+	margin: 0;
+	padding: 0;
+}
+
+.dak-booking-page .dak-bk-progress-btn {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	min-height: 44px;
+	padding: 8px 10px;
+	border: 1px solid var( --bk-border );
+	border-radius: var( --bk-radius-sm );
+	background: var( --bk-surface );
+	color: var( --bk-muted );
+	font: inherit;
+	font-size: 14px;
+	font-weight: 500;
+	text-align: left;
+	cursor: pointer;
+}
+
+.dak-booking-page .dak-bk-progress-btn:disabled {
+	cursor: default;
+}
+
+.dak-booking-page .dak-bk-progress-btn:not( :disabled ):hover {
+	border-color: var( --bk-border-strong );
+	color: var( --bk-text );
+}
+
+.dak-booking-page .dak-bk-progress-num {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 24px;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	border: 1.5px solid var( --bk-border-strong );
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.dak-booking-page .dak-bk-progress-num svg {
+	display: none;
+	width: 14px;
+	height: 14px;
+}
+
+.dak-booking-page .dak-bk-progress-label {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.dak-booking-page .dak-bk-progress-step.is-active .dak-bk-progress-btn {
+	border-color: var( --bk-primary );
+	background: var( --bk-primary-tint );
+	color: var( --bk-text );
+	font-weight: 600;
+	box-shadow: inset 0 -2px 0 var( --bk-primary );
+}
+
+.dak-booking-page .dak-bk-progress-step.is-active .dak-bk-progress-num {
+	border-color: var( --bk-primary );
+	background: var( --bk-primary );
+	color: var( --bk-on-primary );
+}
+
+.dak-booking-page .dak-bk-progress-step.is-complete .dak-bk-progress-btn {
+	color: var( --bk-text );
+}
+
+.dak-booking-page .dak-bk-progress-step.is-complete .dak-bk-progress-num {
+	border-color: var( --bk-primary );
+	background: var( --bk-primary );
+	color: var( --bk-on-primary );
+}
+
+.dak-booking-page .dak-bk-progress-step.is-complete .dak-bk-progress-n {
+	display: none;
+}
+
+.dak-booking-page .dak-bk-progress-step.is-complete .dak-bk-progress-num svg {
+	display: block;
+}
+
+/* ==========================================================================
+   3. Layout + step cards
+   ========================================================================== */
+
+.dak-booking-page #dak-booking-form {
+	margin: 0;
+}
+
+.dak-booking-page .dak-bk-layout {
+	display: grid;
+	grid-template-columns: minmax( 0, 1fr ) 320px;
+	align-items: start;
+	gap: 24px;
+}
+
+.dak-booking-page .dak-bk-main {
+	min-width: 0;
+}
+
+.dak-booking-page .dak-booking-card {
+	margin: 0;
+	padding: 24px;
+	border: 1px solid var( --bk-border );
+	border-radius: var( --bk-radius );
+	background: var( --bk-surface );
+	box-shadow: none;
+}
+
+.dak-booking-page .dak-bk-step-head {
+	margin: 0 0 20px;
+}
+
+.dak-booking-page .dak-bk-step-count {
+	display: block;
+	margin: 0 0 2px;
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var( --bk-muted );
+}
+
+.dak-booking-page .dak-bk-step-head h2,
+.dak-booking-page .dak-bk-result h2 {
+	margin: 0;
+	font-size: 20px;
+	font-weight: 700;
+	line-height: 1.3;
+	outline: none;
+}
+
+.dak-booking-page .dak-bk-tz {
+	margin: 6px 0 0;
+	font-size: 14px;
+	color: var( --bk-muted );
+}
+
+.dak-booking-page .dak-bk-subhead {
+	margin: 0 0 10px;
+	font-size: 15px;
+	font-weight: 700;
+}
+
+.dak-booking-page .dak-bk-nav {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin: 24px -24px -24px;
+	padding: 16px 24px;
+	border-top: 1px solid var( --bk-border );
+	border-radius: 0 0 var( --bk-radius ) var( --bk-radius );
+	background: var( --bk-surface );
+}
+
+.dak-booking-page .dak-bk-nav .dak-button-primary {
+	margin-left: auto;
+}
+
+/* ==========================================================================
+   4. Controls
+   ========================================================================== */
+
+.dak-booking-page .dak-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-height: 44px;
+	padding: 0 20px;
+	border-radius: var( --bk-radius-sm ) !important;
+	font: inherit;
+	font-size: 15px !important;
 	font-weight: 600 !important;
-	color: var( --dak-muted ) !important;
-}
-
-.dak-booking-wizard-step:last-child {
-	padding-bottom: 0 !important;
-}
-
-.dak-booking-wizard-step:not( :last-child )::after {
-	content: '' !important;
-	position: absolute !important;
-	left: 0.75rem !important;
-	top: 1.75rem !important;
-	width: 2px !important;
-	bottom: 0 !important;
-	background: var( --dak-border ) !important;
-}
-
-.dak-booking-wizard-step.is-complete:not( :last-child )::after {
-	background: var( --dak-primary ) !important;
-}
-
-.dak-booking-wizard-step-badge {
-	flex: 0 0 auto !important;
-	display: inline-flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	width: 1.6rem !important;
-	height: 1.6rem !important;
-	border-radius: 999px !important;
-	background: var( --dak-bg-subtle ) !important;
-	color: var( --dak-muted ) !important;
-	font-size: 0 !important;
-	z-index: 1 !important;
-}
-
-.dak-booking-wizard-step-badge::before {
-	content: attr( data-num ) !important;
-	font-size: 0.8rem !important;
-}
-
-.dak-booking-wizard-step-label {
-	line-height: 1.3 !important;
-}
-
-.dak-booking-wizard-step.is-active {
-	color: var( --dak-text ) !important;
-}
-
-.dak-booking-wizard-step.is-active .dak-booking-wizard-step-badge {
-	background: var( --dak-primary ) !important;
-	color: #fff !important;
-	font-size: 0.8rem !important;
-}
-
-.dak-booking-wizard-step.is-complete .dak-booking-wizard-step-badge {
-	background: var( --dak-primary ) !important;
-	color: #fff !important;
-	font-size: 0 !important;
-}
-
-.dak-booking-wizard-step.is-complete .dak-booking-wizard-step-badge::before {
-	content: '\2713' !important;
-	font-size: 0.8rem !important;
-}
-
-.dak-booking-wizard-help {
-	display: flex !important;
-	align-items: center !important;
-	gap: 0.5rem !important;
-	margin-top: 1.5rem !important;
-	padding-top: 1.25rem !important;
-	border-top: 1px solid var( --dak-border ) !important;
-	font-size: 0.8rem !important;
-	font-weight: 600 !important;
-	color: var( --dak-primary-dark ) !important;
+	line-height: 1.2;
 	text-decoration: none !important;
+	box-shadow: none !important;
+	transform: none !important;
+	cursor: pointer;
 }
 
-.dak-booking-wizard-help:hover {
-	text-decoration: underline !important;
+.dak-booking-page .dak-button-sm {
+	min-height: 36px;
+	padding: 0 14px;
+	font-size: 14px !important;
 }
 
-.dak-booking-wizard-help-icon {
-	display: inline-flex !important;
-	flex: 0 0 auto !important;
+.dak-booking-page .dak-button-primary {
+	border: 1px solid var( --bk-primary ) !important;
+	background: var( --bk-primary ) !important;
+	background-image: none !important;
+	color: var( --bk-on-primary ) !important;
 }
 
-.dak-booking-wizard-help-icon svg {
-	width: 1.1rem !important;
-	height: 1.1rem !important;
-	flex-shrink: 0 !important;
-	display: block !important;
-	stroke: currentColor !important;
-	fill: none !important;
+.dak-booking-page .dak-button-primary:hover:not( :disabled ) {
+	border-color: var( --bk-primary-hover ) !important;
+	background: var( --bk-primary-hover ) !important;
 }
 
-/* Step cards */
-
-.dak-booking-card {
-	background: var( --dak-bg-card ) !important;
-	border-radius: var( --dak-radius-lg ) !important;
-	box-shadow: var( --dak-shadow ) !important;
-	padding: 1.75rem !important;
-}
-
-.dak-booking-card-title {
-	margin: 0 0 1.25rem !important;
-	font-size: 1.05rem !important;
-	font-weight: 700 !important;
-	color: var( --dak-text ) !important;
-}
-
-/* A second sub-heading within a merged step (Doctor & Service; Date/Time &
-   Payment) — visually separates what used to be two whole steps' content
-   now living in one card. */
-.dak-booking-card-title-secondary {
-	margin-top: 2rem !important;
-	padding-top: 1.75rem !important;
-	border-top: 1px solid var( --dak-border ) !important;
-}
-
-.dak-booking-field-label {
-	font-size: 0.82rem !important;
-	font-weight: 700 !important;
-	color: var( --dak-text ) !important;
-	margin: 1.25rem 0 0.6rem !important;
-}
-
-.dak-booking-field-label:first-child {
-	margin-top: 0 !important;
-}
-
-.dak-booking-wizard-nav {
-	display: flex !important;
-	align-items: center !important;
-	justify-content: space-between !important;
-	margin-top: 1.75rem !important;
-	padding-top: 1.25rem !important;
-	border-top: 1px solid var( --dak-border ) !important;
-}
-
-/* Doctor cards */
-
-/* Search + specialization filter above the Doctor step's card grid (see
-   templates/booking/booking-page.php + wireDoctorFilters() in
-   doctor-ak-booking-page.js) — reuses .dak-directory-search/
-   #dak-directory-specialization-filter's own styling (loaded alongside this
-   stylesheet) for the input itself, just a simpler row layout than the
-   directory's own multi-filter grid since there are only two fields here. */
-.dak-booking-doctor-filters {
-	display: flex !important;
-	flex-wrap: wrap !important;
-	gap: 0.75rem !important;
-	margin-bottom: 1.25rem !important;
-}
-
-.dak-booking-doctor-filters .dak-directory-search {
-	flex: 1 1 240px !important;
-}
-
-.dak-booking-doctor-filters select {
-	flex: 0 1 220px !important;
-	box-sizing: border-box !important;
-	padding: 0.65rem 0.85rem !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-sm ) !important;
-	background: var( --dak-bg-card ) !important;
-	color: var( --dak-text ) !important;
-	font-size: 0.95rem !important;
-}
-
-.dak-booking-doctor-cards {
-	display: grid !important;
-	grid-template-columns: repeat( auto-fill, minmax( 220px, 1fr ) ) !important;
-	gap: 0.75rem !important;
-}
-
-.dak-booking-doctor-card.dak-hidden {
-	display: none !important;
-}
-
-.dak-booking-doctor-card {
-	display: flex !important;
-	align-items: center !important;
-	gap: 0.65rem !important;
-	text-align: left !important;
-	padding: 0.85rem !important;
-	border-radius: var( --dak-radius-md ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	background: var( --dak-bg-card ) !important;
-	color: var( --dak-text ) !important;
-	cursor: pointer !important;
-}
-
-.dak-booking-doctor-card:hover {
-	border-color: var( --dak-primary ) !important;
-}
-
-.dak-booking-doctor-card.is-selected {
-	border-color: var( --dak-primary ) !important;
-	background: var( --dak-primary-tint ) !important;
-}
-
-.dak-booking-doctor-avatar {
-	flex: 0 0 auto !important;
-	display: inline-flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	width: 2.5rem !important;
-	height: 2.5rem !important;
-	border-radius: 999px !important;
-	background: var( --dak-primary-tint ) !important;
-	color: var( --dak-primary-dark ) !important;
-	font-weight: 700 !important;
-	font-size: 0.9rem !important;
-	overflow: hidden !important;
-}
-
-.dak-booking-doctor-avatar img {
-	width: 100% !important;
-	height: 100% !important;
-	object-fit: cover !important;
-}
-
-.dak-booking-doctor-info {
-	display: flex !important;
-	flex-direction: column !important;
-	gap: 0.15rem !important;
-	min-width: 0 !important;
-}
-
-.dak-booking-doctor-info strong {
-	font-size: 0.9rem !important;
-	color: var( --dak-text ) !important;
-	white-space: nowrap !important;
-	overflow: hidden !important;
-	text-overflow: ellipsis !important;
-}
-
-/* Patient cards — staff (Admin/Receptionist) "Personal Details" step's
-   patient picker (see #dak-booking-identity-staff). Same visual language
-   as the doctor cards above. */
-
-.dak-booking-patient-cards {
-	display: grid !important;
-	grid-template-columns: repeat( auto-fill, minmax( 200px, 1fr ) ) !important;
-	gap: 0.65rem !important;
-	max-height: 320px !important;
-	overflow-y: auto !important;
-	padding: 0.1rem !important;
-}
-
-.dak-booking-patient-card {
-	display: flex !important;
-	align-items: center !important;
-	gap: 0.65rem !important;
-	text-align: left !important;
-	padding: 0.75rem !important;
-	border-radius: var( --dak-radius-md ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	background: var( --dak-bg-card ) !important;
-	color: var( --dak-text ) !important;
-	cursor: pointer !important;
-	font-family: inherit !important;
-}
-
-.dak-booking-patient-card:hover {
-	border-color: var( --dak-primary ) !important;
-}
-
-.dak-booking-patient-card.is-selected {
-	border-color: var( --dak-primary ) !important;
-	background: var( --dak-primary-tint ) !important;
-}
-
-.dak-booking-patient-card.dak-hidden {
-	display: none !important;
-}
-
-.dak-booking-patient-avatar {
-	flex: 0 0 auto !important;
-	display: inline-flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	width: 2.25rem !important;
-	height: 2.25rem !important;
-	border-radius: 999px !important;
-	background: var( --dak-primary-tint ) !important;
-	color: var( --dak-primary-dark ) !important;
-	font-weight: 700 !important;
-	font-size: 0.85rem !important;
-}
-
-.dak-booking-patient-info {
-	display: flex !important;
-	flex-direction: column !important;
-	gap: 0.1rem !important;
-	min-width: 0 !important;
-}
-
-.dak-booking-patient-info strong {
-	font-size: 0.87rem !important;
-	color: var( --dak-text ) !important;
-	white-space: nowrap !important;
-	overflow: hidden !important;
-	text-overflow: ellipsis !important;
-}
-
-.dak-booking-patient-info span {
-	font-size: 0.76rem !important;
-	color: var( --dak-muted ) !important;
-}
-
-.dak-booking-patient-card-add {
-	border-style: dashed !important;
-}
-
-.dak-booking-patient-card-add .dak-booking-patient-avatar {
-	background: transparent !important;
-	border: 1.5px dashed var( --dak-primary ) !important;
-	color: var( --dak-primary ) !important;
-	font-size: 1.1rem !important;
-}
-
-.dak-booking-patient-search {
-	margin-bottom: 0.65rem !important;
-}
-
-.dak-booking-doctor-specialization {
-	font-size: 0.78rem !important;
-	color: var( --dak-muted ) !important;
-}
-
-/* Appointment type segmented control */
-
-.dak-booking-segmented {
-	display: inline-flex !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: 999px !important;
-	overflow: hidden !important;
-	width: 100% !important;
-}
-
-.dak-booking-segment {
-	flex: 1 1 0 !important;
-	padding: 0.6rem 1rem !important;
-	background: var( --dak-bg-card ) !important;
-	color: var( --dak-text ) !important;
-	font-weight: 600 !important;
-	font-size: 0.88rem !important;
-	cursor: pointer !important;
-	border: none !important;
-}
-
-.dak-booking-segment + .dak-booking-segment {
-	border-left: 1px solid var( --dak-border ) !important;
-}
-
-.dak-booking-segment.is-active {
-	background: var( --dak-primary ) !important;
-	color: #fff !important;
-}
-
-.dak-booking-segment:disabled {
-	color: var( --dak-muted ) !important;
-	cursor: not-allowed !important;
-	opacity: 0.6 !important;
-}
-
-/* Service cards */
-
-.dak-booking-service-cards {
-	display: grid !important;
-	grid-template-columns: repeat( auto-fill, minmax( 150px, 1fr ) ) !important;
-	gap: 0.75rem !important;
-}
-
-.dak-booking-service-card {
-	text-align: left !important;
-	padding: 0.85rem !important;
-	border-radius: var( --dak-radius-md ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	background: var( --dak-bg-card ) !important;
-	color: var( --dak-text ) !important;
-	cursor: pointer !important;
-	display: flex !important;
-	flex-direction: column !important;
-	gap: 0.3rem !important;
-	min-width: 0 !important;
-	overflow-wrap: break-word !important;
-	word-break: break-word !important;
-}
-
-.dak-booking-service-card:hover {
-	border-color: var( --dak-primary ) !important;
-}
-
-.dak-booking-service-card {
-	white-space: normal !important;
-}
-
-.dak-booking-service-card.is-selected {
-	border-color: var( --dak-primary ) !important;
-	background: var( --dak-primary-tint ) !important;
-}
-
-.dak-booking-service-card.is-fixed-price {
-	cursor: default !important;
-}
-
-.dak-booking-service-card.is-fixed-price:hover {
-	border-color: var( --dak-primary ) !important;
-}
-
-.dak-booking-service-card strong {
-	font-size: 0.88rem !important;
-	color: var( --dak-text ) !important;
-}
-
-.dak-booking-service-card span {
-	font-size: 0.78rem !important;
-	color: var( --dak-muted ) !important;
-}
-
-/* A patient can now select more than one service to bundle into the same
-   visit — cards are <label>s wrapping a real checkbox (see
-   doctor-ak-booking-page.js's updateServiceCards()) instead of single-select
-   buttons; the video-consultation fixed-price card (.is-fixed-price) has no
-   checkbox and stays a plain, unclickable card. */
-.dak-booking-service-card-selectable {
-	position: relative !important;
-	padding-right: 2.1rem !important;
-}
-
-.dak-booking-service-checkbox {
-	position: absolute !important;
-	top: 0.7rem !important;
-	right: 0.7rem !important;
-	width: 16px !important;
-	height: 16px !important;
-	accent-color: var( --dak-primary ) !important;
-	cursor: pointer !important;
-}
-
-.dak-price-with-discount {
-	display: flex !important;
-	flex-wrap: wrap !important;
-	align-items: center !important;
-	gap: 0.4rem !important;
-}
-
-.dak-price-original {
-	font-size: 0.78rem !important;
-	color: var( --dak-muted ) !important;
-	text-decoration: line-through !important;
-}
-
-.dak-price-sale {
-	font-size: 0.95rem !important;
-	font-weight: 700 !important;
-	color: var( --dak-primary-dark, var( --dak-primary ) ) !important;
-}
-
-.dak-price-discount-badge {
-	font-size: 0.68rem !important;
-	font-weight: 700 !important;
-	padding: 0.1rem 0.4rem !important;
-	border-radius: 999px !important;
-	background: var( --dak-danger-tint, #fbeaea ) !important;
-	color: var( --dak-danger, #c0392b ) !important;
-}
-
-.dak-price-discount-ends {
-	flex-basis: 100% !important;
-	font-size: 0.7rem !important;
-	color: var( --dak-muted ) !important;
-}
-
-/* Identity step */
-
-.dak-booking-identity-choices {
-	display: flex !important;
-	flex-wrap: wrap !important;
-	gap: 0.75rem !important;
-}
-
-/* Date & time step */
-
-.dak-booking-calendar-toolbar {
-	display: flex !important;
-	align-items: center !important;
-	justify-content: space-between !important;
-	flex-wrap: wrap !important;
-	gap: 0.5rem !important;
-	margin-bottom: 1rem !important;
-}
-
-.dak-booking-calendar-toolbar .dak-booking-card-title {
-	margin: 0 !important;
-}
-
-.dak-booking-quick-dates {
-	display: flex !important;
-	gap: 0.4rem !important;
-	margin-bottom: 1.25rem !important;
-}
-
-.dak-booking-quick-date {
-	padding: 0.3rem 0.75rem !important;
-	border-radius: 999px !important;
-	border: 1px solid var( --dak-border ) !important;
-	background: var( --dak-bg-card ) !important;
-	color: var( --dak-text ) !important;
-	font-size: 0.78rem !important;
-	font-weight: 600 !important;
-	cursor: pointer !important;
-}
-
-.dak-booking-quick-date:hover {
-	border-color: var( --dak-primary ) !important;
-}
-
-.dak-booking-calendar-header {
-	display: flex !important;
-	align-items: center !important;
-	gap: 0.75rem !important;
-}
-
-.dak-booking-calendar-title {
-	font-weight: 700 !important;
-	font-size: 0.95rem !important;
-	color: var( --dak-primary-dark ) !important;
-	min-width: 9rem !important;
-	text-align: center !important;
-}
-
-/* Horizontal date-strip */
-
-.dak-booking-date-strip-row {
-	display: flex !important;
-	align-items: center !important;
-	gap: 0.5rem !important;
-	margin-bottom: 1.25rem !important;
-}
-
-.dak-booking-date-strip-nav {
-	flex: 0 0 auto !important;
-}
-
-.dak-booking-date-strip {
-	flex: 1 1 auto !important;
-	min-width: 0 !important;
-	display: grid !important;
-	grid-template-columns: repeat( 7, 1fr ) !important;
-	gap: 0.5rem !important;
-}
-
-.dak-booking-date-strip-day {
-	display: flex !important;
-	flex-direction: column !important;
-	align-items: center !important;
-	justify-content: center !important;
-	gap: 0.3rem !important;
-	min-height: 3rem !important;
-	padding: 0.65rem 0.25rem !important;
-	border-radius: var( --dak-radius-md ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	background: var( --dak-bg-card ) !important;
-	color: var( --dak-text ) !important;
-	cursor: pointer !important;
-}
-
-.dak-booking-date-strip-day:hover:not( :disabled ) {
-	border-color: var( --dak-primary ) !important;
-}
-
-.dak-booking-date-strip-dow {
-	font-size: 0.68rem !important;
-	font-weight: 700 !important;
-	text-transform: uppercase !important;
-	letter-spacing: 0.03em !important;
-	color: var( --dak-muted ) !important;
-}
-
-.dak-booking-date-strip-day.is-selected .dak-booking-date-strip-dow {
-	color: rgba( 255, 255, 255, 0.85 ) !important;
-}
-
-.dak-booking-date-strip-num {
-	font-size: 1.05rem !important;
-	font-weight: 700 !important;
-}
-
-.dak-booking-date-strip-day .dak-booking-dot {
-	margin-top: 0.1rem !important;
-}
-
-.dak-booking-date-strip-day.is-selected {
-	background: var( --dak-primary ) !important;
-	border-color: var( --dak-primary ) !important;
-	color: #fff !important;
-}
-
-.dak-booking-date-strip-day:disabled {
-	background: transparent !important;
-	color: var( --dak-muted ) !important;
-	opacity: 0.4 !important;
-	cursor: not-allowed !important;
-}
-
-.dak-booking-dot {
-	display: inline-block !important;
-	width: 5px !important;
-	height: 5px !important;
-	border-radius: 999px !important;
-}
-
-.dak-booking-dot.is-many { background: #2fae5a !important; }
-.dak-booking-dot.is-few { background: #e0a72c !important; }
-.dak-booking-dot.is-full { background: #e26a6a !important; }
-
-.dak-booking-date-strip-day.is-selected .dak-booking-dot.is-many,
-.dak-booking-date-strip-day.is-selected .dak-booking-dot.is-few,
-.dak-booking-date-strip-day.is-selected .dak-booking-dot.is-full {
-	background: rgba( 255, 255, 255, 0.85 ) !important;
-}
-
-.dak-booking-legend {
-	display: flex !important;
-	flex-wrap: wrap !important;
-	gap: 1rem !important;
-	margin: 1.25rem 0 !important;
-	font-size: 0.78rem !important;
-	color: var( --dak-muted ) !important;
-}
-
-.dak-booking-legend-item {
-	display: inline-flex !important;
-	align-items: center !important;
-	gap: 0.4rem !important;
-}
-
-.dak-booking-legend-swatch {
-	display: inline-block !important;
-	width: 0.8rem !important;
-	height: 0.8rem !important;
-	border-radius: 4px !important;
-	border: 1px solid var( --dak-border ) !important;
-}
-
-.dak-booking-legend-swatch.is-available { background: #e3f6e8 !important; border-color: #a7e0b6 !important; }
-.dak-booking-legend-swatch.is-booked { background: #fbeaea !important; border-color: #f0b8b8 !important; }
-.dak-booking-legend-swatch.is-past { background: var( --dak-bg-subtle ) !important; }
-.dak-booking-legend-swatch.is-selected { background: var( --dak-primary ) !important; border-color: var( --dak-primary ) !important; }
-
-/* Time slots, grouped morning/afternoon/evening */
-
-.dak-booking-slot-group {
-	margin-bottom: 1rem !important;
-}
-
-.dak-booking-slot-group-label {
-	font-size: 0.75rem !important;
-	font-weight: 700 !important;
-	text-transform: uppercase !important;
-	letter-spacing: 0.04em !important;
-	color: var( --dak-muted ) !important;
-	margin-bottom: 0.5rem !important;
-}
-
-.dak-booking-slots-grid {
-	display: grid !important;
-	grid-template-columns: repeat( auto-fill, minmax( 90px, 1fr ) ) !important;
-	gap: 0.5rem !important;
-}
-
-.dak-booking-slot-card {
-	position: relative !important;
-	display: flex !important;
-	flex-direction: column !important;
-	align-items: center !important;
-	gap: 0.15rem !important;
-	width: 100% !important;
-	padding: 0.55rem 0.5rem !important;
-	border-radius: var( --dak-radius-md ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	background: var( --dak-bg-card ) !important;
-	font-size: 0.82rem !important;
-	font-weight: 600 !important;
-	text-align: center !important;
-	cursor: pointer !important;
-}
-
-.dak-booking-slot-time {
-	display: block !important;
-}
-
-.dak-booking-slot-card.is-instant {
-	border-style: dashed !important;
-	border-color: #e0a72c !important;
-}
-
-.dak-booking-slot-instant-badge {
-	position: absolute !important;
-	top: -0.4rem !important;
-	right: -0.3rem !important;
-	font-size: 0.7rem !important;
-	line-height: 1 !important;
-	filter: drop-shadow( 0 1px 1px rgba( 0, 0, 0, 0.25 ) ) !important;
-}
-
-.dak-booking-slot-surcharge {
-	display: block !important;
-	font-size: 0.68rem !important;
-	font-weight: 700 !important;
-	color: #b45f06 !important;
-}
-
-.dak-booking-slot-card.is-selected .dak-booking-slot-surcharge {
-	color: rgba( 255, 255, 255, 0.9 ) !important;
-}
-
-.dak-booking-slot-card.is-available {
-	background: #e3f6e8 !important;
-	border-color: #a7e0b6 !important;
-	color: #157a3c !important;
-}
-
-.dak-booking-slot-card.is-available:hover {
-	border-color: var( --dak-primary ) !important;
-}
-
-.dak-booking-slot-card.is-booked {
-	background: #fbeaea !important;
-	border-color: #f0b8b8 !important;
-	color: #b42323 !important;
-	cursor: not-allowed !important;
-}
-
-.dak-booking-slot-card.is-past {
-	background: var( --dak-bg-subtle ) !important;
-	color: var( --dak-muted ) !important;
-	cursor: not-allowed !important;
-	text-decoration: line-through !important;
-}
-
-.dak-booking-slot-card.is-selected {
-	background: var( --dak-primary ) !important;
-	border-color: var( --dak-primary ) !important;
-	color: #fff !important;
-	text-decoration: none !important;
-}
-
-.dak-booking-currently-selected {
-	display: flex !important;
-	align-items: center !important;
-	gap: 0.6rem !important;
-	margin-top: 1rem !important;
-	padding: 0.85rem 1rem !important;
-	border-radius: var( --dak-radius-md ) !important;
-	background: var( --dak-primary-tint ) !important;
-	color: var( --dak-primary-dark ) !important;
-	font-size: 0.85rem !important;
-}
-
-.dak-booking-currently-selected-icon {
-	flex: 0 0 auto !important;
-	display: inline-flex !important;
-}
-
-.dak-booking-currently-selected-icon svg {
-	width: 1.15rem !important;
-	height: 1.15rem !important;
-	flex-shrink: 0 !important;
-	display: block !important;
-	stroke: currentColor !important;
-	fill: none !important;
-}
-
-/* Payment step summary */
-
-.dak-booking-payment-choice {
-	display: flex !important;
-	flex-direction: column !important;
-	gap: 0.6rem !important;
-}
-
-.dak-booking-payment-choice.dak-hidden {
-	display: none !important;
+html[data-theme='dark'] .dak-booking-page .dak-button-primary {
+	border-color: #1d7a5c !important;
+	background: #1d7a5c !important;
 }
 
-.dak-booking-summary-list {
-	list-style: none !important;
-	margin: 0 0 1rem !important;
-	padding: 0 !important;
-	display: flex !important;
-	flex-direction: column !important;
-	gap: 0.65rem !important;
+html[data-theme='dark'] .dak-booking-page .dak-button-primary:hover:not( :disabled ) {
+	border-color: #23906c !important;
+	background: #23906c !important;
 }
 
-.dak-booking-summary-list li {
-	display: flex !important;
-	align-items: flex-start !important;
-	gap: 0.5rem !important;
-	font-size: 0.9rem !important;
+.dak-booking-page .dak-button-secondary {
+	border: 1px solid var( --bk-border-strong ) !important;
+	background: var( --bk-surface ) !important;
+	color: var( --bk-text ) !important;
 }
 
-.dak-booking-summary-list li.dak-hidden {
-	display: none !important;
+.dak-booking-page .dak-button-secondary:hover:not( :disabled ) {
+	background: var( --bk-subtle ) !important;
 }
 
-.dak-booking-summary-icon {
-	flex: 0 0 auto !important;
+.dak-booking-page .dak-button:disabled,
+.dak-booking-page .dak-button.is-loading {
+	opacity: 0.65;
+	cursor: progress;
 }
 
-.dak-booking-summary-total {
-	display: flex !important;
-	align-items: center !important;
-	justify-content: space-between !important;
-	border-top: 1px solid var( --dak-border ) !important;
-	padding-top: 0.85rem !important;
-	margin: 0.5rem 0 1rem !important;
-	font-weight: 700 !important;
-	font-size: 1.05rem !important;
+.dak-booking-page .dak-link-button {
+	display: inline;
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var( --bk-primary );
+	font: inherit;
+	font-size: 14px;
+	font-weight: 600;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+	cursor: pointer;
 }
 
-.dak-booking-summary-note {
-	font-size: 0.78rem !important;
-	color: var( --dak-muted ) !important;
-	margin: 0 0 1.25rem !important;
+html[data-theme='dark'] .dak-booking-page .dak-link-button,
+html[data-theme='dark'] .dak-booking-page .dak-bk-help {
+	color: #7fd3ab;
 }
 
-/* Small icon buttons (calendar prev/next) — scoped locally since this page
-   doesn't load the full dashboard stylesheet. */
 .dak-booking-page .dak-icon-button {
-	display: inline-flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	width: 2rem !important;
-	height: 2rem !important;
-	flex: 0 0 auto !important;
-	border-radius: 999px !important;
-	border: 1px solid var( --dak-border ) !important;
-	background: var( --dak-bg-card ) !important;
-	color: var( --dak-text ) !important;
-	font-size: 1.2rem !important;
-	line-height: 1 !important;
-	cursor: pointer !important;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	border: 1px solid var( --bk-border );
+	border-radius: var( --bk-radius-sm );
+	background: var( --bk-surface );
+	color: var( --bk-text );
+	cursor: pointer;
 }
 
 .dak-booking-page .dak-icon-button svg {
-	width: 1rem !important;
-	height: 1rem !important;
-	flex-shrink: 0 !important;
-	display: block !important;
-	/* Belt-and-suspenders against the active theme resetting SVG stroke/fill
-	   globally (some page-builder themes strip icon colors expecting an
-	   <i> icon font instead) — pin these directly rather than relying only
-	   on the inherited `color`/currentColor. */
-	stroke: var( --dak-text ) !important;
-	fill: none !important;
-}
-
-.dak-booking-page .dak-icon-button:hover {
-	border-color: var( --dak-primary ) !important;
+	width: 18px;
+	height: 18px;
 }
 
 .dak-booking-page .dak-icon-button:disabled {
-	opacity: 0.4 !important;
-	cursor: not-allowed !important;
+	opacity: 0.4;
+	cursor: default;
+}
+
+.dak-booking-page .dak-field {
+	margin: 0 0 16px;
+}
+
+.dak-booking-page .dak-field > label,
+.dak-booking-page .dak-field-label {
+	display: block;
+	margin: 0 0 6px;
+	font-size: 14px;
+	font-weight: 600;
+	color: var( --bk-text );
+}
+
+.dak-booking-page .dak-field input[type='text'],
+.dak-booking-page .dak-field input[type='email'],
+.dak-booking-page .dak-field input[type='tel'],
+.dak-booking-page .dak-field input[type='search'],
+.dak-booking-page .dak-field select,
+.dak-booking-page input.dak-booking-patient-search {
+	width: 100%;
+	min-height: 44px;
+	padding: 10px 12px;
+	border: 1px solid var( --bk-border-strong ) !important;
+	border-radius: var( --bk-radius-sm ) !important;
+	background: var( --bk-surface ) !important;
+	color: var( --bk-text ) !important;
+	font: inherit;
+	font-size: 16px; /* 16px prevents iOS zoom on focus. */
+	box-shadow: none !important;
+}
+
+html[data-theme='dark'] .dak-booking-page input,
+html[data-theme='dark'] .dak-booking-page select {
+	color-scheme: dark;
+}
+
+.dak-booking-page .dak-field input:focus,
+.dak-booking-page .dak-field select:focus {
+	border-color: var( --bk-primary ) !important;
+}
+
+.dak-booking-page .dak-field input[aria-invalid='true'] {
+	border-color: var( --bk-danger ) !important;
+}
+
+.dak-booking-page .dak-field input::placeholder {
+	color: var( --bk-muted );
+	opacity: 1;
+}
+
+.dak-booking-page .dak-field-row {
+	display: grid;
+	grid-template-columns: repeat( 2, minmax( 0, 1fr ) );
+	gap: 0 16px;
+}
+
+.dak-booking-page .dak-field-hint {
+	display: block;
+	margin: 6px 0 0;
+	font-size: 13px;
+	color: var( --bk-muted );
+}
+
+.dak-booking-page .dak-field-error {
+	margin-top: 6px !important;
+	font-size: 14px !important;
+	font-weight: 500;
+	color: var( --bk-danger ) !important;
+}
+
+.dak-booking-page .dak-field-error.is-visible::before {
+	content: '! ';
+	font-weight: 700;
+}
+
+.dak-booking-page .dak-bk-req {
+	margin-left: 4px;
+	padding: 1px 6px;
+	border-radius: 4px;
+	background: var( --bk-subtle );
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	color: var( --bk-muted );
+	vertical-align: 1px;
+}
+
+.dak-booking-page .dak-optional {
+	margin-left: 4px;
+	font-weight: 400;
+	color: var( --bk-muted );
+}
+
+.dak-booking-page .dak-alert {
+	margin: 0 0 16px;
+	padding: 12px 16px;
+	border-radius: var( --bk-radius-sm );
+	font-size: 15px;
+	outline: none;
+}
+
+.dak-booking-page .dak-alert-error {
+	border: 1px solid rgba( 180, 35, 24, 0.3 );
+	background: var( --bk-danger-tint );
+	color: var( --bk-danger );
+}
+
+.dak-booking-page .dak-bk-notice {
+	margin: 12px 0 0;
+	padding: 12px 14px;
+	border-radius: var( --bk-radius-sm );
+	border: 1px solid var( --bk-border );
+	background: var( --bk-subtle );
+	font-size: 14px;
+	color: var( --bk-text );
+}
+
+.dak-booking-page .dak-bk-notice.is-warning {
+	border-color: rgba( 138, 75, 8, 0.3 );
+	background: var( --bk-warn-tint );
+}
+
+.dak-booking-page .dak-bk-notice.is-info {
+	border-color: rgba( 36, 95, 168, 0.25 );
+	background: var( --bk-info-tint );
+}
+
+.dak-booking-page .dak-bk-notice .dak-button {
+	margin-top: 10px;
+}
+
+.dak-booking-page .dak-bk-notice a {
+	color: inherit;
+	font-weight: 600;
+}
+
+.dak-booking-page .dak-bk-fieldset {
+	min-width: 0;
+	margin: 0 0 20px;
+	padding: 0;
+	border: 0;
+}
+
+.dak-booking-page .dak-bk-fieldset > legend {
+	display: block;
+	width: 100%;
+	margin: 0 0 10px;
+	padding: 0;
+	font-size: 15px;
+	font-weight: 700;
+	color: var( --bk-text );
+}
+
+.dak-booking-page .dak-bk-legend-hint {
+	margin-left: 6px;
+	font-size: 13px;
+	font-weight: 400;
+	color: var( --bk-muted );
+}
+
+/* ==========================================================================
+   5. Doctor picker
+   ========================================================================== */
+
+.dak-booking-page .dak-bk-filters {
+	display: grid;
+	grid-template-columns: minmax( 0, 1fr ) 220px;
+	gap: 12px;
+}
+
+.dak-booking-page .dak-bk-filters .dak-field {
+	margin: 0;
+}
+
+.dak-booking-page .dak-bk-result-count {
+	margin: 10px 0 8px;
+	font-size: 13px;
+	color: var( --bk-muted );
+}
+
+.dak-booking-page .dak-bk-doctor-list {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	max-height: 420px;
+	margin: 0;
+	padding: 2px;
+	overflow-y: auto;
+	list-style: none;
+	overscroll-behavior: contain;
+}
+
+.dak-booking-page .dak-bk-doctor-item {
+	margin: 0;
+}
+
+.dak-booking-page .dak-bk-doctor-item.is-pinned {
+	order: -1;
+}
+
+.dak-booking-page .dak-bk-doctor {
+	display: grid;
+	grid-template-columns: 40px minmax( 0, 1fr ) auto 22px;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	min-height: 60px;
+	padding: 10px 12px;
+	border: 1px solid var( --bk-border );
+	border-radius: var( --bk-radius-sm );
+	background: var( --bk-surface );
+	color: var( --bk-text );
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.dak-booking-page .dak-bk-doctor:hover {
+	border-color: var( --bk-border-strong );
+	background: var( --bk-subtle );
+}
+
+.dak-booking-page .dak-bk-doctor.is-selected {
+	border: 2px solid var( --bk-primary );
+	padding: 9px 11px;
+	background: var( --bk-primary-tint );
+}
+
+.dak-booking-page .dak-bk-avatar {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	overflow: hidden;
+	background: var( --bk-primary-tint );
+	color: var( --bk-primary );
+	font-size: 14px;
+	font-weight: 700;
+}
+
+html[data-theme='dark'] .dak-booking-page .dak-bk-avatar {
+	color: #7fd3ab;
+}
+
+.dak-booking-page .dak-bk-avatar img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.dak-booking-page .dak-bk-doctor-text,
+.dak-booking-page .dak-bk-selected-doctor-text,
+.dak-booking-page .dak-bk-option-text {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	line-height: 1.35;
+}
+
+.dak-booking-page .dak-bk-doctor-text strong,
+.dak-booking-page .dak-bk-selected-doctor-text strong {
+	font-size: 15px;
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+
+.dak-booking-page .dak-bk-doctor-text span,
+.dak-booking-page .dak-bk-selected-doctor-text span:not( .dak-bk-eyebrow ) {
+	font-size: 13px;
+	color: var( --bk-muted );
+}
+
+.dak-booking-page .dak-bk-doctor-tags {
+	display: flex;
+	gap: 4px;
+}
+
+.dak-booking-page .dak-bk-tag {
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: var( --bk-subtle );
+	font-size: 12px;
+	font-weight: 500;
+	color: var( --bk-muted );
+	white-space: nowrap;
+}
+
+.dak-booking-page .dak-bk-check {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	color: transparent;
+}
+
+.dak-booking-page .dak-bk-check svg {
+	width: 14px;
+	height: 14px;
+}
+
+.dak-booking-page .is-selected > .dak-bk-check,
+.dak-booking-page .dak-bk-picked .dak-bk-check {
+	background: var( --bk-primary );
+	color: var( --bk-on-primary );
+}
+
+.dak-booking-page .dak-bk-selected-doctor {
+	display: grid;
+	grid-template-columns: 48px minmax( 0, 1fr ) auto;
+	align-items: center;
+	gap: 12px;
+	margin: 0 0 20px;
+	padding: 12px 14px;
+	border: 1px solid var( --bk-border );
+	border-radius: var( --bk-radius );
+	background: var( --bk-subtle );
+}
+
+.dak-booking-page .dak-bk-selected-doctor .dak-bk-avatar {
+	width: 48px;
+	height: 48px;
+	font-size: 16px;
+}
+
+.dak-booking-page .dak-bk-eyebrow {
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var( --bk-muted );
+}
+
+.dak-booking-page .dak-bk-doctor-picker.is-changing {
+	margin: -8px 0 20px;
+	padding: 16px;
+	border: 1px dashed var( --bk-border-strong );
+	border-radius: var( --bk-radius );
 }
 
 .dak-booking-page .dak-empty-state {
-	text-align: center !important;
-	color: var( --dak-muted ) !important;
-	padding: 1.5rem 0 !important;
+	margin: 8px 0 0;
+	padding: 16px;
+	border: 1px dashed var( --bk-border );
+	border-radius: var( --bk-radius-sm );
+	font-size: 14px;
+	text-align: center;
+	color: var( --bk-muted );
 }
 
-@media ( max-width: 860px ) {
-	.dak-booking-wizard-layout {
-		grid-template-columns: 1fr !important;
+.dak-booking-page .dak-bk-visit {
+	margin-top: 4px;
+}
+
+/* ==========================================================================
+   6. Options — visit type, clinics, services, payment, patients
+   ========================================================================== */
+
+.dak-booking-page .dak-bk-segmented {
+	display: grid;
+	grid-template-columns: repeat( 2, minmax( 0, 1fr ) );
+	gap: 8px;
+}
+
+.dak-booking-page .dak-bk-segment {
+	position: relative;
+	display: block;
+	margin: 0;
+	cursor: pointer;
+}
+
+.dak-booking-page .dak-bk-segment input,
+.dak-booking-page .dak-bk-option-radio input,
+.dak-booking-page .dak-bk-option-check input {
+	position: absolute;
+	opacity: 0;
+	width: 1px;
+	height: 1px;
+	margin: 0;
+	pointer-events: none;
+}
+
+.dak-booking-page .dak-bk-segment > span {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-height: 60px;
+	padding: 10px 14px;
+	border: 1px solid var( --bk-border-strong );
+	border-radius: var( --bk-radius-sm );
+	background: var( --bk-surface );
+}
+
+.dak-booking-page .dak-bk-segment strong {
+	font-size: 15px;
+	font-weight: 600;
+}
+
+.dak-booking-page .dak-bk-segment small {
+	font-size: 13px;
+	color: var( --bk-muted );
+}
+
+.dak-booking-page .dak-bk-segment.is-active > span {
+	border: 2px solid var( --bk-primary );
+	padding: 9px 13px;
+	background: var( --bk-primary-tint );
+}
+
+.dak-booking-page .dak-bk-segment input:focus-visible + span,
+.dak-booking-page .dak-bk-option-radio input:focus-visible ~ .dak-bk-option-text,
+.dak-booking-page .dak-bk-option:focus-within {
+	outline: 2px solid var( --bk-focus );
+	outline-offset: 2px;
+}
+
+.dak-booking-page .dak-bk-segment.is-disabled {
+	cursor: not-allowed;
+}
+
+.dak-booking-page .dak-bk-segment.is-disabled > span {
+	border-style: dashed;
+	background: var( --bk-subtle );
+	color: var( --bk-muted );
+}
+
+.dak-booking-page .dak-bk-options {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.dak-booking-page .dak-bk-option {
+	position: relative;
+	display: grid;
+	grid-template-columns: minmax( 0, 1fr ) auto auto;
+	align-items: center;
+	gap: 12px;
+	width: 100%;
+	min-height: 56px;
+	margin: 0;
+	padding: 10px 14px;
+	border: 1px solid var( --bk-border-strong );
+	border-radius: var( --bk-radius-sm );
+	background: var( --bk-surface );
+	color: var( --bk-text );
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.dak-booking-page .dak-bk-option:hover:not( .is-static ) {
+	border-color: var( --bk-primary );
+}
+
+.dak-booking-page .dak-bk-option.is-selected {
+	border: 2px solid var( --bk-primary );
+	padding: 9px 13px;
+	background: var( --bk-primary-tint );
+}
+
+.dak-booking-page .dak-bk-option.is-static {
+	cursor: default;
+}
+
+.dak-booking-page .dak-bk-option-text strong {
+	font-size: 15px;
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+
+.dak-booking-page .dak-bk-option-text span {
+	font-size: 13px;
+	color: var( --bk-muted );
+	overflow-wrap: anywhere;
+}
+
+.dak-booking-page .dak-bk-option-price {
+	font-size: 15px;
+	font-weight: 600;
+	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
+}
+
+.dak-booking-page .dak-bk-option-price s {
+	margin-right: 4px;
+	font-weight: 400;
+	color: var( --bk-muted );
+}
+
+.dak-booking-page .dak-bk-option-price.is-free {
+	color: var( --bk-primary );
+}
+
+.dak-booking-page .dak-bk-badge {
+	display: inline-block;
+	margin-left: 4px;
+	padding: 1px 6px;
+	border-radius: 4px;
+	background: var( --bk-warn-tint );
+	color: var( --bk-warn-text );
+	font-size: 12px;
+	font-weight: 600;
+}
+
+/* Checkbox (services) — a visible square that mirrors the real input. */
+.dak-booking-page .dak-bk-option-check {
+	grid-template-columns: 22px minmax( 0, 1fr ) auto;
+}
+
+.dak-booking-page .dak-bk-option-check::before {
+	content: '';
+	grid-column: 1;
+	grid-row: 1;
+	width: 20px;
+	height: 20px;
+	border: 1.5px solid var( --bk-border-strong );
+	border-radius: 5px;
+	background: var( --bk-surface );
+}
+
+.dak-booking-page .dak-bk-option-check.is-selected::before {
+	border-color: var( --bk-primary );
+	background: var( --bk-primary ) url( "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 10.5l3.2 3.2 6.8-7.2'/%3E%3C/svg%3E" ) center / 14px no-repeat;
+}
+
+.dak-booking-page .dak-bk-option-check .dak-bk-option-text {
+	grid-column: 2;
+	grid-row: 1;
+}
+
+.dak-booking-page .dak-bk-option-check .dak-bk-option-price {
+	grid-column: 3;
+	grid-row: 1;
+}
+
+/* Radio (clinics, payment) — a visible circle. */
+.dak-booking-page .dak-bk-option-radio {
+	grid-template-columns: 22px minmax( 0, 1fr ) auto;
+}
+
+.dak-booking-page .dak-bk-option-radio::before {
+	content: '';
+	grid-column: 1;
+	grid-row: 1;
+	width: 20px;
+	height: 20px;
+	border: 1.5px solid var( --bk-border-strong );
+	border-radius: 50%;
+	background: var( --bk-surface );
+}
+
+.dak-booking-page .dak-bk-option-radio.is-selected::before {
+	border: 6px solid var( --bk-primary );
+}
+
+.dak-booking-page .dak-bk-option-radio .dak-bk-option-text {
+	grid-column: 2;
+	grid-row: 1;
+}
+
+.dak-booking-page .dak-bk-option-radio .dak-bk-check {
+	display: none;
+}
+
+.dak-booking-page .dak-bk-service-search {
+	margin: 0 0 10px;
+}
+
+.dak-booking-page #dak-bk-service-more {
+	margin-top: 10px;
+}
+
+/* Staff patient picker. */
+.dak-booking-page .dak-booking-patient-cards {
+	max-height: 320px;
+	overflow-y: auto;
+	padding: 2px;
+}
+
+.dak-booking-page .dak-booking-patient-card {
+	grid-template-columns: minmax( 0, 1fr ) 22px;
+}
+
+.dak-booking-page input.dak-booking-patient-search {
+	margin: 0 0 10px;
+}
+
+/* ==========================================================================
+   7. Calendar + slots
+   ========================================================================== */
+
+.dak-booking-page .dak-bk-cal {
+	margin: 0 0 8px;
+}
+
+.dak-booking-page .dak-bk-cal-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin: 0 0 10px;
+}
+
+.dak-booking-page .dak-bk-cal-title {
+	font-size: 15px;
+	font-weight: 700;
+}
+
+.dak-booking-page .dak-bk-days {
+	display: grid;
+	grid-template-columns: repeat( 7, minmax( 0, 1fr ) );
+	gap: 6px;
+}
+
+.dak-booking-page .dak-bk-day {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+	min-height: 68px;
+	padding: 8px 2px;
+	border: 1px solid var( --bk-border-strong );
+	border-radius: var( --bk-radius-sm );
+	background: var( --bk-surface );
+	color: var( --bk-text );
+	font: inherit;
+	cursor: pointer;
+}
+
+.dak-booking-page .dak-bk-day:hover:not( :disabled ) {
+	border-color: var( --bk-primary );
+}
+
+.dak-booking-page .dak-bk-day-dow {
+	font-size: 12px;
+	font-weight: 500;
+	color: var( --bk-muted );
+}
+
+.dak-booking-page .dak-bk-day-num {
+	font-size: 18px;
+	font-weight: 700;
+	line-height: 1.2;
+}
+
+.dak-booking-page .dak-bk-day-mark {
+	width: 8px;
+	height: 8px;
+	margin-top: 2px;
+	border-radius: 50%;
+	background: transparent;
+}
+
+.dak-booking-page .dak-bk-day.is-available .dak-bk-day-mark {
+	background: var( --bk-primary );
+}
+
+.dak-booking-page .dak-bk-day.is-few .dak-bk-day-mark {
+	background: #c27803;
+}
+
+.dak-booking-page .dak-bk-day.is-full .dak-bk-day-mark {
+	width: 10px;
+	height: 2px;
+	border-radius: 1px;
+	background: var( --bk-danger );
+}
+
+.dak-booking-page .dak-bk-day:disabled {
+	border-style: dashed;
+	background: var( --bk-subtle );
+	color: var( --bk-muted );
+	cursor: not-allowed;
+}
+
+.dak-booking-page .dak-bk-day.is-none .dak-bk-day-num,
+.dak-booking-page .dak-bk-day.is-past .dak-bk-day-num {
+	font-weight: 500;
+	text-decoration: line-through;
+	text-decoration-color: var( --bk-border-strong );
+}
+
+.dak-booking-page .dak-bk-day.is-loading .dak-bk-day-mark {
+	background: var( --bk-border );
+}
+
+.dak-booking-page .dak-bk-day.is-selected {
+	border: 2px solid var( --bk-primary );
+	background: var( --bk-primary );
+	color: var( --bk-on-primary );
+}
+
+.dak-booking-page .dak-bk-day.is-selected .dak-bk-day-dow {
+	color: var( --bk-on-primary );
+}
+
+.dak-booking-page .dak-bk-day.is-selected .dak-bk-day-mark {
+	background: var( --bk-on-primary );
+}
+
+html[data-theme='dark'] .dak-booking-page .dak-bk-day.is-selected {
+	background: #1d7a5c;
+	border-color: #1d7a5c;
+}
+
+.dak-booking-page .dak-bk-legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 16px;
+	margin: 10px 0 0;
+	padding: 0;
+	list-style: none;
+	font-size: 13px;
+	color: var( --bk-muted );
+}
+
+.dak-booking-page .dak-bk-legend li {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin: 0;
+}
+
+.dak-booking-page .dak-bk-swatch {
+	display: inline-block;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+}
+
+.dak-booking-page .dak-bk-swatch.is-available { background: var( --bk-primary ); }
+.dak-booking-page .dak-bk-swatch.is-few { background: #c27803; }
+.dak-booking-page .dak-bk-swatch.is-full { width: 10px; height: 2px; border-radius: 1px; background: var( --bk-danger ); }
+.dak-booking-page .dak-bk-swatch.is-none { border: 1px dashed var( --bk-muted ); }
+
+.dak-booking-page .dak-bk-slots {
+	margin: 20px 0 0;
+	padding: 20px 0 0;
+	border-top: 1px solid var( --bk-border );
+}
+
+.dak-booking-page .dak-bk-slots-status:empty {
+	display: none;
+}
+
+.dak-booking-page .dak-bk-slots-status {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 12px;
+	padding: 14px;
+	border-radius: var( --bk-radius-sm );
+	background: var( --bk-subtle );
+	font-size: 14px;
+	color: var( --bk-text );
+}
+
+.dak-booking-page .dak-bk-slots-status.is-error {
+	background: var( --bk-danger-tint );
+	color: var( --bk-danger );
+}
+
+.dak-booking-page .dak-bk-spinner {
+	width: 16px;
+	height: 16px;
+	border: 2px solid var( --bk-border-strong );
+	border-top-color: var( --bk-primary );
+	border-radius: 50%;
+	animation: dak-bk-spin 0.8s linear infinite;
+}
+
+@keyframes dak-bk-spin {
+	to { transform: rotate( 360deg ); }
+}
+
+.dak-booking-page .dak-bk-slot-group + .dak-bk-slot-group {
+	margin-top: 16px;
+}
+
+.dak-booking-page .dak-bk-slot-group-label {
+	margin: 0 0 8px;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: var( --bk-muted );
+}
+
+.dak-booking-page .dak-bk-slot-grid {
+	display: grid;
+	grid-template-columns: repeat( auto-fill, minmax( 104px, 1fr ) );
+	gap: 8px;
+}
+
+.dak-booking-page .dak-bk-slot {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0;
+	min-height: 48px;
+	padding: 6px 8px;
+	border: 1px solid var( --bk-border-strong );
+	border-radius: var( --bk-radius-sm );
+	background: var( --bk-surface );
+	color: var( --bk-text );
+	font: inherit;
+	cursor: pointer;
+}
+
+.dak-booking-page .dak-bk-slot:hover:not( :disabled ) {
+	border-color: var( --bk-primary );
+	background: var( --bk-primary-tint );
+}
+
+.dak-booking-page .dak-bk-slot-time {
+	font-size: 15px;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.dak-booking-page .dak-bk-slot-note {
+	font-size: 12px;
+	color: var( --bk-muted );
+}
+
+.dak-booking-page .dak-bk-slot:disabled {
+	border-style: dashed;
+	background: var( --bk-subtle );
+	color: var( --bk-muted );
+	cursor: not-allowed;
+}
+
+.dak-booking-page .dak-bk-slot:disabled .dak-bk-slot-time {
+	font-weight: 500;
+	text-decoration: line-through;
+}
+
+.dak-booking-page .dak-bk-slot.is-selected {
+	border: 2px solid var( --bk-primary );
+	background: var( --bk-primary );
+	color: var( --bk-on-primary );
+}
+
+.dak-booking-page .dak-bk-slot.is-selected .dak-bk-slot-note {
+	color: var( --bk-on-primary );
+}
+
+html[data-theme='dark'] .dak-booking-page .dak-bk-slot.is-selected {
+	background: #1d7a5c;
+	border-color: #1d7a5c;
+}
+
+.dak-booking-page .dak-bk-picked {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 16px 0 0;
+	padding: 12px 14px;
+	border-radius: var( --bk-radius-sm );
+	background: var( --bk-primary-tint );
+	font-size: 15px;
+}
+
+/* ==========================================================================
+   8. Details
+   ========================================================================== */
+
+.dak-booking-page .dak-bk-account {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px 16px;
+	margin: 0 0 20px;
+	padding: 14px 16px;
+	border: 1px solid var( --bk-border );
+	border-radius: var( --bk-radius-sm );
+	background: var( --bk-subtle );
+}
+
+.dak-booking-page .dak-bk-account p {
+	flex: 1 1 280px;
+	margin: 0;
+	font-size: 14px;
+}
+
+.dak-booking-page .dak-bk-account-links {
+	display: flex;
+	gap: 8px;
+}
+
+.dak-booking-page .dak-bk-guest-intro {
+	margin: 0 0 12px;
+	font-size: 14px;
+	font-weight: 600;
+	color: var( --bk-muted );
+}
+
+.dak-booking-page .dak-bk-facts {
+	display: grid;
+	gap: 8px;
+	margin: 0;
+}
+
+.dak-booking-page .dak-bk-facts > div {
+	display: grid;
+	grid-template-columns: 120px minmax( 0, 1fr );
+	gap: 12px;
+}
+
+.dak-booking-page .dak-bk-facts dt {
+	margin: 0;
+	font-size: 14px;
+	color: var( --bk-muted );
+}
+
+.dak-booking-page .dak-bk-facts dd {
+	margin: 0;
+	font-size: 15px;
+	font-weight: 500;
+	overflow-wrap: anywhere;
+}
+
+.dak-booking-page .dak-bk-facts-sub {
+	display: block;
+	font-size: 13px;
+	font-weight: 400;
+	color: var( --bk-muted );
+}
+
+/* ==========================================================================
+   9. Review
+   ========================================================================== */
+
+.dak-booking-page .dak-bk-review-block {
+	margin: 0 0 16px;
+	padding: 0 0 16px;
+	border-bottom: 1px solid var( --bk-border );
+}
+
+.dak-booking-page .dak-bk-review-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.dak-booking-page .dak-bk-charges {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 15px;
+}
+
+.dak-booking-page .dak-bk-charges th,
+.dak-booking-page .dak-bk-charges td {
+	padding: 6px 0;
+	border: 0;
+	background: none;
+	font-weight: 400;
+	text-align: left;
+	vertical-align: top;
+}
+
+.dak-booking-page .dak-bk-charges td {
+	text-align: right;
+	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
+}
+
+.dak-booking-page .dak-bk-charges tr.is-discount td,
+.dak-booking-page .dak-bk-charges tr.is-discount th {
+	color: var( --bk-primary );
+}
+
+.dak-booking-page .dak-bk-charges tfoot th,
+.dak-booking-page .dak-bk-charges tfoot td {
+	padding-top: 10px;
+	border-top: 1px solid var( --bk-border );
+	font-size: 17px;
+	font-weight: 700;
+}
+
+.dak-booking-page .dak-bk-payment {
+	margin: 4px 0 16px;
+}
+
+.dak-booking-page .dak-bk-terms {
+	margin: 0;
+	font-size: 14px;
+	color: var( --bk-muted );
+}
+
+.dak-booking-page .dak-bk-terms strong {
+	color: var( --bk-text );
+}
+
+/* ==========================================================================
+   10. Summary
+   ========================================================================== */
+
+.dak-booking-page .dak-bk-aside {
+	position: sticky;
+	top: var( --bk-offset );
+	min-width: 0;
+}
+
+.dak-booking-page .dak-bk-summary {
+	border: 1px solid var( --bk-border );
+	border-radius: var( --bk-radius );
+	background: var( --bk-surface );
+}
+
+.dak-booking-page .dak-bk-summary > summary {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 14px 16px;
+	border-bottom: 1px solid var( --bk-border );
+	list-style: none;
+	cursor: default;
+}
+
+.dak-booking-page .dak-bk-summary > summary::-webkit-details-marker {
+	display: none;
+}
+
+.dak-booking-page .dak-bk-summary-title {
+	font-size: 15px;
+	font-weight: 700;
+}
+
+.dak-booking-page .dak-bk-summary-total-mini {
+	display: none;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+.dak-booking-page .dak-bk-summary-list {
+	margin: 0;
+	padding: 6px 16px;
+	list-style: none;
+}
+
+.dak-booking-page .dak-bk-summary-list li {
+	display: grid;
+	grid-template-columns: minmax( 0, 1fr ) auto;
+	grid-template-areas: 'k edit' 'v v';
+	gap: 0 8px;
+	margin: 0;
+	padding: 8px 0;
+	border-bottom: 1px solid var( --bk-border );
+}
+
+.dak-booking-page .dak-bk-summary-list li:last-child {
+	border-bottom: 0;
+}
+
+.dak-booking-page .dak-bk-summary-k {
+	grid-area: k;
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var( --bk-muted );
+}
+
+.dak-booking-page .dak-bk-summary-v {
+	grid-area: v;
+	font-size: 14px;
+	font-weight: 500;
+	overflow-wrap: anywhere;
+}
+
+.dak-booking-page .dak-bk-summary-list li.is-empty .dak-bk-summary-v {
+	font-weight: 400;
+	color: var( --bk-muted );
+}
+
+.dak-booking-page .dak-bk-summary-list .dak-link-button {
+	grid-area: edit;
+	font-size: 13px;
+}
+
+.dak-booking-page .dak-bk-summary-total {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 12px 16px;
+	border-top: 1px solid var( --bk-border );
+	font-size: 15px;
+}
+
+.dak-booking-page .dak-bk-summary-total strong {
+	font-size: 20px;
+	font-variant-numeric: tabular-nums;
+}
+
+.dak-booking-page .dak-bk-summary-note {
+	margin: 0;
+	padding: 0 16px 14px;
+	font-size: 13px;
+	color: var( --bk-muted );
+}
+
+/* ==========================================================================
+   11. Result
+   ========================================================================== */
+
+.dak-booking-page .dak-bk-result {
+	text-align: left;
+}
+
+.dak-booking-page .dak-bk-result-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 48px;
+	height: 48px;
+	margin: 0 0 12px;
+	border-radius: 50%;
+	background: var( --bk-primary-tint );
+	color: var( --bk-primary );
+}
+
+.dak-booking-page .dak-bk-result-icon svg {
+	width: 26px;
+	height: 26px;
+}
+
+.dak-booking-page .dak-bk-result-message {
+	margin: 8px 0 20px;
+	font-size: 15px;
+	color: var( --bk-text );
+}
+
+.dak-booking-page .dak-bk-result .dak-bk-facts {
+	padding: 16px;
+	border: 1px solid var( --bk-border );
+	border-radius: var( --bk-radius-sm );
+	background: var( --bk-subtle );
+}
+
+.dak-booking-page .dak-bk-result-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 20px;
+}
+
+.dak-booking-page.is-done .dak-bk-aside {
+	display: none;
+}
+
+.dak-booking-page.is-done .dak-bk-layout {
+	grid-template-columns: minmax( 0, 720px );
+	justify-content: center;
+}
+
+/* ==========================================================================
+   12. Responsive
+   ========================================================================== */
+
+@media ( max-width: 1023px ) {
+	.dak-booking-page .dak-bk-layout {
+		grid-template-columns: minmax( 0, 1fr );
+		gap: 12px;
 	}
 
-	.dak-booking-wizard-sidebar {
-		position: static !important;
+	/* Summary sits above the form as a collapsible panel. */
+	.dak-booking-page .dak-bk-aside {
+		position: static;
+		order: -1;
 	}
 
-	.dak-booking-wizard-steps {
-		display: flex !important;
-		flex-wrap: wrap !important;
-		gap: 0.5rem 1.25rem !important;
+	.dak-booking-page .dak-bk-summary > summary {
+		cursor: pointer;
+		border-bottom: 0;
 	}
 
-	.dak-booking-wizard-step {
-		padding-bottom: 0 !important;
+	.dak-booking-page .dak-bk-summary[open] > summary {
+		border-bottom: 1px solid var( --bk-border );
 	}
 
-	.dak-booking-wizard-step:not( :last-child )::after {
+	.dak-booking-page .dak-bk-summary > summary::after {
+		content: '';
+		width: 8px;
+		height: 8px;
+		margin-left: 4px;
+		border-right: 2px solid var( --bk-muted );
+		border-bottom: 2px solid var( --bk-muted );
+		transform: rotate( 45deg ) translateY( -2px );
+	}
+
+	.dak-booking-page .dak-bk-summary[open] > summary::after {
+		transform: rotate( -135deg ) translateY( -2px );
+	}
+
+	.dak-booking-page .dak-bk-summary-total-mini {
+		display: inline;
+		margin-left: auto;
+	}
+}
+
+@media ( max-width: 782px ) {
+	.dak-booking-page {
+		--bk-offset: 72px;
+		padding: 16px 16px 24px;
+	}
+
+	.dak-booking-page .dak-bk-head h1 {
+		font-size: 22px;
+	}
+
+	.dak-booking-page .dak-bk-head p {
+		display: none;
+	}
+
+	/* Progress: numbers for every step, the label only for the current one. */
+	.dak-booking-page .dak-bk-progress {
+		grid-template-columns: auto auto auto auto;
+		justify-content: start;
+		gap: 6px;
+	}
+
+	.dak-booking-page .dak-bk-progress-btn {
+		padding: 6px;
+		min-height: 40px;
+	}
+
+	.dak-booking-page .dak-bk-progress-step:not( .is-active ) .dak-bk-progress-label {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip: rect( 0 0 0 0 );
+	}
+
+	.dak-booking-page .dak-bk-progress-step.is-active .dak-bk-progress-btn {
+		padding-right: 12px;
+	}
+
+	.dak-booking-page .dak-booking-card {
+		padding: 16px;
+	}
+
+	.dak-booking-page .dak-bk-nav {
+		position: sticky;
+		bottom: 0;
+		z-index: 5;
+		margin: 20px -16px -16px;
+		padding: 12px 16px calc( 12px + env( safe-area-inset-bottom, 0px ) );
+		box-shadow: 0 -4px 12px rgba( 24, 43, 58, 0.06 );
+	}
+
+	.dak-booking-page .dak-bk-nav .dak-button {
+		flex: 1 1 0;
+	}
+
+	.dak-booking-page .dak-bk-nav > span:empty {
+		display: none;
+	}
+
+	.dak-booking-page .dak-bk-filters,
+	.dak-booking-page .dak-field-row {
+		grid-template-columns: minmax( 0, 1fr );
+	}
+
+	.dak-booking-page .dak-bk-doctor {
+		grid-template-columns: 40px minmax( 0, 1fr ) 22px;
+	}
+
+	.dak-booking-page .dak-bk-doctor-tags {
+		grid-column: 2;
+		grid-row: 2;
+	}
+
+	.dak-booking-page .dak-bk-doctor .dak-bk-check {
+		grid-column: 3;
+		grid-row: 1;
+	}
+
+	.dak-booking-page .dak-bk-doctor-list {
+		max-height: 55vh;
+	}
+
+	.dak-booking-page .dak-bk-selected-doctor {
+		grid-template-columns: 40px minmax( 0, 1fr );
+	}
+
+	.dak-booking-page .dak-bk-selected-doctor .dak-bk-avatar {
+		width: 40px;
+		height: 40px;
+	}
+
+	.dak-booking-page .dak-bk-selected-doctor .dak-button {
+		grid-column: 1 / -1;
+	}
+
+	.dak-booking-page .dak-bk-days {
+		gap: 4px;
+	}
+
+	.dak-booking-page .dak-bk-day {
+		min-height: 60px;
+		padding: 6px 0;
+	}
+
+	.dak-booking-page .dak-bk-day-num {
+		font-size: 16px;
+	}
+
+	.dak-booking-page .dak-bk-slot-grid {
+		grid-template-columns: repeat( auto-fill, minmax( 92px, 1fr ) );
+	}
+
+	.dak-booking-page .dak-bk-facts > div {
+		grid-template-columns: minmax( 0, 1fr );
+		gap: 0;
+	}
+
+	.dak-booking-page .dak-bk-account-links .dak-button {
+		flex: 1 1 0;
+	}
+
+	.dak-booking-page .dak-bk-account-links {
+		width: 100%;
+	}
+}
+
+@media ( max-width: 380px ) {
+	.dak-booking-page .dak-bk-day-dow {
+		font-size: 11px;
+	}
+}
+
+/* ==========================================================================
+   13. Floating widgets + motion
+   ========================================================================== */
+
+/* On phones the floating chat buttons would sit on top of the sticky
+   Continue/Back bar; the page's own "Need help?" link stays available. */
+@media ( max-width: 782px ) {
+	body:has( .dak-booking-wizard ) .joinchat,
+	body:has( .dak-booking-wizard ) #wp-chatbot-ball-container,
+	body:has( .dak-booking-wizard ) #wp-chatbot-integration-container {
 		display: none !important;
 	}
-
-	.dak-booking-wizard-help {
-		border-top: none !important;
-		margin-top: 0.75rem !important;
-		padding-top: 0 !important;
-	}
 }
 
-@media ( max-width: 600px ) {
-	/* All 7 days stay visible and swipeable (scroll-snap) instead of being
-	   squeezed into fewer, cramped columns — a fixed column count can't
-	   shrink below its content's minimum width without wrapping/clipping. */
-	.dak-booking-date-strip {
-		display: flex !important;
-		overflow-x: auto !important;
-		-webkit-overflow-scrolling: touch !important;
-		scroll-snap-type: x proximity !important;
-		padding-bottom: 0.25rem !important;
-	}
-
-	.dak-booking-date-strip-day {
-		flex: 0 0 auto !important;
-		width: 3.5rem !important;
-		min-height: 3.5rem !important;
-		scroll-snap-align: start !important;
-	}
-
-	.dak-booking-calendar-title {
-		min-width: 0 !important;
-		font-size: 0.85rem !important;
-	}
-
-	.dak-booking-page .dak-icon-button {
-		width: 2.75rem !important;
-		height: 2.75rem !important;
-	}
-
-	.dak-booking-slot-card {
-		min-height: 2.75rem !important;
-	}
-}
-
-@media ( max-width: 480px ) {
+/* Desktop: leave room at the bottom so they never cover the last control. */
+@media ( min-width: 783px ) {
 	.dak-booking-page {
-		padding: 2rem 1rem 3rem !important;
+		padding-bottom: 96px;
 	}
+}
 
-	.dak-booking-doctor-cards,
-	.dak-field-row {
-		grid-template-columns: 1fr !important;
+@media ( prefers-reduced-motion: reduce ) {
+	.dak-booking-page *,
+	.dak-booking-page *::before,
+	.dak-booking-page *::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
 	}
+}
+
+/* ==========================================================================
+   14. Overrides for shared auth-form styles (doctor-ak-auth.css uses
+   !important on these, so the booking page's own values need it too)
+   ========================================================================== */
+
+/* Step headings receive focus programmatically (for screen readers) when a
+   step opens — they aren't interactive, so no focus ring is drawn. */
+.dak-booking-page .dak-bk-step h2[tabindex='-1']:focus,
+.dak-booking-page .dak-bk-step h2[tabindex='-1']:focus-visible {
+	outline: none !important;
+}
+
+.dak-booking-page .dak-field-hint {
+	padding: 0 !important;
+	border: 0 !important;
+	background: none !important;
+	margin: 6px 0 0 !important;
+	font-size: 13px !important;
+	color: var( --bk-muted ) !important;
+}
+
+.dak-booking-page .dak-link-button {
+	padding: 0 !important;
+	color: var( --bk-primary ) !important;
+	font-size: 14px !important;
+	font-weight: 600 !important;
+}
+
+html[data-theme='dark'] .dak-booking-page .dak-link-button {
+	color: #7fd3ab !important;
 }

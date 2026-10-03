@@ -115,7 +115,7 @@ $dak_footer_link_columns = array_chunk( $dak_numbered_quick_links, (int) ceil( c
 			<?php
 			echo esc_html(
 				sprintf(
-					/* translators: %s: brand domain, e.g. "drakhlana.com". */
+					/* translators: %s: brand domain, e.g. "doctoraklohana.com". */
 					__( '%s – All Rights Reserved', 'doctor-ak-portal' ),
 					$brand_domain
 				)

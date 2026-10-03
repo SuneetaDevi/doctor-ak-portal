@@ -21,7 +21,8 @@
  * @var string $clinic_name          Clinic name (Settings → Footer Settings).
  * @var string $clinic_address       Clinic address (Settings → Footer Settings).
  * @var string $appointments_url     URL of the Appointments section ("View all" link).
- * @var string $doctor_requests_url  URL of the Doctor Requests section ("Review" links).
+ * @var string $doctor_requests_url  URL of the Doctor Requests section ("Review" links), or '' when this viewer can't open that section.
+ * @var bool   $can_review_doctor_requests Whether this viewer may open Doctor Requests — gates the pending-approval count and panel (same check the section itself applies).
  * @var bool   $is_receptionist      Whether the logged-in viewer is a Receptionist — hospital revenue figures are admin-only and hidden entirely for this role.
  */
 
@@ -60,7 +61,7 @@ endif;
 ?>
 <div class="dak-page-head">
 	<div>
-		<h1><?php esc_html_e( 'Overview', 'doctor-ak-portal' ); ?></h1>
+		<h1><?php echo esc_html( $is_receptionist ? __( 'Front desk', 'doctor-ak-portal' ) : __( 'Overview', 'doctor-ak-portal' ) ); ?></h1>
 		<p>
 			<?php
 			echo esc_html( date_i18n( 'l, j F Y', current_time( 'timestamp' ) ) ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- display-only, no math done with it.
@@ -71,7 +72,7 @@ endif;
 		</p>
 	</div>
 	<?php if ( $appointments_url ) : ?>
-		<a class="dak-button dak-button-secondary dak-button-sm" href="<?php echo esc_url( $appointments_url ); ?>"><?php esc_html_e( 'View appointments', 'doctor-ak-portal' ); ?></a>
+		<a class="dak-button dak-button-primary" href="<?php echo esc_url( $appointments_url ); ?>"><?php esc_html_e( 'Manage appointments', 'doctor-ak-portal' ); ?></a>
 	<?php endif; ?>
 </div>
 
@@ -99,7 +100,7 @@ endif;
 			<span class="dak-stat-icon" aria-hidden="true"><?php echo $dak_overview_icons['person']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 		</div>
 		<span class="dak-stat-value"><?php echo esc_html( number_format_i18n( $total_doctors ) ); ?></span>
-		<?php if ( $pending_doctors_count > 0 ) : ?>
+		<?php if ( $can_review_doctor_requests && $pending_doctors_count > 0 ) : ?>
 			<span class="dak-stat-delta">
 				<?php
 				echo esc_html(
@@ -127,13 +128,135 @@ endif;
 	<?php endif; ?>
 </section>
 
+<?php // Today's working list first — the charts below support decisions but shouldn't push the list a front desk works from off-screen. ?>
+<section class="dak-dashboard-card dak-activity-card">
+	<div class="dak-activity-head">
+		<div>
+			<h2><?php esc_html_e( 'Upcoming appointments', 'doctor-ak-portal' ); ?></h2>
+			<p class="dak-notifications-card-subtitle"><?php esc_html_e( 'From today, soonest first', 'doctor-ak-portal' ); ?></p>
+		</div>
+		<div class="dak-activity-tools">
+			<label class="dak-activity-search">
+				<span class="dak-visually-hidden"><?php esc_html_e( 'Search activities', 'doctor-ak-portal' ); ?></span>
+				<input type="search" placeholder="<?php esc_attr_e( 'Search', 'doctor-ak-portal' ); ?>" data-activity-search>
+			</label>
+			<select data-activity-filter aria-label="<?php esc_attr_e( 'Filter by status', 'doctor-ak-portal' ); ?>">
+				<option value=""><?php esc_html_e( 'All statuses', 'doctor-ak-portal' ); ?></option>
+				<?php foreach ( array_unique( wp_list_pluck( $latest_appointments, 'status_label' ) ) as $dak_status_option ) : ?>
+					<option value="<?php echo esc_attr( strtolower( $dak_status_option ) ); ?>"><?php echo esc_html( $dak_status_option ); ?></option>
+				<?php endforeach; ?>
+			</select>
+			<?php if ( $appointments_url ) : ?>
+				<a class="dak-button dak-button-secondary dak-button-sm" href="<?php echo esc_url( $appointments_url ); ?>"><?php esc_html_e( 'View all', 'doctor-ak-portal' ); ?></a>
+			<?php endif; ?>
+		</div>
+	</div>
+
+	<?php if ( empty( $latest_appointments ) ) : ?>
+		<p class="dak-empty-state"><?php esc_html_e( 'No upcoming appointments.', 'doctor-ak-portal' ); ?></p>
+	<?php else : ?>
+		<div class="dak-activity-scroll">
+			<table class="dak-activity-table">
+				<thead>
+					<tr>
+						<th><?php esc_html_e( 'Patient', 'doctor-ak-portal' ); ?></th>
+						<th><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></th>
+						<th><?php esc_html_e( 'Date & time', 'doctor-ak-portal' ); ?></th>
+						<th><?php esc_html_e( 'Amount', 'doctor-ak-portal' ); ?></th>
+						<th><?php esc_html_e( 'Status', 'doctor-ak-portal' ); ?></th>
+						<th><span class="dak-visually-hidden"><?php esc_html_e( 'Actions', 'doctor-ak-portal' ); ?></span></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( $latest_appointments as $dak_row ) : ?>
+						<tr data-activity-row data-status="<?php echo esc_attr( strtolower( $dak_row['status_label'] ) ); ?>" data-text="<?php echo esc_attr( strtolower( $dak_row['patient_name'] . ' ' . $dak_row['doctor_name'] . ' ' . $dak_row['patient_phone'] ) ); ?>">
+							<td>
+								<span class="dak-activity-person">
+									<span class="dak-patient-appt-avatar">
+										<?php if ( $dak_row['patient_avatar_url'] ) : ?>
+											<img src="<?php echo esc_url( $dak_row['patient_avatar_url'] ); ?>" alt="">
+										<?php else : ?>
+											<?php echo esc_html( dak_admin_overview_initials( $dak_row['patient_name'] ) ); ?>
+										<?php endif; ?>
+									</span>
+									<span><strong><?php echo esc_html( $dak_row['patient_name'] ); ?></strong>
+									<?php if ( '' !== $dak_row['patient_phone'] ) : ?><small><?php echo esc_html( $dak_row['patient_phone'] ); ?></small><?php endif; ?></span>
+								</span>
+							</td>
+							<td><?php echo esc_html( sprintf( 'Dr. %s', $dak_row['doctor_name'] ) ); ?></td>
+							<td><?php echo esc_html( $dak_row['datetime_label'] ); ?></td>
+							<td><strong>PKR <?php echo esc_html( number_format_i18n( $dak_row['charge'] ) ); ?></strong></td>
+							<td>
+								<span class="dak-status-pill dak-status-pill-outline dak-status-pill-<?php echo esc_attr( $dak_row['status_badge_class'] ); ?>"><?php echo esc_html( $dak_row['status_label'] ); ?></span>
+								<?php if ( ! in_array( $dak_row['status'], array( 'pending_payment', 'paid' ), true ) ) : ?>
+									<span class="dak-status-pill dak-status-pill-outline <?php echo $dak_row['is_paid'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-pending'; ?>"><?php echo $dak_row['is_paid'] ? esc_html__( 'Paid', 'doctor-ak-portal' ) : esc_html__( 'Payment Pending', 'doctor-ak-portal' ); ?></span>
+								<?php endif; ?>
+							</td>
+							<td class="dak-activity-actions">
+					<?php if ( $dak_row['is_overdue'] ) : ?>
+						<div class="dak-patient-appt-row-actions">
+							<button
+								type="button"
+								class="dak-status-pill dak-status-pill-action"
+								data-admin-appointment-edit
+								data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>"
+								data-doctor-id="<?php echo esc_attr( $dak_row['doctor_id'] ); ?>"
+								data-patient-id="<?php echo esc_attr( $dak_row['patient_id'] ); ?>"
+								data-guest-name="<?php echo esc_attr( $dak_row['guest_name'] ); ?>"
+								data-guest-email="<?php echo esc_attr( $dak_row['guest_email'] ); ?>"
+								data-guest-phone="<?php echo esc_attr( $dak_row['guest_phone'] ); ?>"
+								data-type="<?php echo esc_attr( $dak_row['type'] ); ?>"
+								data-service-id="<?php echo esc_attr( $dak_row['service_id'] ); ?>"
+								data-date="<?php echo esc_attr( $dak_row['date'] ); ?>"
+								data-time="<?php echo esc_attr( $dak_row['time'] ); ?>"
+								data-status="<?php echo esc_attr( $dak_row['status'] ); ?>"
+								data-payment-status="<?php echo esc_attr( $dak_row['payment_status'] ); ?>"
+								data-payment-mode="<?php echo esc_attr( $dak_row['payment_mode'] ); ?>"
+								data-notes="<?php echo esc_attr( $dak_row['notes'] ); ?>"
+								title="<?php esc_attr_e( 'This appointment\'s time has passed — reschedule it to a new date/time.', 'doctor-ak-portal' ); ?>"
+							><?php esc_html_e( 'Reschedule', 'doctor-ak-portal' ); ?></button>
+						</div>
+					<?php elseif ( ! $dak_row['is_paid'] || ! empty( $dak_row['video_call']['can_join'] ) || in_array( $dak_row['status'], array( 'confirmed', 'paid', 'rescheduled', 'checked_in' ), true ) ) : ?>
+						<div class="dak-patient-appt-row-actions">
+							<?php if ( ! empty( $dak_row['video_call']['can_join'] ) ) : ?>
+								<button type="button" class="dak-status-pill dak-status-pill-action" data-join-video-call data-room-url="<?php echo esc_url( $dak_row['video_call']['room_url'] ); ?>"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></button>
+							<?php endif; ?>
+							<?php if ( in_array( $dak_row['status'], array( 'confirmed', 'paid', 'rescheduled' ), true ) && ( $dak_row['is_paid'] || (float) $dak_row['charge'] <= 0 ) ) : ?>
+								<button type="button" class="dak-status-pill dak-status-pill-action" data-check-in data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>" title="<?php esc_attr_e( 'Check the patient in and open their encounter', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Check In', 'doctor-ak-portal' ); ?></button>
+							<?php elseif ( 'checked_in' === $dak_row['status'] ) : ?>
+								<?php
+								$dak_open_encounter = \DoctorAKPortal\Includes\Encounters::find_by_appointment( $dak_row['id'], \DoctorAKPortal\Includes\Encounters::STATUS_OPEN );
+								$dak_encounter_url  = $dak_open_encounter ? add_query_arg( array( 'section' => 'encounter', 'encounter_id' => $dak_open_encounter['id'] ), \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( \DoctorAKPortal\Frontend\Admin_Dashboard::SHORTCODE_TAG ) ) : '';
+								?>
+								<?php if ( '' !== $dak_encounter_url ) : ?>
+									<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $dak_encounter_url ); ?>"><?php esc_html_e( 'Open Encounter', 'doctor-ak-portal' ); ?></a>
+								<?php endif; ?>
+							<?php endif; ?>
+							<?php if ( ! $dak_row['is_paid'] && (float) $dak_row['charge'] > 0 && 'online' === $dak_row['payment_mode'] ) : ?>
+								<button type="button" class="dak-status-pill dak-status-pill-action" data-admin-appointment-pay-now data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>" title="<?php esc_attr_e( 'Pay for this appointment', 'doctor-ak-portal' ); ?>"><?php echo esc_html( sprintf( /* translators: %s: amount. */ __( 'Pay PKR%s', 'doctor-ak-portal' ), number_format( (float) $dak_row['charge'], 0 ) ) ); ?></button>
+								<button type="button" class="dak-icon-button" data-admin-appointment-mark-paid data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>" title="<?php esc_attr_e( 'Already collected? Mark this appointment as paid manually.', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Mark Paid', 'doctor-ak-portal' ); ?>"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.2"/><path d="M6.8 10.2l2.1 2.1 4.3-4.6"/></svg></button>
+							<?php elseif ( ! $dak_row['is_paid'] && (float) $dak_row['charge'] > 0 ) : ?>
+								<button type="button" class="dak-status-pill dak-status-pill-action" data-admin-appointment-mark-paid data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>" title="<?php esc_attr_e( 'Mark this appointment as paid', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Mark Paid', 'doctor-ak-portal' ); ?></button>
+							<?php endif; ?>
+						</div>
+					<?php endif; ?>
+							</td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+		</div>
+		<p class="dak-empty-state dak-hidden" data-activity-empty><?php esc_html_e( 'No activities match your search.', 'doctor-ak-portal' ); ?></p>
+	<?php endif; ?>
+</section>
+
 <div class="dak-dashboard-grid dak-dashboard-grid-charts">
 	<?php if ( ! $is_receptionist ) : ?>
 	<section class="dak-dashboard-card dak-cashflow">
 		<?php
 		$dak_rev_totals = wp_list_pluck( $revenue_chart, 'total' );
 		$dak_rev_sum    = array_sum( $dak_rev_totals );
-		$dak_rev_max    = max( 1.0, (float) max( $dak_rev_totals ) );
+		$dak_rev_max    = max( 1.0, empty( $dak_rev_totals ) ? 0.0 : (float) max( $dak_rev_totals ) );
 		$dak_rev_scale  = pow( 10, floor( log10( $dak_rev_max ) ) );
 		$dak_rev_top    = ceil( $dak_rev_max / $dak_rev_scale ) * $dak_rev_scale;
 		?>
@@ -141,150 +264,40 @@ endif;
 			<div>
 				<span class="dak-cashflow-label"><?php esc_html_e( 'Hospital revenue', 'doctor-ak-portal' ); ?></span>
 				<strong class="dak-cashflow-total">PKR <?php echo esc_html( number_format_i18n( $dak_rev_sum ) ); ?></strong>
+				<span class="dak-cashflow-note"><?php esc_html_e( "Clinic's own share of paid appointments", 'doctor-ak-portal' ); ?></span>
 			</div>
 			<span class="dak-cashflow-range"><?php esc_html_e( 'Last 14 days', 'doctor-ak-portal' ); ?></span>
 		</div>
-		<div class="dak-cashflow-chart" role="img" aria-label="<?php esc_attr_e( 'Bar chart of daily paid revenue over the last 14 days', 'doctor-ak-portal' ); ?>">
-			<div class="dak-cashflow-axis">
-				<?php foreach ( array( 1, 0.75, 0.5, 0.25, 0 ) as $dak_fraction ) : ?>
-					<span><?php echo esc_html( number_format_i18n( $dak_rev_top * $dak_fraction ) ); ?></span>
-				<?php endforeach; ?>
+		<?php if ( 0.0 === (float) $dak_rev_sum ) : ?>
+			<?php // A real zero, not a loading/failed state — the figure above is already computed server-side. An empty 14-bar chart with a 0–1 axis would only add noise. ?>
+			<p class="dak-chart-empty"><?php esc_html_e( 'No paid revenue in the last 14 days. This chart fills in as appointments are marked paid.', 'doctor-ak-portal' ); ?></p>
+		<?php else : ?>
+			<div class="dak-cashflow-chart" role="img" aria-label="<?php esc_attr_e( 'Bar chart of daily paid revenue over the last 14 days', 'doctor-ak-portal' ); ?>">
+				<div class="dak-cashflow-axis">
+					<?php foreach ( array( 1, 0.5, 0 ) as $dak_fraction ) : ?>
+						<span><?php echo esc_html( number_format_i18n( $dak_rev_top * $dak_fraction ) ); ?></span>
+					<?php endforeach; ?>
+				</div>
+				<div class="dak-cashflow-bars">
+					<?php foreach ( array_values( $revenue_chart ) as $dak_i => $dak_point ) : ?>
+						<div class="dak-cashflow-col" tabindex="0" aria-label="<?php echo esc_attr( $dak_point['label'] . ': PKR ' . number_format_i18n( $dak_point['total'] ) ); ?>">
+							<span class="dak-cashflow-tip"><small><?php echo esc_html( $dak_point['label'] ); ?></small>PKR <?php echo esc_html( number_format_i18n( $dak_point['total'] ) ); ?></span>
+							<span class="dak-cashflow-bar" style="height:<?php echo esc_attr( max( 2, round( $dak_point['total'] / $dak_rev_top * 100 ) ) ); ?>%"></span>
+							<?php // Every other day labelled — 14 labels in this width collide; each bar still exposes its own date via the tooltip/aria-label. ?>
+							<span class="dak-cashflow-xlabel"><?php echo 0 === $dak_i % 2 ? esc_html( $dak_point['label'] ) : ''; ?></span>
+						</div>
+					<?php endforeach; ?>
+				</div>
 			</div>
-			<div class="dak-cashflow-bars">
-				<?php foreach ( array_values( $revenue_chart ) as $dak_i => $dak_point ) : ?>
-					<div class="dak-cashflow-col" tabindex="0">
-						<span class="dak-cashflow-tip"><small><?php echo esc_html( $dak_point['label'] ); ?></small>PKR <?php echo esc_html( number_format_i18n( $dak_point['total'] ) ); ?></span>
-						<span class="dak-cashflow-bar" style="height:<?php echo esc_attr( max( 2, round( $dak_point['total'] / $dak_rev_top * 100 ) ) ); ?>%"></span>
-						<span class="dak-cashflow-xlabel"><?php echo esc_html( $dak_point['label'] ); ?></span>
-					</div>
-				<?php endforeach; ?>
-			</div>
-		</div>
+		<?php endif; ?>
 	</section>
 	<?php endif; ?>
 
 	<?php echo $appointments_chart_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own admin-appointments-chart.php template, which escapes its own output. ?>
 </div>
 
+<?php if ( $can_review_doctor_requests ) : ?>
 <div class="dak-dashboard-grid dak-dashboard-grid-lists">
-	<section class="dak-dashboard-card dak-activity-card">
-		<div class="dak-activity-head">
-			<h2><?php esc_html_e( 'Recent activities', 'doctor-ak-portal' ); ?></h2>
-			<div class="dak-activity-tools">
-				<label class="dak-activity-search">
-					<span class="dak-visually-hidden"><?php esc_html_e( 'Search activities', 'doctor-ak-portal' ); ?></span>
-					<input type="search" placeholder="<?php esc_attr_e( 'Search', 'doctor-ak-portal' ); ?>" data-activity-search>
-				</label>
-				<select data-activity-filter aria-label="<?php esc_attr_e( 'Filter by status', 'doctor-ak-portal' ); ?>">
-					<option value=""><?php esc_html_e( 'All statuses', 'doctor-ak-portal' ); ?></option>
-					<?php foreach ( array_unique( wp_list_pluck( $latest_appointments, 'status_label' ) ) as $dak_status_option ) : ?>
-						<option value="<?php echo esc_attr( strtolower( $dak_status_option ) ); ?>"><?php echo esc_html( $dak_status_option ); ?></option>
-					<?php endforeach; ?>
-				</select>
-				<?php if ( $appointments_url ) : ?>
-					<a class="dak-button dak-button-secondary dak-button-sm" href="<?php echo esc_url( $appointments_url ); ?>"><?php esc_html_e( 'View all', 'doctor-ak-portal' ); ?></a>
-				<?php endif; ?>
-			</div>
-		</div>
-
-		<?php if ( empty( $latest_appointments ) ) : ?>
-			<p class="dak-empty-state"><?php esc_html_e( 'No upcoming appointments.', 'doctor-ak-portal' ); ?></p>
-		<?php else : ?>
-			<div class="dak-activity-scroll">
-				<table class="dak-activity-table">
-					<thead>
-						<tr>
-							<th><?php esc_html_e( 'Patient', 'doctor-ak-portal' ); ?></th>
-							<th><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></th>
-							<th><?php esc_html_e( 'Date & time', 'doctor-ak-portal' ); ?></th>
-							<th><?php esc_html_e( 'Amount', 'doctor-ak-portal' ); ?></th>
-							<th><?php esc_html_e( 'Status', 'doctor-ak-portal' ); ?></th>
-							<th><span class="dak-visually-hidden"><?php esc_html_e( 'Actions', 'doctor-ak-portal' ); ?></span></th>
-						</tr>
-					</thead>
-					<tbody>
-						<?php foreach ( $latest_appointments as $dak_row ) : ?>
-							<tr data-activity-row data-status="<?php echo esc_attr( strtolower( $dak_row['status_label'] ) ); ?>" data-text="<?php echo esc_attr( strtolower( $dak_row['patient_name'] . ' ' . $dak_row['doctor_name'] . ' ' . $dak_row['patient_phone'] ) ); ?>">
-								<td>
-									<span class="dak-activity-person">
-										<span class="dak-patient-appt-avatar">
-											<?php if ( $dak_row['patient_avatar_url'] ) : ?>
-												<img src="<?php echo esc_url( $dak_row['patient_avatar_url'] ); ?>" alt="">
-											<?php else : ?>
-												<?php echo esc_html( dak_admin_overview_initials( $dak_row['patient_name'] ) ); ?>
-											<?php endif; ?>
-										</span>
-										<span><strong><?php echo esc_html( $dak_row['patient_name'] ); ?></strong>
-										<?php if ( '' !== $dak_row['patient_phone'] ) : ?><small><?php echo esc_html( $dak_row['patient_phone'] ); ?></small><?php endif; ?></span>
-									</span>
-								</td>
-								<td><?php echo esc_html( sprintf( 'Dr. %s', $dak_row['doctor_name'] ) ); ?></td>
-								<td><?php echo esc_html( $dak_row['datetime_label'] ); ?></td>
-								<td><strong>PKR <?php echo esc_html( number_format_i18n( $dak_row['charge'] ) ); ?></strong></td>
-								<td>
-									<span class="dak-status-pill dak-status-pill-outline dak-status-pill-<?php echo esc_attr( $dak_row['status_badge_class'] ); ?>"><?php echo esc_html( $dak_row['status_label'] ); ?></span>
-									<?php if ( ! in_array( $dak_row['status'], array( 'pending_payment', 'paid' ), true ) ) : ?>
-										<span class="dak-status-pill dak-status-pill-outline <?php echo $dak_row['is_paid'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-pending'; ?>"><?php echo $dak_row['is_paid'] ? esc_html__( 'Paid', 'doctor-ak-portal' ) : esc_html__( 'Payment Pending', 'doctor-ak-portal' ); ?></span>
-									<?php endif; ?>
-								</td>
-								<td class="dak-activity-actions">
-						<?php if ( $dak_row['is_overdue'] ) : ?>
-							<div class="dak-patient-appt-row-actions">
-								<button
-									type="button"
-									class="dak-status-pill dak-status-pill-action"
-									data-admin-appointment-edit
-									data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>"
-									data-doctor-id="<?php echo esc_attr( $dak_row['doctor_id'] ); ?>"
-									data-patient-id="<?php echo esc_attr( $dak_row['patient_id'] ); ?>"
-									data-guest-name="<?php echo esc_attr( $dak_row['guest_name'] ); ?>"
-									data-guest-email="<?php echo esc_attr( $dak_row['guest_email'] ); ?>"
-									data-guest-phone="<?php echo esc_attr( $dak_row['guest_phone'] ); ?>"
-									data-type="<?php echo esc_attr( $dak_row['type'] ); ?>"
-									data-service-id="<?php echo esc_attr( $dak_row['service_id'] ); ?>"
-									data-date="<?php echo esc_attr( $dak_row['date'] ); ?>"
-									data-time="<?php echo esc_attr( $dak_row['time'] ); ?>"
-									data-status="<?php echo esc_attr( $dak_row['status'] ); ?>"
-									data-payment-status="<?php echo esc_attr( $dak_row['payment_status'] ); ?>"
-									data-payment-mode="<?php echo esc_attr( $dak_row['payment_mode'] ); ?>"
-									data-notes="<?php echo esc_attr( $dak_row['notes'] ); ?>"
-									title="<?php esc_attr_e( 'This appointment\'s time has passed — reschedule it to a new date/time.', 'doctor-ak-portal' ); ?>"
-								><?php esc_html_e( 'Reschedule', 'doctor-ak-portal' ); ?></button>
-							</div>
-						<?php elseif ( ! $dak_row['is_paid'] || ! empty( $dak_row['video_call']['can_join'] ) || in_array( $dak_row['status'], array( 'confirmed', 'paid', 'rescheduled', 'checked_in' ), true ) ) : ?>
-							<div class="dak-patient-appt-row-actions">
-								<?php if ( ! empty( $dak_row['video_call']['can_join'] ) ) : ?>
-									<button type="button" class="dak-status-pill dak-status-pill-action" data-join-video-call data-room-url="<?php echo esc_url( $dak_row['video_call']['room_url'] ); ?>"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></button>
-								<?php endif; ?>
-								<?php if ( in_array( $dak_row['status'], array( 'confirmed', 'paid', 'rescheduled' ), true ) && ( $dak_row['is_paid'] || (float) $dak_row['charge'] <= 0 ) ) : ?>
-									<button type="button" class="dak-status-pill dak-status-pill-action" data-check-in data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>" title="<?php esc_attr_e( 'Check the patient in and open their encounter', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Check In', 'doctor-ak-portal' ); ?></button>
-								<?php elseif ( 'checked_in' === $dak_row['status'] ) : ?>
-									<?php
-									$dak_open_encounter = \DoctorAKPortal\Includes\Encounters::find_by_appointment( $dak_row['id'], \DoctorAKPortal\Includes\Encounters::STATUS_OPEN );
-									$dak_encounter_url  = $dak_open_encounter ? add_query_arg( array( 'section' => 'encounter', 'encounter_id' => $dak_open_encounter['id'] ), \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( \DoctorAKPortal\Frontend\Admin_Dashboard::SHORTCODE_TAG ) ) : '';
-									?>
-									<?php if ( '' !== $dak_encounter_url ) : ?>
-										<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $dak_encounter_url ); ?>"><?php esc_html_e( 'Open Encounter', 'doctor-ak-portal' ); ?></a>
-									<?php endif; ?>
-								<?php endif; ?>
-								<?php if ( ! $dak_row['is_paid'] && (float) $dak_row['charge'] > 0 && 'online' === $dak_row['payment_mode'] ) : ?>
-									<button type="button" class="dak-status-pill dak-status-pill-action" data-admin-appointment-pay-now data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>" title="<?php esc_attr_e( 'Pay for this appointment', 'doctor-ak-portal' ); ?>"><?php echo esc_html( sprintf( /* translators: %s: amount. */ __( 'Pay PKR%s', 'doctor-ak-portal' ), number_format( (float) $dak_row['charge'], 0 ) ) ); ?></button>
-									<button type="button" class="dak-icon-button" data-admin-appointment-mark-paid data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>" title="<?php esc_attr_e( 'Already collected? Mark this appointment as paid manually.', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Mark Paid', 'doctor-ak-portal' ); ?>"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.2"/><path d="M6.8 10.2l2.1 2.1 4.3-4.6"/></svg></button>
-								<?php elseif ( ! $dak_row['is_paid'] && (float) $dak_row['charge'] > 0 ) : ?>
-									<button type="button" class="dak-status-pill dak-status-pill-action" data-admin-appointment-mark-paid data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>" title="<?php esc_attr_e( 'Mark this appointment as paid', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Mark Paid', 'doctor-ak-portal' ); ?></button>
-								<?php endif; ?>
-							</div>
-						<?php endif; ?>
-								</td>
-							</tr>
-						<?php endforeach; ?>
-					</tbody>
-				</table>
-			</div>
-			<p class="dak-empty-state dak-hidden" data-activity-empty><?php esc_html_e( 'No activities match your search.', 'doctor-ak-portal' ); ?></p>
-		<?php endif; ?>
-	</section>
-
 	<section class="dak-dashboard-card">
 		<div class="dak-dashboard-card-header">
 			<h2><?php esc_html_e( 'Pending doctor approvals', 'doctor-ak-portal' ); ?></h2>
@@ -335,3 +348,4 @@ endif;
 		<?php endif; ?>
 	</section>
 </div>
+<?php endif; ?>

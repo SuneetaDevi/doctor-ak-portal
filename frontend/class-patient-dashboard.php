@@ -665,17 +665,26 @@ class Patient_Dashboard {
 			array(
 				'is_complete' => $profile_picture_id > 0,
 				'label'       => __( 'Upload a profile photo', 'doctor-ak-portal' ),
+				// Optional — counts toward the Profile page's completion
+				// score, but isn't something the clinic needs to book or
+				// contact a patient, so the dashboard home never nags for it.
+				'optional'    => true,
 			),
 		);
 
-		$missing_profile_items = array();
-		$complete_count        = 0;
+		$missing_profile_items  = array();
+		$required_profile_items = array();
+		$complete_count         = 0;
 
 		foreach ( $completion_checks as $check ) {
 			if ( $check['is_complete'] ) {
 				++$complete_count;
 			} else {
 				$missing_profile_items[] = $check['label'];
+
+				if ( empty( $check['optional'] ) ) {
+					$required_profile_items[] = $check['label'];
+				}
 			}
 		}
 
@@ -701,6 +710,7 @@ class Patient_Dashboard {
 			'avatar_url'            => self::avatar_url( $user->ID ),
 			'profile_completion'    => $profile_completion,
 			'missing_profile_items' => $missing_profile_items,
+			'required_profile_items' => $required_profile_items,
 			'phone_number'          => $phone_number,
 			'next_appointment'      => $dashboard_data['next_appointment'],
 			'unpaid_count'          => $dashboard_data['unpaid_count'],

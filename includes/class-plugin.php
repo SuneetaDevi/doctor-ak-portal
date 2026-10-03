@@ -13,6 +13,7 @@ use DoctorAKPortal\Admin\Role_Permissions_Settings;
 use DoctorAKPortal\Admin\Notification_Settings;
 use DoctorAKPortal\Admin\Swich_Settings;
 use DoctorAKPortal\Frontend\Admin_Dashboard;
+use DoctorAKPortal\Frontend\Policy_Pages;
 use DoctorAKPortal\Frontend\Admin_User_Handler;
 use DoctorAKPortal\Frontend\Appointment_Handler;
 use DoctorAKPortal\Frontend\Booking_Handler;
@@ -195,6 +196,7 @@ class Plugin {
 
 		$dashboard_layout = new Dashboard_Layout();
 		$this->loader->add_filter( 'template_include', $dashboard_layout, 'template_include' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $dashboard_layout, 'enqueue_assets', 100 );
 
 		$clinic_handler = new Clinic_Handler();
 		$this->loader->add_action( 'wp_enqueue_scripts', $clinic_handler, 'enqueue_assets' );
@@ -211,6 +213,13 @@ class Plugin {
 		$site_footer = new Site_Footer( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $site_footer, 'enqueue_assets' );
 		$this->loader->add_action( 'wp_footer', $site_footer, 'render' );
+
+		// Terms / Privacy / Cancellation: one shared policy template (no theme
+		// header/footer duplicates) and its own stylesheet — see Policy_Pages.
+		$policy_pages = new Policy_Pages( new Template_Loader() );
+		$this->loader->add_filter( 'template_include', $policy_pages, 'template_include', 20 );
+		$this->loader->add_filter( 'body_class', $policy_pages, 'add_body_class' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $policy_pages, 'enqueue_assets', 100 );
 
 		$featured_doctors = new Featured_Doctors( new Template_Loader(), $doctors_directory );
 		$this->loader->add_action( 'wp_enqueue_scripts', $featured_doctors, 'enqueue_assets' );

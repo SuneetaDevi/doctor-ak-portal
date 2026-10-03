@@ -987,6 +987,16 @@ class Doctor_Dashboard {
 			'specialization_labels' => $specialization_labels,
 			'clinic_location'       => $primary_clinic_location,
 			'video_consultation'    => Clinics::doctor_has_active_video_clinic( $user->ID ),
+			// Real booking prerequisites for the overview's setup checklist —
+			// only rendered while one is still missing, and only on the
+			// Dashboard tab (cheap queries, but no reason to run them elsewhere).
+			'setup_has_clinic'      => 'dashboard' === $active_tab ? (bool) array_filter(
+				Clinics::get_for_doctor( $user->ID ),
+				function ( $clinic ) {
+					return Clinics::TYPE_PHYSICAL === $clinic['type'] && ! empty( $clinic['enabled_days'] );
+				}
+			) : true,
+			'setup_has_service'     => 'dashboard' === $active_tab ? ! empty( Services::active_for_doctor( $user->ID, 'clinic' ) ) : true,
 			'appointment_groups'    => $appointment_groups_html,
 			'total_upcoming_appointments' => $appointment_data['total_upcoming_count'],
 			'active_tab'            => $active_tab,

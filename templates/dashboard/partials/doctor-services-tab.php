@@ -67,6 +67,29 @@ $dak_service_icons = array(
 						<span class="dak-service-row-price">
 							<?php echo $service['charge'] > 0 ? esc_html( 'PKR ' . number_format( $service['charge'], 0 ) ) : esc_html__( 'Free', 'doctor-ak-portal' ); ?>
 						</span>
+						<?php if ( ! empty( $service['clinic_locations'] ) ) : ?>
+							<span class="dak-service-row-scope">
+								<?php
+								echo esc_html(
+									sprintf(
+										/* translators: %s: comma-separated "Clinic: PKR price" list. */
+										__( 'Clinic prices: %s', 'doctor-ak-portal' ),
+										implode(
+											', ',
+											array_map(
+												static function ( $dak_location ) {
+													return $dak_location['name'] . ' ' . $dak_location['price_label'];
+												},
+												$service['clinic_locations']
+											)
+										)
+									)
+								);
+								?>
+							</span>
+						<?php else : ?>
+							<span class="dak-service-row-scope"><?php esc_html_e( 'Same price at all your clinics', 'doctor-ak-portal' ); ?></span>
+						<?php endif; ?>
 					</span>
 
 					<span class="dak-admin-record-row-tags">

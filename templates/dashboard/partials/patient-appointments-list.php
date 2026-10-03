@@ -70,8 +70,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 </section>
 
 <section class="dak-dashboard-card">
-	<?php if ( empty( $rows ) ) : ?>
-		<p class="dak-empty-state"><?php esc_html_e( 'No appointments match these filters.', 'doctor-ak-portal' ); ?></p>
+	<?php if ( empty( $rows ) && ( '' !== $selected_date || '' !== $selected_status || 'upcoming' !== $selected_range || '' !== $selected_search ) ) : ?>
+		<div class="dak-empty-state">
+			<p><?php esc_html_e( 'No appointments match these filters.', 'doctor-ak-portal' ); ?></p>
+			<a
+				class="dak-button dak-button-secondary dak-button-sm"
+				href="?tab=appointments"
+				data-live-filter-clear
+				data-live-filter="doctor_ak_patient_appointments_filter"
+				data-live-filter-target="#dak-patient-appointments-tab-content"
+				data-live-filter-nonce="dakPatientDashboard"
+			><?php esc_html_e( 'Clear filters', 'doctor-ak-portal' ); ?></a>
+		</div>
+	<?php elseif ( empty( $rows ) ) : ?>
+		<div class="dak-empty-state">
+			<p><?php esc_html_e( 'You have no upcoming appointments.', 'doctor-ak-portal' ); ?></p>
+			<button type="button" class="dak-button dak-button-primary dak-button-sm" data-dak-book-appointment><?php esc_html_e( 'Book appointment', 'doctor-ak-portal' ); ?></button>
+		</div>
 	<?php else : ?>
 		<?php foreach ( $rows as $row ) : ?>
 			<div id="dak-appointment-<?php echo esc_attr( $row['id'] ); ?>" class="dak-admin-record-row" data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>">

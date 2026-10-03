@@ -147,9 +147,9 @@ foreach ( $ledger as $dak_row ) {
 
 			<span class="dak-admin-record-row-tags">
 				<?php if ( $outstanding['closing_balance'] > 0.01 ) : ?>
-					<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-active"><?php esc_html_e( 'Clinic owes you', 'doctor-ak-portal' ); ?></span>
+					<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-active"><?php esc_html_e( 'Owed to you', 'doctor-ak-portal' ); ?></span>
 				<?php elseif ( $outstanding['closing_balance'] < -0.01 ) : ?>
-					<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-disabled"><?php esc_html_e( 'You owe clinic', 'doctor-ak-portal' ); ?></span>
+					<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-pending"><?php esc_html_e( 'You owe', 'doctor-ak-portal' ); ?></span>
 				<?php else : ?>
 					<span class="dak-status-pill dak-status-pill-outline"><?php esc_html_e( 'Settled', 'doctor-ak-portal' ); ?></span>
 				<?php endif; ?>

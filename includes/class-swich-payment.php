@@ -220,17 +220,28 @@ class Swich_Payment {
 			wp_die( esc_html__( 'Appointment not found.', 'doctor-ak-portal' ) );
 		}
 
+		// The gateway's own word on this transaction, when it has one — lets
+		// the page tell "payment failed/cancelled" apart from "not confirmed
+		// yet" instead of showing the same "still confirming" text for both.
+		$gateway_status = '';
+
 		if ( Appointments::PAYMENT_STATUS_PENDING === $appointment['payment_status'] ) {
 			$customer_transaction_id = get_post_meta( $appointment_id, self::META_TRANSACTION_ID, true );
 			$inquiry                 = self::inquire( $customer_transaction_id );
 
-			if ( ! is_wp_error( $inquiry ) && isset( $inquiry['transaction']['transactionStatus'] ) && 'success' === $inquiry['transaction']['transactionStatus'] ) {
+			if ( ! is_wp_error( $inquiry ) && isset( $inquiry['transaction']['transactionStatus'] ) ) {
+				$gateway_status = strtolower( (string) $inquiry['transaction']['transactionStatus'] );
+			}
+
+			if ( 'success' === $gateway_status ) {
 				Appointments::mark_paid( $appointment_id );
 				$appointment['payment_status'] = Appointments::PAYMENT_STATUS_PAID;
 			}
 		}
 
-		$paid = Appointments::PAYMENT_STATUS_PAID === $appointment['payment_status'];
+		$paid     = Appointments::PAYMENT_STATUS_PAID === $appointment['payment_status'];
+		$failed   = ! $paid && in_array( $gateway_status, array( 'failed', 'failure', 'cancelled', 'canceled', 'declined', 'expired', 'rejected' ), true );
+		$is_video = Appointments::TYPE_VIDEO === $appointment['type'];
 
 		// A guest booking has no account, so there's no dashboard for them
 		// to land on or check back at — send them home instead, and show
@@ -247,17 +258,31 @@ class Swich_Payment {
 			$continue_label = __( 'Go to Dashboard', 'doctor-ak-portal' );
 		}
 
-		$heading = $paid
-			? __( 'Payment received', 'doctor-ak-portal' )
-			: __( "We're still confirming your payment", 'doctor-ak-portal' );
-
-		if ( $is_guest ) {
-			$message = $paid
-				? __( 'Your online video consultation has been confirmed. Details are below — please save or screenshot this page, as it will not be emailed again.', 'doctor-ak-portal' )
-				: __( "We haven't received confirmation from the payment gateway yet. If the amount was deducted, this will update shortly. Please save this page and check back, or contact us with the details below if it doesn't update.", 'doctor-ak-portal' );
+		if ( $paid ) {
+			$heading = __( 'Payment received', 'doctor-ak-portal' );
+		} elseif ( $failed ) {
+			$heading = __( 'Payment not completed', 'doctor-ak-portal' );
 		} else {
-			$message = $paid
-				? __( 'Your online video consultation has been confirmed. You can view it from your dashboard.', 'doctor-ak-portal' )
+			$heading = __( "We're still confirming your payment", 'doctor-ak-portal' );
+		}
+
+		$confirmed_label = $is_video
+			? __( 'Your online video consultation has been confirmed.', 'doctor-ak-portal' )
+			: __( 'Your clinic appointment has been confirmed.', 'doctor-ak-portal' );
+
+		if ( $paid ) {
+			$message = $is_guest
+				? $confirmed_label . ' ' . __( 'Details are below — please save or screenshot this page, as it will not be emailed again.', 'doctor-ak-portal' )
+				: $confirmed_label . ' ' . __( 'You can view it from your dashboard.', 'doctor-ak-portal' );
+		} elseif ( $failed ) {
+			// The appointment itself still exists with its payment pending —
+			// nothing here changes its status, it only says so accurately.
+			$message = $is_guest
+				? __( 'The payment gateway reports that this payment did not go through, so nothing was charged for it. Your appointment request is saved with payment pending — please contact us with the reference below to complete payment.', 'doctor-ak-portal' )
+				: __( 'The payment gateway reports that this payment did not go through, so nothing was charged for it. Your appointment is saved with payment pending — you can try paying again from your dashboard.', 'doctor-ak-portal' );
+		} else {
+			$message = $is_guest
+				? __( "We haven't received confirmation from the payment gateway yet. If the amount was deducted, this will update shortly. Please save this page and check back, or contact us with the details below if it doesn't update.", 'doctor-ak-portal' )
 				: __( "We haven't received confirmation from the payment gateway yet. If the amount was deducted, this will update shortly — please check your dashboard in a few minutes.", 'doctor-ak-portal' );
 		}
 
@@ -292,7 +317,7 @@ class Swich_Payment {
 					<h1 style="margin-bottom:8px;">%1$s</h1>
 					<p style="color:#555;margin-bottom:24px;">%2$s</p>
 					%3$s
-					<a href="%4$s" style="display:inline-block;padding:10px 20px;background:#2563eb;color:#fff;border-radius:6px;text-decoration:none;">%5$s</a>
+					<a href="%4$s" style="display:inline-block;padding:10px 20px;background:#16634b;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">%5$s</a>
 				</div>',
 				esc_html( $heading ),
 				esc_html( $message ),

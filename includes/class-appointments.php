@@ -1202,6 +1202,7 @@ class Appointments {
 			'doctor_name'           => '' !== $doctor_name ? $doctor_name : __( 'Unknown Doctor', 'doctor-ak-portal' ),
 			'doctor_avatar_url'     => $avatar_url,
 			'doctor_specialization' => $specialization_label,
+			'clinic_name'           => ( $appointment['clinic_id'] > 0 && ( $dak_row_clinic = Clinics::find( $appointment['clinic_id'] ) ) ) ? $dak_row_clinic['name'] : '',
 			'type'                  => $appointment['type'],
 			'type_label'            => self::type_label( $appointment['type'] ),
 			'date'                  => $appointment['date'],
@@ -2765,17 +2766,20 @@ class Appointments {
 
 		$patient_name = self::patient_display_name_for( $appointment );
 
-		$clinic_label = '';
+		$clinic_label   = '';
+		$clinic_name    = '';
+		$clinic_address = '';
 
 		if ( $appointment['clinic_id'] > 0 ) {
 			$clinic = Clinics::find( $appointment['clinic_id'] );
 
 			if ( $clinic ) {
-				$clinic_label = $clinic['name'];
-				$address_line = implode( ', ', array_filter( array( $clinic['address'], $clinic['area_label'], $clinic['city_label'] ) ) );
+				$clinic_name    = $clinic['name'];
+				$clinic_label   = $clinic['name'];
+				$clinic_address = implode( ', ', array_filter( array( $clinic['address'], $clinic['area_label'], $clinic['city_label'] ) ) );
 
-				if ( '' !== $address_line ) {
-					$clinic_label .= ' — ' . $address_line;
+				if ( '' !== $clinic_address ) {
+					$clinic_label .= ' — ' . $clinic_address;
 				}
 			}
 		}
@@ -2815,6 +2819,11 @@ class Appointments {
 			'type_label'        => self::type_label( $appointment['type'] ),
 			'clinic_id'         => $appointment['clinic_id'],
 			'clinic_label'      => $clinic_label,
+			// Same clinic, split — a short name for dense list rows, with the
+			// address kept separately for a detail/tooltip — so lists stop
+			// wrapping the full "Name — address" string across several lines.
+			'clinic_name'       => $clinic_name,
+			'clinic_address'    => $clinic_address,
 			'date'              => $appointment['date'],
 			'time'              => $appointment['time'],
 			'datetime_label'    => false !== $start_timestamp ? date_i18n( 'd/m/Y h:i A', $start_timestamp ) : trim( $appointment['date'] . ' ' . $appointment['time'] ),

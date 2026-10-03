@@ -42,7 +42,7 @@ $show_save_button     = ! isset( $show_save_button ) || $show_save_button;
 			<p><?php esc_html_e( 'Email me when an appointment involving me is booked.', 'doctor-ak-portal' ); ?></p>
 		</div>
 		<label class="dak-toggle-switch">
-			<input type="checkbox" id="dak-notify-booking" <?php checked( $notify_booking ); ?>>
+			<input type="checkbox" id="dak-notify-booking" aria-label="<?php esc_attr_e( 'Appointment booked', 'doctor-ak-portal' ); ?>" <?php checked( $notify_booking ); ?>>
 			<span></span>
 		</label>
 	</div>
@@ -53,7 +53,7 @@ $show_save_button     = ! isset( $show_save_button ) || $show_save_button;
 			<p><?php esc_html_e( 'Email me when payment is completed for an appointment involving me.', 'doctor-ak-portal' ); ?></p>
 		</div>
 		<label class="dak-toggle-switch">
-			<input type="checkbox" id="dak-notify-paid" <?php checked( $notify_paid ); ?>>
+			<input type="checkbox" id="dak-notify-paid" aria-label="<?php esc_attr_e( 'Payment received', 'doctor-ak-portal' ); ?>" <?php checked( $notify_paid ); ?>>
 			<span></span>
 		</label>
 	</div>
@@ -64,7 +64,7 @@ $show_save_button     = ! isset( $show_save_button ) || $show_save_button;
 			<p><?php esc_html_e( 'Email me when an appointment involving me is cancelled.', 'doctor-ak-portal' ); ?></p>
 		</div>
 		<label class="dak-toggle-switch">
-			<input type="checkbox" id="dak-notify-cancelled" <?php checked( $notify_cancelled ); ?>>
+			<input type="checkbox" id="dak-notify-cancelled" aria-label="<?php esc_attr_e( 'Cancellations', 'doctor-ak-portal' ); ?>" <?php checked( $notify_cancelled ); ?>>
 			<span></span>
 		</label>
 	</div>
@@ -75,7 +75,7 @@ $show_save_button     = ! isset( $show_save_button ) || $show_save_button;
 			<p><?php esc_html_e( 'Email me when a new blog post or service is added.', 'doctor-ak-portal' ); ?></p>
 		</div>
 		<label class="dak-toggle-switch">
-			<input type="checkbox" id="dak-notify-announcements" <?php checked( $notify_announcements ); ?>>
+			<input type="checkbox" id="dak-notify-announcements" aria-label="<?php esc_attr_e( 'Announcements', 'doctor-ak-portal' ); ?>" <?php checked( $notify_announcements ); ?>>
 			<span></span>
 		</label>
 	</div>

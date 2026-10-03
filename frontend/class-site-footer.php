@@ -54,7 +54,7 @@ class Site_Footer {
 	 *
 	 * @var string
 	 */
-	const BRAND_DOMAIN = 'drakhlana.com';
+	const BRAND_DOMAIN = 'doctoraklohana.com';
 
 	/**
 	 * Template loader.

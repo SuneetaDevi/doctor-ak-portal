@@ -90,20 +90,34 @@
 	 * @param {number} delta Amount to change the badge count by.
 	 */
 	function updateBadges( delta ) {
-		var badge = document.getElementById( 'dak-notifications-badge' );
+		// Every unread badge (sidebar + topbar bell) carries the real count
+		// in data-unread-count — its visible text is capped at "99+" (see
+		// templates/dashboard/partials/unread-badge.php), so parsing the
+		// text would undercount. The visually hidden label right after
+		// each badge is what screen readers hear; keep it in step too.
+		var badges = document.querySelectorAll( '[data-unread-count]' );
 
-		if ( ! badge ) {
-			return;
-		}
+		badges.forEach( function ( badge ) {
+			var current = parseInt( badge.getAttribute( 'data-unread-count' ), 10 );
+			var count = Math.max( 0, ( isNaN( current ) ? parseInt( badge.textContent, 10 ) || 0 : current ) + delta );
+			var label = badge.nextElementSibling && badge.nextElementSibling.hasAttribute( 'data-unread-label' ) ? badge.nextElementSibling : null;
 
-		var count = parseInt( badge.textContent, 10 ) || 0;
-		count = Math.max( 0, count + delta );
+			if ( 0 === count ) {
+				badge.remove();
 
-		if ( 0 === count ) {
-			badge.remove();
-			return;
-		}
+				if ( label ) {
+					label.remove();
+				}
 
-		badge.textContent = String( count );
+				return;
+			}
+
+			badge.setAttribute( 'data-unread-count', String( count ) );
+			badge.textContent = count > 99 ? '99+' : String( count );
+
+			if ( label ) {
+				label.textContent = '(' + count + ' unread)';
+			}
+		} );
 	}
 } )();

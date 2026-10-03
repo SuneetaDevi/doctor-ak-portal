@@ -19,6 +19,18 @@ $keywords         = \DoctorAKPortal\Includes\Doctor_Keywords::get_all();
 $login_url       = \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( 'doctor_login' );
 $home_url        = home_url( '/' );
 
+// A caller (e.g. the booking page's "Create an account" link) can ask to be
+// returned somewhere after signing up. Patient registration doesn't log the
+// new user in, so that target is carried through the login page instead —
+// the same-site check here and Login_Handler's own wp_validate_redirect()
+// keep it from becoming an open redirect.
+$dak_register_redirect_to = isset( $_GET['redirect_to'] ) ? wp_validate_redirect( wp_unslash( $_GET['redirect_to'] ), '' ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- read-only redirect target, validated same-site.
+
+if ( '' !== $dak_register_redirect_to && $login_url ) {
+	$login_url = add_query_arg( 'redirect_to', rawurlencode( $dak_register_redirect_to ), $login_url );
+	$home_url  = $login_url;
+}
+
 // Small, hand-drawn line icons (no external icon library dependency).
 $dak_icons = array(
 	'doctor'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3v4.5a3.5 3.5 0 0 0 7 0V3"/><path d="M6.5 5H5M13.5 5H15"/><path d="M13.5 9v2a3.5 3.5 0 0 1-7 0v-1"/><circle cx="15.5" cy="11.5" r="1.5"/></svg>',

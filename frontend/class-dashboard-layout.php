@@ -15,6 +15,7 @@
 
 namespace DoctorAKPortal\Frontend;
 
+use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Roles;
 
@@ -186,6 +187,59 @@ class Dashboard_Layout {
 		}
 
 		return '';
+	}
+
+	/**
+	 * Loads the shared dashboard design system (tokens, shell, lists,
+	 * filters, forms, dialogs — see assets/css/doctor-ak-dashboard-ui.css)
+	 * and its small behaviour layer on any of the three dashboard pages.
+	 * Hooked late (priority 100) so it lands after every per-dashboard
+	 * stylesheet each controller enqueues for itself, which is what lets it
+	 * act as the single source of truth for the shared look without
+	 * touching those controllers' own enqueue order.
+	 *
+	 * @return void
+	 */
+	public function enqueue_assets() {
+		if ( '' === $this->dashboard_shortcode_on_page() ) {
+			return;
+		}
+
+		wp_enqueue_style(
+			'doctor-ak-portal-dashboard-ui',
+			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-dashboard-ui.css',
+			array(),
+			Assets::version( 'assets/css/doctor-ak-dashboard-ui.css' )
+		);
+
+		wp_enqueue_script(
+			'doctor-ak-portal-dashboard-ui',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-dashboard-ui.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-dashboard-ui.js' ),
+			true
+		);
+	}
+
+	/**
+	 * Where the dashboard sidebar's "Help & support" entry points — the
+	 * site's Contact page at the common 'contact'/'contact-us' slugs (no
+	 * dedicated shortcode exists for it), falling back to the home page
+	 * rather than a dead link. Shared by all three dashboards (see
+	 * templates/dashboard/partials/sidebar-footer.php).
+	 *
+	 * @return string
+	 */
+	public static function support_url() {
+		foreach ( array( 'contact', 'contact-us' ) as $slug ) {
+			$page = get_page_by_path( $slug );
+
+			if ( $page instanceof \WP_Post ) {
+				return get_permalink( $page );
+			}
+		}
+
+		return home_url( '/' );
 	}
 
 	/**

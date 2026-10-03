@@ -98,17 +98,20 @@ $dak_admin_section_icons = array(
 			</span>
 			<span class="dak-sidebar-brand-text">
 				<strong><?php esc_html_e( 'Doctor AK Portal', 'doctor-ak-portal' ); ?></strong>
-				<span><?php esc_html_e( 'Admin portal', 'doctor-ak-portal' ); ?></span>
+				<span><?php echo esc_html( $is_receptionist ? __( 'Receptionist portal', 'doctor-ak-portal' ) : __( 'Admin portal', 'doctor-ak-portal' ) ); ?></span>
 			</span>
 		</a>
 
-		<div class="dak-sidebar-doctor-card">
-			<span class="dak-avatar dak-avatar-md">
-				<?php echo $dak_admin_icons['person']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-			</span>
-			<span class="dak-sidebar-doctor-name"><?php echo esc_html( $current_user->display_name ); ?></span>
-			<span class="dak-specialty-tag dak-sidebar-doctor-tagline"><?php echo esc_html( $is_receptionist ? __( 'Receptionist', 'doctor-ak-portal' ) : __( 'Clinic Admin', 'doctor-ak-portal' ) ); ?></span>
-		</div>
+		<?php
+		echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- partial escapes its own output.
+			'dashboard/partials/sidebar-identity.php',
+			array(
+				'name'       => $current_user->display_name,
+				'role_label' => $is_receptionist ? __( 'Receptionist', 'doctor-ak-portal' ) : __( 'Administrator', 'doctor-ak-portal' ),
+				'avatar_url' => $avatar_url,
+			)
+		);
+		?>
 
 		<nav class="dak-dashboard-nav">
 			<?php foreach ( $nav_groups as $group ) : ?>
@@ -121,7 +124,7 @@ $dak_admin_section_icons = array(
 								<a href="<?php echo esc_url( $item['url'] ); ?>">
 									<span class="dak-nav-icon"><?php echo $dak_admin_icons[ $icon ]; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 									<?php echo esc_html( $item['label'] ); ?>
-									<?php if ( ! empty( $item['badge'] ) ) : ?><span class="dak-nav-badge"<?php echo 'notifications' === $item['slug'] ? ' id="dak-notifications-badge"' : ''; ?>><?php echo esc_html( $item['badge'] ); ?></span><?php endif; ?>
+									<?php if ( ! empty( $item['badge'] ) && 'notifications' === $item['slug'] ) : ?><?php echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( 'dashboard/partials/unread-badge.php', array( 'count' => (int) $item['badge'], 'class' => 'dak-nav-badge', 'id' => 'dak-notifications-badge' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- partial escapes its own output. ?><?php elseif ( ! empty( $item['badge'] ) ) : ?><span class="dak-nav-badge"><?php echo esc_html( $item['badge'] ); ?></span><?php endif; ?>
 								</a>
 							</li>
 						<?php endforeach; ?>
@@ -130,7 +133,7 @@ $dak_admin_section_icons = array(
 			<?php endforeach; ?>
 		</nav>
 
-		<a class="dak-sidebar-logout" href="<?php echo esc_url( $logout_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_admin_icons['logout']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Logout', 'doctor-ak-portal' ); ?></a>
+		<?php echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( 'dashboard/partials/sidebar-footer.php', array( 'logout_url' => $logout_url ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- partial escapes its own output. ?>
 	</aside>
 
 	<main class="dak-dashboard-main">
@@ -145,8 +148,8 @@ $dak_admin_section_icons = array(
 							data-live-search="doctor_ak_admin_dashboard_search"
 							data-live-search-nonce="dakAdminUsers"
 							data-live-search-groups="doctors,patients,receptionist,admin,appointments,services,doctor_sessions,clinic_locations,doctor_requests,encounters"
-							placeholder="<?php esc_attr_e( 'Search everything…', 'doctor-ak-portal' ); ?>"
-							aria-label="<?php esc_attr_e( 'Search everything…', 'doctor-ak-portal' ); ?>"
+							placeholder="<?php echo esc_attr( $is_receptionist ? __( 'Search patients, doctors, appointments…', 'doctor-ak-portal' ) : __( 'Search people, appointments, services, clinics…', 'doctor-ak-portal' ) ); ?>"
+							aria-label="<?php echo esc_attr( $is_receptionist ? __( 'Search patients, doctors and appointments', 'doctor-ak-portal' ) : __( 'Search people, appointments, services and clinics', 'doctor-ak-portal' ) ); ?>"
 							autocomplete="off"
 						>
 						<div class="dak-search-results dak-hidden" id="dak-dashboard-topbar-search-results"></div>

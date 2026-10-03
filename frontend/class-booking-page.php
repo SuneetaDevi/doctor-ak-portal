@@ -16,6 +16,7 @@ use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Specializations;
+use DoctorAKPortal\Includes\Swich_Payment;
 use DoctorAKPortal\Includes\Template_Loader;
 use DoctorAKPortal\Includes\Video_Pricing;
 
@@ -125,6 +126,16 @@ class Booking_Page {
 				// dashboard" default — see redirect_to handling there.
 				'loginUrl'    => add_query_arg( 'redirect_to', rawurlencode( self::current_url() ), Page_Finder::url_for_shortcode( 'doctor_login' ) ),
 				'registerUrl' => Page_Finder::url_for_shortcode( 'doctor_register' ),
+				// Bare login/register URLs — the page's JS appends its own
+				// `redirect_to` built from the patient's CURRENT in-page
+				// selections (doctor/type/clinic/services/date/time), so
+				// choosing "Log in" mid-booking returns them to exactly where
+				// they were, not just to the URL they first arrived on.
+				'loginBaseUrl'    => Page_Finder::url_for_shortcode( 'doctor_login' ),
+				'registerBaseUrl' => Page_Finder::url_for_shortcode( 'doctor_register' ),
+				'dashboardUrl'    => Page_Finder::url_for_shortcode( 'patient_dashboard' ),
+				'homeUrl'         => home_url( '/' ),
+				'contactUrl'      => self::contact_url(),
 				'profileUrl'  => Page_Finder::url_for_shortcode( 'doctor_profile' ),
 				'pageUrl'     => Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ),
 				'services'    => $this->services_by_doctor_and_type(),
@@ -138,6 +149,21 @@ class Booking_Page {
 				// in case something became invalid between render and load.
 				'selectionFullyKnown' => $selection['selection_fully_known'],
 				'identityFullyKnown'  => $this->identity_fully_known(),
+				// The validated entry-link preselection itself (resolved_selection()
+				// already dropped anything foreign/inactive) — previously only
+				// passed to the template, never to the script that applies it.
+				'selectedServiceIds'  => $selection['selected_service_ids'],
+				'selectedClinicId'    => $selection['selected_clinic_id'],
+				// Slot times and "today" are in the site's timezone (see
+				// Appointments::slot_statuses_for_date()), not the visitor's —
+				// shown explicitly, and used as the calendar's "today".
+				'today'               => current_time( 'Y-m-d' ),
+				'timezoneLabel'       => self::timezone_label(),
+				// "Pay now" only does anything when the gateway is configured
+				// (see Swich_Payment::requires_payment()) — otherwise the
+				// booking is simply saved with payment pending, so the page
+				// must not offer an online payment it can't start.
+				'onlinePaymentAvailable' => Swich_Payment::is_configured(),
 			)
 		);
 	}
@@ -200,6 +226,7 @@ class Booking_Page {
 				'selection_fully_known'   => $selection['selection_fully_known'],
 				'identity_fully_known'    => $this->identity_fully_known(),
 				'contact_url'             => self::contact_url(),
+				'timezone_label'          => self::timezone_label(),
 				'is_staff'                => self::is_staff(),
 				'patient_options'         => self::is_staff() ? Appointments::patient_options() : array(),
 				'selected_patient_id'     => $selected_patient_id,
@@ -352,6 +379,25 @@ class Booking_Page {
 		}
 
 		return '' !== get_user_meta( wp_get_current_user()->ID, 'doctor_ak_phone_number', true );
+	}
+
+	/**
+	 * Human label for the site timezone every slot time is expressed in,
+	 * e.g. "Asia/Karachi (UTC+05:00)" — or just the offset when the site
+	 * uses a manual UTC offset instead of a named zone.
+	 *
+	 * @return string
+	 */
+	private static function timezone_label() {
+		$timezone = wp_timezone();
+		$offset   = ( new \DateTime( 'now', $timezone ) )->format( 'P' );
+		$name     = $timezone->getName();
+
+		if ( preg_match( '/^[+-]\d{2}:\d{2}$/', $name ) ) {
+			return sprintf( 'UTC%s', $offset );
+		}
+
+		return sprintf( '%1$s (UTC%2$s)', str_replace( '_', ' ', $name ), $offset );
 	}
 
 	/**

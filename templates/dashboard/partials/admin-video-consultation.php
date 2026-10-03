@@ -73,7 +73,7 @@ endif;
 
 					<span class="dak-admin-record-row-tags">
 						<?php if ( $row['discount_active'] ) : ?>
-							<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-disabled"><?php echo esc_html( sprintf( '%d%% off', $row['discount_percent'] ) ); ?></span>
+							<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-active"><?php echo esc_html( sprintf( '%d%% off', $row['discount_percent'] ) ); ?></span>
 						<?php elseif ( $row['discount_percent'] > 0 ) : ?>
 							<span class="dak-status-pill dak-status-pill-outline"><?php esc_html_e( 'Discount expired', 'doctor-ak-portal' ); ?></span>
 						<?php else : ?>
