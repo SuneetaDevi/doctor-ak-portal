@@ -1,0 +1,1130 @@
+/**
+ * Doctor AK Portal — shared public design system for the clinics
+ * directory and each clinic page (loaded only there, see
+ * Public_Pages::enqueue_assets()).
+ *
+ * Same palette, type scale, radii and control heights as the booking page
+ * and dashboards (doctor-ak-booking-page.css / doctor-ak-dashboard-ui.css),
+ * re-declared under `.dak-pub` so no other page is affected. Selectors are
+ * written to outrank the Elementor kit's global typography (which
+ * capitalizes text, sets 35–56px headings and turns every <button> into a
+ * pill) without !important.
+ *
+ * Sections: 1 tokens + base · 2 layout + type · 3 buttons + links ·
+ * 4 fields + chips · 5 cards + states · 6 clinic cards · 7 clinics finder ·
+ * 8 clinic page · 9 widgets, motion, print.
+ */
+
+/* ==========================================================================
+   1. Tokens + base
+   ========================================================================== */
+
+.dak-pub {
+	--pub-primary: #16634b;
+	--pub-primary-hover: #104d3a;
+	--pub-primary-tint: #eaf4ef;
+	--pub-on-primary: #ffffff;
+	--pub-text: #182b3a;
+	--pub-muted: #526273;
+	--pub-border: #dfe5eb;
+	--pub-border-strong: #c3ccd5;
+	--pub-canvas: #f6f8fa;
+	--pub-surface: #ffffff;
+	--pub-subtle: #f1f4f7;
+	--pub-info: #245fa8;
+	--pub-info-tint: #e8f0fa;
+	--pub-warn-text: #8a4b08;
+	--pub-warn-tint: #fff4d8;
+	--pub-danger: #b42318;
+	--pub-danger-tint: #feeceb;
+	--pub-focus: #245fa8;
+	--pub-radius: 12px;
+	--pub-radius-sm: 8px;
+	--pub-shadow: 0 1px 2px rgba( 16, 24, 40, 0.05 );
+	--pub-shadow-raised: 0 6px 20px rgba( 16, 24, 40, 0.08 );
+	--pub-control: 44px;
+	--pub-gutter: 24px;
+	--pub-max: 1180px;
+	--pub-offset: 96px;
+	--pub-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+	box-sizing: border-box;
+	width: 100%;
+	background: var( --pub-canvas );
+	color: var( --pub-text );
+	font-family: var( --pub-font );
+	font-size: 16px;
+	font-weight: 400;
+	line-height: 1.55;
+	text-transform: none;
+	letter-spacing: normal;
+	word-spacing: normal;
+	overflow-wrap: anywhere;
+}
+
+html[data-theme='dark'] .dak-pub {
+	--pub-primary: #3aa679;
+	--pub-primary-hover: #7fd3ab;
+	--pub-primary-tint: #12261d;
+	--pub-on-primary: #ffffff;
+	--pub-text: #e6ebef;
+	--pub-muted: #a3afba;
+	--pub-border: #2a3139;
+	--pub-border-strong: #3a434d;
+	--pub-canvas: #0b0d10;
+	--pub-surface: #13171b;
+	--pub-subtle: #1a1f25;
+	--pub-info: #8db8f2;
+	--pub-info-tint: #13213a;
+	--pub-warn-text: #f2c26b;
+	--pub-warn-tint: #2b2310;
+	--pub-danger: #f4a29b;
+	--pub-danger-tint: #2c1516;
+	--pub-focus: #8db8f2;
+	--pub-shadow: 0 1px 2px rgba( 0, 0, 0, 0.4 );
+	--pub-shadow-raised: 0 6px 20px rgba( 0, 0, 0, 0.45 );
+}
+
+html[data-theme='dark'] .dak-pub .pub-btn-primary {
+	--pub-on-primary: #06140e;
+}
+
+body.dak-pub-page {
+	background: var( --pub-page-bg, #f6f8fa );
+}
+
+html[data-theme='dark'] body.dak-pub-page {
+	--pub-page-bg: #0b0d10;
+}
+
+.dak-pub *,
+.dak-pub *::before,
+.dak-pub *::after {
+	box-sizing: border-box;
+}
+
+/* The Elementor kit capitalizes every word and restyles headings, links and
+   buttons site-wide; reset all of that inside these pages. */
+body .dak-pub :is( h1, h2, h3, h4, h5, p, a, li, dt, dd, span, strong, em, small, label, button, input, select, summary, legend, mark, figcaption ) {
+	text-transform: none;
+	letter-spacing: normal;
+	word-spacing: normal;
+	font-family: var( --pub-font );
+}
+
+body .dak-pub :is( h1, h2, h3, h4, h5 ) {
+	margin: 0;
+	color: var( --pub-text );
+	font-weight: 700;
+	line-height: 1.25;
+}
+
+body .dak-pub p {
+	margin: 0;
+	color: var( --pub-text );
+	font-size: inherit;
+	line-height: inherit;
+}
+
+body .dak-pub a {
+	color: var( --pub-primary );
+	font-size: inherit;
+	font-weight: inherit;
+	line-height: inherit;
+	text-decoration: none;
+}
+
+body .dak-pub a:hover {
+	color: var( --pub-primary-hover );
+}
+
+body .dak-pub :is( ul, ol ) {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+body .dak-pub img {
+	max-width: 100%;
+	height: auto;
+}
+
+body .dak-pub svg {
+	flex-shrink: 0;
+}
+
+body .dak-pub :focus-visible {
+	outline: 2px solid var( --pub-focus );
+	outline-offset: 2px;
+}
+
+.dak-pub .dak-hidden,
+.dak-pub [hidden] {
+	display: none !important;
+}
+
+.dak-pub .pub-sr-only {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	padding: 0 !important;
+	margin: -1px !important;
+	overflow: hidden !important;
+	clip: rect( 0, 0, 0, 0 ) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
+}
+
+/* ==========================================================================
+   2. Layout + type
+   ========================================================================== */
+
+.dak-pub .pub-wrap {
+	width: 100%;
+	max-width: var( --pub-max );
+	margin: 0 auto;
+	padding: 0 var( --pub-gutter );
+}
+
+.dak-pub .pub-page {
+	padding-top: 24px;
+	padding-bottom: 64px;
+}
+
+.dak-pub .pub-section {
+	padding: 48px 0;
+	scroll-margin-top: var( --pub-offset );
+}
+
+.dak-pub .pub-section-alt {
+	background: var( --pub-surface );
+	border-top: 1px solid var( --pub-border );
+	border-bottom: 1px solid var( --pub-border );
+}
+
+body .dak-pub .pub-h1 {
+	font-size: 30px;
+	line-height: 1.2;
+	letter-spacing: -0.01em;
+}
+
+body .dak-pub .pub-h2 {
+	font-size: 24px;
+	line-height: 1.25;
+	letter-spacing: -0.01em;
+}
+
+body .dak-pub .pub-h3 {
+	font-size: 17px;
+	line-height: 1.35;
+}
+
+body .dak-pub .pub-lead {
+	max-width: 62ch;
+	color: var( --pub-muted );
+	font-size: 16px;
+	line-height: 1.6;
+}
+
+body .dak-pub .pub-muted {
+	color: var( --pub-muted );
+}
+
+body .dak-pub .pub-small {
+	font-size: 14px;
+}
+
+.dak-pub .pub-section-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 8px 24px;
+	margin: 0 0 24px;
+}
+
+.dak-pub .pub-section-head > div {
+	display: grid;
+	gap: 6px;
+	min-width: 0;
+}
+
+/* Breadcrumb */
+
+.dak-pub .pub-crumbs ol {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px;
+	margin: 0 0 16px;
+	font-size: 14px;
+	color: var( --pub-muted );
+}
+
+.dak-pub .pub-crumbs li {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	min-width: 0;
+}
+
+.dak-pub .pub-crumbs li + li::before {
+	content: '/';
+	color: var( --pub-border-strong );
+	margin-right: 2px;
+}
+
+body .dak-pub .pub-crumbs a {
+	color: var( --pub-muted );
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	text-decoration-color: var( --pub-border-strong );
+}
+
+body .dak-pub .pub-crumbs a:hover {
+	color: var( --pub-primary );
+}
+
+body .dak-pub .pub-crumbs [aria-current] {
+	color: var( --pub-text );
+	font-weight: 600;
+}
+
+/* Icons */
+
+.dak-pub .pub-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	color: currentColor;
+}
+
+.dak-pub .pub-icon svg {
+	width: 18px;
+	height: 18px;
+}
+
+/* ==========================================================================
+   3. Buttons + links
+   ========================================================================== */
+
+body .dak-pub .pub-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-height: var( --pub-control );
+	margin: 0;
+	padding: 10px 18px;
+	border: 1px solid transparent;
+	border-radius: 10px;
+	background: transparent;
+	color: var( --pub-text );
+	font-size: 15px;
+	font-weight: 600;
+	line-height: 1.2;
+	text-align: center;
+	text-decoration: none;
+	white-space: normal;
+	cursor: pointer;
+	box-shadow: none;
+	transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+body .dak-pub .pub-btn svg {
+	width: 18px;
+	height: 18px;
+}
+
+body .dak-pub .pub-btn-primary {
+	background: var( --pub-primary );
+	border-color: var( --pub-primary );
+	color: var( --pub-on-primary );
+}
+
+body .dak-pub .pub-btn-primary:hover,
+body .dak-pub .pub-btn-primary:focus {
+	background: var( --pub-primary-hover );
+	border-color: var( --pub-primary-hover );
+	color: var( --pub-on-primary );
+}
+
+body .dak-pub .pub-btn-secondary {
+	background: var( --pub-surface );
+	border-color: var( --pub-border-strong );
+	color: var( --pub-text );
+}
+
+body .dak-pub .pub-btn-secondary:hover,
+body .dak-pub .pub-btn-secondary:focus {
+	background: var( --pub-subtle );
+	border-color: var( --pub-primary );
+	color: var( --pub-primary );
+}
+
+body .dak-pub .pub-btn-ghost {
+	background: transparent;
+	border-color: transparent;
+	color: var( --pub-primary );
+	padding-left: 10px;
+	padding-right: 10px;
+}
+
+body .dak-pub .pub-btn-ghost:hover,
+body .dak-pub .pub-btn-ghost:focus {
+	background: var( --pub-primary-tint );
+	color: var( --pub-primary-hover );
+}
+
+body .dak-pub .pub-btn-sm {
+	min-height: 38px;
+	padding: 7px 12px;
+	font-size: 14px;
+}
+
+body .dak-pub .pub-btn-block {
+	width: 100%;
+}
+
+body .dak-pub .pub-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-weight: 600;
+	color: var( --pub-primary );
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	text-decoration-thickness: 1px;
+}
+
+body .dak-pub .pub-link svg {
+	width: 16px;
+	height: 16px;
+}
+
+/* ==========================================================================
+   4. Fields + chips
+   ========================================================================== */
+
+.dak-pub .pub-field {
+	display: grid;
+	gap: 6px;
+	min-width: 0;
+}
+
+body .dak-pub .pub-field > label,
+body .dak-pub .pub-label {
+	color: var( --pub-text );
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+body .dak-pub .pub-input,
+body .dak-pub .pub-select {
+	width: 100%;
+	min-height: var( --pub-control );
+	margin: 0;
+	padding: 10px 12px;
+	border: 1px solid var( --pub-border-strong );
+	border-radius: 10px;
+	background-color: var( --pub-surface );
+	color: var( --pub-text );
+	font-size: 16px; /* 16px keeps iOS from zooming on focus. */
+	line-height: 1.3;
+	box-shadow: none;
+	appearance: none;
+	-webkit-appearance: none;
+}
+
+body .dak-pub .pub-select {
+	padding-right: 36px;
+	background-image: url( "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23526273' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.5 8l4.5 4.5L14.5 8'/%3E%3C/svg%3E" );
+	background-repeat: no-repeat;
+	background-position: right 10px center;
+	background-size: 18px 18px;
+}
+
+body .dak-pub .pub-input::placeholder {
+	color: var( --pub-muted );
+	opacity: 1;
+}
+
+body .dak-pub .pub-input:focus,
+body .dak-pub .pub-select:focus {
+	border-color: var( --pub-focus );
+	outline: 2px solid var( --pub-focus );
+	outline-offset: 0;
+}
+
+body .dak-pub .pub-select:disabled {
+	background-color: var( --pub-subtle );
+	color: var( --pub-muted );
+	cursor: not-allowed;
+}
+
+.dak-pub .pub-input-icon {
+	position: relative;
+}
+
+.dak-pub .pub-input-icon .pub-icon {
+	position: absolute;
+	top: 50%;
+	left: 12px;
+	transform: translateY( -50% );
+	color: var( --pub-muted );
+	pointer-events: none;
+}
+
+body .dak-pub .pub-input-icon .pub-input {
+	padding-left: 40px;
+}
+
+.dak-pub .pub-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+body .dak-pub .pub-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 36px;
+	margin: 0;
+	padding: 6px 12px;
+	border: 1px solid var( --pub-border );
+	border-radius: 999px;
+	background: var( --pub-surface );
+	color: var( --pub-text );
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 1.2;
+	cursor: pointer;
+}
+
+body .dak-pub .pub-chip:hover,
+body .dak-pub .pub-chip:focus {
+	background: var( --pub-subtle );
+	border-color: var( --pub-border-strong );
+	color: var( --pub-text );
+}
+
+body .dak-pub .pub-chip svg {
+	width: 14px;
+	height: 14px;
+}
+
+/* ==========================================================================
+   5. Cards + states
+   ========================================================================== */
+
+.dak-pub .pub-card {
+	background: var( --pub-surface );
+	border: 1px solid var( --pub-border );
+	border-radius: var( --pub-radius );
+	box-shadow: var( --pub-shadow );
+}
+
+.dak-pub .pub-meta {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	color: var( --pub-muted );
+	font-size: 14px;
+	line-height: 1.45;
+}
+
+.dak-pub .pub-meta .pub-icon {
+	width: 16px;
+	height: 16px;
+	margin-top: 1px;
+}
+
+.dak-pub .pub-meta .pub-icon svg {
+	width: 16px;
+	height: 16px;
+}
+
+body .dak-pub .pub-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: var( --pub-subtle );
+	color: var( --pub-muted );
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 1.5;
+	white-space: nowrap;
+}
+
+body .dak-pub .pub-badge-primary {
+	background: var( --pub-primary-tint );
+	color: var( --pub-primary );
+}
+
+body .dak-pub .pub-badge-info {
+	background: var( --pub-info-tint );
+	color: var( --pub-info );
+}
+
+.dak-pub .pub-state {
+	display: grid;
+	justify-items: center;
+	gap: 8px;
+	padding: 40px 24px;
+	text-align: center;
+	background: var( --pub-surface );
+	border: 1px dashed var( --pub-border-strong );
+	border-radius: var( --pub-radius );
+}
+
+.dak-pub .pub-state .pub-state-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	border-radius: 50%;
+	background: var( --pub-subtle );
+	color: var( --pub-muted );
+}
+
+.dak-pub .pub-state .pub-state-icon svg {
+	width: 22px;
+	height: 22px;
+}
+
+body .dak-pub .pub-state p {
+	max-width: 52ch;
+	color: var( --pub-muted );
+}
+
+.dak-pub .pub-state-actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.dak-pub .pub-notice {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 12px 14px;
+	border-radius: var( --pub-radius-sm );
+	background: var( --pub-info-tint );
+	color: var( --pub-text );
+	font-size: 15px;
+}
+
+.dak-pub .pub-notice .pub-icon {
+	color: var( --pub-info );
+	margin-top: 2px;
+}
+
+/* Avatar / initials fallback */
+
+.dak-pub .pub-avatar {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 64px;
+	height: 64px;
+	border-radius: 50%;
+	overflow: hidden;
+	background: var( --pub-primary-tint );
+	color: var( --pub-primary );
+	font-size: 20px;
+	font-weight: 700;
+	line-height: 1;
+}
+
+body .dak-pub .pub-avatar img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: center top;
+}
+
+/* Disclosure */
+
+.dak-pub .pub-disclosure summary {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 32px;
+	color: var( --pub-primary );
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	list-style: none;
+}
+
+.dak-pub .pub-disclosure summary::-webkit-details-marker {
+	display: none;
+}
+
+.dak-pub .pub-disclosure summary::after {
+	content: '';
+	width: 8px;
+	height: 8px;
+	margin-left: 2px;
+	border-right: 2px solid currentColor;
+	border-bottom: 2px solid currentColor;
+	transform: rotate( 45deg ) translateY( -2px );
+	transition: transform 0.15s ease;
+}
+
+.dak-pub .pub-disclosure[open] summary::after {
+	transform: rotate( -135deg ) translateY( -2px );
+}
+
+.dak-pub .pub-disclosure ul {
+	display: grid;
+	gap: 4px;
+	margin-top: 6px;
+	padding-left: 2px;
+	font-size: 14px;
+	color: var( --pub-muted );
+}
+
+/* ==========================================================================
+   6. Clinic cards (clinics finder)
+   ========================================================================== */
+
+.dak-pub .pub-clinic-grid {
+	display: grid;
+	grid-template-columns: repeat( 3, minmax( 0, 1fr ) );
+	gap: 16px;
+}
+
+.dak-pub .pub-clinic-card {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	min-width: 0;
+	padding: 20px;
+}
+
+.dak-pub .pub-clinic-card-head {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	min-width: 0;
+}
+
+.dak-pub .pub-clinic-mark {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 40px;
+	height: 40px;
+	border-radius: 10px;
+	background: var( --pub-primary-tint );
+	color: var( --pub-primary );
+}
+
+.dak-pub .pub-clinic-mark svg {
+	width: 20px;
+	height: 20px;
+}
+
+.dak-pub .pub-clinic-card-title {
+	display: grid;
+	gap: 2px;
+	min-width: 0;
+}
+
+body .dak-pub .pub-clinic-card-title h2,
+body .dak-pub .pub-clinic-card-title h3 {
+	font-size: 17px;
+	line-height: 1.35;
+}
+
+body .dak-pub .pub-clinic-card-title h2 a,
+body .dak-pub .pub-clinic-card-title h3 a {
+	color: var( --pub-text );
+}
+
+body .dak-pub .pub-clinic-card-title h2 a:hover,
+body .dak-pub .pub-clinic-card-title h3 a:hover {
+	color: var( --pub-primary );
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+body .dak-pub .pub-clinic-place {
+	color: var( --pub-muted );
+	font-size: 14px;
+	font-weight: 500;
+}
+
+.dak-pub .pub-clinic-card-body {
+	display: grid;
+	gap: 8px;
+}
+
+.dak-pub .pub-clinic-address {
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+.dak-pub .pub-clinic-card-actions {
+	display: grid;
+	grid-template-columns: minmax( 0, 1fr ) minmax( 0, 1fr );
+	gap: 8px;
+	margin-top: auto;
+	padding-top: 4px;
+}
+
+.dak-pub .pub-clinic-card-actions > :only-child {
+	grid-column: 1 / -1;
+}
+
+body .dak-pub .pub-phone-link {
+	color: var( --pub-text );
+	font-weight: 600;
+	text-decoration: underline;
+	text-decoration-color: var( --pub-border-strong );
+	text-underline-offset: 3px;
+}
+
+/* ==========================================================================
+   7. Clinics finder
+   ========================================================================== */
+
+.dak-pub .pub-finder-head {
+	display: grid;
+	gap: 8px;
+	margin: 0 0 20px;
+}
+
+.dak-pub .pub-filters {
+	display: grid;
+	grid-template-columns: minmax( 0, 2fr ) repeat( 3, minmax( 0, 1fr ) );
+	gap: 12px;
+	align-items: end;
+	padding: 16px;
+}
+
+.dak-pub .pub-results-bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 12px;
+	min-height: 40px;
+	margin: 16px 0;
+}
+
+body .dak-pub .pub-results-count {
+	color: var( --pub-text );
+	font-size: 15px;
+	font-weight: 600;
+}
+
+.dak-pub .pub-active-filters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+body .dak-pub .pub-active-filters .pub-chip {
+	min-height: 32px;
+	padding: 4px 10px;
+	background: var( --pub-primary-tint );
+	border-color: transparent;
+	color: var( --pub-primary );
+	font-size: 13px;
+}
+
+body .dak-pub .pub-active-filters .pub-chip:hover,
+body .dak-pub .pub-active-filters .pub-chip:focus {
+	border-color: var( --pub-primary );
+	background: var( --pub-primary-tint );
+	color: var( --pub-primary-hover );
+}
+
+/* ==========================================================================
+   8. Clinic page
+   ========================================================================== */
+
+.dak-pub .pub-clinic-hero {
+	display: grid;
+	grid-template-columns: minmax( 0, 1fr ) auto;
+	gap: 16px 24px;
+	align-items: start;
+	padding: 24px;
+	margin: 0 0 24px;
+}
+
+.dak-pub .pub-clinic-hero-main {
+	display: grid;
+	gap: 10px;
+	min-width: 0;
+}
+
+.dak-pub .pub-clinic-facts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 20px;
+}
+
+.dak-pub .pub-clinic-hero-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	justify-content: flex-end;
+}
+
+.dak-pub .pub-doctor-tools {
+	display: grid;
+	grid-template-columns: minmax( 0, 2fr ) minmax( 0, 1fr );
+	gap: 12px;
+	align-items: end;
+	margin: 0 0 16px;
+}
+
+.dak-pub .pub-doctor-list {
+	display: grid;
+	grid-template-columns: repeat( 2, minmax( 0, 1fr ) );
+	gap: 16px;
+}
+
+.dak-pub .pub-doctor-list.is-single {
+	grid-template-columns: minmax( 0, 760px );
+}
+
+.dak-pub .pub-doctor {
+	display: grid;
+	grid-template-columns: 72px minmax( 0, 1fr );
+	gap: 16px;
+	padding: 20px;
+	min-width: 0;
+}
+
+.dak-pub .pub-doctor .pub-avatar {
+	width: 72px;
+	height: 72px;
+	font-size: 22px;
+}
+
+.dak-pub .pub-doctor-main {
+	display: grid;
+	gap: 10px;
+	min-width: 0;
+	align-content: start;
+}
+
+.dak-pub .pub-doctor-name {
+	display: grid;
+	gap: 4px;
+}
+
+body .dak-pub .pub-doctor-name h3 {
+	font-size: 18px;
+	line-height: 1.3;
+}
+
+body .dak-pub .pub-doctor-name h3 a {
+	color: var( --pub-text );
+}
+
+body .dak-pub .pub-doctor-name h3 a:hover {
+	color: var( --pub-primary );
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+.dak-pub .pub-doctor-tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	align-items: center;
+}
+
+.dak-pub .pub-doctor-here {
+	display: grid;
+	gap: 6px;
+	padding: 12px;
+	border-radius: var( --pub-radius-sm );
+	background: var( --pub-subtle );
+}
+
+body .dak-pub .pub-doctor-here-title {
+	color: var( --pub-text );
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.dak-pub .pub-doctor-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	padding-top: 2px;
+}
+
+/* ==========================================================================
+   9. Widgets, motion, print
+   ========================================================================== */
+
+/* Floating WhatsApp / chatbot buttons sit over the bottom corners — leave
+   room under the last content and the footer links so nothing stays
+   covered once scrolled to the end. */
+body.dak-pub-page .dak-site-footer {
+	padding-bottom: 88px;
+}
+
+body.dak-pub-page .dak-pub {
+	padding-bottom: 8px;
+}
+
+/* Fallback for doctor-ak-public.js: should Elementor ever initialise its
+   first-load popup before that script removes it, keep it hidden. */
+body.dak-pub-page .elementor-popup-modal {
+	display: none !important;
+}
+
+@media ( max-width: 1023px ) {
+	.dak-pub .pub-clinic-grid {
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) );
+	}
+
+	.dak-pub .pub-filters {
+		grid-template-columns: repeat( 3, minmax( 0, 1fr ) );
+	}
+
+	.dak-pub .pub-filters .pub-field-search {
+		grid-column: 1 / -1;
+	}
+
+	.dak-pub .pub-doctor-list {
+		grid-template-columns: minmax( 0, 1fr );
+	}
+
+	.dak-pub .pub-filters.pub-doctor-tools {
+		grid-template-columns: minmax( 0, 2fr ) minmax( 0, 1fr );
+	}
+}
+
+@media ( max-width: 782px ) {
+	.dak-pub {
+		--pub-gutter: 16px;
+		font-size: 15px;
+	}
+
+	.dak-pub .pub-page {
+		padding-top: 16px;
+		padding-bottom: 48px;
+	}
+
+	.dak-pub .pub-section {
+		padding: 36px 0;
+	}
+
+	body .dak-pub .pub-h1 {
+		font-size: 25px;
+	}
+
+	body .dak-pub .pub-h2 {
+		font-size: 21px;
+	}
+
+	.dak-pub .pub-clinic-hero {
+		grid-template-columns: minmax( 0, 1fr );
+		padding: 20px 16px;
+	}
+
+	.dak-pub .pub-clinic-hero-actions {
+		justify-content: flex-start;
+	}
+
+	.dak-pub .pub-doctor-tools {
+		grid-template-columns: minmax( 0, 1fr );
+	}
+}
+
+@media ( max-width: 640px ) {
+	.dak-pub .pub-clinic-grid {
+		grid-template-columns: minmax( 0, 1fr );
+	}
+
+	.dak-pub .pub-filters {
+		grid-template-columns: minmax( 0, 1fr ) minmax( 0, 1fr );
+		padding: 12px;
+	}
+
+	.dak-pub .pub-filters .pub-field-sort {
+		grid-column: 1 / -1;
+	}
+
+	.dak-pub .pub-filters.pub-doctor-tools {
+		grid-template-columns: minmax( 0, 1fr );
+	}
+
+	.dak-pub .pub-doctor {
+		grid-template-columns: 56px minmax( 0, 1fr );
+		gap: 12px;
+		padding: 16px;
+	}
+
+	.dak-pub .pub-doctor .pub-avatar {
+		width: 56px;
+		height: 56px;
+		font-size: 18px;
+	}
+
+	.dak-pub .pub-doctor-actions .pub-btn {
+		flex: 1 1 100%;
+	}
+
+	.dak-pub .pub-clinic-hero-actions .pub-btn {
+		flex: 1 1 calc( 50% - 4px );
+	}
+}
+
+@media ( max-width: 380px ) {
+	.dak-pub .pub-clinic-card-actions {
+		grid-template-columns: minmax( 0, 1fr );
+	}
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.dak-pub *,
+	.dak-pub *::before,
+	.dak-pub *::after {
+		transition: none !important;
+		animation: none !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+@media print {
+	body.dak-pub-page .dak-site-header,
+	body.dak-pub-page .dak-site-footer,
+	body.dak-pub-page .joinchat,
+	body.dak-pub-page #wp-chatbot-ball-container,
+	.dak-pub .pub-filters,
+	.dak-pub .pub-doctor-tools {
+		display: none !important;
+	}
+
+	.dak-pub {
+		background: #ffffff;
+	}
+
+	.dak-pub .pub-card {
+		box-shadow: none;
+		break-inside: avoid;
+	}
+}

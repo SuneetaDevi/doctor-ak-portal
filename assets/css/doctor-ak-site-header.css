@@ -1148,3 +1148,14 @@ html {
 .dak-site-header-account-menu {
 	z-index: 300 !important;
 }
+
+/* 360px phones: the utility strip's phone number, theme toggle and
+   "Login / Register" button were ~9px wider than the screen, so the whole
+   page scrolled sideways. A slightly tighter button fits them. */
+@media ( max-width: 380px ) {
+	.dak-site-header-account-link {
+		padding: 0.4rem 0.6rem !important;
+		gap: 0.25rem !important;
+		font-size: 0.78rem !important;
+	}
+}

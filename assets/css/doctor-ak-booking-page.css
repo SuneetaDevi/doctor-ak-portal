@@ -558,6 +558,10 @@ html[data-theme='dark'] .dak-booking-page select {
 	color: var( --bk-text );
 }
 
+.dak-booking-page .dak-bk-entry-notice {
+	margin: 0 0 16px;
+}
+
 .dak-booking-page .dak-bk-notice.is-warning {
 	border-color: rgba( 138, 75, 8, 0.3 );
 	background: var( --bk-warn-tint );

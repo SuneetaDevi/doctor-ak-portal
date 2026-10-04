@@ -26,6 +26,7 @@
  * @var int[]  $selected_service_ids   Preselected, validated service ids (clinic type only), or an empty array.
  * @var int    $selected_clinic_id     Preselected, validated Clinics row id, or 0.
  * @var bool   $selection_fully_known  Whether the Doctor & visit step can be skipped entirely.
+ * @var string $entry_notice           Why part of the entry link couldn't be used (e.g. a clinic that isn't the doctor's), or ''.
  * @var bool   $identity_fully_known   Whether the Your details step can be skipped entirely.
  * @var string $contact_url            "Need help?" link target.
  * @var string $timezone_label         Site timezone every slot time is expressed in, e.g. "Asia/Karachi (UTC+05:00)".
@@ -89,6 +90,10 @@ $dak_bk_icon_check = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"
 		<div class="dak-bk-layout">
 			<div class="dak-bk-main">
 				<div class="dak-alert dak-alert-error dak-hidden" id="dak-booking-error" role="alert" tabindex="-1"></div>
+
+				<?php if ( ! empty( $entry_notice ) ) : ?>
+					<p class="dak-bk-notice is-warning dak-bk-entry-notice" id="dak-bk-entry-notice" role="status"><?php echo esc_html( $entry_notice ); ?></p>
+				<?php endif; ?>
 
 				<!-- Step 1: Doctor & visit -->
 				<section class="dak-booking-card dak-bk-step" id="dak-booking-step-selection" aria-labelledby="dak-bk-title-selection">

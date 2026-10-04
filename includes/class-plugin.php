@@ -14,6 +14,7 @@ use DoctorAKPortal\Admin\Notification_Settings;
 use DoctorAKPortal\Admin\Swich_Settings;
 use DoctorAKPortal\Frontend\Admin_Dashboard;
 use DoctorAKPortal\Frontend\Policy_Pages;
+use DoctorAKPortal\Frontend\Public_Pages;
 use DoctorAKPortal\Frontend\Admin_User_Handler;
 use DoctorAKPortal\Frontend\Appointment_Handler;
 use DoctorAKPortal\Frontend\Booking_Handler;
@@ -254,6 +255,17 @@ class Plugin {
 		$clinic_profile_view = new Clinic_Profile_View( new Template_Loader(), $doctors_directory );
 		$this->loader->add_action( 'wp_enqueue_scripts', $clinics_directory, 'enqueue_assets' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $clinic_profile_view, 'enqueue_assets' );
+		$this->loader->add_action( 'template_redirect', $clinic_profile_view, 'maybe_not_found_status' );
+
+		// Home / Clinics / Clinic detail: shared public stylesheet + script,
+		// body classes and descriptive titles — see Public_Pages.
+		$public_pages = new Public_Pages();
+		$this->loader->add_filter( 'body_class', $public_pages, 'add_body_class' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $public_pages, 'enqueue_assets', 100 );
+		$this->loader->add_filter( 'pre_get_document_title', $public_pages, 'filter_title', 99 );
+		$this->loader->add_filter( 'wpseo_title', $public_pages, 'filter_title', 99 );
+		$this->loader->add_filter( 'wpseo_opengraph_title', $public_pages, 'filter_title', 99 );
+		$this->loader->add_filter( 'wpseo_twitter_title', $public_pages, 'filter_title', 99 );
 
 		$booking_page = new Booking_Page( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $booking_page, 'enqueue_assets' );

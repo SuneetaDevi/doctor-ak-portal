@@ -224,6 +224,7 @@ class Booking_Page {
 				'selected_service_ids'    => $selection['selected_service_ids'],
 				'selected_clinic_id'      => $selection['selected_clinic_id'],
 				'selection_fully_known'   => $selection['selection_fully_known'],
+				'entry_notice'            => $selection['entry_notice'],
 				'identity_fully_known'    => $this->identity_fully_known(),
 				'contact_url'             => self::contact_url(),
 				'timezone_label'          => self::timezone_label(),
@@ -256,6 +257,7 @@ class Booking_Page {
 	 *     @type int[]          $selected_service_ids   Validated service ids (clinic type only, empty for video).
 	 *     @type int            $selected_clinic_id     Validated Clinics row id (0 if none requested/applicable).
 	 *     @type bool           $selection_fully_known  Whether the Selection step can be skipped entirely.
+	 *     @type string         $entry_notice           Why part of the link couldn't be used (unknown doctor, no video, or a clinic that isn't the doctor's), or ''.
 	 * }
 	 */
 	private function resolved_selection() {
@@ -266,11 +268,25 @@ class Booking_Page {
 
 		$type           = ( isset( $_GET['type'] ) && 'video' === $_GET['type'] ) ? 'video' : 'clinic'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 		$video_disabled = false;
+		$entry_notice   = '';
+		$doctor_label   = '';
+
+		if ( $requested_doctor_id > 0 && ! $doctor ) {
+			$entry_notice = __( 'The doctor in your link isn’t available for online booking right now. Please choose a doctor below.', 'doctor-ak-portal' );
+		}
 
 		if ( $doctor ) {
+			$doctor_label = trim( $doctor->first_name . ' ' . $doctor->last_name );
+			/* translators: %s: doctor's name. */
+			$doctor_label   = sprintf( __( 'Dr. %s', 'doctor-ak-portal' ), '' !== $doctor_label ? $doctor_label : $doctor->display_name );
 			$video_disabled = ! Clinics::doctor_has_active_video_clinic( $doctor->ID );
 
 			if ( $video_disabled ) {
+				if ( 'video' === $type ) {
+					/* translators: %s: doctor's name. */
+					$entry_notice = sprintf( __( '%s doesn’t offer online video consultations, so a clinic visit is selected instead.', 'doctor-ak-portal' ), $doctor_label );
+				}
+
 				$type = 'clinic';
 			}
 		}
@@ -314,6 +330,18 @@ class Booking_Page {
 
 			if ( $clinic_valid && ! empty( $doctor_clinic_ids ) ) {
 				$selected_clinic_id = $requested_clinic_id;
+			}
+
+			// A clinic named in the link (e.g. from a clinic page) that isn't
+			// one of this doctor's clinics any more is never swapped for
+			// another one silently — say so, and let the patient choose.
+			if ( $requested_clinic_id > 0 && ! in_array( $requested_clinic_id, $doctor_clinic_ids, true ) ) {
+				$clinic_valid = false;
+				$entry_notice = empty( $doctor_clinic_ids )
+					/* translators: %s: doctor's name. */
+					? sprintf( __( 'The clinic in your link isn’t listed for %s any more, and they have no clinic locations listed right now. You can still request a visit, or choose another doctor.', 'doctor-ak-portal' ), $doctor_label )
+					/* translators: %s: doctor's name. */
+					: sprintf( __( 'The clinic in your link isn’t one of %s’s current clinics. Please choose one of their clinics below.', 'doctor-ak-portal' ), $doctor_label );
 			}
 
 			// A service can be restricted to specific clinics (see
@@ -360,6 +388,7 @@ class Booking_Page {
 			'selected_service_ids'  => $selected_service_ids,
 			'selected_clinic_id'    => $selected_clinic_id,
 			'selection_fully_known' => $selection_fully_known,
+			'entry_notice'          => $entry_notice,
 		);
 	}
 

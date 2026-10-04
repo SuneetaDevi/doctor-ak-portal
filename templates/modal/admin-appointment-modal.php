@@ -80,7 +80,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</select>
 					</div>
 				</div>
-				<div class="dak-field">
+				<p class="dak-field-hint dak-hidden" id="dak-admin-appointment-video-fee-note"><?php esc_html_e( 'Video consultations have no services — they are charged at the doctor\'s video consultation fee.', 'doctor-ak-portal' ); ?></p>
+				<div class="dak-field" id="dak-admin-appointment-service-field">
 					<label for="dak-admin-appointment-service"><?php esc_html_e( 'Services', 'doctor-ak-portal' ); ?></label>
 					<select id="dak-admin-appointment-service" class="dak-select-searchable" multiple data-placeholder="<?php esc_attr_e( 'Select at least one service…', 'doctor-ak-portal' ); ?>"></select>
 					<span class="dak-field-error" data-field="service_ids"></span>

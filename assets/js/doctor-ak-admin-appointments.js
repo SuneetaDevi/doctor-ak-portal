@@ -249,6 +249,23 @@
 
 		var keepIds = ( keepServiceIds || [] ).map( String );
 
+		// Video consultations have no services (they're charged at the
+		// doctor's video fee), so the picker is replaced by a short note.
+		var serviceField = document.getElementById( 'dak-admin-appointment-service-field' );
+		var videoNote = document.getElementById( 'dak-admin-appointment-video-fee-note' );
+
+		if ( serviceField ) {
+			serviceField.classList.toggle( 'dak-hidden', 'video' === type );
+		}
+
+		if ( videoNote ) {
+			videoNote.classList.toggle( 'dak-hidden', 'video' !== type );
+		}
+
+		if ( 'video' === type ) {
+			keepIds = [];
+		}
+
 		select.innerHTML = '';
 
 		var services = servicesByDoctorAndType[ doctorId ] ? servicesByDoctorAndType[ doctorId ][ type ] : null;
@@ -608,7 +625,9 @@
 				return;
 			}
 
-			if ( ! document.getElementById( 'dak-admin-appointment-service' ).selectedOptions.length ) {
+			var isVideo = 'video' === document.getElementById( 'dak-admin-appointment-type' ).value;
+
+			if ( ! isVideo && ! document.getElementById( 'dak-admin-appointment-service' ).selectedOptions.length ) {
 				var serviceError = document.querySelector( '.dak-field-error[data-field="service_ids"]' );
 
 				if ( serviceError ) {
@@ -626,9 +645,11 @@
 			formData.append( 'appointment_id', document.getElementById( 'dak-admin-appointment-id' ).value );
 			formData.append( 'doctor_id', doctorId );
 			formData.append( 'type', document.getElementById( 'dak-admin-appointment-type' ).value );
-			Array.prototype.forEach.call( document.getElementById( 'dak-admin-appointment-service' ).selectedOptions, function ( opt ) {
-				formData.append( 'service_ids[]', opt.value );
-			} );
+			if ( ! isVideo ) {
+				Array.prototype.forEach.call( document.getElementById( 'dak-admin-appointment-service' ).selectedOptions, function ( opt ) {
+					formData.append( 'service_ids[]', opt.value );
+				} );
+			}
 			formData.append( 'patient_id', document.getElementById( 'dak-admin-appointment-patient' ).value );
 			formData.append( 'guest_name', document.getElementById( 'dak-admin-appointment-guest-name' ).value );
 			formData.append( 'guest_email', document.getElementById( 'dak-admin-appointment-guest-email' ).value );
