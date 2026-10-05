@@ -1068,7 +1068,7 @@ body.dak-app-page .dak-dashboard .dak-admin-record-row:hover {
 
 body.dak-app-page .dak-dashboard .dak-admin-record-row-main {
 	display: grid !important;
-	grid-template-columns: auto auto minmax( 160px, 1.3fr ) minmax( 160px, 1.4fr ) minmax( 140px, 1fr ) minmax( 90px, auto ) auto !important;
+	grid-template-columns: auto auto minmax( 140px, 1.3fr ) minmax( 140px, 1.4fr ) minmax( 120px, 1fr ) minmax( 80px, auto ) auto !important;
 	align-items: center !important;
 	gap: 12px !important;
 	min-height: 64px !important;
@@ -1126,7 +1126,16 @@ body.dak-app-page .dak-dashboard .dak-admin-record-row-actions {
 	align-items: center !important;
 	justify-content: flex-end !important;
 	gap: 6px !important;
-	flex-wrap: nowrap !important;
+	/* When a long action ("Collect PKR 2,500 online") and "More" don't fit
+	   beside the other columns, "More" drops below it instead of being
+	   pushed past the card edge (the card clips overflow). */
+	flex-wrap: wrap !important;
+	min-width: 0 !important;
+}
+
+body.dak-app-page .dak-dashboard .dak-admin-record-row-actions > * {
+	flex: 0 0 auto !important;
+	white-space: nowrap !important;
 }
 
 body.dak-app-page .dak-dashboard .dak-appt-row-checkbox input {
@@ -1193,6 +1202,18 @@ body.dak-app-page .dak-portal .dak-row-menu-panel {
 body.dak-app-page .dak-portal .dak-row-menu.is-flipped .dak-row-menu-panel {
 	top: auto !important;
 	bottom: calc( 100% + 4px ) !important;
+}
+
+/* Open menus are placed against the viewport by doctor-ak-dashboard-ui.js
+   (left/top set inline), so no card, scrolling list or the sidebar can clip
+   or cover them on small screens. Above dialogs, as menus also open in them. */
+body.dak-app-page .dak-portal .dak-row-menu.is-floating .dak-row-menu-panel {
+	position: fixed !important;
+	right: auto !important;
+	bottom: auto !important;
+	z-index: 100020 !important;
+	overflow-y: auto !important;
+	box-sizing: border-box !important;
 }
 
 body.dak-app-page .dak-portal .dak-row-menu-item {

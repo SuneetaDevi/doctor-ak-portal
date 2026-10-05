@@ -273,6 +273,17 @@ class Appointments {
 			return new \WP_Error( 'doctor_ak_invalid_time', __( 'Please choose a valid appointment time.', 'doctor-ak-portal' ) );
 		}
 
+		// The patient-facing booking only offers times from the chosen
+		// clinic's own sessions (Clinics::slot_grid_for_date()); refuse any
+		// other time here too, so a stale page or a tampered request can't
+		// book a slot from a different clinic's hours. Admin bookings keep
+		// their existing freedom (their form has no clinic picker).
+		if ( self::TYPE_CLINIC === $type && $clinic_id > 0 && empty( $data['admin_override'] )
+			&& ! in_array( $time, Clinics::slot_grid_for_date( $doctor_id, $type, $date, $clinic_id ), true )
+		) {
+			return new \WP_Error( 'doctor_ak_slot_not_at_clinic', __( "That time isn't available at the clinic you chose. Please pick one of the times shown for that clinic.", 'doctor-ak-portal' ) );
+		}
+
 		if ( self::is_slot_taken( $doctor_id, $date, $time ) ) {
 			return new \WP_Error( 'doctor_ak_slot_taken', __( 'That time slot has just been booked by someone else. Please choose another time.', 'doctor-ak-portal' ) );
 		}
@@ -643,10 +654,14 @@ class Appointments {
 	 * @param string $type      'clinic' or 'video'.
 	 * @param int    $year      Four-digit year.
 	 * @param int    $month     1-12.
+	 * @param int    $clinic_id Optional Clinics row id — for a clinic visit, only that clinic's sessions (0 = every clinic).
 	 * @return array 'YYYY-MM-DD' => array( 'total' => int, 'available' => int ).
 	 */
-	public static function month_availability_summary( $doctor_id, $type, $year, $month ) {
-		$clinics = Clinics::get_for_doctor( $doctor_id );
+	public static function month_availability_summary( $doctor_id, $type, $year, $month, $clinic_id = 0 ) {
+		// Only the chosen clinic's sessions for a clinic visit (see
+		// Clinics::clinics_for_slots()) — the doctor's other clinics have
+		// their own days and hours.
+		$clinics = Clinics::clinics_for_slots( $doctor_id, $type, $clinic_id );
 
 		$booked = array();
 
@@ -700,10 +715,11 @@ class Appointments {
 	 * @param int    $doctor_id Doctor's user ID.
 	 * @param string $type      'clinic' or 'video'.
 	 * @param string $date      'YYYY-MM-DD'.
+	 * @param int    $clinic_id Optional Clinics row id — for a clinic visit, only that clinic's sessions (0 = every clinic).
 	 * @return array List of `array( 'time' => 'HH:MM', 'status' => 'available'|'booked'|'past', 'is_instant' => bool, 'surcharge' => float )`, sorted ascending.
 	 */
-	public static function slot_statuses_for_date( $doctor_id, $type, $date ) {
-		$grid = Clinics::slot_grid_for_date( $doctor_id, $type, $date );
+	public static function slot_statuses_for_date( $doctor_id, $type, $date, $clinic_id = 0 ) {
+		$grid = Clinics::slot_grid_for_date( $doctor_id, $type, $date, $clinic_id );
 
 		if ( empty( $grid ) ) {
 			return array();

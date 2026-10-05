@@ -7,9 +7,14 @@
  *    returns to the control that opened it once it closes. Opening/closing
  *    itself stays with each feature's own script.
  *  - Row "More" menus (`details.dak-row-menu`): one open at a time, closes on
- *    outside click, Escape or after choosing an item, and flips upward when
- *    there isn't room below. Item clicks still reach the existing delegated
- *    handlers because nothing here stops propagation.
+ *    outside click, Escape, or after choosing an item (and follows its More
+ *    button if the page scrolls, closing once the button leaves the screen).
+ *    The open panel is placed against the viewport (position: fixed), so a
+ *    card or the main column can't clip it and the sidebar can't cover it on
+ *    small screens: it lines up with the More button, is kept inside the
+ *    screen horizontally, and opens upward when there isn't room below.
+ *    Item clicks still reach the existing delegated handlers because nothing
+ *    here stops propagation.
  */
 ( function () {
 	'use strict';
@@ -176,6 +181,9 @@
 	/* Row "More" menus                                                    */
 	/* ------------------------------------------------------------------ */
 
+	var MENU_GAP = 4;
+	var MENU_EDGE = 8;
+
 	function closeMenus( except ) {
 		Array.prototype.forEach.call( document.querySelectorAll( 'details.dak-row-menu[open]' ), function ( menu ) {
 			if ( menu !== except ) {
@@ -184,21 +192,82 @@
 		} );
 	}
 
+	/**
+	 * Places an open menu's panel on screen, next to its More button:
+	 * right-aligned with the button when there's room, otherwise pushed
+	 * inside the viewport edge; below the button, or above it when the
+	 * space below is too short (and capped to the taller side, scrolling
+	 * inside if a very long menu still doesn't fit).
+	 */
+	function placeMenu( menu ) {
+		var toggle = menu.querySelector( '.dak-row-menu-toggle' ) || menu.querySelector( 'summary' );
+		var panel = menu.querySelector( '.dak-row-menu-panel' );
+
+		if ( ! toggle || ! panel ) {
+			return;
+		}
+
+		menu.classList.add( 'is-floating' );
+		menu.classList.remove( 'is-flipped' );
+		panel.style.removeProperty( 'max-height' );
+
+		var anchor = toggle.getBoundingClientRect();
+		var viewW = document.documentElement.clientWidth;
+		var viewH = window.innerHeight;
+		var width = Math.min( panel.offsetWidth, viewW - MENU_EDGE * 2 );
+		var left = Math.max( MENU_EDGE, Math.min( anchor.right - width, viewW - width - MENU_EDGE ) );
+		var below = viewH - anchor.bottom - MENU_GAP - MENU_EDGE;
+		var above = anchor.top - MENU_GAP - MENU_EDGE;
+		var height = panel.offsetHeight;
+		var flip = height > below && above > below;
+		var room = flip ? above : below;
+
+		if ( height > room ) {
+			panel.style.setProperty( 'max-height', Math.max( 120, room ) + 'px', 'important' );
+			height = Math.min( height, Math.max( 120, room ) );
+		}
+
+		panel.style.setProperty( 'left', left + 'px', 'important' );
+		panel.style.setProperty( 'max-width', ( viewW - MENU_EDGE * 2 ) + 'px', 'important' );
+		panel.style.setProperty( 'top', ( flip ? anchor.top - MENU_GAP - height : anchor.bottom + MENU_GAP ) + 'px', 'important' );
+		menu.classList.toggle( 'is-flipped', flip );
+	}
+
 	document.addEventListener( 'toggle', function ( event ) {
 		var menu = event.target;
-		if ( ! menu.classList || ! menu.classList.contains( 'dak-row-menu' ) || ! menu.open ) {
+		if ( ! menu.classList || ! menu.classList.contains( 'dak-row-menu' ) ) {
+			return;
+		}
+		if ( ! menu.open ) {
+			menu.classList.remove( 'is-floating', 'is-flipped' );
 			return;
 		}
 		closeMenus( menu );
-		menu.classList.remove( 'is-flipped' );
-		var panel = menu.querySelector( '.dak-row-menu-panel' );
-		if ( panel ) {
-			var rect = panel.getBoundingClientRect();
-			if ( rect.bottom > window.innerHeight - 8 && menu.getBoundingClientRect().top > rect.height + 16 ) {
-				menu.classList.add( 'is-flipped' );
-			}
-		}
+		placeMenu( menu );
 	}, true );
+
+	// A fixed panel must stay with its row: when the page (or a scrolling
+	// list) moves, follow the More button, and close once the button has
+	// scrolled out of view. Scrolling inside the panel itself is ignored.
+	function followOnMove( event ) {
+		var open = document.querySelector( 'details.dak-row-menu[open].is-floating' );
+
+		if ( ! open || ( event && event.target && 1 === event.target.nodeType && open.querySelector( '.dak-row-menu-panel' ).contains( event.target ) ) ) {
+			return;
+		}
+
+		var toggle = ( open.querySelector( '.dak-row-menu-toggle' ) || open.querySelector( 'summary' ) ).getBoundingClientRect();
+
+		if ( toggle.bottom < 0 || toggle.top > window.innerHeight || toggle.right < 0 || toggle.left > document.documentElement.clientWidth ) {
+			closeMenus( null );
+			return;
+		}
+
+		placeMenu( open );
+	}
+
+	window.addEventListener( 'scroll', followOnMove, true );
+	window.addEventListener( 'resize', followOnMove );
 
 	document.addEventListener( 'click', function ( event ) {
 		var inMenu = event.target.closest( 'details.dak-row-menu' );

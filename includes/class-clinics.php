@@ -510,16 +510,50 @@ class Clinics {
 	 * date, from that weekday's session(s) of the given type — independent
 	 * of which slots are already booked (see Appointments::available_slots()
 	 * for that). Slot spacing follows each clinic's own configured
-	 * slot_duration_minutes for that day; slots from multiple clinics of the
-	 * same type on the same day are merged and de-duplicated.
+	 * slot_duration_minutes for that day. For a clinic visit at one chosen
+	 * clinic ($clinic_id), only that clinic's sessions count — a doctor's
+	 * morning at one clinic must never be offered as a morning at another.
+	 * Without a clinic (video, or a caller that has no clinic picker), slots
+	 * from every clinic of the type are merged and de-duplicated.
 	 *
 	 * @param int    $doctor_id Doctor's user ID.
 	 * @param string $type      'clinic' or 'video' (booking-form type, not TYPE_PHYSICAL/TYPE_VIDEO).
 	 * @param string $date      'YYYY-MM-DD'.
+	 * @param int    $clinic_id Optional Clinics row id to limit a clinic visit to (0 = all).
 	 * @return array List of 'HH:MM' strings, sorted ascending.
 	 */
-	public static function slot_grid_for_date( $doctor_id, $type, $date ) {
-		return self::slot_grid_from_clinics( self::get_for_doctor( $doctor_id ), $type, $date );
+	public static function slot_grid_for_date( $doctor_id, $type, $date, $clinic_id = 0 ) {
+		return self::slot_grid_from_clinics( self::clinics_for_slots( $doctor_id, $type, $clinic_id ), $type, $date );
+	}
+
+	/**
+	 * The doctor's clinics whose sessions make up the bookable slots: just
+	 * the chosen physical clinic for a clinic visit with $clinic_id set (and
+	 * none at all if that id isn't one of this doctor's physical clinics, so
+	 * a stale or tampered id never falls back to every clinic), otherwise
+	 * all of them (slot_grid_from_clinics() keeps only the right type).
+	 *
+	 * @param int    $doctor_id Doctor's user ID.
+	 * @param string $type      'clinic' or 'video'.
+	 * @param int    $clinic_id Clinics row id, or 0.
+	 * @return array Decoded clinic rows.
+	 */
+	public static function clinics_for_slots( $doctor_id, $type, $clinic_id = 0 ) {
+		$clinics   = self::get_for_doctor( $doctor_id );
+		$clinic_id = (int) $clinic_id;
+
+		if ( 'video' === $type || $clinic_id <= 0 ) {
+			return $clinics;
+		}
+
+		return array_values(
+			array_filter(
+				$clinics,
+				function ( $clinic ) use ( $clinic_id ) {
+					return (int) $clinic['id'] === $clinic_id && self::TYPE_PHYSICAL === $clinic['type'];
+				}
+			)
+		);
 	}
 
 	/**

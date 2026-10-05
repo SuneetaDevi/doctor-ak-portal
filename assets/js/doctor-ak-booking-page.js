@@ -1233,8 +1233,13 @@
 		}
 	}
 
+	/** The clinic availability is for: the chosen clinic for a clinic visit, none for video. */
+	function availabilityClinicId() {
+		return 'clinic' === state.type ? ( state.clinicId || '' ) : '';
+	}
+
 	function monthKey( year, month ) {
-		return state.doctorId + ':' + state.type + ':' + year + '-' + month;
+		return state.doctorId + ':' + state.type + ':' + availabilityClinicId() + ':' + year + '-' + month;
 	}
 
 	function ensureMonth( year, month ) {
@@ -1249,6 +1254,7 @@
 		body.append( 'nonce', cfg.nonce );
 		body.append( 'doctor_id', state.doctorId );
 		body.append( 'type', state.type );
+		body.append( 'clinic_id', availabilityClinicId() );
 		body.append( 'year', year );
 		body.append( 'month', month );
 
@@ -1432,7 +1438,7 @@
 		}
 
 		var seq = ++slotsSeq;
-		var request = { doctorId: state.doctorId, type: state.type, date: state.date };
+		var request = { doctorId: state.doctorId, type: state.type, date: state.date, clinicId: availabilityClinicId() };
 
 		state.slots = null;
 		document.getElementById( 'dak-booking-slots-groups' ).innerHTML = '';
@@ -1444,12 +1450,14 @@
 		body.append( 'doctor_id', request.doctorId );
 		body.append( 'type', request.type );
 		body.append( 'date', request.date );
+		// Only the chosen clinic's own hours (each clinic has its own days and times).
+		body.append( 'clinic_id', request.clinicId );
 
 		fetch( cfg.ajaxUrl, { method: 'POST', body: body, credentials: 'same-origin' } )
 			.then( function ( response ) { return response.json(); } )
 			.then( function ( result ) {
 				// Discard anything answered for a selection that's since changed.
-				if ( seq !== slotsSeq || request.doctorId !== state.doctorId || request.type !== state.type || request.date !== state.date ) {
+				if ( seq !== slotsSeq || request.doctorId !== state.doctorId || request.type !== state.type || request.date !== state.date || request.clinicId !== availabilityClinicId() ) {
 					return;
 				}
 

@@ -52,12 +52,16 @@ class Booking_Handler {
 		$doctor_id = isset( $_POST['doctor_id'] ) ? absint( $_POST['doctor_id'] ) : 0;
 		$type      = ( isset( $_POST['type'] ) && 'video' === $_POST['type'] ) ? 'video' : 'clinic';
 		$date      = isset( $_POST['date'] ) ? sanitize_text_field( wp_unslash( $_POST['date'] ) ) : '';
+		$clinic_id = 'clinic' === $type && isset( $_POST['clinic_id'] ) ? absint( $_POST['clinic_id'] ) : 0;
 
 		if ( $doctor_id <= 0 || ! self::is_valid_date( $date ) || ! Appointments::is_active_doctor( $doctor_id ) ) {
 			wp_send_json_error( array( 'message' => __( 'Please choose a doctor and date.', 'doctor-ak-portal' ) ) );
 		}
 
-		wp_send_json_success( array( 'slots' => Appointments::slot_statuses_for_date( $doctor_id, $type, $date ) ) );
+		// With a clinic chosen, only that clinic's hours (see
+		// Clinics::slot_grid_for_date()); without one (e.g. the admin
+		// Add/Edit Appointment modal), every clinic as before.
+		wp_send_json_success( array( 'slots' => Appointments::slot_statuses_for_date( $doctor_id, $type, $date, $clinic_id ) ) );
 	}
 
 	/**
@@ -109,12 +113,13 @@ class Booking_Handler {
 		$type      = ( isset( $_POST['type'] ) && 'video' === $_POST['type'] ) ? 'video' : 'clinic';
 		$year      = isset( $_POST['year'] ) ? absint( $_POST['year'] ) : 0;
 		$month     = isset( $_POST['month'] ) ? absint( $_POST['month'] ) : 0;
+		$clinic_id = 'clinic' === $type && isset( $_POST['clinic_id'] ) ? absint( $_POST['clinic_id'] ) : 0;
 
 		if ( $year < 2000 || $month < 1 || $month > 12 || ! Appointments::is_active_doctor( $doctor_id ) ) {
 			wp_send_json_error( array( 'message' => __( 'Please choose a doctor.', 'doctor-ak-portal' ) ) );
 		}
 
-		wp_send_json_success( array( 'days' => Appointments::month_availability_summary( $doctor_id, $type, $year, $month ) ) );
+		wp_send_json_success( array( 'days' => Appointments::month_availability_summary( $doctor_id, $type, $year, $month, $clinic_id ) ) );
 	}
 
 	/**

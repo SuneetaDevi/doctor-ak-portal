@@ -42,7 +42,8 @@
 }
 
 .dak-site-footer-logo img {
-	max-height: 44px !important;
+	/* Square logo (icon + wordmark) — taller than the old wide one. */
+	max-height: 88px !important;
 	width: auto !important;
 }
 

@@ -1095,7 +1095,15 @@ html {
 }
 
 .dak-site-header-logo img {
-	max-height: 52px !important;
+	/* The logo is square (icon over the doctoraklohana.com wordmark), so it
+	   needs a little more height than the old wide logo to stay legible. */
+	max-height: 64px !important;
+}
+
+@media ( max-width: 782px ) {
+	.dak-site-header-logo img {
+		max-height: 52px !important;
+	}
 }
 
 /* Centre the menu on desktop only — the nav's own display is left alone so the
