@@ -459,7 +459,9 @@
 
 	/**
 	 * Lands on this page with a search term already typed — the site
-	 * header's Doctors mega-menu search box links here as `?s=<term>`.
+	 * header's Doctors menu search submits here as `?q=<term>`. `q`, not
+	 * WordPress's reserved `s` (which can turn a page request into a search
+	 * of the page's own content); `?s=` is still read for older links.
 	 *
 	 * @param {HTMLInputElement} input        The search text input.
 	 * @param {Function}         applyFilters Re-runs the grid filtering.
@@ -469,7 +471,8 @@
 			return;
 		}
 
-		var requested = new URLSearchParams( window.location.search ).get( 's' );
+		var params = new URLSearchParams( window.location.search );
+		var requested = params.get( 'q' ) || params.get( 's' );
 
 		if ( ! requested ) {
 			return;

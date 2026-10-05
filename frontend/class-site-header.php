@@ -7,12 +7,14 @@
 
 namespace DoctorAKPortal\Frontend;
 
+use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Role_Permissions;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
+use DoctorAKPortal\Includes\Specializations;
 use DoctorAKPortal\Includes\Template_Loader;
 
 // Prevent direct file access.
@@ -209,8 +211,19 @@ class Site_Header {
 			'clinics_url'        => Page_Finder::url_for_shortcode( 'clinics_directory' ),
 			'blogs_url'          => Page_Finder::url_for_shortcode( 'blogs_directory' ),
 			'doctor_specialties' => Home_Page::specialties_in_use( $directory_url ),
+			'doctor_index'       => self::doctors_for_menu(),
 			'service_categories' => self::service_categories_for_menu(),
-			'clinic_columns'     => self::clinic_locations_for_menu(),
+			'clinics'            => self::clinics_for_menu(),
+			'booking_url'        => Page_Finder::url_for_shortcode( 'book_appointment' ),
+			'gallery_url'        => self::gallery_url(),
+			// Detail pages that belong under a nav item, for the active-page
+			// indicator (a doctor profile highlights "Doctors", etc.).
+			'section_paths'      => array(
+				'doctors'  => array( $directory_url, Page_Finder::url_for_shortcode( 'doctor_profile_view' ) ),
+				'services' => array( Page_Finder::url_for_shortcode( 'services_directory' ), Page_Finder::url_for_shortcode( 'service_profile_view' ) ),
+				'clinics'  => array( Page_Finder::url_for_shortcode( 'clinics_directory' ), Page_Finder::url_for_shortcode( 'clinic_profile_view' ) ),
+				'blogs'    => array( Page_Finder::url_for_shortcode( 'blogs_directory' ), Page_Finder::url_for_shortcode( 'blog_single' ) ),
+			),
 			'current_path'       => self::current_path(),
 			'is_logged_in'       => is_user_logged_in(),
 			'user'               => $user,
@@ -267,47 +280,104 @@ class Site_Header {
 	}
 
 	/**
-	 * The Clinics mega-menu's columns — one per city that has at least one
-	 * clinic location, each with its own list of { name, url } links
-	 * straight into [clinic_profile_view]. Mirrors service_categories_for_menu()
-	 * above, just grouped by city instead of Service_Categories (see
-	 * Clinic_Locations::get_all()).
+	 * The Clinics menu's data, from the same source as the clinics
+	 * directory (Clinic_Public_Data): every clinic as name, "Area, City"
+	 * subtitle and detail link (never the full street address), plus the
+	 * cities that have clinics, most first, for the city filter — so the
+	 * menu and the directory always agree.
 	 *
-	 * @return array List of { city, clinics: [{ name, url }] }, sorted by clinic count descending (the city with the most clinics first) so the busiest city always lands in the first column.
+	 * @return array { clinics: [{ name, place, city, url }], cities: [{ slug, label, count }] }
 	 */
-	private static function clinic_locations_for_menu() {
-		$profile_url = Page_Finder::url_for_shortcode( 'clinic_profile_view' );
-		$grouped     = array();
+	private static function clinics_for_menu() {
+		$clinics = array();
 
-		foreach ( Clinic_Locations::get_all() as $clinic ) {
-			$city = $clinic['city_label'] ? $clinic['city_label'] : __( 'Other', 'doctor-ak-portal' );
-
-			if ( ! isset( $grouped[ $city ] ) ) {
-				$grouped[ $city ] = array();
-			}
-
-			$grouped[ $city ][] = array(
-				'name' => $clinic['name'],
-				'url'  => $profile_url ? add_query_arg( 'clinic_id', $clinic['id'], $profile_url ) : '',
+		foreach ( Clinic_Public_Data::locations() as $location ) {
+			$clinics[] = array(
+				'name'  => $location['name'],
+				'place' => $location['place'],
+				'city'  => $location['city'],
+				'url'   => $location['profile_url'],
 			);
 		}
 
-		uasort(
-			$grouped,
+		$cities = array_map(
+			function ( $city ) {
+				return array(
+					'slug'  => $city['slug'],
+					'label' => $city['label'],
+					'count' => $city['count'],
+				);
+			},
+			Clinic_Public_Data::cities()
+		);
+
+		return array(
+			'clinics' => $clinics,
+			'cities'  => $cities,
+		);
+	}
+
+	/**
+	 * Every doctor the public directory lists (same rule as
+	 * Doctors_Directory::doctor_cards_data(): the Doctor role, not
+	 * deactivated), alphabetical, so the Doctors menu's search can show
+	 * matching doctors inline. `search` holds exactly what the directory's
+	 * own search box matches (the name and every specialty, lowercase), so
+	 * the menu never promises a match the directory then can't find.
+	 *
+	 * @return array List of { name, specialty, search, url }.
+	 */
+	private static function doctors_for_menu() {
+		$profile_url = Page_Finder::url_for_shortcode( 'doctor_profile_view' );
+		$labels      = Specializations::get_all();
+		$doctors     = array();
+
+		foreach ( Appointments::active_doctor_ids() as $doctor_id ) {
+			$doctor = get_userdata( $doctor_id );
+
+			if ( ! $doctor ) {
+				continue;
+			}
+
+			$name        = trim( $doctor->first_name . ' ' . $doctor->last_name );
+			$name        = '' !== $name ? $name : $doctor->display_name;
+			$specialties = array();
+
+			foreach ( (array) get_user_meta( $doctor_id, 'doctor_ak_specializations', true ) as $slug ) {
+				if ( isset( $labels[ $slug ] ) ) {
+					$specialties[] = $labels[ $slug ];
+				}
+			}
+
+			$doctors[] = array(
+				'name'      => $name,
+				'specialty' => $specialties ? $specialties[0] : '',
+				'search'    => mb_strtolower( $name . ',' . implode( ',', $specialties ) ),
+				'url'       => $profile_url ? add_query_arg( 'doctor_id', $doctor_id, $profile_url ) : '',
+			);
+		}
+
+		usort(
+			$doctors,
 			function ( $a, $b ) {
-				return count( $b ) - count( $a );
+				return strcasecmp( $a['name'], $b['name'] );
 			}
 		);
 
-		$columns = array();
-		foreach ( $grouped as $city => $clinics ) {
-			$columns[] = array(
-				'city'    => $city,
-				'clinics' => $clinics,
-			);
-		}
+		return $doctors;
+	}
 
-		return $columns;
+	/**
+	 * The Gallery page's URL — a published page with the `gallery` slug — or
+	 * '' when there isn't one (then the nav item isn't shown, rather than a
+	 * link that goes nowhere).
+	 *
+	 * @return string
+	 */
+	private static function gallery_url() {
+		$page = get_page_by_path( 'gallery' );
+
+		return ( $page instanceof \WP_Post && 'publish' === $page->post_status ) ? (string) get_permalink( $page ) : '';
 	}
 
 	/**

@@ -1,693 +1,307 @@
 /**
- * Doctor AK Portal — Site-wide header.
+ * Doctor AK Portal — Site-wide header (templates/site-header.php).
  *
- * Loaded together with doctor-ak-auth.css, which provides the shared design
- * tokens (--dak-primary, --dak-border, etc.) and the defensive
- * text-transform/letter-spacing reset scoped to .dak-portal.
+ * Two siblings: .dak-site-topbar (slim contact/account strip that scrolls
+ * away) and header.dak-site-header (the sticky main bar). The main bar keeps
+ * one fixed height at every scroll position, so nothing below it jumps, and
+ * other scripts that measure `.dak-site-header` for anchor offsets
+ * (booking page, policy pages) get exactly the sticky part.
  *
- * Two tiers: a top "utility" bar (logo, Call Us/Email Us) above the main bar
- * (nav, theme toggle, Book Now, account). Only the main bar stays frozen at
- * the top while scrolling — the utility bar collapses away as soon as
- * scrolling starts (see .is-scrolled below, toggled by
- * assets/js/doctor-ak-site-header.js), rather than the older behavior where
- * the whole two-tier header stayed pinned together.
+ * Colours are the public design system's (doctor-ak-public.css --pub-*),
+ * restated here as --hdr-* because this file loads on every page, not just
+ * the ones that load doctor-ak-public.css. Almost every declaration is
+ * !important: the active theme / Elementor kit style bare `button`, `a` and
+ * `ul` with higher-specificity selectors (uppercase text, coloured
+ * backgrounds, hover colours), and the header has to look the same on top
+ * of all of them.
  */
 
-/* The mega-menus below (Doctors/Services/Clinics) are ~900px wide panels,
-   absolutely positioned against their own nav item. Even while closed
-   (opacity/visibility hidden, never `display: none`), a positioned box still
-   counts toward the page's scrollable width — so on plenty of ordinary
-   desktop widths, whichever panel's anchor happens to place it past the
-   right edge quietly turns the ENTIRE site into one that scrolls
-   horizontally. This stylesheet is loaded on every front-end page
-   (Site_Header renders site-wide), so this one rule protects all of them,
-   not just whichever page a particular menu's overflow happened to show up
-   on.
-   `html`, not `body` — the header's own sticky positioning further down is
-   explicitly anchored to <body>, and clipping overflow on an ancestor of a
-   `position: sticky` element can break it; `html` sits above body, so this
-   leaves that untouched. */
+/* Closed panels are `hidden` (display: none) so they can't widen the page,
+   but other plugin and theme blocks can — kept from the previous header. */
 html {
 	overflow-x: hidden !important;
 }
 
-/* position: sticky lives here, on the OUTER wrapper, not on
-   .dak-site-header-inner — a sticky element only stays pinned while its own
-   parent box is still in view, and .dak-site-header-inner's parent used to
-   be this element sized to fit just the two header bars (barely taller than
-   the sticky child itself). That gave it only a few pixels of scroll before
-   running out of room to stick within, so in practice the header scrolled
-   away like a normal in-flow element almost immediately. This element's own
-   parent is <body> — always far taller than the viewport — so sticking it
-   directly here actually holds for the full page scroll. */
+/* Fragment links land below the sticky bar (see --dak-site-header-offset,
+   kept up to date by doctor-ak-site-header.js; the fallback is the bar's
+   fixed height). */
+html:has( .dak-site-header ) {
+	scroll-padding-top: calc( var( --dak-site-header-offset, 76px ) + 12px );
+}
+
+.dak-site-topbar,
 .dak-site-header {
-	position: sticky !important;
-	top: 0 !important;
-	z-index: 200 !important;
-	/* Slightly off-white — the main bar below is pure --dak-bg-card (white),
-	   so this sliver of contrast plus its shadow is what makes the pill read
-	   as "floating" rather than just another flat bar. */
-	background: var( --dak-bg-page ) !important;
+	--hdr-primary: #16634b;
+	--hdr-primary-hover: #104d3a;
+	--hdr-tint: #eaf4ef;
+	--hdr-tint-strong: #d5eadf;
+	--hdr-on-primary: #ffffff;
+	--hdr-text: #182b3a;
+	--hdr-muted: #526273;
+	--hdr-border: #dfe5eb;
+	--hdr-surface: #ffffff;
+	--hdr-subtle: #f6f8fa;
+	--hdr-focus: #245fa8;
+	--hdr-warn-text: #8a4b08;
+	--hdr-warn-tint: #fff4d8;
+	--hdr-shadow: 0 16px 40px rgba( 16, 24, 40, 0.12 ), 0 2px 6px rgba( 16, 24, 40, 0.06 );
+	--hdr-max: 1180px;
+	--hdr-gutter: 24px;
+	--hdr-row: 76px;
+	--hdr-radius: 14px;
+	--hdr-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-/* Utility bar — now the header's TOP row: logo on the left, Call Us/Email Us
-   on the right, each as a round icon badge + two-line (label, then value)
-   block. Address and social links used to live here too; both are already
-   shown in the site footer (Site_Footer), so dropping them here just avoids
-   showing the same information twice. */
-
-.dak-site-header-utility {
-	background: var( --dak-bg-subtle ) !important;
-	border-bottom: 1px solid var( --dak-border ) !important;
-	max-height: 120px !important;
-	/* Visible (not hidden) so the account dropdown, which now lives in this
-	   strip, isn't clipped by it — it only clips while collapsed (below). */
-	overflow: visible !important;
-	opacity: 1 !important;
-	transition: max-height 0.25s ease, opacity 0.2s ease, border-color 0.25s ease !important;
+html[data-theme='dark'] .dak-site-topbar,
+html[data-theme='dark'] .dak-site-header {
+	--hdr-primary: #3aa679;
+	--hdr-primary-hover: #7fd3ab;
+	--hdr-tint: #12261d;
+	--hdr-tint-strong: #1a3628;
+	--hdr-on-primary: #06140e;
+	--hdr-text: #e6ebef;
+	--hdr-muted: #a3afba;
+	--hdr-border: #2a3139;
+	--hdr-surface: #13171b;
+	--hdr-subtle: #1a1f25;
+	--hdr-focus: #8db8f2;
+	--hdr-warn-text: #f2c26b;
+	--hdr-warn-tint: #2b2310;
+	--hdr-shadow: 0 16px 40px rgba( 0, 0, 0, 0.5 ), 0 2px 6px rgba( 0, 0, 0, 0.35 );
 }
 
-/* Only the main bar (nav links + Book Now) needs to stay frozen at the top
-   while scrolling — this top "utility" bar (logo, Call Us/Email Us) should
-   scroll away instead, matching a normal in-flow strip above the frozen nav.
-   .dak-site-header itself already stays position: sticky against <body> (see
-   below) no matter what, so simply collapsing this row once scrolled — via
-   the .is-scrolled class doctor-ak-site-header.js toggles on scroll — is
-   what actually makes only the main bar visibly "freeze". */
-.dak-site-header.is-scrolled .dak-site-header-utility {
-	overflow: hidden !important;
-	max-height: 0 !important;
-	opacity: 0 !important;
-	border-bottom-color: transparent !important;
+/* ---------------------------------------------------------------- Resets */
+
+/* Wrapped in :where() so they carry almost no specificity: they beat the
+   theme's plain `a` / `button` rules (Elementor kit: green links at 16px,
+   pill buttons with padding and uppercase text) only through !important,
+   and every header class rule below still overrides them. */
+:where( .dak-site-topbar, .dak-site-header ),
+:where( .dak-site-topbar, .dak-site-header ) * {
+	box-sizing: border-box !important;
+	text-transform: none !important;
+	letter-spacing: normal !important;
+	word-spacing: normal !important;
 }
 
-.dak-site-header-utility-inner {
-	max-width: 1280px !important;
-	margin: 0 auto !important;
-	padding: 0.85rem 1.5rem !important;
-	display: flex !important;
-	align-items: center !important;
-	justify-content: space-between !important;
-	gap: 1.5rem !important;
-	flex-wrap: wrap !important;
+.dak-site-topbar,
+.dak-site-header {
+	font-family: var( --hdr-font ) !important;
+	color: var( --hdr-text ) !important;
+	line-height: 1.4 !important;
 }
 
-.dak-site-header-utility-contact {
-	display: flex !important;
-	align-items: center !important;
-	gap: 1.75rem !important;
-	flex-wrap: wrap !important;
-}
-
-.dak-site-header-contact-item {
-	display: inline-flex !important;
-	align-items: center !important;
-	gap: 0.65rem !important;
+:where( .dak-site-topbar, .dak-site-header ) button {
+	margin: 0 !important;
+	padding: 0 !important;
+	font-family: inherit !important;
+	font-size: inherit !important;
+	font-weight: inherit !important;
+	line-height: 1.3 !important;
+	color: inherit !important;
+	background: transparent !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
 	text-decoration: none !important;
+	text-align: inherit !important;
+	white-space: normal !important;
+	min-height: 0 !important;
+	cursor: pointer !important;
+	-webkit-appearance: none !important;
+	appearance: none !important;
 }
 
-.dak-site-header-contact-icon {
-	display: inline-flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	width: 40px !important;
-	height: 40px !important;
+:where( .dak-site-topbar, .dak-site-header ) a {
+	font-family: inherit !important;
+	font-size: inherit !important;
+	font-weight: inherit !important;
+	line-height: inherit !important;
+	color: inherit !important;
+	text-decoration: none !important;
+	box-shadow: none !important;
+}
+
+:where( .dak-site-topbar, .dak-site-header ) :is( ul, li, p, form ) {
+	list-style: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+:where( .dak-site-header ) li::before,
+:where( .dak-site-header ) li::marker {
+	content: none !important;
+}
+
+:where( .dak-site-topbar, .dak-site-header ) svg {
+	display: block !important;
 	flex: 0 0 auto !important;
-	border-radius: 50% !important;
-	background: var( --dak-primary ) !important;
-	color: #fff !important;
-}
-
-.dak-site-header-contact-icon svg {
 	width: 18px !important;
 	height: 18px !important;
-}
-
-.dak-site-header-contact-text {
-	display: flex !important;
-	flex-direction: column !important;
-	line-height: 1.3 !important;
-}
-
-.dak-site-header-contact-label {
-	font-size: 0.72rem !important;
-	font-weight: 500 !important;
-	color: var( --dak-muted ) !important;
-}
-
-.dak-site-header-contact-value {
-	font-size: 0.92rem !important;
-	font-weight: 700 !important;
-	color: var( --dak-text ) !important;
-	white-space: nowrap !important;
-}
-
-.dak-site-header-contact-item:hover .dak-site-header-contact-value {
-	color: var( --dak-primary-dark ) !important;
-}
-
-/* Main bar — the nav row underneath the logo/contact bar above. Same
-   max-width/centering as .dak-site-header-utility-inner so both rows' content
-   lines up, with a soft shadow of its own standing in for a border. Nav /
-   auth actions split into two flex groups (no logo here any more — it moved
-   up to the utility bar, see templates/site-header.php) so the nav can sit
-   flush left and the auth actions flush right, matching the reference. */
-
-.dak-site-header-inner {
-	max-width: 1280px !important;
-	margin: 0 auto !important;
-	padding: 0.65rem 1.5rem !important;
-	display: flex !important;
-	align-items: center !important;
-	justify-content: space-between !important;
-	gap: var( --dak-space-5 ) !important;
-}
-
-.dak-site-header-logo {
-	display: flex !important;
-	align-items: center !important;
-	flex-shrink: 0 !important;
-	text-decoration: none !important;
-}
-
-.dak-site-header-logo img {
-	display: block !important;
-	max-height: 48px !important;
-	width: auto !important;
-}
-
-.dak-site-header-logo-text {
-	font-size: 1.15rem !important;
-	font-weight: 700 !important;
-	color: var( --dak-primary ) !important;
-}
-
-.dak-site-header-toggle {
-	display: none !important;
-	flex-direction: column !important;
-	justify-content: space-between !important;
-	width: 24px !important;
-	height: 18px !important;
-	border: 0 !important;
-	background: none !important;
-	cursor: pointer !important;
-	padding: 0 !important;
-	margin-left: auto !important;
-}
-
-.dak-site-header-toggle span {
-	display: block !important;
-	height: 2px !important;
-	width: 100% !important;
-	background: var( --dak-text ) !important;
-}
-
-.dak-site-header-nav {
-	flex: 1 1 auto !important;
-	min-width: 0 !important;
-}
-
-.dak-site-header-menu {
-	list-style: none !important;
-	margin: 0 !important;
-	padding: 0 !important;
-	display: flex !important;
-	align-items: center !important;
-	/* Flush left, like the reference — the logo isn't in this row any more
-	   (it moved up to the utility bar), so there's nothing to center against. */
-	justify-content: flex-start !important;
-	gap: 0.2rem !important;
-}
-
-.dak-site-header-menu .menu-item {
-	/* Explicitly static, not just "unset" — the active theme/Elementor's own
-	   generic `.menu-item` styling sets position: relative (a common
-	   WordPress nav convention), which would otherwise still win and make
-	   this <li> the sub-menu's containing block again regardless of what
-	   this stylesheet does or doesn't declare for the same selector. See
-	   the comment on .dak-site-header-menu .sub-menu below for why its
-	   containing block needs to be the sticky header itself instead. */
-	position: static !important;
-}
-
-.dak-site-header-menu a {
-	display: flex !important;
-	align-items: center !important;
-	gap: 0.3rem !important;
-	padding: 0.55rem 0.9rem !important;
-	font-size: 0.9rem !important;
-	font-weight: 600 !important;
-	color: var( --dak-text ) !important;
-	text-decoration: none !important;
-	border-radius: var( --dak-radius-sm ) !important;
-	white-space: nowrap !important;
-}
-
-.dak-site-header-menu > .menu-item > a:hover {
-	color: var( --dak-primary-dark ) !important;
-}
-
-/* Active-page indicator — an underline on whichever nav item's own page
-   you're currently on (see Site_Header::current_path() /
-   $dak_is_current_page() in templates/site-header.php), matching the
-   reference design's "Home" state. Anchor-only items (Clinics/Videos, which
-   both just jump to a spot on the home page rather than being pages of
-   their own) don't participate — no "site.com/#dak-home-clinics" URL to
-   compare against, and highlighting whichever one was clicked last would
-   need extra JS state for a cosmetic detail. */
-.dak-site-header-menu-current > a {
-	color: var( --dak-primary-dark ) !important;
-	position: relative !important;
-}
-
-.dak-site-header-menu-current > a::after {
-	content: '' !important;
-	position: absolute !important;
-	left: 0.9rem !important;
-	right: 0.9rem !important;
-	bottom: 0.1rem !important;
-	height: 2px !important;
-	border-radius: 999px !important;
-	background: var( --dak-primary ) !important;
-}
-
-.dak-site-header-menu-caret {
-	display: inline-flex !important;
-	width: 13px !important;
-	height: 13px !important;
-	transition: transform 0.15s ease !important;
-}
-
-.menu-item-has-children:hover > a .dak-site-header-menu-caret,
-.menu-item-has-children.is-open > a .dak-site-header-menu-caret {
-	transform: rotate( 180deg ) !important;
-}
-
-/* Doctors mega-menu — a white content panel floating over a dimmed photo
-   backdrop (the same hero banner behind the homepage hero), inset so the
-   photo shows around its edges. Two card grids (By Speciality / By
-   Location) plus a "what next" column, all built from real data (see
-   Site_Header::prepare_data()): every card deep-links into the doctors
-   directory with that filter preselected (assets/js/doctor-ak-directory.js),
-   and the search bar submits there as a real `?s=` search. */
-
-/* Centered on the whole header, not anchored under whichever nav item
-   opened it. Anchoring a 900px-wide panel to an individual item's own edge
-   (a Doctors-style `left: 0`, or a Services/Clinics-style `right: 0`) only
-   fits when that item happens to sit far enough from the opposite viewport
-   edge — true at very wide viewports, false at plenty of ordinary desktop
-   ones (anywhere from ~1024px up to ~1700px, measured against this nav's
-   real item widths), where the panel quietly ran off one side and got
-   clipped instead. Centering on the header is anchor-position-independent:
-   it only ever depends on the panel's own width vs. the viewport's, which
-   `max-width: calc(100vw - 3rem)` below already guarantees fits. That's why
-   `.dak-site-header-menu .menu-item` above deliberately isn't
-   `position: relative` any more — this needs its containing block to be
-   `.dak-site-header` itself (a valid one: `position: sticky` counts, no
-   extra property needed there), not the individual <li>. */
-.dak-site-header-menu .sub-menu {
-	margin: 0 !important;
-	padding: 0 !important;
-	position: absolute !important;
-	top: 100% !important;
-	left: 50% !important;
-	z-index: 1 !important;
-	opacity: 0 !important;
-	visibility: hidden !important;
-	transform: translateX( -50% ) translateY( 6px ) !important;
-	transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s !important;
-}
-
-.menu-item-has-children:hover > .sub-menu,
-.menu-item-has-children.is-open > .sub-menu {
-	opacity: 1 !important;
-	visibility: visible !important;
-	transform: translateX( -50% ) translateY( 0 ) !important;
-}
-
-.dak-site-header-mega {
-	position: relative !important;
-	width: 900px !important;
-	max-width: calc( 100vw - 3rem ) !important;
-}
-
-.dak-site-header-mega-panel {
-	padding: var( --dak-space-5 ) !important;
-	background: var( --dak-bg-card ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-lg ) !important;
-	box-shadow: var( --dak-shadow-lg ) !important;
-}
-
-.dak-site-header-mega-search {
-	display: flex !important;
-	align-items: center !important;
-	gap: var( --dak-space-2 ) !important;
-	padding: 0.7rem 1rem !important;
-	margin-bottom: var( --dak-space-3 ) !important;
-	background: var( --dak-bg-subtle ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-md ) !important;
-	transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
-}
-
-/* The bar itself carries the focus cue since its <input> has its own
-   outline suppressed below — this is what actually makes it visible that
-   the search box auto-focused when the menu opened (see
-   initMegaMenuAutoFocus() in doctor-ak-site-header.js), not just that
-   typing happens to work. */
-.dak-site-header-mega-search:focus-within {
-	border-color: var( --dak-primary ) !important;
-	box-shadow: 0 0 0 3px var( --dak-primary-tint ) !important;
-}
-
-/* Shown only while a live search (see initMegaMenuSearch() in
-   doctor-ak-site-header.js) matches nothing among the rendered specialty/
-   location cards. */
-.dak-site-header-mega-no-results {
-	margin: 0 0 var( --dak-space-3 ) !important;
-	font-size: 0.82rem !important;
-	color: var( --dak-muted ) !important;
-	text-align: center !important;
-}
-
-.dak-site-header-mega-search svg {
-	width: 16px !important;
-	height: 16px !important;
-	flex: 0 0 auto !important;
-	color: var( --dak-muted ) !important;
-}
-
-.dak-site-header-mega-search input {
-	flex: 1 1 auto !important;
-	min-width: 0 !important;
-	border: 0 !important;
-	background: none !important;
-	font: inherit !important;
-	font-size: 0.88rem !important;
-	color: var( --dak-text ) !important;
-}
-
-.dak-site-header-mega-search input:focus {
-	outline: none !important;
-}
-
-.dak-site-header-mega-body {
-	margin-top: var( --dak-space-2 ) !important;
-}
-
-.dak-site-header-mega-heading {
-	display: block !important;
-	margin-bottom: var( --dak-space-3 ) !important;
-	font-size: 0.72rem !important;
-	font-weight: 700 !important;
-	text-transform: uppercase !important;
-	letter-spacing: 0.04em !important;
-	color: var( --dak-primary-dark ) !important;
-}
-
-/* Clinics mega-menu — one column per city, each with its own heading and a
-   plain list of clinic names underneath (see the Doctors "mega-cards" grid
-   below for the equivalent flat-card layout used by that menu instead). */
-.dak-site-header-mega-columns {
-	display: grid !important;
-	grid-template-columns: repeat( 3, minmax( 0, 1fr ) ) !important;
-	gap: 1.25rem !important;
-	max-height: 360px !important;
-	overflow-x: hidden !important;
-	overflow-y: auto !important;
-}
-
-/* Without this, a grid item defaults to min-width: auto — sized to fit its
-   content's min-content (here, effectively the widest unwrapped service/
-   clinic name) rather than shrinking to its 1fr track. A handful of long
-   names (e.g. "ESOPHAGEAL VARICEAL BAND LIGATION") was enough to blow the
-   whole grid past the panel's own width, forcing a horizontal scrollbar
-   inside the dropdown instead of each name just wrapping onto two lines. */
-.dak-site-header-mega-column {
-	min-width: 0 !important;
-}
-
-.dak-site-header-mega-column-list {
-	margin: 0 !important;
-	padding: 0 !important;
-	list-style: none !important;
-}
-
-.dak-site-header-mega-column-item {
-	margin: 0 !important;
-}
-
-.dak-site-header-mega-column-item.dak-hidden {
-	display: none !important;
-}
-
-.dak-site-header-mega-column.dak-hidden {
-	display: none !important;
-}
-
-.dak-site-header-mega-column-item a {
-	display: flex !important;
-	align-items: center !important;
-	gap: 0.5rem !important;
-	min-width: 0 !important;
-	padding: 0.4rem 0.5rem !important;
-	border-radius: var( --dak-radius-sm ) !important;
-	color: var( --dak-text ) !important;
-	text-decoration: none !important;
-	font-size: 0.88rem !important;
-	/* Long service/clinic names wrap onto a second line inside their own
-	   column. (`.dak-site-header-menu a` above sets white-space: nowrap for the
-	   top-level links, which would otherwise carry over and let a long name run
-	   underneath the next column.) */
-	white-space: normal !important;
-	overflow-wrap: anywhere !important;
-	align-items: flex-start !important;
-	line-height: 1.3 !important;
-}
-
-.dak-site-header-mega-column-item a:hover {
-	background: var( --dak-bg-subtle ) !important;
-	color: var( --dak-primary-dark ) !important;
-}
-
-/* Small circular per-item icon, same spirit as .dak-site-header-mega-card-icon
-   on the Doctors mega-menu's cards, just sized down to sit inline in a list
-   row instead of a card. */
-.dak-site-header-mega-column-item-icon {
-	display: inline-flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	width: 22px !important;
-	height: 22px !important;
-	flex: 0 0 auto !important;
-	border-radius: 50% !important;
-	background: var( --dak-primary-tint ) !important;
-	color: var( --dak-primary-dark ) !important;
-}
-
-.dak-site-header-mega-column-item-icon svg {
-	width: 12px !important;
-	height: 12px !important;
-}
-
-/* By Speciality — a 3-column grid of icon cards, each showing how many
-   doctors have that specialty rather than just its name; every specialty in
-   use is listed (no cap), so a fixed max-height with its own scrollbar keeps
-   the dropdown from ever growing past what fits comfortably on screen. */
-.dak-site-header-mega-cards {
-	display: grid !important;
-	grid-template-columns: repeat( 3, minmax( 0, 1fr ) ) !important;
-	gap: 0.1rem 0.5rem !important;
-	max-height: 360px !important;
-	overflow-y: auto !important;
-}
-
-.dak-site-header-mega-card {
-	display: flex !important;
-	align-items: flex-start !important;
-	gap: 0.55rem !important;
-	min-width: 0 !important;
-	padding: 0.5rem !important;
-	border-radius: var( --dak-radius-sm ) !important;
-	text-decoration: none !important;
-}
-
-/* .dak-hidden (shared utility, doctor-ak-auth.css) sets display: none
-   !important too — same specificity, and this stylesheet loads after it, so
-   without the extra specificity here the card's own `display: flex
-   !important` would win the tie and initMegaMenuSearch()'s hide would
-   silently do nothing. Same fix mirrored below for .dak-site-header-mega-
-   location. */
-.dak-site-header-mega-card.dak-hidden {
-	display: none !important;
-}
-
-.dak-site-header-mega-card:hover {
-	background: var( --dak-bg-subtle ) !important;
-}
-
-.dak-site-header-mega-card-icon {
-	display: inline-flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	width: 32px !important;
-	height: 32px !important;
-	flex: 0 0 auto !important;
-	border-radius: 50% !important;
-	background: var( --dak-primary-tint ) !important;
-	color: var( --dak-primary-dark ) !important;
-}
-
-.dak-site-header-mega-card-icon svg {
-	width: 16px !important;
-	height: 16px !important;
-}
-
-.dak-site-header-mega-card-body {
-	display: flex !important;
-	flex-direction: column !important;
-	min-width: 0 !important;
-	gap: 0.1rem !important;
-}
-
-.dak-site-header-mega-card-body strong {
-	/* Full name, wrapping to a second line rather than being cut off with an
-	   ellipsis — some specialty names ("Metabolic & Endocrine Disorders")
-	   are long enough that truncating them loses real information. */
-	white-space: normal !important;
-	line-height: 1.25 !important;
-	font-size: 0.85rem !important;
-	font-weight: 600 !important;
-	color: var( --dak-text ) !important;
-}
-
-.dak-site-header-mega-card-body span {
-	font-size: 0.75rem !important;
-	color: var( --dak-muted ) !important;
-}
-
-/* Footer strip below the specialty grid — replaces the old "Not sure who to
-   see?" side panel with a single, plainer "View All Doctors" link,
-   right-aligned in the bottom corner of the dropdown. */
-.dak-site-header-mega-footer {
-	display: flex !important;
-	justify-content: flex-end !important;
-	margin-top: var( --dak-space-4 ) !important;
-	padding-top: var( --dak-space-3 ) !important;
-	border-top: 1px solid var( --dak-border ) !important;
-}
-
-/* Restates what the generic .dak-button-primary/.dak-button-sm rules already
-   set, at higher specificity than the plain-link-row ".dak-site-header-menu
-   a" rule above (a class+tag selector, which would otherwise win on
-   `color`/padding/border-radius and turn this button into gray text). */
-.dak-site-header-mega-footer .dak-button {
-	padding: 0.5rem 1.1rem !important;
-	font-size: 0.85rem !important;
-	color: #fff !important;
-	border-radius: 999px !important;
-	white-space: nowrap !important;
-}
-
-.dak-site-header-mega-footer .dak-button svg {
-	width: 15px !important;
-	height: 15px !important;
-}
-
-/* Auth area */
-.dak-site-header-auth {
-	position: relative !important;
-	flex-shrink: 0 !important;
-	margin-left: auto !important;
-	display: flex !important;
-	align-items: center !important;
-	gap: 0.75rem !important;
-}
-
-/* "Book Now" dropdown — replaced the single "Schedule Appointment" button so
-   Lab/Pharmacy (not just Doctor/Service) are visible as booking options. */
-.dak-site-header-book {
-	position: relative !important;
-	flex-shrink: 0 !important;
-}
-
-.dak-site-header-book-caret {
-	display: inline-flex !important;
-	margin-left: 0.3rem !important;
-	transition: transform 0.15s ease !important;
-}
-
-.dak-site-header-book-caret svg {
-	width: 12px !important;
-	height: 12px !important;
-	color: currentColor !important;
+	fill: none !important;
 	stroke: currentColor !important;
 }
 
-.dak-site-header-cta[aria-expanded='true'] .dak-site-header-book-caret {
-	transform: rotate( 180deg ) !important;
-}
-
-.dak-site-header-book-menu {
-	position: absolute !important;
-	top: calc( 100% + 8px ) !important;
-	right: 0 !important;
-	min-width: 210px !important;
-	background: var( --dak-bg-card ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-md ) !important;
-	box-shadow: var( --dak-shadow ) !important;
-	padding: 0.4rem !important;
+/* Doubled attribute selector: outranks every display rule below, so a
+   `hidden` panel, list or row is never shown (or focusable). */
+.dak-site-topbar [hidden][hidden],
+.dak-site-header [hidden][hidden] {
 	display: none !important;
-	flex-direction: column !important;
-	gap: 0.15rem !important;
-	z-index: 20 !important;
 }
 
-.dak-site-header-book-menu.is-open {
-	display: flex !important;
+.dak-site-topbar .dak-sr-only,
+.dak-site-header .dak-sr-only {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	margin: -1px !important;
+	padding: 0 !important;
+	overflow: hidden !important;
+	clip: rect( 0, 0, 0, 0 ) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
 }
 
-.dak-site-header-book-menu a,
-.dak-site-header-book-menu button {
+/* One visible focus ring for every control in the header. */
+.dak-site-topbar a:focus-visible,
+.dak-site-topbar button:focus-visible,
+.dak-site-header a:focus-visible,
+.dak-site-header button:focus-visible,
+.dak-site-header input:focus-visible {
+	outline: 2px solid var( --hdr-focus ) !important;
+	outline-offset: 2px !important;
+}
+
+.dak-site-topbar a:focus:not( :focus-visible ),
+.dak-site-topbar button:focus:not( :focus-visible ),
+.dak-site-header a:focus:not( :focus-visible ),
+.dak-site-header button:focus:not( :focus-visible ) {
+	outline: none !important;
+}
+
+/* ---------------------------------------------------------------- Top strip */
+
+.dak-site-topbar {
+	position: relative !important;
+	z-index: 210 !important;
+	background: var( --hdr-subtle ) !important;
+	border-bottom: 1px solid var( --hdr-border ) !important;
+	font-size: 0.8125rem !important;
+}
+
+.dak-site-topbar-inner {
 	display: flex !important;
 	align-items: center !important;
-	gap: 0.55rem !important;
-	width: 100% !important;
-	border: none !important;
-	background: none !important;
-	padding: 0.55rem 0.7rem !important;
-	border-radius: var( --dak-radius-sm ) !important;
-	font-size: 0.85rem !important;
+	justify-content: space-between !important;
+	gap: 12px !important;
+	max-width: var( --hdr-max ) !important;
+	min-height: 40px !important;
+	margin: 0 auto !important;
+	padding: 0 var( --hdr-gutter ) !important;
+}
+
+.dak-site-topbar-contact,
+.dak-site-topbar-actions {
+	display: flex !important;
+	align-items: center !important;
+	min-width: 0 !important;
+}
+
+.dak-site-topbar-contact {
+	gap: 20px !important;
+}
+
+.dak-site-topbar-actions {
+	gap: 8px !important;
+	flex: 0 0 auto !important;
+}
+
+.dak-site-topbar-item {
+	font-size: 0.8125rem !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	min-height: 32px !important;
+	color: var( --hdr-muted ) !important;
+	white-space: nowrap !important;
+	min-width: 0 !important;
+}
+
+.dak-site-topbar-item span {
+	overflow: hidden !important;
+	text-overflow: ellipsis !important;
+}
+
+.dak-site-topbar-item svg {
+	width: 15px !important;
+	height: 15px !important;
+	color: var( --hdr-primary ) !important;
+}
+
+a.dak-site-topbar-item:hover {
+	color: var( --hdr-primary ) !important;
+}
+
+.dak-site-topbar-login,
+.dak-site-topbar .dak-site-topbar-account-trigger {
+	font-size: 0.8125rem !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	min-height: 32px !important;
+	padding: 0 10px !important;
+	border-radius: 999px !important;
+	color: var( --hdr-text ) !important;
 	font-weight: 600 !important;
-	color: var( --dak-text ) !important;
-	text-decoration: none !important;
-	text-align: left !important;
-	cursor: pointer !important;
+	white-space: nowrap !important;
 }
 
-.dak-site-header-book-menu a:hover,
-.dak-site-header-book-menu button:hover {
-	background: var( --dak-bg-subtle ) !important;
-	color: var( --dak-primary-dark ) !important;
-}
-
-.dak-site-header-book-menu svg {
+.dak-site-topbar-login svg {
 	width: 16px !important;
 	height: 16px !important;
-	flex-shrink: 0 !important;
-	color: var( --dak-muted ) !important;
-	stroke: var( --dak-muted ) !important;
 }
 
-.dak-site-header-cta {
-	padding: 0.7rem 1.4rem !important;
-	font-size: 0.85rem !important;
-	white-space: nowrap !important;
+.dak-site-topbar-login:hover,
+.dak-site-topbar .dak-site-topbar-account-trigger:hover,
+.dak-site-topbar .dak-site-topbar-account-trigger[aria-expanded='true'] {
+	background: var( --hdr-tint ) !important;
+	color: var( --hdr-primary ) !important;
+}
+
+.dak-site-topbar-account {
+	position: relative !important;
+}
+
+.dak-site-topbar .dak-site-topbar-account-trigger {
+	padding: 0 8px 0 3px !important;
 	border-radius: 999px !important;
 }
 
+.dak-site-topbar-avatar {
+	width: 26px !important;
+	height: 26px !important;
+	border-radius: 50% !important;
+	object-fit: cover !important;
+	border: 1px solid var( --hdr-border ) !important;
+}
+
+.dak-site-topbar-account-name {
+	max-width: 12ch !important;
+	overflow: hidden !important;
+	text-overflow: ellipsis !important;
+}
+
+.dak-site-topbar .dak-nav-chevron svg {
+	width: 14px !important;
+	height: 14px !important;
+}
+
+.dak-site-topbar-account-menu {
+	right: 0 !important;
+	min-width: 190px !important;
+}
+
+/* Theme toggle — also used by the dashboards' top bar (dashboard/partials/topbar-actions.php). */
 .dak-public-theme-toggle {
 	position: relative !important;
 	flex: 0 0 auto !important;
@@ -696,6 +310,7 @@ html {
 	justify-content: center !important;
 	width: 36px !important;
 	height: 36px !important;
+	padding: 0 !important;
 	border: 1px solid var( --dak-border ) !important;
 	border-radius: 50% !important;
 	background: var( --dak-bg-card ) !important;
@@ -709,11 +324,6 @@ html {
 	color: var( --dak-primary-dark ) !important;
 }
 
-/* Sun/moon icon swap, keyed off this button's own aria-pressed state (see
-   doctor-ak-public-theme-toggle.js) rather than a `data-theme` ancestor,
-   since the icon needs to reflect this specific toggle instance. This is
-   the plugin's only theme toggle — shown site-wide, including on the three
-   dashboards. */
 .dak-public-theme-toggle .dak-theme-icon {
 	width: 18px !important;
 	height: 18px !important;
@@ -722,25 +332,12 @@ html {
 	justify-content: center !important;
 }
 
+/* Fixed pixels and explicit fill/stroke: some themes reset every <svg> to
+   fill: currentColor; stroke: none, which would leave this line icon blank. */
 .dak-public-theme-toggle .dak-theme-icon svg {
-	/* Fixed pixels, not 100% — a theme that resets the wrapping <span>'s box
-	   model (display/line-height) can collapse a percentage-sized child to
-	   0, leaving an <svg> that's "present" but invisible for a completely
-	   different reason than the stroke issue below. */
 	display: inline-block !important;
 	width: 18px !important;
 	height: 18px !important;
-	/* Belt-and-suspenders: the icon paths use stroke="currentColor" and
-	   fill="none" (they're line-art, not filled glyphs) — but some
-	   page-builder/news themes (doctor-ak-featured-doctors.css and
-	   doctor-ak-booking-page.css note the same fix for the same theme
-	   behaviour) reset every <svg> to fill="currentColor"; stroke="none"
-	   expecting an icon-font convention instead. That leaves a
-	   stroke-only icon with nothing to paint: present in the DOM,
-	   "visible" by every computed display/opacity check, zero actual
-	   pixels. Restating both here at !important, directly on the element
-	   rather than relying on inheritance, wins that fight explicitly
-	   instead of hoping the cascade falls our way. */
 	fill: none !important;
 	stroke: var( --dak-text ) !important;
 	stroke-width: 1.5 !important;
@@ -752,10 +349,7 @@ html {
 	stroke: var( --dak-primary-dark ) !important;
 }
 
-.dak-public-theme-toggle .dak-theme-icon-moon {
-	display: none !important;
-}
-
+.dak-public-theme-toggle .dak-theme-icon-moon,
 .dak-public-theme-toggle[aria-pressed='true'] .dak-theme-icon-sun {
 	display: none !important;
 }
@@ -764,228 +358,1184 @@ html {
 	display: flex !important;
 }
 
-.dak-site-header-account-link {
+/* In the strip: a quieter 32px version in the header's own colours. */
+.dak-site-topbar .dak-public-theme-toggle {
+	width: 32px !important;
+	height: 32px !important;
+	border: 1px solid var( --hdr-border ) !important;
+	border-radius: 50% !important;
+	background: var( --hdr-surface ) !important;
+	color: var( --hdr-text ) !important;
+}
+
+.dak-site-topbar .dak-public-theme-toggle .dak-theme-icon svg {
+	width: 16px !important;
+	height: 16px !important;
+	stroke: currentColor !important;
+	color: inherit !important;
+}
+
+.dak-site-topbar .dak-public-theme-toggle:hover {
+	border-color: var( --hdr-primary ) !important;
+	color: var( --hdr-primary ) !important;
+}
+
+/* ---------------------------------------------------------------- Main bar */
+
+.dak-site-header {
+	position: sticky !important;
+	top: 0 !important;
+	z-index: 200 !important;
+	background: var( --hdr-surface ) !important;
+	border-bottom: 1px solid var( --hdr-border ) !important;
+	box-shadow: none !important;
+}
+
+/* Logged-in admins: stay below the fixed WordPress toolbar. */
+body.admin-bar .dak-site-header {
+	top: 32px !important;
+}
+
+@media screen and ( max-width: 782px ) {
+	body.admin-bar .dak-site-header {
+		top: 46px !important;
+	}
+}
+
+@media screen and ( max-width: 600px ) {
+	/* The toolbar scrolls away with the page at this width. */
+	body.admin-bar .dak-site-header {
+		top: 0 !important;
+	}
+}
+
+.dak-site-header-inner {
+	position: relative !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: 24px !important;
+	max-width: var( --hdr-max ) !important;
+	height: var( --hdr-row ) !important;
+	margin: 0 auto !important;
+	padding: 0 var( --hdr-gutter ) !important;
+}
+
+.dak-site-header-logo {
+	display: flex !important;
+	align-items: center !important;
+	flex: 0 0 auto !important;
+	height: 100% !important;
+	padding: 8px 0 !important;
+}
+
+.dak-site-header-logo img {
+	display: block !important;
+	width: auto !important;
+	height: 60px !important;
+	max-height: 60px !important;
+	max-width: none !important;
+}
+
+.dak-site-header-logo .custom-logo {
+	height: 60px !important;
+	width: auto !important;
+}
+
+.dak-site-header-logo-text {
+	font-size: 1.125rem !important;
+	font-weight: 700 !important;
+	color: var( --hdr-primary ) !important;
+}
+
+.dak-site-header-drawer {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+	display: flex !important;
+	justify-content: center !important;
+}
+
+.dak-site-header-drawer-head,
+.dak-site-header-drawer-foot,
+.dak-site-header-scrim {
+	display: none !important;
+}
+
+.dak-site-header-menu {
+	display: flex !important;
+	align-items: center !important;
+	gap: 2px !important;
+}
+
+/* Static so each panel positions against .dak-site-header-inner (aligned to
+   the page container), not under its own item. */
+.dak-nav-item {
+	position: static !important;
+}
+
+.dak-nav-link,
+.dak-site-header .dak-nav-trigger {
+	position: relative !important;
 	display: inline-flex !important;
 	align-items: center !important;
-	gap: 0.4rem !important;
-	padding: 0.55rem 1rem !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-color: var( --dak-primary ) !important;
-	border-radius: 999px !important;
-	font-size: 0.85rem !important;
+	gap: 4px !important;
+	min-height: 44px !important;
+	padding: 0 12px !important;
+	border-radius: 10px !important;
+	font-size: 0.9375rem !important;
 	font-weight: 600 !important;
-	color: var( --dak-text ) !important;
-	text-decoration: none !important;
+	color: var( --hdr-text ) !important;
 	white-space: nowrap !important;
+	transition: background-color 0.15s ease, color 0.15s ease !important;
 }
 
-.dak-site-header-account-link:hover {
-	border-color: var( --dak-primary ) !important;
-	color: var( --dak-primary-dark ) !important;
+.dak-nav-link:hover,
+.dak-site-header .dak-nav-trigger:hover {
+	background: var( --hdr-subtle ) !important;
+	color: var( --hdr-primary ) !important;
 }
 
-.dak-site-header-account-icon {
+/* Open: pale green fill + rotated chevron. */
+.dak-site-header .dak-nav-trigger[aria-expanded='true'] {
+	background: var( --hdr-tint ) !important;
+	color: var( --hdr-primary ) !important;
+}
+
+/* Current page / section: a green underline, independent of the open state. */
+.dak-nav-link.is-current,
+.dak-site-header .dak-nav-trigger.is-current {
+	color: var( --hdr-primary ) !important;
+}
+
+.dak-nav-link.is-current::after,
+.dak-site-header .dak-nav-trigger.is-current::after {
+	content: '' !important;
+	position: absolute !important;
+	left: 12px !important;
+	right: 12px !important;
+	bottom: -16px !important;
+	height: 3px !important;
+	border-radius: 3px 3px 0 0 !important;
+	background: var( --hdr-primary ) !important;
+}
+
+.dak-site-header .dak-nav-trigger.is-current::after {
+	right: 30px !important;
+}
+
+.dak-nav-chevron {
 	display: inline-flex !important;
+	transition: transform 0.2s ease !important;
+}
+
+.dak-nav-chevron svg {
 	width: 16px !important;
 	height: 16px !important;
 }
 
-.dak-site-header-account-icon svg {
-	width: 100% !important;
-	height: 100% !important;
+[aria-expanded='true'] > .dak-nav-chevron {
+	transform: rotate( 180deg ) !important;
 }
 
-/* Avatar-only — the account name used to sit next to this as text; by
-   request, the photo alone is the whole button now (still labelled for
-   screen readers via the button's own aria-label, set in
-   templates/site-header.php). */
-.dak-site-header-account {
-	display: inline-flex !important;
+/* ---------------------------------------------------------------- Panels */
+
+.dak-nav-panel {
+	position: absolute !important;
+	top: calc( 100% + 1px ) !important;
+	left: var( --hdr-gutter ) !important;
+	right: var( --hdr-gutter ) !important;
+	z-index: 5 !important;
+	display: flex !important;
+	justify-content: center !important;
+	padding-top: 8px !important;
+	pointer-events: none !important;
+}
+
+.dak-nav-panel-card {
+	pointer-events: auto !important;
+	display: flex !important;
+	flex-direction: column !important;
+	width: 100% !important;
+	max-width: 1040px !important;
+	max-height: var( --dak-nav-panel-max, calc( 100vh - 140px ) ) !important;
+	background: var( --hdr-surface ) !important;
+	border: 1px solid var( --hdr-border ) !important;
+	border-radius: var( --hdr-radius ) !important;
+	box-shadow: var( --hdr-shadow ) !important;
+	overflow: hidden !important;
+	animation: dak-nav-in 0.14s ease-out !important;
+}
+
+@keyframes dak-nav-in {
+	from {
+		opacity: 0;
+		transform: translateY( -4px );
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+.dak-nav-panel-search {
+	display: flex !important;
+	align-items: center !important;
+	gap: 12px !important;
 	flex: 0 0 auto !important;
-	width: 40px !important;
-	height: 40px !important;
-	border: 2px solid transparent !important;
-	border-radius: 50% !important;
-	background: none !important;
-	padding: 0 !important;
-	cursor: pointer !important;
+	margin: 0 !important;
+	padding: 16px 20px !important;
+	border-bottom: 1px solid var( --hdr-border ) !important;
+	background: var( --hdr-surface ) !important;
 }
 
-.dak-site-header-account:hover {
-	border-color: var( --dak-primary ) !important;
+.dak-nav-search-field {
+	position: relative !important;
+	flex: 1 1 auto !important;
+	display: flex !important;
+	align-items: center !important;
+	min-width: 0 !important;
 }
 
-.dak-site-header-avatar {
+.dak-nav-search-icon {
+	position: absolute !important;
+	left: 14px !important;
+	color: var( --hdr-muted ) !important;
+	pointer-events: none !important;
+}
+
+.dak-site-header .dak-nav-search-input {
 	width: 100% !important;
-	height: 100% !important;
-	border-radius: 50% !important;
-	object-fit: cover !important;
+	height: 44px !important;
+	margin: 0 !important;
+	padding: 0 44px 0 42px !important;
+	border: 1px solid var( --hdr-border ) !important;
+	border-radius: 10px !important;
+	background: var( --hdr-subtle ) !important;
+	color: var( --hdr-text ) !important;
+	font: inherit !important;
+	font-size: 0.9375rem !important;
+	box-shadow: none !important;
+	outline: none !important;
+	-webkit-appearance: none !important;
+	appearance: none !important;
 }
 
-.dak-site-header-account-menu {
+.dak-site-header .dak-nav-search-input::placeholder {
+	color: var( --hdr-muted ) !important;
+	opacity: 1 !important;
+}
+
+.dak-site-header .dak-nav-search-input::-webkit-search-cancel-button {
+	display: none !important;
+	-webkit-appearance: none !important;
+}
+
+.dak-site-header .dak-nav-search-input:focus {
+	border-color: var( --hdr-primary ) !important;
+	background: var( --hdr-surface ) !important;
+	box-shadow: 0 0 0 3px var( --hdr-tint-strong ) !important;
+}
+
+.dak-site-header .dak-nav-search-clear {
+	position: absolute !important;
+	right: 4px !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 36px !important;
+	height: 36px !important;
+	border-radius: 8px !important;
+	color: var( --hdr-muted ) !important;
+}
+
+.dak-site-header .dak-nav-search-clear:hover {
+	background: var( --hdr-tint ) !important;
+	color: var( --hdr-primary ) !important;
+}
+
+.dak-site-header .dak-nav-search-submit {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	min-height: 44px !important;
+	padding: 0 16px !important;
+	border: 1px solid var( --hdr-primary ) !important;
+	border-radius: 10px !important;
+	color: var( --hdr-primary ) !important;
+	font-size: 0.875rem !important;
+	font-weight: 600 !important;
+	white-space: nowrap !important;
+}
+
+.dak-site-header .dak-nav-search-submit:hover {
+	background: var( --hdr-tint ) !important;
+}
+
+.dak-nav-panel-body {
+	flex: 1 1 auto !important;
+	min-height: 0 !important;
+	overflow-y: auto !important;
+	overscroll-behavior: contain !important;
+	padding: 18px 20px 20px !important;
+}
+
+.dak-nav-heading {
+	margin: 0 0 10px !important;
+	font-size: 0.75rem !important;
+	font-weight: 700 !important;
+	color: var( --hdr-muted ) !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.06em !important;
+}
+
+.dak-nav-note {
+	color: var( --hdr-muted ) !important;
+	font-size: 0.9375rem !important;
+}
+
+.dak-nav-panel-foot {
+	flex: 0 0 auto !important;
+	display: flex !important;
+	justify-content: flex-end !important;
+	padding: 12px 20px !important;
+	border-top: 1px solid var( --hdr-border ) !important;
+	background: var( --hdr-subtle ) !important;
+}
+
+.dak-nav-view-all {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	min-height: 40px !important;
+	padding: 0 14px !important;
+	border-radius: 10px !important;
+	font-size: 0.9375rem !important;
+	font-weight: 600 !important;
+	color: var( --hdr-primary ) !important;
+}
+
+.dak-nav-view-all:hover {
+	background: var( --hdr-tint ) !important;
+}
+
+/* Tiles (specialties) and result rows share one look: icon + title + meta. */
+.dak-nav-tiles {
+	display: grid !important;
+	grid-template-columns: repeat( 3, minmax( 0, 1fr ) ) !important;
+	gap: 6px !important;
+}
+
+.dak-nav-tile,
+.dak-nav-result {
+	display: flex !important;
+	align-items: center !important;
+	gap: 12px !important;
+	min-height: 52px !important;
+	padding: 8px 10px !important;
+	border-radius: 10px !important;
+	color: var( --hdr-text ) !important;
+	transition: background-color 0.12s ease !important;
+}
+
+.dak-nav-tile:hover,
+.dak-nav-tile:focus-visible,
+.dak-nav-result:hover,
+.dak-nav-result:focus-visible {
+	background: var( --hdr-tint ) !important;
+}
+
+.dak-nav-tile-icon,
+.dak-nav-result-icon,
+.dak-nav-category-icon,
+.dak-book-option-icon {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	flex: 0 0 auto !important;
+	width: 36px !important;
+	height: 36px !important;
+	border-radius: 10px !important;
+	background: var( --hdr-tint ) !important;
+	color: var( --hdr-primary ) !important;
+}
+
+.dak-nav-tile-text,
+.dak-nav-result-text,
+.dak-book-option-text {
+	display: flex !important;
+	flex-direction: column !important;
+	min-width: 0 !important;
+}
+
+.dak-nav-tile-title,
+.dak-nav-result-title,
+.dak-book-option-title {
+	font-size: 0.9375rem !important;
+	font-weight: 600 !important;
+	color: var( --hdr-text ) !important;
+	overflow-wrap: anywhere !important;
+}
+
+.dak-nav-tile-meta,
+.dak-nav-result-meta,
+.dak-book-option-meta {
+	font-size: 0.8125rem !important;
+	color: var( --hdr-muted ) !important;
+	overflow-wrap: anywhere !important;
+}
+
+.dak-nav-tile:hover .dak-nav-tile-title,
+.dak-nav-result:hover .dak-nav-result-title {
+	color: var( --hdr-primary ) !important;
+}
+
+/* Search results: grouped, two columns on wide panels. */
+.dak-nav-results {
+	display: grid !important;
+	grid-template-columns: repeat( auto-fit, minmax( 280px, 1fr ) ) !important;
+	gap: 8px 24px !important;
+}
+
+.dak-nav-result-list {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 2px !important;
+}
+
+.dak-nav-more {
+	margin-top: 8px !important;
+	padding: 0 10px !important;
+	font-size: 0.875rem !important;
+	color: var( --hdr-muted ) !important;
+}
+
+.dak-nav-more a {
+	color: var( --hdr-primary ) !important;
+	font-weight: 600 !important;
+	text-decoration: underline !important;
+	text-underline-offset: 2px !important;
+}
+
+.dak-nav-empty {
+	padding: 28px 12px !important;
+	text-align: center !important;
+}
+
+.dak-nav-empty-title {
+	font-size: 1rem !important;
+	font-weight: 600 !important;
+	color: var( --hdr-text ) !important;
+	overflow-wrap: anywhere !important;
+}
+
+.dak-nav-empty-text {
+	margin-top: 4px !important;
+	font-size: 0.875rem !important;
+	color: var( --hdr-muted ) !important;
+}
+
+/* Services: category list on the left, the chosen category's services on the
+   right. Buttons and panes alternate in the markup (button, pane, button,
+   pane…) so the same order works as an accordion in the mobile drawer. */
+.dak-nav-categories {
+	display: grid !important;
+	grid-template-columns: minmax( 220px, 260px ) minmax( 0, 1fr ) !important;
+	grid-template-rows: repeat( var( --dak-nav-category-rows, 6 ), auto ) 1fr !important;
+	column-gap: 24px !important;
+	row-gap: 2px !important;
+	align-items: start !important;
+}
+
+.dak-site-header .dak-nav-category {
+	grid-column: 1 !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: 10px !important;
+	width: 100% !important;
+	min-height: 48px !important;
+	padding: 6px 10px !important;
+	border-radius: 10px !important;
+	text-align: left !important;
+	font-size: 0.9375rem !important;
+	font-weight: 600 !important;
+	color: var( --hdr-text ) !important;
+}
+
+.dak-site-header .dak-nav-category:hover {
+	background: var( --hdr-subtle ) !important;
+}
+
+.dak-site-header .dak-nav-category[aria-expanded='true'] {
+	background: var( --hdr-tint ) !important;
+	color: var( --hdr-primary ) !important;
+	box-shadow: inset 3px 0 0 var( --hdr-primary ) !important;
+}
+
+.dak-nav-category .dak-nav-category-icon {
+	width: 32px !important;
+	height: 32px !important;
+	border-radius: 8px !important;
+}
+
+.dak-nav-category-label {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+	overflow-wrap: anywhere !important;
+}
+
+.dak-nav-category-count {
+	flex: 0 0 auto !important;
+	min-width: 26px !important;
+	padding: 1px 8px !important;
+	border-radius: 999px !important;
+	background: var( --hdr-subtle ) !important;
+	color: var( --hdr-muted ) !important;
+	font-size: 0.75rem !important;
+	font-weight: 600 !important;
+	text-align: center !important;
+}
+
+.dak-nav-category[aria-expanded='true'] .dak-nav-category-count {
+	background: var( --hdr-surface ) !important;
+	color: var( --hdr-primary ) !important;
+}
+
+/* The accordion chevron is only for the mobile drawer. */
+.dak-nav-category .dak-nav-chevron {
+	display: none !important;
+}
+
+.dak-nav-category-pane {
+	grid-column: 2 !important;
+	grid-row: 1 / -1 !important;
+	min-width: 0 !important;
+	padding: 4px 0 0 24px !important;
+	border-left: 1px solid var( --hdr-border ) !important;
+	align-self: stretch !important;
+}
+
+.dak-nav-link-list {
+	display: grid !important;
+	grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+	gap: 2px 16px !important;
+}
+
+.dak-nav-plain-link {
+	display: flex !important;
+	align-items: center !important;
+	min-height: 40px !important;
+	padding: 8px 10px !important;
+	border-radius: 8px !important;
+	font-size: 0.9375rem !important;
+	line-height: 1.35 !important;
+	color: var( --hdr-text ) !important;
+	overflow-wrap: anywhere !important;
+}
+
+.dak-nav-plain-link:hover,
+.dak-nav-plain-link:focus-visible {
+	background: var( --hdr-tint ) !important;
+	color: var( --hdr-primary ) !important;
+}
+
+/* While searching: every category with a match, stacked, no left list. */
+.dak-nav-categories.is-searching {
+	display: block !important;
+}
+
+.dak-nav-categories.is-searching .dak-nav-category {
+	display: none !important;
+}
+
+.dak-nav-categories.is-searching .dak-nav-category-pane {
+	padding: 0 !important;
+	border-left: 0 !important;
+}
+
+.dak-nav-categories.is-searching .dak-nav-category-pane:not( [hidden] ) ~ .dak-nav-category-pane:not( [hidden] ) {
+	margin-top: 16px !important;
+}
+
+/* Clinics: city chips + a list of name/area rows. */
+.dak-nav-chips {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 8px !important;
+	flex: 0 0 auto !important;
+	padding: 12px 20px 0 !important;
+}
+
+.dak-site-header .dak-nav-chip {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	min-height: 36px !important;
+	padding: 0 12px !important;
+	border: 1px solid var( --hdr-border ) !important;
+	border-radius: 999px !important;
+	background: var( --hdr-surface ) !important;
+	color: var( --hdr-text ) !important;
+	font-size: 0.875rem !important;
+	font-weight: 600 !important;
+}
+
+.dak-site-header .dak-nav-chip:hover {
+	border-color: var( --hdr-primary ) !important;
+	color: var( --hdr-primary ) !important;
+}
+
+.dak-site-header .dak-nav-chip[aria-pressed='true'] {
+	border-color: var( --hdr-primary ) !important;
+	background: var( --hdr-tint ) !important;
+	color: var( --hdr-primary ) !important;
+}
+
+.dak-nav-chip-count {
+	font-size: 0.75rem !important;
+	font-weight: 600 !important;
+	color: var( --hdr-muted ) !important;
+}
+
+.dak-nav-chip[aria-pressed='true'] .dak-nav-chip-count {
+	color: inherit !important;
+}
+
+.dak-nav-clinics {
+	display: grid !important;
+	grid-template-columns: repeat( 3, minmax( 0, 1fr ) ) !important;
+	gap: 4px 12px !important;
+}
+
+/* ---------------------------------------------------------------- Book Now */
+
+.dak-site-header-actions {
+	display: flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	flex: 0 0 auto !important;
+	margin-left: auto !important;
+}
+
+.dak-site-header-book {
+	position: relative !important;
+}
+
+.dak-site-header .dak-site-header-cta {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	min-height: 44px !important;
+	padding: 0 14px 0 18px !important;
+	border-radius: 10px !important;
+	background: var( --hdr-primary ) !important;
+	color: var( --hdr-on-primary ) !important;
+	font-size: 0.9375rem !important;
+	font-weight: 600 !important;
+	white-space: nowrap !important;
+	transition: background-color 0.15s ease !important;
+}
+
+.dak-site-header .dak-site-header-cta:hover,
+.dak-site-header .dak-site-header-cta[aria-expanded='true'] {
+	background: var( --hdr-primary-hover ) !important;
+	color: var( --hdr-on-primary ) !important;
+}
+
+html[data-theme='dark'] .dak-site-header .dak-site-header-cta:hover,
+html[data-theme='dark'] .dak-site-header .dak-site-header-cta[aria-expanded='true'] {
+	background: #5cc193 !important;
+}
+
+/* Small dropdowns (Book Now, account): same card style as the panels. */
+.dak-nav-dropdown {
 	position: absolute !important;
 	top: calc( 100% + 8px ) !important;
 	right: 0 !important;
-	min-width: 200px !important;
-	background: var( --dak-bg-card ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-md ) !important;
-	box-shadow: var( --dak-shadow ) !important;
-	padding: 0.4rem !important;
-	display: none !important;
-	flex-direction: column !important;
-	gap: 0.15rem !important;
+	z-index: 6 !important;
+	background: var( --hdr-surface ) !important;
+	border: 1px solid var( --hdr-border ) !important;
+	border-radius: var( --hdr-radius ) !important;
+	box-shadow: var( --hdr-shadow ) !important;
+	padding: 6px !important;
+	animation: dak-nav-in 0.14s ease-out !important;
 }
 
-.dak-site-header-account-menu.is-open {
+.dak-site-topbar-account-menu a {
 	display: flex !important;
+	align-items: center !important;
+	min-height: 40px !important;
+	padding: 0 12px !important;
+	border-radius: 8px !important;
+	font-size: 0.875rem !important;
+	font-weight: 500 !important;
+	color: var( --hdr-text ) !important;
 }
 
-.dak-site-header-account-menu a {
-	padding: 0.55rem 0.7rem !important;
-	border-radius: var( --dak-radius-sm ) !important;
-	font-size: 0.85rem !important;
+.dak-site-topbar-account-menu a:hover {
+	background: var( --hdr-tint ) !important;
+	color: var( --hdr-primary ) !important;
+}
+
+.dak-site-header-book-menu {
+	width: 340px !important;
+	max-width: calc( 100vw - 32px ) !important;
+}
+
+.dak-book-options {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 2px !important;
+}
+
+.dak-site-header .dak-book-option {
+	display: flex !important;
+	align-items: center !important;
+	gap: 12px !important;
+	width: 100% !important;
+	min-height: 56px !important;
+	padding: 8px 10px !important;
+	border-radius: 10px !important;
+	text-align: left !important;
+	color: var( --hdr-text ) !important;
+}
+
+.dak-site-header .dak-book-option:hover {
+	background: var( --hdr-tint ) !important;
+}
+
+.dak-site-header .dak-book-option:hover .dak-book-option-title {
+	color: var( --hdr-primary ) !important;
+}
+
+.dak-book-option-text {
+	flex: 1 1 auto !important;
+}
+
+.dak-book-option.is-unavailable .dak-book-option-icon {
+	background: var( --hdr-subtle ) !important;
+	color: var( --hdr-muted ) !important;
+}
+
+.dak-book-option-title:has( .dak-book-option-badge ) {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 4px 8px !important;
+}
+
+.dak-book-option-badge {
+	flex: 0 0 auto !important;
+	padding: 2px 8px !important;
+	border-radius: 999px !important;
+	background: var( --hdr-warn-tint ) !important;
+	color: var( --hdr-warn-text ) !important;
+	font-size: 0.75rem !important;
 	font-weight: 600 !important;
-	color: var( --dak-text ) !important;
-	text-decoration: none !important;
+	white-space: nowrap !important;
 }
 
-.dak-site-header-account-menu a:hover {
-	background: var( --dak-bg-subtle ) !important;
-	color: var( --dak-primary-dark ) !important;
+.dak-site-header .dak-site-header-toggle {
+	display: none !important;
 }
 
-@media ( max-width: 1020px ) {
-	.dak-site-header-mega {
-		width: 560px !important;
+/* ---------------------------------------------------------------- Tablet */
+
+@media ( max-width: 1180px ) and ( min-width: 1024px ) {
+	.dak-site-header-inner {
+		gap: 12px !important;
 	}
 
-	/* Three columns of icon cards get tight once the panel itself narrows —
-	   back to two here (see the 420px breakpoint below for the next step,
-	   down to one). */
-	.dak-site-header-mega-cards {
-		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+	.dak-nav-link,
+	.dak-site-header .dak-nav-trigger {
+		padding: 0 9px !important;
 	}
 
-	.dak-site-header-mega-columns {
-		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+	.dak-nav-link.is-current::after,
+	.dak-site-header .dak-nav-trigger.is-current::after {
+		left: 9px !important;
+		right: 9px !important;
+	}
+
+	.dak-site-header .dak-nav-trigger.is-current::after {
+		right: 27px !important;
 	}
 }
 
-@media ( max-width: 1024px ) {
-	.dak-site-header-utility-contact {
-		gap: 0.75rem !important;
+@media ( max-width: 1100px ) {
+	.dak-site-topbar-location {
+		display: none !important;
+	}
+}
+
+/* ---------------------------------------------------------------- Drawer (≤1023px) */
+
+@media ( max-width: 1023px ) {
+	.dak-site-topbar,
+	.dak-site-header {
+		--hdr-row: 64px;
+		--hdr-gutter: 16px;
 	}
 
-	.dak-site-header-toggle {
-		display: flex !important;
-	}
-
-	.dak-site-header-nav {
-		flex-basis: 100% !important;
-		order: 3 !important;
+	.dak-site-topbar-email {
 		display: none !important;
 	}
 
-	.dak-site-header-nav.is-open {
+	.dak-site-header-inner {
+		gap: 12px !important;
+	}
+
+	.dak-site-header-logo img,
+	.dak-site-header-logo .custom-logo {
+		height: 50px !important;
+		max-height: 50px !important;
+	}
+
+	.dak-site-header .dak-site-header-toggle {
+		display: inline-flex !important;
+		align-items: center !important;
+		justify-content: center !important;
+		width: 44px !important;
+		height: 44px !important;
+		border: 1px solid var( --hdr-border ) !important;
+		border-radius: 10px !important;
+		color: var( --hdr-text ) !important;
+	}
+
+	.dak-site-header .dak-site-header-toggle svg {
+		width: 22px !important;
+		height: 22px !important;
+	}
+
+	.dak-site-header .dak-site-header-toggle:hover,
+	.dak-site-header .dak-site-header-toggle[aria-expanded='true'] {
+		background: var( --hdr-tint ) !important;
+		color: var( --hdr-primary ) !important;
+	}
+
+	/* Closed: display none, so nothing inside can take focus. */
+	.dak-site-header-drawer {
+		display: none !important;
+	}
+
+	.dak-site-header-drawer.is-open {
+		position: fixed !important;
+		top: 0 !important;
+		right: 0 !important;
+		bottom: 0 !important;
+		z-index: 30 !important;
+		display: flex !important;
+		flex-direction: column !important;
+		justify-content: flex-start !important;
+		width: min( 420px, 100vw ) !important;
+		background: var( --hdr-surface ) !important;
+		border-left: 1px solid var( --hdr-border ) !important;
+		box-shadow: var( --hdr-shadow ) !important;
+		animation: dak-drawer-in 0.2s ease-out !important;
+	}
+
+	body.admin-bar .dak-site-header-drawer.is-open {
+		top: 46px !important;
+	}
+
+	@keyframes dak-drawer-in {
+		from {
+			transform: translateX( 24px );
+			opacity: 0;
+		}
+		to {
+			transform: none;
+			opacity: 1;
+		}
+	}
+
+	.dak-site-header-scrim:not( [hidden] ) {
 		display: block !important;
+		position: fixed !important;
+		inset: 0 !important;
+		z-index: 29 !important;
+		background: rgba( 16, 24, 40, 0.45 ) !important;
+	}
+
+	html.dak-nav-drawer-open,
+	html.dak-nav-drawer-open body {
+		overflow: hidden !important;
+	}
+
+	/* The strip would otherwise draw over the open drawer. */
+	html.dak-nav-drawer-open .dak-site-topbar {
+		z-index: 1 !important;
+	}
+
+	.dak-site-header-drawer-head {
+		display: flex !important;
+		align-items: center !important;
+		justify-content: space-between !important;
+		flex: 0 0 auto !important;
+		height: 64px !important;
+		padding: 0 12px 0 20px !important;
+		border-bottom: 1px solid var( --hdr-border ) !important;
+	}
+
+	.dak-site-header-drawer-title {
+		font-size: 1rem !important;
+		font-weight: 700 !important;
+	}
+
+	.dak-site-header .dak-site-header-drawer-close {
+		display: inline-flex !important;
+		align-items: center !important;
+		justify-content: center !important;
+		width: 44px !important;
+		height: 44px !important;
+		border-radius: 10px !important;
+	}
+
+	.dak-site-header .dak-site-header-drawer-close:hover {
+		background: var( --hdr-tint ) !important;
+		color: var( --hdr-primary ) !important;
+	}
+
+	.dak-site-header-drawer.is-open .dak-site-header-nav {
+		flex: 1 1 auto !important;
+		min-height: 0 !important;
+		overflow-y: auto !important;
+		overscroll-behavior: contain !important;
+		padding: 8px 12px 16px !important;
+	}
+
+	.dak-site-header-drawer-foot {
+		display: block !important;
+		flex: 0 0 auto !important;
+		padding: 12px 16px !important;
+		border-top: 1px solid var( --hdr-border ) !important;
+	}
+
+	.dak-site-header-drawer-call {
+		display: flex !important;
+		align-items: center !important;
+		justify-content: center !important;
+		gap: 8px !important;
+		min-height: 48px !important;
+		border: 1px solid var( --hdr-border ) !important;
+		border-radius: 10px !important;
+		font-weight: 600 !important;
+		color: var( --hdr-primary ) !important;
 	}
 
 	.dak-site-header-menu {
 		flex-direction: column !important;
 		align-items: stretch !important;
-		gap: 0.15rem !important;
-		padding: 0.5rem 0 !important;
+		gap: 2px !important;
 	}
 
-	.dak-site-header-menu .sub-menu {
+	.dak-nav-link,
+	.dak-site-header .dak-nav-trigger {
+		display: flex !important;
+		width: 100% !important;
+		min-height: 48px !important;
+		padding: 0 12px !important;
+		font-size: 1rem !important;
+		justify-content: space-between !important;
+	}
+
+	/* Current item in the drawer: a left bar instead of the underline. */
+	.dak-nav-link.is-current::after,
+	.dak-site-header .dak-nav-trigger.is-current::after {
+		left: 0 !important;
+		right: auto !important;
+		top: 12px !important;
+		bottom: 12px !important;
+		width: 3px !important;
+		height: auto !important;
+		border-radius: 0 3px 3px 0 !important;
+	}
+
+	/* Panels expand inline under their trigger. */
+	.dak-nav-panel {
 		position: static !important;
-		opacity: 1 !important;
-		visibility: visible !important;
-		transform: none !important;
-		box-shadow: none !important;
-		border: 0 !important;
-		display: none !important;
-	}
-
-	.menu-item-has-children.is-open > .sub-menu {
 		display: block !important;
+		padding: 4px 0 8px !important;
+		pointer-events: auto !important;
 	}
 
-	/* Stacked in the mobile nav, the mega-menu is just a plain block of the
-	   same three sections in a single column rather than a floating panel. */
-	.dak-site-header-mega {
-		width: auto !important;
-		max-width: none !important;
-	}
-
-	.dak-site-header-mega-panel {
-		padding: var( --dak-space-3 ) 0 var( --dak-space-3 ) 1rem !important;
-		border: 0 !important;
-		background: none !important;
-		box-shadow: none !important;
-	}
-
-	.dak-site-header-mega-footer {
-		justify-content: stretch !important;
-	}
-
-	.dak-site-header-mega-columns {
-		grid-template-columns: 1fr !important;
+	.dak-nav-panel-card {
 		max-height: none !important;
-		gap: 0.75rem !important;
+		max-width: none !important;
+		border-radius: 12px !important;
+		box-shadow: none !important;
+		background: var( --hdr-subtle ) !important;
+		animation: none !important;
 	}
 
-	.dak-site-header-mega-footer .dak-button {
-		flex: 1 1 auto !important;
-		text-align: center !important;
+	.dak-nav-panel-search {
+		flex-wrap: wrap !important;
+		padding: 12px !important;
+		background: transparent !important;
+	}
+
+	.dak-site-header .dak-nav-search-input {
+		background: var( --hdr-surface ) !important;
+	}
+
+	.dak-site-header .dak-nav-search-submit {
+		width: 100% !important;
 		justify-content: center !important;
 	}
 
-	.dak-site-header-inner {
-		flex-wrap: wrap !important;
-		/* A full 999px pill stops looking like one once the mobile nav wraps
-		   underneath it and the bar grows tall — a normal rounded rectangle
-		   suits a multi-row bar better. */
-		border-radius: var( --dak-radius-lg ) !important;
+	.dak-nav-chips {
+		padding: 10px 12px 0 !important;
+	}
+
+	.dak-nav-panel-body {
+		overflow: visible !important;
+		padding: 12px !important;
+	}
+
+	.dak-nav-panel-foot {
+		justify-content: stretch !important;
+		padding: 8px 12px !important;
+		background: transparent !important;
+	}
+
+	.dak-nav-view-all {
+		width: 100% !important;
+		justify-content: center !important;
+		min-height: 44px !important;
+		border: 1px solid var( --hdr-border ) !important;
+		background: var( --hdr-surface ) !important;
+	}
+
+	.dak-nav-tiles,
+	.dak-nav-clinics,
+	.dak-nav-link-list {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+	}
+
+	.dak-nav-results {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+	}
+
+	.dak-nav-tile,
+	.dak-nav-result,
+	.dak-nav-plain-link {
+		min-height: 44px !important;
+	}
+
+	/* Services: an accordion of categories. */
+	.dak-nav-categories {
+		display: flex !important;
+		flex-direction: column !important;
+		gap: 2px !important;
+	}
+
+	.dak-nav-category .dak-nav-chevron {
+		display: inline-flex !important;
+		margin-left: 4px !important;
+	}
+
+	.dak-site-header .dak-nav-category[aria-expanded='true'] {
+		box-shadow: none !important;
+	}
+
+	.dak-nav-category-pane {
+		padding: 4px 0 8px 12px !important;
+		border-left: 0 !important;
+	}
+
+	.dak-nav-category-pane .dak-nav-heading {
+		display: none !important;
+	}
+
+	.dak-nav-categories.is-searching .dak-nav-category-pane .dak-nav-heading {
+		display: block !important;
+	}
+
+	/* Book Now: compact, still in the bar. Its menu lines up with the bar's
+	   right edge (not the button's, which sits left of the menu button) so it
+	   always fits on a phone. */
+	.dak-site-header .dak-site-header-cta {
+		padding: 0 10px 0 14px !important;
+	}
+
+	.dak-site-header-book {
+		position: static !important;
+	}
+
+	.dak-site-header-book-menu {
+		top: calc( 100% + 4px ) !important;
+		right: var( --hdr-gutter ) !important;
 	}
 }
 
-/* Below this width the two-line Call Us/Email Us blocks don't have room next
-   to the logo — hide them, leaving just the logo on this row (the numbers
-   are still one tap away from the nav's own Book Now button). */
-@media ( max-width: 640px ) {
-	.dak-site-header-utility-contact {
+@media ( max-width: 480px ) {
+	.dak-site-topbar-contact {
+		gap: 12px !important;
+	}
+
+	.dak-site-topbar-login {
+		padding: 0 6px !important;
+	}
+
+	.dak-site-header-inner {
+		gap: 8px !important;
+	}
+
+	.dak-site-header-logo img,
+	.dak-site-header-logo .custom-logo {
+		height: 46px !important;
+		max-height: 46px !important;
+	}
+
+	.dak-site-header .dak-site-header-cta {
+		font-size: 0.875rem !important;
+	}
+
+	.dak-site-topbar-account-name {
 		display: none !important;
 	}
 }
 
-@media ( max-width: 420px ) {
-	.dak-site-header-cta {
-		padding: 0.5rem 0.75rem !important;
-		font-size: 0.78rem !important;
+@media ( max-width: 360px ) {
+	.dak-site-topbar-login span {
+		display: none !important;
 	}
 
-	/* Two columns of icon cards get too tight once the mobile nav's own
-	   left indent (see .dak-site-header-mega-panel above) eats into the
-	   width too — back to a single column here. */
-	.dak-site-header-mega-cards {
-		grid-template-columns: 1fr !important;
+	.dak-site-topbar-login {
+		width: 32px !important;
+		justify-content: center !important;
+		padding: 0 !important;
 	}
 }
 
-/* "Coming soon" toast — shown when a not-yet-built booking option (Book Lab /
-   Book Pharmacy, see [data-dak-coming-soon] in templates/site-header.php and
-   templates/directory/home-page.php) is tapped. One shared element, reused
-   and repositioned by doctor-ak-site-header.js. */
+/* ---------------------------------------------------------------- Motion, print */
+
+@media ( prefers-reduced-motion: reduce ) {
+	.dak-site-header *,
+	.dak-site-topbar * {
+		animation: none !important;
+		transition: none !important;
+	}
+}
+
+@media print {
+	.dak-site-topbar,
+	.dak-site-header {
+		display: none !important;
+	}
+}
+
+/* ---------------------------------------------------------------- Toast */
+
+/* "Coming soon" toast for the not-yet-built Lab / Pharmacy options (header,
+   footer and home page — [data-dak-coming-soon]). One shared element,
+   created by doctor-ak-site-header.js. */
 .dak-coming-soon-toast {
 	position: fixed !important;
 	left: 50% !important;
 	bottom: 24px !important;
 	transform: translate( -50%, 12px ) !important;
 	max-width: min( 90vw, 420px ) !important;
-	background: var( --dak-text ) !important;
-	color: var( --dak-bg-card ) !important;
+	background: var( --dak-text, #182b3a ) !important;
+	color: var( --dak-bg-card, #ffffff ) !important;
 	padding: 0.75rem 1.1rem !important;
 	border-radius: var( --dak-radius-md ) !important;
 	box-shadow: var( --dak-shadow ) !important;
@@ -1002,168 +1552,4 @@ html {
 .dak-coming-soon-toast.is-visible {
 	opacity: 1 !important;
 	transform: translate( -50%, 0 ) !important;
-}
-
-/* ------------------------------------------------------------------------
-   Header layout v2 — a slim contact strip on top (phone/email on the left;
-   location, dark-mode toggle and the account on the right), then a full-width
-   white bar: logo, centred menu, Book Now. Declared last so it wins over the
-   earlier, pill-style rules above. */
-
-.dak-site-header {
-	background: var( --dak-bg-card ) !important;
-	box-shadow: 0 1px 0 var( --dak-border ), 0 6px 20px rgba( 20, 30, 40, 0.05 ) !important;
-}
-
-.dak-site-header-utility {
-	background: var( --dak-bg-subtle ) !important;
-}
-
-.dak-site-header-utility-inner {
-	padding: 0.4rem 1.5rem !important;
-	flex-wrap: nowrap !important;
-}
-
-.dak-site-header-utility-contact,
-.dak-site-header-utility-actions {
-	display: flex !important;
-	align-items: center !important;
-	gap: 0 !important;
-	flex-wrap: nowrap !important;
-	min-width: 0 !important;
-}
-
-.dak-site-header-utility-actions {
-	gap: 1rem !important;
-	margin-left: auto !important;
-}
-
-/* Phone / email / location: small icon + plain text, divided by thin rules. */
-.dak-site-header-contact-item {
-	display: inline-flex !important;
-	align-items: center !important;
-	gap: 0.5rem !important;
-	padding: 0 1rem !important;
-	text-decoration: none !important;
-	color: var( --dak-muted ) !important;
-}
-
-.dak-site-header-utility-contact .dak-site-header-contact-item:first-child {
-	padding-left: 0 !important;
-}
-
-.dak-site-header-utility-contact .dak-site-header-contact-item + .dak-site-header-contact-item {
-	border-left: 1px solid var( --dak-border ) !important;
-}
-
-.dak-site-header-contact-icon {
-	display: inline-flex !important;
-	width: auto !important;
-	height: auto !important;
-	border-radius: 0 !important;
-	background: none !important;
-	color: var( --dak-primary-dark ) !important;
-}
-
-.dak-site-header-contact-icon svg {
-	width: 16px !important;
-	height: 16px !important;
-}
-
-.dak-site-header-contact-value {
-	font-size: 0.82rem !important;
-	font-weight: 500 !important;
-	color: var( --dak-muted ) !important;
-}
-
-.dak-site-header-contact-item:hover .dak-site-header-contact-value {
-	color: var( --dak-primary-dark ) !important;
-}
-
-/* Account: avatar / "Login / Register" sits in a wrapper so its dropdown can
-   anchor to it. */
-.dak-site-header-account-wrap {
-	position: relative !important;
-	display: flex !important;
-	align-items: center !important;
-}
-
-/* The full-width white bar. */
-.dak-site-header-inner {
-	padding: 0.85rem 1.5rem !important;
-	gap: var( --dak-space-6 ) !important;
-}
-
-.dak-site-header-logo img {
-	/* The logo is square (icon over the doctoraklohana.com wordmark), so it
-	   needs a little more height than the old wide logo to stay legible. */
-	max-height: 64px !important;
-}
-
-@media ( max-width: 782px ) {
-	.dak-site-header-logo img {
-		max-height: 52px !important;
-	}
-}
-
-/* Centre the menu on desktop only — the nav's own display is left alone so the
-   mobile rules (hidden until the hamburger opens it) keep working. */
-@media ( min-width: 1025px ) {
-	.dak-site-header-menu {
-		justify-content: center !important;
-	}
-}
-
-.dak-site-header-auth {
-	display: flex !important;
-	align-items: center !important;
-	gap: 0.75rem !important;
-	flex: 0 0 auto !important;
-}
-
-@media ( max-width: 1024px ) {
-	.dak-site-header-location,
-	.dak-site-header-contact-email {
-		display: none !important;
-	}
-
-}
-
-@media ( max-width: 640px ) {
-	/* The phone/email pair no longer disappears here — the strip is only one
-	   line tall now, so the phone number stays. */
-	.dak-site-header-utility-contact {
-		display: flex !important;
-	}
-
-	.dak-site-header-account-link {
-		font-size: 0.8rem !important;
-	}
-}
-
-/* Stacking: the utility strip (with the account dropdown) sits above the main
-   bar, so that dropdown opens over the Book Now button instead of under it. */
-.dak-site-header-utility {
-	position: relative !important;
-	z-index: 3 !important;
-}
-
-.dak-site-header-inner {
-	position: relative !important;
-	z-index: 2 !important;
-}
-
-.dak-site-header-account-menu {
-	z-index: 300 !important;
-}
-
-/* 360px phones: the utility strip's phone number, theme toggle and
-   "Login / Register" button were ~9px wider than the screen, so the whole
-   page scrolled sideways. A slightly tighter button fits them. */
-@media ( max-width: 380px ) {
-	.dak-site-header-account-link {
-		padding: 0.4rem 0.6rem !important;
-		gap: 0.25rem !important;
-		font-size: 0.78rem !important;
-	}
 }
