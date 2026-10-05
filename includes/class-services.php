@@ -645,6 +645,121 @@ class Services {
 	}
 
 	/**
+	 * Formats a single, known charge — "PKR X", or "Fee not set" for an
+	 * unpriced (0.00) one. For ONE specific price (a service at one
+	 * specific clinic, a doctor's one video price) — never "Free" for an
+	 * unpriced value, matching price_summary()'s rule but phrased for a
+	 * single item rather than a "from" range across several.
+	 *
+	 * @param float $charge One charge.
+	 * @return string
+	 */
+	public static function single_price_label( $charge ) {
+		$charge = (float) $charge;
+
+		return $charge > 0 ? 'PKR ' . number_format_i18n( $charge ) : __( 'Fee not set', 'doctor-ak-portal' );
+	}
+
+	/**
+	 * A tri-state price summary for one or more charges — used by
+	 * Doctor_Profile_View instead of price_range_label()'s "empty/0 ⇒ Free"
+	 * rule, which conflates "nothing configured" with "genuinely free."
+	 * There is no "unset" sentinel at the DB layer (`charge` defaults to
+	 * 0.00), so a 0 value here is always treated as not-yet-priced, never as
+	 * free — a real free service isn't something this codebase currently has
+	 * any evidence of, and inventing a "free" state the data can't actually
+	 * distinguish would just move the lie rather than fix it.
+	 *
+	 * @param float[] $charges Charges to summarize (may be empty, may contain 0s).
+	 * @return array { @type string state 'none'|'unset'|'paid'|'range', @type string label Ready-to-display text, '' for 'none'. }
+	 */
+	public static function price_summary( array $charges ) {
+		if ( empty( $charges ) ) {
+			return array(
+				'state' => 'none',
+				'label' => '',
+			);
+		}
+
+		$priced = array_values( array_filter( $charges, function ( $charge ) {
+			return $charge > 0;
+		} ) );
+
+		if ( empty( $priced ) ) {
+			return array(
+				'state' => 'unset',
+				'label' => __( 'Select a service to view the fee.', 'doctor-ak-portal' ),
+			);
+		}
+
+		$min   = min( $priced );
+		$label = 'PKR ' . number_format_i18n( $min );
+
+		// A 0 mixed in with real prices (an unpriced service alongside priced
+		// ones) still forces "range" wording — that 0 is excluded from the
+		// min() above, never silently used as "the" price.
+		if ( count( array_unique( $priced ) ) > 1 || count( $priced ) < count( $charges ) ) {
+			return array(
+				'state' => 'range',
+				'label' => sprintf( /* translators: %s: lowest configured price. */ __( 'From %s', 'doctor-ak-portal' ), $label ),
+			);
+		}
+
+		return array(
+			'state' => 'paid',
+			'label' => $label,
+		);
+	}
+
+	/**
+	 * Groups a doctor's own active clinic-type services by normalized name,
+	 * returning only names with more than one row — surfaces likely
+	 * duplicate/conflicting service records (e.g. "Colonoscopy" entered
+	 * twice, or the same procedure with inconsistent capitalization and a
+	 * different fee) for a human to review. Never merges, hides, or
+	 * re-prices anything itself — this is read-only reporting.
+	 *
+	 * @param int $doctor_id Doctor's user ID.
+	 * @return array List of { name, rows: [ { id, name, charge, category_label } ] }, one entry per colliding name.
+	 */
+	public static function duplicate_groups_for_doctor( $doctor_id ) {
+		$services = self::active_for_doctor( $doctor_id, 'clinic' );
+		$groups   = array();
+
+		foreach ( $services as $service ) {
+			$key = mb_strtolower( trim( $service['name'] ) );
+
+			if ( '' === $key ) {
+				continue;
+			}
+
+			if ( ! isset( $groups[ $key ] ) ) {
+				$groups[ $key ] = array();
+			}
+
+			$groups[ $key ][] = array(
+				'id'             => $service['id'],
+				'name'           => $service['name'],
+				'charge'         => $service['charge'],
+				'category_label' => $service['category_label'],
+			);
+		}
+
+		$duplicates = array();
+
+		foreach ( $groups as $rows ) {
+			if ( count( $rows ) > 1 ) {
+				$duplicates[] = array(
+					'name' => $rows[0]['name'],
+					'rows' => $rows,
+				);
+			}
+		}
+
+		return $duplicates;
+	}
+
+	/**
 	 * A single active service for the public [service_profile_view] page —
 	 * null if it doesn't exist, isn't active, or its doctor is deactivated
 	 * (matches active_for_public_directory()'s visibility rule).

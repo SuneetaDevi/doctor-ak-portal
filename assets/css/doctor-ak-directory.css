@@ -823,6 +823,128 @@
 
 /* Public profile view ([doctor_profile_view]) */
 
+/* Same sticky header (.dak-site-header, position: sticky, see
+   doctor-ak-site-header.css) every other public page accounts for via its
+   own locally-scoped offset variable (--pub-offset in doctor-ak-public.css,
+   --bk-offset in doctor-ak-booking-page.css) — this page gets its own for
+   the same reason: anchor-scrolled section headings and the sticky sidebar
+   both need to clear it, not just land right at the viewport's top edge. */
+.dak-profile-view {
+	--dak-profile-offset: 96px;
+}
+
+/* Several components on this page set their own `display: ... !important`
+   (.dak-specialty-tag, .dak-profile-radio-row, .dak-profile-booking-fee) in
+   this file, which loads after doctor-ak-auth.css — at equal specificity
+   that beats the shared .dak-hidden utility, so "hidden" tags/services never
+   actually hid and the "Show all"/search controls appeared to do nothing.
+   The extra class here out-ranks them all. */
+.dak-profile-view .dak-hidden {
+	display: none !important;
+}
+
+/* The Experience section wraps several cards in one anchor target — give
+   them the same spacing .dak-profile-main gives its direct children. */
+#dak-profile-experience {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 1.5rem !important;
+}
+
+.dak-profile-unavailable {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: center !important;
+	gap: 0.75rem !important;
+	max-width: 420px !important;
+	margin: 3rem auto !important;
+	padding: 2.5rem 2rem !important;
+	text-align: center !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	box-shadow: var( --dak-shadow ) !important;
+}
+
+.dak-profile-unavailable-icon {
+	display: inline-flex !important;
+	width: 2.5rem !important;
+	height: 2.5rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-profile-unavailable-icon svg {
+	width: 100% !important;
+	height: 100% !important;
+}
+
+.dak-profile-unavailable h1 {
+	margin: 0 !important;
+	font-size: 1.25rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-profile-unavailable p {
+	margin: 0 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-profile-section-nav {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0.4rem !important;
+	margin-bottom: 1.5rem !important;
+}
+
+.dak-profile-section-nav a {
+	padding: 0.45rem 0.9rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.82rem !important;
+	font-weight: 600 !important;
+	text-decoration: none !important;
+	transition: border-color 0.15s ease, color 0.15s ease !important;
+}
+
+.dak-profile-section-nav a:hover,
+.dak-profile-section-nav a:focus-visible {
+	border-color: var( --dak-primary ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-profile-about-text {
+	margin: 0 !important;
+	max-width: 65ch !important;
+	color: var( --dak-text ) !important;
+	line-height: 1.65 !important;
+	white-space: pre-line !important;
+}
+
+.dak-profile-qualifications-list {
+	margin: 0 !important;
+	padding: 0 0 0 1.1rem !important;
+	color: var( --dak-text ) !important;
+	line-height: 1.6 !important;
+}
+
+.dak-profile-qualifications-list li {
+	margin-bottom: 0.3rem !important;
+}
+
+/* Reviews sit after the booking-relevant cards and read a notch quieter —
+   same card shell, lighter shadow, no accent — matching the spec's "visually
+   secondary to clinical information and booking." */
+.dak-profile-card-secondary {
+	box-shadow: none !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-profile-booking-summary {
+	margin-bottom: 0.75rem !important;
+}
+
 .dak-profile-breadcrumb {
 	display: flex !important;
 	flex-wrap: wrap !important;
@@ -1057,53 +1179,14 @@
 	height: 100% !important;
 }
 
-#dak-profile-services {
-	scroll-margin-top: 1.5rem !important;
-}
-
-.dak-profile-clinics,
-.dak-profile-services {
-	display: flex !important;
-	flex-direction: column !important;
-	gap: 0.75rem !important;
-}
-
-/* "Services" list on the doctor profile page (replaces the old flat
-   "Clinics" list — see doctor-profile-view.php +
-   doctor-ak-doctor-profile-clinics.js): each service is a plain label row
-   — same look as the clinic groups on the [service_profile_view] page's
-   "Doctors & Pricing" list (.dak-service-clinic-group-header there) —
-   followed by its own clinic list, always visible, never collapsed
-   (reusing .dak-profile-clinic-row's existing selectable-row styling above
-   for those rows, and for the standalone "Online Video Consultation" row). */
-.dak-profile-service-row + .dak-profile-service-row {
-	margin-top: 1.5rem !important;
-}
-
-.dak-profile-service-header {
-	display: flex !important;
-	align-items: center !important;
-	gap: 0.75rem !important;
-	margin-bottom: 0.75rem !important;
-	padding-bottom: 0.5rem !important;
-	border-bottom: 1px solid var( --dak-border ) !important;
-}
-
-.dak-profile-service-header .dak-profile-clinic-info {
-	flex: 1 1 auto !important;
-	min-width: 0 !important;
-}
-
-.dak-profile-service-header-price {
-	flex: 0 0 auto !important;
-	font-weight: 700 !important;
-	color: var( --dak-text ) !important;
-}
-
-.dak-profile-service-clinics {
-	display: flex !important;
-	flex-direction: column !important;
-	gap: 0.6rem !important;
+/* Scroll offsets for the sticky header — see --dak-profile-offset, set on
+   .dak-profile-view further down, next to the rest of this page's
+   accessibility/layout rules. */
+#dak-profile-overview,
+#dak-profile-clinics-fees,
+#dak-profile-experience,
+#dak-profile-reviews {
+	scroll-margin-top: var( --dak-profile-offset, 96px ) !important;
 }
 
 .dak-profile-clinic-row {
@@ -1116,26 +1199,49 @@
 	border-radius: var( --dak-radius-md ) !important;
 }
 
-/* Selectable clinic rows on the doctor profile page (see
-   templates/directory/doctor-profile-view.php +
-   doctor-ak-doctor-profile-clinics.js) — the "Available At"/"Provided By"
-   uses of this same row class elsewhere are read-only and never carry
-   [data-clinic-select], so this doesn't affect them. */
-.dak-profile-clinic-row[data-clinic-select] {
+/* Selectable rows built from a real <input type="radio"> (the "pick a
+   clinic/visit type/service" picker — see templates/directory/
+   doctor-profile-view.php + doctor-ak-doctor-profile-clinics.js). The
+   .dak-profile-clinic-row shell above stays shared with the read-only
+   "Available At"/"Provided By" uses of this same row elsewhere — only rows
+   additionally carrying .dak-profile-radio-row get the pointer/selected-
+   state treatment below. */
+.dak-profile-radio-row {
+	display: flex !important;
+	align-items: flex-start !important;
+	position: relative !important;
 	cursor: pointer !important;
-	transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease !important;
 }
 
-.dak-profile-clinic-row[data-clinic-select]:hover {
+/* The real input stays in the document/tab order (screen readers and
+   keyboard users need it) but is visually replaced by the decorative dot
+   below — a near-zero, non-display:none box keeps it out of the way
+   without removing it from accessibility. */
+.dak-profile-radio-input {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	margin: 0 !important;
+	opacity: 0 !important;
+	pointer-events: none !important;
+}
+
+.dak-profile-radio-row:hover {
 	border-color: var( --dak-primary ) !important;
 }
 
-.dak-profile-clinic-row[data-clinic-select]:focus-visible {
+.dak-profile-radio-row:focus-within {
 	outline: 2px solid var( --dak-primary ) !important;
 	outline-offset: 2px !important;
 }
 
-.dak-profile-clinic-row[data-clinic-select].is-selected {
+/* Selected state is never color alone: border + shadow + tint background,
+   the filled dot below, AND a bold-weight/checkmark change on the row's own
+   title (see .dak-profile-radio-row.is-selected .dak-profile-clinic-info
+   strong::before further down) — toggled by doctor-ak-doctor-profile-
+   clinics.js on the radio group's native `change` event. */
+.dak-profile-radio-row.is-selected {
 	border-color: var( --dak-primary ) !important;
 	box-shadow: 0 0 0 1px var( --dak-primary ) !important;
 	background: var( --dak-primary-tint ) !important;
@@ -1149,14 +1255,11 @@
 	flex: 1 1 auto !important;
 }
 
-/* Decorative radio indicator — only meaningful (and only rendered as a
-   circle) on selectable rows; read-only uses of this row markup elsewhere
-   never carry [data-clinic-select], so it just sits inert/hidden there. */
 .dak-profile-clinic-radio {
 	display: none;
 }
 
-.dak-profile-clinic-row[data-clinic-select] .dak-profile-clinic-radio {
+.dak-profile-radio-row .dak-profile-clinic-radio {
 	display: block !important;
 	flex: 0 0 auto !important;
 	width: 18px !important;
@@ -1168,20 +1271,112 @@
 	transition: border-color 0.15s ease !important;
 }
 
-.dak-profile-clinic-row[data-clinic-select]:hover .dak-profile-clinic-radio {
+.dak-profile-radio-row:hover .dak-profile-clinic-radio {
 	border-color: var( --dak-primary ) !important;
 }
 
-.dak-profile-clinic-row[data-clinic-select].is-selected .dak-profile-clinic-radio {
+.dak-profile-radio-row.is-selected .dak-profile-clinic-radio {
 	border-color: var( --dak-primary ) !important;
 }
 
-.dak-profile-clinic-row[data-clinic-select].is-selected .dak-profile-clinic-radio::after {
+.dak-profile-radio-row.is-selected .dak-profile-clinic-radio::after {
 	content: '' !important;
 	position: absolute !important;
 	inset: 3px !important;
 	border-radius: 50% !important;
 	background: var( --dak-primary ) !important;
+}
+
+/* The non-color selected cue — a checkmark ahead of the row's own title,
+   so selection reads via shape+icon+weight too, not border/background tint
+   alone. */
+.dak-profile-radio-row .dak-profile-clinic-info strong {
+	font-weight: 600 !important;
+}
+
+.dak-profile-radio-row.is-selected .dak-profile-clinic-info strong {
+	font-weight: 700 !important;
+}
+
+.dak-profile-radio-row.is-selected .dak-profile-clinic-info strong::before {
+	content: '✓ ' !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+/* The "pick a visit type / clinic / service" sequence itself. */
+.dak-profile-picker {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 1.25rem !important;
+}
+
+.dak-profile-picker-group {
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.6rem !important;
+}
+
+.dak-profile-picker-group legend {
+	padding: 0 0 0.3rem !important;
+	font-size: 0.78rem !important;
+	font-weight: 700 !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.04em !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-profile-picker-group[hidden],
+.dak-profile-clinic-static[hidden] {
+	display: none !important;
+}
+
+/* The single-clinic / video info display when there's nothing to actually
+   choose (one physical clinic, or the video option once selected) — same
+   shell as a picker row, minus the radio affordance. */
+.dak-profile-clinic-static {
+	display: flex !important;
+	align-items: flex-start !important;
+	justify-content: space-between !important;
+	gap: 1rem !important;
+	padding: 1rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-profile-service-search {
+	margin: 0.2rem 0 0.4rem !important;
+}
+
+.dak-profile-service-search-input {
+	width: 100% !important;
+	box-sizing: border-box !important;
+	padding: 0.6rem 0.85rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.9rem !important;
+}
+
+.dak-profile-service-search-input:focus-visible {
+	outline: 2px solid var( --dak-primary ) !important;
+	outline-offset: 1px !important;
+}
+
+.dak-profile-service-options {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.6rem !important;
+}
+
+.dak-profile-service-no-results {
+	color: var( --dak-muted ) !important;
+	font-size: 0.85rem !important;
+	margin: 0.25rem 0 !important;
 }
 
 .dak-profile-clinic-info {
@@ -1426,7 +1621,44 @@
 
 .dak-profile-sidebar {
 	position: sticky !important;
-	top: 1.5rem !important;
+	top: calc( var( --dak-profile-offset, 96px ) + 1rem ) !important;
+}
+
+/* Fixed bottom booking bar — mobile only (see the 600px breakpoint below,
+   which hides .dak-profile-sidebar and shows this instead). Sits above the
+   page's own content but below any third-party floating widget (WhatsApp/
+   chat) the live site adds outside this plugin — verify the exact stacking
+   against those on the live page, since they aren't part of this
+   stylesheet. */
+.dak-profile-mobile-bar {
+	display: none;
+	position: fixed !important;
+	left: 0 !important;
+	right: 0 !important;
+	bottom: 0 !important;
+	z-index: 150 !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 0.75rem !important;
+	padding: 0.75rem 1rem calc( 0.75rem + env( safe-area-inset-bottom, 0px ) ) !important;
+	background: var( --dak-bg-card ) !important;
+	border-top: 1px solid var( --dak-border ) !important;
+	box-shadow: 0 -4px 16px rgba( 0, 0, 0, 0.08 ) !important;
+}
+
+.dak-profile-mobile-bar-summary {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+	font-size: 0.82rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+	overflow: hidden !important;
+	text-overflow: ellipsis !important;
+	white-space: nowrap !important;
+}
+
+.dak-profile-mobile-bar .dak-button {
+	flex: 0 0 auto !important;
 }
 
 .dak-profile-booking-card h2 {
@@ -1486,6 +1718,16 @@
 }
 
 @media ( max-width: 600px ) {
+	.dak-profile-view {
+		/* Matches the header's own mobile-nav breakpoint (see
+		   doctor-ak-site-header.css) — the sticky header is shorter once
+		   collapsed to its single mobile row. */
+		--dak-profile-offset: 72px;
+		/* Reserves room at the bottom of the page so the fixed bottom
+		   booking bar (below) never covers the last bit of content. */
+		padding-bottom: 4.5rem !important;
+	}
+
 	.dak-profile-header-card {
 		flex-direction: column !important;
 		align-items: center !important;
@@ -1496,6 +1738,13 @@
 		justify-content: center !important;
 	}
 
+	/* The header's own primary CTA is redundant with the fixed bottom bar
+	   below on this narrow a screen — keep just the secondary "Call
+	   Clinic" action here so the two don't compete. */
+	.dak-profile-header-actions #dak-profile-header-cta {
+		display: none !important;
+	}
+
 	.dak-profile-header-actions {
 		justify-content: center !important;
 		width: 100% !important;
@@ -1504,6 +1753,17 @@
 	.dak-profile-header-actions .dak-button {
 		flex: 1 1 auto !important;
 		justify-content: center !important;
+	}
+
+	/* The sidebar's own booking card is replaced by the fixed bottom bar at
+	   this width — avoids showing the same CTA twice and frees up the
+	   vertical space the sidebar panel would otherwise take. */
+	.dak-profile-sidebar {
+		display: none !important;
+	}
+
+	.dak-profile-mobile-bar {
+		display: flex !important;
 	}
 
 	.dak-profile-clinic-row {

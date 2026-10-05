@@ -30,6 +30,7 @@ class Public_Pages {
 	const PAGES = array(
 		Clinics_Directory::SHORTCODE_TAG   => 'clinics',
 		Clinic_Profile_View::SHORTCODE_TAG => 'clinic',
+		Doctor_Profile_View::SHORTCODE_TAG => 'doctor',
 	);
 
 	/**
@@ -117,10 +118,19 @@ class Public_Pages {
 	 * Enqueues the shared public stylesheet and script on these pages only.
 	 * Runs late so it lands after the theme and Elementor kit styles.
 	 *
+	 * The doctor profile page is excluded — it already enqueues its own
+	 * assets (doctor-ak-directory.css, etc.) via Doctor_Profile_View::
+	 * enqueue_assets(), scoped under .dak-portal.dak-directory rather than
+	 * this shared .dak-pub wrapper, so loading both would just be dead
+	 * weight on that page. It still gets the dynamic title below via
+	 * current()/filter_title() — only the asset loading is skipped.
+	 *
 	 * @return void
 	 */
 	public function enqueue_assets() {
-		if ( '' === self::current() ) {
+		$kind = self::current();
+
+		if ( '' === $kind || 'doctor' === $kind ) {
 			return;
 		}
 
@@ -152,7 +162,7 @@ class Public_Pages {
 	public function filter_title( $title ) {
 		$kind = self::current();
 
-		if ( 'clinics' !== $kind && 'clinic' !== $kind ) {
+		if ( 'clinics' !== $kind && 'clinic' !== $kind && 'doctor' !== $kind ) {
 			return $title;
 		}
 
@@ -165,7 +175,7 @@ class Public_Pages {
 				/* translators: %s: list of cities, e.g. "Karachi, Hyderabad and Quetta". */
 				? sprintf( __( 'Our clinics in %s', 'doctor-ak-portal' ), $cities )
 				: __( 'Our clinics', 'doctor-ak-portal' );
-		} else {
+		} elseif ( 'clinic' === $kind ) {
 			$clinic_id = isset( $_GET['clinic_id'] ) ? absint( $_GET['clinic_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only public lookup.
 			$clinic    = $clinic_id > 0 ? Clinic_Public_Data::find( $clinic_id ) : null;
 
@@ -177,6 +187,13 @@ class Public_Pages {
 					: sprintf( __( '%s — doctors and directions', 'doctor-ak-portal' ), $clinic['name'] );
 			} else {
 				$page_title = __( 'Clinic not found', 'doctor-ak-portal' );
+			}
+		} else {
+			$doctor_id  = isset( $_GET['doctor_id'] ) ? absint( $_GET['doctor_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only public lookup.
+			$page_title = $doctor_id > 0 ? Doctor_Profile_View::page_title_for_doctor( $doctor_id ) : '';
+
+			if ( '' === $page_title ) {
+				$page_title = __( 'Doctor not found', 'doctor-ak-portal' );
 			}
 		}
 

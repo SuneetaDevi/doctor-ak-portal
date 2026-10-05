@@ -88,6 +88,22 @@ class Doctor_Profile_View {
 			true
 		);
 
+		wp_localize_script(
+			'doctor-ak-portal-doctor-profile-clinics',
+			'dakDoctorProfile',
+			array(
+				'chooseConsultationLabel' => __( 'Choose consultation', 'doctor-ak-portal' ),
+				'chooseDateTimeLabel'     => __( 'Choose date & time', 'doctor-ak-portal' ),
+				'chooseTypeLabel'         => __( 'Choose a visit type to get started.', 'doctor-ak-portal' ),
+				'chooseClinicLabel'       => __( 'Choose a clinic to see its services and fees.', 'doctor-ak-portal' ),
+				'chooseServiceLabel'      => __( 'Choose a service to see the fee.', 'doctor-ak-portal' ),
+				/* translators: %s: clinic name — replaced client-side, keep the literal %s. */
+				'chooseServiceAtLabel'    => __( 'Choose a service at %s to see the fee.', 'doctor-ak-portal' ),
+				'videoSummaryLabel'       => __( 'Online Video Consultation', 'doctor-ak-portal' ),
+				'feeLabel'                => __( 'Fee', 'doctor-ak-portal' ),
+			)
+		);
+
 		wp_enqueue_script(
 			'doctor-ak-portal-doctor-reviews',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-doctor-reviews.js',
@@ -155,27 +171,41 @@ class Doctor_Profile_View {
 			}
 		}
 
-		$services = $this->services_with_clinics( $doctor->ID, $raw_clinics );
+		// Separate from $clinics' raw count (which also includes any TYPE_VIDEO
+		// row) — the header's "N Locations" stat must only ever count real,
+		// physical places a patient can walk into, never the online option
+		// (that's its own "Online Video Consults" badge, see $video_consultation).
+		$physical_clinic_count = count(
+			array_filter(
+				$raw_clinics,
+				function ( $clinic ) {
+					return Clinics::TYPE_PHYSICAL === $clinic['type'];
+				}
+			)
+		);
+
+		$clinics_with_services = $this->clinics_with_services( $doctor->ID, $raw_clinics );
 
 		return $this->template_loader->get_template(
 			'directory/doctor-profile-view.php',
 			array(
 				'doctor'                 => array(
-					'id'                    => $doctor->ID,
-					'name'                  => $display_name,
-					'avatar_url'            => self::avatar_url( $doctor->ID ),
-					'specialization_labels' => $specialization_labels,
-					'keywords'              => array_filter( (array) get_user_meta( $doctor->ID, 'doctor_ak_keywords', true ) ),
-					'clinics'               => $clinics,
-					'services'              => $services,
-					'video_fee_label'       => self::video_fee_label( $doctor->ID ),
-					'years_experience'      => get_user_meta( $doctor->ID, 'doctor_ak_years_experience', true ),
-					'qualification'         => get_user_meta( $doctor->ID, 'doctor_ak_qualification', true ),
-					'short_description'     => get_user_meta( $doctor->ID, 'doctor_ak_short_description', true ),
-					'expertise'             => get_user_meta( $doctor->ID, 'doctor_ak_expertise', true ),
-					'awards'                => Doctor_Awards::get_for_doctor( $doctor->ID ),
-					'video_consultation'    => Clinics::doctor_has_active_video_clinic( $doctor->ID ),
-					'phone'                 => $phone,
+					'id'                     => $doctor->ID,
+					'name'                   => $display_name,
+					'avatar_url'             => self::avatar_url( $doctor->ID ),
+					'specialization_labels'  => $specialization_labels,
+					'keywords'               => array_filter( (array) get_user_meta( $doctor->ID, 'doctor_ak_keywords', true ) ),
+					'clinics'                => $clinics,
+					'physical_clinic_count'  => $physical_clinic_count,
+					'clinics_with_services'  => $clinics_with_services,
+					'video_fee_label'        => self::video_fee_label( $doctor->ID ),
+					'years_experience'       => get_user_meta( $doctor->ID, 'doctor_ak_years_experience', true ),
+					'qualification'          => get_user_meta( $doctor->ID, 'doctor_ak_qualification', true ),
+					'short_description'      => get_user_meta( $doctor->ID, 'doctor_ak_short_description', true ),
+					'expertise'              => get_user_meta( $doctor->ID, 'doctor_ak_expertise', true ),
+					'awards'                 => Doctor_Awards::get_for_doctor( $doctor->ID ),
+					'video_consultation'     => Clinics::doctor_has_active_video_clinic( $doctor->ID ),
+					'phone'                  => $phone,
 				),
 				'reviews'                => Doctor_Reviews::get_for_doctor( $doctor->ID ),
 				'review_summary'         => Doctor_Reviews::summary( $doctor->ID ),
@@ -183,10 +213,45 @@ class Doctor_Profile_View {
 				'my_review'              => is_user_logged_in() ? Doctor_Reviews::find_for_patient( get_current_user_id(), $doctor->ID ) : null,
 				'is_logged_in'           => is_user_logged_in(),
 				'directory_url'          => Page_Finder::url_for_shortcode( 'doctors_directory' ),
-				'starting_fee_label'     => $this->starting_fee_label( $doctor->ID ),
+				'starting_fee_summary'   => $this->starting_fee_summary( $doctor->ID ),
 				'cancellation_note'      => $this->cancellation_note( $doctor->ID ),
 			)
 		);
+	}
+
+	/**
+	 * A validated doctor's browser-tab/SEO title — "Dr. {Name} —
+	 * {Specialty}", or '' for an invalid/unpublished id (same validation
+	 * render() already applies). Called from Public_Pages::filter_title()
+	 * rather than duplicating this doctor lookup/validation there.
+	 *
+	 * @param int $doctor_id Doctor's user ID.
+	 * @return string
+	 */
+	public static function page_title_for_doctor( $doctor_id ) {
+		$doctor = $doctor_id > 0 ? get_userdata( $doctor_id ) : false;
+
+		if ( ! $doctor || ! in_array( Roles::DOCTOR_ROLE, (array) $doctor->roles, true ) || 'yes' === get_user_meta( $doctor->ID, 'doctor_ak_account_disabled', true ) ) {
+			return '';
+		}
+
+		$display_name = trim( $doctor->first_name . ' ' . $doctor->last_name );
+		$display_name = '' !== $display_name ? $display_name : $doctor->display_name;
+
+		$specialization_slugs = (array) get_user_meta( $doctor->ID, 'doctor_ak_specializations', true );
+		$all_specializations   = Specializations::get_all();
+		$first_specialization   = '';
+
+		foreach ( $specialization_slugs as $slug ) {
+			if ( isset( $all_specializations[ $slug ] ) ) {
+				$first_specialization = $all_specializations[ $slug ];
+				break;
+			}
+		}
+
+		$title = sprintf( 'Dr. %s', $display_name );
+
+		return '' !== $first_specialization ? $title . ' — ' . $first_specialization : $title;
 	}
 
 	/**
@@ -208,75 +273,74 @@ class Doctor_Profile_View {
 	}
 
 	/**
-	 * This doctor's clinic-type services, each with its own clinic
-	 * breakdown — "Services" replaces the old flat "Clinics" list on the
-	 * public profile with a service-first one, since a patient usually
-	 * comes here already knowing what they want done, not which building
-	 * they want to visit; picking a service then narrows down to exactly
-	 * the clinic(s) it's offered at. A service scoped to specific clinics
-	 * (see Services::decode_row()'s 'clinic_locations') only lists those,
-	 * each at its own override price; one with no clinics picked (the
-	 * common case) falls back to every one of this doctor's own physical
-	 * clinics, at the service's flat charge — same convention
-	 * clinic_fee_label() above already uses.
+	 * This doctor's physical clinics, each with the services actually
+	 * offered there and that clinic's own exact fee for each — "Clinics &
+	 * Fees" replaces the old flat, service-first "Services" list (which
+	 * repeated the same clinic name/address/hours once per service) with a
+	 * clinic-first one for the "pick a clinic, then see its services"
+	 * selection sequence: a patient picks a clinic once, then sees that
+	 * clinic's address/hours a single time plus every service actually
+	 * offered there at its exact price.
+	 *
+	 * Uses the same clinic_charges scoping rule clinic_fee_label() already
+	 * uses (a service with no clinics picked in its own "Available at" list
+	 * — see Services::decode_row()'s 'clinic_charges' — applies to every
+	 * physical clinic at its flat charge; one scoped to specific clinics
+	 * only applies to those, at each one's own override price), just
+	 * grouped by clinic instead of by service. Never trusts a service's own
+	 * baked-in price_label (still subject to Services::decode_row()'s
+	 * "0 ⇒ Free" rule) — always reformats from the raw charge via
+	 * Services::single_price_label().
 	 *
 	 * @param int   $doctor_id   Doctor's user ID.
 	 * @param array $raw_clinics Clinics::get_for_doctor( $doctor_id ) — passed in rather than re-queried, render() already has it.
-	 * @return array List of { id, name, price_label, clinics: [ { clinic_id (this doctor's own Clinics row ID, for the booking link), name, meta, hours_label, price_label } ] }.
+	 * @return array List of { clinic_id (this doctor's own Clinics row ID, for the booking link), name, meta, hours_label, services: [ { id, name, charge, price_label } ] } — physical clinics with at least one service only.
 	 */
-	private function services_with_clinics( $doctor_id, array $raw_clinics ) {
+	private function clinics_with_services( $doctor_id, array $raw_clinics ) {
 		$services = Services::active_for_doctor( $doctor_id, 'clinic' );
 		$out      = array();
 
-		foreach ( $services as $service ) {
-			$clinic_rows = array();
-
-			if ( ! empty( $service['clinic_locations'] ) ) {
-				foreach ( $service['clinic_locations'] as $dak_clinic_location ) {
-					$dak_doctor_clinic_id = 0;
-					$dak_hours_label      = '';
-
-					foreach ( $raw_clinics as $dak_doctor_clinic ) {
-						if ( (int) $dak_doctor_clinic['clinic_location_id'] === (int) $dak_clinic_location['id'] ) {
-							$dak_doctor_clinic_id = $dak_doctor_clinic['id'];
-							$dak_hours_label      = self::sessions_hours_label( $dak_doctor_clinic['sessions'] );
-							break;
-						}
-					}
-
-					$clinic_rows[] = array(
-						'clinic_id'   => $dak_doctor_clinic_id,
-						'name'        => $dak_clinic_location['name'],
-						'meta'        => implode( ', ', array_filter( array( $dak_clinic_location['address'], $dak_clinic_location['area_label'], $dak_clinic_location['city_label'] ) ) ),
-						'hours_label' => $dak_hours_label,
-						'price_label' => $dak_clinic_location['price_label'],
-					);
-				}
-			} else {
-				foreach ( $raw_clinics as $dak_doctor_clinic ) {
-					if ( Clinics::TYPE_PHYSICAL !== $dak_doctor_clinic['type'] ) {
-						continue;
-					}
-
-					$clinic_rows[] = array(
-						'clinic_id'   => $dak_doctor_clinic['id'],
-						'name'        => $dak_doctor_clinic['name'],
-						'meta'        => implode( ', ', array_filter( array( $dak_doctor_clinic['address'], $dak_doctor_clinic['area_label'], $dak_doctor_clinic['city_label'] ) ) ),
-						'hours_label' => self::sessions_hours_label( $dak_doctor_clinic['sessions'] ),
-						'price_label' => $service['price_label'],
-					);
-				}
+		foreach ( $raw_clinics as $dak_doctor_clinic ) {
+			if ( Clinics::TYPE_PHYSICAL !== $dak_doctor_clinic['type'] ) {
+				continue;
 			}
 
-			if ( empty( $clinic_rows ) ) {
+			$dak_clinic_location_id = (int) $dak_doctor_clinic['clinic_location_id'];
+			$service_rows            = array();
+
+			foreach ( $services as $service ) {
+				$charge = null;
+
+				if ( ! empty( $service['clinic_charges'] ) ) {
+					if ( isset( $service['clinic_charges'][ $dak_clinic_location_id ] ) ) {
+						$charge = (float) $service['clinic_charges'][ $dak_clinic_location_id ];
+					}
+				} else {
+					$charge = (float) $service['charge'];
+				}
+
+				if ( null === $charge ) {
+					continue;
+				}
+
+				$service_rows[] = array(
+					'id'          => $service['id'],
+					'name'        => $service['name'],
+					'charge'      => $charge,
+					'price_label' => Services::single_price_label( $charge ),
+				);
+			}
+
+			if ( empty( $service_rows ) ) {
 				continue;
 			}
 
 			$out[] = array(
-				'id'          => $service['id'],
-				'name'        => $service['name'],
-				'price_label' => $service['price_label'],
-				'clinics'     => $clinic_rows,
+				'clinic_id'   => $dak_doctor_clinic['id'],
+				'name'        => $dak_doctor_clinic['name'],
+				'meta'        => implode( ', ', array_filter( array( $dak_doctor_clinic['address'], $dak_doctor_clinic['area_label'], $dak_doctor_clinic['city_label'] ) ) ),
+				'hours_label' => self::sessions_hours_label( $dak_doctor_clinic['sessions'] ),
+				'services'    => $service_rows,
 			);
 		}
 
@@ -332,12 +396,13 @@ class Doctor_Profile_View {
 	/**
 	 * A clinic (onsite) visit's fee at one specific physical clinic, from
 	 * the doctor's real configured services — never a fabricated
-	 * placeholder. A service with no clinics picked in its own "Available
-	 * at" list (see Services::decode_row()'s 'clinic_charges') counts at
-	 * every clinic, at its flat charge; a service scoped to specific
-	 * clinics only counts here when this one is among them, at that
-	 * clinic's own override price. Empty string if nothing configured
-	 * applies to this clinic at all.
+	 * placeholder, and never "Free" for a service that was simply never
+	 * priced (see Services::price_summary()). A service with no clinics
+	 * picked in its own "Available at" list (see Services::decode_row()'s
+	 * 'clinic_charges') counts at every clinic, at its flat charge; a
+	 * service scoped to specific clinics only counts here when this one is
+	 * among them, at that clinic's own override price. Empty string if
+	 * nothing configured applies to this clinic at all.
 	 *
 	 * @param int $doctor_id          Doctor's user ID.
 	 * @param int $clinic_location_id This clinic's Clinic_Locations ID (0 for a legacy clinic not linked to one — only unscoped services count there).
@@ -364,28 +429,13 @@ class Doctor_Profile_View {
 			$charges[] = (float) $service['charge'];
 		}
 
-		if ( empty( $charges ) ) {
-			return '';
-		}
-
-		$min = min( $charges );
-
-		if ( 0.0 === $min ) {
-			return __( 'Free', 'doctor-ak-portal' );
-		}
-
-		$label = 'PKR ' . number_format_i18n( $min );
-
-		return count( array_unique( $charges ) ) > 1 ? sprintf(
-			/* translators: %s: lowest configured service charge. */
-			__( 'From %s', 'doctor-ak-portal' ),
-			$label
-		) : $label;
+		return Services::price_summary( $charges )['label'];
 	}
 
 	/**
 	 * A video consultation's fee, from the doctor's real video pricing
-	 * settings.
+	 * settings — "Select a service to view the fee." rather than "Free"
+	 * when nothing has actually been priced (see Services::price_summary()).
 	 *
 	 * @param int $doctor_id Doctor's user ID.
 	 * @return string
@@ -393,21 +443,22 @@ class Doctor_Profile_View {
 	private static function video_fee_label( $doctor_id ) {
 		$pricing = Video_Pricing::effective_price_for_doctor( $doctor_id );
 
-		if ( ! ( $pricing['final_price'] > 0 ) ) {
-			return __( 'Free', 'doctor-ak-portal' );
-		}
-
-		return 'PKR ' . number_format_i18n( $pricing['final_price'] );
+		return Services::single_price_label( $pricing['final_price'] );
 	}
 
 	/**
 	 * The cheapest of the doctor's clinic and video fees, for the sidebar's
-	 * "Consultation from" teaser. Empty if nothing is configured for either.
+	 * pre-selection teaser. Returns the full { state, label } pair (not just
+	 * a string) so the template can phrase it correctly: 'paid'/'range'
+	 * reads as "Consultation from {label}", 'unset' reads as just the
+	 * label on its own (already a complete sentence — "Select a service to
+	 * view the fee."), and 'none' hides the teaser entirely. Never "Free"
+	 * for a merely-unpriced service (see Services::price_summary()).
 	 *
 	 * @param int $doctor_id Doctor's user ID.
-	 * @return string
+	 * @return array { @type string state, @type string label }
 	 */
-	private function starting_fee_label( $doctor_id ) {
+	private function starting_fee_summary( $doctor_id ) {
 		$clinic_services = Services::active_for_doctor( $doctor_id, 'clinic' );
 		$video_pricing   = Clinics::doctor_has_active_video_clinic( $doctor_id ) ? Video_Pricing::effective_price_for_doctor( $doctor_id ) : null;
 
@@ -421,13 +472,7 @@ class Doctor_Profile_View {
 			$candidates[] = (float) $video_pricing['final_price'];
 		}
 
-		if ( empty( $candidates ) ) {
-			return '';
-		}
-
-		$min = min( $candidates );
-
-		return $min > 0 ? 'PKR ' . number_format_i18n( $min ) : __( 'Free', 'doctor-ak-portal' );
+		return Services::price_summary( $candidates );
 	}
 
 	/**
