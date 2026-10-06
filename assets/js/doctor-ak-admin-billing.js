@@ -100,15 +100,27 @@
 					return;
 				}
 
+				// Its own simple list — not the appointments table's
+				// .dak-admin-record-row markup, whose 7-column grid squeezed
+				// the service name into a near-zero-width column here.
+				var total = 0;
+				var count = 0;
 				var rows = items.map( function ( item ) {
-					return '<div class="dak-admin-record-row"><div class="dak-admin-record-row-main">' +
-						'<span class="dak-admin-record-row-info"><strong>' + escapeHtml( item.label ) + '</strong>' +
-						'<span class="dak-admin-record-row-id">' + item.quantity + ' &times; PKR ' + formatNumber( item.avg_price ) + '</span></span>' +
-						'<span class="dak-admin-record-row-amount">PKR ' + formatNumber( item.total_amount ) + '</span>' +
-						'</div></div>';
+					total += Number( item.total_amount ) || 0;
+					count += Number( item.quantity ) || 0;
+
+					return '<li class="dak-billing-details-item">' +
+						'<span class="dak-billing-details-label"><strong>' + escapeHtml( item.label ) + '</strong>' +
+						'<span class="dak-billing-details-meta">' + escapeHtml( String( item.quantity ) ) + ' &times; PKR ' + formatNumber( item.avg_price ) + '</span></span>' +
+						'<span class="dak-billing-details-amount">PKR ' + formatNumber( item.total_amount ) + '</span>' +
+						'</li>';
 				} );
 
-				detailsBody.innerHTML = rows.join( '' );
+				detailsBody.innerHTML = '<ul class="dak-billing-details-list">' + rows.join( '' ) + '</ul>' +
+					'<div class="dak-billing-details-total">' +
+					'<span>Total <span class="dak-billing-details-meta">(' + count + ( 1 === count ? ' appointment' : ' appointments' ) + ')</span></span>' +
+					'<strong>PKR ' + formatNumber( total ) + '</strong>' +
+					'</div>';
 			} );
 		}
 
