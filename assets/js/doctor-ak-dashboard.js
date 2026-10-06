@@ -73,27 +73,56 @@
 	}
 
 	/**
-	 * Wires the sidebar's specialty "+N" chip — expands/collapses the extra
-	 * tags beyond the first two shown by default (mirrors the same pattern
-	 * on the admin dashboard's Doctors table, see doctor-ak-admin-dashboard.js).
+	 * Two kinds of "+N" expanders, both delegated from document so they keep
+	 * working after a live filter swaps the list HTML (a direct per-element
+	 * binding never reached rows rendered later). This is now the only place
+	 * either is wired — the admin dashboard script used to bind the
+	 * specialty chip too, so every click toggled twice and did nothing.
+	 *
+	 *  - [data-specialty-toggle]: the older chip that reveals
+	 *    .dak-specialty-tag-extra siblings (Patients table, sidebar).
+	 *  - [data-dak-disclosure]: a button with aria-controls pointing at a
+	 *    [hidden] list (Doctors directory), keeping aria-expanded in sync.
 	 */
 	function wireSpecialtyTagToggles() {
-		document.querySelectorAll( '[data-specialty-toggle]' ).forEach( function ( toggle ) {
-			toggle.addEventListener( 'click', function () {
-				var container = toggle.closest( '[data-specialty-tags]' );
+		document.addEventListener( 'click', function ( event ) {
+			var disclosure = event.target.closest( '[data-dak-disclosure]' );
 
-				if ( ! container ) {
+			if ( disclosure ) {
+				var panel = document.getElementById( disclosure.getAttribute( 'aria-controls' ) );
+
+				if ( ! panel ) {
 					return;
 				}
 
-				var expanded = toggle.classList.toggle( 'is-expanded' );
+				var willExpand = 'true' !== disclosure.getAttribute( 'aria-expanded' );
 
-				container.querySelectorAll( '.dak-specialty-tag-extra' ).forEach( function ( tag ) {
-					tag.classList.toggle( 'dak-hidden', ! expanded );
-				} );
+				disclosure.setAttribute( 'aria-expanded', willExpand ? 'true' : 'false' );
+				panel.hidden = ! willExpand;
+				disclosure.textContent = willExpand ? disclosure.getAttribute( 'data-less-label' ) : disclosure.getAttribute( 'data-more-label' );
+				return;
+			}
 
-				toggle.textContent = expanded ? toggle.getAttribute( 'data-less-label' ) : toggle.getAttribute( 'data-more-label' );
+			var toggle = event.target.closest( '[data-specialty-toggle]' );
+
+			if ( ! toggle ) {
+				return;
+			}
+
+			var container = toggle.closest( '[data-specialty-tags]' );
+
+			if ( ! container ) {
+				return;
+			}
+
+			var expanded = toggle.classList.toggle( 'is-expanded' );
+
+			toggle.setAttribute( 'aria-expanded', expanded ? 'true' : 'false' );
+			container.querySelectorAll( '.dak-specialty-tag-extra' ).forEach( function ( tag ) {
+				tag.classList.toggle( 'dak-hidden', ! expanded );
 			} );
+
+			toggle.textContent = expanded ? toggle.getAttribute( 'data-less-label' ) : toggle.getAttribute( 'data-more-label' );
 		} );
 	}
 

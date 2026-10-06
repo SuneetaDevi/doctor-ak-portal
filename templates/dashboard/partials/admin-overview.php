@@ -195,26 +195,28 @@ endif;
 							<td class="dak-activity-actions">
 					<?php if ( $dak_row['is_overdue'] ) : ?>
 						<div class="dak-patient-appt-row-actions">
-							<button
-								type="button"
-								class="dak-status-pill dak-status-pill-action"
-								data-admin-appointment-edit
-								data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>"
-								data-doctor-id="<?php echo esc_attr( $dak_row['doctor_id'] ); ?>"
-								data-patient-id="<?php echo esc_attr( $dak_row['patient_id'] ); ?>"
-								data-guest-name="<?php echo esc_attr( $dak_row['guest_name'] ); ?>"
-								data-guest-email="<?php echo esc_attr( $dak_row['guest_email'] ); ?>"
-								data-guest-phone="<?php echo esc_attr( $dak_row['guest_phone'] ); ?>"
-								data-type="<?php echo esc_attr( $dak_row['type'] ); ?>"
-								data-service-id="<?php echo esc_attr( $dak_row['service_id'] ); ?>"
-								data-date="<?php echo esc_attr( $dak_row['date'] ); ?>"
-								data-time="<?php echo esc_attr( $dak_row['time'] ); ?>"
-								data-status="<?php echo esc_attr( $dak_row['status'] ); ?>"
-								data-payment-status="<?php echo esc_attr( $dak_row['payment_status'] ); ?>"
-								data-payment-mode="<?php echo esc_attr( $dak_row['payment_mode'] ); ?>"
-								data-notes="<?php echo esc_attr( $dak_row['notes'] ); ?>"
-								title="<?php esc_attr_e( 'This appointment\'s time has passed — reschedule it to a new date/time.', 'doctor-ak-portal' ); ?>"
-							><?php esc_html_e( 'Reschedule', 'doctor-ak-portal' ); ?></button>
+							<?php
+								// The appointment dialog only lives on the Appointments
+								// section (this overview doesn't load it), so Reschedule
+								// opens that list narrowed to this appointment's day, and
+								// doctor-ak-admin-appointments.js opens its reschedule
+								// dialog from the `reschedule` parameter.
+								$dak_reschedule_url = add_query_arg(
+									array(
+										'section'    => 'appointments',
+										'range'      => '',
+										'date_from'  => $dak_row['date'],
+										'date_to'    => $dak_row['date'],
+										'reschedule' => $dak_row['id'],
+									),
+									\DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( \DoctorAKPortal\Frontend\Admin_Dashboard::SHORTCODE_TAG )
+								) . '#dak-appointment-' . $dak_row['id'];
+								?>
+								<a
+									class="dak-status-pill dak-status-pill-action"
+									href="<?php echo esc_url( $dak_reschedule_url ); ?>"
+									title="<?php esc_attr_e( 'This appointment\'s time has passed — reschedule it to a new date/time.', 'doctor-ak-portal' ); ?>"
+								><?php esc_html_e( 'Reschedule', 'doctor-ak-portal' ); ?></a>
 						</div>
 					<?php elseif ( ! $dak_row['is_paid'] || ! empty( $dak_row['video_call']['can_join'] ) || in_array( $dak_row['status'], array( 'confirmed', 'paid', 'rescheduled', 'checked_in' ), true ) ) : ?>
 						<div class="dak-patient-appt-row-actions">
@@ -222,11 +224,11 @@ endif;
 								<button type="button" class="dak-status-pill dak-status-pill-action" data-join-video-call data-room-url="<?php echo esc_url( $dak_row['video_call']['room_url'] ); ?>"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></button>
 							<?php endif; ?>
 							<?php if ( in_array( $dak_row['status'], array( 'confirmed', 'paid', 'rescheduled' ), true ) && ( $dak_row['is_paid'] || (float) $dak_row['charge'] <= 0 ) ) : ?>
-								<button type="button" class="dak-status-pill dak-status-pill-action" data-check-in data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>" title="<?php esc_attr_e( 'Check the patient in and open their encounter', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Check In', 'doctor-ak-portal' ); ?></button>
+								<button type="button" class="dak-status-pill dak-status-pill-action" data-check-in data-appointment-id="<?php echo esc_attr( $dak_row['id'] ); ?>" data-return-query="from=dashboard" title="<?php esc_attr_e( 'Check the patient in and open their encounter', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Check In', 'doctor-ak-portal' ); ?></button>
 							<?php elseif ( 'checked_in' === $dak_row['status'] ) : ?>
 								<?php
 								$dak_open_encounter = \DoctorAKPortal\Includes\Encounters::find_by_appointment( $dak_row['id'], \DoctorAKPortal\Includes\Encounters::STATUS_OPEN );
-								$dak_encounter_url  = $dak_open_encounter ? add_query_arg( array( 'section' => 'encounter', 'encounter_id' => $dak_open_encounter['id'] ), \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( \DoctorAKPortal\Frontend\Admin_Dashboard::SHORTCODE_TAG ) ) : '';
+								$dak_encounter_url  = $dak_open_encounter ? add_query_arg( array( 'section' => 'encounter', 'encounter_id' => $dak_open_encounter['id'], 'from' => 'dashboard' ), \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( \DoctorAKPortal\Frontend\Admin_Dashboard::SHORTCODE_TAG ) ) : '';
 								?>
 								<?php if ( '' !== $dak_encounter_url ) : ?>
 									<a class="dak-status-pill dak-status-pill-action" href="<?php echo esc_url( $dak_encounter_url ); ?>"><?php esc_html_e( 'Open Encounter', 'doctor-ak-portal' ); ?></a>

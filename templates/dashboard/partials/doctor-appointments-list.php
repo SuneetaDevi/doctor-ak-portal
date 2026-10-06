@@ -17,6 +17,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] || '' !== $filters['payment_status'] || 'upcoming' !== $filters['range'] || '' !== $filters['search'];
+
+// Encounter links/check-ins from this tab come back here with the same
+// filters (see Encounter_Return).
+$dak_return_args  = \DoctorAKPortal\Includes\Encounter_Return::link_args( 'appointments', $filters );
+$dak_return_query = http_build_query( $dak_return_args, '', '&' );
 ?>
 <div class="dak-dashboard-greeting">
 	<h1><?php esc_html_e( 'Appointments', 'doctor-ak-portal' ); ?></h1>
@@ -154,13 +159,13 @@ $dak_has_filters = '' !== $filters['date_from'] || '' !== $filters['date_to'] ||
 						<?php endif; ?>
 						<?php if ( in_array( $row['status'], array( 'confirmed', 'paid', 'rescheduled' ), true ) && ( $row['is_paid'] || (float) $row['charge'] <= 0 ) ) : ?>
 							<?php if ( ! $row['is_overdue'] ) : ?>
-								<button type="button" class="dak-button dak-button-secondary dak-button-sm" data-check-in data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>" title="<?php esc_attr_e( 'Check the patient in and open their encounter', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Check In', 'doctor-ak-portal' ); ?></button>
+								<button type="button" class="dak-button dak-button-secondary dak-button-sm" data-check-in data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>" data-return-query="<?php echo esc_attr( $dak_return_query ); ?>" title="<?php esc_attr_e( 'Check the patient in and open their encounter', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Check In', 'doctor-ak-portal' ); ?></button>
 							<?php endif; ?>
 							<button type="button" class="dak-button dak-button-secondary dak-button-sm" data-mark-completed data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"><?php esc_html_e( 'Mark Completed', 'doctor-ak-portal' ); ?></button>
 						<?php elseif ( 'checked_in' === $row['status'] ) : ?>
 							<?php
 							$dak_open_encounter = \DoctorAKPortal\Includes\Encounters::find_by_appointment( $row['id'], \DoctorAKPortal\Includes\Encounters::STATUS_OPEN );
-							$dak_encounter_url  = $dak_open_encounter ? add_query_arg( array( 'tab' => 'encounter', 'encounter_id' => $dak_open_encounter['id'] ), \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( \DoctorAKPortal\Frontend\Doctor_Dashboard::SHORTCODE_TAG ) ) : '';
+							$dak_encounter_url  = $dak_open_encounter ? add_query_arg( array_merge( array( 'tab' => 'encounter', 'encounter_id' => $dak_open_encounter['id'] ), $dak_return_args ), \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( \DoctorAKPortal\Frontend\Doctor_Dashboard::SHORTCODE_TAG ) ) : '';
 							?>
 							<?php if ( '' !== $dak_encounter_url ) : ?>
 								<a class="dak-button dak-button-primary dak-button-sm" href="<?php echo esc_url( $dak_encounter_url ); ?>"><?php esc_html_e( 'Open Encounter', 'doctor-ak-portal' ); ?></a>

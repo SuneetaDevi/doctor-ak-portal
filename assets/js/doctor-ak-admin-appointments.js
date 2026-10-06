@@ -15,6 +15,26 @@
 	// just because it's already booked by itself.
 	var currentEditTime = '';
 
+	// The Add/Edit dialog doubles as the focused "Reschedule appointment"
+	// dialog: 'add' | 'edit' | 'reschedule' (see setMode()).
+	var mode = 'add';
+	// Reschedule mode only: the appointment being moved, from its trigger's
+	// data-* attributes ({ id, label, doctorId, type, clinicId, date, time, … }).
+	var rescheduleCtx = null;
+	var isSubmitting = false;
+	var slotsLoading = false;
+	// Every slot request is numbered; a response that isn't the latest one
+	// (the date changed again meanwhile) is dropped instead of rendered.
+	var slotRequestSeq = 0;
+	// Row to highlight once the live-filtered list has refreshed after a
+	// successful reschedule.
+	var pendingHighlightId = '';
+	// After a "slot taken" reply, focus lands on the refreshed times (the
+	// Confirm button that had focus was disabled during the request).
+	var focusSlotsAfterLoad = false;
+	var SLOT_GROUP_THRESHOLD = 8;
+	var FLASH_KEY = 'dakAdminAppointmentFlash';
+
 	document.addEventListener( 'DOMContentLoaded', function () {
 		if ( ! window.dakAdminAppointments ) {
 			return;
@@ -47,12 +67,17 @@
 		wireModalClose( viewModal, 'dak-admin-appointment-view-modal-close' );
 		wireDoctorTypeChange();
 		wireDateTimePicker();
+		wireSlotChoice();
 		wirePatientToggle();
 		wireAdd( modal );
 		wireEdit( modal );
+		wireReschedule( modal );
 		wireView( viewModal );
 		wireSave( modal );
 		wireDelete();
+		wireViewportHeight( modal );
+		showFlash();
+		openRescheduleFromUrl();
 
 		if ( refundModal ) {
 			wireModalClose( refundModal, 'dak-admin-process-refund-modal-close' );
@@ -183,18 +208,76 @@
 	}
 
 	function wireAdd( modal ) {
-		var addButton = document.getElementById( 'dak-admin-appointment-add' );
+		// Delegated: the button lives inside the live-filtered section, so a
+		// direct binding was lost after the first filter change.
+		document.addEventListener( 'click', function ( event ) {
+			if ( ! event.target.closest( '#dak-admin-appointment-add' ) ) {
+				return;
+			}
 
-		if ( ! addButton ) {
-			return;
-		}
-
-		addButton.addEventListener( 'click', function () {
 			clearErrors();
+			setMode( modal, 'add' );
 			resetModalFields();
 			setModalTitle( 'Add Appointment' );
 			openModal( modal );
 		} );
+	}
+
+	/**
+	 * Switches the shared dialog between its full Add/Edit form and the
+	 * focused Reschedule view: shows/hides [data-edit-only] and
+	 * [data-reschedule-only] parts, swaps field labels (data-edit-label /
+	 * data-reschedule-label) and the primary button's text.
+	 *
+	 * @param {HTMLElement} modal   The .dak-modal wrapper.
+	 * @param {string}      newMode 'add' | 'edit' | 'reschedule'.
+	 */
+	function setMode( modal, newMode ) {
+		var isReschedule = 'reschedule' === newMode;
+		var dialog = modal.querySelector( '.dak-modal-dialog' );
+
+		mode = newMode;
+		isSubmitting = false;
+		dialog.setAttribute( 'data-mode', newMode );
+
+		if ( isReschedule ) {
+			dialog.setAttribute( 'aria-describedby', 'dak-admin-appointment-modal-subtitle' );
+		} else {
+			dialog.removeAttribute( 'aria-describedby' );
+			rescheduleCtx = null;
+		}
+
+		modal.querySelectorAll( '[data-edit-only]' ).forEach( function ( el ) {
+			el.hidden = isReschedule;
+		} );
+
+		modal.querySelectorAll( '[data-reschedule-only]' ).forEach( function ( el ) {
+			el.hidden = ! isReschedule;
+		} );
+
+		modal.querySelectorAll( '[data-edit-label]' ).forEach( function ( el ) {
+			el.textContent = el.getAttribute( isReschedule ? 'data-reschedule-label' : 'data-edit-label' );
+		} );
+
+		var saveButton = document.getElementById( 'dak-admin-appointment-save' );
+		var schedule = modal.querySelector( '.dak-schedule-section' );
+
+		setSaveLabel( isReschedule ? 'Confirm reschedule' : 'Save Appointment' );
+		saveButton.disabled = false;
+		saveButton.removeAttribute( 'aria-busy' );
+		setRaw( 'dak-resched-hint', '' );
+
+		if ( schedule ) {
+			schedule.disabled = false;
+		}
+	}
+
+	function setSaveLabel( text ) {
+		var label = document.querySelector( '#dak-admin-appointment-save .dak-button-label' );
+
+		if ( label ) {
+			label.textContent = text;
+		}
 	}
 
 	function setModalTitle( text ) {
@@ -223,6 +306,14 @@
 		modal.classList.add( 'is-open' );
 		modal.setAttribute( 'aria-hidden', 'false' );
 		document.body.classList.add( 'dak-modal-open' );
+
+		// Always open at the top — the body kept its scroll position from
+		// the previous time this dialog was used, which left the first
+		// fields hidden under the header.
+		modal.scrollTop = 0;
+		modal.querySelectorAll( '.dak-modal-body' ).forEach( function ( body ) {
+			body.scrollTop = 0;
+		} );
 	}
 
 	function closeModal( modal ) {
@@ -343,7 +434,17 @@
 			return;
 		}
 
-		function refresh() {
+		function refresh( event ) {
+			// Reschedule mode: doctor/type are fixed; only the date changes,
+			// and a still-valid time survives it (see renderSlotGrid()).
+			if ( 'reschedule' === mode ) {
+				if ( event && event.target === dateField ) {
+					refreshRescheduleSlots();
+				}
+
+				return;
+			}
+
 			// Picking a different doctor/type/date invalidates whatever slot
 			// was selected for the previous one.
 			document.getElementById( 'dak-admin-appointment-time' ).value = '';
@@ -366,30 +467,83 @@
 	}
 
 	function resetSlots() {
+		slotRequestSeq++;
+		slotsLoading = false;
 		document.getElementById( 'dak-admin-appointment-slots-groups' ).innerHTML = '';
+		setSlotStatus( '', '' );
 		hide( document.getElementById( 'dak-admin-appointment-no-slots' ) );
 		show( document.getElementById( 'dak-admin-appointment-slots-hint' ) );
 	}
 
-	function fetchSlots( doctorId, type, date ) {
+	/**
+	 * The slot list's single message line (a polite live region): loading,
+	 * nothing available, or a load failure with a Retry button.
+	 *
+	 * @param {string} kind    '' (clear) | 'loading' | 'empty' | 'error'.
+	 * @param {string} message Text to show.
+	 */
+	function setSlotStatus( kind, message ) {
+		var status = document.getElementById( 'dak-admin-appointment-slots-status' );
+
+		if ( ! status ) {
+			return;
+		}
+
+		status.className = 'dak-slot-status' + ( kind ? ' is-' + kind : '' );
+		status.textContent = message || '';
+
+		if ( 'error' === kind ) {
+			var retry = document.createElement( 'button' );
+			retry.type = 'button';
+			retry.className = 'dak-slot-retry';
+			retry.setAttribute( 'data-dak-slot-retry', '' );
+			retry.textContent = 'Try again';
+			status.appendChild( document.createTextNode( ' ' ) );
+			status.appendChild( retry );
+		}
+	}
+
+	/**
+	 * Loads the real slot grid for a doctor/type/date (the public booking
+	 * page's doctor_ak_available_slots endpoint — never invented times).
+	 *
+	 * @param {string} doctorId Doctor user ID.
+	 * @param {string} type     'clinic' or 'video'.
+	 * @param {string} date     'YYYY-MM-DD'.
+	 * @param {string} clinicId Optional: limit a clinic visit to that clinic's sessions.
+	 */
+	function fetchSlots( doctorId, type, date, clinicId ) {
 		var groups = document.getElementById( 'dak-admin-appointment-slots-groups' );
 		var noSlots = document.getElementById( 'dak-admin-appointment-no-slots' );
 		var hint = document.getElementById( 'dak-admin-appointment-slots-hint' );
+		var requestId = ++slotRequestSeq;
 
 		if ( ! groups ) {
 			return;
 		}
 
 		if ( ! doctorId || ! date ) {
+			slotsLoading = false;
 			groups.innerHTML = '';
+			setSlotStatus( '', '' );
 			hide( noSlots );
-			show( hint );
+
+			if ( 'reschedule' === mode ) {
+				updateRescheduleState();
+			} else {
+				show( hint );
+			}
+
 			return;
 		}
 
 		hide( hint );
 		hide( noSlots );
-		groups.innerHTML = '<p>' + 'Loading times…' + '</p>';
+		slotsLoading = true;
+		groups.innerHTML = '';
+		groups.setAttribute( 'aria-busy', 'true' );
+		setSlotStatus( 'loading', 'Loading available times…' );
+		updateRescheduleState();
 
 		var formData = new FormData();
 		formData.append( 'action', 'doctor_ak_available_slots' );
@@ -398,15 +552,37 @@
 		formData.append( 'type', type );
 		formData.append( 'date', date );
 
+		if ( clinicId && '0' !== String( clinicId ) && 'video' !== type ) {
+			formData.append( 'clinic_id', clinicId );
+		}
+
 		fetch( window.dakAdminAppointments.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
 			.then( function ( response ) { return response.json(); } )
 			.then( function ( result ) {
-				var slots = ( result.success && result.data && result.data.slots ) ? result.data.slots : [];
-				renderSlotGrid( slots );
+				if ( requestId !== slotRequestSeq ) {
+					return;
+				}
+
+				slotsLoading = false;
+				groups.removeAttribute( 'aria-busy' );
+				renderSlotGrid( ( result.success && result.data && result.data.slots ) ? result.data.slots : [], date );
 			} )
 			.catch( function () {
+				if ( requestId !== slotRequestSeq ) {
+					return;
+				}
+
+				slotsLoading = false;
+				groups.removeAttribute( 'aria-busy' );
 				groups.innerHTML = '';
-				show( noSlots );
+
+				if ( 'reschedule' === mode ) {
+					setSlotStatus( 'error', 'Couldn’t load available times.' );
+					updateRescheduleState();
+				} else {
+					setSlotStatus( '', '' );
+					show( noSlots );
+				}
 			} );
 	}
 
@@ -423,17 +599,64 @@
 		return displayHour + ':' + parts[ 1 ] + ' ' + period;
 	}
 
-	function renderSlotGrid( slots ) {
+	/**
+	 * "09:30 AM" — the same 'h:i A' pattern the Appointments list prints, so
+	 * the Current/New comparison reads exactly like the row it came from.
+	 */
+	function formatTimePadded( time ) {
+		var label = formatTimeLabel( time );
+
+		return /^\d:/.test( label ) ? '0' + label : label;
+	}
+
+	/**
+	 * A stored 'YYYY-MM-DD' as an unambiguous label ("Tue 14 Oct 2026", or
+	 * the long form for the date readout). Built in UTC from the date parts
+	 * themselves, so the browser's timezone can never shift the day — the
+	 * date is already in the site's scheduling timezone.
+	 */
+	function formatDateLabel( ymd, long ) {
+		var parts = String( ymd || '' ).split( '-' );
+
+		if ( 3 !== parts.length ) {
+			return ymd || '';
+		}
+
+		var date = new Date( Date.UTC( +parts[ 0 ], +parts[ 1 ] - 1, +parts[ 2 ] ) );
+		var options = long
+			? { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }
+			: { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' };
+
+		try {
+			return new Intl.DateTimeFormat( 'en-GB', options ).format( date ).replace( ',', '' );
+		} catch ( e ) {
+			return ymd;
+		}
+	}
+
+	/**
+	 * Renders the day's slots as one native radio group styled as buttons
+	 * (arrow keys move between times, the checked one is announced as
+	 * selected). Unavailable times stay visible but disabled, with a text
+	 * reason. More than SLOT_GROUP_THRESHOLD visible times are grouped into
+	 * Morning / Afternoon / Evening by their actual start times.
+	 *
+	 * @param {Array}  slots From doctor_ak_available_slots.
+	 * @param {string} date  The date they belong to.
+	 */
+	function renderSlotGrid( slots, date ) {
 		var groupsEl = document.getElementById( 'dak-admin-appointment-slots-groups' );
 		var noSlots = document.getElementById( 'dak-admin-appointment-no-slots' );
 		var timeField = document.getElementById( 'dak-admin-appointment-time' );
+		var isReschedule = 'reschedule' === mode;
 
 		groupsEl.innerHTML = '';
+		setSlotStatus( '', '' );
 
 		// The appointment being edited already occupies its own slot — the
 		// server reports it 'booked' (by this same appointment), but that
 		// shouldn't stop the admin from keeping it selected.
-		if ( currentEditTime ) {
+		if ( currentEditTime && ! isReschedule ) {
 			slots = slots.map( function ( slot ) {
 				if ( slot.time === currentEditTime && 'available' !== slot.status ) {
 					return { time: slot.time, status: 'available', is_instant: false, surcharge: 0 };
@@ -442,60 +665,569 @@
 			} );
 		}
 
-		if ( ! slots.length ) {
-			show( noSlots );
-			return;
+		if ( isReschedule ) {
+			slots = slots
+				// Times already gone today are noise when choosing a new one.
+				.filter( function ( slot ) { return 'past' !== slot.status; } )
+				// Its own current slot can't be "moved" to — shown, not offered.
+				.map( function ( slot ) {
+					if ( rescheduleCtx && date === rescheduleCtx.date && slot.time === rescheduleCtx.time ) {
+						return { time: slot.time, status: 'current' };
+					}
+					return slot;
+				} );
+		}
+
+		var openSlots = slots.filter( function ( slot ) { return 'available' === slot.status; } );
+
+		// Reschedule: an earlier choice survives a date change only if it's
+		// still open. (Add/Edit keep their existing behaviour untouched.)
+		if ( isReschedule && timeField.value && ! openSlots.some( function ( slot ) { return slot.time === timeField.value; } ) ) {
+			var hadTime = timeField.value;
+			timeField.value = '';
+
+			if ( isReschedule && hadTime ) {
+				setFieldError( 'time', formatTimeLabel( hadTime ) + ' isn’t available on this date — choose another time.', false );
+			}
+		}
+
+		if ( ! openSlots.length ) {
+			if ( isReschedule ) {
+				setSlotStatus( 'empty', 'No available times on ' + formatDateLabel( date ) + '. Try another date.' );
+				updateRescheduleState();
+				return;
+			}
+
+			if ( ! slots.length ) {
+				show( noSlots );
+				return;
+			}
 		}
 
 		hide( noSlots );
 
-		var gridEl = document.createElement( 'div' );
-		gridEl.className = 'dak-booking-slots-grid';
+		var periods = [
+			{ label: 'Morning', test: function ( t ) { return t < '12:00'; } },
+			{ label: 'Afternoon', test: function ( t ) { return t >= '12:00' && t < '17:00'; } },
+			{ label: 'Evening', test: function ( t ) { return t >= '17:00'; } },
+		];
+		var buckets = slots.length > SLOT_GROUP_THRESHOLD
+			? periods.map( function ( period ) {
+				return { label: period.label, slots: slots.filter( function ( slot ) { return period.test( slot.time ); } ) };
+			} ).filter( function ( bucket ) { return bucket.slots.length; } )
+			: [ { label: '', slots: slots } ];
 
-		slots.forEach( function ( slot ) {
-			var card = document.createElement( 'button' );
-			card.type = 'button';
-			card.className = 'dak-booking-slot-card is-' + slot.status;
+		buckets.forEach( function ( bucket, index ) {
+			var group = document.createElement( 'div' );
+			group.className = 'dak-slot-group';
 
-			var timeLabel = document.createElement( 'span' );
-			timeLabel.className = 'dak-booking-slot-time';
-			timeLabel.textContent = formatTimeLabel( slot.time );
-			card.appendChild( timeLabel );
-
-			if ( slot.time === timeField.value ) {
-				card.classList.add( 'is-selected' );
+			if ( bucket.label ) {
+				var heading = document.createElement( 'p' );
+				heading.className = 'dak-slot-group-title';
+				heading.id = 'dak-admin-appointment-slot-group-' + index;
+				heading.textContent = bucket.label;
+				group.setAttribute( 'role', 'group' );
+				group.setAttribute( 'aria-labelledby', heading.id );
+				group.appendChild( heading );
 			}
 
-			if ( 'available' === slot.status ) {
-				card.addEventListener( 'click', function () {
-					selectSlot( slot.time, card );
-				} );
-			} else {
-				card.disabled = true;
-			}
+			var grid = document.createElement( 'div' );
+			grid.className = 'dak-slot-grid';
 
-			gridEl.appendChild( card );
+			bucket.slots.forEach( function ( slot ) {
+				grid.appendChild( slotOption( slot, timeField.value ) );
+			} );
+
+			group.appendChild( grid );
+			groupsEl.appendChild( group );
 		} );
 
-		groupsEl.appendChild( gridEl );
+		if ( focusSlotsAfterLoad ) {
+			focusSlotsAfterLoad = false;
+			var firstOpen = groupsEl.querySelector( '.dak-slot-input:not(:disabled)' );
+
+			if ( firstOpen ) {
+				firstOpen.focus();
+			}
+		}
+
+		updateRescheduleState();
 	}
 
-	function selectSlot( time, card ) {
-		document.getElementById( 'dak-admin-appointment-time' ).value = time;
-		clearFieldError( 'time' );
+	/**
+	 * One time option: <label><input type=radio><span>9:30 AM</span></label>.
+	 */
+	function slotOption( slot, selectedTime ) {
+		var reasons = { booked: 'Booked', past: 'Passed', current: 'Current time' };
+		var isOpen = 'available' === slot.status;
+		var label = document.createElement( 'label' );
+		var input = document.createElement( 'input' );
+		var face = document.createElement( 'span' );
+		var time = document.createElement( 'span' );
 
-		document.querySelectorAll( '#dak-admin-appointment-slots-groups .dak-booking-slot-card' ).forEach( function ( el ) {
-			el.classList.remove( 'is-selected' );
+		label.className = 'dak-slot' + ( isOpen ? '' : ' is-unavailable is-' + slot.status );
+		input.type = 'radio';
+		input.name = 'dak-admin-appointment-slot';
+		input.value = slot.time;
+		input.className = 'dak-slot-input';
+		input.disabled = ! isOpen;
+		input.checked = isOpen && slot.time === selectedTime;
+
+		face.className = 'dak-slot-face';
+		time.className = 'dak-slot-time';
+		time.textContent = formatTimeLabel( slot.time );
+		face.appendChild( time );
+
+		if ( ! isOpen ) {
+			var reason = document.createElement( 'span' );
+			reason.className = 'dak-slot-reason';
+			reason.textContent = reasons[ slot.status ] || 'Unavailable';
+			face.appendChild( reason );
+		}
+
+		label.appendChild( input );
+		label.appendChild( face );
+
+		return label;
+	}
+
+	/**
+	 * Native radios: a choice (click, Space, or arrow keys) updates the
+	 * hidden time field the save/reschedule requests read. Delegated, since
+	 * the radios are rebuilt for every date.
+	 */
+	function wireSlotChoice() {
+		var groups = document.getElementById( 'dak-admin-appointment-slots-groups' );
+
+		if ( ! groups ) {
+			return;
+		}
+
+		groups.addEventListener( 'change', function ( event ) {
+			if ( event.target.classList.contains( 'dak-slot-input' ) && event.target.checked ) {
+				document.getElementById( 'dak-admin-appointment-time' ).value = event.target.value;
+				clearFieldError( 'time' );
+				updateRescheduleState();
+			}
 		} );
-		card.classList.add( 'is-selected' );
+
+		document.addEventListener( 'click', function ( event ) {
+			if ( event.target.closest( '[data-dak-slot-retry]' ) ) {
+				refreshRescheduleSlots();
+			}
+		} );
 	}
 
 	function clearFieldError( field ) {
-		var el = document.querySelector( '.dak-field-error[data-field="' + field + '"]' );
+		var el = document.querySelector( '#dak-admin-appointment-modal .dak-field-error[data-field="' + field + '"]' );
 
 		if ( el ) {
 			el.textContent = '';
 		}
+
+		if ( 'time' === field ) {
+			var groups = document.getElementById( 'dak-admin-appointment-slots-groups' );
+
+			if ( groups ) {
+				groups.classList.remove( 'is-invalid' );
+				groups.removeAttribute( 'aria-invalid' );
+				groups.removeAttribute( 'aria-errormessage' );
+			}
+		}
+	}
+
+	/**
+	 * Inline field message. `invalid` (validation errors only) also marks
+	 * the slot group red; an informational note doesn't.
+	 */
+	function setFieldError( field, message, invalid ) {
+		var el = document.querySelector( '#dak-admin-appointment-modal .dak-field-error[data-field="' + field + '"]' );
+
+		if ( el ) {
+			el.textContent = message;
+		}
+
+		if ( 'time' === field && invalid ) {
+			var groups = document.getElementById( 'dak-admin-appointment-slots-groups' );
+
+			if ( groups ) {
+				groups.classList.add( 'is-invalid' );
+				groups.setAttribute( 'aria-invalid', 'true' );
+				groups.setAttribute( 'aria-errormessage', 'dak-admin-appointment-time-error' );
+			}
+		}
+	}
+
+	/* ------------------------------------------------------------------ */
+	/* Reschedule mode                                                     */
+	/* ------------------------------------------------------------------ */
+
+	function wireReschedule( modal ) {
+		document.addEventListener( 'click', function ( event ) {
+			var trigger = event.target.closest( '[data-admin-appointment-reschedule]' );
+
+			if ( ! trigger ) {
+				return;
+			}
+
+			var attr = function ( name ) {
+				return trigger.getAttribute( name ) || '';
+			};
+
+			openReschedule( modal, {
+				id: attr( 'data-appointment-id' ),
+				label: attr( 'data-appointment-label' ),
+				doctorId: attr( 'data-doctor-id' ),
+				type: attr( 'data-type' ) || 'clinic',
+				clinicId: attr( 'data-clinic-id' ),
+				date: attr( 'data-date' ),
+				time: attr( 'data-time' ),
+				patientName: attr( 'data-patient-name' ),
+				doctorName: attr( 'data-doctor-name' ),
+				serviceName: attr( 'data-service-name' ),
+				typeLabel: attr( 'data-type-label' ),
+				clinicName: attr( 'data-clinic-name' ),
+			} );
+		} );
+	}
+
+	function openReschedule( modal, ctx ) {
+		clearErrors();
+		setMode( modal, 'reschedule' );
+		rescheduleCtx = ctx;
+		setModalTitle( 'Reschedule appointment' );
+
+		document.getElementById( 'dak-admin-appointment-id' ).value = ctx.id || '0';
+
+		// Read-only summary of what's being moved.
+		setText( 'dak-resched-patient', ctx.patientName );
+		setRaw( 'dak-resched-label', ctx.label );
+		setText( 'dak-resched-doctor', ctx.doctorName ? 'Dr. ' + ctx.doctorName : '' );
+
+		// "General Consultation · Clinic visit" — the visit type alone when
+		// the service just repeats it (a video consultation).
+		var visit = [ ctx.serviceName, ctx.typeLabel ].filter( function ( part, index, all ) {
+			return part && ( 0 === index || part.toLowerCase() !== all[ 0 ].toLowerCase() );
+		} );
+		setText( 'dak-resched-visit', visit.join( ' · ' ) );
+		setOptional( 'dak-resched-clinic', 'video' === ctx.type ? '' : ctx.clinicName );
+		setText( 'dak-resched-current', formatDateLabel( ctx.date ) + ' · ' + formatTimePadded( ctx.time ) );
+		setText( 'dak-resched-compare-current', formatDateLabel( ctx.date ) + ' · ' + formatTimePadded( ctx.time ) );
+
+		// Earliest date: today in the site's scheduling timezone. Starts on the
+		// current date if that's still ahead, otherwise today.
+		var today = ( window.dakAdminAppointments && window.dakAdminAppointments.today ) || new Date().toISOString().slice( 0, 10 );
+		var dateField = document.getElementById( 'dak-admin-appointment-date' );
+
+		dateField.min = today;
+		dateField.value = ctx.date && ctx.date >= today ? ctx.date : today;
+		currentEditTime = '';
+		document.getElementById( 'dak-admin-appointment-time' ).value = '';
+
+		openModal( modal );
+		refreshRescheduleSlots();
+	}
+
+	function refreshRescheduleSlots() {
+		if ( ! rescheduleCtx ) {
+			return;
+		}
+
+		var dateField = document.getElementById( 'dak-admin-appointment-date' );
+		var date = dateField.value;
+
+		clearFieldError( 'date' );
+		clearFieldError( 'time' );
+		updateDateReadout( date );
+
+		// Typed dates can bypass the picker's own min.
+		if ( date && dateField.min && date < dateField.min ) {
+			resetSlots();
+			hide( document.getElementById( 'dak-admin-appointment-slots-hint' ) );
+			setFieldError( 'date', 'Choose today or a later date.', true );
+			updateRescheduleState();
+			return;
+		}
+
+		fetchSlots( rescheduleCtx.doctorId, rescheduleCtx.type, date, rescheduleCtx.clinicId );
+	}
+
+	function updateDateReadout( date ) {
+		setRaw( 'dak-admin-appointment-date-readout', date ? formatDateLabel( date, true ) : '' );
+	}
+
+	/**
+	 * Footer state: what's still missing (and Confirm disabled), or the
+	 * Current → New comparison (and Confirm enabled).
+	 */
+	function updateRescheduleState() {
+		if ( 'reschedule' !== mode || ! rescheduleCtx ) {
+			return;
+		}
+
+		var date = document.getElementById( 'dak-admin-appointment-date' ).value;
+		var time = document.getElementById( 'dak-admin-appointment-time' ).value;
+		var list = document.getElementById( 'dak-resched-compare-list' );
+		var saveButton = document.getElementById( 'dak-admin-appointment-save' );
+		var hint = '';
+
+		if ( ! date ) {
+			hint = 'Choose a new date to see available times.';
+		} else if ( slotsLoading ) {
+			hint = 'Checking availability…';
+		} else if ( ! time ) {
+			hint = 'Select an available time to continue.';
+		} else if ( date === rescheduleCtx.date && time === rescheduleCtx.time ) {
+			hint = 'Choose a date or time different from the current one.';
+		}
+
+		var isReady = '' === hint;
+
+		setRaw( 'dak-resched-hint', hint );
+		document.getElementById( 'dak-resched-hint' ).hidden = isReady;
+
+		if ( list ) {
+			list.hidden = ! isReady;
+		}
+
+		if ( isReady ) {
+			setText( 'dak-resched-compare-new', formatDateLabel( date ) + ' · ' + formatTimePadded( time ) );
+		}
+
+		saveButton.disabled = ! isReady || isSubmitting;
+	}
+
+	function submitReschedule( modal ) {
+		if ( isSubmitting || ! rescheduleCtx ) {
+			return;
+		}
+
+		updateRescheduleState();
+
+		var saveButton = document.getElementById( 'dak-admin-appointment-save' );
+
+		if ( saveButton.disabled ) {
+			return;
+		}
+
+		var schedule = modal.querySelector( '.dak-schedule-section' );
+		var ctx = rescheduleCtx;
+		var date = document.getElementById( 'dak-admin-appointment-date' ).value;
+		var time = document.getElementById( 'dak-admin-appointment-time' ).value;
+
+		clearErrors();
+		isSubmitting = true;
+		saveButton.disabled = true;
+		saveButton.setAttribute( 'aria-busy', 'true' );
+		setSaveLabel( 'Rescheduling…' );
+
+		// Freeze the choice while the server checks it (a fieldset's
+		// `disabled` covers the date input and every radio).
+		if ( schedule ) {
+			schedule.disabled = true;
+		}
+
+		var formData = new FormData();
+		formData.append( 'action', 'doctor_ak_admin_appointment_reschedule' );
+		formData.append( 'nonce', window.dakAdminAppointments.nonce );
+		formData.append( 'appointment_id', ctx.id );
+		formData.append( 'date', date );
+		formData.append( 'time', time );
+
+		function finish() {
+			isSubmitting = false;
+			saveButton.removeAttribute( 'aria-busy' );
+			setSaveLabel( 'Confirm reschedule' );
+
+			if ( schedule ) {
+				schedule.disabled = false;
+			}
+		}
+
+		fetch( window.dakAdminAppointments.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
+			.then( function ( response ) { return response.json(); } )
+			.then( function ( result ) {
+				finish();
+
+				if ( result.success ) {
+					rescheduled( modal, ctx, date, time );
+					return;
+				}
+
+				if ( 'reschedule' !== mode || ctx !== rescheduleCtx ) {
+					return; // Dialog was closed or reused meanwhile.
+				}
+
+				var message = ( result.data && result.data.message ) || 'Something went wrong. Please try again.';
+
+				if ( result.data && 'slot_unavailable' === result.data.code ) {
+					// Keep the chosen date; drop the taken time and reload
+					// what's actually open now.
+					document.getElementById( 'dak-admin-appointment-time' ).value = '';
+					focusSlotsAfterLoad = true;
+					refreshRescheduleSlots();
+					setFieldError( 'time', message, true );
+					return;
+				}
+
+				showGeneralError( message );
+				focusGeneralError();
+				updateRescheduleState();
+			} )
+			.catch( function () {
+				finish();
+
+				if ( 'reschedule' === mode && ctx === rescheduleCtx ) {
+					showGeneralError( 'Something went wrong. Please check your connection and try again.' );
+					focusGeneralError();
+					updateRescheduleState();
+				}
+			} );
+	}
+
+	/**
+	 * Success: close, confirm in a toast, and refresh the list in place (the
+	 * live filter keeps the admin's current filters), highlighting the moved
+	 * row. Without a live-filter form on the page, reload and show the
+	 * message after.
+	 */
+	function rescheduled( modal, ctx, date, time ) {
+		var message = 'Appointment ' + ( ctx.label ? ctx.label + ' ' : '' ) + 'rescheduled to ' + formatDateLabel( date ) + ' at ' + formatTimePadded( time ) + '.';
+		var filterForm = document.getElementById( 'dak-appt-filter-form' );
+
+		closeModal( modal );
+
+		if ( filterForm && filterForm.hasAttribute( 'data-live-filter' ) && 'function' === typeof filterForm.requestSubmit ) {
+			pendingHighlightId = ctx.id;
+			showToast( message );
+			filterForm.requestSubmit();
+			return;
+		}
+
+		try {
+			window.sessionStorage.setItem( FLASH_KEY, message );
+		} catch ( e ) {
+			// Storage unavailable — the reload still shows the new time.
+		}
+
+		window.location.reload();
+	}
+
+	document.addEventListener( 'dak:live-filter-updated', function () {
+		if ( ! pendingHighlightId ) {
+			return;
+		}
+
+		var row = document.getElementById( 'dak-appointment-' + pendingHighlightId );
+		pendingHighlightId = '';
+
+		if ( ! row ) {
+			return; // Moved outside the current filters.
+		}
+
+		row.classList.add( 'is-just-updated' );
+		row.scrollIntoView( { block: 'center', behavior: 'smooth' } );
+
+		// The Reschedule button that opened the dialog is gone with the old
+		// list — put focus on the same row instead of losing it.
+		var focusTarget = row.querySelector( '[data-admin-appointment-view]' );
+
+		if ( focusTarget ) {
+			focusTarget.focus( { preventScroll: true } );
+		}
+
+		window.setTimeout( function () {
+			row.classList.remove( 'is-just-updated' );
+		}, 2400 );
+	} );
+
+	function focusGeneralError() {
+		var el = document.getElementById( 'dak-admin-appointment-general-error' );
+
+		if ( el ) {
+			el.setAttribute( 'tabindex', '-1' );
+			el.focus();
+		}
+	}
+
+	function showToast( message ) {
+		var toast = document.getElementById( 'dak-admin-toast' );
+
+		if ( ! toast ) {
+			toast = document.createElement( 'div' );
+			toast.id = 'dak-admin-toast';
+			toast.className = 'dak-admin-toast';
+			toast.setAttribute( 'role', 'status' );
+			toast.setAttribute( 'aria-live', 'polite' );
+			document.body.appendChild( toast );
+		}
+
+		toast.textContent = message;
+		toast.classList.add( 'is-visible' );
+		window.clearTimeout( toast.__dakTimer );
+		toast.__dakTimer = window.setTimeout( function () {
+			toast.classList.remove( 'is-visible' );
+		}, 5000 );
+	}
+
+	function showFlash() {
+		var message = '';
+
+		try {
+			message = window.sessionStorage.getItem( FLASH_KEY ) || '';
+			window.sessionStorage.removeItem( FLASH_KEY );
+		} catch ( e ) {
+			message = '';
+		}
+
+		if ( message ) {
+			showToast( message );
+		}
+	}
+
+	/**
+	 * `?reschedule=ID` (the Dashboard overview's Reschedule link) opens that
+	 * row's Reschedule dialog once, then drops the parameter so a refresh
+	 * doesn't reopen it.
+	 */
+	function openRescheduleFromUrl() {
+		var url = new URL( window.location.href );
+		var id = url.searchParams.get( 'reschedule' );
+
+		if ( ! id ) {
+			return;
+		}
+
+		url.searchParams.delete( 'reschedule' );
+		window.history.replaceState( null, '', url.toString() );
+
+		var trigger = document.querySelector( '[data-admin-appointment-reschedule][data-appointment-id="' + String( id ).replace( /[^0-9]/g, '' ) + '"]' );
+
+		if ( trigger ) {
+			trigger.click();
+		} else {
+			showToast( 'That appointment can’t be rescheduled from here — its time may already have been changed.' );
+		}
+	}
+
+	/**
+	 * On phones the on-screen keyboard shrinks the visible area without
+	 * changing 100dvh in every browser — track the visual viewport so the
+	 * dialog (and its footer) always fits what's actually visible.
+	 */
+	function wireViewportHeight( modal ) {
+		if ( ! window.visualViewport ) {
+			return;
+		}
+
+		function update() {
+			if ( modal.classList.contains( 'is-open' ) ) {
+				modal.style.setProperty( '--dak-vvh', window.visualViewport.height + 'px' );
+			}
+		}
+
+		window.visualViewport.addEventListener( 'resize', update );
+		new MutationObserver( update ).observe( modal, { attributes: true, attributeFilter: [ 'class' ] } );
 	}
 
 	function wirePatientToggle() {
@@ -520,6 +1252,7 @@
 			}
 
 			clearErrors();
+			setMode( modal, 'edit' );
 			setModalTitle( 'Edit Appointment' );
 
 			document.getElementById( 'dak-admin-appointment-id' ).value = trigger.getAttribute( 'data-appointment-id' ) || '0';
@@ -575,15 +1308,45 @@
 				return;
 			}
 
-			setText( 'dak-admin-appointment-view-patient', trigger.getAttribute( 'data-patient-name' ) );
-			setText( 'dak-admin-appointment-view-doctor', 'Dr. ' + ( trigger.getAttribute( 'data-doctor-name' ) || '' ) );
-			setText( 'dak-admin-appointment-view-type', trigger.getAttribute( 'data-type-label' ) );
-			setText( 'dak-admin-appointment-view-service', trigger.getAttribute( 'data-service-name' ) );
-			setText( 'dak-admin-appointment-view-datetime', trigger.getAttribute( 'data-datetime-label' ) || '' );
-			setText( 'dak-admin-appointment-view-charge', trigger.getAttribute( 'data-charge' ) );
-			setText( 'dak-admin-appointment-view-payment-mode', trigger.getAttribute( 'data-payment-mode' ) );
-			setText( 'dak-admin-appointment-view-status', trigger.getAttribute( 'data-status-label' ) );
-			setText( 'dak-admin-appointment-view-notes', trigger.getAttribute( 'data-notes' ) );
+			var attr = function ( name ) {
+				return trigger.getAttribute( name ) || '';
+			};
+			var appointmentLabel = attr( 'data-appointment-label' );
+			var clinicName = attr( 'data-clinic-name' );
+			var clinicAddress = attr( 'data-clinic-address' );
+			var doctorName = attr( 'data-doctor-name' );
+			var title = document.getElementById( 'dak-admin-appointment-view-modal-title' );
+
+			if ( title ) {
+				title.textContent = appointmentLabel ? 'Appointment ' + appointmentLabel : 'Appointment details';
+			}
+
+			// Patient
+			setText( 'dak-admin-appointment-view-patient', attr( 'data-patient-name' ) );
+			setText( 'dak-admin-appointment-view-id', appointmentLabel );
+			setText( 'dak-admin-appointment-view-phone', attr( 'data-patient-phone' ) );
+			setOptional( 'dak-admin-appointment-view-age', attr( 'data-patient-age' ) );
+
+			// Schedule and visit — the date/time strings are pre-formatted
+			// server-side with the list's own formatter, so both always match.
+			// Older callers (Dashboard overview) only send data-datetime-label.
+			setText( 'dak-admin-appointment-view-date', attr( 'data-date-label' ) || attr( 'data-datetime-label' ) );
+			setText( 'dak-admin-appointment-view-time', attr( 'data-time-label' ) );
+			setText( 'dak-admin-appointment-view-doctor', doctorName ? 'Dr. ' + doctorName : '' );
+			setText( 'dak-admin-appointment-view-service', attr( 'data-service-name' ) );
+			setText( 'dak-admin-appointment-view-type', attr( 'data-type-label' ) );
+			setOptional( 'dak-admin-appointment-view-location', clinicName && clinicAddress ? clinicName + '\n' + clinicAddress : clinicName );
+			setText( 'dak-admin-appointment-view-status', attr( 'data-status-label' ) );
+
+			// Payment
+			setText( 'dak-admin-appointment-view-charge', attr( 'data-charge' ) );
+			setText( 'dak-admin-appointment-view-payment-status', attr( 'data-payment-status-label' ) );
+			setText( 'dak-admin-appointment-view-payment-mode', attr( 'data-payment-mode' ) );
+			setOptional( 'dak-admin-appointment-view-order', attr( 'data-online-order-id' ) );
+			setOptional( 'dak-admin-appointment-view-refund', attr( 'data-refund-label' ) );
+
+			// Notes
+			setText( 'dak-admin-appointment-view-notes', attr( 'data-notes' ) );
 
 			var printLink = document.getElementById( 'dak-admin-appointment-view-print' );
 
@@ -603,6 +1366,35 @@
 		}
 	}
 
+	/** Like setText(), but an empty value stays empty (no dash). */
+	function setRaw( id, value ) {
+		var el = document.getElementById( id );
+
+		if ( el ) {
+			el.textContent = value || '';
+		}
+	}
+
+	/**
+	 * Like setText(), but hides the whole label/value pair (its wrapping
+	 * <div data-optional>) instead of showing a dash when there's no value.
+	 */
+	function setOptional( id, value ) {
+		var el = document.getElementById( id );
+
+		if ( ! el ) {
+			return;
+		}
+
+		el.textContent = value || '';
+
+		var wrapper = el.closest( '[data-optional]' );
+
+		if ( wrapper ) {
+			wrapper.hidden = ! value;
+		}
+	}
+
 	function wireSave( modal ) {
 		var saveButton = document.getElementById( 'dak-admin-appointment-save' );
 
@@ -611,6 +1403,11 @@
 		}
 
 		saveButton.addEventListener( 'click', function () {
+			if ( 'reschedule' === mode ) {
+				submitReschedule( modal );
+				return;
+			}
+
 			clearErrors();
 
 			var doctorId = document.getElementById( 'dak-admin-appointment-doctor' ).value;
@@ -793,14 +1590,10 @@
 	 * bulk-specific endpoints.
 	 */
 	function wireBulkActions() {
-		var selectAll = document.getElementById( 'dak-appt-select-all' );
-		var bulkBar = document.getElementById( 'dak-appt-bulk-actions' );
-		var bulkCount = document.getElementById( 'dak-appt-bulk-count' );
-
-		if ( ! selectAll || ! bulkBar ) {
-			return;
-		}
-
+		// Every element is looked up at event time, not captured on load: the
+		// live filter replaces the whole list (select-all, bulk bar and all)
+		// with fresh HTML, which used to leave these handlers pointing at the
+		// detached old nodes so bulk selection silently stopped working.
 		function selectedCheckboxes() {
 			return Array.prototype.slice.call( document.querySelectorAll( '.dak-appt-select' ) );
 		}
@@ -810,25 +1603,38 @@
 		}
 
 		function refreshBulkBar() {
+			var selectAll = document.getElementById( 'dak-appt-select-all' );
+			var bulkBar = document.getElementById( 'dak-appt-bulk-actions' );
+			var bulkCount = document.getElementById( 'dak-appt-bulk-count' );
 			var checked = checkedCheckboxes();
-
-			bulkBar.classList.toggle( 'dak-hidden', 0 === checked.length );
-			bulkCount.textContent = checked.length + ' selected';
-
 			var all = selectedCheckboxes();
-			selectAll.checked = all.length > 0 && checked.length === all.length;
-			selectAll.indeterminate = checked.length > 0 && checked.length < all.length;
+
+			if ( bulkBar ) {
+				bulkBar.classList.toggle( 'dak-hidden', 0 === checked.length );
+			}
+
+			if ( bulkCount ) {
+				bulkCount.textContent = checked.length + ' selected';
+			}
+
+			if ( selectAll ) {
+				selectAll.checked = all.length > 0 && checked.length === all.length;
+				selectAll.indeterminate = checked.length > 0 && checked.length < all.length;
+			}
 		}
 
-		selectAll.addEventListener( 'change', function () {
-			selectedCheckboxes().forEach( function ( box ) {
-				box.checked = selectAll.checked;
-			} );
-
-			refreshBulkBar();
-		} );
-
 		document.addEventListener( 'change', function ( event ) {
+			if ( event.target && 'dak-appt-select-all' === event.target.id ) {
+				var checkAll = event.target.checked;
+
+				selectedCheckboxes().forEach( function ( box ) {
+					box.checked = checkAll;
+				} );
+
+				refreshBulkBar();
+				return;
+			}
+
 			if ( event.target.classList && event.target.classList.contains( 'dak-appt-select' ) ) {
 				refreshBulkBar();
 			}
@@ -906,6 +1712,8 @@
 			el.textContent = '';
 		} );
 
+		clearFieldError( 'time' );
+
 		var generalError = document.getElementById( 'dak-admin-appointment-general-error' );
 
 		if ( generalError ) {
@@ -920,6 +1728,13 @@
 		if ( el ) {
 			el.textContent = message;
 			el.classList.remove( 'dak-hidden' );
+
+			// It sits at the top of the scrolling body — bring it into view.
+			var body = el.closest( '.dak-modal-body' );
+
+			if ( body ) {
+				body.scrollTop = 0;
+			}
 		}
 	}
 

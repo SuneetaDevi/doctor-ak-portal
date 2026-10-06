@@ -11,6 +11,7 @@ use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Clinics;
+use DoctorAKPortal\Includes\Encounter_Return;
 use DoctorAKPortal\Includes\Encounters;
 use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Notifications;
@@ -853,11 +854,27 @@ class Doctor_Dashboard {
 			$encounter_id = 0;
 		}
 
+		$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+
+		// Back to whichever tab the encounter was opened from, with its
+		// filters and row — see Encounter_Return. tab_url() returns '' for a
+		// tab this doctor can't access, which hides the link.
+		$back = Encounter_Return::back_link(
+			function ( $list ) use ( $dashboard_url ) {
+				// The overview is the dashboard's own landing page, not a
+				// permission-gated tab.
+				return 'dashboard' === $list ? (string) $dashboard_url : self::tab_url( $dashboard_url, $list );
+			},
+			$encounter ? $encounter : array()
+		);
+
 		return $this->template_loader->get_template(
 			'dashboard/partials/doctor-encounter.php',
 			array(
 				'encounter_id'    => $encounter_id,
-				'appointments_url' => self::tab_url( Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ), 'appointments' ),
+				'appointments_url' => self::tab_url( $dashboard_url, 'appointments' ),
+				'back_url'         => $back['url'],
+				'back_label'       => $back['label'],
 				'is_closed'        => $encounter && Encounters::STATUS_CLOSED === $encounter['status'],
 			)
 		);

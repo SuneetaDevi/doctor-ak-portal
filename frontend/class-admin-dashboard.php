@@ -14,6 +14,7 @@ use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Doctor_Awards;
 use DoctorAKPortal\Includes\Doctor_Keywords;
+use DoctorAKPortal\Includes\Encounter_Return;
 use DoctorAKPortal\Includes\Encounters;
 use DoctorAKPortal\Includes\Google_Reviews;
 use DoctorAKPortal\Includes\Home_Testimonials;
@@ -909,6 +910,10 @@ class Admin_Dashboard {
 					// slot picker reuses from the public booking page (see
 					// Booking_Handler::handle_get_available_slots()).
 					'slotsNonce' => wp_create_nonce( Booking_Handler::NONCE_ACTION ),
+					// "Today" in the site's scheduling timezone — the
+					// Reschedule dialog's earliest date (the browser's own
+					// clock/UTC date can be a day off).
+					'today'      => current_time( 'Y-m-d' ),
 				)
 			);
 		}
@@ -1586,7 +1591,7 @@ class Admin_Dashboard {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		foreach ( array( 'patient_id', 'date_from', 'date_to', 'doctor_id', 'payment_status', 'range', 'search' ) as $key ) {
+		foreach ( array( 'patient_id', 'date_from', 'date_to', 'doctor_id', 'payment_status', 'range', 'search', 'sort' ) as $key ) {
 			$_GET[ $key ] = isset( $_POST[ $key ] ) ? $_POST[ $key ] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- nonce already verified above; section_content_html() sanitizes each value itself, same as it does for a real $_GET.
 		}
 
@@ -1715,6 +1720,11 @@ class Admin_Dashboard {
 			$modal_html = $this->appointment_modal_html();
 		} elseif ( 'clinic' === $section ) {
 			$modal_html = $this->clinic_location_modal_html();
+		} elseif ( 'doctors' === $section && ! $is_user_form_view ) {
+			// Shared "Doctor details" dialog shell — printed outside the
+			// live-filter target so filtering never destroys it; each row
+			// carries its own <template> that fills it.
+			$modal_html = $this->template_loader->get_template( 'modal/admin-doctor-view-modal.php', array() );
 		}
 
 		if ( $is_user_form_view ) {
@@ -1922,6 +1932,10 @@ class Admin_Dashboard {
 			$range = isset( $_GET['range'] ) ? sanitize_key( wp_unslash( $_GET['range'] ) ) : 'upcoming'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			$range = array_key_exists( $range, Appointments::range_options() ) ? $range : 'upcoming';
 
+			// Explicit ordering. 'desc' (newest date/time first) is what this
+			// list has always used, so it stays the default.
+			$sort = isset( $_GET['sort'] ) && 'asc' === sanitize_key( wp_unslash( $_GET['sort'] ) ) ? 'asc' : 'desc'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+
 			// Query bounds only — $date_from/$date_to themselves stay as
 			// whatever the admin actually typed, so the From/To fields don't
 			// appear to have a value the admin never entered.
@@ -1959,6 +1973,7 @@ class Admin_Dashboard {
 					'date_to'        => $query_date_to,
 					'doctor_id'      => $doctor_id,
 					'payment_status' => $payment_status,
+					'sort'           => $sort,
 				)
 			);
 
@@ -2012,6 +2027,7 @@ class Admin_Dashboard {
 						'payment_status' => $payment_status,
 						'range'          => $range,
 						'search'         => $search,
+						'sort'           => $sort,
 					),
 				)
 			);
@@ -2310,6 +2326,15 @@ class Admin_Dashboard {
 
 			$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
 
+			// Back to whichever list the encounter was opened from (with its
+			// filters and row), not always Appointments — see Encounter_Return.
+			$back = Encounter_Return::back_link(
+				function ( $list ) use ( $dashboard_url ) {
+					return $dashboard_url ? add_query_arg( 'section', $list, $dashboard_url ) : '';
+				},
+				$encounter ? $encounter : array()
+			);
+
 			// Reuses the doctor dashboard's own encounter template verbatim —
 			// the screen (and its JS, see Doctor_Dashboard::enqueue_assets())
 			// is identical for both audiences, just reached via a different
@@ -2319,6 +2344,8 @@ class Admin_Dashboard {
 				array(
 					'encounter_id'     => $encounter_id,
 					'appointments_url' => $dashboard_url ? add_query_arg( 'section', 'appointments', $dashboard_url ) : '',
+					'back_url'         => $back['url'],
+					'back_label'       => $back['label'],
 					'is_closed'        => $encounter && Encounters::STATUS_CLOSED === $encounter['status'],
 				)
 			);
@@ -3057,8 +3084,10 @@ class Admin_Dashboard {
 		$dashboard_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
 		$section_url   = $dashboard_url ? add_query_arg( 'section', $section, $dashboard_url ) : '';
 
+		// The Doctors directory has its own semantic-table partial; Patients
+		// and Receptionists keep the shared row template.
 		return $this->template_loader->get_template(
-			'dashboard/partials/admin-user-table.php',
+			$is_doctors_section ? 'dashboard/partials/admin-doctors-table.php' : 'dashboard/partials/admin-user-table.php',
 			array(
 				'users'              => $users,
 				'section'            => $section,
@@ -3189,6 +3218,7 @@ class Admin_Dashboard {
 
 		$location                        = '';
 		$clinic_labels                   = array();
+		$physical_clinic_labels          = array();
 		$clinic_location_id              = 0;
 		$clinic_location_label           = '';
 		$receptionist_clinic_location_ids = array();
@@ -3226,6 +3256,17 @@ class Admin_Dashboard {
 					)
 				)
 			);
+
+			// Physical clinics only — the Doctors directory shows video once,
+			// as a visit option from video_consultation_allowed below, rather
+			// than also listing it as if it were a clinic.
+			foreach ( $doctor_clinics as $clinic ) {
+				if ( Clinics::TYPE_PHYSICAL === $clinic['type'] && '' !== $clinic['name'] ) {
+					$physical_clinic_labels[] = $clinic['name'];
+				}
+			}
+
+			$physical_clinic_labels = array_values( array_unique( $physical_clinic_labels ) );
 		}
 
 		if ( in_array( Roles::RECEPTIONIST_ROLE, (array) $user->roles, true ) ) {
@@ -3263,6 +3304,7 @@ class Admin_Dashboard {
 			'specialization_labels'       => $specialization_labels,
 			'keywords'                    => (array) get_user_meta( $user->ID, 'doctor_ak_keywords', true ),
 			'clinic_labels'               => $clinic_labels,
+			'physical_clinic_labels'      => $physical_clinic_labels,
 			'receptionist_clinic_location_ids' => $receptionist_clinic_location_ids,
 			'clinic_location_id'          => $clinic_location_id,
 			'clinic_location_label'       => $clinic_location_label,

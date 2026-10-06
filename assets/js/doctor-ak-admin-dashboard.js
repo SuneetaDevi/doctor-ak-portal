@@ -17,31 +17,59 @@
 	document.addEventListener( 'DOMContentLoaded', function () {
 		initUserForm();
 		initRowActions();
-		initSpecialtyTagToggles();
+		initDoctorDetails();
 	} );
 
-	/**
-	 * Wires the table's "+N" specialization chip — expands/collapses the
-	 * extra tags beyond the first two shown by default (see
-	 * admin-user-table.php).
-	 */
-	function initSpecialtyTagToggles() {
-		document.querySelectorAll( '[data-specialty-toggle]' ).forEach( function ( toggle ) {
-			toggle.addEventListener( 'click', function () {
-				var container = toggle.closest( '[data-specialty-tags]' );
+	// The "+N" specialization chip (data-specialty-toggle) used to be bound
+	// here AND in doctor-ak-dashboard.js — both scripts load on this page, so
+	// every click toggled twice and nothing visibly changed. It now lives
+	// once, delegated, in doctor-ak-dashboard.js.
 
-				if ( ! container ) {
+	/**
+	 * Doctors directory → "View details": fills the shared dialog
+	 * (templates/modal/admin-doctor-view-modal.php) from the clicked row's
+	 * own <template data-admin-doctor-template>. Delegated, so it keeps
+	 * working after the live filter replaces the table. Escape, focus trap
+	 * and returning focus to this button come from doctor-ak-dashboard-ui.js,
+	 * which manages every .dak-modal.
+	 */
+	function initDoctorDetails() {
+		var modal = document.getElementById( 'dak-admin-doctor-view-modal' );
+
+		if ( ! modal ) {
+			return;
+		}
+
+		var body = document.getElementById( 'dak-admin-doctor-view-body' );
+
+		function close() {
+			modal.classList.remove( 'is-open' );
+			modal.setAttribute( 'aria-hidden', 'true' );
+			document.body.classList.remove( 'dak-modal-open' );
+		}
+
+		document.addEventListener( 'click', function ( event ) {
+			var trigger = event.target.closest( '[data-admin-doctor-view]' );
+
+			if ( trigger ) {
+				var id = trigger.getAttribute( 'data-admin-doctor-view' );
+				var template = document.querySelector( 'template[data-admin-doctor-template="' + id + '"]' );
+
+				if ( ! template || ! body ) {
 					return;
 				}
 
-				var expanded = toggle.classList.toggle( 'is-expanded' );
+				body.innerHTML = '';
+				body.appendChild( template.content.cloneNode( true ) );
+				modal.classList.add( 'is-open' );
+				modal.setAttribute( 'aria-hidden', 'false' );
+				document.body.classList.add( 'dak-modal-open' );
+				return;
+			}
 
-				container.querySelectorAll( '.dak-specialty-tag-extra' ).forEach( function ( tag ) {
-					tag.classList.toggle( 'dak-hidden', ! expanded );
-				} );
-
-				toggle.textContent = expanded ? toggle.getAttribute( 'data-less-label' ) : toggle.getAttribute( 'data-more-label' );
-			} );
+			if ( event.target.closest( '[data-dak-admin-doctor-view-close]' ) ) {
+				close();
+			}
 		} );
 	}
 

@@ -147,7 +147,8 @@
 				.then( function ( result ) {
 					if ( result.success && result.data && result.data.encounter_id ) {
 						var separator = window.dakAdminEncounters.encounterUrl.indexOf( '?' ) > -1 ? '&' : '?';
-						window.location.href = window.dakAdminEncounters.encounterUrl + separator + 'encounter_id=' + result.data.encounter_id;
+						// from=encounters: the new encounter's back link returns here.
+						window.location.href = window.dakAdminEncounters.encounterUrl + separator + 'encounter_id=' + result.data.encounter_id + '&from=encounters';
 						return;
 					}
 

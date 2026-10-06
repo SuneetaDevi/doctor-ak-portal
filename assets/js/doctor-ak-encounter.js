@@ -401,17 +401,23 @@
 		if ( statusEl ) {
 			statusEl.textContent = isOpen ? 'Open' : 'Closed';
 			statusEl.classList.toggle( 'dak-status-pill-is-active', isOpen );
-			statusEl.classList.toggle( 'dak-status-pill-is-disabled', ! isOpen );
+			// Closed is a normal end state, not an error — neutral, not red.
+			statusEl.classList.remove( 'dak-status-pill-is-disabled' );
+			statusEl.classList.toggle( 'dak-status-pill-is-neutral', ! isOpen );
 		}
 
 		var metaParts = [];
+
+		if ( data.encounter.id ) {
+			metaParts.push( 'ENC-' + ( '000' + data.encounter.id ).slice( -Math.max( 4, String( data.encounter.id ).length ) ) );
+		}
 
 		if ( data.appointment.doctor_name ) {
 			metaParts.push( 'Dr. ' + data.appointment.doctor_name );
 		}
 
 		if ( data.encounter.clinic_name ) {
-			metaParts.push( data.encounter.clinic_name );
+			metaParts.push( data.encounter.clinic_address ? data.encounter.clinic_name + ' — ' + data.encounter.clinic_address : data.encounter.clinic_name );
 		} else if ( data.appointment.type_label ) {
 			// No physical clinic on this encounter means it's a video
 			// consultation — say so instead of just omitting the clinic.

@@ -1637,9 +1637,15 @@ class Appointments {
 	 * @param int    $appointment_id Appointment post ID.
 	 * @param string $date           New date, 'YYYY-MM-DD'.
 	 * @param string $time           New time, 'HH:MM'.
+	 * @param array  $args           Optional. 'ignore_cutoff' => true skips the
+	 *                               "starts within RESCHEDULE_CUTOFF_MINUTES_BEFORE"
+	 *                               rule — admin/receptionist only (their
+	 *                               Reschedule action exists precisely for
+	 *                               appointments whose time has already passed).
+	 *                               Patient/doctor callers never pass it.
 	 * @return true|\WP_Error
 	 */
-	public static function reschedule( $appointment_id, $date, $time ) {
+	public static function reschedule( $appointment_id, $date, $time, array $args = array() ) {
 		$appointment = self::get( $appointment_id );
 
 		if ( empty( $appointment ) ) {
@@ -1652,7 +1658,7 @@ class Appointments {
 
 		$current_start = strtotime( $appointment['date'] . ' ' . $appointment['time'] );
 
-		if ( false !== $current_start ) {
+		if ( false !== $current_start && empty( $args['ignore_cutoff'] ) ) {
 			$now = current_time( 'timestamp' ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- comparing against strtotime() of a stored local date/time string, not doing math that needs UTC.
 
 			if ( $now > $current_start - self::RESCHEDULE_CUTOFF_MINUTES_BEFORE * MINUTE_IN_SECONDS ) {
@@ -2851,7 +2857,16 @@ class Appointments {
 			'is_paid'           => self::PAYMENT_STATUS_PAID === $appointment['payment_status'],
 			'payment_mode'      => $appointment['payment_mode'],
 			'service_id'        => $appointment['service_id'],
+			// Every service on a multi-service visit — the Edit modal reads
+			// this to pre-select them all (without it, it fell back to just
+			// the single primary service_id).
+			'service_ids'       => $appointment['service_ids'],
 			'service_name'      => $appointment['service_name'],
+			// The Swich order reference saved by a completed online payment,
+			// or '' — shown read-only in the details dialog. Unlike
+			// payment_mode (set at booking/edit time only), this is actual
+			// evidence that money was collected online.
+			'online_order_id'   => (string) get_post_meta( $appointment['id'], Swich_Payment::META_ORDER_ID, true ),
 			'charge'            => $appointment['charge'],
 			'base_charge'       => $appointment['base_charge'],
 			'discount_percent'  => $appointment['discount_percent'],

@@ -35,7 +35,13 @@
 				.then( function ( result ) {
 					if ( result.success && result.data && result.data.encounter_id ) {
 						var separator = window.dakCheckIn.encounterUrl.indexOf( '?' ) > -1 ? '&' : '?';
-						window.location.href = window.dakCheckIn.encounterUrl + separator + 'encounter_id=' + result.data.encounter_id;
+						// The list this was clicked in (from=… plus its filters,
+						// pre-built server-side — see Encounter_Return), so the
+						// encounter's back link returns there, not always to
+						// Appointments.
+						var returnQuery = trigger.getAttribute( 'data-return-query' );
+
+						window.location.href = window.dakCheckIn.encounterUrl + separator + 'encounter_id=' + result.data.encounter_id + ( returnQuery ? '&' + returnQuery : '' );
 						return;
 					}
 

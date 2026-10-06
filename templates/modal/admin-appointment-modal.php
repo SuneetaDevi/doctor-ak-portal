@@ -21,15 +21,49 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="dak-portal dak-modal" id="dak-admin-appointment-modal" aria-hidden="true" data-services="<?php echo esc_attr( wp_json_encode( $services ) ); ?>">
 	<div class="dak-modal-overlay" data-dak-admin-appointment-modal-close></div>
 
-	<div class="dak-modal-dialog dak-modal-dialog-form" role="dialog" aria-modal="true" aria-labelledby="dak-admin-appointment-modal-title">
-		<button type="button" class="dak-modal-close" data-dak-admin-appointment-modal-close aria-label="<?php esc_attr_e( 'Close', 'doctor-ak-portal' ); ?>">&times;</button>
+	<?php
+	// One dialog, three modes (data-mode on the dialog, set by
+	// doctor-ak-admin-appointments.js): "add" and "edit" show the full form;
+	// "reschedule" shows a read-only summary plus only the date/time picker
+	// ([data-edit-only] sections are hidden, [data-reschedule-only] shown).
+	?>
+	<div class="dak-modal-dialog dak-modal-dialog-form" role="dialog" aria-modal="true" aria-labelledby="dak-admin-appointment-modal-title" data-mode="add">
 		<div class="dak-modal-header">
 			<h2 id="dak-admin-appointment-modal-title"><?php esc_html_e( 'Add Appointment', 'doctor-ak-portal' ); ?></h2>
+			<p class="dak-modal-subtitle" id="dak-admin-appointment-modal-subtitle" data-reschedule-only hidden><?php esc_html_e( 'Choose a new date and available time.', 'doctor-ak-portal' ); ?></p>
+			<button type="button" class="dak-modal-close" data-dak-admin-appointment-modal-close aria-label="<?php esc_attr_e( 'Close', 'doctor-ak-portal' ); ?>">&times;</button>
 		</div>
 		<div class="dak-modal-body">
 			<div class="dak-alert dak-alert-error dak-hidden" id="dak-admin-appointment-general-error" role="alert"></div>
 			<input type="hidden" id="dak-admin-appointment-id" value="0">
-			<fieldset class="dak-form-section">
+
+			<section class="dak-resched-summary" data-reschedule-only hidden aria-labelledby="dak-resched-summary-title">
+				<h3 class="dak-visually-hidden" id="dak-resched-summary-title"><?php esc_html_e( 'Current appointment', 'doctor-ak-portal' ); ?></h3>
+				<dl class="dak-resched-summary-list">
+					<div>
+						<dt><?php esc_html_e( 'Patient', 'doctor-ak-portal' ); ?></dt>
+						<dd><span id="dak-resched-patient"></span> <span class="dak-resched-muted" id="dak-resched-label"></span></dd>
+					</div>
+					<div>
+						<dt><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></dt>
+						<dd id="dak-resched-doctor"></dd>
+					</div>
+					<div>
+						<dt><?php esc_html_e( 'Service and visit', 'doctor-ak-portal' ); ?></dt>
+						<dd id="dak-resched-visit"></dd>
+					</div>
+					<div data-optional>
+						<dt><?php esc_html_e( 'Clinic', 'doctor-ak-portal' ); ?></dt>
+						<dd id="dak-resched-clinic"></dd>
+					</div>
+					<div class="dak-resched-summary-current">
+						<dt><?php esc_html_e( 'Current date and time', 'doctor-ak-portal' ); ?></dt>
+						<dd id="dak-resched-current"></dd>
+					</div>
+				</dl>
+			</section>
+
+			<fieldset class="dak-form-section" data-edit-only>
 				<legend><?php esc_html_e( 'Patient', 'doctor-ak-portal' ); ?></legend>
 				<div class="dak-field">
 					<label for="dak-admin-appointment-patient"><?php esc_html_e( 'Registered patient', 'doctor-ak-portal' ); ?> <span class="dak-optional"><?php esc_html_e( '(optional)', 'doctor-ak-portal' ); ?></label>
@@ -59,7 +93,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</div>
 				</div>
 			</fieldset>
-			<fieldset class="dak-form-section">
+			<fieldset class="dak-form-section" data-edit-only>
 				<legend><?php esc_html_e( 'Doctor and services', 'doctor-ak-portal' ); ?></legend>
 				<div class="dak-field-row">
 					<div class="dak-field">
@@ -88,23 +122,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<span class="dak-field-hint" id="dak-admin-appointment-service-total"></span>
 				</div>
 			</fieldset>
-			<fieldset class="dak-form-section">
-				<legend><?php esc_html_e( 'Date and time', 'doctor-ak-portal' ); ?></legend>
+			<fieldset class="dak-form-section dak-schedule-section">
+				<legend data-edit-only><?php esc_html_e( 'Date and time', 'doctor-ak-portal' ); ?></legend>
 				<div class="dak-field">
-					<label for="dak-admin-appointment-date"><?php esc_html_e( 'Date', 'doctor-ak-portal' ); ?></label>
-					<input type="date" id="dak-admin-appointment-date">
+					<label for="dak-admin-appointment-date" id="dak-admin-appointment-date-label" data-edit-label="<?php esc_attr_e( 'Date', 'doctor-ak-portal' ); ?>" data-reschedule-label="<?php esc_attr_e( 'New appointment date', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Date', 'doctor-ak-portal' ); ?></label>
+					<input type="date" id="dak-admin-appointment-date" aria-describedby="dak-admin-appointment-date-readout">
+					<p class="dak-resched-date-readout" id="dak-admin-appointment-date-readout" data-reschedule-only hidden></p>
 					<span class="dak-field-error" data-field="date"></span>
 				</div>
 				<div class="dak-field">
-					<span class="dak-field-label" id="dak-admin-appointment-time-label"><?php esc_html_e( 'Time', 'doctor-ak-portal' ); ?></span>
+					<span class="dak-field-label" id="dak-admin-appointment-time-label" data-edit-label="<?php esc_attr_e( 'Time', 'doctor-ak-portal' ); ?>" data-reschedule-label="<?php esc_attr_e( 'Available times', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Time', 'doctor-ak-portal' ); ?></span>
 					<input type="hidden" id="dak-admin-appointment-time">
+					<?php // Directly under the label, so a "time no longer available" message is seen before the (possibly long) list. ?>
+					<span class="dak-field-error dak-slot-error" data-field="time" id="dak-admin-appointment-time-error" role="alert"></span>
 					<p class="dak-field-hint dak-hidden" id="dak-admin-appointment-slots-hint"><?php esc_html_e( 'Choose a doctor and date to see open slots.', 'doctor-ak-portal' ); ?></p>
-					<div id="dak-admin-appointment-slots-groups" role="group" aria-labelledby="dak-admin-appointment-time-label"></div>
+					<?php // Loading / empty / error messages for the slot list (polite live region). ?>
+					<div class="dak-slot-status" id="dak-admin-appointment-slots-status" role="status" aria-live="polite"></div>
+					<div class="dak-slot-groups" id="dak-admin-appointment-slots-groups" role="radiogroup" aria-labelledby="dak-admin-appointment-time-label"></div>
 					<p class="dak-empty-state dak-hidden" id="dak-admin-appointment-no-slots"><?php esc_html_e( 'No time slots are configured for this doctor on this date.', 'doctor-ak-portal' ); ?></p>
-					<span class="dak-field-error" data-field="time"></span>
 				</div>
 			</fieldset>
-			<fieldset class="dak-form-section">
+			<fieldset class="dak-form-section" data-edit-only>
 				<legend><?php esc_html_e( 'Status and payment', 'doctor-ak-portal' ); ?></legend>
 				<div class="dak-field-row">
 					<div class="dak-field">
@@ -138,10 +176,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</fieldset>
 		</div>
 		<div class="dak-modal-footer">
-			<button type="button" class="dak-button dak-button-secondary" data-dak-admin-appointment-modal-close><?php esc_html_e( 'Cancel', 'doctor-ak-portal' ); ?></button>
-			<button type="button" class="dak-button dak-button-primary" id="dak-admin-appointment-save">
-				<span class="dak-button-label"><?php esc_html_e( 'Save Appointment', 'doctor-ak-portal' ); ?></span>
-			</button>
+			<?php // Reschedule mode: what changes (Current → New), or what's still missing. ?>
+			<div class="dak-resched-compare" id="dak-resched-compare" data-reschedule-only hidden aria-live="polite">
+				<p class="dak-resched-compare-hint" id="dak-resched-hint"></p>
+				<dl class="dak-resched-compare-list" id="dak-resched-compare-list" hidden>
+					<div><dt><?php esc_html_e( 'Current', 'doctor-ak-portal' ); ?></dt><dd id="dak-resched-compare-current"></dd></div>
+					<div class="is-new"><dt><?php esc_html_e( 'New', 'doctor-ak-portal' ); ?></dt><dd id="dak-resched-compare-new"></dd></div>
+				</dl>
+			</div>
+			<div class="dak-modal-footer-actions">
+				<button type="button" class="dak-button dak-button-secondary" data-dak-admin-appointment-modal-close><?php esc_html_e( 'Cancel', 'doctor-ak-portal' ); ?></button>
+				<button type="button" class="dak-button dak-button-primary" id="dak-admin-appointment-save" aria-describedby="dak-resched-hint">
+					<span class="dak-button-label"><?php esc_html_e( 'Save Appointment', 'doctor-ak-portal' ); ?></span>
+				</button>
+			</div>
 		</div>
 	</div>
 </div>
@@ -153,26 +201,57 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<button type="button" class="dak-modal-close" data-dak-admin-appointment-view-modal-close aria-label="<?php esc_attr_e( 'Close', 'doctor-ak-portal' ); ?>">&times;</button>
 
 		<div class="dak-modal-header">
-			<h2 id="dak-admin-appointment-view-modal-title"><?php esc_html_e( 'Appointment Details', 'doctor-ak-portal' ); ?></h2>
+			<h2 id="dak-admin-appointment-view-modal-title"><?php esc_html_e( 'Appointment details', 'doctor-ak-portal' ); ?></h2>
 		</div>
 
-		<table class="dak-admin-users-table">
-			<tbody>
-				<tr><td><?php esc_html_e( 'Patient', 'doctor-ak-portal' ); ?></td><td id="dak-admin-appointment-view-patient"></td></tr>
-				<tr><td><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></td><td id="dak-admin-appointment-view-doctor"></td></tr>
-				<tr><td><?php esc_html_e( 'Type', 'doctor-ak-portal' ); ?></td><td id="dak-admin-appointment-view-type"></td></tr>
-				<tr><td><?php esc_html_e( 'Service', 'doctor-ak-portal' ); ?></td><td id="dak-admin-appointment-view-service"></td></tr>
-				<tr><td><?php esc_html_e( 'Date & Time', 'doctor-ak-portal' ); ?></td><td id="dak-admin-appointment-view-datetime"></td></tr>
-				<tr><td><?php esc_html_e( 'Charges', 'doctor-ak-portal' ); ?></td><td id="dak-admin-appointment-view-charge"></td></tr>
-				<tr><td><?php esc_html_e( 'Payment Mode', 'doctor-ak-portal' ); ?></td><td id="dak-admin-appointment-view-payment-mode"></td></tr>
-				<tr><td><?php esc_html_e( 'Status', 'doctor-ak-portal' ); ?></td><td id="dak-admin-appointment-view-status"></td></tr>
-				<tr><td><?php esc_html_e( 'Notes', 'doctor-ak-portal' ); ?></td><td id="dak-admin-appointment-view-notes"></td></tr>
-			</tbody>
-		</table>
+		<div class="dak-modal-body">
+			<?php // Filled by wireView() in doctor-ak-admin-appointments.js from the clicked row's data-* attributes. ?>
+			<div class="dak-detail-group">
+				<h3 class="dak-detail-group-title"><?php esc_html_e( 'Patient', 'doctor-ak-portal' ); ?></h3>
+				<dl class="dak-detail-list">
+					<div><dt><?php esc_html_e( 'Name', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-patient"></dd></div>
+					<div><dt><?php esc_html_e( 'Appointment ID', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-id"></dd></div>
+					<div><dt><?php esc_html_e( 'Phone', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-phone"></dd></div>
+					<div data-optional><dt><?php esc_html_e( 'Age', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-age"></dd></div>
+				</dl>
+			</div>
 
-		<a class="dak-button dak-button-primary dak-button-block" id="dak-admin-appointment-view-print" href="#" target="_blank" rel="noopener noreferrer">
-			<?php esc_html_e( 'Print', 'doctor-ak-portal' ); ?>
-		</a>
+			<div class="dak-detail-group">
+				<h3 class="dak-detail-group-title"><?php esc_html_e( 'Schedule and visit', 'doctor-ak-portal' ); ?></h3>
+				<dl class="dak-detail-list">
+					<div><dt><?php esc_html_e( 'Date', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-date"></dd></div>
+					<div><dt><?php esc_html_e( 'Time', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-time"></dd></div>
+					<div><dt><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-doctor"></dd></div>
+					<div><dt><?php esc_html_e( 'Service', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-service"></dd></div>
+					<div><dt><?php esc_html_e( 'Visit type', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-type"></dd></div>
+					<div data-optional><dt><?php esc_html_e( 'Location', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-location"></dd></div>
+					<div><dt><?php esc_html_e( 'Appointment status', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-status"></dd></div>
+				</dl>
+			</div>
+
+			<div class="dak-detail-group">
+				<h3 class="dak-detail-group-title"><?php esc_html_e( 'Payment', 'doctor-ak-portal' ); ?></h3>
+				<dl class="dak-detail-list">
+					<div><dt><?php esc_html_e( 'Amount', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-charge"></dd></div>
+					<div><dt><?php esc_html_e( 'Payment status', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-payment-status"></dd></div>
+					<?php // payment_mode is set at booking/edit time only — it isn't updated when a payment is collected later, so it's labelled as such rather than as "paid via". ?>
+					<div><dt><?php esc_html_e( 'Payment mode (set at booking)', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-payment-mode"></dd></div>
+					<div data-optional><dt><?php esc_html_e( 'Online payment reference', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-order"></dd></div>
+					<div data-optional><dt><?php esc_html_e( 'Refund', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-refund"></dd></div>
+				</dl>
+			</div>
+
+			<div class="dak-detail-group">
+				<h3 class="dak-detail-group-title"><?php esc_html_e( 'Notes', 'doctor-ak-portal' ); ?></h3>
+				<p class="dak-detail-notes" id="dak-admin-appointment-view-notes"></p>
+			</div>
+		</div>
+
+		<div class="dak-modal-footer">
+			<a class="dak-button dak-button-primary" id="dak-admin-appointment-view-print" href="#" target="_blank" rel="noopener noreferrer">
+				<?php esc_html_e( 'Print slip', 'doctor-ak-portal' ); ?>
+			</a>
+		</div>
 	</div>
 </div>
 

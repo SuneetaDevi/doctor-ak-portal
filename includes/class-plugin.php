@@ -407,6 +407,7 @@ class Plugin {
 
 		$appointment_handler = new Appointment_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointment_save', $appointment_handler, 'handle_admin_save_appointment' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointment_reschedule', $appointment_handler, 'handle_admin_reschedule_appointment' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointment_delete', $appointment_handler, 'handle_admin_delete_appointment' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_encounter_note_save', $appointment_handler, 'handle_admin_save_encounter_note' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_appointment_print', $appointment_handler, 'handle_print' );

@@ -743,6 +743,9 @@ class Encounter_Handler {
 				'id'            => $encounter['id'],
 				'status'        => $encounter['status'],
 				'clinic_name'   => $clinic ? $clinic['name'] : '',
+				// Full address for the detail banner — the lists only show the
+				// short clinic name.
+				'clinic_address' => $clinic ? implode( ', ', array_filter( array( $clinic['address'], $clinic['area_label'], $clinic['city_label'] ) ) ) : '',
 				'checked_in_at' => $encounter['checked_in_at'],
 				'legacy_note'   => $encounter['legacy_note'],
 			),

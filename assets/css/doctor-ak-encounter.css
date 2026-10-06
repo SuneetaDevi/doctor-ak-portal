@@ -89,6 +89,24 @@
 	top: 1rem !important;
 }
 
+/* "Clinical" / "Billing" group labels — keep the clinical record (Problems,
+   Prescription, Reports) visibly apart from the financial Bill. The column's
+   own gap spaces them; the Billing label adds a divider above itself. */
+.dak-encounter-group-label {
+	margin: 0 0 -0.5rem !important;
+	font-size: 0.75rem !important;
+	font-weight: 700 !important;
+	letter-spacing: 0.06em !important;
+	text-transform: uppercase !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-encounter-group-label.is-billing {
+	margin-top: 0.5rem !important;
+	padding-top: 1.25rem !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
 @media ( max-width: 900px ) {
 	.dak-encounter-grid {
 		grid-template-columns: 1fr !important;

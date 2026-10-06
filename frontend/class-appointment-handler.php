@@ -108,6 +108,92 @@ class Appointment_Handler {
 	}
 
 	/**
+	 * AJAX handler: the admin "Reschedule appointment" dialog — moves an
+	 * appointment to a new date/time and nothing else. Unlike
+	 * handle_admin_save_appointment() (whose Appointments::update() re-prices
+	 * the visit from today's service/video fees and re-writes every field),
+	 * this goes through Appointments::reschedule(), so the fee, payment
+	 * status/mode, doctor, services, clinic and patient are untouched, and
+	 * the existing doctor_ak_appointment_rescheduled notifications fire
+	 * exactly as for a patient/doctor reschedule. Same audience and nonce as
+	 * the Edit dialog.
+	 *
+	 * Availability is revalidated here against the same slot grid the
+	 * dialog showed (Appointments::slot_statuses_for_date(), limited to the
+	 * appointment's own clinic), and reschedule() re-checks the paid-booking
+	 * conflict and the past. A slot that was taken in the meantime returns
+	 * `code: slot_unavailable` so the dialog can refresh its times.
+	 *
+	 * @return void
+	 */
+	public function handle_admin_reschedule_appointment() {
+		if ( ! check_ajax_referer( Admin_Dashboard::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'doctor_ak_manage_appointments' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$appointment_id = isset( $_POST['appointment_id'] ) ? absint( wp_unslash( $_POST['appointment_id'] ) ) : 0;
+		$appointment    = $appointment_id > 0 ? Appointments::find( $appointment_id ) : null;
+
+		if ( empty( $appointment ) ) {
+			wp_send_json_error( array( 'message' => __( 'That appointment no longer exists.', 'doctor-ak-portal' ) ) );
+		}
+
+		// A checked-in visit is moved on by its encounter, not by the
+		// calendar (same rule Appointments::update() enforces for Edit).
+		if ( Appointments::STATUS_CHECKED_IN === $appointment['status'] ) {
+			wp_send_json_error( array( 'message' => __( 'This patient is already checked in, so the appointment can’t be rescheduled.', 'doctor-ak-portal' ) ) );
+		}
+
+		$date = isset( $_POST['date'] ) ? sanitize_text_field( wp_unslash( $_POST['date'] ) ) : '';
+		$time = isset( $_POST['time'] ) ? sanitize_text_field( wp_unslash( $_POST['time'] ) ) : '';
+
+		if ( $date === $appointment['date'] && $time === $appointment['time'] ) {
+			wp_send_json_error( array( 'message' => __( 'Choose a different date or time from the current one.', 'doctor-ak-portal' ) ) );
+		}
+
+		$clinic_id = Appointments::TYPE_CLINIC === $appointment['type'] ? (int) $appointment['clinic_id'] : 0;
+		$is_open   = false;
+
+		foreach ( Appointments::slot_statuses_for_date( $appointment['doctor_id'], $appointment['type'], $date, $clinic_id ) as $slot ) {
+			if ( $slot['time'] === $time && 'available' === $slot['status'] ) {
+				$is_open = true;
+				break;
+			}
+		}
+
+		if ( ! $is_open ) {
+			wp_send_json_error(
+				array(
+					'code'    => 'slot_unavailable',
+					'message' => __( 'That time is no longer available. Please choose another time.', 'doctor-ak-portal' ),
+				)
+			);
+		}
+
+		$result = Appointments::reschedule( $appointment_id, $date, $time, array( 'ignore_cutoff' => true ) );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error(
+				array(
+					'code'    => 'doctor_ak_slot_taken' === $result->get_error_code() ? 'slot_unavailable' : $result->get_error_code(),
+					'message' => $result->get_error_message(),
+				)
+			);
+		}
+
+		wp_send_json_success(
+			array(
+				'message'        => __( 'Appointment rescheduled.', 'doctor-ak-portal' ),
+				'appointment_id' => $appointment_id,
+			)
+		);
+	}
+
+	/**
 	 * AJAX handler: marks an appointment's payment as received — a narrow
 	 * "front-desk" action (unlike handle_admin_save_appointment(), it can't
 	 * re-target the doctor/patient/date or touch anything except payment

@@ -96,10 +96,12 @@ $dak_status_labels = array(
 		<?php foreach ( $encounters as $row ) : ?>
 			<?php
 			$dak_appt               = $row['appointment'];
-			$dak_encounter_edit_url = add_query_arg( 'encounter_id', $row['id'], $encounter_url );
+			// Carries this tab's filters so the encounter's back link returns
+			// here, filtered, at this row (see Encounter_Return).
+			$dak_encounter_edit_url = add_query_arg( array_merge( array( 'encounter_id' => $row['id'] ), \DoctorAKPortal\Includes\Encounter_Return::link_args( 'encounters', $filters ) ), $encounter_url );
 			$dak_encounter_patient_name = isset( $dak_appt['patient_name'] ) ? $dak_appt['patient_name'] : '';
 			?>
-			<div class="dak-admin-record-row" data-encounter-row="<?php echo esc_attr( $row['id'] ); ?>" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $dak_encounter_patient_name ) ); ?>">
+			<div id="dak-encounter-<?php echo esc_attr( $row['id'] ); ?>" class="dak-admin-record-row" data-encounter-row="<?php echo esc_attr( $row['id'] ); ?>" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $dak_encounter_patient_name ) ); ?>">
 				<div class="dak-admin-record-row-main">
 					<span class="dak-avatar dak-avatar-sm" aria-hidden="true">
 						<?php if ( ! empty( $dak_appt['patient_avatar_url'] ) ) : ?>
@@ -121,7 +123,7 @@ $dak_status_labels = array(
 						<span class="dak-status-pill dak-status-pill-outline dak-status-pill-truncate" title="<?php echo esc_attr( $row['problem_summary'] ); ?>"><?php echo esc_html( '' !== $row['problem_summary'] ? $row['problem_summary'] : __( 'No problem recorded', 'doctor-ak-portal' ) ); ?></span>
 					</span>
 
-					<span class="dak-status-pill dak-status-pill-outline <?php echo \DoctorAKPortal\Includes\Encounters::STATUS_OPEN === $row['status'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-disabled'; ?>">
+					<span class="dak-status-pill dak-status-pill-outline <?php echo \DoctorAKPortal\Includes\Encounters::STATUS_OPEN === $row['status'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-neutral'; ?>">
 						<?php echo esc_html( $dak_status_labels[ $row['status'] ] ); ?>
 					</span>
 

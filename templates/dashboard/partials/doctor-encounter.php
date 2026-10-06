@@ -12,7 +12,9 @@
  * @package DoctorAKPortal\Templates
  *
  * @var int    $encounter_id     The encounter to load, or 0 if it couldn't be found/isn't this account's.
- * @var string $appointments_url "Back to Appointments" link target.
+ * @var string $appointments_url Appointments list URL — the fallback back-link target.
+ * @var string $back_url         Optional. Back to the list this encounter was opened from, with its filters and row (see Encounter_Return::back_link()).
+ * @var string $back_label       Optional. Matching label, e.g. "Back to Encounters".
  * @var bool   $is_closed        Whether this encounter is already closed — hides "Close encounter" up front (client-side render() also keeps this in sync after every fetch, but this avoids it flashing visible for a moment on a closed encounter's first load).
  */
 
@@ -20,9 +22,12 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+$dak_back_url   = ! empty( $back_url ) ? $back_url : $appointments_url;
+$dak_back_label = ! empty( $back_url ) && ! empty( $back_label ) ? $back_label : __( 'Back to Appointments', 'doctor-ak-portal' );
 ?>
-<?php if ( $appointments_url ) : ?>
-	<a class="dak-encounter-back-link" href="<?php echo esc_url( $appointments_url ); ?>">&larr; <?php esc_html_e( 'Back to Appointments', 'doctor-ak-portal' ); ?></a>
+<?php if ( $dak_back_url ) : ?>
+	<a class="dak-encounter-back-link" href="<?php echo esc_url( $dak_back_url ); ?>">&larr; <?php echo esc_html( $dak_back_label ); ?></a>
 <?php endif; ?>
 
 <?php if ( $encounter_id <= 0 ) : ?>
@@ -50,6 +55,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		<div class="dak-encounter-grid">
 			<div class="dak-encounter-main">
+
+				<!-- Clinical record (kept apart from billing below). -->
+				<p class="dak-encounter-group-label" id="dak-encounter-group-clinical"><?php esc_html_e( 'Clinical', 'doctor-ak-portal' ); ?></p>
 
 				<!-- Problems -->
 				<section class="dak-dashboard-card dak-encounter-section">
@@ -127,6 +135,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</form>
 				</section>
 
+				<!-- Reports -->
+				<section class="dak-dashboard-card dak-encounter-section">
+					<div class="dak-encounter-section-header">
+						<span class="dak-encounter-section-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h6a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M7.5 9h5M7.5 12h5"/></svg></span>
+						<div class="dak-encounter-section-title">
+							<h2><?php esc_html_e( 'Reports', 'doctor-ak-portal' ); ?></h2>
+							<p><?php esc_html_e( 'PDF, JPG, PNG or WebP up to 10 MB', 'doctor-ak-portal' ); ?></p>
+						</div>
+						<span class="dak-encounter-section-count" id="dak-encounter-reports-count">0</span>
+					</div>
+					<div id="dak-encounter-reports-list"></div>
+					<form id="dak-encounter-upload-report-form">
+						<label class="dak-encounter-upload-dropzone" for="dak-encounter-report-file">
+							<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5V5M6.5 8.5 10 5l3.5 3.5"/><path d="M4 14.5v1a1.5 1.5 0 0 0 1.5 1.5h9a1.5 1.5 0 0 0 1.5-1.5v-1"/></svg>
+							<strong><?php esc_html_e( 'Drag & drop a report, or click to browse', 'doctor-ak-portal' ); ?></strong>
+							<span><?php esc_html_e( 'Attached reports appear on the patient timeline', 'doctor-ak-portal' ); ?></span>
+							<input type="file" id="dak-encounter-report-file" accept="application/pdf,image/jpeg,image/png,image/webp" class="dak-visually-hidden">
+						</label>
+					</form>
+				</section>
+
+				<!-- Billing (financial — separate from the clinical record above). -->
+				<p class="dak-encounter-group-label is-billing" id="dak-encounter-group-billing"><?php esc_html_e( 'Billing', 'doctor-ak-portal' ); ?></p>
+
 				<!-- Bill -->
 				<section class="dak-dashboard-card dak-encounter-section">
 					<div class="dak-encounter-section-header">
@@ -159,27 +191,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<input type="number" id="dak-encounter-bill-discount" min="0" max="100" step="0.01" placeholder="0">
 						</div>
 						<button type="submit" class="dak-button dak-button-primary dak-button-sm"><?php esc_html_e( '+ Add Charge', 'doctor-ak-portal' ); ?></button>
-					</form>
-				</section>
-
-				<!-- Reports -->
-				<section class="dak-dashboard-card dak-encounter-section">
-					<div class="dak-encounter-section-header">
-						<span class="dak-encounter-section-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h6a1 1 0 0 1 1 1V16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M7.5 9h5M7.5 12h5"/></svg></span>
-						<div class="dak-encounter-section-title">
-							<h2><?php esc_html_e( 'Reports', 'doctor-ak-portal' ); ?></h2>
-							<p><?php esc_html_e( 'PDF, JPG, PNG or WebP up to 10 MB', 'doctor-ak-portal' ); ?></p>
-						</div>
-						<span class="dak-encounter-section-count" id="dak-encounter-reports-count">0</span>
-					</div>
-					<div id="dak-encounter-reports-list"></div>
-					<form id="dak-encounter-upload-report-form">
-						<label class="dak-encounter-upload-dropzone" for="dak-encounter-report-file">
-							<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5V5M6.5 8.5 10 5l3.5 3.5"/><path d="M4 14.5v1a1.5 1.5 0 0 0 1.5 1.5h9a1.5 1.5 0 0 0 1.5-1.5v-1"/></svg>
-							<strong><?php esc_html_e( 'Drag & drop a report, or click to browse', 'doctor-ak-portal' ); ?></strong>
-							<span><?php esc_html_e( 'Attached reports appear on the patient timeline', 'doctor-ak-portal' ); ?></span>
-							<input type="file" id="dak-encounter-report-file" accept="application/pdf,image/jpeg,image/png,image/webp" class="dak-visually-hidden">
-						</label>
 					</form>
 				</section>
 

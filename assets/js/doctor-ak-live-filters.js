@@ -31,13 +31,22 @@
 			submitFilter( form );
 		} );
 
-		form.querySelectorAll( 'select, input[type="date"]' ).forEach( function ( field ) {
+		// form.elements (not querySelectorAll) so a control placed elsewhere
+		// and attached with `form="…"` — e.g. a Sort select beside the
+		// results — auto-submits too.
+		var fields = Array.prototype.slice.call( form.elements );
+
+		fields.filter( function ( field ) {
+			return 'SELECT' === field.tagName || 'date' === field.type;
+		} ).forEach( function ( field ) {
 			field.addEventListener( 'change', function () {
 				submitFilter( form );
 			} );
 		} );
 
-		form.querySelectorAll( 'input[type="search"]' ).forEach( function ( field ) {
+		fields.filter( function ( field ) {
+			return 'search' === field.type;
+		} ).forEach( function ( field ) {
 			var debounceTimer = null;
 
 			field.addEventListener( 'input', function () {
@@ -146,6 +155,10 @@
 					if ( newUrl ) {
 						window.history.replaceState( null, '', newUrl );
 					}
+
+					// Lets a feature script act on the fresh list (e.g. the
+					// Reschedule dialog highlighting the row it just moved).
+					document.dispatchEvent( new CustomEvent( 'dak:live-filter-updated', { detail: { target: target } } ) );
 				}
 			} )
 			.catch( function () {

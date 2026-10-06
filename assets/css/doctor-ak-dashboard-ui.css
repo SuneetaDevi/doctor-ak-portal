@@ -2209,3 +2209,1672 @@ body.dak-app-page .dak-portal .dak-toggle-switch input:focus-visible + span {
 body.dak-app-page .dak-portal .dak-toggle-switch input:disabled + span {
 	opacity: 0.5 !important;
 }
+
+
+/* ==========================================================================
+   17. Data tables — Doctors, Appointments, Encounters
+   ========================================================================== */
+
+/* One shared, semantic table for the three admin directories. These lists
+   used to be .dak-admin-record-row divs, each sizing its own 7-track grid
+   (section 7), so columns never lined up between rows and a 6-item row (a
+   doctor, an encounter) landed one track off — which is what stretched the
+   doctor "Active" badge across a wide column. A real <table> sizes every
+   column once for the whole list instead. */
+
+body.dak-app-page .dak-portal .dak-data-table-wrap {
+	position: relative !important;
+	max-width: 100% !important;
+	overflow-x: auto !important;
+}
+
+body.dak-app-page .dak-portal .dak-data-table {
+	width: 100% !important;
+	border-collapse: collapse !important;
+	table-layout: auto !important;
+	font-size: 14px !important;
+	line-height: 1.45 !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-data-table thead th {
+	padding: 8px 12px !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	background: transparent !important;
+	color: var( --dak-muted ) !important;
+	font-size: 12px !important;
+	font-weight: 600 !important;
+	letter-spacing: 0.02em !important;
+	text-align: left !important;
+	white-space: nowrap !important;
+}
+
+body.dak-app-page .dak-portal .dak-data-table td {
+	padding: 12px !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	vertical-align: top !important;
+	text-align: left !important;
+	background: transparent !important;
+}
+
+body.dak-app-page .dak-portal .dak-data-table tbody tr[data-row]:hover > td {
+	background: var( --dui-row-hover ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-data-table tbody tr[data-row]:target > td {
+	background: var( --dak-primary-tint ) !important;
+}
+
+/* Group heading row (Today / Tomorrow / Upcoming / Earlier). */
+body.dak-app-page .dak-portal .dak-data-table .dak-data-table-group th {
+	padding: 16px 12px 6px !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 12px !important;
+	font-weight: 700 !important;
+	letter-spacing: 0.05em !important;
+	text-align: left !important;
+	text-transform: uppercase !important;
+}
+
+body.dak-app-page .dak-portal .dak-data-table .dak-data-table-group th .dak-appt-section-count {
+	margin-left: 6px !important;
+}
+
+/* Column purposes. */
+body.dak-app-page .dak-portal .dak-data-table .dak-col-select {
+	width: 1% !important;
+	padding-right: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-data-table .dak-col-select input {
+	width: 16px !important;
+	height: 16px !important;
+	margin: 2px 0 0 !important;
+	accent-color: var( --dak-primary ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-data-table .dak-col-status,
+body.dak-app-page .dak-portal .dak-data-table .dak-col-nowrap {
+	white-space: nowrap !important;
+}
+
+body.dak-app-page .dak-portal .dak-data-table .dak-col-actions {
+	width: 1% !important;
+	text-align: right !important;
+	white-space: nowrap !important;
+}
+
+/* Cell content: one prominent line, quieter supporting lines. */
+body.dak-app-page .dak-portal .dak-data-table .dak-cell-identity {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 10px !important;
+	min-width: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-data-table .dak-cell-identity .dak-avatar {
+	flex: 0 0 auto !important;
+}
+
+body.dak-app-page .dak-portal .dak-data-table .dak-cell-stack {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: flex-start !important;
+	gap: 2px !important;
+	min-width: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-data-table .dak-cell-primary {
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+	overflow-wrap: anywhere !important;
+}
+
+body.dak-app-page .dak-portal .dak-data-table .dak-cell-sub {
+	font-size: 13px !important;
+	color: var( --dak-muted ) !important;
+	overflow-wrap: anywhere !important;
+}
+
+body.dak-app-page .dak-portal .dak-data-table .dak-cell-sub.is-tabular {
+	font-variant-numeric: tabular-nums !important;
+}
+
+/* A labelled, single-line preview with an explicit "Read more" — never a
+   badge. */
+body.dak-app-page .dak-portal .dak-data-table .dak-cell-preview {
+	display: flex !important;
+	align-items: baseline !important;
+	gap: 6px !important;
+	max-width: 420px !important;
+	min-width: 0 !important;
+	margin-top: 4px !important;
+	font-size: 13px !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-data-table .dak-cell-preview-text {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+	overflow: hidden !important;
+	text-overflow: ellipsis !important;
+	white-space: nowrap !important;
+}
+
+body.dak-app-page .dak-portal .dak-data-table .dak-cell-preview a {
+	flex: 0 0 auto !important;
+	color: var( --dak-primary ) !important;
+	font-weight: 600 !important;
+	text-decoration: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-data-table .dak-cell-preview a:hover {
+	text-decoration: underline !important;
+}
+
+/* Badges are content-sized everywhere inside these tables. */
+body.dak-app-page .dak-portal .dak-data-table .dak-status-pill {
+	width: max-content !important;
+	max-width: 100% !important;
+}
+
+/* Neutral, still text-labelled — for Closed, Deactivated, Completed,
+   Cancelled. Red stays for errors and destructive actions. */
+body.dak-app-page .dak-portal .dak-status-pill-is-neutral {
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+	border-color: var( --dak-border ) !important;
+}
+
+/* "+N more" disclosure: a real button that reveals a list inline. */
+body.dak-app-page .dak-portal .dak-disclosure-toggle {
+	display: inline-flex !important;
+	align-items: center !important;
+	min-height: 24px !important;
+	padding: 0 !important;
+	border: 0 !important;
+	background: transparent !important;
+	color: var( --dak-primary ) !important;
+	font: inherit !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+}
+
+body.dak-app-page .dak-portal .dak-disclosure-toggle:hover {
+	text-decoration: underline !important;
+}
+
+body.dak-app-page .dak-portal .dak-disclosure-list {
+	margin: 4px 0 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+	font-size: 13px !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-disclosure-list li {
+	margin: 0 0 2px !important;
+	overflow-wrap: anywhere !important;
+}
+
+/* Actions: one View, an optional workflow action, then More. */
+body.dak-app-page .dak-portal .dak-data-table .dak-row-actions {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: flex-end !important;
+	gap: 6px !important;
+}
+
+body.dak-app-page .dak-portal .dak-data-table .dak-row-actions .dak-button {
+	min-height: 32px !important;
+	white-space: nowrap !important;
+}
+
+body.dak-app-page .dak-portal .dak-data-table .dak-row-actions .dak-row-menu-toggle {
+	min-height: 32px !important;
+}
+
+/* Overdue / time-passed note under a status — informative, not an error. */
+body.dak-app-page .dak-portal .dak-data-table .dak-cell-note {
+	font-size: 12px !important;
+	color: var( --dak-muted ) !important;
+}
+
+/* Detail dialogs: grouped definition lists. */
+body.dak-app-page .dak-portal .dak-detail-group + .dak-detail-group {
+	margin-top: 16px !important;
+	padding-top: 16px !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-detail-group-title {
+	margin: 0 0 8px !important;
+	font-size: 12px !important;
+	font-weight: 700 !important;
+	letter-spacing: 0.05em !important;
+	text-transform: uppercase !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-detail-list {
+	display: grid !important;
+	grid-template-columns: minmax( 120px, 34% ) minmax( 0, 1fr ) !important;
+	gap: 6px 16px !important;
+	margin: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-detail-list dt {
+	margin: 0 !important;
+	font-size: 13px !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-detail-list dd {
+	margin: 0 !important;
+	font-size: 14px !important;
+	color: var( --dak-text ) !important;
+	overflow-wrap: anywhere !important;
+	white-space: pre-line !important;
+}
+
+body.dak-app-page .dak-portal .dak-detail-actions {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 8px !important;
+}
+
+body.dak-app-page .dak-portal .dak-detail-actions.is-danger-zone {
+	margin-top: 12px !important;
+	padding-top: 12px !important;
+	border-top: 1px dashed var( --dak-border ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-detail-tags {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 6px !important;
+}
+
+/* Tablet: the actions column keeps its width; text columns wrap. */
+@media ( max-width: 1200px ) {
+	body.dak-app-page .dak-portal .dak-data-table td,
+	body.dak-app-page .dak-portal .dak-data-table thead th {
+		padding-left: 8px !important;
+		padding-right: 8px !important;
+	}
+}
+
+/* Mobile: each row becomes a labelled, stacked record in the same order. */
+@media ( max-width: 782px ) {
+	body.dak-app-page .dak-portal .dak-data-table-wrap {
+		overflow-x: clip !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-data-table,
+	body.dak-app-page .dak-portal .dak-data-table tbody,
+	body.dak-app-page .dak-portal .dak-data-table tr,
+	body.dak-app-page .dak-portal .dak-data-table td,
+	body.dak-app-page .dak-portal .dak-data-table th {
+		display: block !important;
+		width: 100% !important;
+		box-sizing: border-box !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-data-table thead {
+		position: absolute !important;
+		width: 1px !important;
+		height: 1px !important;
+		overflow: hidden !important;
+		clip: rect( 0, 0, 0, 0 ) !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-data-table tbody tr[data-row] {
+		padding: 10px 4px !important;
+		border-bottom: 1px solid var( --dak-border ) !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-data-table td {
+		display: grid !important;
+		grid-template-columns: 112px minmax( 0, 1fr ) !important;
+		gap: 10px !important;
+		padding: 5px 4px !important;
+		border-bottom: 0 !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-data-table td::before {
+		content: attr( data-label ) !important;
+		font-size: 12px !important;
+		font-weight: 600 !important;
+		color: var( --dak-muted ) !important;
+	}
+
+	/* The first (identity) cell and the actions cell read without a label. */
+	body.dak-app-page .dak-portal .dak-data-table td.dak-col-primary,
+	body.dak-app-page .dak-portal .dak-data-table td.dak-col-actions {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-data-table td.dak-col-primary::before,
+	body.dak-app-page .dak-portal .dak-data-table td.dak-col-actions::before {
+		display: none !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-data-table td.dak-col-select {
+		grid-template-columns: auto minmax( 0, 1fr ) !important;
+		align-items: center !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-data-table td.dak-col-actions {
+		padding-top: 8px !important;
+		text-align: left !important;
+		white-space: normal !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-data-table .dak-row-actions {
+		display: flex !important;
+		flex-wrap: wrap !important;
+		justify-content: flex-start !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-data-table .dak-row-actions .dak-button,
+	body.dak-app-page .dak-portal .dak-data-table .dak-row-actions .dak-row-menu-toggle {
+		min-height: 44px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-data-table .dak-data-table-group th {
+		padding: 16px 4px 6px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-data-table .dak-cell-preview {
+		max-width: 100% !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-detail-list {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+		gap: 2px 0 !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-detail-list dd {
+		margin-bottom: 8px !important;
+	}
+}
+
+/* Keep the shared hide utilities winning over this component's own display
+   rules (the mobile stacking below sets display on tr/td, which would
+   otherwise outrank .dak-hidden and resurface rows hidden by list search). */
+body.dak-app-page .dak-portal .dak-data-table tr.dak-hidden,
+body.dak-app-page .dak-portal .dak-data-table tbody.dak-hidden,
+body.dak-app-page .dak-portal .dak-data-table [hidden],
+body.dak-app-page .dak-portal .dak-disclosure-list[hidden] {
+	display: none !important;
+}
+
+/* Destructive buttons inside detail dialogs: outlined, red text only. */
+body.dak-app-page .dak-portal .dak-detail-actions .dak-button.is-danger {
+	color: var( --dak-tint-danger-text ) !important;
+	border-color: var( --dak-tint-danger-text ) !important;
+	background: var( --dak-bg-card ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-detail-actions .dak-button.is-danger:hover {
+	background: var( --dak-tint-danger ) !important;
+}
+
+/* <dl> rows are wrapped in <div>s (valid HTML) so an optional pair can be
+   hidden as a unit; display: contents keeps dt/dd on the list's own grid. */
+body.dak-app-page .dak-portal .dak-detail-list > div {
+	display: contents !important;
+}
+
+body.dak-app-page .dak-portal .dak-detail-list > div[hidden] {
+	display: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-detail-notes {
+	margin: 0 !important;
+	font-size: 14px !important;
+	color: var( --dak-text ) !important;
+	white-space: pre-line !important;
+	overflow-wrap: anywhere !important;
+}
+
+
+/* ==========================================================================
+   18. Admin → Appointments page (scoped to .dak-appts-page)
+   ========================================================================== */
+
+/* Everything here is scoped to the Appointments page wrapper, so no other
+   dashboard screen changes. The theme's reset.css styles every <table>
+   (1px borders on all four sides of each cell, zebra rows, a 2px band
+   between <tbody>s, 15px margin, .9em font) — the rules in section 17 only
+   replaced border-bottom, which is what left the "spreadsheet" grid lines.
+   They are reset explicitly below. */
+
+/* ---- Page rhythm: 24px page padding on desktop, 16px between blocks. ---- */
+@media ( min-width: 901px ) {
+	body.dak-app-page .dak-dashboard .dak-dashboard-main:has( .dak-appts-page ) {
+		padding: 0 24px 32px !important;
+	}
+
+	body.dak-app-page .dak-dashboard .dak-dashboard-main:has( .dak-appts-page ) > .dak-dashboard-topbar {
+		margin: 0 -24px 24px !important;
+		padding: 12px 24px !important;
+	}
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-page-head {
+	align-items: center !important;
+	margin: 0 0 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-page-head h1 {
+	font-size: 24px !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-page-head p {
+	margin: 2px 0 0 !important;
+	font-size: 13px !important;
+}
+
+/* ---- Compact summary tiles (calculations unchanged). ---- */
+body.dak-app-page .dak-portal .dak-appts-page .dak-appt-stats-grid {
+	grid-template-columns: repeat( 4, minmax( 0, 1fr ) ) !important;
+	gap: 12px !important;
+	margin: 0 0 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appt-stat-card {
+	gap: 2px !important;
+	min-height: 0 !important;
+	padding: 10px 16px !important;
+	border-radius: var( --dak-radius-md ) !important;
+	box-shadow: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appt-stat-label {
+	font-size: 12px !important;
+	font-weight: 500 !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appt-stat-value {
+	font-size: 20px !important;
+	font-weight: 700 !important;
+	line-height: 1.3 !important;
+	font-variant-numeric: tabular-nums !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appt-stat-sub {
+	font-size: 12px !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page > .dak-alert {
+	margin: 0 0 16px !important;
+}
+
+/* ---- Filter toolbar: no card heading; controls and Apply on one line. ---- */
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-toolbar {
+	margin: 0 0 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filters {
+	display: grid !important;
+	grid-template-columns: minmax( 240px, 2fr ) minmax( 130px, 150px ) minmax( 180px, 1fr ) auto !important;
+	align-items: end !important;
+	gap: 12px !important;
+	margin: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filters .dak-field {
+	flex: none !important;
+	min-width: 0 !important;
+	max-width: none !important;
+	margin: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filters .dak-field > label,
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-sort label {
+	margin: 0 0 4px !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filter-buttons {
+	display: flex !important;
+	gap: 8px !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filter-buttons .dak-button {
+	min-height: var( --dui-control-h ) !important;
+	padding: 0 14px !important;
+	font-size: 14px !important;
+	white-space: nowrap !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-more-filters {
+	display: grid !important;
+	grid-column: 1 / -1 !important;
+	grid-template-columns: repeat( 3, minmax( 0, 200px ) ) !important;
+	gap: 12px !important;
+	padding: 12px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-more-filters[hidden] {
+	display: none !important;
+}
+
+/* Active-filter chips: each removes just its own filter. */
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-chips {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 8px !important;
+	margin: 12px 0 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-chips li {
+	margin: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-chip {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	min-height: 28px !important;
+	max-width: 100% !important;
+	padding: 0 6px 0 10px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 13px !important;
+	text-decoration: none !important;
+	box-sizing: border-box !important;
+	overflow-wrap: anywhere !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-chip:hover {
+	border-color: #c5ced8 !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-chip-x {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 18px !important;
+	height: 18px !important;
+	border-radius: 999px !important;
+	color: var( --dak-muted ) !important;
+	font-size: 15px !important;
+	line-height: 1 !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-chip:hover .dak-appts-chip-x {
+	background: var( --dak-border ) !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-clear-all {
+	padding: 0 4px !important;
+	color: var( --dak-primary-dark ) !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+	text-decoration: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-clear-all:hover {
+	text-decoration: underline !important;
+}
+
+/* ---- Results surface: one white panel, tinted header, row separators. ---- */
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-results {
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	background: var( --dak-bg-card ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-results > .dak-empty-state {
+	margin: 0 !important;
+	padding: 32px 16px !important;
+	border: 0 !important;
+	text-align: center !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-results-tools {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 8px 16px !important;
+	min-height: 52px !important;
+	padding: 8px 16px !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	box-sizing: border-box !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appt-bulk-toolbar {
+	flex-wrap: wrap !important;
+	justify-content: flex-start !important;
+	gap: 8px 12px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appt-select-all {
+	font-size: 13px !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appt-bulk-actions {
+	flex-wrap: wrap !important;
+	gap: 6px !important;
+	padding: 4px 8px !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appt-bulk-actions .dak-button {
+	min-height: 30px !important;
+	padding: 0 10px !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-sort {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-sort label {
+	margin: 0 !important;
+	white-space: nowrap !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-sort select {
+	width: auto !important;
+	min-height: 34px !important;
+	height: 34px !important;
+	margin: 0 !important;
+	padding: 0 32px 0 10px !important;
+	border: 1px solid #c9d2db !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background-color: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 13px !important;
+}
+
+html[data-theme='dark'] body.dak-app-page .dak-portal .dak-appts-page .dak-appts-sort select {
+	border-color: #38414b !important;
+	color-scheme: dark !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-table-wrap {
+	overflow-x: auto !important;
+	border-radius: 0 0 var( --dak-radius-lg ) var( --dak-radius-lg ) !important;
+}
+
+/* Theme reset.css neutralised: no outer/vertical/per-cell borders, no zebra,
+   no band between groups, no stray margin or .9em font. */
+body.dak-app-page .dak-portal .dak-appts-page table.dak-appointments-table {
+	margin: 0 !important;
+	border: 0 !important;
+	border-spacing: 0 !important;
+	background: transparent !important;
+	font-size: 14px !important;
+	line-height: 1.4 !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table th,
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td {
+	border: 0 !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	background-color: transparent !important;
+	line-height: 1.4 !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table tbody + tbody {
+	border: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table tbody:last-child > tr:last-child > td {
+	border-bottom: 0 !important;
+}
+
+/* Column proportions (Select 3 / Patient 20 / Date 13 / Doctor 26 / Status 13
+   / Payment 13 / Actions 12). Auto layout, so content can still claim the
+   space it needs instead of clipping. */
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-col-select { width: 3% !important; }
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-col-patient { width: 20% !important; }
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-col-schedule { width: 13% !important; }
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-col-doctor { width: 26% !important; }
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-col-status { width: 13% !important; }
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-col-payment { width: 13% !important; }
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-col-actions { width: 12% !important; }
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table thead th {
+	padding: 10px 12px !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+	letter-spacing: 0.01em !important;
+	text-transform: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table thead th.dak-col-actions {
+	text-align: right !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td {
+	padding: 14px 12px !important;
+	vertical-align: top !important;
+	overflow-wrap: anywhere !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table .dak-col-select {
+	width: 3% !important;
+	padding-left: 16px !important;
+	padding-right: 4px !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-col-actions {
+	padding-right: 16px !important;
+}
+
+/* Quiet group label: "Today 3". */
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table .dak-data-table-group th {
+	padding: 14px 16px 6px !important;
+	background: transparent !important;
+	color: var( --dak-text ) !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+	letter-spacing: 0 !important;
+	text-transform: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table .dak-data-table-group .dak-appt-section-count {
+	display: inline-flex !important;
+	min-width: 20px !important;
+	height: 20px !important;
+	margin-left: 6px !important;
+	padding: 0 6px !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+	box-sizing: border-box !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table tbody tr[data-row]:hover > td {
+	background-color: var( --dui-row-hover ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table tbody tr[data-row]:target > td {
+	background-color: var( --dak-primary-tint ) !important;
+}
+
+/* Cell typography: names 15/600, primary 14, supporting 13/12. */
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table .dak-cell-stack {
+	gap: 2px !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-cell-patient .dak-cell-primary {
+	font-size: 15px !important;
+	font-weight: 600 !important;
+	line-height: 1.35 !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table .dak-cell-sub {
+	font-size: 13px !important;
+	line-height: 1.4 !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-cell-patient .dak-cell-sub {
+	font-size: 12px !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table .is-tabular {
+	font-variant-numeric: tabular-nums !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-cell-schedule .dak-cell-stack > :first-child,
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-cell-doctor .dak-cell-stack > :first-child {
+	font-weight: 500 !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-cell-schedule .dak-cell-stack > :first-child {
+	white-space: nowrap !important;
+}
+
+/* Small soft badges. */
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table .dak-status-pill {
+	padding: 1px 8px !important;
+	border: 0 !important;
+	border-radius: 999px !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+	line-height: 1.6 !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table .dak-cell-note {
+	font-size: 12px !important;
+	color: var( --dak-muted ) !important;
+}
+
+/* Payment: amount first, status as a small dotted label beneath. */
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-amount {
+	font-size: 14px !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+	white-space: nowrap !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-pay-status {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	padding: 0 !important;
+	border: 0 !important;
+	background: transparent !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+	line-height: 1.5 !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-pay-status::before {
+	content: '' !important;
+	width: 6px !important;
+	height: 6px !important;
+	border-radius: 999px !important;
+	background: currentColor !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-pay-status.dak-status-pill-is-neutral {
+	color: var( --dak-muted ) !important;
+}
+
+/* Actions: one filled workflow button on top, then View (text) and More. */
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table .dak-row-actions {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	justify-content: flex-end !important;
+	gap: 6px !important;
+	width: 152px !important;
+	margin-left: auto !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table .dak-row-actions > .dak-button {
+	flex: 1 0 100% !important;
+	min-height: 30px !important;
+	padding: 0 10px !important;
+	font-size: 13px !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-action-link {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	min-height: 30px !important;
+	padding: 0 10px !important;
+	border: 0 !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: transparent !important;
+	color: var( --dak-primary-dark ) !important;
+	font: inherit !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-action-link:hover {
+	background: var( --dak-bg-subtle ) !important;
+	text-decoration: underline !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table .dak-row-actions .dak-row-menu-toggle {
+	min-height: 30px !important;
+	padding: 0 10px !important;
+	font-weight: 500 !important;
+}
+
+/* ---- Tablet (601–1100px): each appointment is a two-line record. ---- */
+@media ( max-width: 1100px ) {
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filters {
+		grid-template-columns: minmax( 0, 1fr ) minmax( 0, 1fr ) auto !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filter-search {
+		grid-column: 1 / -1 !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-table-wrap {
+		overflow-x: clip !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page table.dak-appointments-table,
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table tbody,
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table tr,
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table th {
+		display: block !important;
+		width: 100% !important;
+		box-sizing: border-box !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table colgroup,
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table thead {
+		display: none !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table tbody tr[data-row] {
+		display: grid !important;
+		grid-template-columns: 24px minmax( 0, 1.3fr ) minmax( 0, 1fr ) 152px !important;
+		grid-template-areas:
+			'sel patient schedule status'
+			'sel doctor payment actions' !important;
+		gap: 12px 16px !important;
+		padding: 14px 16px !important;
+		border-bottom: 1px solid var( --dak-border ) !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table tbody:last-child > tr:last-child {
+		border-bottom: 0 !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table tbody tr[data-row]:hover {
+		background: var( --dui-row-hover ) !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table tbody tr[data-row]:target {
+		background: var( --dak-primary-tint ) !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table tbody tr[data-row]:hover > td,
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table tbody tr[data-row]:target > td {
+		background-color: transparent !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td,
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-col-primary,
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-col-actions,
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-col-select {
+		display: block !important;
+		width: auto !important;
+		min-width: 0 !important;
+		padding: 0 !important;
+		border: 0 !important;
+		text-align: left !important;
+		white-space: normal !important;
+	}
+
+	/* Quiet labels where the column header is gone. */
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td::before {
+		content: none !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-appts-cell-schedule::before,
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-appts-cell-doctor::before,
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-appts-cell-payment::before {
+		content: attr( data-label ) !important;
+		display: block !important;
+		margin: 0 0 2px !important;
+		color: var( --dak-muted ) !important;
+		font-size: 12px !important;
+		font-weight: 500 !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-col-select { grid-area: sel !important; }
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-appts-cell-patient { grid-area: patient !important; }
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-appts-cell-schedule { grid-area: schedule !important; }
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-appts-cell-doctor { grid-area: doctor !important; }
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-appts-cell-status { grid-area: status !important; }
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-appts-cell-payment { grid-area: payment !important; }
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-appts-cell-actions { grid-area: actions !important; }
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-appts-cell-status .dak-cell-stack {
+		align-items: flex-end !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-appts-cell-actions {
+		align-self: end !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table .dak-data-table-group th {
+		padding: 14px 16px 6px !important;
+	}
+}
+
+/* ---- Mobile (≤600px): one labelled stack per appointment. ---- */
+@media ( max-width: 600px ) {
+	body.dak-app-page .dak-portal .dak-appts-page .dak-page-head > .dak-button {
+		width: 100% !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appt-stats-grid {
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+		gap: 8px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appt-stat-card {
+		padding: 10px 12px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appt-stat-value {
+		font-size: 18px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filters {
+		grid-template-columns: minmax( 0, 1fr ) minmax( 0, 1fr ) !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filter-buttons {
+		grid-column: 1 / -1 !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filter-buttons .dak-button {
+		flex: 1 1 0 !important;
+		min-height: 44px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-more-filters {
+		grid-template-columns: minmax( 0, 1fr ) minmax( 0, 1fr ) !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-more-filters > .dak-field:last-child {
+		grid-column: 1 / -1 !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-results-tools {
+		padding: 8px 12px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table tbody tr[data-row] {
+		grid-template-columns: 24px minmax( 0, 1fr ) auto !important;
+		grid-template-areas:
+			'sel patient status'
+			'. schedule schedule'
+			'. doctor doctor'
+			'. payment payment'
+			'. actions actions' !important;
+		gap: 10px 12px !important;
+		padding: 14px 12px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-appts-cell-schedule,
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-appts-cell-doctor,
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-appts-cell-payment {
+		display: grid !important;
+		grid-template-columns: 96px minmax( 0, 1fr ) !important;
+		gap: 8px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-appts-cell-schedule::before,
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-appts-cell-doctor::before,
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table td.dak-appts-cell-payment::before {
+		margin: 0 !important;
+		padding-top: 1px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table .dak-row-actions {
+		flex-wrap: nowrap !important;
+		justify-content: flex-start !important;
+		width: 100% !important;
+		margin: 2px 0 0 !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table .dak-row-actions > .dak-button {
+		flex: 1 1 auto !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table .dak-row-actions > .dak-button,
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-action-link,
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table .dak-row-actions .dak-row-menu-toggle {
+		min-height: 44px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table .dak-data-table-group th {
+		padding: 12px 12px 6px !important;
+	}
+}
+
+/* Row just moved by the Reschedule dialog (cleared after ~2.4s). */
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table tr.is-just-updated > td,
+body.dak-app-page .dak-portal .dak-appts-page .dak-appointments-table tbody tr.is-just-updated {
+	background-color: var( --dak-primary-tint ) !important;
+	transition: background-color 0.6s ease !important;
+}
+
+
+/* ==========================================================================
+   19. Appointment dialog (#dak-admin-appointment-modal): Add / Edit /
+       Reschedule
+   ========================================================================== */
+
+/* Structure: header, one scrolling body, footer — the dialog is sized to
+   the viewport so the page behind never scrolls it out from under its own
+   header (the old top-aligned dialog could be taller than the screen, so the
+   overlay itself scrolled and clipped the first fields). */
+body.dak-app-page #dak-admin-appointment-modal {
+	align-items: center !important;
+	padding: 24px 16px !important;
+	overflow: hidden !important;
+}
+
+/* Doubled attribute: outranks this section's own display rules below. */
+body.dak-app-page #dak-admin-appointment-modal [hidden][hidden] {
+	display: none !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-modal-dialog {
+	display: flex !important;
+	flex-direction: column !important;
+	min-height: 0 !important;
+	max-height: calc( 100vh - 48px ) !important;
+	max-height: calc( var( --dak-vvh, 100dvh ) - 48px ) !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	overflow: hidden !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-modal-dialog[data-mode='reschedule'] {
+	width: min( 704px, calc( 100vw - 32px ) ) !important;
+	max-width: none !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-modal-header {
+	position: relative !important;
+	flex: 0 0 auto !important;
+	margin: 0 !important;
+	padding: 20px 64px 16px 24px !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-modal-header h2 {
+	margin: 0 !important;
+	font-size: 20px !important;
+	line-height: 1.3 !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-modal-subtitle {
+	margin: 4px 0 0 !important;
+	color: var( --dak-muted ) !important;
+	font-size: 14px !important;
+	line-height: 1.45 !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-modal-close {
+	position: absolute !important;
+	top: 14px !important;
+	right: 14px !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-modal-body {
+	flex: 1 1 auto !important;
+	min-height: 0 !important;
+	overflow-y: auto !important;
+	padding: 24px !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-modal-body > .dak-alert {
+	margin: 0 0 20px !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-modal-footer {
+	flex: 0 0 auto !important;
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	justify-content: flex-end !important;
+	gap: 12px 16px !important;
+	padding: 14px 24px !important;
+	padding-bottom: max( 14px, env( safe-area-inset-bottom ) ) !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-modal-footer-actions {
+	display: flex !important;
+	flex: 0 0 auto !important;
+	gap: 8px !important;
+	margin-left: auto !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-field > label,
+body.dak-app-page #dak-admin-appointment-modal .dak-field > .dak-field-label {
+	display: block !important;
+	margin: 0 0 8px !important;
+}
+
+/* ---- Reschedule: read-only summary of the current appointment. ---- */
+body.dak-app-page #dak-admin-appointment-modal .dak-resched-summary {
+	margin: 0 0 24px !important;
+	padding: 16px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-resched-summary-list {
+	display: grid !important;
+	grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+	gap: 12px 24px !important;
+	margin: 0 !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-resched-summary-list > div {
+	min-width: 0 !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-resched-summary-list dt {
+	margin: 0 0 2px !important;
+	color: var( --dak-muted ) !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-resched-summary-list dd {
+	margin: 0 !important;
+	color: var( --dak-text ) !important;
+	font-size: 14px !important;
+	font-weight: 500 !important;
+	overflow-wrap: anywhere !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-resched-muted {
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+	font-weight: 400 !important;
+	font-variant-numeric: tabular-nums !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-resched-summary-current {
+	grid-column: 1 / -1 !important;
+	padding-top: 12px !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-resched-summary-current dd {
+	font-variant-numeric: tabular-nums !important;
+}
+
+/* ---- Date + time. ---- */
+body.dak-app-page #dak-admin-appointment-modal .dak-schedule-section {
+	margin: 0 !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-schedule-section .dak-field + .dak-field {
+	margin-top: 20px !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-modal-dialog[data-mode='reschedule'] #dak-admin-appointment-date {
+	max-width: 280px !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-resched-date-readout {
+	margin: 8px 0 0 !important;
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-field-error:not( :empty ) {
+	display: block !important;
+	margin-top: 8px !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot-error:not( :empty ) {
+	margin: 0 0 12px !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot-status:empty {
+	display: none !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot-status {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 8px !important;
+	margin: 0 !important;
+	color: var( --dak-muted ) !important;
+	font-size: 14px !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot-status.is-loading::before {
+	content: '' !important;
+	width: 14px !important;
+	height: 14px !important;
+	border: 2px solid var( --dak-border ) !important;
+	border-top-color: var( --dak-primary ) !important;
+	border-radius: 999px !important;
+	animation: dak-slot-spin 0.8s linear infinite !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot-status.is-empty,
+body.dak-app-page #dak-admin-appointment-modal .dak-slot-status.is-error {
+	padding: 14px 16px !important;
+	border: 1px dashed var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot-retry {
+	min-height: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	background: transparent !important;
+	color: var( --dak-primary-dark ) !important;
+	font: inherit !important;
+	font-weight: 600 !important;
+	text-decoration: underline !important;
+	cursor: pointer !important;
+}
+
+@keyframes dak-slot-spin {
+	to {
+		transform: rotate( 360deg );
+	}
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	body.dak-app-page #dak-admin-appointment-modal .dak-slot-status.is-loading::before {
+		animation: none !important;
+	}
+}
+
+/* Time slots: one radio group styled as an even grid of buttons. */
+body.dak-app-page #dak-admin-appointment-modal .dak-slot-groups {
+	display: grid !important;
+	gap: 16px !important;
+	border-radius: var( --dak-radius-sm ) !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot-groups:empty {
+	display: none !important;
+}
+
+/* Red only for a validation error. */
+body.dak-app-page #dak-admin-appointment-modal .dak-slot-groups.is-invalid {
+	outline: 1px solid var( --dak-tint-danger-text ) !important;
+	outline-offset: 6px !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot-group-title {
+	margin: 0 0 8px !important;
+	color: var( --dak-muted ) !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot-grid {
+	display: grid !important;
+	grid-template-columns: repeat( 4, minmax( 0, 1fr ) ) !important;
+	gap: 8px !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot {
+	position: relative !important;
+	display: block !important;
+	margin: 0 !important;
+	cursor: pointer !important;
+}
+
+/* The real radio covers the face (so it's clickable and focusable) but is
+   invisible; the face shows its state. */
+body.dak-app-page #dak-admin-appointment-modal .dak-slot-input {
+	position: absolute !important;
+	inset: 0 !important;
+	width: 100% !important;
+	height: 100% !important;
+	margin: 0 !important;
+	opacity: 0 !important;
+	appearance: none !important;
+	cursor: inherit !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot-face {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: center !important;
+	justify-content: center !important;
+	min-height: 44px !important;
+	padding: 6px 8px !important;
+	border: 1px solid #c9d2db !important;
+	border-radius: 8px !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 14px !important;
+	font-weight: 500 !important;
+	line-height: 1.2 !important;
+	text-align: center !important;
+	box-sizing: border-box !important;
+	transition: background-color 0.12s ease, border-color 0.12s ease !important;
+}
+
+html[data-theme='dark'] body.dak-app-page #dak-admin-appointment-modal .dak-slot-face {
+	border-color: #38414b !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot-time {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	font-variant-numeric: tabular-nums !important;
+	white-space: nowrap !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot:hover .dak-slot-input:not( :disabled ):not( :checked ) + .dak-slot-face {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary-tint ) !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot-input:checked + .dak-slot-face {
+	border-color: var( --dui-primary-solid ) !important;
+	background: var( --dui-primary-solid ) !important;
+	color: var( --dui-on-primary ) !important;
+}
+
+/* Check mark on the selected time (shape + colour, not colour alone). */
+body.dak-app-page #dak-admin-appointment-modal .dak-slot-input:checked + .dak-slot-face .dak-slot-time::before {
+	content: '' !important;
+	width: 5px !important;
+	height: 9px !important;
+	margin-top: -2px !important;
+	border-right: 2px solid currentColor !important;
+	border-bottom: 2px solid currentColor !important;
+	transform: rotate( 45deg ) !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot-input:focus-visible + .dak-slot-face {
+	outline: 2px solid var( --dui-focus ) !important;
+	outline-offset: 2px !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot.is-unavailable {
+	cursor: not-allowed !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot.is-unavailable .dak-slot-face {
+	border-style: dashed !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot.is-unavailable .dak-slot-time {
+	text-decoration: line-through !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot.is-current .dak-slot-time {
+	text-decoration: none !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-slot-reason {
+	margin-top: 2px !important;
+	font-size: 11px !important;
+	font-weight: 500 !important;
+}
+
+/* ---- Footer: what's missing, or Current → New. ---- */
+body.dak-app-page #dak-admin-appointment-modal .dak-resched-compare {
+	flex: 1 1 280px !important;
+	min-width: 0 !important;
+	font-size: 13px !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-resched-compare-hint {
+	margin: 0 !important;
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-resched-compare-list {
+	display: grid !important;
+	grid-template-columns: auto minmax( 0, 1fr ) !important;
+	gap: 2px 10px !important;
+	margin: 0 !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-resched-compare-list > div {
+	display: contents !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-resched-compare-list dt {
+	margin: 0 !important;
+	color: var( --dak-muted ) !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+	line-height: 20px !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-resched-compare-list dd {
+	margin: 0 !important;
+	color: var( --dak-text ) !important;
+	font-size: 13px !important;
+	line-height: 20px !important;
+	font-variant-numeric: tabular-nums !important;
+}
+
+body.dak-app-page #dak-admin-appointment-modal .dak-resched-compare-list .is-new dd {
+	color: var( --dak-primary-dark ) !important;
+	font-weight: 600 !important;
+}
+
+/* ---- Phones: nearly full-screen; footer pinned, never over content. ---- */
+@media ( max-width: 640px ) {
+	body.dak-app-page #dak-admin-appointment-modal {
+		align-items: stretch !important;
+		padding: 8px !important;
+	}
+
+	body.dak-app-page #dak-admin-appointment-modal .dak-modal-dialog,
+	body.dak-app-page #dak-admin-appointment-modal .dak-modal-dialog[data-mode='reschedule'] {
+		width: 100% !important;
+		max-width: none !important;
+		height: calc( 100vh - 16px ) !important;
+		height: calc( var( --dak-vvh, 100dvh ) - 16px ) !important;
+		max-height: none !important;
+		min-height: 0 !important;
+		border-radius: var( --dak-radius-lg ) !important;
+	}
+
+	body.dak-app-page #dak-admin-appointment-modal .dak-modal-header {
+		padding: 16px 56px 12px 16px !important;
+	}
+
+	body.dak-app-page #dak-admin-appointment-modal .dak-modal-header h2 {
+		font-size: 18px !important;
+	}
+
+	body.dak-app-page #dak-admin-appointment-modal .dak-modal-close {
+		top: 10px !important;
+		right: 10px !important;
+		width: 44px !important;
+		height: 44px !important;
+	}
+
+	body.dak-app-page #dak-admin-appointment-modal .dak-modal-body {
+		padding: 20px 16px !important;
+	}
+
+	body.dak-app-page #dak-admin-appointment-modal .dak-modal-footer {
+		padding: 12px 16px !important;
+		padding-bottom: max( 12px, env( safe-area-inset-bottom ) ) !important;
+	}
+
+	body.dak-app-page #dak-admin-appointment-modal .dak-resched-compare {
+		flex-basis: 100% !important;
+	}
+
+	body.dak-app-page #dak-admin-appointment-modal .dak-modal-footer-actions {
+		width: 100% !important;
+	}
+
+	body.dak-app-page #dak-admin-appointment-modal .dak-modal-footer-actions .dak-button {
+		flex: 1 1 0 !important;
+		min-height: 44px !important;
+	}
+
+	body.dak-app-page #dak-admin-appointment-modal .dak-resched-summary {
+		margin-bottom: 20px !important;
+		padding: 14px !important;
+	}
+
+	body.dak-app-page #dak-admin-appointment-modal .dak-resched-summary-list {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+		gap: 10px !important;
+	}
+
+	body.dak-app-page #dak-admin-appointment-modal .dak-modal-dialog[data-mode='reschedule'] #dak-admin-appointment-date {
+		max-width: none !important;
+	}
+
+	body.dak-app-page #dak-admin-appointment-modal .dak-slot-grid {
+		grid-template-columns: repeat( 3, minmax( 0, 1fr ) ) !important;
+	}
+}
+
+@media ( max-width: 360px ) {
+	body.dak-app-page #dak-admin-appointment-modal .dak-slot-grid {
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+	}
+}
+
+/* Short confirmation after an admin action (e.g. a reschedule). */
+body.dak-app-page .dak-admin-toast {
+	position: fixed !important;
+	left: 50% !important;
+	bottom: 24px !important;
+	bottom: max( 24px, env( safe-area-inset-bottom ) ) !important;
+	z-index: 100030 !important;
+	max-width: min( 480px, calc( 100vw - 32px ) ) !important;
+	padding: 12px 16px !important;
+	border-radius: var( --dak-radius-md ) !important;
+	background: #182b3a !important;
+	color: #ffffff !important;
+	font-size: 14px !important;
+	line-height: 1.45 !important;
+	box-shadow: var( --dak-shadow-lg ) !important;
+	box-sizing: border-box !important;
+	opacity: 0 !important;
+	pointer-events: none !important;
+	transform: translate( -50%, 8px ) !important;
+	transition: opacity 0.2s ease, transform 0.2s ease !important;
+}
+
+body.dak-app-page .dak-admin-toast.is-visible {
+	opacity: 1 !important;
+	transform: translate( -50%, 0 ) !important;
+}
+
+html[data-theme='dark'] body.dak-app-page .dak-admin-toast {
+	background: #e6ebef !important;
+	color: #0b0d10 !important;
+}
