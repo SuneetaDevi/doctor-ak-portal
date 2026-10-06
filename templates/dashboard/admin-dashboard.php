@@ -190,9 +190,10 @@ $dak_admin_section_icons = array(
 				<?php endif; ?>
 			</div>
 
-			<section class="dak-dashboard-card dak-admin-users-card" id="dak-admin-users-tab-content">
-				<?php echo $content_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own admin-user-table.php template, which escapes its own output. ?>
-			</section>
+			<?php // Not a card: the partial supplies its own toolbar + results surface (shared list pattern). The id is the live-filter target. ?>
+			<div class="dak-list-page dak-admin-users-content" id="dak-admin-users-tab-content">
+				<?php echo $content_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own admin-user-table.php / admin-doctors-table.php templates, which escape their own output. ?>
+			</div>
 		<?php elseif ( $is_user_form_view ) : ?>
 			<?php echo $content_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own admin-user-form-screen.php template, which escapes its own output. ?>
 		<?php else : ?>

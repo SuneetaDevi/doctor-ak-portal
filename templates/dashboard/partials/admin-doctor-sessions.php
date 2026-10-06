@@ -15,14 +15,10 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
-
-$dak_session_icons = array(
-	'pin'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18s6-5.2 6-9.8A6 6 0 0 0 4 8.2C4 12.8 10 18 10 18z"/><circle cx="10" cy="8" r="2"/></svg>',
-	'video'  => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="11" height="10" rx="1.5"/><path d="M13 8.3l5-2.8v9l-5-2.8"/></svg>',
-	'edit'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 3.5a1.7 1.7 0 0 1 2.4 2.4L6.5 15.3l-3 .7.7-3 9.3-9.3z"/></svg>',
-	'delete' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h12M8 6V4.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V6M6 6l.6 9a1.5 1.5 0 0 0 1.5 1.4h3.8a1.5 1.5 0 0 0 1.5-1.4L14 6"/></svg>',
-);
+$dak_session_day_labels    = \DoctorAKPortal\Includes\Clinics::session_days();
+$dak_session_period_labels = \DoctorAKPortal\Includes\Clinics::session_periods();
 ?>
+<div class="dak-list-page">
 <div class="dak-page-head">
 	<div>
 		<h1><?php esc_html_e( 'Doctor Sessions', 'doctor-ak-portal' ); ?></h1>
@@ -46,13 +42,13 @@ $dak_session_icons = array(
 	</div>
 <?php endif; ?>
 
-<section class="dak-dashboard-card" id="dak-doctor-sessions-list">
-	<div class="dak-dashboard-card-header">
-		<h2><?php esc_html_e( 'Session directory', 'doctor-ak-portal' ); ?></h2>
+<section class="dak-results" id="dak-doctor-sessions-list" aria-labelledby="dak-doctor-sessions-title">
+	<div class="dak-results-tools">
+		<h2 class="dak-results-title" id="dak-doctor-sessions-title"><?php esc_html_e( 'Sessions', 'doctor-ak-portal' ); ?><span class="dak-results-count"><?php echo esc_html( number_format_i18n( count( $clinics ) ) ); ?></span></h2>
 		<?php if ( ! empty( $clinics ) ) : ?>
 			<div class="dak-dashboard-search dak-list-search-box">
 				<span class="dak-dashboard-search-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg></span>
-				<input type="search" data-list-search="#dak-doctor-sessions-list" placeholder="<?php esc_attr_e( 'Search sessions', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search sessions', 'doctor-ak-portal' ); ?>">
+				<input type="search" data-list-search="#dak-doctor-sessions-list" placeholder="<?php esc_attr_e( 'Search doctor, clinic or city', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search sessions', 'doctor-ak-portal' ); ?>">
 			</div>
 		<?php endif; ?>
 	</div>
@@ -60,63 +56,101 @@ $dak_session_icons = array(
 	<?php if ( empty( $clinics ) ) : ?>
 		<p class="dak-empty-state"><?php esc_html_e( 'No doctors have added any clinics or sessions yet.', 'doctor-ak-portal' ); ?></p>
 	<?php else : ?>
-		<?php foreach ( $clinics as $clinic ) : ?>
-			<?php
-			$slot_durations = array();
+		<div class="dak-data-table-wrap">
+			<table class="dak-data-table dak-ui-table dak-sessions-table">
+				<thead>
+					<tr>
+						<th scope="col"><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Clinic / visit mode', 'doctor-ak-portal' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Slot length', 'doctor-ak-portal' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Weekly schedule', 'doctor-ak-portal' ); ?></th>
+						<th scope="col" class="dak-col-actions"><?php esc_html_e( 'Actions', 'doctor-ak-portal' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( $clinics as $clinic ) : ?>
+						<?php
+						$dak_durations = array();
+						$dak_hours     = array();
 
-			foreach ( $clinic['sessions'] as $dak_session_day ) {
-				foreach ( $dak_session_day as $dak_session_period ) {
-					if ( ! empty( $dak_session_period['enabled'] ) ) {
-						$slot_durations[] = $dak_session_period['slot_duration_minutes'];
-					}
-				}
-			}
+						foreach ( $clinic['sessions'] as $dak_day_slug => $dak_session_day ) {
+							foreach ( $dak_session_day as $dak_period_slug => $dak_session_period ) {
+								if ( empty( $dak_session_period['enabled'] ) ) {
+									continue;
+								}
 
-			$slot_label = ! empty( $slot_durations ) ? sprintf( /* translators: %d: minutes. */ __( '%d min', 'doctor-ak-portal' ), (int) reset( $slot_durations ) ) : '—';
-			?>
-			<div id="dak-clinic-<?php echo esc_attr( $clinic['id'] ); ?>" class="dak-admin-record-row" data-clinic-row="<?php echo esc_attr( $clinic['id'] ); ?>" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $clinic['name'] . ' ' . $clinic['city_label'] . ' ' . $clinic['doctor']['name'] ) ); ?>">
-				<div class="dak-admin-record-row-main">
-					<span class="dak-avatar dak-avatar-sm" aria-hidden="true"><?php echo $dak_session_icons[ 'video' === $clinic['type'] ? 'video' : 'pin' ]; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-					<span class="dak-admin-record-row-info">
-						<strong><?php echo esc_html( sprintf( 'Dr. %s', $clinic['doctor']['name'] ) ); ?></strong>
-						<span class="dak-admin-record-row-id">
-							<?php echo esc_html( 'video' === $clinic['type'] ? __( 'Online Consultation', 'doctor-ak-portal' ) : $clinic['name'] ); ?>
-						</span>
-					</span>
+								if ( (int) $dak_session_period['slot_duration_minutes'] > 0 ) {
+									$dak_durations[ (int) $dak_session_period['slot_duration_minutes'] ] = true;
+								}
 
-					<span class="dak-admin-record-row-meta"><?php echo esc_html( $slot_label ); ?></span>
+								$dak_hours[ $dak_day_slug ][] = sprintf(
+									'%1$s–%2$s',
+									\DoctorAKPortal\Includes\Dashboard_Format::time( $dak_session_period['start'] ),
+									\DoctorAKPortal\Includes\Dashboard_Format::time( $dak_session_period['end'] )
+								);
+							}
+						}
 
-					<span class="dak-status-pill dak-status-pill-outline <?php echo empty( $clinic['enabled_days'] ) ? 'dak-status-pill-is-disabled' : 'dak-status-pill-is-active'; ?>">
-						<?php echo empty( $clinic['enabled_days'] ) ? esc_html__( 'Not available', 'doctor-ak-portal' ) : esc_html__( 'Available', 'doctor-ak-portal' ); ?>
-					</span>
-
-					<?php if ( ! empty( $clinic['enabled_days'] ) ) : ?>
-						<span class="dak-admin-record-row-tags">
-							<?php foreach ( $clinic['enabled_days'] as $label ) : ?>
-								<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( mb_substr( $label, 0, 3 ) ); ?></span>
-							<?php endforeach; ?>
-						</span>
-					<?php endif; ?>
-
-					<span class="dak-admin-record-row-actions">
-						<a
-							class="dak-icon-button"
-							href="<?php echo esc_url( add_query_arg( array( 'view' => 'form', 'clinic_id' => $clinic['id'] ), $section_url ) ); ?>"
-							title="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
-							aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
-						><?php echo $dak_session_icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
-						<button
-							type="button"
-							class="dak-icon-button dak-icon-button-danger"
-							data-admin-session-delete
-							data-clinic-id="<?php echo esc_attr( $clinic['id'] ); ?>"
-							title="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
-							aria-label="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
-						><?php echo $dak_session_icons['delete']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
-					</span>
-				</div>
-			</div>
-		<?php endforeach; ?>
-		<p class="dak-empty-state dak-hidden" data-list-search-empty><?php esc_html_e( 'No sessions match your search.', 'doctor-ak-portal' ); ?></p>
+						ksort( $dak_durations );
+						$dak_duration_label = empty( $dak_durations )
+							? '—'
+							: implode( ', ', array_map( array( '\DoctorAKPortal\Includes\Dashboard_Format', 'duration' ), array_keys( $dak_durations ) ) );
+						$dak_is_video   = 'video' === $clinic['type'];
+						$dak_place      = $dak_is_video ? __( 'Video visit', 'doctor-ak-portal' ) : $clinic['name'];
+						$dak_place_sub  = $dak_is_video ? __( 'Online consultation', 'doctor-ak-portal' ) : implode( ', ', array_filter( array( $clinic['area_label'], $clinic['city_label'] ) ) );
+						$dak_hours_id   = 'dak-session-' . $clinic['id'] . '-hours';
+						?>
+						<tr id="dak-clinic-<?php echo esc_attr( $clinic['id'] ); ?>" data-row data-clinic-row="<?php echo esc_attr( $clinic['id'] ); ?>" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $clinic['name'] . ' ' . $clinic['city_label'] . ' ' . $clinic['doctor']['name'] ) ); ?>">
+							<td class="dak-col-primary" data-label="<?php esc_attr_e( 'Doctor', 'doctor-ak-portal' ); ?>">
+								<span class="dak-cell-primary"><?php echo esc_html( sprintf( 'Dr. %s', $clinic['doctor']['name'] ) ); ?></span>
+							</td>
+							<td data-label="<?php esc_attr_e( 'Clinic / visit mode', 'doctor-ak-portal' ); ?>">
+								<span class="dak-cell-stack">
+									<span class="dak-cell-strong"><?php echo esc_html( $dak_place ); ?></span>
+									<?php if ( '' !== $dak_place_sub ) : ?>
+										<span class="dak-cell-sub"><?php echo esc_html( $dak_place_sub ); ?></span>
+									<?php endif; ?>
+								</span>
+							</td>
+							<td class="dak-col-nowrap" data-label="<?php esc_attr_e( 'Slot length', 'doctor-ak-portal' ); ?>"><?php echo esc_html( $dak_duration_label ); ?></td>
+							<td data-label="<?php esc_attr_e( 'Weekly schedule', 'doctor-ak-portal' ); ?>">
+								<?php if ( empty( $clinic['enabled_days'] ) ) : ?>
+									<span class="dak-cell-stack">
+										<span class="dak-status-pill dak-status-pill-is-neutral"><?php esc_html_e( 'Not available', 'doctor-ak-portal' ); ?></span>
+										<span class="dak-cell-note"><?php esc_html_e( 'No days open', 'doctor-ak-portal' ); ?></span>
+									</span>
+								<?php else : ?>
+									<span class="dak-cell-stack">
+										<span class="dak-status-pill dak-status-pill-is-active"><?php esc_html_e( 'Available', 'doctor-ak-portal' ); ?></span>
+										<span class="dak-cell-sub"><?php echo esc_html( implode( ', ', array_map( function ( $label ) { return mb_substr( $label, 0, 3 ); }, $clinic['enabled_days'] ) ) ); ?></span>
+										<details class="dak-cell-details">
+											<summary><?php esc_html_e( 'Hours', 'doctor-ak-portal' ); ?></summary>
+											<dl class="dak-detail-list dak-detail-list-compact" id="<?php echo esc_attr( $dak_hours_id ); ?>">
+												<?php foreach ( $dak_hours as $dak_day_slug => $dak_day_hours ) : ?>
+													<div><dt><?php echo esc_html( isset( $dak_session_day_labels[ $dak_day_slug ] ) ? $dak_session_day_labels[ $dak_day_slug ] : $dak_day_slug ); ?></dt><dd class="is-tabular"><?php echo esc_html( implode( ', ', $dak_day_hours ) ); ?></dd></div>
+												<?php endforeach; ?>
+											</dl>
+										</details>
+									</span>
+								<?php endif; ?>
+							</td>
+							<td class="dak-col-actions" data-label="<?php esc_attr_e( 'Actions', 'doctor-ak-portal' ); ?>">
+								<div class="dak-row-actions">
+									<a class="dak-text-action" href="<?php echo esc_url( add_query_arg( array( 'view' => 'form', 'clinic_id' => $clinic['id'] ), $section_url ) ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: 1: doctor name, 2: clinic. */ __( 'Edit session for Dr. %1$s at %2$s', 'doctor-ak-portal' ), $clinic['doctor']['name'], $dak_place ) ); ?>"><?php esc_html_e( 'Edit', 'doctor-ak-portal' ); ?></a>
+									<details class="dak-row-menu">
+										<summary class="dak-row-menu-toggle" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: doctor name. */ __( 'More actions for Dr. %s', 'doctor-ak-portal' ), $clinic['doctor']['name'] ) ); ?>"><?php esc_html_e( 'More', 'doctor-ak-portal' ); ?></summary>
+										<div class="dak-row-menu-panel" role="menu">
+											<button type="button" class="dak-row-menu-item is-danger" role="menuitem" data-admin-session-delete data-clinic-id="<?php echo esc_attr( $clinic['id'] ); ?>"><?php esc_html_e( 'Delete session', 'doctor-ak-portal' ); ?></button>
+										</div>
+									</details>
+								</div>
+							</td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+		</div>
+		<p class="dak-empty-state dak-results-empty dak-hidden" data-list-search-empty><?php esc_html_e( 'No sessions match your search.', 'doctor-ak-portal' ); ?></p>
 	<?php endif; ?>
 </section>
+</div>

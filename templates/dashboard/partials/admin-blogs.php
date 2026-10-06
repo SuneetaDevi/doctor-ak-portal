@@ -12,13 +12,8 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
-
-$dak_blog_icons = array(
-	'post'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2.5" width="14" height="15" rx="1.5"/><path d="M6.5 6.5h7M6.5 10h7M6.5 13.5h4"/></svg>',
-	'edit'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 3.5a1.7 1.7 0 0 1 2.4 2.4L6.5 15.3l-3 .7.7-3 9.3-9.3z"/></svg>',
-	'delete' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h12M8 6V4.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V6M6 6l.6 9a1.5 1.5 0 0 0 1.5 1.4h3.8a1.5 1.5 0 0 0 1.5-1.4L14 6"/></svg>',
-);
 ?>
+<div class="dak-list-page">
 <div class="dak-page-head">
 	<div>
 		<h1><?php esc_html_e( 'Blogs', 'doctor-ak-portal' ); ?></h1>
@@ -27,13 +22,12 @@ $dak_blog_icons = array(
 	<a class="dak-button dak-button-primary" href="<?php echo esc_url( add_query_arg( 'view', 'form', $section_url ) ); ?>"><?php esc_html_e( '+ Add Post', 'doctor-ak-portal' ); ?></a>
 </div>
 
-<section class="dak-dashboard-card" id="dak-blogs-list">
-	<div class="dak-dashboard-card-header">
-		<h2><?php esc_html_e( 'All posts', 'doctor-ak-portal' ); ?></h2>
+<section class="dak-results" id="dak-blogs-list" aria-labelledby="dak-blogs-title">
+	<div class="dak-results-tools">
+		<h2 class="dak-results-title" id="dak-blogs-title"><?php esc_html_e( 'Posts', 'doctor-ak-portal' ); ?><span class="dak-results-count"><?php echo esc_html( number_format_i18n( count( $blogs ) ) ); ?></span></h2>
 		<?php if ( ! empty( $blogs ) ) : ?>
-			<div class="dak-dashboard-search dak-list-search-box">
-				<span class="dak-dashboard-search-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg></span>
-				<input type="search" data-list-search="#dak-blogs-list" placeholder="<?php esc_attr_e( 'Search posts', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search posts', 'doctor-ak-portal' ); ?>">
+			<div class="dak-dashboard-search dak-list-search-box"><span class="dak-dashboard-search-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg></span>
+				<input type="search" data-list-search="#dak-blogs-list" placeholder="<?php esc_attr_e( 'Search title or author', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search posts', 'doctor-ak-portal' ); ?>">
 			</div>
 		<?php endif; ?>
 	</div>
@@ -41,54 +35,51 @@ $dak_blog_icons = array(
 	<?php if ( empty( $blogs ) ) : ?>
 		<p class="dak-empty-state"><?php esc_html_e( 'No blog posts yet.', 'doctor-ak-portal' ); ?></p>
 	<?php else : ?>
-		<?php foreach ( $blogs as $blog ) : ?>
-			<div id="dak-blog-<?php echo esc_attr( $blog['id'] ); ?>" class="dak-admin-record-row" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $blog['title'] . ' ' . $blog['author']['name'] ) ); ?>">
-				<div class="dak-admin-record-row-main">
-					<span class="dak-avatar dak-avatar-sm" aria-hidden="true">
-						<?php if ( $blog['image_url'] ) : ?>
-							<img src="<?php echo esc_url( $blog['image_url'] ); ?>" alt="">
-						<?php else : ?>
-							<?php echo $dak_blog_icons['post']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-						<?php endif; ?>
-					</span>
-					<span class="dak-admin-record-row-info">
-						<strong><?php echo esc_html( $blog['title'] ); ?></strong>
-						<span class="dak-admin-record-row-id"><?php echo esc_html( $blog['author']['name'] ); ?></span>
-					</span>
-
-					<span class="dak-admin-record-row-meta">
-						<?php
-						echo $blog['published_at']
-							? esc_html( date_i18n( get_option( 'date_format' ), strtotime( $blog['published_at'] ) ) )
-							: esc_html( date_i18n( get_option( 'date_format' ), strtotime( $blog['created_at'] ) ) );
-						?>
-					</span>
-
-					<span class="dak-admin-record-row-tags">
-						<span class="dak-status-pill dak-status-pill-outline <?php echo 'published' === $blog['status'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-disabled'; ?>">
-							<?php echo esc_html( $blog['status_label'] ); ?>
-						</span>
-					</span>
-
-					<span class="dak-admin-record-row-actions">
-						<a
-							class="dak-icon-button"
-							href="<?php echo esc_url( add_query_arg( array( 'view' => 'form', 'blog_id' => $blog['id'] ), $section_url ) ); ?>"
-							title="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
-							aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
-						><?php echo $dak_blog_icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></a>
-						<button
-							type="button"
-							class="dak-icon-button dak-icon-button-danger"
-							data-admin-blog-delete
-							data-blog-id="<?php echo esc_attr( $blog['id'] ); ?>"
-							title="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
-							aria-label="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
-						><?php echo $dak_blog_icons['delete']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
-					</span>
-				</div>
-			</div>
-		<?php endforeach; ?>
-		<p class="dak-empty-state dak-hidden" data-list-search-empty><?php esc_html_e( 'No posts match your search.', 'doctor-ak-portal' ); ?></p>
+		<div class="dak-data-table-wrap">
+			<table class="dak-data-table dak-ui-table dak-blogs-table">
+				<thead>
+					<tr>
+						<th scope="col"><?php esc_html_e( 'Post', 'doctor-ak-portal' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Date', 'doctor-ak-portal' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Status', 'doctor-ak-portal' ); ?></th>
+						<th scope="col" class="dak-col-actions"><?php esc_html_e( 'Actions', 'doctor-ak-portal' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( $blogs as $blog ) : ?>
+						<tr id="dak-blog-<?php echo esc_attr( $blog['id'] ); ?>" data-row data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $blog['title'] . ' ' . $blog['author']['name'] ) ); ?>">
+							<td class="dak-col-primary" data-label="<?php esc_attr_e( 'Post', 'doctor-ak-portal' ); ?>">
+								<span class="dak-cell-stack">
+									<span class="dak-cell-primary"><?php echo esc_html( $blog['title'] ); ?></span>
+									<span class="dak-cell-sub"><?php echo esc_html( sprintf( /* translators: %s: author name. */ __( 'By %s', 'doctor-ak-portal' ), $blog['author']['name'] ) ); ?></span>
+								</span>
+							</td>
+							<td class="dak-col-nowrap" data-label="<?php esc_attr_e( 'Date', 'doctor-ak-portal' ); ?>">
+								<span class="dak-cell-stack">
+									<span class="is-tabular"><?php echo esc_html( \DoctorAKPortal\Includes\Dashboard_Format::date( $blog['published_at'] ? $blog['published_at'] : $blog['created_at'] ) ); ?></span>
+									<span class="dak-cell-sub"><?php echo $blog['published_at'] ? esc_html__( 'Published', 'doctor-ak-portal' ) : esc_html__( 'Created', 'doctor-ak-portal' ); ?></span>
+								</span>
+							</td>
+							<td class="dak-col-status" data-label="<?php esc_attr_e( 'Status', 'doctor-ak-portal' ); ?>">
+								<span class="dak-status-pill <?php echo 'published' === $blog['status'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-neutral'; ?>"><?php echo esc_html( $blog['status_label'] ); ?></span>
+							</td>
+							<td class="dak-col-actions" data-label="<?php esc_attr_e( 'Actions', 'doctor-ak-portal' ); ?>">
+								<div class="dak-row-actions">
+									<a class="dak-text-action" href="<?php echo esc_url( add_query_arg( array( 'view' => 'form', 'blog_id' => $blog['id'] ), $section_url ) ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: post title. */ __( 'Edit %s', 'doctor-ak-portal' ), $blog['title'] ) ); ?>"><?php esc_html_e( 'Edit', 'doctor-ak-portal' ); ?></a>
+									<details class="dak-row-menu">
+										<summary class="dak-row-menu-toggle" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: post title. */ __( 'More actions for %s', 'doctor-ak-portal' ), $blog['title'] ) ); ?>"><?php esc_html_e( 'More', 'doctor-ak-portal' ); ?></summary>
+										<div class="dak-row-menu-panel" role="menu">
+											<button type="button" class="dak-row-menu-item is-danger" role="menuitem" data-admin-blog-delete data-blog-id="<?php echo esc_attr( $blog['id'] ); ?>"><?php esc_html_e( 'Delete post', 'doctor-ak-portal' ); ?></button>
+										</div>
+									</details>
+								</div>
+							</td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+		</div>
+		<p class="dak-empty-state dak-results-empty dak-hidden" data-list-search-empty><?php esc_html_e( 'No posts match your search.', 'doctor-ak-portal' ); ?></p>
 	<?php endif; ?>
 </section>
+</div>

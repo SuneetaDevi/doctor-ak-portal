@@ -110,7 +110,7 @@ $dak_editing_video_clinic_for_js = $editing_video_clinic ? array(
 					<?php if ( $dak_is_editing && '' !== $editing_user['avatar_url'] ) : ?>
 						<img src="<?php echo esc_url( $editing_user['avatar_url'] ); ?>" alt="">
 					<?php else : ?>
-						<span class="dak-upload-placeholder"><?php esc_html_e( 'No photo selected', 'doctor-ak-portal' ); ?></span>
+						<span class="dak-upload-placeholder" title="<?php esc_attr_e( 'No photo selected', 'doctor-ak-portal' ); ?>"><svg viewBox="0 0 20 20" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="7" r="3.2"/><path d="M4 17c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/></svg><span class="dak-visually-hidden"><?php esc_html_e( 'No photo selected', 'doctor-ak-portal' ); ?></span></span>
 					<?php endif; ?>
 				</div>
 				<label class="dak-button dak-button-secondary" for="dak-admin-user-picture-input"><?php esc_html_e( 'Upload Photo', 'doctor-ak-portal' ); ?></label>

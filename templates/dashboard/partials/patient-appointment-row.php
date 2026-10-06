@@ -37,96 +37,80 @@ if ( ! function_exists( 'dak_patient_appt_initials' ) ) :
 	}
 endif;
 
-$dak_patient_appt_icons = array(
-	'reschedule' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a6 6 0 1 1 1.8 4.3"/><path d="M4 14v-3.5H7.5"/><path d="M10 6.5v4l2.5 1.5"/></svg>',
-	'cancel'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5l10 10M15 5L5 15"/></svg>',
-);
-
 $datetime_timestamp = strtotime( $appointment['date'] . ' ' . $appointment['time'] );
-$datetime_label     = $datetime_timestamp ? date_i18n( 'd/m/Y h:i A', $datetime_timestamp ) : trim( $appointment['date'] . ' ' . $appointment['time'] );
 
-$is_cancellable      = ! in_array( $appointment['status'], array( 'cancelled', 'completed' ), true );
-$can_pay_now         = ! $appointment['is_paid'] && (float) $appointment['charge'] > 0;
-$can_request_refund  = 'cancelled' === $appointment['status'] && $appointment['is_paid'] && 'online' === $appointment['payment_mode'] && '' === $appointment['refund_status'];
+$is_cancellable     = ! in_array( $appointment['status'], array( 'cancelled', 'completed' ), true );
+$can_pay_now        = ! $appointment['is_paid'] && (float) $appointment['charge'] > 0;
+$can_request_refund = 'cancelled' === $appointment['status'] && $appointment['is_paid'] && 'online' === $appointment['payment_mode'] && '' === $appointment['refund_status'];
+$dak_can_join       = ! empty( $appointment['video_call']['can_join'] );
+$dak_pay            = $appointment['is_paid'] ? array( __( 'Paid', 'doctor-ak-portal' ), 'dak-status-pill-is-active' ) : ( (float) $appointment['charge'] > 0 ? array( __( 'Pending', 'doctor-ak-portal' ), 'dak-status-pill-is-pending' ) : array( __( 'Nothing to pay', 'doctor-ak-portal' ), 'dak-status-pill-is-neutral' ) );
+$dak_has_more       = ( $dak_can_join && $can_pay_now ) || $can_request_refund || ! empty( $appointment['reschedulable'] ) || $is_cancellable;
 ?>
-<div class="dak-admin-record-row" data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>">
-	<div class="dak-admin-record-row-main">
-		<span class="dak-avatar dak-avatar-sm" aria-hidden="true">
-			<?php if ( $appointment['doctor_avatar_url'] ) : ?>
-				<img src="<?php echo esc_url( $appointment['doctor_avatar_url'] ); ?>" alt="">
-			<?php else : ?>
-				<?php echo esc_html( dak_patient_appt_initials( $appointment['doctor_name'] ) ); ?>
-			<?php endif; ?>
+<tr data-row data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>">
+	<td class="dak-col-primary" data-label="<?php esc_attr_e( 'Doctor', 'doctor-ak-portal' ); ?>">
+		<span class="dak-cell-stack">
+			<span class="dak-cell-primary"><?php echo esc_html( sprintf( 'Dr. %s', $appointment['doctor_name'] ) ); ?></span>
+			<span class="dak-cell-sub"><?php echo esc_html( '' !== $appointment['doctor_specialization'] ? $appointment['doctor_specialization'] : $appointment['type_label'] ); ?></span>
 		</span>
-
-		<span class="dak-admin-record-row-info">
-			<strong><?php echo esc_html( sprintf( 'Dr. %s', $appointment['doctor_name'] ) ); ?></strong>
-			<span class="dak-admin-record-row-id"><?php echo esc_html( '' !== $appointment['doctor_specialization'] ? $appointment['doctor_specialization'] : $appointment['type_label'] ); ?></span>
+	</td>
+	<td class="dak-col-nowrap" data-label="<?php esc_attr_e( 'When', 'doctor-ak-portal' ); ?>">
+		<span class="dak-cell-stack">
+			<span class="dak-cell-strong is-tabular"><?php echo esc_html( $datetime_timestamp ? date_i18n( 'd M Y, h:i A', $datetime_timestamp ) : trim( $appointment['date'] . ' ' . $appointment['time'] ) ); ?></span>
+			<span class="dak-cell-sub"><?php echo esc_html( $appointment['countdown_label'] ); ?></span>
 		</span>
-
-		<span class="dak-admin-record-row-meta">
-			<span class="dak-patient-appt-countdown"><?php echo esc_html( $appointment['countdown_label'] ); ?></span><br>
-			<span class="dak-clinic-card-meta"><?php echo esc_html( $datetime_label ); ?></span>
-		</span>
-
-		<span class="dak-admin-record-row-tags">
-			<span class="dak-status-pill dak-status-pill-outline dak-status-pill-<?php echo esc_attr( $appointment['status_badge_class'] ); ?>"><?php echo esc_html( $appointment['status_label'] ); ?></span>
+	</td>
+	<td data-label="<?php esc_attr_e( 'Status', 'doctor-ak-portal' ); ?>">
+		<span class="dak-cell-stack">
+			<span class="dak-status-pill <?php echo esc_attr( \DoctorAKPortal\Includes\Dashboard_Format::status_class( $appointment['status'] ) ); ?>"><?php echo esc_html( $appointment['status_label'] ); ?></span>
 			<?php if ( ! empty( $appointment['video_call']['applicable'] ) && ! $appointment['video_call']['can_join'] && '' !== $appointment['video_call']['hint'] ) : ?>
-				<span class="dak-status-pill dak-status-pill-disabled" title="<?php echo esc_attr( $appointment['video_call']['hint'] ); ?>"><?php echo esc_html( $appointment['video_call']['hint'] ); ?></span>
+				<span class="dak-cell-note"><?php echo esc_html( $appointment['video_call']['hint'] ); ?></span>
 			<?php endif; ?>
-			<?php if ( ! empty( $appointment['is_instant'] ) && (float) $appointment['surcharge'] > 0 ) : ?>
-				<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-pending" title="<?php esc_attr_e( 'Booked inside the instant-booking window', 'doctor-ak-portal' ); ?>">
-					<?php echo esc_html( sprintf( /* translators: %s: surcharge amount. */ __( 'Instant · +PKR%s', 'doctor-ak-portal' ), number_format( (float) $appointment['surcharge'], 0 ) ) ); ?>
-				</span>
+			<?php if ( $dak_can_join ) : ?>
+				<span class="dak-cell-note"><?php esc_html_e( 'If it says waiting for the host, please wait — your doctor starts the call.', 'doctor-ak-portal' ); ?></span>
 			<?php endif; ?>
 			<?php if ( 'requested' === $appointment['refund_status'] ) : ?>
-				<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-pending"><?php esc_html_e( 'Refund Requested', 'doctor-ak-portal' ); ?></span>
+				<span class="dak-cell-note"><?php esc_html_e( 'Refund requested', 'doctor-ak-portal' ); ?></span>
 			<?php elseif ( 'processed' === $appointment['refund_status'] ) : ?>
-				<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-active"><?php esc_html_e( 'Refund Processed', 'doctor-ak-portal' ); ?></span>
+				<span class="dak-cell-note"><?php esc_html_e( 'Refund processed', 'doctor-ak-portal' ); ?></span>
 			<?php endif; ?>
 		</span>
-
-		<span class="dak-admin-record-row-actions">
-			<?php if ( ! empty( $appointment['video_call']['can_join'] ) ) : ?>
-				<button type="button" class="dak-status-pill dak-status-pill-action" data-join-video-call data-room-url="<?php echo esc_url( $appointment['video_call']['room_url'] ); ?>"><?php esc_html_e( 'Join Call', 'doctor-ak-portal' ); ?></button>
-			<?php endif; ?>
-			<?php if ( $can_request_refund ) : ?>
-				<button type="button" class="dak-status-pill dak-status-pill-action" data-request-refund data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"><?php esc_html_e( 'Request Refund', 'doctor-ak-portal' ); ?></button>
-			<?php endif; ?>
-			<?php if ( $can_pay_now ) : ?>
-				<button type="button" class="dak-status-pill dak-status-pill-action" data-pay-now data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>">
-					<?php echo esc_html( sprintf( /* translators: %s: amount. */ __( 'Pay PKR%s', 'doctor-ak-portal' ), number_format( (float) $appointment['charge'], 0 ) ) ); ?>
-				</button>
-			<?php endif; ?>
-			<?php if ( ! empty( $appointment['reschedulable'] ) ) : ?>
-				<button
-					type="button"
-					class="dak-icon-button"
-					data-reschedule-appointment
-					data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"
-					data-date="<?php echo esc_attr( $appointment['date'] ); ?>"
-					data-time="<?php echo esc_attr( $appointment['time'] ); ?>"
-					title="<?php esc_attr_e( 'Reschedule', 'doctor-ak-portal' ); ?>"
-					aria-label="<?php esc_attr_e( 'Reschedule', 'doctor-ak-portal' ); ?>"
-				><?php echo $dak_patient_appt_icons['reschedule']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
-			<?php endif; ?>
-			<?php if ( $is_cancellable ) : ?>
-				<button
-					type="button"
-					class="dak-icon-button dak-icon-button-danger"
-					data-cancel-appointment
-					data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"
-					data-refund-eligible="<?php echo esc_attr( $appointment['refund_eligible'] ? '1' : '0' ); ?>"
-					title="<?php esc_attr_e( 'Cancel', 'doctor-ak-portal' ); ?>"
-					aria-label="<?php esc_attr_e( 'Cancel', 'doctor-ak-portal' ); ?>"
-				><?php echo $dak_patient_appt_icons['cancel']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
+	</td>
+	<td data-label="<?php esc_attr_e( 'Payment', 'doctor-ak-portal' ); ?>">
+		<span class="dak-cell-stack">
+			<span class="dak-cell-strong is-tabular"><?php echo esc_html( \DoctorAKPortal\Includes\Dashboard_Format::money( $appointment['charge'], __( 'Free', 'doctor-ak-portal' ) ) ); ?></span>
+			<span class="dak-pay-status <?php echo esc_attr( $dak_pay[1] ); ?>"><?php echo esc_html( $dak_pay[0] ); ?></span>
+			<?php if ( ! empty( $appointment['is_instant'] ) && (float) $appointment['surcharge'] > 0 ) : ?>
+				<span class="dak-cell-note"><?php echo esc_html( sprintf( /* translators: %s: surcharge amount. */ __( 'Includes %s instant booking fee', 'doctor-ak-portal' ), \DoctorAKPortal\Includes\Dashboard_Format::money( $appointment['surcharge'] ) ) ); ?></span>
 			<?php endif; ?>
 		</span>
-	</div>
-
-	<?php if ( ! empty( $appointment['video_call']['can_join'] ) ) : ?>
-		<div class="dak-admin-record-row-secondary">
-			<span class="dak-admin-record-row-secondary-empty"><?php esc_html_e( "If it says waiting for the host, please wait a moment — your doctor needs to start the call first.", 'doctor-ak-portal' ); ?></span>
+	</td>
+	<td class="dak-col-actions" data-label="<?php esc_attr_e( 'Actions', 'doctor-ak-portal' ); ?>">
+		<div class="dak-row-actions">
+			<?php if ( $dak_can_join ) : ?>
+				<button type="button" class="dak-button dak-button-primary dak-button-sm" data-join-video-call data-room-url="<?php echo esc_url( $appointment['video_call']['room_url'] ); ?>"><?php esc_html_e( 'Join call', 'doctor-ak-portal' ); ?></button>
+			<?php elseif ( $can_pay_now ) : ?>
+				<button type="button" class="dak-button dak-button-primary dak-button-sm" data-pay-now data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"><?php echo esc_html( sprintf( /* translators: %s: amount. */ __( 'Pay %s', 'doctor-ak-portal' ), \DoctorAKPortal\Includes\Dashboard_Format::money( $appointment['charge'] ) ) ); ?></button>
+			<?php endif; ?>
+			<?php if ( $dak_has_more ) : ?>
+				<details class="dak-row-menu">
+					<summary class="dak-row-menu-toggle" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: doctor name. */ __( 'More actions for your appointment with Dr. %s', 'doctor-ak-portal' ), $appointment['doctor_name'] ) ); ?>"><?php esc_html_e( 'More', 'doctor-ak-portal' ); ?></summary>
+					<div class="dak-row-menu-panel" role="menu">
+						<?php if ( $dak_can_join && $can_pay_now ) : ?>
+							<button type="button" class="dak-row-menu-item" role="menuitem" data-pay-now data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"><?php echo esc_html( sprintf( /* translators: %s: amount. */ __( 'Pay %s', 'doctor-ak-portal' ), \DoctorAKPortal\Includes\Dashboard_Format::money( $appointment['charge'] ) ) ); ?></button>
+						<?php endif; ?>
+						<?php if ( ! empty( $appointment['reschedulable'] ) ) : ?>
+							<button type="button" class="dak-row-menu-item" role="menuitem" data-reschedule-appointment data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>" data-date="<?php echo esc_attr( $appointment['date'] ); ?>" data-time="<?php echo esc_attr( $appointment['time'] ); ?>"><?php esc_html_e( 'Reschedule', 'doctor-ak-portal' ); ?></button>
+						<?php endif; ?>
+						<?php if ( $can_request_refund ) : ?>
+							<button type="button" class="dak-row-menu-item" role="menuitem" data-request-refund data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"><?php esc_html_e( 'Request refund', 'doctor-ak-portal' ); ?></button>
+						<?php endif; ?>
+						<?php if ( $is_cancellable ) : ?>
+							<hr class="dak-row-menu-sep">
+							<button type="button" class="dak-row-menu-item is-danger" role="menuitem" data-cancel-appointment data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>" data-refund-eligible="<?php echo esc_attr( $appointment['refund_eligible'] ? '1' : '0' ); ?>"><?php esc_html_e( 'Cancel appointment', 'doctor-ak-portal' ); ?></button>
+						<?php endif; ?>
+					</div>
+				</details>
+			<?php endif; ?>
 		</div>
-	<?php endif; ?>
-</div>
+	</td>
+</tr>

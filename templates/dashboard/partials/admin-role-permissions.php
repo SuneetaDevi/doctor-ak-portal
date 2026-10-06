@@ -35,45 +35,52 @@ $dak_portals = array(
 	'receptionist' => array( __( 'Receptionist', 'doctor-ak-portal' ), $receptionist_tabs ),
 );
 ?>
-<div class="dak-dashboard-greeting">
-	<h1><?php esc_html_e( 'Role & Permissions', 'doctor-ak-portal' ); ?></h1>
-	<p><?php esc_html_e( 'Choose which dashboard pages each portal can see. Turning a page off hides its menu link and blocks direct access to it — the Dashboard overview and this Roles & Permissions page itself are always available, so a mistake here can always be undone.', 'doctor-ak-portal' ); ?></p>
+<div class="dak-list-page dak-form-page">
+<div class="dak-page-head">
+	<div>
+		<h1><?php esc_html_e( 'Roles & Permissions', 'doctor-ak-portal' ); ?></h1>
+		<p><?php esc_html_e( 'Choose which dashboard pages each portal can see. Turning a page off hides its menu link and blocks direct access — the Dashboard overview and this page are always available, so a mistake here can always be undone.', 'doctor-ak-portal' ); ?></p>
+	</div>
 </div>
 
-<section class="dak-dashboard-card dak-admin-users-card" id="dak-role-permissions-form">
-	<div class="dak-dashboard-card-header">
-		<h2><?php esc_html_e( 'Permission matrix', 'doctor-ak-portal' ); ?></h2>
+<section class="dak-results" id="dak-role-permissions-form" aria-labelledby="dak-role-permissions-title">
+	<div class="dak-results-tools">
+		<h2 class="dak-results-title" id="dak-role-permissions-title"><?php esc_html_e( 'Permission matrix', 'doctor-ak-portal' ); ?></h2>
+		<span class="dak-cell-sub"><?php esc_html_e( 'Changes apply on next login.', 'doctor-ak-portal' ); ?></span>
 	</div>
 
-	<div class="dak-alert dak-alert-error dak-hidden" id="dak-role-permissions-error" role="alert"></div>
-	<div class="dak-alert dak-alert-success dak-hidden" id="dak-role-permissions-success" role="status"></div>
+	<div class="dak-results-body dak-results-messages">
+		<div class="dak-alert dak-alert-error dak-hidden" id="dak-role-permissions-error" role="alert"></div>
+		<div class="dak-alert dak-alert-success dak-hidden" id="dak-role-permissions-success" role="status"></div>
+	</div>
 
-	<div class="dak-table-scroll">
-		<table class="dak-admin-users-table dak-permission-matrix">
+	<div class="dak-data-table-wrap">
+		<table class="dak-data-table dak-ui-table dak-permission-matrix">
 			<thead>
 				<tr>
-					<th><?php esc_html_e( 'Capability', 'doctor-ak-portal' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Page / module', 'doctor-ak-portal' ); ?></th>
 					<?php foreach ( $dak_portals as $dak_portal ) : ?>
-						<th><?php echo esc_html( $dak_portal[0] ); ?></th>
+						<th scope="col"><?php echo esc_html( $dak_portal[0] ); ?></th>
 					<?php endforeach; ?>
 				</tr>
 			</thead>
 			<tbody>
 				<?php foreach ( $dak_all_tab_slugs as $dak_tab_slug => $dak_tab_label ) : ?>
-					<tr>
-						<td><strong><?php echo esc_html( $dak_tab_label ); ?></strong></td>
+					<tr data-row>
+						<th scope="row" class="dak-col-primary"><?php echo esc_html( $dak_tab_label ); ?></th>
 						<?php foreach ( $dak_portals as $dak_portal_key => $dak_portal ) : ?>
 							<?php
-							list( , $dak_portal_own_tabs ) = $dak_portal;
-							$dak_saved_portal              = isset( $saved[ $dak_portal_key ] ) ? $saved[ $dak_portal_key ] : array();
-							$dak_default_checked            = isset( $dak_portal_own_tabs[ $dak_tab_slug ] );
-							$dak_is_checked                 = isset( $dak_saved_portal[ $dak_tab_slug ] ) ? $dak_saved_portal[ $dak_tab_slug ] : $dak_default_checked;
+							list( $dak_portal_label, $dak_portal_own_tabs ) = $dak_portal;
+							$dak_saved_portal                               = isset( $saved[ $dak_portal_key ] ) ? $saved[ $dak_portal_key ] : array();
+							$dak_default_checked                             = isset( $dak_portal_own_tabs[ $dak_tab_slug ] );
+							$dak_is_checked                                  = isset( $dak_saved_portal[ $dak_tab_slug ] ) ? $dak_saved_portal[ $dak_tab_slug ] : $dak_default_checked;
 							?>
-							<td>
+							<td data-label="<?php echo esc_attr( $dak_portal_label ); ?>">
 								<input
 									type="checkbox"
 									name="permissions[<?php echo esc_attr( $dak_portal_key ); ?>][<?php echo esc_attr( $dak_tab_slug ); ?>]"
 									value="1"
+									aria-label="<?php echo esc_attr( sprintf( /* translators: 1: page/module name, 2: portal name. */ __( '%1$s — %2$s portal', 'doctor-ak-portal' ), $dak_tab_label, $dak_portal_label ) ); ?>"
 									<?php checked( $dak_is_checked ); ?>
 								>
 							</td>
@@ -84,9 +91,10 @@ $dak_portals = array(
 		</table>
 	</div>
 
-	<p class="dak-field-hint"><?php esc_html_e( 'Changes apply on next login.', 'doctor-ak-portal' ); ?></p>
-
-	<button type="button" class="dak-button dak-button-primary" id="dak-role-permissions-save">
-		<span class="dak-button-label"><?php esc_html_e( 'Save Permissions', 'doctor-ak-portal' ); ?></span>
-	</button>
+	<div class="dak-results-footer">
+		<button type="button" class="dak-button dak-button-primary" id="dak-role-permissions-save">
+			<span class="dak-button-label"><?php esc_html_e( 'Save permissions', 'doctor-ak-portal' ); ?></span>
+		</button>
+	</div>
 </section>
+</div>

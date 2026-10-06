@@ -3878,3 +3878,1615 @@ html[data-theme='dark'] body.dak-app-page .dak-admin-toast {
 	background: #e6ebef !important;
 	color: #0b0d10 !important;
 }
+
+
+/* ==========================================================================
+   20. Shared list pattern — every dashboard list/table page
+   ========================================================================== */
+
+/* The approved Admin Appointments page (section 18) is the reference: these
+   rules reproduce its measurements for every other dashboard list. They
+   never match the Appointments page itself — it keeps its own scoped rules
+   (.dak-appts-page / .dak-appointments-table), which outrank these anyway.
+
+   Markup contract (templates):
+     .dak-list-page                       page wrapper
+       .dak-page-head                     title, count/helper text, one Add action
+       .dak-list-toolbar > form.dak-list-filters   compact filters (optional)
+       section.dak-results                one white results surface
+         .dak-results-tools               count / quick search / sort (optional)
+         .dak-data-table-wrap > table.dak-data-table.dak-ui-table
+         p.dak-empty-state                empty / no-match message            */
+
+/* ---- 20.1 Theme table reset, dashboard-only --------------------------------
+   Hello Elementor's reset.css draws a border on all four sides of every
+   cell, zebra-stripes rows, adds a 2px band between <tbody>s, a 15px bottom
+   margin and a .9em font — the "spreadsheet grid" on every dashboard table.
+   Scoped to the plugin's own portal markup (never the rest of the site);
+   horizontal separators only. The Appointments table resets itself. */
+body.dak-app-page .dak-portal table:not( .dak-appointments-table ) {
+	margin: 0 !important;
+	border: 0 !important;
+	border-spacing: 0 !important;
+	background: transparent !important;
+	font-size: 14px !important;
+}
+
+body.dak-app-page .dak-portal table:not( .dak-appointments-table ) th,
+body.dak-app-page .dak-portal table:not( .dak-appointments-table ) td {
+	border: 0 !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	background-color: transparent !important;
+}
+
+body.dak-app-page .dak-portal table:not( .dak-appointments-table ) tbody + tbody {
+	border: 0 !important;
+}
+
+/* ---- 20.2 Page rhythm (same as Appointments) ------------------------------- */
+@media ( min-width: 901px ) {
+	body.dak-app-page .dak-dashboard .dak-dashboard-main {
+		padding: 0 24px 32px !important;
+	}
+
+	body.dak-app-page .dak-dashboard .dak-dashboard-main > .dak-dashboard-topbar {
+		margin: 0 -24px 24px !important;
+		padding: 12px 24px !important;
+	}
+}
+
+body.dak-app-page .dak-dashboard .dak-page-head,
+body.dak-app-page .dak-dashboard .dak-dashboard-greeting {
+	align-items: center !important;
+	margin: 0 0 16px !important;
+}
+
+body.dak-app-page .dak-dashboard .dak-page-head h1,
+body.dak-app-page .dak-dashboard .dak-dashboard-greeting h1 {
+	font-size: 24px !important;
+}
+
+body.dak-app-page .dak-dashboard .dak-page-head p,
+body.dak-app-page .dak-dashboard .dak-dashboard-greeting p {
+	margin: 2px 0 0 !important;
+	font-size: 13px !important;
+	line-height: 1.5 !important;
+}
+
+body.dak-app-page .dak-portal .dak-list-page > .dak-alert,
+body.dak-app-page .dak-portal .dak-list-page > .dak-tabs {
+	margin: 0 0 16px !important;
+}
+
+/* ---- 20.3 Summary tiles (same as the Appointments stat cards) -------------- */
+body.dak-app-page .dak-portal .dak-summary-grid {
+	display: grid !important;
+	grid-template-columns: repeat( auto-fit, minmax( 200px, 1fr ) ) !important;
+	gap: 12px !important;
+	margin: 0 0 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-summary-card {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 2px !important;
+	min-width: 0 !important;
+	padding: 10px 16px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	background: var( --dak-bg-card ) !important;
+	box-shadow: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-summary-card-label {
+	color: var( --dak-muted ) !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+}
+
+body.dak-app-page .dak-portal .dak-summary-card-value {
+	color: var( --dak-text ) !important;
+	font-size: 20px !important;
+	font-weight: 700 !important;
+	line-height: 1.3 !important;
+	font-variant-numeric: tabular-nums !important;
+	overflow-wrap: anywhere !important;
+}
+
+body.dak-app-page .dak-portal .dak-summary-card-sub {
+	color: var( --dak-muted ) !important;
+	font-size: 12px !important;
+}
+
+/* ---- 20.4 Filter toolbar (same controls as Appointments) ------------------- */
+body.dak-app-page .dak-portal .dak-list-toolbar {
+	margin: 0 0 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-list-filters {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: flex-end !important;
+	gap: 12px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	background: transparent !important;
+}
+
+body.dak-app-page .dak-portal .dak-list-filters .dak-field {
+	flex: 0 1 200px !important;
+	min-width: 150px !important;
+	max-width: none !important;
+	margin: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-list-filters .dak-field.is-search {
+	flex: 1 1 280px !important;
+	max-width: 520px !important;
+}
+
+body.dak-app-page .dak-portal .dak-list-filters .dak-field > label {
+	margin: 0 0 4px !important;
+	color: var( --dak-muted ) !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+}
+
+body.dak-app-page .dak-portal .dak-list-filter-actions {
+	display: flex !important;
+	flex: 0 0 auto !important;
+	gap: 8px !important;
+	margin: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-list-filter-actions .dak-button {
+	min-height: var( --dui-control-h ) !important;
+	padding: 0 14px !important;
+	font-size: 14px !important;
+	white-space: nowrap !important;
+}
+
+/* ---- 20.5 Results surface ---------------------------------------------- */
+body.dak-app-page .dak-portal .dak-results {
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	background: var( --dak-bg-card ) !important;
+	box-shadow: none !important;
+	min-width: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-results + .dak-results,
+body.dak-app-page .dak-portal .dak-results + .dak-list-toolbar {
+	margin-top: 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-results-tools {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 8px 16px !important;
+	min-height: 52px !important;
+	margin: 0 !important;
+	padding: 8px 16px !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	box-sizing: border-box !important;
+}
+
+body.dak-app-page .dak-portal .dak-results-title {
+	margin: 0 !important;
+	color: var( --dak-text ) !important;
+	font-size: 14px !important;
+	font-weight: 600 !important;
+	letter-spacing: 0 !important;
+	text-transform: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-results-title .dak-results-count {
+	margin-left: 6px !important;
+	color: var( --dak-muted ) !important;
+	font-weight: 500 !important;
+}
+
+body.dak-app-page .dak-portal .dak-results-tools .dak-list-search-box {
+	flex: 0 1 300px !important;
+	max-width: 100% !important;
+	min-width: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-results-tools .dak-list-search-box input {
+	height: 34px !important;
+	min-height: 34px !important;
+	font-size: 13px !important;
+}
+
+body.dak-app-page .dak-portal .dak-results > .dak-empty-state,
+body.dak-app-page .dak-portal .dak-results .dak-results-empty {
+	margin: 0 !important;
+	padding: 32px 16px !important;
+	border: 0 !important;
+	background: transparent !important;
+	color: var( --dak-muted ) !important;
+	text-align: center !important;
+}
+
+body.dak-app-page .dak-portal .dak-results > .dak-data-table-wrap {
+	border-radius: 0 0 var( --dak-radius-lg ) var( --dak-radius-lg ) !important;
+}
+
+/* A plain padded block inside a results surface (forms, grouped records). */
+body.dak-app-page .dak-portal .dak-results-body {
+	padding: 16px !important;
+}
+
+/* ---- 20.6 Table (same header, density and type as Appointments) ---------- */
+body.dak-app-page .dak-portal .dak-ui-table {
+	width: 100% !important;
+	table-layout: auto !important;
+	font-size: 14px !important;
+	line-height: 1.4 !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table thead th {
+	padding: 10px 12px !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+	letter-spacing: 0.01em !important;
+	text-transform: none !important;
+	white-space: nowrap !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table thead th:first-child,
+body.dak-app-page .dak-portal .dak-ui-table td:first-child {
+	padding-left: 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table thead th:last-child,
+body.dak-app-page .dak-portal .dak-ui-table td:last-child {
+	padding-right: 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table td {
+	padding: 14px 12px !important;
+	vertical-align: top !important;
+	overflow-wrap: break-word !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table tbody:last-child > tr:last-child > td {
+	border-bottom: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table tbody tr[data-row]:hover > td {
+	background-color: var( --dui-row-hover ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table tbody tr[data-row]:target > td {
+	background-color: var( --dak-primary-tint ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table .dak-data-table-group th {
+	padding: 14px 16px 6px !important;
+	background: transparent !important;
+	color: var( --dak-text ) !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+	letter-spacing: 0 !important;
+	text-transform: none !important;
+}
+
+/* Names 15/600, primary 14, supporting 13 (12 for ids). Names and emails
+   wrap at word boundaries only — never mid-word fragments. */
+body.dak-app-page .dak-portal .dak-ui-table .dak-cell-primary {
+	font-size: 15px !important;
+	font-weight: 600 !important;
+	line-height: 1.35 !important;
+	overflow-wrap: normal !important;
+	word-break: normal !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table .dak-cell-sub {
+	font-size: 13px !important;
+	line-height: 1.4 !important;
+	overflow-wrap: normal !important;
+	word-break: normal !important;
+}
+
+/* Addresses carry <wbr> after "@" and "." (Dashboard_Format::email_html()),
+   so they wrap there; break-word is only the last resort for one enormous
+   segment and doesn't shrink the column's minimum width. */
+body.dak-app-page .dak-portal .dak-ui-table .dak-cell-email {
+	overflow-wrap: break-word !important;
+	word-break: normal !important;
+}
+
+/* Column proportions per directory (auto layout: content can still claim
+   the room it needs, nothing clips). */
+body.dak-app-page .dak-portal .dak-doctors-table thead th:nth-child( 1 ) { width: 32% !important; }
+body.dak-app-page .dak-portal .dak-doctors-table thead th:nth-child( 2 ) { width: 20% !important; }
+body.dak-app-page .dak-portal .dak-doctors-table thead th:nth-child( 3 ) { width: 24% !important; }
+body.dak-app-page .dak-portal .dak-doctors-table thead th:nth-child( 4 ) { width: 12% !important; }
+
+body.dak-app-page .dak-portal .dak-patients-table thead th:nth-child( 1 ) { width: 22% !important; }
+body.dak-app-page .dak-portal .dak-patients-table thead th:nth-child( 2 ) { width: 26% !important; }
+body.dak-app-page .dak-portal .dak-patients-table thead th:nth-child( 3 ) { width: 22% !important; }
+body.dak-app-page .dak-portal .dak-patients-table thead th:nth-child( 4 ) { width: 11% !important; }
+
+body.dak-app-page .dak-portal .dak-receptionists-table thead th:nth-child( 1 ) { width: 32% !important; }
+body.dak-app-page .dak-portal .dak-receptionists-table thead th:nth-child( 2 ) { width: 28% !important; }
+
+body.dak-app-page .dak-portal .dak-all-users-table thead th:nth-child( 1 ) { width: 24% !important; }
+body.dak-app-page .dak-portal .dak-all-users-table thead th:nth-child( 2 ) { width: 32% !important; }
+
+/* Encounters: patient and doctor/clinic share the room evenly; the clinical
+   text lives in a closed disclosure, so it never sets a width. */
+body.dak-app-page .dak-portal .dak-encounters-table thead th:nth-child( 1 ) { width: 30% !important; }
+body.dak-app-page .dak-portal .dak-encounters-table thead th:nth-child( 2 ) { width: 16% !important; }
+body.dak-app-page .dak-portal .dak-encounters-table thead th:nth-child( 3 ) { width: 30% !important; }
+body.dak-app-page .dak-portal .dak-encounters-table thead th:nth-child( 4 ) { width: 10% !important; }
+
+body.dak-app-page .dak-portal .dak-cell-details {
+	margin-top: 2px !important;
+}
+
+/* A short label/value list opened from a row disclosure (hours, pricing). */
+body.dak-app-page .dak-portal .dak-detail-list.dak-detail-list-compact {
+	grid-template-columns: auto auto !important;
+	justify-content: start !important;
+	gap: 2px 12px !important;
+	margin: 6px 0 0 !important;
+	padding: 8px 10px !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+	text-align: left !important;
+}
+
+body.dak-app-page .dak-portal .dak-detail-list-compact dt,
+body.dak-app-page .dak-portal .dak-detail-list-compact dd {
+	font-size: 12px !important;
+	white-space: nowrap !important;
+}
+
+body.dak-app-page .dak-portal .dak-detail-list-compact dd {
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-services-table thead th:nth-child( 1 ) { width: 26% !important; }
+body.dak-app-page .dak-portal .dak-services-table thead th:nth-child( 2 ) { width: 28% !important; }
+body.dak-app-page .dak-portal .dak-sessions-table thead th:nth-child( 1 ) { width: 24% !important; }
+body.dak-app-page .dak-portal .dak-sessions-table thead th:nth-child( 2 ) { width: 26% !important; }
+body.dak-app-page .dak-portal .dak-sessions-table thead th:nth-child( 3 ) { width: 12% !important; }
+body.dak-app-page .dak-portal .dak-clinic-locations-table thead th:nth-child( 1 ) { width: 38% !important; }
+body.dak-app-page .dak-portal .dak-clinic-locations-table thead th:nth-child( 2 ) { width: 24% !important; }
+body.dak-app-page .dak-portal .dak-video-pricing-table thead th:nth-child( 1 ) { width: 36% !important; }
+
+body.dak-app-page .dak-portal .dak-cell-details-text {
+	max-width: 60ch !important;
+	margin: 6px 0 0 !important;
+	padding: 8px 10px !important;
+	border-left: 2px solid var( --dak-border ) !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 13px !important;
+	line-height: 1.5 !important;
+	white-space: pre-line !important;
+	overflow-wrap: break-word !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table .dak-cell-id {
+	font-size: 12px !important;
+	font-variant-numeric: tabular-nums !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table .dak-cell-strong {
+	font-weight: 500 !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table .is-tabular,
+body.dak-app-page .dak-portal .dak-ui-table .dak-col-num {
+	font-variant-numeric: tabular-nums !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table .dak-col-num {
+	text-align: right !important;
+	white-space: nowrap !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table .dak-col-num .dak-cell-stack {
+	align-items: flex-end !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table .dak-col-nowrap {
+	white-space: nowrap !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table .dak-cell-muted {
+	color: var( --dak-muted ) !important;
+}
+
+/* Small soft badges — content-sized, never stretched. */
+body.dak-app-page .dak-portal .dak-ui-table .dak-status-pill {
+	width: max-content !important;
+	max-width: 100% !important;
+	padding: 1px 8px !important;
+	border: 0 !important;
+	border-radius: 999px !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+	line-height: 1.6 !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table .dak-cell-note {
+	font-size: 12px !important;
+	color: var( --dak-muted ) !important;
+}
+
+/* Actions: View (text link) + More, right-aligned in one line. */
+body.dak-app-page .dak-portal .dak-ui-table .dak-col-actions {
+	width: 1% !important;
+	text-align: right !important;
+	white-space: nowrap !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table .dak-row-actions {
+	display: inline-flex !important;
+	flex-wrap: nowrap !important;
+	align-items: center !important;
+	justify-content: flex-end !important;
+	gap: 6px !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table .dak-row-actions .dak-button {
+	min-height: 30px !important;
+	padding: 0 10px !important;
+	font-size: 13px !important;
+}
+
+body.dak-app-page .dak-portal .dak-ui-table .dak-row-actions .dak-row-menu-toggle {
+	min-height: 30px !important;
+	padding: 0 10px !important;
+	font-weight: 500 !important;
+}
+
+/* "View" — the same quiet text action as Appointments. */
+body.dak-app-page .dak-portal .dak-text-action {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	min-height: 30px !important;
+	padding: 0 10px !important;
+	border: 0 !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: transparent !important;
+	color: var( --dak-primary-dark ) !important;
+	font: inherit !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+	line-height: 1.2 !important;
+	text-decoration: none !important;
+	white-space: nowrap !important;
+	cursor: pointer !important;
+}
+
+body.dak-app-page .dak-portal .dak-text-action:hover {
+	background: var( --dak-bg-subtle ) !important;
+	text-decoration: underline !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+/* Inline "label: value" facts inside a cell (e.g. schedule days). */
+body.dak-app-page .dak-portal .dak-inline-list {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 2px 8px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-inline-list > li {
+	margin: 0 !important;
+	white-space: nowrap !important;
+}
+
+/* Expandable breakdown inside a row (native <details>). */
+body.dak-app-page .dak-portal .dak-cell-details > summary {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 4px !important;
+	color: var( --dak-primary-dark ) !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+	list-style: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-cell-details > summary::-webkit-details-marker {
+	display: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-cell-details > summary::after {
+	content: '' !important;
+	width: 6px !important;
+	height: 6px !important;
+	border-right: 1.5px solid currentColor !important;
+	border-bottom: 1.5px solid currentColor !important;
+	transform: translateY( -2px ) rotate( 45deg ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-cell-details[open] > summary::after {
+	transform: translateY( 1px ) rotate( -135deg ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-cell-details .dak-detail-list {
+	margin-top: 8px !important;
+}
+
+/* ---- 20.7 Mobile: labelled stacked records (same priority order) ---------- */
+@media ( max-width: 782px ) {
+	body.dak-app-page .dak-portal .dak-list-filters .dak-field,
+	body.dak-app-page .dak-portal .dak-list-filters .dak-field.is-search {
+		flex: 1 1 100% !important;
+		max-width: none !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-list-filter-actions {
+		flex: 1 1 100% !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-list-filter-actions .dak-button {
+		flex: 1 1 0 !important;
+		min-height: 44px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-results-tools .dak-list-search-box {
+		flex: 1 1 100% !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-ui-table tbody tr[data-row] {
+		padding: 12px 16px !important;
+	}
+
+	/* table.… so these outrank the dashboard table reset (20.1). */
+	body.dak-app-page .dak-portal table.dak-ui-table td,
+	body.dak-app-page .dak-portal table.dak-ui-table td:first-child,
+	body.dak-app-page .dak-portal table.dak-ui-table td:last-child {
+		padding: 4px 0 !important;
+		border-bottom: 0 !important;
+		text-align: left !important;
+		white-space: normal !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-ui-table td.dak-col-num {
+		text-align: left !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-ui-table .dak-col-num .dak-cell-stack {
+		align-items: flex-start !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-ui-table td::before {
+		font-weight: 500 !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-ui-table td.dak-col-actions {
+		width: auto !important;
+		padding-top: 8px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-ui-table .dak-row-actions {
+		display: flex !important;
+		flex-wrap: wrap !important;
+		justify-content: flex-start !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-ui-table .dak-row-actions .dak-button,
+	body.dak-app-page .dak-portal .dak-ui-table .dak-row-actions .dak-text-action,
+	body.dak-app-page .dak-portal .dak-ui-table .dak-row-actions .dak-row-menu-toggle {
+		min-height: 44px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-ui-table .dak-data-table-group th {
+		padding: 12px 16px 6px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-summary-grid {
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+		gap: 8px !important;
+	}
+}
+
+/* ---- 20.8 Form pages: titled sections, one Save row ----------------------- */
+body.dak-app-page .dak-portal .dak-form-card {
+	margin: 0 0 16px !important;
+	padding: 0 !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	background: var( --dak-bg-card ) !important;
+	box-shadow: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-form-card-header {
+	margin: 0 !important;
+	padding: 16px 20px !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-form-card-header h2 {
+	margin: 0 !important;
+	font-size: 16px !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-form-card-header p {
+	max-width: 75ch !important;
+	margin: 4px 0 0 !important;
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+	line-height: 1.5 !important;
+}
+
+body.dak-app-page .dak-portal .dak-form-card-body {
+	padding: 20px !important;
+}
+
+body.dak-app-page .dak-portal .dak-form-card-body > .dak-field + .dak-field,
+body.dak-app-page .dak-portal .dak-form-card-body > .dak-field + .dak-field-row,
+body.dak-app-page .dak-portal .dak-form-card-body > .dak-field-row + .dak-field {
+	margin-top: 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-form-card .dak-field-narrow {
+	max-width: 360px !important;
+}
+
+body.dak-app-page .dak-portal .dak-form-card .dak-field-row-narrow {
+	max-width: 560px !important;
+}
+
+/* The shared Notifications block used inside a form card: its own <h2>
+   becomes the section heading. */
+body.dak-app-page .dak-portal .dak-form-card .dak-settings-section h2 {
+	margin: 0 0 4px !important;
+	font-size: 16px !important;
+	font-weight: 600 !important;
+}
+
+body.dak-app-page .dak-portal .dak-form-actions-bar {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	justify-content: flex-end !important;
+	gap: 12px !important;
+	margin: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-form-actions-messages {
+	flex: 1 1 240px !important;
+	min-width: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-form-actions-messages .dak-alert {
+	margin: 0 !important;
+}
+
+/* Footer row of a results surface (a matrix/editor's Save). */
+body.dak-app-page .dak-portal .dak-results-footer {
+	display: flex !important;
+	justify-content: flex-end !important;
+	gap: 8px !important;
+	padding: 12px 16px !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-results-tools-actions {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 8px !important;
+}
+
+/* Status-message slot that takes no room until a message is shown. */
+body.dak-app-page .dak-portal .dak-results-messages:not( :has( .dak-alert:not( .dak-hidden ) ) ) {
+	display: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-results-messages .dak-alert:not( .dak-hidden ) {
+	margin: 0 !important;
+}
+
+/* Roles & Permissions matrix: row header + one centred checkbox per portal. */
+body.dak-app-page .dak-portal .dak-permission-matrix thead th:not( :first-child ),
+body.dak-app-page .dak-portal .dak-permission-matrix td {
+	width: 14% !important;
+	text-align: center !important;
+}
+
+body.dak-app-page .dak-portal .dak-permission-matrix tbody th {
+	padding: 12px 12px 12px 16px !important;
+	color: var( --dak-text ) !important;
+	font-size: 14px !important;
+	font-weight: 500 !important;
+	text-align: left !important;
+	white-space: normal !important;
+}
+
+body.dak-app-page .dak-portal .dak-permission-matrix td {
+	padding: 12px !important;
+	vertical-align: middle !important;
+}
+
+body.dak-app-page .dak-portal .dak-permission-matrix input[type='checkbox'] {
+	width: 18px !important;
+	height: 18px !important;
+	margin: 0 !important;
+	accent-color: var( --dak-primary ) !important;
+	cursor: pointer !important;
+}
+
+/* Locations editor: each country is one bordered group, cities indented
+   beneath it on a left rule, areas as compact inline inputs. Applies to rows
+   the editor script adds too (same classes). */
+body.dak-app-page .dak-portal .dak-locations-editor .dak-locations-hint {
+	margin: 0 0 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-locations-editor .dak-countries-rows {
+	display: grid !important;
+	gap: 12px !important;
+}
+
+body.dak-app-page .dak-portal .dak-locations-editor .dak-country-row {
+	margin: 0 !important;
+	padding: 14px 16px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	background: var( --dak-bg-card ) !important;
+	box-shadow: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-locations-editor .dak-country-row-header {
+	display: flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	margin: 0 0 10px !important;
+}
+
+body.dak-app-page .dak-portal .dak-locations-editor .dak-country-name {
+	flex: 1 1 auto !important;
+	max-width: 360px !important;
+	font-weight: 600 !important;
+}
+
+body.dak-app-page .dak-portal .dak-locations-editor .dak-cities-rows {
+	display: grid !important;
+	gap: 8px !important;
+	margin: 0 0 10px 6px !important;
+	padding: 0 0 0 14px !important;
+	border-left: 2px solid var( --dak-border ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-locations-editor .dak-city-row {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 8px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	background: transparent !important;
+}
+
+body.dak-app-page .dak-portal .dak-locations-editor .dak-city-name {
+	flex: 0 1 220px !important;
+	min-width: 160px !important;
+}
+
+body.dak-app-page .dak-portal .dak-locations-editor .dak-areas-rows {
+	display: flex !important;
+	flex: 1 1 100% !important;
+	flex-wrap: wrap !important;
+	gap: 6px !important;
+	order: 3 !important;
+}
+
+body.dak-app-page .dak-portal .dak-locations-editor .dak-area-chip {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 2px !important;
+	padding: 2px 2px 2px 8px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-locations-editor .dak-area-name {
+	width: 130px !important;
+	min-height: 30px !important;
+	padding: 2px 4px !important;
+	border: 0 !important;
+	background: transparent !important;
+	font-size: 13px !important;
+}
+
+body.dak-app-page .dak-portal .dak-locations-editor .dak-country-name,
+body.dak-app-page .dak-portal .dak-locations-editor .dak-city-name {
+	min-height: 36px !important;
+	padding: 6px 10px !important;
+	border: 1px solid #c9d2db !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 14px !important;
+}
+
+body.dak-app-page .dak-portal .dak-locations-editor .dak-awards-remove {
+	flex: 0 0 auto !important;
+	width: 28px !important;
+	height: 28px !important;
+}
+
+@media ( max-width: 782px ) {
+	body.dak-app-page .dak-portal .dak-form-card-header,
+	body.dak-app-page .dak-portal .dak-form-card-body {
+		padding: 16px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-form-actions-bar .dak-button,
+	body.dak-app-page .dak-portal .dak-results-footer .dak-button {
+		flex: 1 1 100% !important;
+		min-height: 44px !important;
+	}
+
+	/* The matrix keeps its rows-by-portals grid (a stacked list would lose
+	   the row/column association); it scrolls inside its surface instead. */
+	body.dak-app-page .dak-portal table.dak-permission-matrix,
+	body.dak-app-page .dak-portal table.dak-permission-matrix thead,
+	body.dak-app-page .dak-portal table.dak-permission-matrix tbody,
+	body.dak-app-page .dak-portal table.dak-permission-matrix tr {
+		display: revert !important;
+		position: static !important;
+		width: auto !important;
+		height: auto !important;
+		overflow: visible !important;
+		clip: auto !important;
+	}
+
+	body.dak-app-page .dak-portal table.dak-permission-matrix th,
+	body.dak-app-page .dak-portal table.dak-permission-matrix td {
+		display: table-cell !important;
+		width: auto !important;
+		padding: 10px 8px !important;
+		border-bottom: 1px solid var( --dak-border ) !important;
+	}
+
+	body.dak-app-page .dak-portal table.dak-permission-matrix td::before {
+		content: none !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-results:has( .dak-permission-matrix ) .dak-data-table-wrap {
+		overflow-x: auto !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-locations-editor .dak-country-name,
+	body.dak-app-page .dak-portal .dak-locations-editor .dak-city-name {
+		flex: 1 1 auto !important;
+		max-width: none !important;
+	}
+}
+
+/* ---- 20.9 Small shared pieces: segmented switch, notes, group heads ------- */
+body.dak-app-page .dak-portal .dak-segmented {
+	display: inline-flex !important;
+	padding: 2px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-segmented-item {
+	display: inline-flex !important;
+	align-items: center !important;
+	min-height: 30px !important;
+	padding: 0 12px !important;
+	border-radius: 6px !important;
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+	font-weight: 500 !important;
+	text-decoration: none !important;
+	white-space: nowrap !important;
+}
+
+body.dak-app-page .dak-portal .dak-segmented-item:hover {
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-segmented-item.is-active {
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	box-shadow: 0 1px 2px rgba( 24, 43, 58, 0.08 ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-results-note {
+	margin: 0 !important;
+	padding: 10px 16px !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+	line-height: 1.5 !important;
+}
+
+body.dak-app-page .dak-portal .dak-group-head {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 4px 12px !important;
+}
+
+body.dak-app-page .dak-portal .dak-group-head .dak-text-action {
+	min-height: 26px !important;
+	font-size: 12px !important;
+}
+
+body.dak-app-page .dak-portal .dak-settlement-figures {
+	max-width: 560px !important;
+	margin: 0 0 20px !important;
+}
+
+body.dak-app-page .dak-portal .dak-settlement-figures dd {
+	text-align: right !important;
+	font-variant-numeric: tabular-nums !important;
+}
+
+body.dak-app-page .dak-portal .dak-settlement-figures .is-total dt,
+body.dak-app-page .dak-portal .dak-settlement-figures .is-total dd {
+	padding-top: 8px !important;
+	border-top: 1px solid var( --dak-border ) !important;
+	color: var( --dak-text ) !important;
+	font-weight: 600 !important;
+}
+
+body.dak-app-page .dak-portal .dak-settlement-figures .is-total .dak-status-pill {
+	margin-left: 6px !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+	border-radius: 999px !important;
+}
+
+body.dak-app-page .dak-portal .dak-settlement-form {
+	padding-top: 16px !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-billing-settlement + .dak-results {
+	margin-top: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-list-page > .dak-results + .dak-form-card {
+	margin-top: 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-summary-card-link {
+	align-self: flex-start !important;
+	margin-top: 2px !important;
+	color: var( --dak-primary-dark ) !important;
+	font-size: 12px !important;
+	font-weight: 600 !important;
+	text-decoration: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-summary-card-link:hover {
+	text-decoration: underline !important;
+}
+
+body.dak-app-page .dak-portal .dak-summary-card-sub.is-attention {
+	color: var( --dak-tint-amber-text ) !important;
+	font-weight: 500 !important;
+}
+
+body.dak-app-page .dak-portal .dak-results-subtitle {
+	margin: 2px 0 0 !important;
+	color: var( --dak-muted ) !important;
+	font-size: 12px !important;
+}
+
+/* Compact select for a results toolbar (same size as the Appointments Sort). */
+body.dak-app-page .dak-portal .dak-compact-select {
+	width: auto !important;
+	min-height: 34px !important;
+	height: 34px !important;
+	margin: 0 !important;
+	padding: 0 32px 0 10px !important;
+	border: 1px solid #c9d2db !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background-color: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 13px !important;
+}
+
+html[data-theme='dark'] body.dak-app-page .dak-portal .dak-compact-select {
+	border-color: #38414b !important;
+	color-scheme: dark !important;
+}
+
+/* Payment status beneath an amount: small dotted label, not a second badge
+   (same as the Appointments list). */
+body.dak-app-page .dak-portal .dak-pay-status {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	padding: 0 !important;
+	border: 0 !important;
+	background: transparent !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+	line-height: 1.5 !important;
+}
+
+body.dak-app-page .dak-portal .dak-pay-status::before {
+	content: '' !important;
+	width: 6px !important;
+	height: 6px !important;
+	border-radius: 999px !important;
+	background: currentColor !important;
+}
+
+/* Overview: sections stacked with the standard rhythm. */
+body.dak-app-page .dak-portal .dak-overview-page > .dak-results,
+body.dak-app-page .dak-portal .dak-overview-page > .dak-dashboard-grid {
+	margin: 0 0 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-overview-page .dak-dashboard-card {
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-lg ) !important;
+	box-shadow: none !important;
+}
+
+@media ( max-width: 782px ) {
+	body.dak-app-page .dak-portal .dak-results-tools-actions {
+		flex: 1 1 100% !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-results-tools-actions .dak-list-search-box {
+		flex: 1 1 100% !important;
+	}
+}
+
+/* ---- 20.10 Notifications inside the shared results surface ---------------- */
+body.dak-app-page .dak-portal .dak-results .dak-notifications-list {
+	border: 0 !important;
+	border-radius: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-results .dak-notifications-group,
+body.dak-app-page .dak-portal .dak-results .dak-notifications-group + .dak-notifications-group {
+	margin: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-results .dak-notifications-group-label {
+	display: flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	margin: 0 !important;
+	padding: 14px 16px 6px !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+	letter-spacing: 0 !important;
+	text-transform: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-results .dak-notifications-group:last-child .dak-notification-row:last-child {
+	border-bottom: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-results .dak-notifications-group:not( :last-child ) .dak-notification-row:last-child {
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-results .dak-notification-row-link {
+	padding: 12px 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-inline-filter {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	margin: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-inline-filter label {
+	margin: 0 !important;
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+	font-weight: 500 !important;
+}
+
+/* Toolbar controls inside a results header stay on one line on desktop. */
+@media ( min-width: 783px ) {
+	body.dak-app-page .dak-portal .dak-results-tools-actions {
+		flex-wrap: nowrap !important;
+		align-items: center !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-results-tools-actions .dak-list-search-box {
+		flex: 0 1 240px !important;
+	}
+}
+
+body.dak-app-page .dak-portal .dak-pay-status.dak-status-pill-is-neutral {
+	color: var( --dak-muted ) !important;
+}
+
+/* Settlement figures: label left, amount right, one line each. */
+body.dak-app-page .dak-portal .dak-detail-list.dak-settlement-figures {
+	grid-template-columns: minmax( 0, 1fr ) auto !important;
+	gap: 6px 24px !important;
+}
+
+@media ( min-width: 1024px ) {
+	body.dak-app-page .dak-portal .dak-summary-grid.dak-billing-summary {
+		grid-template-columns: repeat( 3, minmax( 0, 1fr ) ) !important;
+	}
+}
+
+body.dak-app-page .dak-portal .dak-locations-editor .dak-country-name,
+body.dak-app-page .dak-portal .dak-locations-editor .dak-city-name {
+	height: 40px !important;
+	min-height: 40px !important;
+}
+
+body.dak-app-page .dak-portal .dak-locations-editor .dak-area-name {
+	height: 30px !important;
+}
+
+/* ---- 20.11 Add/Edit form screens ----------------------------------------- */
+/* Readable measure: forms don't stretch across a wide desktop. */
+body.dak-app-page .dak-portal .dak-admin-user-form-card,
+body.dak-app-page .dak-portal .dak-dashboard-profile-form.dak-form-card {
+	max-width: 920px !important;
+}
+
+/* Screens without the top bar (full-screen add/edit forms) still get the
+   page's top spacing. */
+body.dak-app-page .dak-dashboard .dak-dashboard-main > .dak-dashboard-greeting:first-child,
+body.dak-app-page .dak-dashboard .dak-dashboard-main > .dak-page-head:first-child {
+	margin-top: 24px !important;
+}
+
+/* Empty-photo placeholder: an icon inside the circle, not overflowing text. */
+body.dak-app-page .dak-portal .dak-upload-placeholder {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 100% !important;
+	height: 100% !important;
+	color: var( --dak-muted ) !important;
+}
+
+/* Native file inputs look like the standard secondary button. */
+body.dak-app-page .dak-portal input[type='file']:not( .dak-hidden ):not( .dak-visually-hidden ) {
+	max-width: 100% !important;
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+}
+
+body.dak-app-page .dak-portal input[type='file']::file-selector-button {
+	min-height: 36px !important;
+	margin-right: 10px !important;
+	padding: 0 14px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font: inherit !important;
+	font-size: 14px !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+}
+
+body.dak-app-page .dak-portal input[type='file']::file-selector-button:hover {
+	background: var( --dak-bg-subtle ) !important;
+}
+
+/* ---- 20.12 Doctor portal: clinic / service entries as rows ---------------- */
+body.dak-app-page .dak-portal .dak-results .dak-clinics-list,
+body.dak-app-page .dak-portal .dak-results .dak-doctor-services-list {
+	display: block !important;
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-results .dak-clinic-card {
+	margin: 0 !important;
+	padding: 14px 16px !important;
+	border: 0 !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	border-radius: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-results .dak-clinic-card:last-of-type {
+	border-bottom: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-results .dak-clinic-card-summary {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 12px !important;
+}
+
+body.dak-app-page .dak-portal .dak-results .dak-clinic-card-icon {
+	flex: 0 0 auto !important;
+	width: 32px !important;
+	height: 32px !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-results .dak-clinic-card-info {
+	display: flex !important;
+	flex: 1 1 auto !important;
+	flex-direction: column !important;
+	gap: 2px !important;
+	min-width: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-results .dak-clinic-card-name {
+	font-size: 15px !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-results .dak-clinic-card-meta,
+body.dak-app-page .dak-portal .dak-results .dak-clinic-card-days {
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+}
+
+body.dak-app-page .dak-portal .dak-results .dak-clinic-card-days abbr {
+	text-decoration: none !important;
+	cursor: help !important;
+}
+
+body.dak-app-page .dak-portal .dak-results .dak-clinic-card-actions {
+	flex: 0 0 auto !important;
+	margin-left: auto !important;
+}
+
+body.dak-app-page .dak-portal .dak-results .dak-clinic-card-form {
+	margin-top: 12px !important;
+	padding: 16px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	background: var( --dak-bg-card ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-results .dak-clinic-card-summary.dak-hidden + .dak-clinic-card-form {
+	margin-top: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-results .dak-clinic-card-form-actions {
+	display: flex !important;
+	flex-direction: row-reverse !important;
+	justify-content: flex-start !important;
+	gap: 8px !important;
+	margin-top: 16px !important;
+	padding-top: 16px !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+/* Form page with a side column (doctor Video Consultation). */
+body.dak-app-page .dak-portal .dak-form-columns {
+	display: grid !important;
+	grid-template-columns: minmax( 0, 1fr ) minmax( 280px, 360px ) !important;
+	align-items: start !important;
+	gap: 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-form-columns > .dak-form-card,
+body.dak-app-page .dak-portal .dak-form-aside > .dak-form-card {
+	margin: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-form-aside {
+	display: grid !important;
+	gap: 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-form-card-footer {
+	display: flex !important;
+	justify-content: flex-end !important;
+	gap: 8px !important;
+	padding: 12px 20px !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-form-subhead {
+	margin: 0 0 12px !important;
+	color: var( --dak-text ) !important;
+	font-size: 14px !important;
+	font-weight: 600 !important;
+}
+
+body.dak-app-page .dak-portal .dak-form-card-body > .dak-form-subhead:not( :first-of-type ) {
+	margin-top: 24px !important;
+	padding-top: 20px !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-form-card-body > .dak-field-hint {
+	margin: 6px 0 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-rule-list {
+	display: grid !important;
+	gap: 10px !important;
+	margin: 0 !important;
+	padding: 0 0 0 18px !important;
+	color: var( --dak-text ) !important;
+	font-size: 14px !important;
+	line-height: 1.5 !important;
+}
+
+@media ( max-width: 1100px ) {
+	body.dak-app-page .dak-portal .dak-form-columns {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+	}
+}
+
+@media ( max-width: 782px ) {
+	body.dak-app-page .dak-portal .dak-form-card-footer .dak-button {
+		flex: 1 1 100% !important;
+		min-height: 44px !important;
+	}
+}
+
+/* A menu item that exists but can't be used right now, with its reason. */
+body.dak-app-page .dak-portal .dak-row-menu-item:disabled,
+body.dak-app-page .dak-portal .dak-row-menu-item[aria-disabled='true'] {
+	color: var( --dak-muted ) !important;
+	background: transparent !important;
+	cursor: not-allowed !important;
+	opacity: 0.75 !important;
+}
+
+body.dak-app-page .dak-portal .dak-row-menu-note {
+	display: block !important;
+	max-width: 240px !important;
+	margin: -4px 0 4px !important;
+	padding: 0 10px !important;
+	color: var( --dak-muted ) !important;
+	font-size: 12px !important;
+	line-height: 1.4 !important;
+	white-space: normal !important;
+	text-align: left !important;
+}
+
+/* Consistent 16px rhythm between stacked sections of a list page. */
+body.dak-app-page .dak-portal .dak-list-page > .dak-results:not( :last-child ),
+body.dak-app-page .dak-portal .dak-list-page > .dak-form-columns:not( :last-child ),
+body.dak-app-page .dak-portal .dak-list-page > .dak-summary-grid {
+	margin-bottom: 16px !important;
+}
+
+/* Neutral information note (not success, not warning). */
+body.dak-app-page .dak-portal .dak-alert.dak-alert-info {
+	margin: 0 0 16px !important;
+	padding: 12px 16px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-left: 3px solid var( --dak-tint-info-text ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 13px !important;
+	line-height: 1.55 !important;
+}
+
+body.dak-app-page .dak-portal .dak-earnings-columns {
+	grid-template-columns: minmax( 0, 1fr ) minmax( 300px, 420px ) !important;
+}
+
+@media ( max-width: 1100px ) {
+	body.dak-app-page .dak-portal .dak-earnings-columns {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+	}
+}
+
+/* A form card that holds a whole pre-built form (Profile, Settings). */
+body.dak-app-page .dak-portal .dak-form-card.dak-form-card-padded {
+	max-width: 920px !important;
+	padding: 20px 24px !important;
+}
+
+body.dak-app-page .dak-portal .dak-dashboard-grid > .dak-results {
+	margin: 0 !important;
+}
+
+@media ( max-width: 782px ) {
+	body.dak-app-page .dak-portal .dak-form-card.dak-form-card-padded {
+		padding: 16px !important;
+	}
+}
+
+/* ---- 20.13 Patient portal --------------------------------------------- */
+/* Medical history: one record per visit — heading, then labelled clinical
+   sections; the recorded text is shown exactly as entered. */
+body.dak-app-page .dak-portal .dak-visit-record {
+	padding: 16px !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-visit-record:last-child {
+	border-bottom: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-visit-record-head {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: flex-start !important;
+	justify-content: space-between !important;
+	gap: 8px 16px !important;
+	margin: 0 0 12px !important;
+}
+
+body.dak-app-page .dak-portal .dak-visit-record-title {
+	margin: 0 !important;
+	color: var( --dak-text ) !important;
+	font-size: 15px !important;
+	font-weight: 600 !important;
+}
+
+body.dak-app-page .dak-portal .dak-visit-record-meta {
+	margin: 2px 0 0 !important;
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+}
+
+body.dak-app-page .dak-portal .dak-visit-record-links {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 4px !important;
+}
+
+body.dak-app-page .dak-portal .dak-visit-record-body {
+	display: grid !important;
+	grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+	gap: 12px !important;
+}
+
+body.dak-app-page .dak-portal .dak-visit-record-section {
+	padding: 12px 14px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-visit-record-section h4 {
+	margin: 0 0 8px !important;
+	color: var( --dak-muted ) !important;
+	font-size: 12px !important;
+	font-weight: 600 !important;
+}
+
+body.dak-app-page .dak-portal .dak-visit-record-list {
+	display: grid !important;
+	gap: 6px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-visit-record-list li {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 1px !important;
+	margin: 0 !important;
+	font-size: 14px !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-visit-record-notes {
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+	white-space: pre-line !important;
+	overflow-wrap: break-word !important;
+}
+
+body.dak-app-page .dak-portal .dak-results > .dak-patient-empty-appointments,
+body.dak-app-page .dak-portal .dak-results > .dak-patient-appt-reminder,
+body.dak-app-page .dak-portal .dak-results > div.dak-empty-state {
+	margin: 0 !important;
+	padding: 24px 16px !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	text-align: center !important;
+}
+
+body.dak-app-page .dak-portal .dak-results > .dak-patient-appt-reminder {
+	border-top: 1px solid var( --dak-border ) !important;
+	text-align: left !important;
+}
+
+@media ( max-width: 782px ) {
+	body.dak-app-page .dak-portal .dak-visit-record-body {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+	}
+}
+
+/* Doctor overview: the upcoming-appointments table is the page's main
+   content, so it takes the full width (a half-width column clipped its
+   actions); recent patients follows below. */
+body.dak-app-page .dak-portal .dak-doctor-overview-lists {
+	grid-template-columns: minmax( 0, 1fr ) !important;
+}
+
+/* Patient overview side cards: same heading scale as the results titles. */
+body.dak-app-page .dak-portal .dak-patient-dashboard-side-col .dak-dashboard-card-header h2 {
+	margin: 0 !important;
+	color: var( --dak-text ) !important;
+	font-size: 14px !important;
+	font-weight: 600 !important;
+	line-height: 1.4 !important;
+}
+
+/* Form-card hints: plain helper text under the field (the auth stylesheet
+   gives every hint box padding), with room before the next field. */
+body.dak-app-page .dak-portal .dak-form-card-body .dak-field-hint,
+body.dak-app-page .dak-portal .dak-admin-user-form-card .dak-field-hint,
+body.dak-app-page .dak-portal .dak-form-card-padded .dak-field-hint {
+	padding: 0 !important;
+	border: 0 !important;
+	background: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-form-card-body > .dak-field-hint {
+	margin: 4px 0 16px !important;
+}
+
+/* Settlement total: one continuous rule across both columns. */
+body.dak-app-page .dak-portal .dak-detail-list.dak-settlement-figures {
+	column-gap: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-settlement-figures dd {
+	padding-left: 24px !important;
+}
+
+/* Medical history secondary lines: outrank the patient portal's 15px body
+   copy rule so record metadata and "nothing recorded" notes stay secondary. */
+body.dak-app-page .dak-patient-dashboard .dak-dashboard-main p.dak-visit-record-meta,
+body.dak-app-page .dak-patient-dashboard .dak-dashboard-main .dak-visit-record-section p.dak-cell-sub {
+	font-size: 13px !important;
+	margin: 2px 0 0 !important;
+}
+
+/* Locations editor on phones: keep the wrapping row layout (city name and its
+   actions on one line, areas on their own full-width line) — the legacy
+   mobile column direction pushed the areas into a second column off-screen. */
+body.dak-app-page .dak-portal .dak-locations-editor .dak-city-row {
+	flex-direction: row !important;
+	align-items: center !important;
+}
+
+@media ( max-width: 782px ) {
+	body.dak-app-page .dak-portal .dak-locations-editor .dak-city-row .dak-city-name {
+		flex: 1 1 160px !important;
+		min-width: 0 !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-locations-editor .dak-area-chip {
+		flex: 1 1 140px !important;
+		min-width: 0 !important;
+	}
+}

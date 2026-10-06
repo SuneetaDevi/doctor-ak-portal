@@ -66,8 +66,8 @@ if ( ! function_exists( 'dak_render_notification_row' ) ) :
 					<?php echo isset( $icons[ $notification['type'] ] ) ? $icons[ $notification['type'] ] : $icons['booked']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				</span>
 				<span class="dak-notification-body">
-					<span class="dak-notification-message"><?php echo esc_html( $notification['message'] ); ?></span>
-					<span class="dak-notification-date"><?php echo esc_html( $notification['date'] ); ?></span>
+					<?php if ( ! $notification['is_read'] ) : ?><span class="dak-visually-hidden"><?php esc_html_e( 'Unread:', 'doctor-ak-portal' ); ?> </span><?php endif; ?><span class="dak-notification-message"><?php echo esc_html( $notification['message'] ); ?></span>
+					<span class="dak-notification-date"><?php echo esc_html( \DoctorAKPortal\Includes\Dashboard_Format::datetime( $notification['date'], $notification['date'] ) ); ?></span>
 				</span>
 				<?php if ( ! $notification['is_read'] ) : ?>
 					<span class="dak-notification-dot" aria-hidden="true"></span>
@@ -100,35 +100,54 @@ foreach ( $notification_groups as $dak_group_rows ) {
 	}
 }
 ?>
+<?php
+$dak_unread_count = 0;
+
+foreach ( $notification_groups as $dak_group_rows ) {
+	foreach ( $dak_group_rows as $dak_row ) {
+		$dak_unread_count += $dak_row['is_read'] ? 0 : 1;
+	}
+}
+?>
+<div class="dak-list-page dak-notifications-page">
 <?php if ( '' !== $page_title ) : ?>
-	<div class="dak-dashboard-greeting">
-		<h1><?php echo esc_html( $page_title ); ?></h1>
-		<?php if ( '' !== $page_subtitle ) : ?>
-			<p><?php echo esc_html( $page_subtitle ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- esc_html() applied; the &middot; entity is deliberately not double-escaped by esc_html() so it still renders as a middle dot. ?></p>
-		<?php endif; ?>
+	<div class="dak-page-head">
+		<div>
+			<h1><?php echo esc_html( $page_title ); ?></h1>
+			<?php if ( '' !== $page_subtitle ) : ?>
+				<p><?php echo esc_html( $page_subtitle ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- esc_html() applied; the &middot; entity is deliberately not double-escaped by esc_html() so it still renders as a middle dot. ?></p>
+			<?php endif; ?>
+		</div>
 	</div>
 <?php endif; ?>
 
-<section class="dak-dashboard-card dak-notifications-card">
-	<div class="dak-dashboard-card-header">
+<section class="dak-results dak-notifications-card" aria-labelledby="dak-notifications-title">
+	<div class="dak-results-tools">
 		<div>
-			<h2><?php esc_html_e( 'Activity', 'doctor-ak-portal' ); ?></h2>
-			<p class="dak-notifications-card-subtitle"><?php esc_html_e( 'Newest first', 'doctor-ak-portal' ); ?></p>
+			<h2 class="dak-results-title" id="dak-notifications-title"><?php esc_html_e( 'Activity', 'doctor-ak-portal' ); ?><span class="dak-results-count"><?php echo esc_html( number_format_i18n( $dak_total_count ) ); ?></span></h2>
+			<p class="dak-results-subtitle">
+				<?php
+				echo esc_html(
+					$dak_unread_count > 0
+						/* translators: %d: number of unread notifications. */
+						? sprintf( _n( 'Newest first · %d unread', 'Newest first · %d unread', $dak_unread_count, 'doctor-ak-portal' ), $dak_unread_count )
+						: __( 'Newest first · all read', 'doctor-ak-portal' )
+				);
+				?>
+			</p>
 		</div>
-		<div class="dak-notifications-card-actions">
-			<?php if ( $dak_has_unread ) : ?>
-				<button type="button" class="dak-link-button" id="dak-notifications-mark-all-read"><?php esc_html_e( 'Mark all as read', 'doctor-ak-portal' ); ?></button>
-			<?php endif; ?>
-			<form method="get" class="dak-appt-filters-form dak-notifications-filter-form">
+		<div class="dak-results-tools-actions dak-notifications-card-actions">
+			<form method="get" class="dak-notifications-filter-form dak-inline-filter">
 				<input type="hidden" name="<?php echo esc_attr( $filter_field_name ); ?>" value="<?php echo esc_attr( $filter_field_value ); ?>">
-				<div class="dak-field">
-					<label for="dak-notifications-filter-date" class="dak-visually-hidden"><?php esc_html_e( 'Date', 'doctor-ak-portal' ); ?></label>
-					<input type="date" id="dak-notifications-filter-date" name="date" value="<?php echo esc_attr( $selected_date ); ?>" onchange="this.form.submit()">
-				</div>
+				<label for="dak-notifications-filter-date"><?php esc_html_e( 'Date', 'doctor-ak-portal' ); ?></label>
+				<input type="date" class="dak-compact-select" id="dak-notifications-filter-date" name="date" value="<?php echo esc_attr( $selected_date ); ?>" onchange="this.form.submit()">
 				<?php if ( '' !== $selected_date ) : ?>
-					<a class="dak-link" href="?<?php echo esc_attr( $filter_field_name ); ?>=<?php echo esc_attr( $filter_field_value ); ?>"><?php esc_html_e( 'Clear', 'doctor-ak-portal' ); ?></a>
+					<a class="dak-text-action" href="?<?php echo esc_attr( $filter_field_name ); ?>=<?php echo esc_attr( $filter_field_value ); ?>"><?php esc_html_e( 'Clear', 'doctor-ak-portal' ); ?></a>
 				<?php endif; ?>
 			</form>
+			<?php if ( $dak_has_unread ) : ?>
+				<button type="button" class="dak-text-action" id="dak-notifications-mark-all-read"><?php esc_html_e( 'Mark all as read', 'doctor-ak-portal' ); ?></button>
+			<?php endif; ?>
 		</div>
 	</div>
 
@@ -144,7 +163,7 @@ foreach ( $notification_groups as $dak_group_rows ) {
 		<?php foreach ( $dak_notification_section_labels as $dak_group_key => $dak_group_label ) : ?>
 			<?php if ( ! empty( $notification_groups[ $dak_group_key ] ) ) : ?>
 				<div class="dak-notifications-group">
-					<h3 class="dak-notifications-group-label"><?php echo esc_html( $dak_group_label ); ?></h3>
+					<h3 class="dak-notifications-group-label"><?php echo esc_html( $dak_group_label ); ?><span class="dak-appt-section-count"><?php echo esc_html( count( $notification_groups[ $dak_group_key ] ) ); ?></span></h3>
 					<ul class="dak-notifications-list">
 						<?php foreach ( $notification_groups[ $dak_group_key ] as $dak_notification ) : ?>
 							<?php dak_render_notification_row( $dak_notification, $appointments_url, $dak_notification_icons ); ?>
@@ -155,3 +174,4 @@ foreach ( $notification_groups as $dak_group_rows ) {
 		<?php endforeach; ?>
 	<?php endif; ?>
 </section>
+</div>

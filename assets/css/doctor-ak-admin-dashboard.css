@@ -123,19 +123,9 @@
 	margin-bottom: 1.25rem !important;
 }
 
-#dak-role-permissions-form,
-#dak-locations-form {
-	padding: 24px !important;
-	overflow: visible !important;
-}
-
-#dak-role-permissions-form h3 {
-	margin: 24px 0 8px !important;
-}
-
-#dak-role-permissions-form h3:first-child {
-	margin-top: 0 !important;
-}
+/* (The Roles & Permissions matrix and the Locations editor now use the shared
+   results surface — section 20 of doctor-ak-dashboard-ui.css — which supplies
+   its own spacing, so their old id-level padding rules were removed.) */
 
 .dak-countries-rows {
 	display: flex !important;
@@ -328,10 +318,8 @@
 	text-align: center !important;
 }
 
-.dak-permission-matrix th {
-	text-transform: uppercase !important;
-	font-size: 0.72rem !important;
-	letter-spacing: 0.04em !important;
+.dak-permission-matrix thead th {
+	font-size: 0.75rem !important;
 }
 
 .dak-permission-matrix input[type='checkbox'] {

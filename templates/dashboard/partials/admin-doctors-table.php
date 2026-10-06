@@ -56,18 +56,17 @@ endif;
 $dak_has_filters = '' !== $filters['status'] || '' !== $filters['specialization'] || '' !== $filters['search'];
 $dak_read_only   = ! empty( $read_only );
 $dak_genders     = \DoctorAKPortal\Includes\Doctor_Gender::get_all();
+$dak_live_attrs  = ' data-live-filter="doctor_ak_admin_users_filter" data-live-filter-target="#dak-admin-users-tab-content" data-live-filter-nonce="dakAdminUsers"';
 ?>
-	<section class="dak-dashboard-card dak-appt-filters-card">
+	<div class="dak-list-toolbar">
 		<form
 			method="get"
 			action="<?php echo esc_url( $section_url ); ?>"
-			class="dak-appt-filters-form"
-			data-live-filter="doctor_ak_admin_users_filter"
-			data-live-filter-target="#dak-admin-users-tab-content"
-			data-live-filter-nonce="dakAdminUsers"
+			class="dak-list-filters"
+			<?php echo $dak_live_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static attribute string. ?>
 		>
 			<input type="hidden" name="section" value="<?php echo esc_attr( $section ); ?>">
-			<div class="dak-field">
+			<div class="dak-field is-search">
 				<label for="dak-admin-users-filter-search"><?php esc_html_e( 'Search', 'doctor-ak-portal' ); ?></label>
 				<input type="search" id="dak-admin-users-filter-search" name="search" value="<?php echo esc_attr( $filters['search'] ); ?>" placeholder="<?php esc_attr_e( 'Name or email…', 'doctor-ak-portal' ); ?>">
 			</div>
@@ -91,34 +90,18 @@ $dak_genders     = \DoctorAKPortal\Includes\Doctor_Gender::get_all();
 				</select>
 			</div>
 
-			<div class="dak-admin-filter-actions">
-				<button type="submit" class="dak-button dak-button-primary"><?php esc_html_e( 'Filter', 'doctor-ak-portal' ); ?></button>
+			<div class="dak-list-filter-actions">
+				<button type="submit" class="dak-button dak-button-primary"><?php esc_html_e( 'Apply', 'doctor-ak-portal' ); ?></button>
 				<?php if ( $dak_has_filters ) : ?>
-					<a
-						class="dak-button dak-button-secondary"
-						href="<?php echo esc_url( $section_url ); ?>"
-						data-live-filter-clear
-						data-live-filter="doctor_ak_admin_users_filter"
-						data-live-filter-target="#dak-admin-users-tab-content"
-						data-live-filter-nonce="dakAdminUsers"
-					><?php esc_html_e( 'Clear', 'doctor-ak-portal' ); ?></a>
+					<a class="dak-button dak-button-secondary" href="<?php echo esc_url( $section_url ); ?>" data-live-filter-clear<?php echo $dak_live_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static attribute string. ?>><?php esc_html_e( 'Clear', 'doctor-ak-portal' ); ?></a>
 				<?php endif; ?>
 			</div>
 		</form>
-	</section>
+	</div>
 
-	<div class="dak-dashboard-card-header">
-		<h2>
-			<?php
-			echo esc_html(
-				sprintf(
-					/* translators: %d: number of doctors listed. */
-					_n( '%d doctor', '%d doctors', count( $users ), 'doctor-ak-portal' ),
-					count( $users )
-				)
-			);
-			?>
-		</h2>
+	<section class="dak-results" aria-labelledby="dak-admin-doctors-results-title">
+	<div class="dak-results-tools">
+		<h2 class="dak-results-title" id="dak-admin-doctors-results-title"><?php esc_html_e( 'Doctors', 'doctor-ak-portal' ); ?><span class="dak-results-count"><?php echo esc_html( number_format_i18n( count( $users ) ) ); ?></span></h2>
 	</div>
 
 	<?php if ( empty( $users ) ) : ?>
@@ -133,14 +116,14 @@ $dak_genders     = \DoctorAKPortal\Includes\Doctor_Gender::get_all();
 		</p>
 	<?php else : ?>
 		<div class="dak-data-table-wrap">
-			<table class="dak-data-table dak-doctors-table">
+			<table class="dak-data-table dak-ui-table dak-doctors-table">
 				<thead>
 					<tr>
 						<th scope="col"><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></th>
 						<th scope="col"><?php esc_html_e( 'Specialization', 'doctor-ak-portal' ); ?></th>
 						<th scope="col"><?php esc_html_e( 'Clinics / visit options', 'doctor-ak-portal' ); ?></th>
 						<th scope="col"><?php esc_html_e( 'Account status', 'doctor-ak-portal' ); ?></th>
-						<th scope="col" class="dak-col-actions"><span class="dak-visually-hidden"><?php esc_html_e( 'Actions', 'doctor-ak-portal' ); ?></span></th>
+						<th scope="col" class="dak-col-actions"><?php esc_html_e( 'Actions', 'doctor-ak-portal' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -189,7 +172,7 @@ $dak_genders     = \DoctorAKPortal\Includes\Doctor_Gender::get_all();
 									</span>
 									<span class="dak-cell-stack">
 										<span class="dak-cell-primary"><?php echo esc_html( $dak_doctor_name ); ?></span>
-										<span class="dak-cell-sub"><?php echo esc_html( $row['email'] ); ?></span>
+										<span class="dak-cell-sub dak-cell-email"><?php echo \DoctorAKPortal\Includes\Dashboard_Format::email_html( $row['email'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside email_html(). ?></span>
 									</span>
 								</div>
 							</td>
@@ -259,7 +242,7 @@ $dak_genders     = \DoctorAKPortal\Includes\Doctor_Gender::get_all();
 								<div class="dak-row-actions">
 									<button
 										type="button"
-										class="dak-button dak-button-secondary dak-button-sm"
+										class="dak-text-action"
 										data-admin-doctor-view="<?php echo esc_attr( $row['id'] ); ?>"
 										aria-label="<?php echo esc_attr( sprintf( /* translators: %s: doctor name. */ __( 'View details for %s', 'doctor-ak-portal' ), $dak_doctor_name ) ); ?>"
 									><?php esc_html_e( 'View details', 'doctor-ak-portal' ); ?></button>
@@ -395,3 +378,4 @@ $dak_genders     = \DoctorAKPortal\Includes\Doctor_Gender::get_all();
 			</table>
 		</div>
 	<?php endif; ?>
+	</section>

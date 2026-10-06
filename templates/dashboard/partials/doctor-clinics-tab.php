@@ -56,17 +56,34 @@ function dak_render_clinic_card( $clinic, array $session_days, array $icons ) {
 					}
 					?>
 				</span>
-				<div class="dak-specialty-tags dak-clinic-card-days" data-clinic-days-display>
+				<span class="dak-clinic-card-days" data-clinic-days-display>
 					<?php if ( ! $is_blank ) : ?>
-						<?php foreach ( $clinic['enabled_days'] as $label ) : ?>
-							<span class="dak-specialty-tag"><?php echo esc_html( $label ); ?></span>
-						<?php endforeach; ?>
+						<?php if ( empty( $clinic['enabled_days'] ) ) : ?>
+							<?php esc_html_e( 'No days open yet', 'doctor-ak-portal' ); ?>
+						<?php else : ?>
+							<?php
+							echo implode( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- each part escaped below.
+								', ',
+								array_map(
+									function ( $label ) {
+										return '<abbr title="' . esc_attr( $label ) . '">' . esc_html( mb_substr( $label, 0, 3 ) ) . '</abbr>';
+									},
+									$clinic['enabled_days']
+								)
+							);
+							?>
+						<?php endif; ?>
 					<?php endif; ?>
-				</div>
+				</span>
 			</div>
-			<div class="dak-clinic-card-actions">
-				<button type="button" class="dak-icon-button" data-clinic-edit-toggle title="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"><?php echo $icons['edit']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
-				<button type="button" class="dak-icon-button dak-icon-button-danger" data-clinic-delete title="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"><?php echo $icons['delete']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
+			<div class="dak-clinic-card-actions dak-row-actions">
+				<button type="button" class="dak-text-action" data-clinic-edit-toggle aria-label="<?php echo esc_attr( sprintf( /* translators: %s: clinic name. */ __( 'Edit %s', 'doctor-ak-portal' ), $is_blank ? __( 'clinic', 'doctor-ak-portal' ) : $clinic['name'] ) ); ?>"><?php esc_html_e( 'Edit', 'doctor-ak-portal' ); ?></button>
+				<details class="dak-row-menu">
+					<summary class="dak-row-menu-toggle" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: clinic name. */ __( 'More actions for %s', 'doctor-ak-portal' ), $is_blank ? __( 'clinic', 'doctor-ak-portal' ) : $clinic['name'] ) ); ?>"><?php esc_html_e( 'More', 'doctor-ak-portal' ); ?></summary>
+					<div class="dak-row-menu-panel" role="menu">
+						<button type="button" class="dak-row-menu-item is-danger" role="menuitem" data-clinic-delete><?php esc_html_e( 'Delete clinic', 'doctor-ak-portal' ); ?></button>
+					</div>
+				</details>
 			</div>
 		</div>
 
@@ -164,33 +181,42 @@ function dak_render_clinic_card( $clinic, array $session_days, array $icons ) {
 }
 endif;
 ?>
+<div class="dak-list-page">
+<div class="dak-page-head">
+	<div>
+		<h1><?php esc_html_e( 'Clinics', 'doctor-ak-portal' ); ?></h1>
+		<p><?php esc_html_e( 'Where you see patients — each clinic (or your video consultation) and its weekly session hours.', 'doctor-ak-portal' ); ?></p>
+	</div>
+	<button type="button" class="dak-button dak-button-primary" id="dak-clinic-add"><?php esc_html_e( '+ Add Clinic', 'doctor-ak-portal' ); ?></button>
+</div>
+
 <div class="dak-alert dak-alert-success dak-hidden" id="dak-clinics-success" role="status"></div>
 <div class="dak-alert dak-alert-error dak-hidden" id="dak-clinics-general-error" role="alert"></div>
 
-<?php if ( ! empty( $clinics ) ) : ?>
-	<div class="dak-list-search-header">
-		<div class="dak-dashboard-search dak-list-search-box">
-			<span class="dak-dashboard-search-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg></span>
-			<input type="search" data-list-search="#dak-clinics-list" placeholder="<?php esc_attr_e( 'Search clinics', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search clinics', 'doctor-ak-portal' ); ?>">
-		</div>
+<section class="dak-results dak-doctor-clinics" aria-labelledby="dak-doctor-clinics-title">
+	<div class="dak-results-tools">
+		<h2 class="dak-results-title" id="dak-doctor-clinics-title"><?php esc_html_e( 'Your clinics', 'doctor-ak-portal' ); ?><span class="dak-results-count"><?php echo esc_html( number_format_i18n( count( $clinics ) ) ); ?></span></h2>
+		<?php if ( ! empty( $clinics ) ) : ?>
+			<div class="dak-dashboard-search dak-list-search-box">
+				<span class="dak-dashboard-search-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg></span>
+				<input type="search" data-list-search="#dak-clinics-list" placeholder="<?php esc_attr_e( 'Search clinics', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search clinics', 'doctor-ak-portal' ); ?>">
+			</div>
+		<?php endif; ?>
 	</div>
-<?php endif; ?>
 
-<div class="dak-clinics-list" id="dak-clinics-list">
-	<?php if ( empty( $clinics ) ) : ?>
-		<p class="dak-empty-state" id="dak-clinics-empty-state"><?php esc_html_e( "You haven't added any clinics yet. Add one below.", 'doctor-ak-portal' ); ?></p>
-	<?php endif; ?>
+	<div class="dak-clinics-list" id="dak-clinics-list">
+		<?php if ( empty( $clinics ) ) : ?>
+			<p class="dak-empty-state" id="dak-clinics-empty-state"><?php esc_html_e( "You haven't added any clinics yet. Use “+ Add Clinic” to add your first one.", 'doctor-ak-portal' ); ?></p>
+		<?php endif; ?>
 
-	<?php foreach ( $clinics as $clinic ) : ?>
-		<?php dak_render_clinic_card( $clinic, $session_days, $dak_clinic_icons ); ?>
-	<?php endforeach; ?>
+		<?php foreach ( $clinics as $clinic ) : ?>
+			<?php dak_render_clinic_card( $clinic, $session_days, $dak_clinic_icons ); ?>
+		<?php endforeach; ?>
 
-	<p class="dak-empty-state dak-hidden" data-list-search-empty><?php esc_html_e( 'No clinics match your search.', 'doctor-ak-portal' ); ?></p>
+		<p class="dak-empty-state dak-results-empty dak-hidden" data-list-search-empty><?php esc_html_e( 'No clinics match your search.', 'doctor-ak-portal' ); ?></p>
+	</div>
+</section>
 </div>
-
-<button type="button" class="dak-button dak-button-secondary" id="dak-clinic-add">
-	<?php esc_html_e( '+ Add Clinic', 'doctor-ak-portal' ); ?>
-</button>
 
 <template id="dak-clinic-card-template">
 	<?php dak_render_clinic_card( null, $session_days, $dak_clinic_icons ); ?>

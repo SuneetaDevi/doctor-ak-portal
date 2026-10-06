@@ -120,7 +120,17 @@
 			var countdown = document.getElementById( 'dak-video-pricing-preview-countdown' );
 
 			if ( sale ) {
-				sale.textContent = 'PKR ' + finalPrice.toLocaleString();
+				// A zero price books video visits at no charge — say so rather
+				// than "PKR 0".
+				sale.textContent = finalPrice > 0 ? 'PKR ' + finalPrice.toLocaleString() : 'Free';
+			}
+
+			var caption = document.getElementById( 'dak-video-pricing-preview-caption' );
+
+			if ( caption ) {
+				caption.textContent = finalPrice > 0
+					? 'per video consultation'
+					: ( price > 0 ? 'Free while the current discount lasts' : 'No price set — video visits are booked at no charge' );
 			}
 
 			if ( badge ) {

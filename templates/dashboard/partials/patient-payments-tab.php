@@ -15,62 +15,77 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 ?>
-<section class="dak-dashboard-card dak-patient-payments-summary">
-	<span class="dak-patient-payments-summary-label"><?php esc_html_e( 'Total Paid', 'doctor-ak-portal' ); ?></span>
-	<span class="dak-patient-payments-summary-amount"><?php echo esc_html( 'PKR' . number_format( $total_paid, 0 ) ); ?></span>
-	<span class="dak-patient-payments-summary-count">
-		<?php
-		echo esc_html(
-			sprintf(
-				/* translators: %d: number of payments. */
-				_n( 'across %d payment', 'across %d payments', count( $rows ), 'doctor-ak-portal' ),
-				count( $rows )
-			)
-		);
-		?>
-	</span>
-</section>
+<div class="dak-list-page">
+<div class="dak-summary-grid dak-payments-summary">
+	<div class="dak-summary-card">
+		<span class="dak-summary-card-label"><?php esc_html_e( 'Total paid', 'doctor-ak-portal' ); ?></span>
+		<strong class="dak-summary-card-value"><?php echo esc_html( \DoctorAKPortal\Includes\Dashboard_Format::money( $total_paid ) ); ?></strong>
+		<span class="dak-summary-card-sub">
+			<?php
+			echo esc_html(
+				sprintf(
+					/* translators: %d: number of payments. */
+					_n( 'across %d payment', 'across %d payments', count( $rows ), 'doctor-ak-portal' ),
+					count( $rows )
+				)
+			);
+			?>
+		</span>
+	</div>
+</div>
 
-<section class="dak-dashboard-card dak-patient-payments-list-card">
+<section class="dak-results" aria-labelledby="dak-patient-payments-title">
+	<div class="dak-results-tools">
+		<h2 class="dak-results-title" id="dak-patient-payments-title"><?php esc_html_e( 'Payment history', 'doctor-ak-portal' ); ?><span class="dak-results-count"><?php echo esc_html( number_format_i18n( count( $rows ) ) ); ?></span></h2>
+	</div>
 	<?php if ( empty( $rows ) ) : ?>
-		<div class="dak-patient-empty-appointments">
-			<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="18" width="48" height="34" rx="4"/><path d="M8 27h48"/><path d="M16 38h10M16 45h6"/></svg>
+		<div class="dak-empty-state">
 			<p><?php esc_html_e( "You haven't made any payments yet.", 'doctor-ak-portal' ); ?></p>
 			<?php if ( $booking_url ) : ?>
-				<a class="dak-button dak-button-primary" href="<?php echo esc_url( $booking_url ); ?>"><?php esc_html_e( 'Book an appointment', 'doctor-ak-portal' ); ?></a>
+				<a class="dak-button dak-button-primary dak-button-sm" href="<?php echo esc_url( $booking_url ); ?>"><?php esc_html_e( 'Book an appointment', 'doctor-ak-portal' ); ?></a>
 			<?php endif; ?>
 		</div>
 	<?php else : ?>
-		<ul class="dak-patient-payments-list">
-			<?php foreach ( $rows as $row ) : ?>
-				<li class="dak-patient-payment-row">
-					<span class="dak-patient-appt-avatar">
-						<?php if ( $row['doctor_avatar_url'] ) : ?>
-							<img src="<?php echo esc_url( $row['doctor_avatar_url'] ); ?>" alt="">
-						<?php else : ?>
-							<?php echo esc_html( mb_strtoupper( mb_substr( $row['doctor_name'], 0, 1 ) ) ); ?>
-						<?php endif; ?>
-					</span>
-
-					<div class="dak-patient-payment-info">
-						<strong><?php echo esc_html( sprintf( 'Dr. %s', $row['doctor_name'] ) ); ?></strong>
-						<span class="dak-patient-payment-meta">
-							<?php echo esc_html( $row['datetime_label'] ); ?>
-							&middot; <?php echo esc_html( '' !== $row['service_name'] ? $row['service_name'] : $row['type_label'] ); ?>
-						</span>
-						<?php if ( ! empty( $row['is_instant'] ) && (float) $row['surcharge'] > 0 ) : ?>
-							<span class="dak-patient-payment-meta dak-patient-payment-surcharge-note">
-								<?php echo esc_html( sprintf( /* translators: %s: surcharge amount. */ __( 'Includes PKR%s instant booking fee', 'doctor-ak-portal' ), number_format( (float) $row['surcharge'], 0 ) ) ); ?>
-							</span>
-						<?php endif; ?>
-					</div>
-
-					<div class="dak-patient-payment-amount-wrap">
-						<span class="dak-patient-payment-amount"><?php echo esc_html( 'PKR' . number_format( (float) $row['charge'], 0 ) ); ?></span>
-						<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-active"><?php esc_html_e( 'Paid', 'doctor-ak-portal' ); ?></span>
-					</div>
-				</li>
-			<?php endforeach; ?>
-		</ul>
+		<div class="dak-data-table-wrap">
+			<table class="dak-data-table dak-ui-table dak-patient-payments-table">
+				<thead>
+					<tr>
+						<th scope="col"><?php esc_html_e( 'Appointment date', 'doctor-ak-portal' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Doctor & service', 'doctor-ak-portal' ); ?></th>
+						<th scope="col" class="dak-col-num"><?php esc_html_e( 'Amount', 'doctor-ak-portal' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Status', 'doctor-ak-portal' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( $rows as $row ) : ?>
+						<?php $dak_ts = strtotime( $row['date'] . ' ' . $row['time'] ); ?>
+						<tr data-row>
+							<td class="dak-col-nowrap" data-label="<?php esc_attr_e( 'Appointment date', 'doctor-ak-portal' ); ?>">
+								<span class="dak-cell-stack">
+									<span class="dak-cell-strong is-tabular"><?php echo esc_html( false !== $dak_ts ? date_i18n( 'd M Y', $dak_ts ) : $row['date'] ); ?></span>
+									<span class="dak-cell-sub is-tabular"><?php echo esc_html( false !== $dak_ts ? date_i18n( 'h:i A', $dak_ts ) : $row['time'] ); ?></span>
+								</span>
+							</td>
+							<td class="dak-col-primary" data-label="<?php esc_attr_e( 'Doctor & service', 'doctor-ak-portal' ); ?>">
+								<span class="dak-cell-stack">
+									<span class="dak-cell-strong"><?php echo esc_html( sprintf( 'Dr. %s', $row['doctor_name'] ) ); ?></span>
+									<span class="dak-cell-sub"><?php echo esc_html( '' !== $row['service_name'] ? $row['service_name'] : $row['type_label'] ); ?></span>
+								</span>
+							</td>
+							<td class="dak-col-num" data-label="<?php esc_attr_e( 'Amount', 'doctor-ak-portal' ); ?>">
+								<span class="dak-cell-stack">
+									<span class="dak-cell-strong"><?php echo esc_html( \DoctorAKPortal\Includes\Dashboard_Format::money( $row['charge'] ) ); ?></span>
+									<?php if ( ! empty( $row['is_instant'] ) && (float) $row['surcharge'] > 0 ) : ?>
+										<span class="dak-cell-note"><?php echo esc_html( sprintf( /* translators: %s: surcharge amount. */ __( 'Includes %s instant booking fee', 'doctor-ak-portal' ), \DoctorAKPortal\Includes\Dashboard_Format::money( $row['surcharge'] ) ) ); ?></span>
+									<?php endif; ?>
+								</span>
+							</td>
+							<td data-label="<?php esc_attr_e( 'Status', 'doctor-ak-portal' ); ?>"><span class="dak-status-pill dak-status-pill-is-active"><?php esc_html_e( 'Paid', 'doctor-ak-portal' ); ?></span></td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+		</div>
 	<?php endif; ?>
 </section>
+</div>

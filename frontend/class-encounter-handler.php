@@ -591,7 +591,14 @@ class Encounter_Handler {
 		$appointment = Appointments::notification_data( $encounter['appointment_id'] );
 
 		if ( empty( $appointment ) ) {
-			wp_die( esc_html__( 'That appointment could not be found.', 'doctor-ak-portal' ) );
+			// The appointment was deleted after the visit (deleting an
+			// appointment leaves its encounter in place). The prescription
+			// only needs the patient's and doctor's names, which the
+			// encounter still records, so it can still be issued.
+			$appointment = array(
+				'patient_name' => self::user_display_name( $encounter['patient_id'], __( 'Guest', 'doctor-ak-portal' ) ),
+				'doctor_name'  => self::user_display_name( $encounter['doctor_id'], __( 'Unknown Doctor', 'doctor-ak-portal' ) ),
+			);
 		}
 
 		$pdf_bytes = Prescription_Pdf::build(
@@ -609,6 +616,26 @@ class Encounter_Handler {
 		echo $pdf_bytes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw binary PDF bytes, not HTML output.
 
 		exit;
+	}
+
+	/**
+	 * A user's "First Last" name (display name if those are empty), or
+	 * $fallback when the user no longer exists.
+	 *
+	 * @param int    $user_id  User ID.
+	 * @param string $fallback Name to use when there's no such user.
+	 * @return string
+	 */
+	private static function user_display_name( $user_id, $fallback ) {
+		$user = $user_id > 0 ? get_userdata( $user_id ) : false;
+
+		if ( ! $user ) {
+			return $fallback;
+		}
+
+		$full_name = trim( $user->first_name . ' ' . $user->last_name );
+
+		return '' !== $full_name ? $full_name : $user->display_name;
 	}
 
 	/**

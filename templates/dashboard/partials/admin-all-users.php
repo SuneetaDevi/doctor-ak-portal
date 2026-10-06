@@ -4,6 +4,7 @@
  * (Administrator/Doctor/Patient/Receptionist) in one directory, with a
  * search bar and a role filter, so an admin can see everyone's name, phone,
  * ID, email, and role(s) at once instead of checking each role's own tab.
+ * Shared list pattern (see section 20 of doctor-ak-dashboard-ui.css).
  *
  * @package DoctorAKPortal\Templates
  *
@@ -19,152 +20,128 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! function_exists( 'dak_admin_all_users_initials' ) ) :
-	/**
-	 * One or two uppercase initials from a name, for an avatar fallback.
-	 *
-	 * @param string $name Display name.
-	 * @return string
-	 */
-	function dak_admin_all_users_initials( $name ) {
-		$words    = preg_split( '/\s+/', trim( (string) $name ) );
-		$initials = '';
-
-		foreach ( array_slice( $words, 0, 2 ) as $word ) {
-			if ( '' !== $word ) {
-				$initials .= mb_strtoupper( mb_substr( $word, 0, 1 ) );
-			}
-		}
-
-		return '' !== $initials ? $initials : '?';
-	}
-endif;
-
 $dak_has_filters = '' !== $filters['role'] || '' !== $filters['search'];
+$dak_live_attrs  = ' data-live-filter="doctor_ak_admin_users_filter" data-live-filter-target="#dak-admin-section-content" data-live-filter-nonce="dakAdminUsers"';
 ?>
-<div class="dak-page-head">
-	<div>
-		<h1><?php esc_html_e( 'All Users', 'doctor-ak-portal' ); ?></h1>
-		<p>
-			<?php
-			echo esc_html(
-				sprintf(
-					/* translators: %d: number of users. */
-					_n( '%d account', '%d accounts', count( $users ), 'doctor-ak-portal' ),
-					count( $users )
-				)
-			);
-			?>
-		</p>
-	</div>
-</div>
-
-<section class="dak-dashboard-card dak-appt-filters-card">
-	<form
-		method="get"
-		action="<?php echo esc_url( $section_url ); ?>"
-		class="dak-appt-filters-form"
-		data-live-filter="doctor_ak_admin_users_filter"
-		data-live-filter-target="#dak-admin-section-content"
-		data-live-filter-nonce="dakAdminUsers"
-	>
-		<input type="hidden" name="section" value="all-users">
-		<div class="dak-field">
-			<label for="dak-all-users-filter-search"><?php esc_html_e( 'Search', 'doctor-ak-portal' ); ?></label>
-			<input type="search" id="dak-all-users-filter-search" name="search" value="<?php echo esc_attr( $filters['search'] ); ?>" placeholder="<?php esc_attr_e( 'Name, email, or phone…', 'doctor-ak-portal' ); ?>">
+<div class="dak-list-page">
+	<div class="dak-page-head">
+		<div>
+			<h1><?php esc_html_e( 'All Users', 'doctor-ak-portal' ); ?></h1>
+			<p>
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: %d: number of users. */
+						_n( '%d account', '%d accounts', count( $users ), 'doctor-ak-portal' ),
+						count( $users )
+					)
+				);
+				?>
+			</p>
 		</div>
-
-		<div class="dak-field">
-			<label for="dak-all-users-filter-role"><?php esc_html_e( 'Role', 'doctor-ak-portal' ); ?></label>
-			<select id="dak-all-users-filter-role" name="role">
-				<option value=""><?php esc_html_e( 'All roles', 'doctor-ak-portal' ); ?></option>
-				<?php foreach ( $role_labels as $dak_role_slug => $dak_role_label ) : ?>
-					<option value="<?php echo esc_attr( $dak_role_slug ); ?>" <?php selected( $filters['role'], $dak_role_slug ); ?>><?php echo esc_html( $dak_role_label ); ?></option>
-				<?php endforeach; ?>
-			</select>
-		</div>
-
-		<div class="dak-admin-filter-actions">
-			<button type="submit" class="dak-button dak-button-primary"><?php esc_html_e( 'Filter', 'doctor-ak-portal' ); ?></button>
-			<?php if ( $dak_has_filters ) : ?>
-				<a
-					class="dak-button dak-button-secondary"
-					href="<?php echo esc_url( $section_url ); ?>"
-					data-live-filter-clear
-					data-live-filter="doctor_ak_admin_users_filter"
-					data-live-filter-target="#dak-admin-section-content"
-					data-live-filter-nonce="dakAdminUsers"
-				><?php esc_html_e( 'Clear', 'doctor-ak-portal' ); ?></a>
-			<?php endif; ?>
-		</div>
-	</form>
-</section>
-
-<section class="dak-dashboard-card">
-	<div class="dak-dashboard-card-header">
-		<h2><?php esc_html_e( 'User directory', 'doctor-ak-portal' ); ?></h2>
 	</div>
 
-	<?php if ( empty( $users ) ) : ?>
-		<p class="dak-empty-state"><?php esc_html_e( 'No users match these filters.', 'doctor-ak-portal' ); ?></p>
-	<?php else : ?>
-		<?php foreach ( $users as $row ) : ?>
-			<?php
-			$dak_manage_url = ( '' !== $row['manageable_role'] && ! empty( $manageable_section_urls[ $row['manageable_role'] ] ) )
-				? $manageable_section_urls[ $row['manageable_role'] ]
-				: '';
-			?>
-			<div id="dak-all-user-<?php echo esc_attr( $row['id'] ); ?>" class="dak-admin-record-row" data-user-row="<?php echo esc_attr( $row['id'] ); ?>">
-				<div class="dak-admin-record-row-main">
-					<span class="dak-avatar dak-avatar-sm" aria-hidden="true"><?php echo esc_html( dak_admin_all_users_initials( $row['name'] ) ); ?></span>
-					<span class="dak-admin-record-row-info">
-						<strong><?php echo esc_html( $row['name'] ); ?></strong>
-						<span class="dak-admin-record-row-id"><?php echo esc_html( sprintf( 'U-%03d', $row['id'] ) ); ?></span>
-					</span>
-
-					<span class="dak-admin-patient-row-email"><?php echo esc_html( $row['email'] ); ?></span>
-					<span class="dak-admin-patient-row-phone"><?php echo esc_html( '' !== $row['phone'] ? $row['phone'] : '—' ); ?></span>
-
-					<span class="dak-admin-record-row-tags">
-						<?php foreach ( $row['roles'] as $dak_role_label ) : ?>
-							<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-active"><?php echo esc_html( $dak_role_label ); ?></span>
-						<?php endforeach; ?>
-						<?php if ( '' !== $row['manageable_role'] ) : ?>
-							<span class="dak-status-pill dak-status-pill-outline <?php echo $row['is_disabled'] ? 'dak-status-pill-is-disabled' : 'dak-status-pill-is-active'; ?>">
-								<?php echo $row['is_disabled'] ? esc_html__( 'Deactivated', 'doctor-ak-portal' ) : esc_html__( 'Active', 'doctor-ak-portal' ); ?>
-							</span>
-						<?php endif; ?>
-					</span>
-
-					<?php if ( $dak_manage_url ) : ?>
-						<span class="dak-admin-record-row-actions">
-							<a
-								class="dak-icon-button"
-								href="<?php echo esc_url( add_query_arg( array( 'view' => 'form', 'user_id' => $row['id'] ), $dak_manage_url ) ); ?>"
-								title="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
-								aria-label="<?php esc_attr_e( 'Edit', 'doctor-ak-portal' ); ?>"
-							><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 3.5a1.7 1.7 0 0 1 2.4 2.4L6.5 15.3l-3 .7.7-3 9.3-9.3z"/></svg></a>
-							<button
-								type="button"
-								class="dak-icon-button<?php echo $row['is_disabled'] ? ' dak-icon-button-success' : ' dak-icon-button-warning'; ?>"
-								data-admin-toggle-status
-								data-user-id="<?php echo esc_attr( $row['id'] ); ?>"
-								data-is-disabled="<?php echo $row['is_disabled'] ? '1' : '0'; ?>"
-								title="<?php echo $row['is_disabled'] ? esc_attr__( 'Activate', 'doctor-ak-portal' ) : esc_attr__( 'Deactivate', 'doctor-ak-portal' ); ?>"
-								aria-label="<?php echo $row['is_disabled'] ? esc_attr__( 'Activate', 'doctor-ak-portal' ) : esc_attr__( 'Deactivate', 'doctor-ak-portal' ); ?>"
-							><?php if ( $row['is_disabled'] ) : ?><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2.5v6"/><path d="M5.5 5.2a6.5 6.5 0 1 0 9 0"/></svg><?php else : ?><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M7.5 7.5v5M12.5 7.5v5"/></svg><?php endif; ?></button>
-							<button
-								type="button"
-								class="dak-icon-button dak-icon-button-danger"
-								data-admin-delete-user
-								data-user-id="<?php echo esc_attr( $row['id'] ); ?>"
-								title="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
-								aria-label="<?php esc_attr_e( 'Delete', 'doctor-ak-portal' ); ?>"
-							><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h12M8 6V4.5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1V6M6 6l.6 9a1.5 1.5 0 0 0 1.5 1.4h3.8a1.5 1.5 0 0 0 1.5-1.4L14 6"/></svg></button>
-						</span>
-					<?php endif; ?>
-				</div>
+	<div class="dak-list-toolbar">
+		<form
+			method="get"
+			action="<?php echo esc_url( $section_url ); ?>"
+			class="dak-list-filters"
+			<?php echo $dak_live_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static attribute string. ?>
+		>
+			<input type="hidden" name="section" value="all-users">
+			<div class="dak-field is-search">
+				<label for="dak-all-users-filter-search"><?php esc_html_e( 'Search', 'doctor-ak-portal' ); ?></label>
+				<input type="search" id="dak-all-users-filter-search" name="search" value="<?php echo esc_attr( $filters['search'] ); ?>" placeholder="<?php esc_attr_e( 'Name, email, or phone…', 'doctor-ak-portal' ); ?>">
 			</div>
-		<?php endforeach; ?>
-	<?php endif; ?>
-</section>
+
+			<div class="dak-field">
+				<label for="dak-all-users-filter-role"><?php esc_html_e( 'Role', 'doctor-ak-portal' ); ?></label>
+				<select id="dak-all-users-filter-role" name="role">
+					<option value=""><?php esc_html_e( 'All roles', 'doctor-ak-portal' ); ?></option>
+					<?php foreach ( $role_labels as $dak_role_slug => $dak_role_label ) : ?>
+						<option value="<?php echo esc_attr( $dak_role_slug ); ?>" <?php selected( $filters['role'], $dak_role_slug ); ?>><?php echo esc_html( $dak_role_label ); ?></option>
+					<?php endforeach; ?>
+				</select>
+			</div>
+
+			<div class="dak-list-filter-actions">
+				<button type="submit" class="dak-button dak-button-primary"><?php esc_html_e( 'Apply', 'doctor-ak-portal' ); ?></button>
+				<?php if ( $dak_has_filters ) : ?>
+					<a class="dak-button dak-button-secondary" href="<?php echo esc_url( $section_url ); ?>" data-live-filter-clear<?php echo $dak_live_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static attribute string. ?>><?php esc_html_e( 'Clear', 'doctor-ak-portal' ); ?></a>
+				<?php endif; ?>
+			</div>
+		</form>
+	</div>
+
+	<section class="dak-results" aria-labelledby="dak-all-users-results-title">
+		<div class="dak-results-tools">
+			<h2 class="dak-results-title" id="dak-all-users-results-title"><?php esc_html_e( 'Users', 'doctor-ak-portal' ); ?><span class="dak-results-count"><?php echo esc_html( number_format_i18n( count( $users ) ) ); ?></span></h2>
+		</div>
+
+		<?php if ( empty( $users ) ) : ?>
+			<p class="dak-empty-state"><?php esc_html_e( 'No users match these filters.', 'doctor-ak-portal' ); ?></p>
+		<?php else : ?>
+			<div class="dak-data-table-wrap">
+				<table class="dak-data-table dak-ui-table dak-all-users-table">
+					<thead>
+						<tr>
+							<th scope="col"><?php esc_html_e( 'User', 'doctor-ak-portal' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Contact', 'doctor-ak-portal' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Role', 'doctor-ak-portal' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Account status', 'doctor-ak-portal' ); ?></th>
+							<th scope="col" class="dak-col-actions"><?php esc_html_e( 'Actions', 'doctor-ak-portal' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $users as $row ) : ?>
+							<?php
+							$dak_manage_url = ( '' !== $row['manageable_role'] && ! empty( $manageable_section_urls[ $row['manageable_role'] ] ) )
+								? $manageable_section_urls[ $row['manageable_role'] ]
+								: '';
+							?>
+							<tr id="dak-all-user-<?php echo esc_attr( $row['id'] ); ?>" data-row data-user-row="<?php echo esc_attr( $row['id'] ); ?>">
+								<td class="dak-col-primary" data-label="<?php esc_attr_e( 'User', 'doctor-ak-portal' ); ?>">
+									<span class="dak-cell-stack">
+										<span class="dak-cell-primary"><?php echo esc_html( $row['name'] ); ?></span>
+										<span class="dak-cell-sub dak-cell-id"><?php echo esc_html( sprintf( 'U-%03d', $row['id'] ) ); ?></span>
+									</span>
+								</td>
+								<td data-label="<?php esc_attr_e( 'Contact', 'doctor-ak-portal' ); ?>">
+									<span class="dak-cell-stack">
+										<span class="dak-cell-email"><?php echo \DoctorAKPortal\Includes\Dashboard_Format::email_html( $row['email'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside email_html(). ?></span>
+										<span class="dak-cell-sub is-tabular"><?php echo esc_html( '' !== (string) $row['phone'] ? $row['phone'] : __( 'No phone', 'doctor-ak-portal' ) ); ?></span>
+									</span>
+								</td>
+								<td data-label="<?php esc_attr_e( 'Role', 'doctor-ak-portal' ); ?>"><?php echo esc_html( implode( ', ', $row['roles'] ) ); ?></td>
+								<td class="dak-col-status" data-label="<?php esc_attr_e( 'Account status', 'doctor-ak-portal' ); ?>">
+									<?php if ( '' !== $row['manageable_role'] ) : ?>
+										<span class="dak-status-pill <?php echo $row['is_disabled'] ? 'dak-status-pill-is-neutral' : 'dak-status-pill-is-active'; ?>"><?php echo $row['is_disabled'] ? esc_html__( 'Deactivated', 'doctor-ak-portal' ) : esc_html__( 'Active', 'doctor-ak-portal' ); ?></span>
+									<?php else : ?>
+										<span class="dak-cell-sub"><?php esc_html_e( 'Managed in WordPress', 'doctor-ak-portal' ); ?></span>
+									<?php endif; ?>
+								</td>
+								<td class="dak-col-actions" data-label="<?php esc_attr_e( 'Actions', 'doctor-ak-portal' ); ?>">
+									<?php if ( $dak_manage_url ) : ?>
+										<div class="dak-row-actions">
+											<a class="dak-text-action" href="<?php echo esc_url( add_query_arg( array( 'view' => 'form', 'user_id' => $row['id'] ), $dak_manage_url ) ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: person's name. */ __( 'Edit %s', 'doctor-ak-portal' ), $row['name'] ) ); ?>"><?php esc_html_e( 'Edit', 'doctor-ak-portal' ); ?></a>
+											<details class="dak-row-menu">
+												<summary class="dak-row-menu-toggle" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: person's name. */ __( 'More actions for %s', 'doctor-ak-portal' ), $row['name'] ) ); ?>"><?php esc_html_e( 'More', 'doctor-ak-portal' ); ?></summary>
+												<div class="dak-row-menu-panel" role="menu">
+													<button type="button" class="dak-row-menu-item" role="menuitem" data-admin-toggle-status data-user-id="<?php echo esc_attr( $row['id'] ); ?>" data-is-disabled="<?php echo $row['is_disabled'] ? '1' : '0'; ?>"><?php echo $row['is_disabled'] ? esc_html__( 'Reactivate account', 'doctor-ak-portal' ) : esc_html__( 'Deactivate account', 'doctor-ak-portal' ); ?></button>
+													<hr class="dak-row-menu-sep">
+													<button type="button" class="dak-row-menu-item is-danger" role="menuitem" data-admin-delete-user data-user-id="<?php echo esc_attr( $row['id'] ); ?>"><?php esc_html_e( 'Delete account', 'doctor-ak-portal' ); ?></button>
+												</div>
+											</details>
+										</div>
+									<?php else : ?>
+										<span class="dak-cell-sub"><?php esc_html_e( 'No actions', 'doctor-ak-portal' ); ?></span>
+									<?php endif; ?>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div>
+		<?php endif; ?>
+	</section>
+</div>

@@ -38,83 +38,92 @@ if ( ! function_exists( 'dak_doctor_request_initials' ) ) :
 	}
 endif;
 ?>
-<div class="dak-dashboard-greeting">
-	<h1><?php esc_html_e( 'Doctor Requests', 'doctor-ak-portal' ); ?></h1>
-	<p><?php esc_html_e( 'New doctor registrations wait here until you approve them — they cannot log in until then.', 'doctor-ak-portal' ); ?></p>
+<div class="dak-list-page">
+<div class="dak-page-head">
+	<div>
+		<h1><?php esc_html_e( 'Doctor Requests', 'doctor-ak-portal' ); ?></h1>
+		<p><?php esc_html_e( 'New doctor registrations wait here until you approve them — they cannot log in until then.', 'doctor-ak-portal' ); ?></p>
+	</div>
 </div>
 
-<?php if ( empty( $pending_doctors ) ) : ?>
-	<section class="dak-dashboard-card">
+<section class="dak-results" id="dak-doctor-requests-list" aria-labelledby="dak-doctor-requests-title">
+	<div class="dak-results-tools">
+		<h2 class="dak-results-title" id="dak-doctor-requests-title"><?php esc_html_e( 'Pending requests', 'doctor-ak-portal' ); ?><span class="dak-results-count"><?php echo esc_html( number_format_i18n( count( $pending_doctors ) ) ); ?></span></h2>
+		<?php if ( ! empty( $pending_doctors ) ) : ?>
+			<div class="dak-dashboard-search dak-list-search-box"><span class="dak-dashboard-search-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg></span>
+				<input type="search" data-list-search="#dak-doctor-requests-list" placeholder="<?php esc_attr_e( 'Search name or email', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search requests', 'doctor-ak-portal' ); ?>">
+			</div>
+		<?php endif; ?>
+	</div>
+
+	<?php if ( empty( $pending_doctors ) ) : ?>
 		<p class="dak-empty-state"><?php esc_html_e( 'No pending doctor registrations right now.', 'doctor-ak-portal' ); ?></p>
-	</section>
-<?php else : ?>
-	<section class="dak-dashboard-card" id="dak-doctor-requests-list">
-		<div class="dak-dashboard-card-header">
-			<h2><?php esc_html_e( 'Pending requests', 'doctor-ak-portal' ); ?></h2>
-			<div class="dak-dashboard-search dak-list-search-box">
-				<span class="dak-dashboard-search-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg></span>
-				<input type="search" data-list-search="#dak-doctor-requests-list" placeholder="<?php esc_attr_e( 'Search requests', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search requests', 'doctor-ak-portal' ); ?>">
-			</div>
+	<?php else : ?>
+		<div class="dak-data-table-wrap">
+			<table class="dak-data-table dak-ui-table dak-doctor-requests-table">
+				<thead>
+					<tr>
+						<th scope="col"><?php esc_html_e( 'Applicant', 'doctor-ak-portal' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Qualification', 'doctor-ak-portal' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Specialization', 'doctor-ak-portal' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Registered', 'doctor-ak-portal' ); ?></th>
+						<th scope="col" class="dak-col-actions"><?php esc_html_e( 'Actions', 'doctor-ak-portal' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( $pending_doctors as $row ) : ?>
+						<?php $dak_req_specs = array_values( array_filter( (array) $row['specialization_labels'] ) ); ?>
+						<tr id="dak-doctor-request-<?php echo esc_attr( $row['id'] ); ?>" data-row data-doctor-request-row="<?php echo esc_attr( $row['id'] ); ?>" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $row['name'] . ' ' . $row['email'] ) ); ?>">
+							<td class="dak-col-primary" data-label="<?php esc_attr_e( 'Applicant', 'doctor-ak-portal' ); ?>">
+								<span class="dak-cell-stack">
+									<span class="dak-cell-primary"><?php echo esc_html( sprintf( 'Dr. %s', $row['name'] ) ); ?></span>
+									<span class="dak-cell-sub dak-cell-email"><?php echo \DoctorAKPortal\Includes\Dashboard_Format::email_html( $row['email'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside email_html(). ?></span>
+								</span>
+							</td>
+							<td data-label="<?php esc_attr_e( 'Qualification', 'doctor-ak-portal' ); ?>">
+								<span class="dak-cell-stack">
+									<span><?php echo esc_html( '' !== (string) $row['qualification'] ? $row['qualification'] : __( 'Not provided', 'doctor-ak-portal' ) ); ?></span>
+									<?php if ( '' !== (string) $row['years_experience'] ) : ?>
+										<span class="dak-cell-sub"><?php echo esc_html( sprintf( /* translators: %s: years of experience. */ _n( '%s year experience', '%s years experience', (int) $row['years_experience'], 'doctor-ak-portal' ), $row['years_experience'] ) ); ?></span>
+									<?php endif; ?>
+								</span>
+							</td>
+							<td data-label="<?php esc_attr_e( 'Specialization', 'doctor-ak-portal' ); ?>">
+								<?php if ( empty( $dak_req_specs ) ) : ?>
+									<span class="dak-cell-sub"><?php esc_html_e( 'Not set', 'doctor-ak-portal' ); ?></span>
+								<?php else : ?>
+									<span class="dak-cell-stack">
+										<span><?php echo esc_html( $dak_req_specs[0] ); ?></span>
+										<?php if ( count( $dak_req_specs ) > 1 ) : ?>
+											<span class="dak-cell-sub"><?php echo esc_html( sprintf( /* translators: %d: number of other specialties. */ __( '+%d more in profile', 'doctor-ak-portal' ), count( $dak_req_specs ) - 1 ) ); ?></span>
+										<?php endif; ?>
+									</span>
+								<?php endif; ?>
+							</td>
+							<td class="dak-col-nowrap" data-label="<?php esc_attr_e( 'Registered', 'doctor-ak-portal' ); ?>"><span class="dak-cell-sub is-tabular"><?php echo esc_html( \DoctorAKPortal\Includes\Dashboard_Format::date( $row['registered_date'], $row['registered_date'] ) ); ?></span></td>
+							<td class="dak-col-actions" data-label="<?php esc_attr_e( 'Actions', 'doctor-ak-portal' ); ?>">
+								<div class="dak-row-actions">
+									<button type="button" class="dak-text-action" data-doctor-view-open data-user-id="<?php echo esc_attr( $row['id'] ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: doctor name. */ __( 'View profile of Dr. %s', 'doctor-ak-portal' ), $row['name'] ) ); ?>"><?php esc_html_e( 'View profile', 'doctor-ak-portal' ); ?></button>
+									<button type="button" class="dak-button dak-button-primary dak-button-sm" data-doctor-request-approve data-user-id="<?php echo esc_attr( $row['id'] ); ?>"><?php esc_html_e( 'Approve', 'doctor-ak-portal' ); ?></button>
+									<details class="dak-row-menu">
+										<summary class="dak-row-menu-toggle" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: doctor name. */ __( 'More actions for Dr. %s', 'doctor-ak-portal' ), $row['name'] ) ); ?>"><?php esc_html_e( 'More', 'doctor-ak-portal' ); ?></summary>
+										<div class="dak-row-menu-panel" role="menu">
+											<button type="button" class="dak-row-menu-item is-danger" role="menuitem" data-doctor-request-reject data-user-id="<?php echo esc_attr( $row['id'] ); ?>"><?php esc_html_e( 'Reject request', 'doctor-ak-portal' ); ?></button>
+										</div>
+									</details>
+								</div>
+							</td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
 		</div>
+		<p class="dak-empty-state dak-results-empty dak-hidden" data-list-search-empty><?php esc_html_e( 'No requests match your search.', 'doctor-ak-portal' ); ?></p>
+	<?php endif; ?>
+</section>
+</div>
 
-		<?php foreach ( $pending_doctors as $row ) : ?>
-			<div id="dak-doctor-request-<?php echo esc_attr( $row['id'] ); ?>" class="dak-admin-record-row" data-doctor-request-row="<?php echo esc_attr( $row['id'] ); ?>" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $row['name'] . ' ' . $row['email'] ) ); ?>">
-				<div class="dak-admin-record-row-main">
-					<span class="dak-avatar dak-avatar-sm" aria-hidden="true">
-						<?php if ( $row['avatar_url'] ) : ?>
-							<img src="<?php echo esc_url( $row['avatar_url'] ); ?>" alt="">
-						<?php else : ?>
-							<?php echo esc_html( dak_doctor_request_initials( $row['name'] ) ); ?>
-						<?php endif; ?>
-					</span>
-					<span class="dak-admin-record-row-info">
-						<strong><?php echo esc_html( sprintf( 'Dr. %s', $row['name'] ) ); ?></strong>
-						<span class="dak-admin-record-row-id"><?php echo esc_html( $row['email'] ); ?></span>
-					</span>
-
-					<span class="dak-admin-record-row-meta">
-						<?php echo esc_html( '' !== $row['qualification'] ? $row['qualification'] : '—' ); ?>
-						<?php if ( '' !== $row['years_experience'] ) : ?>
-							&middot;
-							<?php
-							echo esc_html(
-								sprintf(
-									/* translators: %s: years of experience. */
-									_n( '%s year', '%s years', (int) $row['years_experience'], 'doctor-ak-portal' ),
-									$row['years_experience']
-								)
-							);
-							?>
-						<?php endif; ?>
-					</span>
-
-					<span class="dak-admin-record-row-tags">
-						<span class="dak-status-pill dak-status-pill-outline dak-status-pill-is-pending"><?php esc_html_e( 'Pending', 'doctor-ak-portal' ); ?></span>
-						<span class="dak-status-pill dak-status-pill-outline"><?php echo esc_html( sprintf( /* translators: %s: registration date. */ __( 'Registered %s', 'doctor-ak-portal' ), $row['registered_date'] ) ); ?></span>
-					</span>
-
-					<span class="dak-admin-record-row-actions">
-						<button
-							type="button"
-							class="dak-icon-button"
-							data-doctor-view-open
-							data-user-id="<?php echo esc_attr( $row['id'] ); ?>"
-							title="<?php esc_attr_e( 'View Profile', 'doctor-ak-portal' ); ?>"
-							aria-label="<?php esc_attr_e( 'View Profile', 'doctor-ak-portal' ); ?>"
-						><?php echo $dak_view_icon; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
-						<button type="button" class="dak-button dak-button-primary dak-button-sm" data-doctor-request-approve data-user-id="<?php echo esc_attr( $row['id'] ); ?>">
-							<?php esc_html_e( 'Approve', 'doctor-ak-portal' ); ?>
-						</button>
-						<button type="button" class="dak-button dak-button-secondary dak-button-sm" data-doctor-request-reject data-user-id="<?php echo esc_attr( $row['id'] ); ?>">
-							<?php esc_html_e( 'Reject', 'doctor-ak-portal' ); ?>
-						</button>
-					</span>
-				</div>
-			</div>
-		<?php endforeach; ?>
-		<p class="dak-empty-state dak-hidden" data-list-search-empty><?php esc_html_e( 'No requests match your search.', 'doctor-ak-portal' ); ?></p>
-	</section>
-
+<?php if ( ! empty( $pending_doctors ) ) : ?>
 	<?php foreach ( $pending_doctors as $row ) : ?>
 		<template data-doctor-profile-template data-user-id="<?php echo esc_attr( $row['id'] ); ?>">
 			<div class="dak-doctor-profile-header">
@@ -207,14 +216,17 @@ endif;
 	<div class="dak-portal dak-modal" id="dak-doctor-view-modal" aria-hidden="true">
 		<div class="dak-modal-overlay" data-doctor-view-close></div>
 
-		<div class="dak-modal-dialog dak-doctor-profile-dialog" role="dialog" aria-modal="true" aria-labelledby="dak-doctor-view-modal-title">
-			<button type="button" class="dak-modal-close" data-doctor-view-close aria-label="<?php esc_attr_e( 'Close', 'doctor-ak-portal' ); ?>">&times;</button>
-
+		<div class="dak-modal-dialog dak-modal-dialog-form dak-doctor-profile-dialog" role="dialog" aria-modal="true" aria-labelledby="dak-doctor-view-modal-title">
 			<div class="dak-modal-header">
 				<h2 id="dak-doctor-view-modal-title"><?php esc_html_e( 'Doctor Profile', 'doctor-ak-portal' ); ?></h2>
+				<button type="button" class="dak-modal-close" data-doctor-view-close aria-label="<?php esc_attr_e( 'Close', 'doctor-ak-portal' ); ?>">&times;</button>
 			</div>
 
-			<div id="dak-doctor-view-modal-body"></div>
+			<div class="dak-modal-body" id="dak-doctor-view-modal-body"></div>
+
+			<div class="dak-modal-footer">
+				<button type="button" class="dak-button dak-button-secondary" data-doctor-view-close><?php esc_html_e( 'Close', 'doctor-ak-portal' ); ?></button>
+			</div>
 		</div>
 	</div>
 <?php endif; ?>

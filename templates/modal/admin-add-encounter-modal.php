@@ -20,12 +20,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="dak-portal dak-modal" id="dak-admin-add-encounter-modal" aria-hidden="true">
 	<div class="dak-modal-overlay" data-dak-admin-add-encounter-modal-close></div>
 
-	<div class="dak-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="dak-admin-add-encounter-modal-title">
-		<button type="button" class="dak-modal-close" data-dak-admin-add-encounter-modal-close aria-label="<?php esc_attr_e( 'Close', 'doctor-ak-portal' ); ?>">&times;</button>
+	<div class="dak-modal-dialog dak-modal-dialog-form" role="dialog" aria-modal="true" aria-labelledby="dak-admin-add-encounter-modal-title">
 
 		<div class="dak-modal-header">
 			<h2 id="dak-admin-add-encounter-modal-title"><?php esc_html_e( 'Add Encounter', 'doctor-ak-portal' ); ?></h2>
+			<button type="button" class="dak-modal-close" data-dak-admin-add-encounter-modal-close aria-label="<?php esc_attr_e( 'Close', 'doctor-ak-portal' ); ?>">&times;</button>
 		</div>
+
+		<div class="dak-modal-body">
 
 		<p class="dak-field-hint"><?php esc_html_e( "For a walk-in patient with no existing appointment — pick the clinic, then the doctor seeing them, then the patient.", 'doctor-ak-portal' ); ?></p>
 
@@ -67,8 +69,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<span class="dak-field-error" data-field="patient_id"></span>
 		</div>
 
-		<button type="button" class="dak-button dak-button-primary dak-button-block" id="dak-admin-add-encounter-save" disabled>
-			<span class="dak-button-label"><?php esc_html_e( 'Check In & Open Encounter', 'doctor-ak-portal' ); ?></span>
-		</button>
+		</div>
+
+		<div class="dak-modal-footer">
+			<button type="button" class="dak-button dak-button-secondary" data-dak-admin-add-encounter-modal-close><?php esc_html_e( 'Cancel', 'doctor-ak-portal' ); ?></button>
+			<button type="button" class="dak-button dak-button-primary" id="dak-admin-add-encounter-save" disabled>
+				<span class="dak-button-label"><?php esc_html_e( 'Check In & Open Encounter', 'doctor-ak-portal' ); ?></span>
+			</button>
+		</div>
 	</div>
 </div>

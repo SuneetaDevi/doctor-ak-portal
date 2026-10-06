@@ -188,6 +188,20 @@
 			var clone = template.content.cloneNode( true );
 			list.appendChild( clone );
 			wireCityAreaSelectsIn( list );
+
+			// "+ Add Clinic" sits in the page header now, so bring the new
+			// (blank) card into view and put the cursor in its first field.
+			var added = list.lastElementChild;
+
+			if ( added ) {
+				added.scrollIntoView( { block: 'nearest', behavior: 'smooth' } );
+
+				var firstField = added.querySelector( 'select, input' );
+
+				if ( firstField ) {
+					firstField.focus( { preventScroll: true } );
+				}
+			}
 		} );
 	}
 

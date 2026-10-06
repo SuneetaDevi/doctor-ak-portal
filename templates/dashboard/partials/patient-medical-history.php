@@ -18,93 +18,85 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 ?>
-<section class="dak-dashboard-card" id="dak-medical-history-list">
-	<?php if ( empty( $encounters ) ) : ?>
-		<p class="dak-empty-state"><?php esc_html_e( 'You have no completed visits yet.', 'doctor-ak-portal' ); ?></p>
-	<?php else : ?>
-		<div class="dak-list-search-header">
+<section class="dak-results" id="dak-medical-history-list" aria-labelledby="dak-medical-history-title">
+	<div class="dak-results-tools">
+		<h2 class="dak-results-title" id="dak-medical-history-title"><?php esc_html_e( 'Completed visits', 'doctor-ak-portal' ); ?><span class="dak-results-count"><?php echo esc_html( number_format_i18n( count( $encounters ) ) ); ?></span></h2>
+		<?php if ( ! empty( $encounters ) ) : ?>
 			<div class="dak-dashboard-search dak-list-search-box">
 				<span class="dak-dashboard-search-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg></span>
-				<input type="search" data-list-search="#dak-medical-history-list" placeholder="<?php esc_attr_e( 'Search visits', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search visits', 'doctor-ak-portal' ); ?>">
+				<input type="search" data-list-search="#dak-medical-history-list" placeholder="<?php esc_attr_e( 'Search doctor or clinic', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search visits', 'doctor-ak-portal' ); ?>">
 			</div>
-		</div>
-		<ul class="dak-patient-payments-list">
+		<?php endif; ?>
+	</div>
+
+	<?php if ( empty( $encounters ) ) : ?>
+		<p class="dak-empty-state"><?php esc_html_e( 'You have no completed visits yet. Notes from your doctors appear here after each visit.', 'doctor-ak-portal' ); ?></p>
+	<?php else : ?>
+		<div class="dak-visit-records">
 			<?php foreach ( $encounters as $encounter ) : ?>
 				<?php
-				$dak_appt = $encounter['appointment'];
+				$dak_appt                = $encounter['appointment'];
 				$dak_history_doctor_name = isset( $dak_appt['doctor_name'] ) ? $dak_appt['doctor_name'] : '';
-				$dak_history_clinic_or_type = ! empty( $dak_appt['clinic_label'] ) ? $dak_appt['clinic_label'] : ( isset( $dak_appt['type_label'] ) ? $dak_appt['type_label'] : '' );
+				$dak_history_place       = ! empty( $dak_appt['clinic_name'] ) ? $dak_appt['clinic_name'] : ( ! empty( $dak_appt['clinic_label'] ) ? $dak_appt['clinic_label'] : ( isset( $dak_appt['type_label'] ) ? $dak_appt['type_label'] : '' ) );
 				?>
-				<li id="dak-encounter-<?php echo esc_attr( $encounter['id'] ); ?>" class="dak-patient-payment-row" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $dak_history_doctor_name . ' ' . $dak_history_clinic_or_type ) ); ?>">
-					<span class="dak-patient-appt-avatar">
-						<?php if ( ! empty( $dak_appt['doctor_avatar_url'] ) ) : ?>
-							<img src="<?php echo esc_url( $dak_appt['doctor_avatar_url'] ); ?>" alt="">
-						<?php else : ?>
-							<?php echo esc_html( mb_strtoupper( mb_substr( isset( $dak_appt['doctor_name'] ) ? $dak_appt['doctor_name'] : '?', 0, 1 ) ) ); ?>
-						<?php endif; ?>
-					</span>
+				<article id="dak-encounter-<?php echo esc_attr( $encounter['id'] ); ?>" class="dak-visit-record" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $dak_history_doctor_name . ' ' . $dak_history_place ) ); ?>" aria-labelledby="dak-visit-<?php echo esc_attr( $encounter['id'] ); ?>-title">
+					<header class="dak-visit-record-head">
+						<div>
+							<h3 class="dak-visit-record-title" id="dak-visit-<?php echo esc_attr( $encounter['id'] ); ?>-title"><?php echo esc_html( sprintf( /* translators: %s: doctor name. */ __( 'Dr. %s', 'doctor-ak-portal' ), '' !== $dak_history_doctor_name ? $dak_history_doctor_name : '—' ) ); ?></h3>
+							<p class="dak-visit-record-meta">
+								<span class="is-tabular"><?php echo esc_html( \DoctorAKPortal\Includes\Dashboard_Format::date( $encounter['checked_in_at'] ) ); ?></span>
+								<?php if ( '' !== $dak_history_place ) : ?>
+									· <?php echo esc_html( $dak_history_place ); ?>
+								<?php endif; ?>
+							</p>
+						</div>
+						<div class="dak-visit-record-links">
+							<a class="dak-text-action" href="<?php echo esc_url( $encounter['prescription_pdf_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Prescription (PDF)', 'doctor-ak-portal' ); ?></a>
+							<a class="dak-text-action" href="<?php echo esc_url( $encounter['bill_pdf_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Bill (PDF)', 'doctor-ak-portal' ); ?></a>
+						</div>
+					</header>
 
-					<div class="dak-patient-payment-info">
-						<strong><?php echo esc_html( sprintf( /* translators: %s: doctor name. */ __( 'Dr. %s', 'doctor-ak-portal' ), isset( $dak_appt['doctor_name'] ) ? $dak_appt['doctor_name'] : '—' ) ); ?></strong>
-						<span class="dak-patient-payment-meta">
-							<?php
-							echo esc_html( mysql2date( get_option( 'date_format' ), $encounter['checked_in_at'] ) );
-
-							$dak_clinic_or_type = ! empty( $dak_appt['clinic_label'] ) ? $dak_appt['clinic_label'] : ( isset( $dak_appt['type_label'] ) ? $dak_appt['type_label'] : '' );
-
-							if ( '' !== $dak_clinic_or_type ) {
-								echo ' &middot; ' . esc_html( $dak_clinic_or_type ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- esc_html() applied; the &middot; entity is deliberately not double-escaped so it renders as a middle dot.
-							}
-							?>
-						</span>
-
-						<div class="dak-medical-history-note">
-							<span class="dak-field-label"><?php esc_html_e( 'Problems', 'doctor-ak-portal' ); ?></span>
+					<div class="dak-visit-record-body">
+						<section class="dak-visit-record-section">
+							<h4><?php esc_html_e( 'Problems & diagnosis', 'doctor-ak-portal' ); ?></h4>
 							<?php if ( empty( $encounter['problems'] ) ) : ?>
-								<p class="dak-medical-history-note-empty"><?php esc_html_e( 'No problem recorded for this visit.', 'doctor-ak-portal' ); ?></p>
+								<p class="dak-cell-sub"><?php esc_html_e( 'No problem recorded for this visit.', 'doctor-ak-portal' ); ?></p>
 							<?php else : ?>
-								<ul class="dak-medical-history-problem-list">
+								<ul class="dak-visit-record-list">
 									<?php foreach ( $encounter['problems'] as $dak_problem ) : ?>
 										<li>
-											<?php echo esc_html( $dak_problem['description'] ); ?>
+											<span class="dak-cell-strong"><?php echo esc_html( $dak_problem['description'] ); ?></span>
 											<?php if ( '' !== $dak_problem['notes'] ) : ?>
-												<span class="dak-medical-history-problem-notes"> — <?php echo esc_html( $dak_problem['notes'] ); ?></span>
+												<span class="dak-visit-record-notes"><?php echo esc_html( $dak_problem['notes'] ); ?></span>
 											<?php endif; ?>
 										</li>
 									<?php endforeach; ?>
 								</ul>
 							<?php endif; ?>
-						</div>
+						</section>
 
-						<div class="dak-medical-history-note">
-							<span class="dak-field-label"><?php esc_html_e( 'Prescription', 'doctor-ak-portal' ); ?></span>
+						<section class="dak-visit-record-section">
+							<h4><?php esc_html_e( 'Prescription', 'doctor-ak-portal' ); ?></h4>
 							<?php if ( empty( $encounter['prescriptions'] ) ) : ?>
-								<p class="dak-medical-history-note-empty"><?php esc_html_e( 'No medicines prescribed for this visit.', 'doctor-ak-portal' ); ?></p>
+								<p class="dak-cell-sub"><?php esc_html_e( 'No medicines prescribed for this visit.', 'doctor-ak-portal' ); ?></p>
 							<?php else : ?>
-								<ul class="dak-medical-history-problem-list">
+								<ul class="dak-visit-record-list">
 									<?php foreach ( $encounter['prescriptions'] as $dak_prescription ) : ?>
-										<?php
-										$dak_prescription_meta = array_filter( array( $dak_prescription['dosage'], $dak_prescription['frequency'], $dak_prescription['duration'] ) );
-										?>
+										<?php $dak_prescription_meta = array_filter( array( $dak_prescription['dosage'], $dak_prescription['frequency'], $dak_prescription['duration'] ) ); ?>
 										<li>
-											<strong><?php echo esc_html( $dak_prescription['medicine_name'] ); ?></strong>
+											<span class="dak-cell-strong"><?php echo esc_html( $dak_prescription['medicine_name'] ); ?></span>
 											<?php if ( ! empty( $dak_prescription_meta ) ) : ?>
-												<span class="dak-medical-history-problem-notes"> — <?php echo esc_html( implode( ' · ', $dak_prescription_meta ) ); ?></span>
+												<span class="dak-visit-record-notes"><?php echo esc_html( implode( ' · ', $dak_prescription_meta ) ); ?></span>
 											<?php endif; ?>
 										</li>
 									<?php endforeach; ?>
 								</ul>
 							<?php endif; ?>
-						</div>
-
-						<div class="dak-medical-history-links">
-							<a class="dak-link" href="<?php echo esc_url( $encounter['prescription_pdf_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Download Prescription PDF', 'doctor-ak-portal' ); ?></a>
-							<a class="dak-link" href="<?php echo esc_url( $encounter['bill_pdf_url'] ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Download Bill PDF', 'doctor-ak-portal' ); ?></a>
-						</div>
+						</section>
 					</div>
-				</li>
+				</article>
 			<?php endforeach; ?>
-		</ul>
-		<p class="dak-empty-state dak-hidden" data-list-search-empty><?php esc_html_e( 'No visits match your search.', 'doctor-ak-portal' ); ?></p>
+		</div>
+		<p class="dak-empty-state dak-results-empty dak-hidden" data-list-search-empty><?php esc_html_e( 'No visits match your search.', 'doctor-ak-portal' ); ?></p>
 	<?php endif; ?>
 </section>
