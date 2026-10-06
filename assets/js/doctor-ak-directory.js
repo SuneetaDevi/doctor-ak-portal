@@ -1,24 +1,30 @@
 /**
- * Doctor AK Portal — Doctors directory search/filter/sort/pagination.
+ * Doctor AK Portal — Doctors directory (templates/directory/doctors-directory.php).
  *
- * Client-side only: the whole grid is already rendered server-side in one
- * page load, so filtering by name/specialization/location just shows/hides
- * cards, sorting re-orders the actual DOM nodes, and pagination further
- * hides everything outside the current page's slice of whatever currently
- * matches — no AJAX round trip needed for any of it. Country/City/Area
- * cascade from the full admin-managed Locations list
- * (window.dakDirectory.locations, see Locations::get_all()), not just
- * locations a listed doctor happens to have — consistent with every other
- * location picker in the plugin.
+ * Every doctor is already in the page. On each change this filters the
+ * full set (search, specialty, visit type, availability, gender, city),
+ * sorts the matches, and only then slices out the current page — so the
+ * count ("Showing 1–12 of 53 doctors"), the order and the pages always
+ * describe the same list. The initial render runs through the same path,
+ * so "Most experienced" is applied from the first paint.
+ *
+ * The state lives in the URL (history.replaceState: q, specialization,
+ * visit, availability, gender, city, sort, page), so Back from a doctor's
+ * profile returns to the same filtered page. `?q=` (or the older `?s=`),
+ * `?specialization=` and `?city=` links from the header, footer and home
+ * page land pre-filtered.
+ *
+ * Below 1024px the filters are a modal drawer (focus moved in and kept
+ * there, Escape / backdrop / close button return focus to "Filters").
+ * "Near me" asks for the location only after it is clicked, and a refusal
+ * just leaves the ordinary filters working.
  */
 ( function () {
 	'use strict';
 
 	var PAGE_SIZE = 12;
 
-	// Approximate city-centre coordinates for Pakistan's major cities — the
-	// "Near me" pill picks the nearest one of these that a listed doctor
-	// practises in (same list the home page's location detection uses).
+	// Approximate city centres, for "Near me" (same list the home page uses).
 	var PK_CITIES = [
 		{ name: 'Karachi', lat: 24.8607, lng: 67.0011 },
 		{ name: 'Lahore', lat: 31.5497, lng: 74.3436 },
@@ -52,534 +58,906 @@
 		{ name: 'Kohat', lat: 33.5900, lng: 71.4400 }
 	];
 
-	/**
-	 * Great-circle distance in km (haversine).
-	 */
-	function distanceKm( lat1, lng1, lat2, lng2 ) {
-		var toRad = Math.PI / 180;
-		var dLat = ( lat2 - lat1 ) * toRad;
-		var dLng = ( lng2 - lng1 ) * toRad;
-		var a = Math.sin( dLat / 2 ) * Math.sin( dLat / 2 )
-			+ Math.cos( lat1 * toRad ) * Math.cos( lat2 * toRad ) * Math.sin( dLng / 2 ) * Math.sin( dLng / 2 );
-
-		return 6371 * 2 * Math.atan2( Math.sqrt( a ), Math.sqrt( 1 - a ) );
+	if ( 'loading' === document.readyState ) {
+		document.addEventListener( 'DOMContentLoaded', init );
+	} else {
+		init();
 	}
 
-	document.addEventListener( 'DOMContentLoaded', function () {
-		var grid = document.getElementById( 'dak-directory-grid' );
-		var searchInput = document.getElementById( 'dak-directory-search-input' );
-		var sortSelect = document.getElementById( 'dak-directory-sort' );
-		var videoToggle = document.getElementById( 'dak-directory-video-toggle' );
-		var availabilityToggle = document.getElementById( 'dak-directory-availability-toggle' );
-		var maleToggle = document.getElementById( 'dak-directory-male-toggle' );
-		var femaleToggle = document.getElementById( 'dak-directory-female-toggle' );
-		var nearMeButton = document.getElementById( 'dak-directory-nearme-toggle' );
-		var nearMeStatus = document.getElementById( 'dak-directory-nearme-status' );
-		var resultsCount = document.getElementById( 'dak-directory-results-count' );
-		var resultsCountTemplate = resultsCount ? resultsCount.getAttribute( 'data-template' ) : '';
+	function init() {
+		var root = document.querySelector( '[data-dak-dir-doctors]' );
+		var list = root ? root.querySelector( '[data-dak-dir-list]' ) : null;
 
-		if ( ! grid || ! searchInput ) {
+		if ( ! list ) {
 			return;
 		}
 
-		var noResults = document.getElementById( 'dak-directory-no-results' );
-		var currentPage = 1;
+		var strings = {};
 
-		// A `?city=<slug>` link (footer/header deep links) matches directly
-		// against each card's own data-search-city — see applyFilters() below.
-		// The "Near me" pill (initNearMe()) overrides it once used.
-		var presetCity = window.URLSearchParams
-			? ( new URLSearchParams( window.location.search ).get( 'city' ) || '' ).toLowerCase()
-			: '';
-
-		// City resolved by the "Near me" pill from the visitor's location, '' when off.
-		var nearCity = '';
-
-		// No specialization dropdown on this page — the `?specialization=` deep
-		// links (home specialty tiles, header Doctors menu) still filter, via this.
-		var presetSpecialization = window.URLSearchParams
-			? ( new URLSearchParams( window.location.search ).get( 'specialization' ) || '' ).toLowerCase()
-			: '';
-
-		initNearMe();
-		initSpecialtiesToggle();
-		initTogglePill( videoToggle, applyFilters );
-		initTogglePill( availabilityToggle, applyFilters );
-		initTogglePill( maleToggle, applyFilters );
-		initTogglePill( femaleToggle, applyFilters );
-		initSort( grid, sortSelect, applyFilters );
-		initPagination( function ( page ) {
-			currentPage = page;
-			applyFilters( false );
-		} );
-
-		/**
-		 * Re-evaluates every filter (search, specialization, country/city/
-		 * area, clinic, the Video/Availability quick-pick pills) against
-		 * every card, then slices whatever still matches down to the
-		 * current page — one pass does both, since pagination has to know
-		 * the filtered count anyway to know how many pages there are.
-		 *
-		 * @param {boolean} [resetPage] False only when a page-nav click
-		 *   itself triggered this (so the page you just clicked to sticks);
-		 *   true (the default) for every real filter/sort change, which
-		 *   always jumps back to page 1 — staying on, say, page 4 of a
-		 *   search that now only has one page of results would just show
-		 *   nothing.
-		 */
-		function applyFilters( resetPage ) {
-			if ( false !== resetPage ) {
-				currentPage = 1;
-			}
-
-			// Queried live (not captured once) so this also reflects
-			// whatever order initSort() last re-arranged the cards into.
-			var cards = Array.prototype.slice.call( grid.querySelectorAll( '[data-doctor-card]' ) );
-
-			var query = searchInput.value.trim().toLowerCase();
-			var specialization = presetSpecialization;
-			var city = nearCity || presetCity;
-			var videoOnly = videoToggle ? videoToggle.classList.contains( 'is-active' ) : false;
-			var availableOnly = availabilityToggle ? availabilityToggle.classList.contains( 'is-active' ) : false;
-			// Male/Female Doctor chips: neither lit = everyone, one = that gender, both = both.
-			var genders = [];
-
-			if ( maleToggle && maleToggle.classList.contains( 'is-active' ) ) {
-				genders.push( 'male' );
-			}
-
-			if ( femaleToggle && femaleToggle.classList.contains( 'is-active' ) ) {
-				genders.push( 'female' );
-			}
-
-			var matching = cards.filter( function ( card ) {
-				var name = card.getAttribute( 'data-search-name' ) || '';
-				var specializations = card.getAttribute( 'data-search-specializations' ) || '';
-				var cities = card.getAttribute( 'data-search-city' ) || '';
-
-				var matchesQuery = '' === query || name.indexOf( query ) !== -1 || specializations.indexOf( query ) !== -1;
-				var matchesSpecialization = '' === specialization || specializations.indexOf( specialization ) !== -1;
-				var matchesCity = '' === city || cities.split( ',' ).indexOf( city ) !== -1;
-				var matchesVideo = ! videoOnly || '1' === card.getAttribute( 'data-search-video' );
-				var matchesGender = 0 === genders.length || genders.indexOf( card.getAttribute( 'data-search-gender' ) || '' ) !== -1;
-				var matchesAvailable = ! availableOnly || '1' === card.getAttribute( 'data-search-available' );
-
-				return matchesQuery && matchesSpecialization && matchesCity
-					&& matchesGender && matchesVideo && matchesAvailable;
-			} );
-
-			var totalPages = Math.max( 1, Math.ceil( matching.length / PAGE_SIZE ) );
-
-			if ( currentPage > totalPages ) {
-				currentPage = totalPages;
-			}
-
-			var start = ( currentPage - 1 ) * PAGE_SIZE;
-			var end = start + PAGE_SIZE;
-			var pageSlice = matching.slice( start, end );
-
-			cards.forEach( function ( card ) {
-				card.classList.toggle( 'dak-hidden', pageSlice.indexOf( card ) === -1 );
-			} );
-
-			if ( noResults ) {
-				noResults.classList.toggle( 'dak-hidden', matching.length > 0 );
-			}
-
-			if ( resultsCount && resultsCountTemplate ) {
-				resultsCount.textContent = resultsCountTemplate
-					.replace( '%1$d', matching.length )
-					.replace( '%2$d', cards.length );
-			}
-
-			renderPagination( currentPage, totalPages );
+		try {
+			strings = JSON.parse( root.getAttribute( 'data-strings' ) || '{}' );
+		} catch ( e ) {
+			strings = {};
 		}
 
-		searchInput.addEventListener( 'input', applyFilters );
+		var $ = function ( sel ) {
+			return root.querySelector( sel );
+		};
+		var $$ = function ( sel ) {
+			return Array.prototype.slice.call( root.querySelectorAll( sel ) );
+		};
 
-		// Speciality chips: one active at a time ("All" clears it). A
-		// `?specialization=` deep link lights the matching chip on load.
-		var specChips = document.querySelectorAll( '[data-spec-filter]' );
+		var items = $$( '[data-dak-dir-doctor]' );
+		var search = $( '#dak-dir-q' );
+		var clearSearch = $( '[data-dak-dir-clear-search]' );
+		var sortSelect = $( '#dak-dir-sort' );
+		var citySelect = $( '#dak-dir-city' );
+		var countEl = $( '[data-dak-dir-count]' );
+		var activeWrap = $( '[data-dak-dir-active]' );
+		var chipList = $( '[data-dak-dir-chips]' );
+		var empty = $( '[data-dak-dir-empty]' );
+		var pager = $( '[data-dak-dir-pagination]' );
+		var pageList = $( '[data-dak-dir-pages]' );
+		var filterCount = $( '[data-dak-dir-filter-count]' );
+		var showButton = $( '[data-dak-dir-show-results]' );
+		var page = 1;
+		var searchTimer = 0;
 
-		function syncSpecChips() {
-			specChips.forEach( function ( chip ) {
-				var isActive = chip.getAttribute( 'data-spec-filter' ) === presetSpecialization;
+		var fmt = function ( key, values ) {
+			var list = [].concat( values );
+			var next = 0;
 
-				chip.classList.toggle( 'is-active', isActive );
-				chip.setAttribute( 'aria-pressed', isActive ? 'true' : 'false' );
+			return ( strings[ key ] || '' ).replace( /%(?:(\d)\$)?s/g, function ( match, position ) {
+				var value = position ? list[ position - 1 ] : list[ next++ ];
+
+				return undefined === value ? '' : String( value );
+			} );
+		};
+
+		var number = function ( n ) {
+			return Number( n ).toLocaleString();
+		};
+
+		/* -------------------------------------------------------- State */
+
+		function radioValue( name ) {
+			var checked = root.querySelector( 'input[name="' + name + '"]:checked' );
+
+			return checked ? checked.value : '';
+		}
+
+		function checkedValues( name ) {
+			return $$( 'input[name="' + name + '"]:checked' ).map( function ( input ) {
+				return input.value;
 			} );
 		}
 
-		specChips.forEach( function ( chip ) {
-			chip.addEventListener( 'click', function () {
-				presetSpecialization = chip.getAttribute( 'data-spec-filter' );
-				syncSpecChips();
-				applyFilters();
-			} );
-		} );
+		function setRadio( name, value ) {
+			var target = root.querySelector( 'input[name="' + name + '"][value="' + cssEscape( value ) + '"]' ) || root.querySelector( 'input[name="' + name + '"][value=""]' );
 
-		syncSpecChips();
-
-		if ( presetSpecialization ) {
-			applyFilters();
+			if ( target ) {
+				target.checked = true;
+			}
 		}
-		applyPreselectedSearch( searchInput, applyFilters );
 
-		// Always run once on load, preset filters or not — unlike the old
-		// filter-only version, this also has to paginate the very first
-		// render (each applyPreselectedX() call above already re-runs it
-		// again on top of this when it actually finds something to preset,
-		// which is harmless — just one extra pass over the cards).
-		applyFilters();
+		function setChecks( name, values ) {
+			$$( 'input[name="' + name + '"]' ).forEach( function ( input ) {
+				input.checked = values.indexOf( input.value ) !== -1;
+			} );
+		}
 
-		/**
-		 * The "Near me" quick-filter pill: on click asks the browser for the
-		 * visitor's position, finds the nearest city (from PK_CITIES below) that
-		 * at least one listed doctor actually practises in, and narrows the list
-		 * to it; clicking again turns it off. Fails quietly with a short message
-		 * when permission is denied or nothing can be matched.
-		 */
-		function initNearMe() {
-			if ( ! nearMeButton ) {
+		function cssEscape( value ) {
+			return String( value ).replace( /["\\]/g, '\\$&' );
+		}
+
+		function state() {
+			return {
+				q: search ? search.value.trim() : '',
+				specialty: radioValue( 'specialty' ),
+				visit: checkedValues( 'visit' ),
+				availability: radioValue( 'availability' ),
+				gender: checkedValues( 'gender' ),
+				city: citySelect ? citySelect.value : '',
+				sort: sortSelect ? sortSelect.value : 'experience'
+			};
+		}
+
+		/** Reads ?q/?s, ?specialization (label or slug), ?visit, ?availability, ?gender, ?city, ?sort, ?page. */
+		function readUrl() {
+			if ( ! window.URLSearchParams ) {
 				return;
 			}
 
-			var labelEl = nearMeButton.querySelector( '[data-nearme-label]' );
-			var defaultLabel = labelEl ? labelEl.textContent : '';
+			var params = new URLSearchParams( window.location.search );
+			var q = params.get( 'q' ) || params.get( 's' ) || '';
 
-			nearMeButton.addEventListener( 'click', function () {
-				if ( nearCity ) {
-					setNearCity( '', '' );
+			if ( search && q ) {
+				search.value = q;
+			}
+
+			var spec = ( params.get( 'specialization' ) || '' ).toLowerCase().replace( /-/g, ' ' ).trim();
+
+			if ( spec ) {
+				// Labels are the keys; a slug like "general-physician" matches too.
+				var match = $$( 'input[name="specialty"]' ).filter( function ( input ) {
+					return input.value === spec || input.value.replace( /-/g, ' ' ) === spec;
+				} )[ 0 ];
+
+				if ( match ) {
+					match.checked = true;
+					revealOption( match );
+				}
+			}
+
+			setChecks( 'visit', ( params.get( 'visit' ) || '' ).split( ',' ) );
+			setRadio( 'availability', params.get( 'availability' ) || '' );
+			setChecks( 'gender', ( params.get( 'gender' ) || '' ).split( ',' ) );
+
+			if ( citySelect && params.get( 'city' ) ) {
+				var city = params.get( 'city' ).toLowerCase();
+
+				if ( citySelect.querySelector( 'option[value="' + cssEscape( city ) + '"]' ) ) {
+					citySelect.value = city;
+				}
+			}
+
+			if ( sortSelect && params.get( 'sort' ) && sortSelect.querySelector( 'option[value="' + cssEscape( params.get( 'sort' ) ) + '"]' ) ) {
+				sortSelect.value = params.get( 'sort' );
+			}
+
+			page = Math.max( 1, parseInt( params.get( 'page' ), 10 ) || 1 );
+		}
+
+		function writeUrl( s ) {
+			if ( ! window.history || ! window.history.replaceState || ! window.URLSearchParams ) {
+				return;
+			}
+
+			var params = new URLSearchParams( window.location.search );
+
+			[ 'q', 's', 'specialization', 'visit', 'availability', 'gender', 'city', 'sort', 'page' ].forEach( function ( key ) {
+				params.delete( key );
+			} );
+
+			if ( s.q ) {
+				params.set( 'q', s.q );
+			}
+			if ( s.specialty ) {
+				params.set( 'specialization', s.specialty );
+			}
+			if ( s.visit.length ) {
+				params.set( 'visit', s.visit.join( ',' ) );
+			}
+			if ( s.availability ) {
+				params.set( 'availability', s.availability );
+			}
+			if ( s.gender.length ) {
+				params.set( 'gender', s.gender.join( ',' ) );
+			}
+			if ( s.city ) {
+				params.set( 'city', s.city );
+			}
+			if ( s.sort && 'experience' !== s.sort ) {
+				params.set( 'sort', s.sort );
+			}
+			if ( page > 1 ) {
+				params.set( 'page', page );
+			}
+
+			var query = params.toString();
+
+			window.history.replaceState( window.history.state, '', window.location.pathname + ( query ? '?' + query : '' ) + window.location.hash );
+		}
+
+		/* -------------------------------------------------------- Filter, sort, page */
+
+		function matches( item, s ) {
+			var q = s.q.toLowerCase().replace( /^(dr|doctor)\.?\s+/, '' );
+
+			if ( q && ( item.getAttribute( 'data-search' ) || '' ).indexOf( q ) === -1 ) {
+				return false;
+			}
+
+			if ( s.specialty && ( item.getAttribute( 'data-specialties' ) || '' ).split( '|' ).indexOf( s.specialty ) === -1 ) {
+				return false;
+			}
+
+			if ( s.visit.length ) {
+				var visits = ( item.getAttribute( 'data-visit' ) || '' ).split( ',' );
+
+				if ( ! s.visit.some( function ( v ) {
+					return visits.indexOf( v ) !== -1;
+				} ) ) {
+					return false;
+				}
+			}
+
+			var availability = item.getAttribute( 'data-availability' ) || '';
+
+			if ( 'today' === s.availability && 'today' !== availability ) {
+				return false;
+			}
+
+			if ( 'week' === s.availability && '' === availability ) {
+				return false;
+			}
+
+			if ( s.gender.length && s.gender.indexOf( item.getAttribute( 'data-gender' ) || '' ) === -1 ) {
+				return false;
+			}
+
+			if ( s.city && ( item.getAttribute( 'data-cities' ) || '' ).split( ',' ).indexOf( s.city ) === -1 ) {
+				return false;
+			}
+
+			return true;
+		}
+
+		function experience( item ) {
+			var raw = item.getAttribute( 'data-experience' );
+
+			return '' === raw || null === raw ? null : parseInt( raw, 10 );
+		}
+
+		function byName( a, b ) {
+			return ( a.getAttribute( 'data-name' ) || '' ).localeCompare( b.getAttribute( 'data-name' ) || '' )
+				|| ( parseInt( a.getAttribute( 'data-id' ), 10 ) - parseInt( b.getAttribute( 'data-id' ), 10 ) );
+		}
+
+		function byExperience( a, b ) {
+			var ea = experience( a );
+			var eb = experience( b );
+
+			if ( ea !== eb ) {
+				if ( null === ea ) {
+					return 1;
+				}
+				if ( null === eb ) {
+					return -1;
+				}
+				return eb - ea;
+			}
+
+			return byName( a, b );
+		}
+
+		function compare( mode ) {
+			if ( 'name-asc' === mode ) {
+				return byName;
+			}
+
+			if ( 'name-desc' === mode ) {
+				return function ( a, b ) {
+					return byName( b, a );
+				};
+			}
+
+			if ( 'available' === mode ) {
+				return function ( a, b ) {
+					var na = a.getAttribute( 'data-next-at' ) || '';
+					var nb = b.getAttribute( 'data-next-at' ) || '';
+
+					if ( na !== nb ) {
+						if ( '' === na ) {
+							return 1;
+						}
+						if ( '' === nb ) {
+							return -1;
+						}
+						return na < nb ? -1 : 1;
+					}
+
+					return byExperience( a, b );
+				};
+			}
+
+			return byExperience;
+		}
+
+		function apply( options ) {
+			options = options || {};
+
+			var s = state();
+
+			if ( options.resetPage ) {
+				page = 1;
+			}
+
+			var matching = items.filter( function ( item ) {
+				return matches( item, s );
+			} ).sort( compare( s.sort ) );
+
+			var pages = Math.max( 1, Math.ceil( matching.length / PAGE_SIZE ) );
+
+			page = Math.min( Math.max( 1, page ), pages );
+
+			var start = ( page - 1 ) * PAGE_SIZE;
+			var shown = matching.slice( start, start + PAGE_SIZE );
+
+			// Matching doctors in order first, then the rest (hidden).
+			var fragment = document.createDocumentFragment();
+
+			matching.concat( items.filter( function ( item ) {
+				return matching.indexOf( item ) === -1;
+			} ) ).forEach( function ( item ) {
+				item.hidden = shown.indexOf( item ) === -1;
+				fragment.appendChild( item );
+			} );
+			list.appendChild( fragment );
+
+			updateCount( matching.length, start, shown.length );
+			renderPager( pages );
+			renderChips( s );
+
+			if ( empty ) {
+				empty.hidden = matching.length > 0;
+			}
+
+			if ( clearSearch ) {
+				clearSearch.hidden = '' === s.q;
+			}
+
+			if ( showButton ) {
+				showButton.textContent = fmt( 'showButton', number( matching.length ) );
+			}
+
+			writeUrl( s );
+		}
+
+		function updateCount( total, start, shownCount ) {
+			if ( ! countEl ) {
+				return;
+			}
+
+			var text;
+
+			if ( 0 === total ) {
+				text = strings.none;
+			} else if ( 1 === total ) {
+				text = strings.showingOne;
+			} else if ( total <= PAGE_SIZE ) {
+				text = fmt( 'showingAll', number( total ) );
+			} else {
+				text = fmt( 'showing', [ number( start + 1 ), number( start + shownCount ), number( total ) ] );
+			}
+
+			if ( countEl.textContent !== text ) {
+				countEl.textContent = text;
+			}
+		}
+
+		function renderPager( pages ) {
+			if ( ! pager || ! pageList ) {
+				return;
+			}
+
+			pager.hidden = pages <= 1;
+			pageList.textContent = '';
+
+			if ( pages <= 1 ) {
+				return;
+			}
+
+			pageNumbers( page, pages ).forEach( function ( entry ) {
+				var li = document.createElement( 'li' );
+
+				if ( '…' === entry ) {
+					li.className = 'dak-dir-page-gap';
+					li.textContent = '…';
+					li.setAttribute( 'aria-hidden', 'true' );
+				} else {
+					var button = document.createElement( 'button' );
+
+					button.type = 'button';
+					button.className = 'dak-dir-page';
+					button.textContent = String( entry );
+					button.setAttribute( 'aria-label', fmt( 'page', entry ) );
+					button.setAttribute( 'data-dak-dir-goto', entry );
+
+					if ( entry === page ) {
+						button.setAttribute( 'aria-current', 'page' );
+					}
+
+					li.appendChild( button );
+				}
+
+				pageList.appendChild( li );
+			} );
+
+			pager.querySelector( '[data-dak-dir-page="prev"]' ).disabled = page <= 1;
+			pager.querySelector( '[data-dak-dir-page="next"]' ).disabled = page >= pages;
+		}
+
+		function pageNumbers( current, total ) {
+			var out = [];
+
+			for ( var i = 1; i <= total; i++ ) {
+				if ( 1 === i || total === i || Math.abs( i - current ) <= 1 ) {
+					out.push( i );
+				} else if ( '…' !== out[ out.length - 1 ] ) {
+					out.push( '…' );
+				}
+			}
+
+			return out;
+		}
+
+		function goToPage( target ) {
+			page = target;
+			apply();
+
+			var top = root.querySelector( '.dak-dir-results' );
+
+			if ( top && top.getBoundingClientRect().top < 0 ) {
+				top.scrollIntoView( { block: 'start' } );
+			}
+		}
+
+		/* -------------------------------------------------------- Active filters */
+
+		function labelFor( input ) {
+			return input.getAttribute( 'data-label' ) || input.value;
+		}
+
+		function renderChips( s ) {
+			var chips = [];
+
+			if ( s.q ) {
+				chips.push( { label: fmt( 'searchChip', s.q ), clear: function () {
+					search.value = '';
+				} } );
+			}
+
+			var spec = root.querySelector( 'input[name="specialty"]:checked' );
+
+			if ( spec && spec.value ) {
+				chips.push( { label: labelFor( spec ), clear: function () {
+					setRadio( 'specialty', '' );
+				} } );
+			}
+
+			[ 'visit', 'gender' ].forEach( function ( name ) {
+				$$( 'input[name="' + name + '"]:checked' ).forEach( function ( input ) {
+					chips.push( { label: labelFor( input ), clear: function () {
+						input.checked = false;
+					} } );
+				} );
+			} );
+
+			var avail = root.querySelector( 'input[name="availability"]:checked' );
+
+			if ( avail && avail.value ) {
+				chips.push( { label: labelFor( avail ), clear: function () {
+					setRadio( 'availability', '' );
+				} } );
+			}
+
+			if ( citySelect && citySelect.value ) {
+				var option = citySelect.options[ citySelect.selectedIndex ];
+
+				chips.push( { label: option.getAttribute( 'data-label' ) || option.textContent, clear: function () {
+					citySelect.value = '';
+					setNearMe( false );
+				} } );
+			}
+
+			if ( chipList ) {
+				chipList.textContent = '';
+
+				chips.forEach( function ( chip ) {
+					var li = document.createElement( 'li' );
+					var button = document.createElement( 'button' );
+
+					button.type = 'button';
+					button.className = 'dak-dir-chip';
+					button.setAttribute( 'aria-label', fmt( 'remove', chip.label ) );
+					button.innerHTML = '<span></span><svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l8 8M14 6l-8 8"/></svg>';
+					button.firstChild.textContent = chip.label;
+					button.addEventListener( 'click', function () {
+						chip.clear();
+						apply( { resetPage: true } );
+
+						// Keep focus somewhere sensible after the chip disappears.
+						var next = chipList.querySelector( '.dak-dir-chip' ) || search;
+
+						if ( next ) {
+							next.focus();
+						}
+					} );
+
+					li.appendChild( button );
+					chipList.appendChild( li );
+				} );
+			}
+
+			if ( activeWrap ) {
+				activeWrap.hidden = 0 === chips.length;
+			}
+
+			// The "Filters" button's badge counts filters, not the search.
+			var filters = chips.length - ( s.q ? 1 : 0 );
+
+			if ( filterCount ) {
+				filterCount.hidden = 0 === filters;
+				filterCount.textContent = filters > 0 ? String( filters ) : '';
+			}
+
+			$$( '[data-dak-dir-clear-all]' ).forEach( function ( button ) {
+				if ( ! button.closest( '[data-dak-dir-empty]' ) && ! button.closest( '[data-dak-dir-active]' ) ) {
+					button.hidden = 0 === chips.length;
+				}
+			} );
+		}
+
+		function clearAll() {
+			if ( search ) {
+				search.value = '';
+			}
+
+			setRadio( 'specialty', '' );
+			setChecks( 'visit', [] );
+			setRadio( 'availability', '' );
+			setChecks( 'gender', [] );
+
+			if ( citySelect ) {
+				citySelect.value = '';
+			}
+
+			setNearMe( false );
+			apply( { resetPage: true } );
+		}
+
+		/* -------------------------------------------------------- Specialty list */
+
+		var specFind = $( '[data-dak-dir-spec-find]' );
+		var specMore = $( '[data-dak-dir-spec-more]' );
+		var specExpanded = false;
+
+		function revealOption( input ) {
+			var option = input.closest( '[data-dak-dir-extra]' );
+
+			if ( option && specMore ) {
+				setSpecExpanded( true );
+			}
+		}
+
+		function setSpecExpanded( expanded ) {
+			specExpanded = expanded;
+
+			if ( specMore ) {
+				specMore.setAttribute( 'aria-expanded', expanded ? 'true' : 'false' );
+				specMore.textContent = expanded ? strings.less : fmt( 'more', specMore.getAttribute( 'data-count' ) );
+			}
+
+			filterSpecOptions();
+		}
+
+		function filterSpecOptions() {
+			var term = specFind ? specFind.value.trim().toLowerCase() : '';
+
+			$$( '[data-dak-dir-spec-option]' ).forEach( function ( option ) {
+				var hit = '' === term || ( option.getAttribute( 'data-name' ) || '' ).indexOf( term ) !== -1;
+				var extra = option.hasAttribute( 'data-dak-dir-extra' );
+				var checked = option.querySelector( 'input' ).checked;
+
+				// While searching, every match shows; otherwise extras only when expanded (or chosen).
+				option.hidden = term ? ! hit : ( extra && ! specExpanded && ! checked );
+			} );
+
+			if ( specMore ) {
+				specMore.hidden = '' !== term;
+			}
+		}
+
+		if ( specFind ) {
+			specFind.addEventListener( 'input', filterSpecOptions );
+		}
+
+		if ( specMore ) {
+			specMore.addEventListener( 'click', function () {
+				setSpecExpanded( ! specExpanded );
+			} );
+		}
+
+		/* -------------------------------------------------------- Near me */
+
+		var nearMe = $( '[data-dak-dir-nearme]' );
+		var nearLabel = $( '[data-dak-dir-nearme-label]' );
+		var nearStatus = $( '[data-dak-dir-nearme-status]' );
+
+		function nearStatusText( text ) {
+			if ( nearStatus ) {
+				nearStatus.textContent = text || '';
+				nearStatus.hidden = ! text;
+			}
+		}
+
+		function setNearMe( on, cityLabel ) {
+			if ( ! nearMe ) {
+				return;
+			}
+
+			nearMe.setAttribute( 'aria-pressed', on ? 'true' : 'false' );
+			nearMe.classList.toggle( 'is-active', !! on );
+
+			if ( nearLabel ) {
+				nearLabel.textContent = on ? fmt( 'nearCity', cityLabel ) : strings.nearMe;
+			}
+
+			if ( ! on ) {
+				nearStatusText( '' );
+			}
+		}
+
+		function distanceKm( lat1, lng1, lat2, lng2 ) {
+			var r = Math.PI / 180;
+			var dLat = ( lat2 - lat1 ) * r;
+			var dLng = ( lng2 - lng1 ) * r;
+			var a = Math.sin( dLat / 2 ) * Math.sin( dLat / 2 ) + Math.cos( lat1 * r ) * Math.cos( lat2 * r ) * Math.sin( dLng / 2 ) * Math.sin( dLng / 2 );
+
+			return 6371 * 2 * Math.atan2( Math.sqrt( a ), Math.sqrt( 1 - a ) );
+		}
+
+		if ( nearMe && citySelect ) {
+			nearMe.addEventListener( 'click', function () {
+				if ( 'true' === nearMe.getAttribute( 'aria-pressed' ) ) {
+					citySelect.value = '';
+					setNearMe( false );
+					apply( { resetPage: true } );
 					return;
 				}
 
 				if ( ! navigator.geolocation ) {
-					showStatus( nearMeButton.getAttribute( 'data-msg-unsupported' ) );
+					nearStatusText( strings.unsupported );
 					return;
 				}
 
-				showStatus( '' );
-				nearMeButton.classList.add( 'is-detecting' );
+				nearStatusText( strings.locating );
+				nearMe.disabled = true;
 
-				navigator.geolocation.getCurrentPosition(
-					function ( position ) {
-						nearMeButton.classList.remove( 'is-detecting' );
+				navigator.geolocation.getCurrentPosition( function ( position ) {
+					nearMe.disabled = false;
 
-						var nearest = findNearestCity( position.coords.latitude, position.coords.longitude );
+					var best = null;
 
-						if ( ! nearest ) {
-							showStatus( nearMeButton.getAttribute( 'data-msg-none' ) );
+					Array.prototype.forEach.call( citySelect.options, function ( option ) {
+						if ( ! option.value ) {
 							return;
 						}
 
-						setNearCity( nearest.slug, nearest.label );
-					},
-					function () {
-						nearMeButton.classList.remove( 'is-detecting' );
-						showStatus( nearMeButton.getAttribute( 'data-msg-denied' ) );
-					},
-					{ enableHighAccuracy: false, timeout: 8000, maximumAge: 600000 }
-				);
-			} );
+						var label = ( option.getAttribute( 'data-label' ) || '' ).toLowerCase();
+						var known = PK_CITIES.filter( function ( c ) {
+							return c.name.toLowerCase() === label;
+						} )[ 0 ];
 
-			function setNearCity( slug, label ) {
-				nearCity = slug;
-				presetCity = '';
-				nearMeButton.classList.toggle( 'is-active', '' !== slug );
-				nearMeButton.setAttribute( 'aria-pressed', '' !== slug ? 'true' : 'false' );
+						if ( known ) {
+							var d = distanceKm( position.coords.latitude, position.coords.longitude, known.lat, known.lng );
 
-				if ( labelEl ) {
-					labelEl.textContent = '' !== slug ? nearMeButton.getAttribute( 'data-label-near' ) + ' ' + label : defaultLabel;
-				}
+							if ( ! best || d < best.d ) {
+								best = { option: option, d: d };
+							}
+						}
+					} );
 
-				showStatus( '' );
-				applyFilters();
-			}
-
-			function showStatus( message ) {
-				if ( ! nearMeStatus ) {
-					return;
-				}
-
-				nearMeStatus.textContent = message || '';
-				nearMeStatus.classList.toggle( 'dak-hidden', ! message );
-			}
-		}
-
-		/**
-		 * Nearest city — among those a listed doctor practises in AND that
-		 * PK_CITIES has coordinates for — to the given point.
-		 *
-		 * @param {number} lat Visitor latitude.
-		 * @param {number} lng Visitor longitude.
-		 * @return {{slug: string, label: string}|null}
-		 */
-		function findNearestCity( lat, lng ) {
-			var labels = {};
-
-			( ( window.dakDirectory && window.dakDirectory.locations ) || [] ).forEach( function ( country ) {
-				( country.cities || [] ).forEach( function ( city ) {
-					labels[ city.slug ] = city.name;
-				} );
-			} );
-
-			var inUse = {};
-
-			grid.querySelectorAll( '[data-doctor-card]' ).forEach( function ( card ) {
-				( card.getAttribute( 'data-search-city' ) || '' ).split( ',' ).forEach( function ( slug ) {
-					if ( slug ) {
-						inUse[ slug ] = true;
+					if ( ! best ) {
+						nearStatusText( strings.noCity );
+						return;
 					}
-				} );
+
+					citySelect.value = best.option.value;
+					setNearMe( true, best.option.getAttribute( 'data-label' ) );
+					nearStatusText( '' );
+					apply( { resetPage: true } );
+				}, function () {
+					nearMe.disabled = false;
+					setNearMe( false );
+					nearStatusText( strings.denied );
+				}, { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 } );
 			} );
-
-			var candidates = Object.keys( inUse ).map( function ( slug ) {
-				var label = labels[ slug ] || slug;
-				var known = PK_CITIES.filter( function ( city ) {
-					return city.name.toLowerCase() === label.toLowerCase();
-				} )[ 0 ];
-
-				return known ? { slug: slug, label: label, distance: distanceKm( lat, lng, known.lat, known.lng ) } : null;
-			} ).filter( Boolean ).sort( function ( a, b ) {
-				return a.distance - b.distance;
-			} );
-
-			return candidates.length ? candidates[ 0 ] : null;
 		}
 
-		/**
-		 * Renders the "1 2 3 … 10" page-number row plus the prev/next
-		 * buttons' disabled state (templates/directory/doctors-directory.php)
-		 * — hides the whole nav when everything fits on one page.
-		 *
-		 * @param {number} page  Current 1-based page.
-		 * @param {number} total Total number of pages.
-		 */
-		function renderPagination( page, total ) {
-			var nav = document.getElementById( 'dak-directory-pagination' );
-			var numbers = document.getElementById( 'dak-directory-page-numbers' );
-			var prevBtn = document.getElementById( 'dak-directory-page-prev' );
-			var nextBtn = document.getElementById( 'dak-directory-page-next' );
+		/* -------------------------------------------------------- Drawer (small screens) */
 
-			if ( ! nav || ! numbers || ! prevBtn || ! nextBtn ) {
+		var drawer = $( '[data-dak-dir-filters]' );
+		var openButton = $( '[data-dak-dir-open-filters]' );
+		var scrim = $( '.dak-dir-scrim' );
+		var drawerQuery = window.matchMedia( '(max-width: 1023px)' );
+		var drawerOpen = false;
+
+		function openDrawer() {
+			if ( ! drawer || ! drawerQuery.matches ) {
 				return;
 			}
 
-			nav.classList.toggle( 'dak-hidden', total <= 1 );
+			drawerOpen = true;
+			drawer.classList.add( 'is-open' );
+			drawer.setAttribute( 'role', 'dialog' );
+			drawer.setAttribute( 'aria-modal', 'true' );
+			drawer.setAttribute( 'aria-label', drawer.getAttribute( 'data-label' ) || 'Filters' );
+			openButton.setAttribute( 'aria-expanded', 'true' );
+			document.documentElement.classList.add( 'dak-dir-locked' );
 
-			if ( total <= 1 ) {
+			if ( scrim ) {
+				scrim.hidden = false;
+			}
+
+			var first = drawer.querySelector( '[data-dak-dir-close-filters]' );
+
+			if ( first ) {
+				first.focus();
+			}
+		}
+
+		function closeDrawer( restore ) {
+			if ( ! drawerOpen ) {
 				return;
 			}
 
-			numbers.innerHTML = '';
+			drawerOpen = false;
+			drawer.classList.remove( 'is-open' );
+			drawer.removeAttribute( 'role' );
+			drawer.removeAttribute( 'aria-modal' );
+			drawer.removeAttribute( 'aria-label' );
+			openButton.setAttribute( 'aria-expanded', 'false' );
+			document.documentElement.classList.remove( 'dak-dir-locked' );
 
-			buildPageList( page, total ).forEach( function ( entry ) {
-				if ( '…' === entry ) {
-					var ellipsis = document.createElement( 'span' );
-					ellipsis.className = 'dak-directory-page-ellipsis';
-					ellipsis.textContent = '…';
-					numbers.appendChild( ellipsis );
+			if ( scrim ) {
+				scrim.hidden = true;
+			}
 
-					return;
-				}
+			if ( restore && openButton ) {
+				openButton.focus();
+			}
+		}
 
-				var button = document.createElement( 'button' );
-				button.type = 'button';
-				button.className = 'dak-directory-page-number' + ( entry === page ? ' is-active' : '' );
-				button.textContent = String( entry );
+		if ( openButton ) {
+			openButton.addEventListener( 'click', openDrawer );
+		}
 
-				if ( entry === page ) {
-					button.setAttribute( 'aria-current', 'page' );
-				}
-
-				button.addEventListener( 'click', function () {
-					currentPage = entry;
-					applyFilters( false );
-					nav.scrollIntoView( { behavior: 'smooth', block: 'nearest' } );
-				} );
-
-				numbers.appendChild( button );
+		$$( '[data-dak-dir-close-filters]' ).forEach( function ( el ) {
+			el.addEventListener( 'click', function () {
+				closeDrawer( true );
 			} );
-
-			prevBtn.disabled = page <= 1;
-			nextBtn.disabled = page >= total;
-		}
-
-		/**
-		 * First/last page, the current page and one neighbour either side,
-		 * with a "…" filling any gap — e.g. for page 1 of 10: 1 2 … 10; for
-		 * page 5 of 10: 1 … 4 5 6 … 10.
-		 *
-		 * @param {number} current
-		 * @param {number} total
-		 * @return {Array<number|string>}
-		 */
-		function buildPageList( current, total ) {
-			var pages = [];
-
-			for ( var i = 1; i <= total; i++ ) {
-				if ( 1 === i || total === i || ( i >= current - 1 && i <= current + 1 ) ) {
-					pages.push( i );
-				} else if ( '…' !== pages[ pages.length - 1 ] ) {
-					pages.push( '…' );
-				}
-			}
-
-			return pages;
-		}
-
-		/**
-		 * Wires the prev/next pagination buttons — the page-number buttons
-		 * themselves are (re)built fresh each render inside renderPagination()
-		 * above, since how many there are changes with the filtered count.
-		 *
-		 * @param {Function} goToPage Called with the 1-based page to show.
-		 */
-		function initPagination( goToPage ) {
-			var prevBtn = document.getElementById( 'dak-directory-page-prev' );
-			var nextBtn = document.getElementById( 'dak-directory-page-next' );
-
-			if ( prevBtn ) {
-				prevBtn.addEventListener( 'click', function () {
-					if ( ! prevBtn.disabled ) {
-						goToPage( currentPage - 1 );
-					}
-				} );
-			}
-
-			if ( nextBtn ) {
-				nextBtn.addEventListener( 'click', function () {
-					if ( ! nextBtn.disabled ) {
-						goToPage( currentPage + 1 );
-					}
-				} );
-			}
-		}
-	} );
-
-	/**
-	 * Lands on this page with a search term already typed — the site
-	 * header's Doctors menu search submits here as `?q=<term>`. `q`, not
-	 * WordPress's reserved `s` (which can turn a page request into a search
-	 * of the page's own content); `?s=` is still read for older links.
-	 *
-	 * @param {HTMLInputElement} input        The search text input.
-	 * @param {Function}         applyFilters Re-runs the grid filtering.
-	 */
-	function applyPreselectedSearch( input, applyFilters ) {
-		if ( ! input || ! window.URLSearchParams ) {
-			return;
-		}
-
-		var params = new URLSearchParams( window.location.search );
-		var requested = params.get( 'q' ) || params.get( 's' );
-
-		if ( ! requested ) {
-			return;
-		}
-
-		input.value = requested;
-		applyFilters();
-	}
-
-	/**
-	 * A simple on/off quick-filter pill (Video Consultation, Availability —
-	 * templates/directory/doctors-directory.php): toggles its own active
-	 * state and re-runs the filters, which read that state directly off the
-	 * button's class (see applyFilters()'s videoOnly/availableOnly).
-	 *
-	 * @param {HTMLElement} button       The pill <button>, or null.
-	 * @param {Function}     applyFilters Re-runs the grid filtering.
-	 */
-	function initTogglePill( button, applyFilters ) {
-		if ( ! button ) {
-			return;
-		}
-
-		button.addEventListener( 'click', function () {
-			var isActive = ! button.classList.contains( 'is-active' );
-
-			button.classList.toggle( 'is-active', isActive );
-			button.setAttribute( 'aria-pressed', isActive ? 'true' : 'false' );
-			applyFilters();
 		} );
-	}
 
-	/**
-	 * Sidebar specialities list: everything past the first few sits behind a
-	 * "+N more" toggle (purely a display collapse — every item, shown or
-	 * not, is still a real element the filter click-handler above already
-	 * bound to, so hiding one here never affects filtering itself).
-	 *
-	 * @return {void}
-	 */
-	function initSpecialtiesToggle() {
-		var toggle = document.getElementById( 'dak-directory-specialties-toggle' );
+		var onBreakpoint = function () {
+			if ( ! drawerQuery.matches ) {
+				closeDrawer( false );
+			}
+		};
 
-		if ( ! toggle ) {
-			return;
+		if ( drawerQuery.addEventListener ) {
+			drawerQuery.addEventListener( 'change', onBreakpoint );
+		} else if ( drawerQuery.addListener ) {
+			drawerQuery.addListener( onBreakpoint );
 		}
 
-		var extraItems = document.querySelectorAll( '.dak-directory-specialty-extra' );
+		document.addEventListener( 'keydown', function ( event ) {
+			if ( ! drawerOpen ) {
+				return;
+			}
 
-		toggle.addEventListener( 'click', function () {
-			var expand = ! toggle.classList.contains( 'is-expanded' );
+			if ( 'Escape' === event.key ) {
+				event.preventDefault();
+				closeDrawer( true );
+				return;
+			}
 
-			extraItems.forEach( function ( item ) {
-				item.classList.toggle( 'dak-hidden', ! expand );
-			} );
+			if ( 'Tab' !== event.key ) {
+				return;
+			}
 
-			toggle.classList.toggle( 'is-expanded', expand );
-			toggle.setAttribute( 'aria-expanded', expand ? 'true' : 'false' );
+			var focusables = Array.prototype.filter.call(
+				drawer.querySelectorAll( 'button, input, select, a[href]' ),
+				function ( el ) {
+					return ! el.disabled && el.offsetParent !== null;
+				}
+			);
 
-			var label = expand ? toggle.getAttribute( 'data-label-less' ) : toggle.getAttribute( 'data-label-more' );
+			if ( ! focusables.length ) {
+				return;
+			}
 
-			if ( label ) {
-				toggle.childNodes[ 0 ].nodeValue = label + ' ';
+			var first = focusables[ 0 ];
+			var last = focusables[ focusables.length - 1 ];
+
+			if ( ! drawer.contains( document.activeElement ) ) {
+				event.preventDefault();
+				first.focus();
+			} else if ( event.shiftKey && document.activeElement === first ) {
+				event.preventDefault();
+				last.focus();
+			} else if ( ! event.shiftKey && document.activeElement === last ) {
+				event.preventDefault();
+				first.focus();
 			}
 		} );
-	}
 
-	/**
-	 * Wires the Sort <select> (templates/directory/doctors-directory.php) —
-	 * physically re-orders the card elements in the DOM (rather than just
-	 * re-filtering) so grid/list view, pagination and print/Ctrl+F all see
-	 * the same order the visitor chose.
-	 *
-	 * @param {HTMLElement}       grid         The doctors grid.
-	 * @param {HTMLSelectElement} sortSelect   The Sort <select>, or null.
-	 * @param {Function}          applyFilters Re-runs filtering/pagination after re-ordering.
-	 */
-	function initSort( grid, sortSelect, applyFilters ) {
-		if ( ! sortSelect ) {
-			return;
+		/* -------------------------------------------------------- Wiring */
+
+		root.addEventListener( 'change', function ( event ) {
+			var target = event.target;
+
+			if ( target === sortSelect ) {
+				apply( { resetPage: true } );
+				return;
+			}
+
+			if ( target === citySelect ) {
+				setNearMe( false );
+			}
+
+			if ( target.name && [ 'specialty', 'visit', 'availability', 'gender', 'city' ].indexOf( target.name ) !== -1 ) {
+				apply( { resetPage: true } );
+			}
+		} );
+
+		if ( search ) {
+			search.addEventListener( 'input', function () {
+				window.clearTimeout( searchTimer );
+				searchTimer = window.setTimeout( function () {
+					apply( { resetPage: true } );
+				}, 150 );
+			} );
+
+			search.form.addEventListener( 'submit', function ( event ) {
+				event.preventDefault();
+				window.clearTimeout( searchTimer );
+				apply( { resetPage: true } );
+			} );
 		}
 
-		sortSelect.addEventListener( 'change', function () {
-			var cards = Array.prototype.slice.call( grid.querySelectorAll( '[data-doctor-card]' ) );
-			var mode = sortSelect.value;
-
-			cards.sort( function ( a, b ) {
-				if ( 'name-asc' === mode ) {
-					return ( a.getAttribute( 'data-sort-name' ) || '' ).localeCompare( b.getAttribute( 'data-sort-name' ) || '' );
-				}
-
-				if ( 'name-desc' === mode ) {
-					return ( b.getAttribute( 'data-sort-name' ) || '' ).localeCompare( a.getAttribute( 'data-sort-name' ) || '' );
-				}
-
-				// 'experience-desc', and the default.
-				return ( parseInt( b.getAttribute( 'data-sort-experience' ), 10 ) || 0 ) - ( parseInt( a.getAttribute( 'data-sort-experience' ), 10 ) || 0 );
+		if ( clearSearch ) {
+			clearSearch.addEventListener( 'click', function () {
+				search.value = '';
+				apply( { resetPage: true } );
+				search.focus();
 			} );
+		}
 
-			// appendChild() on a node already in the document moves it —
-			// re-appending every card in the sorted order re-arranges the
-			// whole grid without touching any card's own markup.
-			cards.forEach( function ( card ) {
-				grid.appendChild( card );
+		$$( '[data-dak-dir-clear-all]' ).forEach( function ( button ) {
+			button.addEventListener( 'click', function () {
+				clearAll();
+
+				if ( search ) {
+					search.focus();
+				}
 			} );
-
-			applyFilters();
 		} );
+
+		if ( pager ) {
+			pager.addEventListener( 'click', function ( event ) {
+				var step = event.target.closest( '[data-dak-dir-page]' );
+				var pageButton = event.target.closest( '[data-dak-dir-goto]' );
+
+				if ( step && ! step.disabled ) {
+					goToPage( page + ( 'next' === step.getAttribute( 'data-dak-dir-page' ) ? 1 : -1 ) );
+				} else if ( pageButton ) {
+					goToPage( parseInt( pageButton.getAttribute( 'data-dak-dir-goto' ), 10 ) );
+				}
+			} );
+		}
+
+		// "+N locations" disclosures on the cards.
+		list.addEventListener( 'click', function ( event ) {
+			var toggle = event.target.closest( '[data-dak-dir-disclosure]' );
+
+			if ( ! toggle ) {
+				return;
+			}
+
+			var panel = document.getElementById( toggle.getAttribute( 'aria-controls' ) );
+			var open = 'true' !== toggle.getAttribute( 'aria-expanded' );
+
+			toggle.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
+
+			if ( panel ) {
+				panel.hidden = ! open;
+			}
+		} );
+
+		readUrl();
+		filterSpecOptions();
+		apply();
 	}
-} )();
+}() );

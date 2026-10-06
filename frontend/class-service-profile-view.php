@@ -172,7 +172,7 @@ class Service_Profile_View {
 				$image_url = $row['image_url'];
 			}
 
-			$prices[] = $row['effective_price'];
+			$prices = array_merge( $prices, Services::offering_prices( $row ) );
 
 			// A clinic id only gets added to the booking link below when this
 			// doctor offers the service at exactly one clinic — with more
@@ -232,7 +232,8 @@ class Service_Profile_View {
 				'doctor_avatar_url'  => self::doctor_avatar_url( $doctor->ID ),
 				'doctor_profile_url' => add_query_arg( 'doctor_id', $doctor->ID, Page_Finder::url_for_shortcode( 'doctor_profile_view' ) ),
 				'price'              => $row['effective_price'],
-				'price_label'        => $row['price_label'],
+				// Never "Free" for an unpriced 0 (see Services::public_price()).
+				'price_label'        => Services::public_price( Services::offering_prices( $row ), __( 'Fee not set', 'doctor-ak-portal' ) )['label'],
 				'category'           => $row['category'],
 				'category_label'     => $row['category_label'],
 				'location_labels'    => $location_labels,
@@ -260,8 +261,11 @@ class Service_Profile_View {
 			'name'          => $name,
 			'description'   => $description,
 			'image_url'     => $image_url,
-			'price_label'   => Services::price_range_label( $prices ),
+			'price_label'   => Services::public_price( $prices, __( 'Price not listed', 'doctor-ak-portal' ) )['label'],
 			'doctor_offers' => $doctor_offers,
+			// Distinct doctors — a doctor with two rows of this service is
+			// still one doctor (the directory card shows the same figure).
+			'doctor_count'  => count( array_unique( wp_list_pluck( $doctor_offers, 'doctor_id' ) ) ),
 		);
 	}
 
@@ -318,7 +322,7 @@ class Service_Profile_View {
 						'meta'               => implode( ', ', array_filter( array( $dak_clinic_location['address'], $dak_clinic_location['area_label'], $dak_clinic_location['city_label'] ) ) ),
 						'clinic_location_id' => (int) $dak_clinic_location['id'],
 						'price'              => $dak_clinic_location['price'],
-						'price_label'        => $dak_clinic_location['price_label'],
+						'price_label'        => Services::single_price_label( $dak_clinic_location['price'] ),
 					);
 				}
 			} else {
@@ -335,7 +339,7 @@ class Service_Profile_View {
 						'meta'               => implode( ', ', array_filter( array( $dak_doctor_clinic['address'], $dak_doctor_clinic['area_label'], $dak_doctor_clinic['city_label'] ) ) ),
 						'clinic_location_id' => $dak_clinic_location_id,
 						'price'              => $row['effective_price'],
-						'price_label'        => $row['price_label'],
+						'price_label'        => Services::single_price_label( $row['effective_price'] ),
 					);
 				}
 			}
@@ -347,7 +351,7 @@ class Service_Profile_View {
 					'meta'               => '',
 					'clinic_location_id' => 0,
 					'price'              => $row['effective_price'],
-					'price_label'        => $row['price_label'],
+					'price_label'        => Services::single_price_label( $row['effective_price'] ),
 				);
 			}
 
@@ -384,6 +388,17 @@ class Service_Profile_View {
 					$dak_booking_query_args['clinic_id'] = $dak_clinic_id;
 				}
 
+				// The same doctor listed twice at this clinic for the same
+				// price (two identical rows of the service) shows once; a
+				// different price is a different offering and stays listed.
+				$dak_offer_key = $doctor->ID . '|' . (string) (float) $dak_entry['price'];
+
+				if ( isset( $groups[ $dak_entry['group_key'] ]['seen'][ $dak_offer_key ] ) ) {
+					continue;
+				}
+
+				$groups[ $dak_entry['group_key'] ]['seen'][ $dak_offer_key ] = true;
+
 				$groups[ $dak_entry['group_key'] ]['doctors'][] = array(
 					'doctor_id'          => $doctor->ID,
 					'doctor_name'        => $doctor_name,
@@ -399,6 +414,8 @@ class Service_Profile_View {
 		}
 
 		foreach ( $groups as &$dak_group ) {
+			unset( $dak_group['seen'] );
+
 			usort(
 				$dak_group['doctors'],
 				function ( $a, $b ) {

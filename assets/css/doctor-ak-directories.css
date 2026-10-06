@@ -1,0 +1,1273 @@
+/**
+ * Doctor AK Portal — public Doctors and Services directories
+ * (templates/directory/doctors-directory.php, services-directory.php and
+ * their -card templates). One shared look: compact intro, prominent search,
+ * the public design system's colours (deep green, white surfaces, quiet
+ * borders), the same interface font and buttons on both pages.
+ *
+ * Declarations are !important where the active theme / Elementor kit styles
+ * bare elements (uppercase pill buttons, green 16px links, serif headings);
+ * the resets are wrapped in :where() so every class rule here still wins.
+ */
+
+.dak-dir {
+	--dir-primary: #16634b;
+	--dir-primary-hover: #104d3a;
+	--dir-tint: #eaf4ef;
+	--dir-tint-strong: #d5eadf;
+	--dir-on-primary: #ffffff;
+	--dir-text: #182b3a;
+	--dir-muted: #526273;
+	--dir-border: #dfe5eb;
+	--dir-border-strong: #c3ccd5;
+	--dir-surface: #ffffff;
+	--dir-subtle: #f6f8fa;
+	--dir-canvas: #f6f8fa;
+	--dir-focus: #245fa8;
+	--dir-positive: #146c43;
+	--dir-positive-tint: #e7f5ee;
+	--dir-shadow: 0 1px 2px rgba( 16, 24, 40, 0.05 );
+	--dir-shadow-hover: 0 4px 14px rgba( 16, 24, 40, 0.08 );
+	--dir-radius: 12px;
+	--dir-radius-sm: 8px;
+	--dir-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+html[data-theme='dark'] .dak-dir {
+	color-scheme: dark;
+	--dir-primary: #3aa679;
+	--dir-primary-hover: #7fd3ab;
+	--dir-tint: #12261d;
+	--dir-tint-strong: #1a3628;
+	--dir-on-primary: #06140e;
+	--dir-text: #e6ebef;
+	--dir-muted: #a3afba;
+	--dir-border: #2a3139;
+	--dir-border-strong: #3a434d;
+	--dir-surface: #13171b;
+	--dir-subtle: #1a1f25;
+	--dir-canvas: #0b0d10;
+	--dir-focus: #8db8f2;
+	--dir-positive: #7fd3ab;
+	--dir-positive-tint: #10241a;
+	--dir-shadow: 0 1px 2px rgba( 0, 0, 0, 0.4 );
+	--dir-shadow-hover: 0 6px 18px rgba( 0, 0, 0, 0.45 );
+}
+
+/* ---------------------------------------------------------------- Resets */
+
+:where( .dak-dir ),
+:where( .dak-dir ) * {
+	box-sizing: border-box !important;
+	text-transform: none !important;
+	letter-spacing: normal !important;
+	word-spacing: normal !important;
+}
+
+.dak-dir {
+	margin: 0 auto !important;
+	padding: 24px 24px 64px !important;
+	font-family: var( --dir-font ) !important;
+	font-size: 15px !important;
+	line-height: 1.5 !important;
+	color: var( --dir-text ) !important;
+}
+
+:where( .dak-dir ) :is( h1, h2, h3, p, ul, ol, li, dl, dt, dd, fieldset, legend, form ) {
+	margin: 0 !important;
+	padding: 0 !important;
+	font-family: inherit !important;
+	color: inherit !important;
+	border: 0 !important;
+	min-width: 0 !important;
+}
+
+:where( .dak-dir ) :is( ul, ol ) {
+	list-style: none !important;
+}
+
+:where( .dak-dir ) li::before,
+:where( .dak-dir ) li::marker {
+	content: none !important;
+}
+
+:where( .dak-dir ) a {
+	font-family: inherit !important;
+	font-size: inherit !important;
+	font-weight: inherit !important;
+	line-height: inherit !important;
+	color: inherit !important;
+	text-decoration: none !important;
+	box-shadow: none !important;
+}
+
+:where( .dak-dir ) button {
+	margin: 0 !important;
+	padding: 0 !important;
+	font-family: inherit !important;
+	font-size: inherit !important;
+	font-weight: inherit !important;
+	line-height: 1.3 !important;
+	color: inherit !important;
+	background: transparent !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	box-shadow: none !important;
+	text-align: inherit !important;
+	white-space: normal !important;
+	min-height: 0 !important;
+	cursor: pointer !important;
+	-webkit-appearance: none !important;
+	appearance: none !important;
+}
+
+:where( .dak-dir ) svg {
+	display: block !important;
+	flex: 0 0 auto !important;
+	width: 18px !important;
+	height: 18px !important;
+	fill: none !important;
+	stroke: currentColor !important;
+}
+
+/* `hidden` always wins over the display rules below (this is what makes a
+   filtered-out card actually disappear). */
+.dak-dir [hidden][hidden] {
+	display: none !important;
+}
+
+.dak-dir .dak-dir-sr {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	margin: -1px !important;
+	padding: 0 !important;
+	overflow: hidden !important;
+	clip: rect( 0, 0, 0, 0 ) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
+}
+
+.dak-dir a:focus-visible,
+.dak-dir button:focus-visible,
+.dak-dir input:focus-visible,
+.dak-dir select:focus-visible {
+	outline: 2px solid var( --dir-focus ) !important;
+	outline-offset: 2px !important;
+}
+
+.dak-dir-muted {
+	color: var( --dir-muted ) !important;
+	font-weight: 400 !important;
+}
+
+/* ---------------------------------------------------------------- Intro + search */
+
+.dak-dir-intro {
+	display: grid !important;
+	grid-template-columns: minmax( 0, 1fr ) minmax( 280px, 460px ) !important;
+	align-items: end !important;
+	gap: 16px 32px !important;
+	margin-bottom: 24px !important;
+	padding-bottom: 20px !important;
+	border-bottom: 1px solid var( --dir-border ) !important;
+}
+
+.dak-dir .dak-dir-title {
+	font-size: 28px !important;
+	font-weight: 700 !important;
+	line-height: 1.2 !important;
+	color: var( --dir-text ) !important;
+}
+
+.dak-dir .dak-dir-lead {
+	margin-top: 6px !important;
+	font-size: 15px !important;
+	color: var( --dir-muted ) !important;
+	max-width: 60ch !important;
+}
+
+.dak-dir-search {
+	position: relative !important;
+	display: flex !important;
+	align-items: center !important;
+}
+
+.dak-dir-search-icon {
+	position: absolute !important;
+	left: 14px !important;
+	color: var( --dir-muted ) !important;
+	pointer-events: none !important;
+}
+
+.dak-dir .dak-dir-search input[type='search'] {
+	width: 100% !important;
+	height: 48px !important;
+	margin: 0 !important;
+	padding: 0 46px 0 42px !important;
+	border: 1px solid var( --dir-border-strong ) !important;
+	border-radius: 10px !important;
+	background: var( --dir-surface ) !important;
+	color: var( --dir-text ) !important;
+	font: inherit !important;
+	font-size: 15px !important;
+	box-shadow: var( --dir-shadow ) !important;
+	-webkit-appearance: none !important;
+	appearance: none !important;
+}
+
+.dak-dir input[type='search']::-webkit-search-cancel-button {
+	-webkit-appearance: none !important;
+	display: none !important;
+}
+
+.dak-dir input::placeholder {
+	color: var( --dir-muted ) !important;
+	opacity: 1 !important;
+}
+
+.dak-dir .dak-dir-search input[type='search']:focus {
+	border-color: var( --dir-primary ) !important;
+	box-shadow: 0 0 0 3px var( --dir-tint-strong ) !important;
+	outline: none !important;
+}
+
+.dak-dir .dak-dir-search-clear {
+	position: absolute !important;
+	right: 6px !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 36px !important;
+	height: 36px !important;
+	border-radius: 8px !important;
+	color: var( --dir-muted ) !important;
+}
+
+.dak-dir .dak-dir-search-clear:hover {
+	background: var( --dir-tint ) !important;
+	color: var( --dir-primary ) !important;
+}
+
+/* ---------------------------------------------------------------- Buttons + links */
+
+.dak-dir .dak-dir-btn {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 6px !important;
+	min-height: 44px !important;
+	padding: 0 16px !important;
+	border: 1px solid transparent !important;
+	border-radius: 10px !important;
+	font-size: 15px !important;
+	font-weight: 600 !important;
+	line-height: 1.2 !important;
+	text-align: center !important;
+	white-space: nowrap !important;
+	transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease !important;
+}
+
+.dak-dir .dak-dir-btn-primary {
+	background: var( --dir-primary ) !important;
+	border-color: var( --dir-primary ) !important;
+	color: var( --dir-on-primary ) !important;
+}
+
+.dak-dir .dak-dir-btn-primary:hover {
+	background: var( --dir-primary-hover ) !important;
+	border-color: var( --dir-primary-hover ) !important;
+	color: var( --dir-on-primary ) !important;
+}
+
+html[data-theme='dark'] .dak-dir .dak-dir-btn-primary:hover {
+	background: #5cc193 !important;
+	border-color: #5cc193 !important;
+}
+
+.dak-dir .dak-dir-btn-secondary {
+	background: var( --dir-surface ) !important;
+	border-color: var( --dir-border-strong ) !important;
+	color: var( --dir-text ) !important;
+}
+
+.dak-dir .dak-dir-btn-secondary:hover {
+	border-color: var( --dir-primary ) !important;
+	background: var( --dir-tint ) !important;
+	color: var( --dir-primary ) !important;
+}
+
+.dak-dir .dak-dir-btn-block {
+	width: 100% !important;
+}
+
+.dak-dir .dak-dir-link-button,
+.dak-dir .dak-dir-text-link {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 4px !important;
+	min-height: 32px !important;
+	font-size: 14px !important;
+	font-weight: 600 !important;
+	color: var( --dir-primary ) !important;
+	text-decoration: underline !important;
+	text-decoration-color: transparent !important;
+	text-underline-offset: 3px !important;
+}
+
+.dak-dir .dak-dir-link-button:hover,
+.dak-dir .dak-dir-text-link:hover {
+	text-decoration-color: currentColor !important;
+}
+
+.dak-dir .dak-dir-icon-button {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 44px !important;
+	height: 44px !important;
+	border-radius: 10px !important;
+	color: var( --dir-text ) !important;
+}
+
+.dak-dir .dak-dir-icon-button:hover {
+	background: var( --dir-tint ) !important;
+	color: var( --dir-primary ) !important;
+}
+
+.dak-dir-option-count {
+	margin-left: auto !important;
+	padding-left: 8px !important;
+	font-size: 13px !important;
+	font-weight: 500 !important;
+	color: var( --dir-muted ) !important;
+	font-variant-numeric: tabular-nums !important;
+}
+
+/* ---------------------------------------------------------------- Doctors layout */
+
+.dak-dir-layout {
+	display: grid !important;
+	grid-template-columns: 264px minmax( 0, 1fr ) !important;
+	gap: 28px !important;
+	align-items: start !important;
+}
+
+.dak-dir-filters {
+	position: sticky !important;
+	top: calc( var( --dak-site-header-offset, 0px ) + 16px ) !important;
+	max-height: calc( 100vh - var( --dak-site-header-offset, 0px ) - 32px ) !important;
+	overflow-y: auto !important;
+	background: var( --dir-surface ) !important;
+	border: 1px solid var( --dir-border ) !important;
+	border-radius: var( --dir-radius ) !important;
+	box-shadow: var( --dir-shadow ) !important;
+}
+
+.dak-dir-filters-head {
+	display: flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	padding: 14px 16px 10px !important;
+	border-bottom: 1px solid var( --dir-border ) !important;
+}
+
+.dak-dir .dak-dir-filters-title {
+	flex: 1 1 auto !important;
+	font-size: 16px !important;
+	font-weight: 700 !important;
+	line-height: 1.3 !important;
+}
+
+.dak-dir .dak-dir-filters .dak-dir-drawer-only {
+	display: none !important;
+}
+
+.dak-dir-filters-body {
+	padding: 4px 16px 12px !important;
+}
+
+.dak-dir .dak-dir-group {
+	padding: 14px 0 !important;
+	border-bottom: 1px solid var( --dir-border ) !important;
+}
+
+.dak-dir .dak-dir-group:last-child {
+	border-bottom: 0 !important;
+}
+
+.dak-dir .dak-dir-group-title {
+	display: block !important;
+	margin-bottom: 8px !important;
+	font-size: 13px !important;
+	font-weight: 700 !important;
+	color: var( --dir-text ) !important;
+}
+
+.dak-dir .dak-dir-group-hint {
+	margin: -4px 0 8px !important;
+	font-size: 12.5px !important;
+	color: var( --dir-muted ) !important;
+}
+
+.dak-dir-options {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 2px !important;
+}
+
+.dak-dir .dak-dir-option {
+	display: flex !important;
+	align-items: center !important;
+	gap: 10px !important;
+	min-height: 36px !important;
+	margin: 0 !important;
+	padding: 4px 8px !important;
+	border-radius: var( --dir-radius-sm ) !important;
+	font-size: 14px !important;
+	font-weight: 400 !important;
+	color: var( --dir-text ) !important;
+	cursor: pointer !important;
+}
+
+.dak-dir .dak-dir-option:hover {
+	background: var( --dir-subtle ) !important;
+}
+
+.dak-dir .dak-dir-option input {
+	flex: 0 0 auto !important;
+	width: 18px !important;
+	height: 18px !important;
+	margin: 0 !important;
+	accent-color: var( --dir-primary ) !important;
+	cursor: pointer !important;
+}
+
+.dak-dir .dak-dir-option:has( input:checked ) {
+	background: var( --dir-tint ) !important;
+	color: var( --dir-primary ) !important;
+	font-weight: 600 !important;
+}
+
+.dak-dir-option-label {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+	overflow-wrap: anywhere !important;
+}
+
+.dak-dir .dak-dir-mini-search,
+.dak-dir .dak-dir-select {
+	width: 100% !important;
+	height: 40px !important;
+	margin: 0 0 8px !important;
+	padding: 0 12px !important;
+	border: 1px solid var( --dir-border-strong ) !important;
+	border-radius: var( --dir-radius-sm ) !important;
+	background: var( --dir-surface ) !important;
+	color: var( --dir-text ) !important;
+	font: inherit !important;
+	font-size: 14px !important;
+	box-shadow: none !important;
+}
+
+.dak-dir .dak-dir-sort .dak-dir-select {
+	width: auto !important;
+	margin: 0 !important;
+}
+
+.dak-dir .dak-dir-nearme {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	min-height: 36px !important;
+	padding: 0 12px !important;
+	border: 1px solid var( --dir-border-strong ) !important;
+	border-radius: 999px !important;
+	font-size: 14px !important;
+	font-weight: 600 !important;
+	color: var( --dir-text ) !important;
+}
+
+.dak-dir .dak-dir-nearme:hover,
+.dak-dir .dak-dir-nearme[aria-pressed='true'] {
+	border-color: var( --dir-primary ) !important;
+	background: var( --dir-tint ) !important;
+	color: var( --dir-primary ) !important;
+}
+
+.dak-dir .dak-dir-nearme[disabled] {
+	opacity: 0.6 !important;
+	cursor: progress !important;
+}
+
+.dak-dir .dak-dir-nearme + .dak-dir-group-hint {
+	margin: 8px 0 0 !important;
+}
+
+/* ---------------------------------------------------------------- Toolbar, chips, count */
+
+.dak-dir-toolbar {
+	display: flex !important;
+	align-items: center !important;
+	flex-wrap: wrap !important;
+	gap: 12px !important;
+	margin-bottom: 12px !important;
+}
+
+.dak-dir .dak-dir-count {
+	flex: 1 1 auto !important;
+	font-size: 14px !important;
+	font-weight: 600 !important;
+	color: var( --dir-text ) !important;
+}
+
+.dak-dir-sort {
+	display: flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	font-size: 14px !important;
+	color: var( --dir-muted ) !important;
+}
+
+.dak-dir .dak-dir-sort label {
+	margin: 0 !important;
+	font-size: 14px !important;
+	font-weight: 400 !important;
+	color: var( --dir-muted ) !important;
+}
+
+.dak-dir .dak-dir-filters-open {
+	display: none !important;
+}
+
+.dak-dir-badge {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	min-width: 20px !important;
+	height: 20px !important;
+	padding: 0 6px !important;
+	border-radius: 999px !important;
+	background: var( --dir-primary ) !important;
+	color: var( --dir-on-primary ) !important;
+	font-size: 12px !important;
+	font-weight: 700 !important;
+}
+
+.dak-dir-active {
+	display: flex !important;
+	align-items: center !important;
+	flex-wrap: wrap !important;
+	gap: 8px 12px !important;
+	margin-bottom: 14px !important;
+}
+
+.dak-dir-chips {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 8px !important;
+}
+
+.dak-dir .dak-dir-chip {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	min-height: 32px !important;
+	padding: 0 10px 0 12px !important;
+	border: 1px solid var( --dir-primary ) !important;
+	border-radius: 999px !important;
+	background: var( --dir-tint ) !important;
+	color: var( --dir-primary ) !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+}
+
+.dak-dir .dak-dir-chip svg {
+	width: 14px !important;
+	height: 14px !important;
+}
+
+.dak-dir .dak-dir-chip:hover {
+	background: var( --dir-tint-strong ) !important;
+}
+
+/* ---------------------------------------------------------------- Doctor cards */
+
+.dak-dir-doctor-list {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 12px !important;
+}
+
+.dak-dir-doctor-card {
+	display: grid !important;
+	grid-template-columns: 88px minmax( 0, 1fr ) 236px !important;
+	gap: 20px !important;
+	padding: 18px !important;
+	background: var( --dir-surface ) !important;
+	border: 1px solid var( --dir-border ) !important;
+	border-radius: var( --dir-radius ) !important;
+	box-shadow: var( --dir-shadow ) !important;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.dak-dir-doctor-card:hover {
+	border-color: var( --dir-border-strong ) !important;
+	box-shadow: var( --dir-shadow-hover ) !important;
+}
+
+.dak-dir .dak-dir-avatar {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 88px !important;
+	height: 88px !important;
+	border-radius: 50% !important;
+	overflow: hidden !important;
+	background: var( --dir-tint ) !important;
+	color: var( --dir-primary ) !important;
+}
+
+.dak-dir .dak-dir-avatar img {
+	width: 100% !important;
+	height: 100% !important;
+	max-width: none !important;
+	object-fit: cover !important;
+	border-radius: 0 !important;
+}
+
+.dak-dir-avatar-initials {
+	font-size: 26px !important;
+	font-weight: 700 !important;
+}
+
+.dak-dir-doctor-main {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 6px !important;
+	min-width: 0 !important;
+}
+
+.dak-dir .dak-dir-doctor-name {
+	font-size: 18px !important;
+	font-weight: 700 !important;
+	line-height: 1.3 !important;
+	color: var( --dir-text ) !important;
+	overflow-wrap: anywhere !important;
+}
+
+.dak-dir .dak-dir-doctor-name a:hover {
+	color: var( --dir-primary ) !important;
+	text-decoration: underline !important;
+	text-underline-offset: 3px !important;
+}
+
+.dak-dir .dak-dir-doctor-specialty {
+	font-size: 15px !important;
+	font-weight: 600 !important;
+	color: var( --dir-primary ) !important;
+}
+
+.dak-dir-facts {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 4px !important;
+	margin-top: 2px !important;
+}
+
+.dak-dir .dak-dir-facts li {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 8px !important;
+	font-size: 14px !important;
+	color: var( --dir-text ) !important;
+}
+
+.dak-dir .dak-dir-facts svg {
+	width: 16px !important;
+	height: 16px !important;
+	margin-top: 2px !important;
+	color: var( --dir-muted ) !important;
+}
+
+.dak-dir-location-name {
+	font-weight: 500 !important;
+}
+
+.dak-dir .dak-dir-disclosure {
+	min-height: 28px !important;
+	margin-left: 24px !important;
+}
+
+.dak-dir .dak-dir-disclosure svg {
+	width: 14px !important;
+	height: 14px !important;
+	transition: transform 0.15s ease !important;
+}
+
+.dak-dir .dak-dir-disclosure[aria-expanded='true'] svg {
+	transform: rotate( 180deg ) !important;
+}
+
+.dak-dir-location-list {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 6px !important;
+	margin: 4px 0 4px 24px !important;
+	padding-left: 12px !important;
+	border-left: 2px solid var( --dir-border ) !important;
+}
+
+.dak-dir .dak-dir-location-list li {
+	display: flex !important;
+	flex-direction: column !important;
+	font-size: 14px !important;
+}
+
+.dak-dir .dak-dir-location-list .dak-dir-muted {
+	font-size: 13px !important;
+}
+
+.dak-dir-tags {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 6px !important;
+	margin-top: 4px !important;
+}
+
+.dak-dir-tag {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 5px !important;
+	min-height: 26px !important;
+	padding: 0 9px !important;
+	border-radius: 999px !important;
+	background: var( --dir-subtle ) !important;
+	border: 1px solid var( --dir-border ) !important;
+	font-size: 12.5px !important;
+	font-weight: 500 !important;
+	color: var( --dir-muted ) !important;
+}
+
+.dak-dir .dak-dir-tag svg {
+	width: 14px !important;
+	height: 14px !important;
+}
+
+.dak-dir .dak-dir-tag.is-positive {
+	background: var( --dir-positive-tint ) !important;
+	border-color: transparent !important;
+	color: var( --dir-positive ) !important;
+	font-weight: 600 !important;
+}
+
+.dak-dir-doctor-side {
+	display: flex !important;
+	flex-direction: column !important;
+	justify-content: space-between !important;
+	gap: 14px !important;
+	padding-left: 20px !important;
+	border-left: 1px solid var( --dir-border ) !important;
+}
+
+.dak-dir-fees {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 8px !important;
+}
+
+.dak-dir .dak-dir-fees > div {
+	display: flex !important;
+	flex-direction: column !important;
+}
+
+.dak-dir .dak-dir-fees dt {
+	font-size: 12.5px !important;
+	font-weight: 500 !important;
+	color: var( --dir-muted ) !important;
+}
+
+.dak-dir .dak-dir-fees dd {
+	font-size: 16px !important;
+	font-weight: 700 !important;
+	color: var( --dir-text ) !important;
+	font-variant-numeric: tabular-nums !important;
+}
+
+.dak-dir .dak-dir-fees dd a {
+	font-size: 14px !important;
+	color: var( --dir-primary ) !important;
+	text-decoration: underline !important;
+	text-underline-offset: 3px !important;
+}
+
+.dak-dir-actions {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: stretch !important;
+	gap: 8px !important;
+}
+
+.dak-dir .dak-dir-actions .dak-dir-btn {
+	width: 100% !important;
+	white-space: normal !important;
+}
+
+.dak-dir .dak-dir-actions .dak-dir-text-link {
+	justify-content: center !important;
+	min-height: 36px !important;
+}
+
+/* ---------------------------------------------------------------- Empty + pagination */
+
+.dak-dir-empty {
+	padding: 40px 20px !important;
+	text-align: center !important;
+	background: var( --dir-surface ) !important;
+	border: 1px dashed var( --dir-border-strong ) !important;
+	border-radius: var( --dir-radius ) !important;
+}
+
+.dak-dir .dak-dir-empty-title {
+	font-size: 17px !important;
+	font-weight: 700 !important;
+	color: var( --dir-text ) !important;
+}
+
+.dak-dir .dak-dir-empty-text {
+	margin: 4px 0 16px !important;
+	font-size: 14px !important;
+	color: var( --dir-muted ) !important;
+}
+
+.dak-dir-pagination {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	flex-wrap: wrap !important;
+	gap: 8px !important;
+	margin-top: 24px !important;
+}
+
+.dak-dir-pages {
+	display: flex !important;
+	align-items: center !important;
+	gap: 4px !important;
+}
+
+.dak-dir .dak-dir-page,
+.dak-dir .dak-dir-page-step {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 4px !important;
+	min-width: 44px !important;
+	min-height: 44px !important;
+	padding: 0 10px !important;
+	border: 1px solid var( --dir-border ) !important;
+	border-radius: 10px !important;
+	background: var( --dir-surface ) !important;
+	font-size: 14px !important;
+	font-weight: 600 !important;
+	color: var( --dir-text ) !important;
+}
+
+.dak-dir .dak-dir-page:hover,
+.dak-dir .dak-dir-page-step:hover:not( [disabled] ) {
+	border-color: var( --dir-primary ) !important;
+	color: var( --dir-primary ) !important;
+}
+
+.dak-dir .dak-dir-page[aria-current='page'] {
+	background: var( --dir-primary ) !important;
+	border-color: var( --dir-primary ) !important;
+	color: var( --dir-on-primary ) !important;
+}
+
+.dak-dir .dak-dir-page-step[disabled] {
+	opacity: 0.45 !important;
+	cursor: default !important;
+}
+
+.dak-dir-page-gap {
+	padding: 0 4px !important;
+	color: var( --dir-muted ) !important;
+}
+
+/* ---------------------------------------------------------------- Services */
+
+.dak-dir-categories {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 8px !important;
+	margin-bottom: 16px !important;
+}
+
+.dak-dir .dak-dir-category {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 2px !important;
+	min-height: 40px !important;
+	padding: 0 14px !important;
+	border: 1px solid var( --dir-border-strong ) !important;
+	border-radius: 999px !important;
+	background: var( --dir-surface ) !important;
+	font-size: 14px !important;
+	font-weight: 600 !important;
+	color: var( --dir-text ) !important;
+	white-space: nowrap !important;
+}
+
+.dak-dir .dak-dir-category:hover {
+	border-color: var( --dir-primary ) !important;
+	color: var( --dir-primary ) !important;
+}
+
+.dak-dir .dak-dir-category[aria-pressed='true'] {
+	background: var( --dir-primary ) !important;
+	border-color: var( --dir-primary ) !important;
+	color: var( --dir-on-primary ) !important;
+}
+
+.dak-dir .dak-dir-category[aria-pressed='true'] .dak-dir-option-count {
+	color: inherit !important;
+	opacity: 0.85 !important;
+}
+
+.dak-dir-service-grid {
+	display: grid !important;
+	grid-template-columns: repeat( 3, minmax( 0, 1fr ) ) !important;
+	gap: 16px !important;
+}
+
+.dak-dir-service {
+	display: flex !important;
+}
+
+.dak-dir-service-card {
+	position: relative !important;
+	display: flex !important;
+	flex-direction: column !important;
+	width: 100% !important;
+	background: var( --dir-surface ) !important;
+	border: 1px solid var( --dir-border ) !important;
+	border-radius: var( --dir-radius ) !important;
+	box-shadow: var( --dir-shadow ) !important;
+	overflow: hidden !important;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.dak-dir-service-card:hover,
+.dak-dir-service-card:focus-within {
+	border-color: var( --dir-border-strong ) !important;
+	box-shadow: var( --dir-shadow-hover ) !important;
+}
+
+/* A modest, fixed-ratio image area; the whole illustration stays visible. */
+.dak-dir-service-media {
+	position: relative !important;
+	overflow: hidden !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	aspect-ratio: 5 / 2 !important;
+	background: var( --dir-subtle ) !important;
+	border-bottom: 1px solid var( --dir-border ) !important;
+	color: var( --dir-muted ) !important;
+}
+
+.dak-dir .dak-dir-service-media img {
+	position: absolute !important;
+	inset: 0 !important;
+	width: 100% !important;
+	height: 100% !important;
+	max-width: none !important;
+	object-fit: contain !important;
+	border-radius: 0 !important;
+}
+
+.dak-dir .dak-dir-service-media.is-empty svg {
+	width: 32px !important;
+	height: 32px !important;
+	opacity: 0.6 !important;
+}
+
+.dak-dir-service-body {
+	display: flex !important;
+	flex-direction: column !important;
+	flex: 1 1 auto !important;
+	gap: 6px !important;
+	padding: 16px !important;
+}
+
+.dak-dir .dak-dir-service-category {
+	font-size: 12.5px !important;
+	font-weight: 600 !important;
+	color: var( --dir-primary ) !important;
+}
+
+.dak-dir .dak-dir-service-title {
+	font-size: 17px !important;
+	font-weight: 700 !important;
+	line-height: 1.3 !important;
+	color: var( --dir-text ) !important;
+	overflow-wrap: anywhere !important;
+}
+
+/* The title link covers the card, so the whole card is clickable. */
+.dak-dir .dak-dir-service-title a::after {
+	content: '' !important;
+	position: absolute !important;
+	inset: 0 !important;
+	z-index: 1 !important;
+}
+
+.dak-dir .dak-dir-service-title a:focus-visible {
+	outline: none !important;
+}
+
+.dak-dir .dak-dir-service-title a:focus-visible::after {
+	outline: 2px solid var( --dir-focus ) !important;
+	outline-offset: -2px !important;
+	border-radius: var( --dir-radius ) !important;
+}
+
+.dak-dir-service-card:hover .dak-dir-service-title {
+	color: var( --dir-primary ) !important;
+}
+
+.dak-dir .dak-dir-service-excerpt {
+	font-size: 14px !important;
+	line-height: 1.5 !important;
+	color: var( --dir-muted ) !important;
+	display: -webkit-box !important;
+	-webkit-line-clamp: 3 !important;
+	-webkit-box-orient: vertical !important;
+	overflow: hidden !important;
+}
+
+.dak-dir-service-meta {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 8px 24px !important;
+	margin-top: auto !important;
+	padding-top: 10px !important;
+}
+
+.dak-dir .dak-dir-service-meta > div {
+	display: flex !important;
+	flex-direction: column !important;
+}
+
+.dak-dir .dak-dir-service-meta dt {
+	font-size: 12.5px !important;
+	color: var( --dir-muted ) !important;
+}
+
+.dak-dir .dak-dir-service-meta dd {
+	font-size: 15px !important;
+	font-weight: 700 !important;
+	color: var( --dir-text ) !important;
+	font-variant-numeric: tabular-nums !important;
+}
+
+.dak-dir .dak-dir-service-meta dd.is-unset {
+	font-weight: 600 !important;
+	color: var( --dir-primary ) !important;
+}
+
+.dak-dir .dak-dir-service-action {
+	margin-top: 12px !important;
+	width: 100% !important;
+}
+
+.dak-dir-service-card:hover .dak-dir-service-action {
+	border-color: var( --dir-primary ) !important;
+	background: var( --dir-tint ) !important;
+	color: var( --dir-primary ) !important;
+}
+
+.dak-dir-more {
+	display: flex !important;
+	justify-content: center !important;
+	margin-top: 24px !important;
+}
+
+/* ---------------------------------------------------------------- Responsive */
+
+@media ( max-width: 1180px ) {
+	.dak-dir-doctor-card {
+		grid-template-columns: 80px minmax( 0, 1fr ) 220px !important;
+		gap: 16px !important;
+	}
+
+	.dak-dir .dak-dir-avatar {
+		width: 80px !important;
+		height: 80px !important;
+	}
+}
+
+@media ( max-width: 1099px ) {
+	.dak-dir-service-grid {
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+	}
+}
+
+/* Filters become a modal drawer. */
+@media ( max-width: 1023px ) {
+	.dak-dir-intro {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+		align-items: start !important;
+	}
+
+	.dak-dir-layout {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+	}
+
+	.dak-dir .dak-dir-filters-open {
+		display: inline-flex !important;
+	}
+
+	.dak-dir-filters {
+		display: none !important;
+	}
+
+	.dak-dir-filters.is-open {
+		position: fixed !important;
+		top: 0 !important;
+		right: 0 !important;
+		bottom: 0 !important;
+		z-index: 100010 !important;
+		display: flex !important;
+		flex-direction: column !important;
+		width: min( 400px, 100% ) !important;
+		max-height: none !important;
+		border-radius: 0 !important;
+		border-width: 0 0 0 1px !important;
+		box-shadow: 0 16px 40px rgba( 16, 24, 40, 0.2 ) !important;
+		overflow: hidden !important;
+	}
+
+	.dak-dir .dak-dir-filters.is-open .dak-dir-drawer-only {
+		display: flex !important;
+	}
+
+	.dak-dir-filters.is-open .dak-dir-filters-head {
+		min-height: 60px !important;
+		padding: 8px 8px 8px 16px !important;
+	}
+
+	.dak-dir-filters.is-open .dak-dir-filters-body {
+		flex: 1 1 auto !important;
+		overflow-y: auto !important;
+		overscroll-behavior: contain !important;
+	}
+
+	.dak-dir-filters-foot {
+		padding: 12px 16px !important;
+		border-top: 1px solid var( --dir-border ) !important;
+		background: var( --dir-surface ) !important;
+	}
+
+	.dak-dir .dak-dir-filters.is-open .dak-dir-option {
+		min-height: 44px !important;
+	}
+
+	.dak-dir-scrim:not( [hidden] ) {
+		position: fixed !important;
+		inset: 0 !important;
+		z-index: 100009 !important;
+		background: rgba( 16, 24, 40, 0.45 ) !important;
+	}
+
+	html.dak-dir-locked,
+	html.dak-dir-locked body {
+		overflow: hidden !important;
+	}
+
+	.dak-dir .dak-dir-count {
+		order: 3 !important;
+		flex-basis: 100% !important;
+	}
+
+	.dak-dir-sort {
+		margin-left: auto !important;
+	}
+}
+
+@media ( max-width: 767px ) {
+	.dak-dir {
+		padding: 16px 16px 112px !important; /* Room above the floating WhatsApp / chat buttons. */
+	}
+
+	.dak-dir .dak-dir-title {
+		font-size: 24px !important;
+	}
+
+	.dak-dir-doctor-card {
+		grid-template-columns: 64px minmax( 0, 1fr ) !important;
+		gap: 14px !important;
+		padding: 16px !important;
+	}
+
+	.dak-dir .dak-dir-avatar {
+		width: 64px !important;
+		height: 64px !important;
+	}
+
+	.dak-dir-avatar-initials {
+		font-size: 20px !important;
+	}
+
+	.dak-dir-doctor-side {
+		grid-column: 1 / -1 !important;
+		padding: 14px 0 0 !important;
+		border-left: 0 !important;
+		border-top: 1px solid var( --dir-border ) !important;
+	}
+
+	.dak-dir-fees {
+		flex-direction: row !important;
+		flex-wrap: wrap !important;
+		gap: 8px 24px !important;
+	}
+
+	.dak-dir .dak-dir-disclosure,
+	.dak-dir-location-list {
+		margin-left: 0 !important;
+	}
+
+	.dak-dir-service-grid {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+	}
+
+	/* One scrolling row of categories instead of several wrapped lines. */
+	.dak-dir-categories {
+		flex-wrap: nowrap !important;
+		overflow-x: auto !important;
+		margin: 0 -16px 16px !important;
+		padding: 2px 16px 6px !important;
+		scrollbar-width: thin !important;
+	}
+
+	.dak-dir .dak-dir-category {
+		flex: 0 0 auto !important;
+		min-height: 44px !important;
+	}
+
+	.dak-dir-sort {
+		flex: 1 1 auto !important;
+		justify-content: flex-end !important;
+	}
+
+	.dak-dir .dak-dir-sort .dak-dir-select {
+		max-width: 180px !important;
+	}
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.dak-dir * {
+		transition: none !important;
+		animation: none !important;
+	}
+}

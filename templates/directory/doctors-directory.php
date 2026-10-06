@@ -1,13 +1,21 @@
 <?php
 /**
- * Template: Doctors directory grid for the [doctors_directory] shortcode.
+ * Template: Doctors directory for the [doctors_directory] shortcode.
+ *
+ * Search on top; filters (specialty, visit type, availability, gender,
+ * location) in a sidebar that becomes a labelled drawer on small screens;
+ * results with a live "Showing 1–12 of 53 doctors" count, sorting and
+ * pagination. Every card is rendered here; doctor-ak-directory.js filters
+ * and sorts the full set before paginating, and keeps the state in the URL
+ * so Back from a profile returns to the same list.
  *
  * @package DoctorAKPortal\Templates
  *
- * @var array    $specialities    Specialities at least one listed doctor has — list of { slug, label, count }, alphabetical by label — the sidebar filter list (see Doctors_Directory::render()).
- * @var int      $doctors_count   Total number of listed doctors — the initial "Showing X of Y" count before any filter narrows it.
- * @var string[] $doctors_html    Pre-rendered directory/doctor-card.php output, one per doctor.
- * @var string   $hero_banner_url Bundled hero banner photo URL (Doctors_Directory::HERO_BANNER_IMAGE_PATH), or '' if missing.
+ * @var string[] $doctors_html  Pre-rendered directory/doctor-directory-card.php output, most experienced first.
+ * @var array    $specialities  { slug (lowercase label), label, count }, alphabetical.
+ * @var array    $cities        { slug, label, count }, most doctors first.
+ * @var array    $facets        Doctors per option: clinic, video, today, week, male, female.
+ * @var int      $doctors_count Number of listed doctors.
  */
 
 // Prevent direct file access.
@@ -15,169 +23,262 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$dak_directory_icons = array(
-	'pin'      => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18s6-5.2 6-9.8A6 6 0 0 0 4 8.2C4 12.8 10 18 10 18z"/><circle cx="10" cy="8" r="2"/></svg>',
-	'user'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.2"/><path d="M3.5 17c1-3.5 4-5 6.5-5s5.5 1.5 6.5 5"/></svg>',
-	'video'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="10" height="10" rx="1.5"/><path d="M17.5 7.5 12.5 10l5 2.5z"/></svg>',
-	'clock'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.2"/><path d="M10 6v4l3 2"/></svg>',
-	'chevron'  => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8l4 4 4-4"/></svg>',
-	'arrow_l'  => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5l-5.5 5.5 5.5 5.5"/></svg>',
-	'arrow_r'  => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 4.5l5.5 5.5-5.5 5.5"/></svg>',
-	'sliders'  => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h9M15 6h2M3 14h5M11 14h6"/><circle cx="12.5" cy="6" r="1.7"/><circle cx="8" cy="14" r="1.7"/></svg>',
+$dak_icon = function ( $paths ) {
+	return '<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' . $paths . '</svg>';
+};
+
+$dak_icons = array(
+	'search'  => $dak_icon( '<circle cx="8.8" cy="8.8" r="5.3"/><path d="M17 17l-3.8-3.8"/>' ),
+	'x'       => $dak_icon( '<path d="M5.5 5.5l9 9M14.5 5.5l-9 9"/>' ),
+	'sliders' => $dak_icon( '<path d="M3 6h9M15 6h2M3 14h5M11 14h6"/><circle cx="13.5" cy="6" r="1.7"/><circle cx="9.5" cy="14" r="1.7"/>' ),
+	'pin'     => $dak_icon( '<path d="M10 18s6-5.2 6-9.8A6 6 0 0 0 4 8.2C4 12.8 10 18 10 18z"/><circle cx="10" cy="8" r="2"/>' ),
+	'arrow_l' => $dak_icon( '<path d="M12.5 4.5 7 10l5.5 5.5"/>' ),
+	'arrow_r' => $dak_icon( '<path d="M7.5 4.5 13 10l-5.5 5.5"/>' ),
 );
 
-// Sidebar shows the first few specialities and tucks the rest behind a
-// "+N more" toggle (see the dak-directory-specialties-toggle wiring in
-// doctor-ak-directory.js) — plain UI collapse, no effect on filtering itself.
-$dak_visible_specialities     = 6;
-$dak_extra_specialities_count = max( 0, count( $specialities ) - $dak_visible_specialities );
+$dak_visible_specialities = 8;
+$dak_count                = function ( $n ) {
+	return '<span class="dak-dir-option-count">' . esc_html( number_format_i18n( $n ) ) . '</span>';
+};
+
+// Text doctor-ak-directory.js writes (counts, chips, pages).
+$dak_dir_strings = array(
+	/* translators: 1: first shown, 2: last shown, 3: total matching. */
+	'showing'     => __( 'Showing %1$s–%2$s of %3$s doctors', 'doctor-ak-portal' ),
+	/* translators: %s: number of doctors. */
+	'showingAll'  => __( 'Showing all %s doctors', 'doctor-ak-portal' ),
+	'showingOne'  => __( 'Showing 1 doctor', 'doctor-ak-portal' ),
+	'none'        => __( 'No doctors match these filters', 'doctor-ak-portal' ),
+	/* translators: %s: number of matching doctors. */
+	'showButton'  => __( 'Show %s doctors', 'doctor-ak-portal' ),
+	/* translators: %s: filter value, e.g. "Cardiologist". */
+	'remove'      => __( 'Remove filter: %s', 'doctor-ak-portal' ),
+	/* translators: %s: search text. */
+	'searchChip'  => __( 'Search: “%s”', 'doctor-ak-portal' ),
+	/* translators: %s: page number. */
+	'page'        => __( 'Page %s', 'doctor-ak-portal' ),
+	/* translators: %s: city name. */
+	'nearCity'    => __( 'Near me: %s', 'doctor-ak-portal' ),
+	'nearMe'      => __( 'Near me', 'doctor-ak-portal' ),
+	'locating'    => __( 'Finding your location…', 'doctor-ak-portal' ),
+	'denied'      => __( 'Location access was not allowed, so Near me is off. You can still choose a city from the list.', 'doctor-ak-portal' ),
+	'unsupported' => __( 'This browser cannot share your location. Choose a city from the list instead.', 'doctor-ak-portal' ),
+	'noCity'      => __( 'We could not match your location to a city with listed doctors. Choose a city from the list instead.', 'doctor-ak-portal' ),
+	/* translators: %s: number of specialties. */
+	'more'        => __( 'Show all %s', 'doctor-ak-portal' ),
+	'less'        => __( 'Show fewer', 'doctor-ak-portal' ),
+);
 ?>
-<div class="dak-portal dak-directory">
-	<section class="dak-directory-hero">
-		<?php if ( $hero_banner_url ) : ?>
-			<div class="dak-directory-hero-media">
-				<img src="<?php echo esc_url( $hero_banner_url ); ?>" alt="">
-				<span class="dak-directory-hero-overlay" aria-hidden="true"></span>
-			</div>
-		<?php endif; ?>
-
-		<div class="dak-directory-hero-content">
-			<span class="dak-eyebrow"><?php esc_html_e( 'Our Specialists', 'doctor-ak-portal' ); ?></span>
-			<h1>
-				<?php esc_html_e( 'Our', 'doctor-ak-portal' ); ?>
-				<span class="dak-directory-hero-accent"><?php esc_html_e( 'Doctors', 'doctor-ak-portal' ); ?></span>
-			</h1>
-			<p><?php esc_html_e( 'Browse our specialists and book a clinic visit or an online video consultation.', 'doctor-ak-portal' ); ?></p>
+<div class="dak-portal dak-dir dak-dir-doctors" data-dak-dir-doctors data-strings="<?php echo esc_attr( wp_json_encode( $dak_dir_strings ) ); ?>">
+	<header class="dak-dir-intro">
+		<div class="dak-dir-intro-text">
+			<h1 class="dak-dir-title"><?php esc_html_e( 'Find a doctor', 'doctor-ak-portal' ); ?></h1>
+			<p class="dak-dir-lead">
+				<?php
+				if ( $doctors_count > 0 ) {
+					echo esc_html(
+						sprintf(
+							/* translators: 1: number of doctors, 2: number of specialties. */
+							__( '%1$s doctors across %2$s specialties. Book a clinic visit or a video consultation.', 'doctor-ak-portal' ),
+							number_format_i18n( $doctors_count ),
+							number_format_i18n( count( $specialities ) )
+						)
+					);
+				} else {
+					esc_html_e( 'Book a clinic visit or a video consultation with our doctors.', 'doctor-ak-portal' );
+				}
+				?>
+			</p>
 		</div>
-	</section>
 
-	<?php if ( ! empty( $doctors_html ) ) : ?>
-		<div class="dak-directory-layout">
-			<aside class="dak-directory-sidebar">
-				<?php if ( ! empty( $specialities ) ) : ?>
-					<div class="dak-directory-sidebar-section">
-						<span class="dak-directory-sidebar-heading"><?php esc_html_e( 'Specialties', 'doctor-ak-portal' ); ?></span>
+		<?php if ( $doctors_count > 0 ) : ?>
+			<form class="dak-dir-search" role="search" data-dak-dir-search>
+				<label class="dak-dir-sr" for="dak-dir-q"><?php esc_html_e( 'Search doctors by name or specialty', 'doctor-ak-portal' ); ?></label>
+				<span class="dak-dir-search-icon"><?php echo $dak_icons['search']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?></span>
+				<input type="search" id="dak-dir-q" name="q" placeholder="<?php esc_attr_e( 'Search by doctor name or specialty', 'doctor-ak-portal' ); ?>" autocomplete="off">
+				<button type="button" class="dak-dir-search-clear" data-dak-dir-clear-search hidden aria-label="<?php esc_attr_e( 'Clear search', 'doctor-ak-portal' ); ?>"><?php echo $dak_icons['x']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?></button>
+			</form>
+		<?php endif; ?>
+	</header>
 
-						<ul class="dak-directory-specialty-list" id="dak-directory-spec-chips" role="group" aria-label="<?php esc_attr_e( 'Filter doctors by speciality', 'doctor-ak-portal' ); ?>">
-							<li>
-								<button type="button" class="dak-directory-specialty-item is-active" data-spec-filter="" aria-pressed="true">
-									<span><?php esc_html_e( 'All Specialties', 'doctor-ak-portal' ); ?></span>
-								</button>
-							</li>
-							<?php foreach ( $specialities as $dak_i => $dak_speciality ) : ?>
-								<li<?php echo $dak_i >= $dak_visible_specialities ? ' class="dak-directory-specialty-extra dak-hidden"' : ''; ?>>
-									<button type="button" class="dak-directory-specialty-item" data-spec-filter="<?php echo esc_attr( $dak_speciality['slug'] ); ?>" aria-pressed="false">
-										<span><?php echo esc_html( $dak_speciality['label'] ); ?></span>
-										<span class="dak-directory-specialty-count"><?php echo esc_html( $dak_speciality['count'] ); ?></span>
-									</button>
-								</li>
-							<?php endforeach; ?>
-						</ul>
-
-						<?php if ( $dak_extra_specialities_count > 0 ) : ?>
-							<button type="button" class="dak-directory-specialties-toggle" id="dak-directory-specialties-toggle" data-label-more="<?php echo esc_attr( sprintf( /* translators: %d: number of additional specialities. */ __( '+%d more', 'doctor-ak-portal' ), $dak_extra_specialities_count ) ); ?>" data-label-less="<?php esc_attr_e( 'Show less', 'doctor-ak-portal' ); ?>">
-								<?php echo esc_html( sprintf( /* translators: %d: number of additional specialities. */ __( '+%d more', 'doctor-ak-portal' ), $dak_extra_specialities_count ) ); ?>
-								<?php echo $dak_directory_icons['chevron']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-							</button>
-						<?php endif; ?>
-					</div>
-				<?php endif; ?>
-
-				<div class="dak-directory-sidebar-section">
-					<span class="dak-directory-sidebar-heading"><?php esc_html_e( 'Availability', 'doctor-ak-portal' ); ?></span>
-
-					<label class="dak-directory-filter-checkbox">
-						<button type="button" class="dak-directory-checkbox-box" id="dak-directory-availability-toggle" aria-pressed="false">
-							<?php echo $dak_directory_icons['chevron']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- reused as the checkmark glyph via CSS rotation/clip, matching the box's on/off state. ?>
-						</button>
-						<span><?php esc_html_e( 'Available today', 'doctor-ak-portal' ); ?></span>
-					</label>
-
-					<label class="dak-directory-filter-checkbox">
-						<button type="button" class="dak-directory-checkbox-box" id="dak-directory-video-toggle" aria-pressed="false">
-							<?php echo $dak_directory_icons['chevron']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-						</button>
-						<span><?php esc_html_e( 'Video consultation', 'doctor-ak-portal' ); ?></span>
-					</label>
-
-					<label class="dak-directory-filter-checkbox">
-						<button type="button" class="dak-directory-checkbox-box" id="dak-directory-male-toggle" aria-pressed="false">
-							<?php echo $dak_directory_icons['chevron']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-						</button>
-						<span><?php esc_html_e( 'Male doctor', 'doctor-ak-portal' ); ?></span>
-					</label>
-
-					<label class="dak-directory-filter-checkbox">
-						<button type="button" class="dak-directory-checkbox-box" id="dak-directory-female-toggle" aria-pressed="false">
-							<?php echo $dak_directory_icons['chevron']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-						</button>
-						<span><?php esc_html_e( 'Female doctor', 'doctor-ak-portal' ); ?></span>
-					</label>
+	<?php if ( $doctors_count > 0 ) : ?>
+		<div class="dak-dir-layout">
+			<div class="dak-dir-filters" id="dak-dir-filters" data-dak-dir-filters data-label="<?php esc_attr_e( 'Filter doctors', 'doctor-ak-portal' ); ?>">
+				<div class="dak-dir-filters-head">
+					<h2 class="dak-dir-filters-title"><?php esc_html_e( 'Filters', 'doctor-ak-portal' ); ?></h2>
+					<button type="button" class="dak-dir-link-button" data-dak-dir-clear-all hidden><?php esc_html_e( 'Clear all', 'doctor-ak-portal' ); ?></button>
+					<button type="button" class="dak-dir-icon-button dak-dir-drawer-only" data-dak-dir-close-filters aria-label="<?php esc_attr_e( 'Close filters', 'doctor-ak-portal' ); ?>"><?php echo $dak_icons['x']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?></button>
 				</div>
-			</aside>
 
-			<div class="dak-directory-main">
-				<div class="dak-directory-toolbar">
-					<div class="dak-directory-search">
-						<span class="dak-directory-search-icon" aria-hidden="true">
-							<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg>
-						</span>
-						<input type="search" id="dak-directory-search-input" placeholder="<?php esc_attr_e( 'Search by doctor name, specialty…', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search by doctor name or specialty', 'doctor-ak-portal' ); ?>">
-					</div>
+				<div class="dak-dir-filters-body">
+					<?php if ( ! empty( $specialities ) ) : ?>
+						<fieldset class="dak-dir-group">
+							<legend class="dak-dir-group-title"><?php esc_html_e( 'Specialty', 'doctor-ak-portal' ); ?></legend>
 
-					<button
-						type="button"
-						class="dak-directory-pill dak-directory-toolbar-nearme"
-						id="dak-directory-nearme-toggle"
-						aria-pressed="false"
-						data-msg-denied="<?php esc_attr_e( 'We could not get your location. Allow location access in your browser to use Near me.', 'doctor-ak-portal' ); ?>"
-						data-msg-unsupported="<?php esc_attr_e( 'Your browser does not support location detection.', 'doctor-ak-portal' ); ?>"
-						data-msg-none="<?php esc_attr_e( 'No doctors are listed in a city we can match to your location yet.', 'doctor-ak-portal' ); ?>"
-						data-label-near="<?php esc_attr_e( 'Near me:', 'doctor-ak-portal' ); ?>"
-					>
-						<?php echo $dak_directory_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-						<span data-nearme-label><?php esc_html_e( 'Near me', 'doctor-ak-portal' ); ?></span>
+							<?php if ( count( $specialities ) > $dak_visible_specialities ) : ?>
+								<label class="dak-dir-sr" for="dak-dir-spec-find"><?php esc_html_e( 'Find a specialty', 'doctor-ak-portal' ); ?></label>
+								<input type="search" class="dak-dir-mini-search" id="dak-dir-spec-find" placeholder="<?php esc_attr_e( 'Find a specialty', 'doctor-ak-portal' ); ?>" autocomplete="off" data-dak-dir-spec-find>
+							<?php endif; ?>
+
+							<div class="dak-dir-options" data-dak-dir-spec-list>
+								<label class="dak-dir-option">
+									<input type="radio" name="specialty" value="" checked>
+									<span class="dak-dir-option-label"><?php esc_html_e( 'All specialties', 'doctor-ak-portal' ); ?></span>
+									<?php echo $dak_count( $doctors_count ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in closure. ?>
+								</label>
+								<?php foreach ( $specialities as $dak_i => $dak_speciality ) : ?>
+									<label class="dak-dir-option" data-dak-dir-spec-option data-name="<?php echo esc_attr( $dak_speciality['slug'] ); ?>"<?php echo $dak_i >= $dak_visible_specialities ? ' data-dak-dir-extra hidden' : ''; ?>>
+										<input type="radio" name="specialty" value="<?php echo esc_attr( $dak_speciality['slug'] ); ?>" data-label="<?php echo esc_attr( $dak_speciality['label'] ); ?>">
+										<span class="dak-dir-option-label"><?php echo esc_html( $dak_speciality['label'] ); ?></span>
+										<?php echo $dak_count( $dak_speciality['count'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in closure. ?>
+									</label>
+								<?php endforeach; ?>
+							</div>
+
+							<?php if ( count( $specialities ) > $dak_visible_specialities ) : ?>
+								<button type="button" class="dak-dir-link-button" data-dak-dir-spec-more aria-expanded="false" data-count="<?php echo esc_attr( count( $specialities ) ); ?>">
+									<?php echo esc_html( sprintf( $dak_dir_strings['more'], number_format_i18n( count( $specialities ) ) ) ); ?>
+								</button>
+							<?php endif; ?>
+						</fieldset>
+					<?php endif; ?>
+
+					<fieldset class="dak-dir-group">
+						<legend class="dak-dir-group-title"><?php esc_html_e( 'Visit type', 'doctor-ak-portal' ); ?></legend>
+						<div class="dak-dir-options">
+							<label class="dak-dir-option">
+								<input type="checkbox" name="visit" value="clinic" data-label="<?php esc_attr_e( 'Clinic visit', 'doctor-ak-portal' ); ?>">
+								<span class="dak-dir-option-label"><?php esc_html_e( 'Clinic visit', 'doctor-ak-portal' ); ?></span>
+								<?php echo $dak_count( $facets['clinic'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in closure. ?>
+							</label>
+							<label class="dak-dir-option">
+								<input type="checkbox" name="visit" value="video" data-label="<?php esc_attr_e( 'Video consultation', 'doctor-ak-portal' ); ?>">
+								<span class="dak-dir-option-label"><?php esc_html_e( 'Video consultation', 'doctor-ak-portal' ); ?></span>
+								<?php echo $dak_count( $facets['video'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in closure. ?>
+							</label>
+						</div>
+					</fieldset>
+
+					<fieldset class="dak-dir-group">
+						<legend class="dak-dir-group-title"><?php esc_html_e( 'Availability', 'doctor-ak-portal' ); ?></legend>
+						<p class="dak-dir-group-hint"><?php esc_html_e( 'Based on session hours and appointments already booked.', 'doctor-ak-portal' ); ?></p>
+						<div class="dak-dir-options">
+							<label class="dak-dir-option">
+								<input type="radio" name="availability" value="" checked>
+								<span class="dak-dir-option-label"><?php esc_html_e( 'Any time', 'doctor-ak-portal' ); ?></span>
+							</label>
+							<label class="dak-dir-option">
+								<input type="radio" name="availability" value="today" data-label="<?php esc_attr_e( 'Open slot today', 'doctor-ak-portal' ); ?>">
+								<span class="dak-dir-option-label"><?php esc_html_e( 'Open slot today', 'doctor-ak-portal' ); ?></span>
+								<?php echo $dak_count( $facets['today'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in closure. ?>
+							</label>
+							<label class="dak-dir-option">
+								<input type="radio" name="availability" value="week" data-label="<?php esc_attr_e( 'Open slot in the next 7 days', 'doctor-ak-portal' ); ?>">
+								<span class="dak-dir-option-label"><?php esc_html_e( 'Next 7 days', 'doctor-ak-portal' ); ?></span>
+								<?php echo $dak_count( $facets['week'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in closure. ?>
+							</label>
+						</div>
+					</fieldset>
+
+					<?php if ( $facets['male'] + $facets['female'] > 0 ) : ?>
+						<fieldset class="dak-dir-group">
+							<legend class="dak-dir-group-title"><?php esc_html_e( 'Doctor gender', 'doctor-ak-portal' ); ?></legend>
+							<div class="dak-dir-options">
+								<label class="dak-dir-option">
+									<input type="checkbox" name="gender" value="female" data-label="<?php esc_attr_e( 'Female doctor', 'doctor-ak-portal' ); ?>">
+									<span class="dak-dir-option-label"><?php esc_html_e( 'Female', 'doctor-ak-portal' ); ?></span>
+									<?php echo $dak_count( $facets['female'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in closure. ?>
+								</label>
+								<label class="dak-dir-option">
+									<input type="checkbox" name="gender" value="male" data-label="<?php esc_attr_e( 'Male doctor', 'doctor-ak-portal' ); ?>">
+									<span class="dak-dir-option-label"><?php esc_html_e( 'Male', 'doctor-ak-portal' ); ?></span>
+									<?php echo $dak_count( $facets['male'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in closure. ?>
+								</label>
+							</div>
+						</fieldset>
+					<?php endif; ?>
+
+					<?php if ( ! empty( $cities ) ) : ?>
+						<fieldset class="dak-dir-group">
+							<legend class="dak-dir-group-title"><?php esc_html_e( 'Location', 'doctor-ak-portal' ); ?></legend>
+							<label class="dak-dir-sr" for="dak-dir-city"><?php esc_html_e( 'City', 'doctor-ak-portal' ); ?></label>
+							<select id="dak-dir-city" name="city" class="dak-dir-select">
+								<option value=""><?php esc_html_e( 'All cities', 'doctor-ak-portal' ); ?></option>
+								<?php foreach ( $cities as $dak_city ) : ?>
+									<option value="<?php echo esc_attr( $dak_city['slug'] ); ?>" data-label="<?php echo esc_attr( $dak_city['label'] ); ?>">
+										<?php echo esc_html( sprintf( '%s (%s)', $dak_city['label'], number_format_i18n( $dak_city['count'] ) ) ); ?>
+									</option>
+								<?php endforeach; ?>
+							</select>
+							<button type="button" class="dak-dir-nearme" data-dak-dir-nearme aria-pressed="false">
+								<?php echo $dak_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?>
+								<span data-dak-dir-nearme-label><?php esc_html_e( 'Near me', 'doctor-ak-portal' ); ?></span>
+							</button>
+							<p class="dak-dir-group-hint" data-dak-dir-nearme-status role="status" hidden></p>
+						</fieldset>
+					<?php endif; ?>
+				</div>
+
+				<div class="dak-dir-filters-foot dak-dir-drawer-only">
+					<button type="button" class="dak-dir-btn dak-dir-btn-primary dak-dir-btn-block" data-dak-dir-close-filters data-dak-dir-show-results><?php echo esc_html( sprintf( $dak_dir_strings['showButton'], number_format_i18n( $doctors_count ) ) ); ?></button>
+				</div>
+			</div>
+			<div class="dak-dir-scrim" data-dak-dir-close-filters hidden></div>
+
+			<section class="dak-dir-results" aria-labelledby="dak-dir-count">
+				<div class="dak-dir-toolbar">
+					<button type="button" class="dak-dir-btn dak-dir-btn-secondary dak-dir-filters-open" data-dak-dir-open-filters aria-controls="dak-dir-filters" aria-expanded="false">
+						<?php echo $dak_icons['sliders']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?>
+						<span><?php esc_html_e( 'Filters', 'doctor-ak-portal' ); ?></span>
+						<span class="dak-dir-badge" data-dak-dir-filter-count hidden></span>
 					</button>
 
-					<div class="dak-directory-sort-field">
-						<span class="dak-directory-sort-label"><?php esc_html_e( 'Sort by:', 'doctor-ak-portal' ); ?></span>
-						<select id="dak-directory-sort" aria-label="<?php esc_attr_e( 'Sort doctors', 'doctor-ak-portal' ); ?>">
-							<option value="experience-desc"><?php esc_html_e( 'Most Experienced', 'doctor-ak-portal' ); ?></option>
-							<option value="name-asc"><?php esc_html_e( 'Name (A-Z)', 'doctor-ak-portal' ); ?></option>
-							<option value="name-desc"><?php esc_html_e( 'Name (Z-A)', 'doctor-ak-portal' ); ?></option>
+					<p class="dak-dir-count" id="dak-dir-count" data-dak-dir-count aria-live="polite" aria-atomic="true">
+						<?php echo esc_html( sprintf( $dak_dir_strings['showing'], 1, number_format_i18n( min( 12, $doctors_count ) ), number_format_i18n( $doctors_count ) ) ); ?>
+					</p>
+
+					<div class="dak-dir-sort">
+						<label for="dak-dir-sort"><?php esc_html_e( 'Sort by', 'doctor-ak-portal' ); ?></label>
+						<select id="dak-dir-sort" name="sort" class="dak-dir-select">
+							<option value="experience"><?php esc_html_e( 'Most experienced', 'doctor-ak-portal' ); ?></option>
+							<option value="available"><?php esc_html_e( 'Soonest available', 'doctor-ak-portal' ); ?></option>
+							<option value="name-asc"><?php esc_html_e( 'Name (A–Z)', 'doctor-ak-portal' ); ?></option>
+							<option value="name-desc"><?php esc_html_e( 'Name (Z–A)', 'doctor-ak-portal' ); ?></option>
 						</select>
 					</div>
 				</div>
 
-				<p class="dak-directory-nearme-status dak-hidden" id="dak-directory-nearme-status" role="status"></p>
-
-				<?php
-				/* translators: 1: number of doctors currently shown, 2: total number of doctors. */
-				$dak_results_count_template = __( 'Showing %1$d of %2$d specialists', 'doctor-ak-portal' );
-				?>
-				<p class="dak-directory-results-count" id="dak-directory-results-count" data-template="<?php echo esc_attr( $dak_results_count_template ); ?>">
-					<?php echo esc_html( sprintf( $dak_results_count_template, $doctors_count, $doctors_count ) ); ?>
-				</p>
-
-				<div class="dak-directory-grid dak-directory-grid-list" id="dak-directory-grid">
-					<?php foreach ( $doctors_html as $card_html ) : ?>
-						<?php echo $card_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- card partial escapes its own output. ?>
-					<?php endforeach; ?>
+				<div class="dak-dir-active" data-dak-dir-active hidden>
+					<ul class="dak-dir-chips" data-dak-dir-chips></ul>
+					<button type="button" class="dak-dir-link-button" data-dak-dir-clear-all><?php esc_html_e( 'Clear all', 'doctor-ak-portal' ); ?></button>
 				</div>
-				<p class="dak-empty-state dak-hidden" id="dak-directory-no-results"><?php esc_html_e( 'No doctors match your search.', 'doctor-ak-portal' ); ?></p>
 
-				<nav class="dak-directory-pagination" id="dak-directory-pagination" aria-label="<?php esc_attr_e( 'Doctors list pages', 'doctor-ak-portal' ); ?>">
-					<button type="button" class="dak-directory-page-nav" id="dak-directory-page-prev" aria-label="<?php esc_attr_e( 'Previous page', 'doctor-ak-portal' ); ?>">
-						<?php echo $dak_directory_icons['arrow_l']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				<ul class="dak-dir-doctor-list" data-dak-dir-list>
+					<?php foreach ( $doctors_html as $dak_card_html ) : ?>
+						<?php echo $dak_card_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- card partial escapes its own output. ?>
+					<?php endforeach; ?>
+				</ul>
+
+				<div class="dak-dir-empty" data-dak-dir-empty hidden>
+					<p class="dak-dir-empty-title"><?php esc_html_e( 'No doctors match these filters', 'doctor-ak-portal' ); ?></p>
+					<p class="dak-dir-empty-text"><?php esc_html_e( 'Try removing a filter or searching for a different name or specialty.', 'doctor-ak-portal' ); ?></p>
+					<button type="button" class="dak-dir-btn dak-dir-btn-secondary" data-dak-dir-clear-all><?php esc_html_e( 'Clear all filters', 'doctor-ak-portal' ); ?></button>
+				</div>
+
+				<nav class="dak-dir-pagination" data-dak-dir-pagination aria-label="<?php esc_attr_e( 'Doctor results pages', 'doctor-ak-portal' ); ?>" hidden>
+					<button type="button" class="dak-dir-page-step" data-dak-dir-page="prev">
+						<?php echo $dak_icons['arrow_l']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?>
+						<span><?php esc_html_e( 'Previous', 'doctor-ak-portal' ); ?></span>
 					</button>
-					<div class="dak-directory-page-numbers" id="dak-directory-page-numbers"></div>
-					<button type="button" class="dak-directory-page-nav" id="dak-directory-page-next" aria-label="<?php esc_attr_e( 'Next page', 'doctor-ak-portal' ); ?>">
-						<?php echo $dak_directory_icons['arrow_r']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+					<ol class="dak-dir-pages" data-dak-dir-pages></ol>
+					<button type="button" class="dak-dir-page-step" data-dak-dir-page="next">
+						<span><?php esc_html_e( 'Next', 'doctor-ak-portal' ); ?></span>
+						<?php echo $dak_icons['arrow_r']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?>
 					</button>
 				</nav>
-			</div>
+			</section>
 		</div>
 	<?php else : ?>
-		<p class="dak-empty-state"><?php esc_html_e( 'No doctors are available yet. Please check back soon.', 'doctor-ak-portal' ); ?></p>
+		<p class="dak-dir-empty-title"><?php esc_html_e( 'No doctors are listed yet. Please check back soon.', 'doctor-ak-portal' ); ?></p>
 	<?php endif; ?>
 </div>

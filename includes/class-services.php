@@ -555,6 +555,16 @@ class Services {
 			}
 
 			$groups[ $key ]['prices'][] = $row['effective_price'];
+
+			// Accurate public figures for the directory (the legacy
+			// price_label/doctor_count above are kept as they were for the
+			// home page): every bookable offering's own price — each clinic
+			// override, or the flat charge — and the distinct doctors.
+			foreach ( self::offering_prices( $row ) as $dak_offering_price ) {
+				$groups[ $key ]['offering_prices'][] = $dak_offering_price;
+			}
+
+			$groups[ $key ]['doctor_ids'][ $row['doctor_id'] ] = true;
 		}
 
 		return array_values(
@@ -572,6 +582,13 @@ class Services {
 
 					$group['keywords'] = implode( ', ', $group['keywords_set'] );
 					unset( $group['keywords_set'] );
+
+					// Distinct doctors (a doctor with two rows of the same
+					// service is still one provider) and the price summary
+					// across every offering — never "Free" for an unpriced 0.
+					$group['provider_count'] = count( isset( $group['doctor_ids'] ) ? $group['doctor_ids'] : array() );
+					$group['public_price']   = self::public_price( isset( $group['offering_prices'] ) ? $group['offering_prices'] : array() );
+					unset( $group['doctor_ids'], $group['offering_prices'] );
 
 					return $group;
 				},
@@ -642,6 +659,124 @@ class Services {
 		}
 
 		return $label;
+	}
+
+	/**
+	 * Every bookable price one service row actually offers: each clinic's
+	 * own override when the row is scoped to specific clinics (a 0 there is
+	 * an unset price, kept so the summary knows one is missing), otherwise
+	 * its flat charge.
+	 *
+	 * @param array $row Decoded service row.
+	 * @return float[]
+	 */
+	public static function offering_prices( array $row ) {
+		if ( ! empty( $row['clinic_charges'] ) ) {
+			return array_values( array_map( 'floatval', $row['clinic_charges'] ) );
+		}
+
+		return array( (float) $row['charge'] );
+	}
+
+	/**
+	 * A public price for one or more offerings, for the directory cards:
+	 * "PKR 50,000" for one known price, "From PKR …" for the lowest of
+	 * several (or when some offerings have no price set), and the
+	 * $unset_label ("View pricing") when no amount is set at all. Never
+	 * "Free": a 0 charge is how an unpriced service is stored (see
+	 * price_summary()) and the pricing model has no explicit free option.
+	 *
+	 * @param float[] $prices      Offering prices (0 = not set).
+	 * @param string  $unset_label Label when no price is known; defaults to "View pricing".
+	 * @return array { state 'paid'|'range'|'unset', label, amount (lowest known price, 0 when unset) }
+	 */
+	public static function public_price( array $prices, $unset_label = null ) {
+		$summary = self::price_summary( $prices );
+		$priced  = array_filter(
+			array_map( 'floatval', $prices ),
+			function ( $price ) {
+				return $price > 0;
+			}
+		);
+
+		if ( 'paid' === $summary['state'] || 'range' === $summary['state'] ) {
+			return array(
+				'state'  => $summary['state'],
+				'label'  => $summary['label'],
+				'amount' => (float) min( $priced ),
+			);
+		}
+
+		return array(
+			'state'  => 'unset',
+			'label'  => null !== $unset_label ? $unset_label : __( 'View pricing', 'doctor-ak-portal' ),
+			'amount' => 0.0,
+		);
+	}
+
+	/**
+	 * A short plain-text excerpt of an admin-written (rich text)
+	 * description for a directory card — the wording is unchanged; only
+	 * markup is removed. Block ends and list items become sentence breaks
+	 * so words never run together ("pain.Treatment" → "pain. Treatment"),
+	 * a leading repeat of the service's own name ("Colonoscopy: …") is
+	 * dropped, and the text is cut at a word boundary.
+	 *
+	 * @param string $html      Stored description (may contain HTML).
+	 * @param string $title     The service name, to drop when the text starts by repeating it.
+	 * @param int    $max_chars Rough maximum length.
+	 * @return string
+	 */
+	public static function plain_excerpt( $html, $title = '', $max_chars = 170 ) {
+		$text = (string) $html;
+
+		if ( '' === trim( $text ) ) {
+			return '';
+		}
+
+		// Ends of blocks, list items and line breaks separate sentences:
+		// marked here, then turned into a space after text that already
+		// ends a sentence, or a " · " between list-style fragments
+		// ("30 minutes · Sedation is available") — no words are added.
+		$text = preg_replace( '#<\s*br\s*/?\s*>#i', "\x1f", $text );
+		$text = preg_replace( '#</\s*(p|div|li|h[1-6]|tr|td|blockquote)\s*>#i', "\x1f", $text );
+		$text = wp_strip_all_tags( $text );
+		$text = html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		$text = str_replace( "\xc2\xa0", ' ', $text );
+		$text = preg_replace( '/[ \t\r\n]+/u', ' ', $text );
+		$text = trim( preg_replace( '/ ?\x1f[ \x1f]*/u', "\x1f", $text ), " \x1f" );
+		$text = preg_replace( '/([.!?:;])\x1f/u', '$1 ', $text );
+		$text = trim( str_replace( "\x1f", ' · ', $text ) );
+
+		// A missing space after a sentence ("pain.Treatment") — only
+		// lowercase-then-uppercase, so "e.g." / "2.5" / "ERCP.EUS"-style
+		// abbreviations are left alone.
+		$text = preg_replace( '/(?<=\p{Ll})([.!?;:])(?=\p{Lu})/u', '$1 ', $text );
+
+		$title = trim( (string) $title );
+
+		if ( '' !== $title && 0 === mb_stripos( $text, $title ) ) {
+			$rest = ltrim( mb_substr( $text, mb_strlen( $title ) ) );
+
+			// Only when the name is followed by a separator ("Colonoscopy: A
+			// test…"); "Colonoscopy is a test…" reads fine as it is.
+			if ( preg_match( '/^[:\-–—|]\s*(.+)$/u', $rest, $matches ) ) {
+				$text = $matches[1];
+			}
+		}
+
+		if ( mb_strlen( $text ) <= $max_chars ) {
+			return $text;
+		}
+
+		$cut   = mb_substr( $text, 0, $max_chars );
+		$space = mb_strrpos( $cut, ' ' );
+
+		if ( false !== $space && $space > $max_chars * 0.6 ) {
+			$cut = mb_substr( $cut, 0, $space );
+		}
+
+		return rtrim( $cut, " ,;:.-–—" ) . '…';
 	}
 
 	/**

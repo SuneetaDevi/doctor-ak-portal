@@ -83,8 +83,8 @@ $dak_service_view_icons = array(
 					<?php if ( $group['requires_doctor'] && ! empty( $group['doctor_offers'] ) ) : ?>
 						<a class="dak-profile-stat dak-profile-stat-link" href="#dak-service-doctors">
 							<span class="dak-profile-stat-icon" aria-hidden="true"><?php echo $dak_service_view_icons['person']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-							<strong><?php echo count( $group['doctor_offers'] ); ?></strong>
-							<span><?php echo esc_html( _n( 'Doctor', 'Doctors', count( $group['doctor_offers'] ), 'doctor-ak-portal' ) ); ?></span>
+							<strong><?php echo esc_html( $group['doctor_count'] ); ?></strong>
+							<span><?php echo esc_html( _n( 'Doctor', 'Doctors', $group['doctor_count'], 'doctor-ak-portal' ) ); ?></span>
 						</a>
 					<?php elseif ( ! $group['requires_doctor'] ) : ?>
 						<span class="dak-profile-stat">
@@ -125,7 +125,7 @@ $dak_service_view_icons = array(
 						</h2>
 						<p class="dak-field-hint"><?php esc_html_e( 'Grouped by clinic — select a doctor to see their price on the right, or click their name for their full profile.', 'doctor-ak-portal' ); ?></p>
 
-						<?php if ( count( $group['doctor_offers'] ) > 1 ) : ?>
+						<?php if ( $group['doctor_count'] > 1 ) : ?>
 							<div class="dak-service-doctor-filters" id="dak-service-doctor-filters">
 								<?php if ( count( $dak_specialization_options ) > 1 ) : ?>
 									<div class="dak-field">

@@ -71,10 +71,10 @@ class Services_Directory {
 		);
 
 		wp_enqueue_style(
-			'doctor-ak-portal-directory',
-			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-directory.css',
+			'doctor-ak-portal-directories',
+			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-directories.css',
 			array( 'doctor-ak-portal-auth' ),
-			Assets::version( 'assets/css/doctor-ak-directory.css' )
+			Assets::version( 'assets/css/doctor-ak-directories.css' )
 		);
 
 		wp_enqueue_script(
@@ -92,25 +92,25 @@ class Services_Directory {
 	 * @return string
 	 */
 	public function render() {
-		// Bucketed the same way the site header's Services mega-menu already
-		// groups them (Service_Categories order, uncategorized services
-		// falling into "Miscellaneous/Other Services" rather than being
-		// dropped) — so the filter chips always cover every listed service,
-		// even on a site where categories were never assigned.
+		// Bucketed the same way the site header's Services menu groups them
+		// (Service_Categories order, uncategorized services falling into
+		// "Miscellaneous/Other Services" rather than being dropped) — so the
+		// category filter always covers every listed service.
 		$buckets    = Services::grouped_by_category_for_public_directory();
 		$categories = array();
 		$groups     = array();
 
 		foreach ( $buckets as $bucket ) {
-			$categories[ $bucket['slug'] ] = $bucket['label'];
+			$categories[] = array(
+				'slug'  => $bucket['slug'],
+				'label' => $bucket['label'],
+				'count' => count( $bucket['services'] ),
+			);
 
 			foreach ( $bucket['services'] as $service ) {
-				// Overwrite with the bucket it actually landed in — an
-				// uncategorized service's own 'category' field is still ''
-				// (grouped_by_category_for_public_directory() only decides
-				// *where* to bucket it, it doesn't relabel the row), but the
-				// filter chip below is keyed by bucket slug, so the card
-				// needs to say which bucket it's in to match.
+				// The card's category is the bucket it landed in — an
+				// uncategorized service's own 'category' is still '', but
+				// the filter is keyed by bucket slug.
 				$service['category']       = $bucket['slug'];
 				$service['category_label'] = $bucket['label'];
 
@@ -118,13 +118,17 @@ class Services_Directory {
 			}
 		}
 
-		// Same wide-row template the home page's own services section uses
-		// (directory/home-service-card.php) rather than the old compact
-		// portrait card, so this directory page's list matches how services
-		// already look on the home page.
+		// Alphabetical across categories, so "All services" reads as one list.
+		usort(
+			$groups,
+			function ( $a, $b ) {
+				return strcasecmp( $a['name'], $b['name'] );
+			}
+		);
+
 		$services_html = array_map(
 			function ( $group ) {
-				return $this->template_loader->get_template( 'directory/home-service-card.php', $this->card_data( $group ) );
+				return $this->template_loader->get_template( 'directory/service-directory-card.php', $this->card_data( $group ) );
 			},
 			$groups
 		);
@@ -134,6 +138,7 @@ class Services_Directory {
 			array(
 				'services_html' => $services_html,
 				'categories'    => $categories,
+				'total'         => count( $groups ),
 			)
 		);
 	}
@@ -145,9 +150,21 @@ class Services_Directory {
 	 * @return array
 	 */
 	private function card_data( array $group ) {
-		$group['profile_url'] = add_query_arg( 'service_id', $group['id'], Page_Finder::url_for_shortcode( 'service_profile_view' ) );
+		$profile_url = Page_Finder::url_for_shortcode( 'service_profile_view' );
 
-		return $group;
+		return array(
+			'id'              => $group['id'],
+			'name'            => $group['name'],
+			'excerpt'         => Services::plain_excerpt( $group['description'], $group['name'] ),
+			'image_url'       => $group['image_url'],
+			'category'        => $group['category'],
+			'category_label'  => $group['category_label'],
+			'keywords'        => $group['keywords'],
+			'requires_doctor' => ! empty( $group['requires_doctor'] ),
+			'provider_count'  => (int) $group['provider_count'],
+			'price'           => $group['public_price'],
+			'profile_url'     => $profile_url ? add_query_arg( 'service_id', $group['id'], $profile_url ) : '',
+		);
 	}
 
 	/**
