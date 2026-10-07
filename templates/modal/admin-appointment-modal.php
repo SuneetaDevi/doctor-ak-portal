@@ -117,18 +117,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 				</div>
 				<?php // Clinic visits only: which of the chosen doctor's clinics (filled by doctor-ak-admin-appointments.js). ?>
 				<div class="dak-field dak-hidden" id="dak-admin-appointment-clinic-field">
-					<label for="dak-admin-appointment-clinic"><?php esc_html_e( 'Clinic', 'doctor-ak-portal' ); ?></label>
-					<select id="dak-admin-appointment-clinic" aria-describedby="dak-admin-appointment-clinic-hint">
+					<label for="dak-admin-appointment-clinic"><?php esc_html_e( 'Clinic', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
+					<select id="dak-admin-appointment-clinic" aria-describedby="dak-admin-appointment-clinic-hint" required aria-required="true">
 						<option value=""><?php esc_html_e( 'Select a clinic…', 'doctor-ak-portal' ); ?></option>
 					</select>
 					<span class="dak-field-error" data-field="clinic_id"></span>
 					<p class="dak-field-hint" id="dak-admin-appointment-clinic-hint"><?php esc_html_e( 'Services, prices and time slots are shown for this clinic.', 'doctor-ak-portal' ); ?></p>
 				</div>
-				<p class="dak-field-hint dak-hidden" id="dak-admin-appointment-no-clinic-note"><?php esc_html_e( 'This doctor has no clinic set up yet, so the appointment will be saved without one.', 'doctor-ak-portal' ); ?></p>
+				<p class="dak-alert dak-alert-error dak-hidden" id="dak-admin-appointment-no-clinic-note" role="alert"><?php esc_html_e( 'This doctor has no clinic set up yet, so a clinic visit can’t be booked. Add a clinic for the doctor first, or choose Online (Video).', 'doctor-ak-portal' ); ?></p>
 				<p class="dak-field-hint dak-hidden" id="dak-admin-appointment-video-fee-note"><?php esc_html_e( 'Video consultations have no services — they are charged at the doctor\'s video consultation fee.', 'doctor-ak-portal' ); ?></p>
 				<div class="dak-field" id="dak-admin-appointment-service-field">
-					<label for="dak-admin-appointment-service"><?php esc_html_e( 'Services', 'doctor-ak-portal' ); ?></label>
-					<select id="dak-admin-appointment-service" class="dak-select-searchable" multiple data-placeholder="<?php esc_attr_e( 'Select at least one service…', 'doctor-ak-portal' ); ?>"></select>
+					<label for="dak-admin-appointment-service"><?php esc_html_e( 'Services', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
+					<select id="dak-admin-appointment-service" class="dak-select-searchable" multiple data-placeholder="<?php esc_attr_e( 'Select at least one service…', 'doctor-ak-portal' ); ?>" aria-required="true"></select>
 					<span class="dak-field-error" data-field="service_ids"></span>
 					<span class="dak-field-hint" id="dak-admin-appointment-service-total"></span>
 				</div>

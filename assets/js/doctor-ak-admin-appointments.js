@@ -1559,10 +1559,17 @@
 			}
 
 			var isVideo = 'video' === document.getElementById( 'dak-admin-appointment-type' ).value;
-			var clinicField = document.getElementById( 'dak-admin-appointment-clinic-field' );
-			var needsClinic = ! isVideo && clinicField && ! clinicField.classList.contains( 'dak-hidden' );
+			// A clinic visit always needs a clinic (and at least one service).
+			if ( ! isVideo && ! selectedClinicId() ) {
+				var noClinicNote = document.getElementById( 'dak-admin-appointment-no-clinic-note' );
 
-			if ( needsClinic && ! selectedClinicId() ) {
+				// The doctor has no clinic set up: the note already says so —
+				// bring it into view instead of pointing at a hidden field.
+				if ( noClinicNote && ! noClinicNote.classList.contains( 'dak-hidden' ) ) {
+					noClinicNote.scrollIntoView( { block: 'center' } );
+					return;
+				}
+
 				var clinicError = document.querySelector( '.dak-field-error[data-field="clinic_id"]' );
 
 				if ( clinicError ) {
@@ -1597,9 +1604,9 @@
 					formData.append( 'service_ids[]', opt.value );
 				} );
 
-				// Always sent for a clinic visit ('0' when the doctor has no
-				// clinic set up), so the server checks it against the doctor.
-				formData.append( 'clinic_id', selectedClinicId() || '0' );
+				// Required for a clinic visit; the server checks it belongs to
+				// this doctor.
+				formData.append( 'clinic_id', selectedClinicId() );
 			}
 			formData.append( 'patient_id', document.getElementById( 'dak-admin-appointment-patient' ).value );
 			formData.append( 'guest_name', document.getElementById( 'dak-admin-appointment-guest-name' ).value );

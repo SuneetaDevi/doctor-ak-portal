@@ -203,12 +203,15 @@ class Appointments {
 	 * clinics: it must be one of them, unless the doctor has none configured
 	 * yet (then the visit simply has no clinic, 0).
 	 *
-	 * @param int    $doctor_id Doctor's user ID.
-	 * @param int    $clinic_id Chosen Clinics row ID (0 if none chosen).
-	 * @param string $message   Error message when the choice isn't valid.
+	 * @param int    $doctor_id      Doctor's user ID.
+	 * @param int    $clinic_id      Chosen Clinics row ID (0 if none chosen).
+	 * @param string $message        Error message when the choice isn't valid.
+	 * @param bool   $require_clinic True (the admin Add/Edit form): a clinic visit always needs a clinic, so a
+	 *                               doctor with none set up can't be booked for one. False: such a doctor's
+	 *                               visit is simply saved without a clinic, as before.
 	 * @return int|\WP_Error The clinic ID to save, or WP_Error.
 	 */
-	private static function checked_clinic_id( $doctor_id, $clinic_id, $message ) {
+	private static function checked_clinic_id( $doctor_id, $clinic_id, $message, $require_clinic = false ) {
 		$doctor_physical_clinic_ids = array_map(
 			'intval',
 			wp_list_pluck(
@@ -223,7 +226,9 @@ class Appointments {
 		);
 
 		if ( empty( $doctor_physical_clinic_ids ) ) {
-			return 0;
+			return $require_clinic
+				? new \WP_Error( 'doctor_ak_doctor_has_no_clinic', __( 'This doctor has no clinic set up yet, so a clinic visit can’t be booked. Add a clinic for the doctor first, or book an online video visit.', 'doctor-ak-portal' ) )
+				: 0;
 		}
 
 		if ( ! in_array( (int) $clinic_id, $doctor_physical_clinic_ids, true ) ) {
@@ -283,7 +288,8 @@ class Appointments {
 				$clinic_id,
 				empty( $data['admin_override'] )
 					? __( "Please choose which of the doctor's clinics you'd like to visit.", 'doctor-ak-portal' )
-					: __( "Please choose one of this doctor's clinics.", 'doctor-ak-portal' )
+					: __( "Please choose one of this doctor's clinics.", 'doctor-ak-portal' ),
+				! empty( $data['admin_override'] )
 			);
 
 			if ( is_wp_error( $clinic_id ) ) {
@@ -525,7 +531,7 @@ class Appointments {
 			$clinic_id   = 0;
 			$save_clinic = true;
 		} elseif ( array_key_exists( 'clinic_id', $data ) ) {
-			$clinic_id = self::checked_clinic_id( $doctor_id, isset( $data['clinic_id'] ) ? (int) $data['clinic_id'] : 0, __( "Please choose one of this doctor's clinics.", 'doctor-ak-portal' ) );
+			$clinic_id = self::checked_clinic_id( $doctor_id, isset( $data['clinic_id'] ) ? (int) $data['clinic_id'] : 0, __( "Please choose one of this doctor's clinics.", 'doctor-ak-portal' ), true );
 
 			if ( is_wp_error( $clinic_id ) ) {
 				return $clinic_id;

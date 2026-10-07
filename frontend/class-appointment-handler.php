@@ -78,11 +78,12 @@ class Appointment_Handler {
 			'payment_mode'   => isset( $_POST['payment_mode'] ) ? sanitize_key( wp_unslash( $_POST['payment_mode'] ) ) : Appointments::PAYMENT_MODE_MANUAL,
 		);
 
-		// The form's Clinic picker (clinic visits only). Passed through only
-		// when posted, so Appointments::create()/update() check it against
-		// the doctor's own clinics and price the services there.
-		if ( isset( $_POST['clinic_id'] ) ) {
-			$data['clinic_id'] = absint( wp_unslash( $_POST['clinic_id'] ) );
+		// The form's Clinic picker — required for a clinic visit, so it's
+		// always passed on (0 when missing) and Appointments::create()/
+		// update() refuse a visit without one of the doctor's own clinics,
+		// then price the services at that clinic.
+		if ( Appointments::TYPE_VIDEO !== $data['type'] ) {
+			$data['clinic_id'] = isset( $_POST['clinic_id'] ) ? absint( wp_unslash( $_POST['clinic_id'] ) ) : 0;
 		}
 
 		// Only clinic visits are priced by service; a video consultation uses
