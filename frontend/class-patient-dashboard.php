@@ -752,11 +752,12 @@ class Patient_Dashboard {
 	 */
 	private function render_medical_history_tab( \WP_User $user ) {
 		// Medical History is just the patient-facing, read-only view of
-		// their own closed clinical Encounters (see the Encounters class)
-		// — the same problems/prescriptions a doctor records during the
-		// visit, not a separate record. Only closed encounters show here;
-		// a visit still in progress (checked in, not yet closed) belongs on
-		// the Appointments tab instead.
+		// their own clinical Encounters (see the Encounters class) — the
+		// same problems/prescriptions a doctor records during the visit,
+		// not a separate record. Every visit is listed: one the doctor
+		// hasn't closed yet is still shown (marked "In progress", since its
+		// notes may still change) rather than hiding the patient's record
+		// until someone remembers to close it.
 		$encounters = array_map(
 			function ( $encounter ) {
 				$encounter['problems']              = Encounter_Problems::for_encounter( $encounter['id'] );
@@ -769,14 +770,16 @@ class Patient_Dashboard {
 			Encounters::all_flat_for_admin(
 				array(
 					'patient_id' => $user->ID,
-					'status'     => Encounters::STATUS_CLOSED,
 				)
 			)
 		);
 
 		return $this->template_loader->get_template(
 			'dashboard/partials/patient-medical-history.php',
-			array( 'encounters' => $encounters )
+			array(
+				'encounters'      => $encounters,
+				'history_pdf_url' => Encounter_Handler::medical_history_pdf_download_url(),
+			)
 		);
 	}
 

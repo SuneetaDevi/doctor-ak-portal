@@ -1362,8 +1362,14 @@ body.dak-app-page .dak-modal .dak-modal-dialog-form .dak-modal-header {
 body.dak-app-page .dak-modal .dak-modal-body {
 	flex: 1 1 auto !important;
 	min-height: 0 !important;
-	overflow-y: auto !important;
 	padding: 20px 24px !important;
+}
+
+/* Only a form dialog's body is its scroll area (the dialog itself is
+   overflow: hidden there). In any other dialog the dialog scrolls, so the
+   body must not become a scroll box that swallows the mouse wheel. */
+body.dak-app-page .dak-modal .dak-modal-dialog-form .dak-modal-body {
+	overflow-y: auto !important;
 	overscroll-behavior: contain !important;
 }
 
@@ -5515,7 +5521,8 @@ body.dak-app-page .dak-portal .dak-patient-dashboard-side-col .dak-dashboard-car
    gives every hint box padding), with room before the next field. */
 body.dak-app-page .dak-portal .dak-form-card-body .dak-field-hint,
 body.dak-app-page .dak-portal .dak-admin-user-form-card .dak-field-hint,
-body.dak-app-page .dak-portal .dak-form-card-padded .dak-field-hint {
+body.dak-app-page .dak-portal .dak-form-card-padded .dak-field-hint,
+body.dak-app-page .dak-modal .dak-modal-body .dak-field-hint {
 	padding: 0 !important;
 	border: 0 !important;
 	background: none !important;
@@ -5560,4 +5567,23 @@ body.dak-app-page .dak-portal .dak-locations-editor .dak-city-row {
 		flex: 1 1 140px !important;
 		min-width: 0 !important;
 	}
+}
+
+/* Appointments list: patient phone under the name — a tap-to-call link
+   that reads as secondary text, not as a coloured link. */
+body.dak-app-page .dak-portal .dak-appts-cell-patient a.dak-cell-phone {
+	color: var( --dak-muted ) !important;
+	text-decoration: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-cell-patient a.dak-cell-phone:hover,
+body.dak-app-page .dak-portal .dak-appts-cell-patient a.dak-cell-phone:focus-visible {
+	color: var( --dak-text ) !important;
+	text-decoration: underline !important;
+}
+
+/* Toolbar buttons beside a results title keep their label on one line. */
+body.dak-app-page .dak-portal .dak-results-tools-actions .dak-button {
+	flex: 0 0 auto !important;
+	white-space: nowrap !important;
 }

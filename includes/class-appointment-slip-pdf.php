@@ -1,17 +1,12 @@
 <?php
 /**
- * Builds a single appointment's printable "slip" as a standalone PDF — same
- * structured layout as Invoice_Pdf/Encounter_Bill_Pdf (logo header, a
- * reference/date block, a meta table, then a description+amount line and
- * total) instead of the old plain-HTML print page, for the admin
- * Appointments table's "Print" action.
+ * Builds a single appointment's printable slip as a standalone PDF, for the
+ * admin Appointments "Print" action.
  *
  * @package DoctorAKPortal\Includes
  */
 
 namespace DoctorAKPortal\Includes;
-
-use DoctorAKPortal\Frontend\Site_Footer;
 
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -21,9 +16,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class Appointment_Slip_Pdf
  *
- * Builds this one slip layout on top of Pdf_Document's dependency-free
- * PDF-writing primitives (see that class for why — no Composer/vendor
- * setup, so no general-purpose PDF library like Dompdf/mPDF is available).
+ * Layout (see Pdf_Builder for the shared stationery): the appointment's
+ * date, time and visit type large at the top; patient, doctor and place of
+ * care; then the booking details with appointment status and payment
+ * status on separate lines; the charge; and visit instructions drawn only
+ * from existing data. An online visit's meeting link is never printed —
+ * patients join from their dashboard, where access is checked.
  */
 class Appointment_Slip_Pdf extends Pdf_Document {
 
@@ -36,108 +34,124 @@ class Appointment_Slip_Pdf extends Pdf_Document {
 	 * @return string Raw PDF file bytes.
 	 */
 	public static function build( array $appointment, $patient_name, $doctor_name ) {
-		$clinic_name    = get_option( Site_Footer::OPTION_CLINIC_NAME, 'Main Clinic' );
-		$clinic_address = get_option( Site_Footer::OPTION_CLINIC_ADDRESS, '' );
-		$clinic_phone   = get_option( Site_Footer::OPTION_CLINIC_PHONE, '' );
-		$slip_number    = sprintf( 'SLIP-%05d', (int) $appointment['id'] );
-		$slip_date      = date_i18n( get_option( 'date_format' ) );
+		$row = Appointments::notification_data( $appointment['id'] );
+		$row = ! empty( $row ) ? $row : array();
+		$get = function ( $key, $default = '' ) use ( $row, $appointment ) {
+			if ( isset( $row[ $key ] ) ) {
+				return $row[ $key ];
+			}
 
-		$type_label         = Appointments::TYPE_VIDEO === $appointment['type'] ? __( 'Online Video Consultation', 'doctor-ak-portal' ) : __( 'Clinic Appointment', 'doctor-ak-portal' );
-		$service_label      = '' !== $appointment['service_name'] ? $appointment['service_name'] : $type_label;
-		$charge             = (float) $appointment['charge'];
-		$is_paid            = Appointments::PAYMENT_STATUS_PAID === $appointment['payment_status'];
-		$payment_mode_label = Appointments::PAYMENT_MODE_ONLINE === $appointment['payment_mode'] ? __( 'Online', 'doctor-ak-portal' ) : __( 'Manual', 'doctor-ak-portal' );
-		$datetime_label     = date_i18n( 'd/m/Y h:i A', strtotime( $appointment['date'] . ' ' . $appointment['time'] ) );
-		$amount_label       = $charge > 0 ? 'PKR ' . number_format( $charge, 0 ) : __( 'Free', 'doctor-ak-portal' );
+			return isset( $appointment[ $key ] ) ? $appointment[ $key ] : $default;
+		};
 
-		$logo = self::load_logo_jpeg();
+		$is_video   = Appointments::TYPE_VIDEO === $appointment['type'];
+		$is_paid    = Appointments::PAYMENT_STATUS_PAID === $appointment['payment_status'];
+		$charge     = (float) $appointment['charge'];
+		$start      = strtotime( $appointment['date'] . ' ' . $appointment['time'] );
+		$type_label = $is_video ? __( 'Online video consultation', 'doctor-ak-portal' ) : __( 'Clinic visit', 'doctor-ak-portal' );
+		$service    = '' !== (string) $appointment['service_name'] ? $appointment['service_name'] : $type_label;
 
-		$left   = 50;
-		$right  = self::PAGE_WIDTH - 50;
-		$y      = self::PAGE_HEIGHT - 60;
-		$stream = '';
+		$pdf = new Pdf_Builder( __( 'Appointment Slip', 'doctor-ak-portal' ), sprintf( 'SLIP-%05d', (int) $appointment['id'] ) );
 
-		$text_x = $left;
-
-		if ( $logo ) {
-			$stream .= self::draw_image( 'Im1', $left, $y - $logo['height'] + 10, $logo['width'], $logo['height'] );
-			$text_x  = $left + $logo['width'] + 15;
-		}
-
-		$stream .= self::draw_text( $text_x, $y, 'F2', 14, $clinic_name );
-		$y      -= 16;
-
-		if ( '' !== $clinic_address ) {
-			$stream .= self::draw_text( $text_x, $y, 'F1', 9, $clinic_address, 0.4 );
-			$y      -= 12;
-		}
-
-		if ( '' !== $clinic_phone ) {
-			$stream .= self::draw_text( $text_x, $y, 'F1', 9, $clinic_phone, 0.4 );
-			$y      -= 12;
-		}
-
-		// "APPOINTMENT SLIP" block, top-right.
-		$header_block_y = self::PAGE_HEIGHT - 60;
-		$stream        .= self::draw_text_right( $right, $header_block_y, 'F2', 14, __( 'APPOINTMENT SLIP', 'doctor-ak-portal' ) );
-		$stream        .= self::draw_text_right( $right, $header_block_y - 16, 'F1', 9, $slip_number, 0.4 );
-		$stream        .= self::draw_text_right( $right, $header_block_y - 28, 'F1', 9, $slip_date, 0.4 );
-
-		$y = min( $y, $header_block_y - 28 ) - 40;
-
-		$stream .= self::draw_text( $left, $y, 'F1', 8, strtoupper( __( 'Patient', 'doctor-ak-portal' ) ), 0.4 );
-		$y      -= 14;
-		$stream .= self::draw_text( $left, $y, 'F2', 11, $patient_name );
-		$y      -= 28;
-
-		// Meta rows — label left, value right.
-		$meta_rows = array(
-			array( __( 'Doctor', 'doctor-ak-portal' ), sprintf( /* translators: %s: doctor's display name. */ __( 'Dr. %s', 'doctor-ak-portal' ), $doctor_name ) ),
-			array( __( 'Type', 'doctor-ak-portal' ), $type_label ),
-			array( __( 'Date & Time', 'doctor-ak-portal' ), $datetime_label ),
-			array( __( 'Payment Mode', 'doctor-ak-portal' ), $payment_mode_label ),
-			array( __( 'Payment Status', 'doctor-ak-portal' ), $is_paid ? __( 'Paid', 'doctor-ak-portal' ) : __( 'Pending', 'doctor-ak-portal' ) ),
+		$pdf->header(
+			array(
+				array( __( 'Slip no.', 'doctor-ak-portal' ), sprintf( 'SLIP-%05d', (int) $appointment['id'] ) ),
+				array( __( 'Appointment', 'doctor-ak-portal' ), sprintf( 'APT-%04d', (int) $appointment['id'] ) ),
+				array( __( 'Issued', 'doctor-ak-portal' ), date_i18n( 'd M Y' ) ),
+			)
 		);
 
-		// Values sit in a fixed left-aligned column (not right-aligned to the
-		// page edge) so they all start at the same x position — "Dr. Ajeet
-		// Kumar Lohana", "Online" and "Paid" being right-justified against
-		// the far margin instead left their starting edges zigzagging all
-		// over the row, which read as misaligned rather than as a clean
-		// label/value block. 150pt clears the widest label ("Payment
-		// Status" at 9pt) with room to spare.
-		$meta_value_x = $left + 150;
+		$pdf->facts(
+			array(
+				array( __( 'Date', 'doctor-ak-portal' ), false !== $start ? date_i18n( 'D, d M Y', $start ) : (string) $appointment['date'] ),
+				array( __( 'Time', 'doctor-ak-portal' ), false !== $start ? date_i18n( 'h:i A', $start ) : (string) $appointment['time'] ),
+				array( __( 'Visit type', 'doctor-ak-portal' ), $is_video ? __( 'Online video', 'doctor-ak-portal' ) : __( 'Clinic visit', 'doctor-ak-portal' ) ),
+			)
+		);
 
-		foreach ( $meta_rows as $meta_row ) {
-			$stream .= self::draw_text( $left, $y, 'F1', 9, $meta_row[0], 0.45 );
-			$stream .= self::draw_text( $meta_value_x, $y, 'F2', 9, $meta_row[1] );
-			$y      -= 17;
+		$pdf->people(
+			array(
+				array(
+					'label' => __( 'Patient', 'doctor-ak-portal' ),
+					'lines' => Pdf_Builder::patient_lines( $patient_name, (int) $appointment['patient_id'], $get( 'patient_age' ), $get( 'patient_phone' ) ),
+				),
+				array(
+					'label' => __( 'Doctor', 'doctor-ak-portal' ),
+					'lines' => Pdf_Builder::doctor_lines( (int) $appointment['doctor_id'], $doctor_name ),
+				),
+				array(
+					'label' => $is_video ? __( 'Location', 'doctor-ak-portal' ) : __( 'Clinic', 'doctor-ak-portal' ),
+					'lines' => Pdf_Builder::place_lines( $appointment['type'], (int) $appointment['clinic_id'], $get( 'clinic_name' ), $get( 'clinic_address' ) ),
+				),
+			)
+		);
+
+		$pdf->section( __( 'Booking details', 'doctor-ak-portal' ), 60 );
+
+		$refund = '';
+
+		if ( '' !== (string) $get( 'refund_status' ) ) {
+			$refund = ucfirst( (string) $get( 'refund_status' ) );
+
+			if ( (float) $get( 'refund_amount', 0 ) > 0 ) {
+				$refund .= ' · ' . Dashboard_Format::money( $get( 'refund_amount', 0 ) );
+			}
 		}
 
-		$y -= 8;
+		$pdf->details(
+			array(
+				array( __( 'Service', 'doctor-ak-portal' ), $service, 'strong' ),
+				array( __( 'Appointment status', 'doctor-ak-portal' ), (string) $get( 'status_label', ucfirst( str_replace( '_', ' ', (string) $appointment['status'] ) ) ) ),
+				array( __( 'Payment status', 'doctor-ak-portal' ), $is_paid ? __( 'Paid', 'doctor-ak-portal' ) : ( $charge > 0 ? __( 'Payment pending', 'doctor-ak-portal' ) : __( 'Nothing to pay', 'doctor-ak-portal' ) ) ),
+				array( __( 'Payment method', 'doctor-ak-portal' ), $charge > 0 ? ( Appointments::PAYMENT_MODE_ONLINE === $appointment['payment_mode'] ? __( 'Online', 'doctor-ak-portal' ) : __( 'At the clinic', 'doctor-ak-portal' ) ) : '' ),
+				array( __( 'Transaction reference', 'doctor-ak-portal' ), (string) $get( 'online_order_id' ) ),
+				array( __( 'Refund', 'doctor-ak-portal' ), $refund ),
+			)
+		);
 
-		// Description/amount table, matching Invoice_Pdf/Encounter_Bill_Pdf.
-		$stream .= self::draw_line( $left, $y, $right, $y, 0.1, 0.1, 0.1, 1.2 );
-		$y      -= 14;
-		$stream .= self::draw_text( $left, $y, 'F2', 9, strtoupper( __( 'Description', 'doctor-ak-portal' ) ) );
-		$stream .= self::draw_text_right( $right, $y, 'F2', 9, strtoupper( __( 'Amount', 'doctor-ak-portal' ) ) );
-		$y      -= 8;
-		$stream .= self::draw_line( $left, $y, $right, $y, 0.6, 0.6, 0.6 );
-		$y      -= 16;
+		$pdf->space( 4 );
+		$pdf->table(
+			array(
+				array( 'label' => __( 'Description', 'doctor-ak-portal' ), 'width' => null ),
+				array( 'label' => __( 'Amount', 'doctor-ak-portal' ), 'width' => 120, 'align' => 'right' ),
+			),
+			array(
+				array(
+					'cells' => array(
+						array( 'text' => $service, 'sub' => $service !== $type_label ? $type_label : '' ),
+						$charge > 0 ? Dashboard_Format::money( $charge ) : __( 'Free', 'doctor-ak-portal' ),
+					),
+				),
+			)
+		);
 
-		$stream .= self::draw_text( $left, $y, 'F1', 10, $service_label );
-		$stream .= self::draw_text_right( $right, $y, 'F1', 10, $amount_label );
-		$y      -= 16;
+		$total_rows = array( array( __( 'Total', 'doctor-ak-portal' ), $charge > 0 ? Dashboard_Format::money( $charge ) : __( 'Free', 'doctor-ak-portal' ), 'strong' ) );
 
-		$stream .= self::draw_line( $left, $y, $right, $y, 0.6, 0.6, 0.6 );
-		$y      -= 20;
+		if ( $charge > 0 ) {
+			$total_rows[] = array( __( 'Amount paid', 'doctor-ak-portal' ), Dashboard_Format::money( $is_paid ? $charge : 0 ) );
+			$total_rows[] = array( __( 'Balance due', 'doctor-ak-portal' ), Dashboard_Format::money( $is_paid ? 0 : $charge ) );
+		}
 
-		$stream .= self::draw_text_right( $right - 90, $y, 'F2', 11, __( 'Total', 'doctor-ak-portal' ) );
-		$stream .= self::draw_text_right( $right, $y, 'F2', 11, $amount_label );
-		$y      -= 40;
+		$pdf->totals( $total_rows );
 
-		$stream .= self::draw_text( $left, $y, 'F1', 9, __( 'Thank you for choosing us — we look forward to seeing you.', 'doctor-ak-portal' ), 0.4 );
+		$notes = trim( (string) $get( 'notes' ) );
 
-		return self::assemble_single_page( $stream, $logo );
+		if ( '' !== $notes ) {
+			$pdf->section( __( 'Notes from booking', 'doctor-ak-portal' ) );
+			$pdf->paragraph( $notes );
+		}
+
+		if ( $is_video && ! in_array( $appointment['status'], array( Appointments::STATUS_CANCELLED, Appointments::STATUS_COMPLETED ), true ) ) {
+			$pdf->section( __( 'Joining your video consultation', 'doctor-ak-portal' ) );
+			$pdf->paragraph(
+				sprintf(
+					/* translators: %d: minutes before the start time. */
+					__( 'Sign in and open Appointments in your patient dashboard. The Join button appears %d minutes before the start time once payment is complete. For your privacy, the meeting link is not printed on this slip.', 'doctor-ak-portal' ),
+					Appointments::VIDEO_JOIN_WINDOW_BEFORE_MINUTES
+				)
+			);
+		}
+
+		return $pdf->render();
 	}
 }

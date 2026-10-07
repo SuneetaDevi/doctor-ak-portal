@@ -7,8 +7,6 @@
 
 namespace DoctorAKPortal\Includes;
 
-use DoctorAKPortal\Frontend\Site_Footer;
-
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -17,203 +15,120 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class Prescription_Pdf
  *
- * Builds this one prescription layout on top of Pdf_Document's
- * dependency-free PDF-writing primitives (see that class for why).
+ * Clinical readability first: patient, prescribing doctor and place of care
+ * at the top; the recorded problems with their notes; then the medicines
+ * table (medicine, dose, frequency, duration) with each medicine's
+ * instructions on a full-width line beneath it, so long instructions wrap
+ * instead of being squeezed or cut off. Every clinical value is printed
+ * exactly as recorded. The signature line is a place to sign by hand — no
+ * signature, stamp or registration number is printed unless the record
+ * holds one (it currently has no such fields).
  */
 class Prescription_Pdf extends Pdf_Document {
 
 	/**
 	 * Builds the prescription PDF for one encounter.
 	 *
-	 * @param array $appointment   Row from Appointments::notification_data() (or ::get(), with patient_name/doctor_name resolved).
+	 * @param array $appointment   Row from Appointments::notification_data() — or, when that appointment no longer exists, at least patient_name/doctor_name.
 	 * @param array $encounter     Row from Encounters::find().
 	 * @param array $problems      Rows from Encounter_Problems::for_encounter().
 	 * @param array $prescriptions Rows from Encounter_Prescriptions::for_encounter().
 	 * @return string Raw PDF file bytes.
 	 */
 	public static function build( array $appointment, array $encounter, array $problems, array $prescriptions ) {
-		$clinic_name    = get_option( Site_Footer::OPTION_CLINIC_NAME, 'Main Clinic' );
-		$clinic_address = get_option( Site_Footer::OPTION_CLINIC_ADDRESS, '' );
-		$clinic_phone   = get_option( Site_Footer::OPTION_CLINIC_PHONE, '' );
-		$visit_date     = date_i18n( 'd/m/Y h:i A', strtotime( $encounter['checked_in_at'] ) );
+		$get = function ( $key, $default = '' ) use ( $appointment ) {
+			return isset( $appointment[ $key ] ) ? $appointment[ $key ] : $default;
+		};
 
-		$logo = self::load_logo_jpeg();
+		$encounter_ref = sprintf( 'ENC-%04d', (int) $encounter['id'] );
+		$visit_ts      = strtotime( (string) $encounter['checked_in_at'] );
+		$doctor_id     = (int) $get( 'doctor_id', isset( $encounter['doctor_id'] ) ? $encounter['doctor_id'] : 0 );
+		$patient_id    = (int) $get( 'patient_id', isset( $encounter['patient_id'] ) ? $encounter['patient_id'] : 0 );
+		$clinic_id     = (int) $get( 'clinic_id', isset( $encounter['clinic_id'] ) ? $encounter['clinic_id'] : 0 );
+		$type          = (string) $get( 'type', $clinic_id > 0 ? Appointments::TYPE_CLINIC : '' );
 
-		$left   = 50;
-		$right  = self::PAGE_WIDTH - 50;
-		$y      = self::PAGE_HEIGHT - 60;
-		$stream = '';
+		$pdf = new Pdf_Builder( __( 'Prescription', 'doctor-ak-portal' ), $encounter_ref );
 
-		$text_x = $left;
+		$pdf->header(
+			array(
+				array( __( 'Encounter', 'doctor-ak-portal' ), $encounter_ref ),
+				array( __( 'Visit date', 'doctor-ak-portal' ), false !== $visit_ts ? date_i18n( 'd M Y, h:i A', $visit_ts ) : '' ),
+				array( __( 'Issued', 'doctor-ak-portal' ), date_i18n( 'd M Y' ) ),
+			)
+		);
 
-		if ( $logo ) {
-			$stream .= self::draw_image( 'Im1', $left, $y - $logo['height'] + 10, $logo['width'], $logo['height'] );
-			$text_x  = $left + $logo['width'] + 15;
-		}
+		$doctor_lines = Pdf_Builder::doctor_lines( $doctor_id, $get( 'doctor_name' ) );
 
-		$stream .= self::draw_text( $text_x, $y, 'F2', 14, $clinic_name );
-		$y      -= 16;
+		$pdf->people(
+			array(
+				array(
+					'label' => __( 'Patient', 'doctor-ak-portal' ),
+					'lines' => Pdf_Builder::patient_lines( $get( 'patient_name' ), $patient_id, $get( 'patient_age' ), $get( 'patient_phone' ) ),
+				),
+				array(
+					'label' => __( 'Prescribing doctor', 'doctor-ak-portal' ),
+					'lines' => $doctor_lines,
+				),
+				array(
+					'label' => Appointments::TYPE_VIDEO === $type ? __( 'Location', 'doctor-ak-portal' ) : __( 'Clinic', 'doctor-ak-portal' ),
+					'lines' => Pdf_Builder::place_lines( $type, $clinic_id, $get( 'clinic_name' ), $get( 'clinic_address' ) ),
+				),
+			)
+		);
 
-		if ( '' !== $clinic_address ) {
-			$stream .= self::draw_text( $text_x, $y, 'F1', 9, $clinic_address, 0.4 );
-			$y      -= 12;
-		}
+		$pdf->section( __( 'Diagnosis & problems', 'doctor-ak-portal' ) );
 
-		if ( '' !== $clinic_phone ) {
-			$stream .= self::draw_text( $text_x, $y, 'F1', 9, $clinic_phone, 0.4 );
-			$y      -= 12;
-		}
+		if ( empty( $problems ) ) {
+			$pdf->paragraph( __( 'No problems recorded for this visit.', 'doctor-ak-portal' ), 'muted' );
+		} else {
+			foreach ( array_values( $problems ) as $index => $problem ) {
+				$pdf->list_item( ( $index + 1 ) . '.', $problem['description'], 'strong' );
 
-		// "Rx" block, top-right.
-		$rx_block_y = self::PAGE_HEIGHT - 60;
-		$stream    .= self::draw_text_right( $right, $rx_block_y, 'F2', 18, __( 'Rx', 'doctor-ak-portal' ) );
-		$stream    .= self::draw_text_right( $right, $rx_block_y - 20, 'F1', 9, $visit_date, 0.4 );
-
-		$y = min( $y, $rx_block_y - 20 ) - 30;
-
-		$stream .= self::draw_line( $left, $y, $right, $y, 0.1, 0.1, 0.1, 1.2 );
-		$y      -= 16;
-
-		$stream .= self::draw_text( $left, $y, 'F1', 8, strtoupper( __( 'Patient', 'doctor-ak-portal' ) ), 0.4 );
-		$stream .= self::draw_text_right( $right, $y, 'F1', 8, strtoupper( __( 'Doctor', 'doctor-ak-portal' ) ), 0.4 );
-		$y      -= 14;
-		$stream .= self::draw_text( $left, $y, 'F2', 11, $appointment['patient_name'] );
-		/* translators: %s: doctor's display name. */
-		$stream .= self::draw_text_right( $right, $y, 'F2', 11, sprintf( __( 'Dr. %s', 'doctor-ak-portal' ), $appointment['doctor_name'] ) );
-		$y      -= 30;
-
-		if ( ! empty( $problems ) ) {
-			$stream .= self::draw_text( $left, $y, 'F2', 10, strtoupper( __( 'Diagnosis', 'doctor-ak-portal' ) ) );
-			$y      -= 14;
-
-			// Long clinical notes need to wrap within the page instead of
-			// running off its right edge — a bullet-indent hanging layout:
-			// "• " only on the first wrapped line, later lines aligned
-			// under the text rather than the bullet.
-			$bullet_indent = 12;
-			$wrap_width    = ( $right - $left ) - $bullet_indent;
-
-			foreach ( $problems as $problem ) {
-				$line = $problem['description'];
-
-				if ( '' !== $problem['notes'] ) {
-					$line .= ' — ' . $problem['notes'];
-				}
-
-				$wrapped = self::wrap_text( $line, 'F1', 9, $wrap_width );
-
-				foreach ( $wrapped as $index => $wrapped_line ) {
-					$prefix = 0 === $index ? '• ' : '';
-					$x      = 0 === $index ? $left : $left + $bullet_indent;
-
-					$stream .= self::draw_text( $x, $y, 'F1', 9, $prefix . $wrapped_line, 0.2 );
-					$y      -= 13;
+				if ( '' !== trim( (string) $problem['notes'] ) ) {
+					$pdf->paragraph( $problem['notes'], 'body', $pdf->indent_x(), $pdf->width - 18 );
+				} else {
+					$pdf->space( 4 );
 				}
 			}
-
-			$y -= 14;
 		}
 
-		$stream .= self::draw_text( $left, $y, 'F2', 10, strtoupper( __( 'Medicines', 'doctor-ak-portal' ) ) );
-		$y      -= 8;
-		$y      -= 8;
-		$stream .= self::draw_line( $left, $y, $right, $y, 0.1, 0.1, 0.1, 1.2 );
-		$y      -= 14;
-
-		$col_name         = $left;
-		$col_dosage        = $left + 150;
-		$col_frequency     = $left + 240;
-		$col_duration      = $left + 340;
-		$col_instructions  = $left + 410;
-
-		$stream .= self::draw_table_row(
-			array(
-				array( 'x' => $col_name, 'text' => strtoupper( __( 'Medicine', 'doctor-ak-portal' ) ) ),
-				array( 'x' => $col_dosage, 'text' => strtoupper( __( 'Dosage', 'doctor-ak-portal' ) ) ),
-				array( 'x' => $col_frequency, 'text' => strtoupper( __( 'Frequency', 'doctor-ak-portal' ) ) ),
-				array( 'x' => $col_duration, 'text' => strtoupper( __( 'Duration', 'doctor-ak-portal' ) ) ),
-				array( 'x' => $col_instructions, 'text' => strtoupper( __( 'Notes', 'doctor-ak-portal' ) ) ),
-			),
-			$y,
-			'F2',
-			8
-		);
-		$y -= 6;
-		$stream .= self::draw_line( $left, $y, $right, $y, 0.6, 0.6, 0.6 );
-		$y      -= 16;
+		$pdf->space( 6 );
+		$pdf->section( __( 'Medicines (Rx)', 'doctor-ak-portal' ), 60 );
 
 		if ( empty( $prescriptions ) ) {
-			$stream .= self::draw_text( $left, $y, 'F1', 9, __( 'No medicines prescribed.', 'doctor-ak-portal' ), 0.4 );
-			$y      -= 16;
+			$pdf->paragraph( __( 'No medicines prescribed.', 'doctor-ak-portal' ), 'muted' );
 		} else {
-			foreach ( $prescriptions as $prescription ) {
-				$stream .= self::draw_table_row(
-					array(
-						array( 'x' => $col_name, 'text' => $prescription['medicine_name'] ),
-						array( 'x' => $col_dosage, 'text' => $prescription['dosage'] ),
-						array( 'x' => $col_frequency, 'text' => $prescription['frequency'] ),
-						array( 'x' => $col_duration, 'text' => $prescription['duration'] ),
-						array( 'x' => $col_instructions, 'text' => $prescription['instructions'] ),
+			$rows = array();
+
+			foreach ( array_values( $prescriptions ) as $index => $prescription ) {
+				$rows[] = array(
+					'cells'      => array(
+						(string) ( $index + 1 ),
+						array( 'text' => $prescription['medicine_name'], 'bold' => true ),
+						$prescription['dosage'],
+						$prescription['frequency'],
+						$prescription['duration'],
 					),
-					$y,
-					'F1',
-					9
+					'note'       => $prescription['instructions'],
+					'note_label' => __( 'Instructions', 'doctor-ak-portal' ),
 				);
-				$y -= 18;
 			}
+
+			$pdf->table(
+				array(
+					array( 'label' => '#', 'width' => 24 ),
+					array( 'label' => __( 'Medicine', 'doctor-ak-portal' ), 'width' => null ),
+					array( 'label' => __( 'Dose', 'doctor-ak-portal' ), 'width' => 92 ),
+					array( 'label' => __( 'Frequency', 'doctor-ak-portal' ), 'width' => 100 ),
+					array( 'label' => __( 'Duration', 'doctor-ak-portal' ), 'width' => 80 ),
+				),
+				$rows
+			);
 		}
 
-		$y -= 30;
-		$stream .= self::draw_line( $right - 160, $y, $right, $y, 0.6, 0.6, 0.6 );
-		$y      -= 12;
-		/* translators: %s: doctor's display name. */
-		$stream .= self::draw_text_right( $right, $y, 'F1', 9, sprintf( __( 'Dr. %s', 'doctor-ak-portal' ), $appointment['doctor_name'] ), 0.4 );
+		$qualification = isset( $doctor_lines[1] ) && 'body' === $doctor_lines[1]['style'] ? $doctor_lines[1]['text'] : '';
+		$pdf->signature( $doctor_lines[0]['text'], $qualification );
 
-		return self::assemble_single_page( $stream, $logo );
-	}
-
-	/**
-	 * Greedy word-wraps text to fit within $max_width, with no line limit
-	 * or truncation — unlike Doctor_Statement_Pdf's fit_text()/wrap_lines()
-	 * (which cap a fixed-height table cell at N lines and truncate with
-	 * '...' past that), a diagnosis note has no such height limit here, so
-	 * it should just keep flowing onto as many lines as it needs rather
-	 * than ever being cut off.
-	 *
-	 * @param string $text      Text to wrap.
-	 * @param string $font      'F1' (regular) or 'F2' (bold).
-	 * @param int    $size      Font size.
-	 * @param float  $max_width Available width, in PDF points.
-	 * @return string[] One or more lines.
-	 */
-	private static function wrap_text( $text, $font, $size, $max_width ) {
-		if ( $max_width <= 0 || '' === trim( $text ) ) {
-			return array( $text );
-		}
-
-		$bold           = 'F2' === $font;
-		$avg_char_width = $size * ( $bold ? 0.60 : 0.52 );
-		$max_chars      = max( 1, (int) floor( $max_width / $avg_char_width ) );
-
-		$words = preg_split( '/\s+/', trim( $text ) );
-		$lines = array();
-		$line  = '';
-
-		foreach ( $words as $word ) {
-			$candidate = '' === $line ? $word : $line . ' ' . $word;
-
-			if ( self::mb_strlen_safe( $candidate ) <= $max_chars || '' === $line ) {
-				$line = $candidate;
-			} else {
-				$lines[] = $line;
-				$line    = $word;
-			}
-		}
-
-		if ( '' !== $line ) {
-			$lines[] = $line;
-		}
-
-		return $lines;
+		return $pdf->render();
 	}
 }

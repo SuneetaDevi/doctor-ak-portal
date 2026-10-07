@@ -249,3 +249,45 @@ body.dak-modal-open {
 		width: 100% !important;
 	}
 }
+
+/* Join/Start call: shown only if the browser blocked the new call tab
+   (see doctor-ak-video-call.js) — a link to open the call manually. */
+.dak-video-call-notice {
+	position: fixed !important;
+	left: 50% !important;
+	bottom: 24px !important;
+	z-index: 100001 !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	max-width: calc( 100vw - 32px ) !important;
+	padding: 12px 12px 12px 16px !important;
+	border: 1px solid #e3e6ea !important;
+	border-radius: 10px !important;
+	background: #ffffff !important;
+	color: #1a2733 !important;
+	box-shadow: 0 8px 24px rgba( 15, 23, 32, 0.18 ) !important;
+	font-size: 14px !important;
+	transform: translateX( -50% ) !important;
+}
+
+.dak-video-call-notice[hidden] {
+	display: none !important;
+}
+
+.dak-video-call-notice-link {
+	color: #16634b !important;
+	font-weight: 600 !important;
+	text-decoration: underline !important;
+}
+
+.dak-video-call-notice-close {
+	margin-left: 4px !important;
+	padding: 0 6px !important;
+	border: 0 !important;
+	background: none !important;
+	color: #5c6773 !important;
+	font-size: 20px !important;
+	line-height: 1 !important;
+	cursor: pointer !important;
+}

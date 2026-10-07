@@ -199,6 +199,41 @@ class Appointments {
 	}
 
 	/**
+	 * Checks a clinic visit's clinic against the doctor's own physical
+	 * clinics: it must be one of them, unless the doctor has none configured
+	 * yet (then the visit simply has no clinic, 0).
+	 *
+	 * @param int    $doctor_id Doctor's user ID.
+	 * @param int    $clinic_id Chosen Clinics row ID (0 if none chosen).
+	 * @param string $message   Error message when the choice isn't valid.
+	 * @return int|\WP_Error The clinic ID to save, or WP_Error.
+	 */
+	private static function checked_clinic_id( $doctor_id, $clinic_id, $message ) {
+		$doctor_physical_clinic_ids = array_map(
+			'intval',
+			wp_list_pluck(
+				array_filter(
+					Clinics::get_for_doctor( $doctor_id ),
+					function ( $clinic ) {
+						return Clinics::TYPE_PHYSICAL === $clinic['type'];
+					}
+				),
+				'id'
+			)
+		);
+
+		if ( empty( $doctor_physical_clinic_ids ) ) {
+			return 0;
+		}
+
+		if ( ! in_array( (int) $clinic_id, $doctor_physical_clinic_ids, true ) ) {
+			return new \WP_Error( 'doctor_ak_invalid_clinic', $message );
+		}
+
+		return (int) $clinic_id;
+	}
+
+	/**
 	 * Validates and saves a new appointment.
 	 *
 	 * @param array $data {
@@ -233,33 +268,27 @@ class Appointments {
 		// locations the patient is going to when the doctor practices at more
 		// than one — see Booking_Page::clinics_by_doctor(). Doctors with no
 		// physical clinic configured yet (legacy/incomplete profiles) are
-		// exempt, since there's nothing to pick from. Only enforced for the
-		// real patient-facing booking flow — the admin "Add Appointment"
-		// modal has no clinic picker yet, so admin_override bookings simply
-		// accept whatever (or no) clinic_id was posted rather than blocking
-		// the admin on a field their form doesn't offer.
+		// exempt, since there's nothing to pick from. Always checked for the
+		// patient-facing booking; an admin_override booking is checked too
+		// whenever it sends a clinic_id (the admin Add/Edit Appointment form
+		// and the encounter walk-in both do) — a caller that sends none keeps
+		// its old behaviour of saving no clinic.
 		$clinic_id = isset( $data['clinic_id'] ) ? (int) $data['clinic_id'] : 0;
 
-		if ( self::TYPE_CLINIC === $type && empty( $data['admin_override'] ) ) {
-			$doctor_physical_clinic_ids = wp_list_pluck(
-				array_filter(
-					Clinics::get_for_doctor( $doctor_id ),
-					function ( $clinic ) {
-						return Clinics::TYPE_PHYSICAL === $clinic['type'];
-					}
-				),
-				'id'
+		if ( self::TYPE_VIDEO === $type ) {
+			$clinic_id = 0;
+		} elseif ( empty( $data['admin_override'] ) || array_key_exists( 'clinic_id', $data ) ) {
+			$clinic_id = self::checked_clinic_id(
+				$doctor_id,
+				$clinic_id,
+				empty( $data['admin_override'] )
+					? __( "Please choose which of the doctor's clinics you'd like to visit.", 'doctor-ak-portal' )
+					: __( "Please choose one of this doctor's clinics.", 'doctor-ak-portal' )
 			);
 
-			if ( ! empty( $doctor_physical_clinic_ids ) && ! in_array( $clinic_id, $doctor_physical_clinic_ids, true ) ) {
-				return new \WP_Error( 'doctor_ak_invalid_clinic', __( "Please choose which of the doctor's clinics you'd like to visit.", 'doctor-ak-portal' ) );
+			if ( is_wp_error( $clinic_id ) ) {
+				return $clinic_id;
 			}
-
-			if ( empty( $doctor_physical_clinic_ids ) ) {
-				$clinic_id = 0;
-			}
-		} elseif ( self::TYPE_VIDEO === $type ) {
-			$clinic_id = 0;
 		}
 
 		$date = isset( $data['date'] ) ? sanitize_text_field( $data['date'] ) : '';
@@ -485,6 +514,34 @@ class Appointments {
 			return new \WP_Error( 'doctor_ak_video_not_offered', __( 'This doctor does not offer online video consultations.', 'doctor-ak-portal' ) );
 		}
 
+		// Clinic: a video visit has none; a clinic visit's clinic is checked
+		// and saved whenever the caller sends one (the admin Edit form does),
+		// and left exactly as stored when it doesn't.
+		$stored_clinic_id = (int) get_post_meta( $appointment_id, 'doctor_ak_appointment_clinic_id', true );
+		$clinic_id        = $stored_clinic_id;
+		$save_clinic      = false;
+
+		if ( self::TYPE_VIDEO === $type ) {
+			$clinic_id   = 0;
+			$save_clinic = true;
+		} elseif ( array_key_exists( 'clinic_id', $data ) ) {
+			$clinic_id = self::checked_clinic_id( $doctor_id, isset( $data['clinic_id'] ) ? (int) $data['clinic_id'] : 0, __( "Please choose one of this doctor's clinics.", 'doctor-ak-portal' ) );
+
+			if ( is_wp_error( $clinic_id ) ) {
+				return $clinic_id;
+			}
+
+			$save_clinic = true;
+		}
+
+		// A checked-in visit's open encounter belongs to the clinic the
+		// patient was checked in at — it can't be moved to another one.
+		if ( $save_clinic && $clinic_id !== $stored_clinic_id
+			&& self::STATUS_CHECKED_IN === get_post_meta( $appointment_id, 'doctor_ak_appointment_status', true )
+		) {
+			return new \WP_Error( 'doctor_ak_appointment_checked_in_clinic', __( 'This patient is already checked in at a clinic, so the clinic can’t be changed.', 'doctor-ak-portal' ) );
+		}
+
 		$date = isset( $data['date'] ) ? sanitize_text_field( $data['date'] ) : '';
 		$time = isset( $data['time'] ) ? sanitize_text_field( $data['time'] ) : '';
 
@@ -544,7 +601,9 @@ class Appointments {
 				$discount_percent = $pricing['discount_percent'];
 			}
 		} else {
-			$resolved = self::resolve_services( $data, $doctor_id, $type );
+			// With a clinic chosen, each service is priced (and checked as
+			// offered) at that clinic — same as create(); otherwise as before.
+			$resolved = self::resolve_services( $data, $doctor_id, $type, $save_clinic ? $clinic_id : 0 );
 
 			if ( is_wp_error( $resolved ) ) {
 				return $resolved;
@@ -601,6 +660,11 @@ class Appointments {
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_guest_email', $guest_email );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_guest_phone', $guest_phone );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_type', $type );
+
+		if ( $save_clinic ) {
+			update_post_meta( $appointment_id, 'doctor_ak_appointment_clinic_id', $clinic_id );
+		}
+
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_date', $date );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_time', $time );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_status', $status );

@@ -1337,9 +1337,7 @@ class Admin_Dashboard {
 		$results = array();
 
 		foreach ( Appointments::all_for_admin() as $row ) {
-			$haystack = mb_strtolower( $row['patient_name'] . ' ' . $row['doctor_name'] . ' ' . $row['guest_name'] );
-
-			if ( false === mb_strpos( $haystack, $needle ) ) {
+			if ( ! self::appointment_matches_search( $row, $needle ) ) {
 				continue;
 			}
 
@@ -1360,6 +1358,30 @@ class Admin_Dashboard {
 		}
 
 		return $results;
+	}
+
+	/**
+	 * Whether an appointment row matches a search term: patient, doctor or
+	 * guest name, the APT-0123 reference, or the patient's phone. Phone
+	 * matching ignores spaces/dashes and a leading 0 or +92, so
+	 * "0300 1234567", "03001234567" and "+923001234567" all find the same
+	 * patient.
+	 *
+	 * @param array  $row    Row from Appointments::all_for_admin().
+	 * @param string $needle Lower-cased search term.
+	 * @return bool
+	 */
+	private static function appointment_matches_search( array $row, $needle ) {
+		$haystack = mb_strtolower( $row['patient_name'] . ' ' . $row['doctor_name'] . ' ' . $row['guest_name'] . ' ' . sprintf( 'apt-%04d', $row['id'] ) . ' ' . $row['patient_phone'] );
+
+		if ( false !== mb_strpos( $haystack, $needle ) ) {
+			return true;
+		}
+
+		$needle_digits = preg_replace( '/^(?:92|0)+/', '', preg_replace( '/\D+/', '', $needle ) );
+		$phone_digits  = preg_replace( '/\D+/', '', (string) $row['patient_phone'] );
+
+		return strlen( $needle_digits ) >= 4 && '' !== $phone_digits && false !== strpos( $phone_digits, $needle_digits );
 	}
 
 	/**
@@ -2001,9 +2023,7 @@ class Admin_Dashboard {
 					array_filter(
 						$appointments,
 						function ( $row ) use ( $needle ) {
-							$haystack = mb_strtolower( $row['patient_name'] . ' ' . $row['doctor_name'] . ' ' . $row['guest_name'] );
-
-							return false !== mb_strpos( $haystack, $needle );
+							return self::appointment_matches_search( $row, $needle );
 						}
 					)
 				);
@@ -2584,8 +2604,38 @@ class Admin_Dashboard {
 				'patient_options' => Appointments::patient_options(),
 				'status_options'  => Appointments::status_options(),
 				'services'        => $this->services_by_doctor_and_type(),
+				'clinics'         => $this->physical_clinics_by_doctor(),
 			)
 		);
+	}
+
+	/**
+	 * Every doctor's physical clinics, for the Appointments modal's Clinic
+	 * picker: [doctor_id] => [{id, name, place, location_id}, ...].
+	 * `location_id` is the shared Clinic_Locations id that services' per-
+	 * clinic prices are keyed by (see Services::decode_row()).
+	 *
+	 * @return array
+	 */
+	private function physical_clinics_by_doctor() {
+		$map = array();
+
+		foreach ( Clinics::get_for_doctors( array_keys( $this->doctor_options() ) ) as $doctor_id => $clinics ) {
+			foreach ( $clinics as $clinic ) {
+				if ( Clinics::TYPE_PHYSICAL !== $clinic['type'] ) {
+					continue;
+				}
+
+				$map[ $doctor_id ][] = array(
+					'id'          => (int) $clinic['id'],
+					'name'        => $clinic['name'],
+					'place'       => implode( ', ', array_filter( array( $clinic['area_label'], $clinic['city_label'] ) ) ),
+					'location_id' => isset( $clinic['clinic_location_id'] ) ? (int) $clinic['clinic_location_id'] : 0,
+				);
+			}
+		}
+
+		return $map;
 	}
 
 	/**
@@ -2613,9 +2663,12 @@ class Admin_Dashboard {
 				$map[ $doctor_id ][ $type ] = array_map(
 					function ( $service ) {
 						return array(
-							'id'     => $service['id'],
-							'name'   => $service['name'],
-							'charge' => $service['charge'],
+							'id'             => $service['id'],
+							'name'           => $service['name'],
+							'charge'         => $service['charge'],
+							// Clinic_Locations id => price at that clinic; empty
+							// means offered at every clinic at the flat charge.
+							'clinic_charges' => isset( $service['clinic_charges'] ) ? (object) $service['clinic_charges'] : (object) array(),
 						);
 					},
 					$services

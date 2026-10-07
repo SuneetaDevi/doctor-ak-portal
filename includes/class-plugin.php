@@ -15,6 +15,7 @@ use DoctorAKPortal\Admin\Swich_Settings;
 use DoctorAKPortal\Frontend\Admin_Dashboard;
 use DoctorAKPortal\Frontend\Policy_Pages;
 use DoctorAKPortal\Frontend\Public_Pages;
+use DoctorAKPortal\Frontend\Social_Share;
 use DoctorAKPortal\Frontend\Admin_User_Handler;
 use DoctorAKPortal\Frontend\Appointment_Handler;
 use DoctorAKPortal\Frontend\Booking_Handler;
@@ -267,6 +268,14 @@ class Plugin {
 		$this->loader->add_filter( 'wpseo_opengraph_title', $public_pages, 'filter_title', 99 );
 		$this->loader->add_filter( 'wpseo_twitter_title', $public_pages, 'filter_title', 99 );
 
+		// Link previews (WhatsApp, Facebook, X…) show the site logo on every page
+		// instead of the SEO plugin's default photo — see Social_Share.
+		$social_share = new Social_Share();
+		$this->loader->add_filter( 'wpseo_frontend_presentation', $social_share, 'filter_presentation', 99 );
+		$this->loader->add_filter( 'wpseo_twitter_image', $social_share, 'filter_twitter_image', 99 );
+		$this->loader->add_filter( 'wpseo_twitter_card_type', $social_share, 'filter_twitter_card_type', 99 );
+		$this->loader->add_action( 'wp_head', $social_share, 'render_fallback_tags', 5 );
+
 		$booking_page = new Booking_Page( new Template_Loader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $booking_page, 'enqueue_assets' );
 
@@ -446,6 +455,7 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_delete_encounter', $encounter_handler, 'handle_delete_encounter' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_prescription_pdf_download', $encounter_handler, 'handle_download_prescription_pdf' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_encounter_bill_pdf_download', $encounter_handler, 'handle_download_bill_pdf' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_medical_history_pdf_download', $encounter_handler, 'handle_download_medical_history_pdf' );
 
 		$role_permissions_handler = new Role_Permissions_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_role_permissions_save', $role_permissions_handler, 'handle_save' );

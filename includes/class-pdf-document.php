@@ -1,7 +1,7 @@
 <?php
 /**
  * Shared low-level PDF-writing primitives for every PDF this plugin
- * generates (invoice, prescription, encounter bill).
+ * generates (receipt, appointment slip, prescription, bill, statement).
  *
  * @package DoctorAKPortal\Includes
  */
@@ -21,12 +21,16 @@ if ( ! defined( 'ABSPATH' ) ) {
  * A minimal, dependency-free PDF writer base class — the plugin has no
  * Composer/vendor setup, and a general-purpose library (Dompdf, mPDF, etc.)
  * can't be installed without one, so every PDF this plugin produces writes
- * the PDF file format directly instead: a single A4 page, built-in
- * Helvetica/Helvetica-Bold fonts (no font embedding needed), simple ruled
- * lines for tables, and the clinic logo embedded as a JPEG XObject (via GD,
- * which ships with PHP) when one is configured and GD can read it. Each
- * concrete subclass (Invoice_Pdf, Prescription_Pdf, Encounter_Bill_Pdf)
- * only owns its own content-stream layout, via its own `build()` method.
+ * the PDF file format directly instead: A4 pages, the built-in
+ * Helvetica/Helvetica-Bold fonts (no font embedding needed, text stays
+ * selectable), ruled lines, and the logo embedded as a JPEG XObject (via
+ * GD, which ships with PHP) when GD can read it.
+ *
+ * Text is written in WinAnsi (Windows-1252) — the encoding those built-in
+ * fonts use — so dashes, bullets, curly quotes and accented Latin letters
+ * print as typed. Widths come from the fonts' published metrics (see
+ * text_width()), so right-aligned figures and wrapped lines land where
+ * they're measured to. The page layout itself lives in Pdf_Builder.
  */
 abstract class Pdf_Document {
 
@@ -37,15 +41,73 @@ abstract class Pdf_Document {
 	const PAGE_HEIGHT = 841.89;
 
 	/**
-	 * Loads the configured clinic logo and re-encodes it as JPEG via GD, so
-	 * it can be embedded as a simple DCTDecode XObject regardless of its
-	 * original format — skipped entirely (not a fatal error) if GD isn't
-	 * available, the file can't be read, or it's an SVG (GD can't rasterize
-	 * those); the document still renders fine without a logo.
+	 * Helvetica advance widths (1/1000 em) for WinAnsi codes 32–126, from
+	 * the standard Adobe font metrics.
 	 *
-	 * @return array|null { @type string jpeg, @type int width_px, @type int height_px, @type float width, @type float height } (width/height in PDF points, capped to a max display size), or null.
+	 * @var int[]
 	 */
-	protected static function load_logo_jpeg() {
+	private static $helvetica_widths = array(
+		278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278,
+		556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556,
+		1015, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778,
+		667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469, 556,
+		333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556,
+		556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584,
+	);
+
+	/**
+	 * Helvetica-Bold advance widths (1/1000 em) for WinAnsi codes 32–126.
+	 *
+	 * @var int[]
+	 */
+	private static $helvetica_bold_widths = array(
+		278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278,
+		556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 333, 333, 584, 584, 584, 611,
+		975, 722, 722, 722, 722, 667, 611, 778, 722, 278, 556, 722, 611, 833, 722, 778,
+		667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 333, 278, 333, 584, 556,
+		333, 556, 611, 556, 611, 556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611,
+		611, 611, 389, 556, 333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584,
+	);
+
+	/**
+	 * Widths for the WinAnsi codes above 126 that documents commonly
+	 * contain (same for both weights unless noted by a pair).
+	 *
+	 * @var array code => width, or code => array( regular, bold ).
+	 */
+	private static $extended_widths = array(
+		128 => 556,                 // Euro.
+		130 => array( 222, 278 ),   // Single low quote.
+		133 => 1000,                // Ellipsis.
+		145 => array( 222, 278 ),   // Left single quote.
+		146 => array( 222, 278 ),   // Right single quote / apostrophe.
+		147 => array( 333, 500 ),   // Left double quote.
+		148 => array( 333, 500 ),   // Right double quote.
+		149 => 350,                 // Bullet.
+		150 => 556,                 // En dash.
+		151 => 1000,                // Em dash.
+		153 => 1000,                // Trademark.
+		160 => 278,                 // No-break space.
+		176 => 400,                 // Degree.
+		177 => 584,                 // Plus-minus.
+		181 => array( 556, 611 ),   // Micro.
+		183 => 278,                 // Middle dot.
+		215 => 584,                 // Multiplication.
+		247 => 584,                 // Division.
+	);
+
+	/**
+	 * Loads the configured logo and re-encodes it as JPEG via GD, so it can
+	 * be embedded as a simple DCTDecode XObject regardless of its original
+	 * format — skipped entirely (not a fatal error) if GD isn't available,
+	 * the file can't be read, or it's an SVG (GD can't rasterize those);
+	 * the document still renders fine without a logo.
+	 *
+	 * @param float $max_height Display height cap, PDF points.
+	 * @param float $max_width  Display width cap, PDF points.
+	 * @return array|null { @type string jpeg, @type int width_px, @type int height_px, @type float width, @type float height } (width/height in PDF points, aspect ratio preserved), or null.
+	 */
+	protected static function load_logo_jpeg( $max_height = 56, $max_width = 200 ) {
 		if ( ! function_exists( 'imagecreatefromstring' ) || ! function_exists( 'imagejpeg' ) ) {
 			return null;
 		}
@@ -76,7 +138,7 @@ abstract class Pdf_Document {
 		imagecopy( $flat, $image, 0, 0, 0, 0, $width, $height );
 
 		ob_start();
-		imagejpeg( $flat, null, 85 );
+		imagejpeg( $flat, null, 90 );
 		$jpeg = ob_get_clean();
 
 		imagedestroy( $image );
@@ -86,10 +148,8 @@ abstract class Pdf_Document {
 			return null;
 		}
 
-		// Cap the display size so a huge source logo doesn't dominate the page.
-		$max_height = 56;
-		$max_width  = 200;
-		$ratio      = min( $max_width / $width, $max_height / $height, 1 );
+		// One scale factor for both sides keeps the logo's own aspect ratio.
+		$ratio = min( $max_width / $width, $max_height / $height, 1 );
 
 		return array(
 			'jpeg'      => $jpeg,
@@ -101,20 +161,180 @@ abstract class Pdf_Document {
 	}
 
 	/**
-	 * @param float  $x    Left edge, PDF points from the page's left.
-	 * @param float  $y    Baseline, PDF points from the page's bottom.
-	 * @param string $font 'F1' (Helvetica) or 'F2' (Helvetica-Bold).
-	 * @param float  $size Font size in points.
-	 * @param string $text Plain text (Latin-1 range only — see pdf_escape()).
-	 * @param float  $gray 0 (black) to 1 (white). Default 0.
-	 * @return string Content-stream fragment.
+	 * Encodes text for the built-in fonts: tags stripped, UTF-8 converted to
+	 * Windows-1252 (characters outside it are transliterated where iconv can,
+	 * dropped otherwise), control characters removed.
+	 *
+	 * @param string $text Raw text.
+	 * @return string Windows-1252 bytes, not yet PDF-escaped.
 	 */
-	protected static function draw_text( $x, $y, $font, $size, $text, $gray = 0 ) {
+	protected static function encode_text( $text ) {
+		$text = wp_strip_all_tags( (string) $text );
+		$text = str_replace( array( "\r", "\n", "\t" ), ' ', $text );
+
+		if ( function_exists( 'iconv' ) ) {
+			$encoded = @iconv( 'UTF-8', 'CP1252//TRANSLIT//IGNORE', $text ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- falls back below if iconv refuses the string.
+
+			if ( false !== $encoded ) {
+				return $encoded;
+			}
+		}
+
+		// No iconv: keep plain ASCII only rather than emit invalid bytes.
+		return preg_replace( '/[^\x20-\x7E]/', '?', remove_accents( $text ) );
+	}
+
+	/**
+	 * Escapes a plain string for a PDF literal string `(...)`.
+	 *
+	 * @param string $text Raw text.
+	 * @return string
+	 */
+	protected static function pdf_escape( $text ) {
+		return str_replace( array( '\\', '(', ')' ), array( '\\\\', '\\(', '\\)' ), self::encode_text( $text ) );
+	}
+
+	/**
+	 * Rendered width of a string, PDF points.
+	 *
+	 * @param string $text     Raw text.
+	 * @param string $font     'F1' (Helvetica) or 'F2' (Helvetica-Bold).
+	 * @param float  $size     Font size.
+	 * @param float  $tracking Extra space after every character (PDF Tc), points.
+	 * @return float
+	 */
+	protected static function text_width( $text, $font, $size, $tracking = 0.0 ) {
+		$bytes  = self::encode_text( $text );
+		$bold   = 'F2' === $font;
+		$widths = $bold ? self::$helvetica_bold_widths : self::$helvetica_widths;
+		$units  = 0;
+		$length = strlen( $bytes );
+
+		for ( $i = 0; $i < $length; $i++ ) {
+			$code = ord( $bytes[ $i ] );
+
+			if ( $code >= 32 && $code <= 126 ) {
+				$units += $widths[ $code - 32 ];
+			} elseif ( isset( self::$extended_widths[ $code ] ) ) {
+				$width  = self::$extended_widths[ $code ];
+				$units += is_array( $width ) ? $width[ $bold ? 1 : 0 ] : $width;
+			} elseif ( $code >= 192 && $code < 224 ) {
+				$units += $bold ? 722 : 667; // Accented capitals.
+			} else {
+				$units += 556; // Accented lowercase and other Latin-1 letters.
+			}
+		}
+
+		return $units * $size / 1000 + $tracking * $length;
+	}
+
+	/**
+	 * Splits text into lines that each fit `$max_width` — never truncates.
+	 * Hard line breaks in the source are kept; a single word longer than
+	 * the line is broken across lines rather than overflowing.
+	 *
+	 * @param string $text      Text to wrap.
+	 * @param string $font      'F1' or 'F2'.
+	 * @param float  $size      Font size.
+	 * @param float  $max_width Available width, PDF points.
+	 * @return string[] One or more lines ('' for a blank source line).
+	 */
+	protected static function wrap_text( $text, $font, $size, $max_width ) {
+		$lines = array();
+
+		foreach ( preg_split( '/\r\n|\r|\n/', (string) $text ) as $paragraph ) {
+			$paragraph = trim( preg_replace( '/[ \t]+/', ' ', $paragraph ) );
+
+			if ( '' === $paragraph ) {
+				$lines[] = '';
+				continue;
+			}
+
+			$line = '';
+
+			foreach ( explode( ' ', $paragraph ) as $word ) {
+				$candidate = '' === $line ? $word : $line . ' ' . $word;
+
+				if ( self::text_width( $candidate, $font, $size ) <= $max_width ) {
+					$line = $candidate;
+					continue;
+				}
+
+				if ( '' !== $line ) {
+					$lines[] = $line;
+				}
+
+				// A word wider than the whole line: break it by characters.
+				while ( self::text_width( $word, $font, $size ) > $max_width && self::mb_len( $word ) > 1 ) {
+					$cut = self::mb_len( $word ) - 1;
+
+					while ( $cut > 1 && self::text_width( self::mb_sub( $word, 0, $cut ), $font, $size ) > $max_width ) {
+						--$cut;
+					}
+
+					$lines[] = self::mb_sub( $word, 0, $cut );
+					$word    = self::mb_sub( $word, $cut );
+				}
+
+				$line = $word;
+			}
+
+			$lines[] = $line;
+		}
+
+		// Drop blank lines at the very start/end; keep intentional inner ones.
+		while ( ! empty( $lines ) && '' === $lines[0] ) {
+			array_shift( $lines );
+		}
+
+		while ( ! empty( $lines ) && '' === end( $lines ) ) {
+			array_pop( $lines );
+		}
+
+		return empty( $lines ) ? array( '' ) : $lines;
+	}
+
+	/**
+	 * @param string $text UTF-8 text.
+	 * @return int
+	 */
+	private static function mb_len( $text ) {
+		return function_exists( 'mb_strlen' ) ? mb_strlen( $text, 'UTF-8' ) : strlen( $text );
+	}
+
+	/**
+	 * @param string   $text   UTF-8 text.
+	 * @param int      $start  Start character.
+	 * @param int|null $length Length, or null for the rest.
+	 * @return string
+	 */
+	private static function mb_sub( $text, $start, $length = null ) {
+		return function_exists( 'mb_substr' ) ? mb_substr( $text, $start, $length, 'UTF-8' ) : substr( $text, $start, null === $length ? strlen( $text ) : $length );
+	}
+
+	/**
+	 * Content-stream fragment drawing one line of text.
+	 *
+	 * @param float        $x        Left edge, points from the page's left.
+	 * @param float        $y        Baseline, points from the page's bottom.
+	 * @param string       $font     'F1' (Helvetica) or 'F2' (Helvetica-Bold).
+	 * @param float        $size     Font size in points.
+	 * @param string       $text     Plain text.
+	 * @param float|array  $color    Gray level 0 (black)–1 (white), or array( r, g, b ) 0–1.
+	 * @param float        $tracking Character spacing, points.
+	 * @return string
+	 */
+	protected static function draw_text( $x, $y, $font, $size, $text, $color = 0, $tracking = 0.0 ) {
+		if ( '' === (string) $text ) {
+			return '';
+		}
+
 		return sprintf(
-			"BT\n%s g\n/%s %s Tf\n%s %s Td\n(%s) Tj\nET\n",
-			self::num( $gray ),
+			"BT\n%s\n/%s %s Tf\n%s Tc\n%s %s Td\n(%s) Tj\nET\n",
+			self::fill_color( $color ),
 			$font,
 			self::num( $size ),
+			self::num( $tracking ),
 			self::num( $x ),
 			self::num( $y ),
 			self::pdf_escape( $text )
@@ -122,43 +342,29 @@ abstract class Pdf_Document {
 	}
 
 	/**
-	 * Right-aligned text — PDF has no native alignment, so this estimates
-	 * the string's rendered width from Helvetica's average glyph width
-	 * (close enough for a receipt/table; not pixel-perfect kerning).
+	 * Right-aligned text ending at `$right_x`.
+	 *
+	 * @return string
 	 */
-	protected static function draw_text_right( $right_x, $y, $font, $size, $text, $gray = 0 ) {
-		$bold             = 'F2' === $font;
-		$avg_char_width   = $size * ( $bold ? 0.60 : 0.52 );
-		$estimated_width  = self::mb_strlen_safe( $text ) * $avg_char_width;
-
-		return self::draw_text( $right_x - $estimated_width, $y, $font, $size, $text, $gray );
+	protected static function draw_text_right( $right_x, $y, $font, $size, $text, $color = 0, $tracking = 0.0 ) {
+		return self::draw_text( $right_x - self::text_width( $text, $font, $size, $tracking ) + $tracking, $y, $font, $size, $text, $color, $tracking );
 	}
 
 	/**
-	 * Right-aligned text with a horizontal strike-through line — used for a
-	 * pre-discount price. PDF has no native strikethrough, so this draws a
-	 * thin line over the middle of the estimated text width (see
-	 * draw_text_right()).
+	 * Content-stream fragment for a straight line.
+	 *
+	 * @param float       $x1    Start x.
+	 * @param float       $y1    Start y.
+	 * @param float       $x2    End x.
+	 * @param float       $y2    End y.
+	 * @param float|array $color Gray level or array( r, g, b ).
+	 * @param float       $width Line width, points.
+	 * @return string
 	 */
-	protected static function draw_text_right_struck( $right_x, $y, $font, $size, $text, $gray = 0 ) {
-		$bold            = 'F2' === $font;
-		$avg_char_width  = $size * ( $bold ? 0.60 : 0.52 );
-		$estimated_width = self::mb_strlen_safe( $text ) * $avg_char_width;
-		$x               = $right_x - $estimated_width;
-
-		return self::draw_text( $x, $y, $font, $size, $text, $gray )
-			. self::draw_line( $x - 1, $y + $size * 0.32, $right_x + 1, $y + $size * 0.32, $gray, $gray, $gray, 0.6 );
-	}
-
-	/**
-	 * @return string Content-stream fragment for a straight line.
-	 */
-	protected static function draw_line( $x1, $y1, $x2, $y2, $r = 0, $g = 0, $b = 0, $width = 0.5 ) {
+	protected static function draw_line( $x1, $y1, $x2, $y2, $color = 0, $width = 0.5 ) {
 		return sprintf(
-			"%s %s %s RG\n%s w\n%s %s m\n%s %s l\nS\n",
-			self::num( $r ),
-			self::num( $g ),
-			self::num( $b ),
+			"%s\n%s w\n%s %s m\n%s %s l\nS\n",
+			self::stroke_color( $color ),
 			self::num( $width ),
 			self::num( $x1 ),
 			self::num( $y1 ),
@@ -168,8 +374,7 @@ abstract class Pdf_Document {
 	}
 
 	/**
-	 * @return string Content-stream fragment placing the (already embedded)
-	 *                'Im1' image XObject at the given position/size.
+	 * @return string Content-stream fragment placing an embedded image XObject.
 	 */
 	protected static function draw_image( $name, $x, $y, $width, $height ) {
 		return sprintf(
@@ -183,31 +388,23 @@ abstract class Pdf_Document {
 	}
 
 	/**
-	 * Draws one row of a simple left/right-aligned table — used by any
-	 * document with a multi-row table (unlike an invoice's single line
-	 * item, a prescription/bill has several).
-	 *
-	 * @param array  $columns List of `array( 'x' => float, 'text' => string, 'align' => 'left'|'right' (default 'left') )`.
-	 * @param float  $y       Baseline, PDF points from the page's bottom.
-	 * @param string $font    'F1' or 'F2'. Default 'F1'.
-	 * @param float  $size    Font size. Default 9.
-	 * @param float  $gray    0 (black) to 1 (white). Default 0.
-	 * @return string Content-stream fragment.
+	 * @param float|array $color Gray level or array( r, g, b ).
+	 * @return string Fill-colour operator.
 	 */
-	protected static function draw_table_row( array $columns, $y, $font = 'F1', $size = 9, $gray = 0 ) {
-		$stream = '';
+	private static function fill_color( $color ) {
+		return is_array( $color )
+			? sprintf( '%s %s %s rg', self::num( $color[0] ), self::num( $color[1] ), self::num( $color[2] ) )
+			: sprintf( '%s g', self::num( $color ) );
+	}
 
-		foreach ( $columns as $column ) {
-			$align = isset( $column['align'] ) ? $column['align'] : 'left';
-
-			if ( 'right' === $align ) {
-				$stream .= self::draw_text_right( $column['x'], $y, $font, $size, $column['text'], $gray );
-			} else {
-				$stream .= self::draw_text( $column['x'], $y, $font, $size, $column['text'], $gray );
-			}
-		}
-
-		return $stream;
+	/**
+	 * @param float|array $color Gray level or array( r, g, b ).
+	 * @return string Stroke-colour operator.
+	 */
+	private static function stroke_color( $color ) {
+		return is_array( $color )
+			? sprintf( '%s %s %s RG', self::num( $color[0] ), self::num( $color[1] ), self::num( $color[2] ) )
+			: sprintf( '%s G', self::num( $color ) );
 	}
 
 	/**
@@ -218,97 +415,86 @@ abstract class Pdf_Document {
 	 * @return string
 	 */
 	protected static function num( $n ) {
-		return rtrim( rtrim( number_format( (float) $n, 3, '.', '' ), '0' ), '.' );
+		$formatted = rtrim( rtrim( number_format( (float) $n, 3, '.', '' ), '0' ), '.' );
+
+		return '-0' === $formatted ? '0' : $formatted;
 	}
 
 	/**
-	 * Escapes a plain string for a PDF literal string `(...)`, and
-	 * transliterates to Latin-1 since the base-14 fonts used here have no
-	 * Unicode support without embedding a real font file.
+	 * Assembles a complete PDF file of one or more A4 pages: catalog, page
+	 * tree, the two base-14 fonts, the optional logo XObject, each page and
+	 * its content stream, a document-information dictionary, and a valid
+	 * cross-reference table and trailer.
 	 *
-	 * @param string $text Raw text.
-	 * @return string
-	 */
-	protected static function pdf_escape( $text ) {
-		$text   = wp_strip_all_tags( (string) $text );
-		$text   = remove_accents( $text );
-		$latin1 = @iconv( 'UTF-8', 'ISO-8859-1//TRANSLIT//IGNORE', $text ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- falls back to the original string if iconv is unavailable.
-
-		if ( false !== $latin1 ) {
-			$text = $latin1;
-		}
-
-		return str_replace( array( '\\', '(', ')' ), array( '\\\\', '\\(', '\\)' ), $text );
-	}
-
-	/**
-	 * @param string $text Text as it will actually be drawn (post pdf_escape()).
-	 * @return int
-	 */
-	protected static function mb_strlen_safe( $text ) {
-		return function_exists( 'mb_strlen' ) ? mb_strlen( self::pdf_escape( $text ), 'ISO-8859-1' ) : strlen( self::pdf_escape( $text ) );
-	}
-
-	/**
-	 * Assembles a complete single-page PDF file: catalog, pages, page,
-	 * content stream, the two base-14 fonts, and — if one was loaded — the
-	 * logo image XObject, followed by a valid cross-reference table and
-	 * trailer.
-	 *
-	 * @param string     $content_stream Page content-stream commands.
-	 * @param array|null $logo           See load_logo_jpeg(), or null.
+	 * @param string[]   $page_streams One content stream per page, in order.
+	 * @param array|null $logo         See load_logo_jpeg(), or null.
+	 * @param string     $title        Document title for the PDF's metadata.
 	 * @return string Raw PDF bytes.
 	 */
-	protected static function assemble_single_page( $content_stream, $logo ) {
+	protected static function assemble_pages( array $page_streams, $logo, $title = '' ) {
 		$objects = array();
 
 		$objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
-		$objects[2] = '<< /Type /Pages /Kids [3 0 R] /Count 1 >>';
-
-		$resources = '/Font << /F1 5 0 R /F2 6 0 R >>';
-
-		if ( $logo ) {
-			$resources .= ' /XObject << /Im1 7 0 R >>';
-		}
-
-		$objects[3] = sprintf(
-			'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %s %s] /Resources << %s >> /Contents 4 0 R >>',
-			self::num( self::PAGE_WIDTH ),
-			self::num( self::PAGE_HEIGHT ),
-			$resources
+		$objects[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
+		$objects[4] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
+		$objects[5] = sprintf(
+			'<< /Title (%s) /Producer (%s) /CreationDate (D:%s) >>',
+			self::pdf_escape( $title ),
+			self::pdf_escape( 'Doctor AK Portal' ),
+			gmdate( 'YmdHis' ) . 'Z'
 		);
 
-		$objects[4] = array(
-			'stream' => $content_stream,
-		);
-
-		$objects[5] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
-		$objects[6] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
+		$next      = 6;
+		$resources = '/Font << /F1 3 0 R /F2 4 0 R >>';
 
 		if ( $logo ) {
-			$objects[7] = array(
+			$objects[ $next ] = array(
 				'dict_extra' => sprintf(
 					'/Type /XObject /Subtype /Image /Width %d /Height %d /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode',
 					$logo['width_px'],
 					$logo['height_px']
 				),
 				'stream'     => $logo['jpeg'],
-				'binary'     => true,
 			);
+			$resources .= sprintf( ' /XObject << /Im1 %d 0 R >>', $next );
+			++$next;
 		}
 
-		return self::write_pdf( $objects );
+		$kids = array();
+
+		foreach ( $page_streams as $stream ) {
+			$page_number = $next;
+			$kids[]      = $page_number . ' 0 R';
+
+			$objects[ $page_number ] = sprintf(
+				'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %s %s] /Resources << %s >> /Contents %d 0 R >>',
+				self::num( self::PAGE_WIDTH ),
+				self::num( self::PAGE_HEIGHT ),
+				$resources,
+				$page_number + 1
+			);
+			$objects[ $page_number + 1 ] = array( 'stream' => $stream );
+
+			$next += 2;
+		}
+
+		$objects[2] = sprintf( '<< /Type /Pages /Kids [%s] /Count %d >>', implode( ' ', $kids ), count( $kids ) );
+
+		ksort( $objects );
+
+		return self::write_pdf( $objects, 5 );
 	}
 
 	/**
 	 * Serializes a flat object map (1-indexed, no gaps) into a complete PDF
 	 * file with a working cross-reference table.
 	 *
-	 * @param array $objects Object number => either a plain dict string, or `array( 'stream' => ..., 'dict_extra' => optional, 'binary' => optional )`.
+	 * @param array $objects     Object number => either a plain dict string, or `array( 'stream' => ..., 'dict_extra' => optional )`.
+	 * @param int   $info_object Object number of the document-information dictionary, or 0.
 	 * @return string
 	 */
-	protected static function write_pdf( array $objects ) {
-		$pdf     = "%PDF-1.4\n";
+	protected static function write_pdf( array $objects, $info_object = 0 ) {
+		$pdf     = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
 		$offsets = array();
 		$count   = count( $objects );
 
@@ -336,7 +522,8 @@ abstract class Pdf_Document {
 			$pdf .= sprintf( "%010d 00000 n \n", $offsets[ $i ] );
 		}
 
-		$pdf .= sprintf( "trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF", $count + 1, $xref_offset );
+		$info = $info_object > 0 ? sprintf( ' /Info %d 0 R', $info_object ) : '';
+		$pdf .= sprintf( "trailer\n<< /Size %d /Root 1 0 R%s >>\nstartxref\n%d\n%%%%EOF", $count + 1, $info, $xref_offset );
 
 		return $pdf;
 	}

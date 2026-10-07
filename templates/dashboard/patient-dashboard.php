@@ -261,7 +261,7 @@ $appointment_group_labels = array(
 			<div class="dak-page-head">
 				<div>
 					<h1><?php esc_html_e( 'Medical History', 'doctor-ak-portal' ); ?></h1>
-					<p><?php esc_html_e( 'Visit notes your doctors have added after completed appointments.', 'doctor-ak-portal' ); ?></p>
+					<p><?php esc_html_e( 'Problems, diagnoses and prescriptions your doctors have recorded at your visits.', 'doctor-ak-portal' ); ?></p>
 				</div>
 			</div>
 

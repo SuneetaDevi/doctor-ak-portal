@@ -297,7 +297,7 @@ $dak_more_label = $dak_more_active > 0 ? sprintf( __( 'More filters (%d)', 'doct
 
 		<div class="dak-field dak-appts-filter-search">
 			<label for="dak-admin-appointments-filter-search"><?php esc_html_e( 'Search', 'doctor-ak-portal' ); ?></label>
-			<input type="search" id="dak-admin-appointments-filter-search" name="search" value="<?php echo esc_attr( $filters['search'] ); ?>" placeholder="<?php esc_attr_e( 'Patient, doctor, or guest name…', 'doctor-ak-portal' ); ?>">
+			<input type="search" id="dak-admin-appointments-filter-search" name="search" value="<?php echo esc_attr( $filters['search'] ); ?>" placeholder="<?php esc_attr_e( 'Name, phone or APT number…', 'doctor-ak-portal' ); ?>">
 		</div>
 
 		<div class="dak-field dak-appts-filter-range">
@@ -590,6 +590,11 @@ $dak_more_label = $dak_more_active > 0 ? sprintf( __( 'More filters (%d)', 'doct
 									<span class="dak-cell-stack">
 										<span class="dak-cell-primary"><?php echo esc_html( $row['patient_name'] ); ?></span>
 										<span class="dak-cell-sub is-tabular"><?php echo esc_html( $dak_appt_id ); ?></span>
+										<?php if ( '' !== trim( (string) $row['patient_phone'] ) ) : ?>
+											<a class="dak-cell-sub dak-cell-phone is-tabular" href="tel:<?php echo esc_attr( preg_replace( '/[^\d+]/', '', $row['patient_phone'] ) ); ?>"><?php echo esc_html( $row['patient_phone'] ); ?></a>
+										<?php else : ?>
+											<span class="dak-cell-sub dak-cell-note"><?php esc_html_e( 'No phone recorded', 'doctor-ak-portal' ); ?></span>
+										<?php endif; ?>
 									</span>
 								</td>
 

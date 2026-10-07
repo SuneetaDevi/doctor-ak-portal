@@ -7,8 +7,6 @@
 
 namespace DoctorAKPortal\Includes;
 
-use DoctorAKPortal\Frontend\Site_Footer;
-
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -17,183 +15,166 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class Encounter_Bill_Pdf
  *
- * Builds this one bill layout on top of Pdf_Document's dependency-free
- * PDF-writing primitives (see that class for why). Unlike Invoice_Pdf
- * (which only ever bills the appointment's own charge), an encounter's
- * bill starts with that same charge as its first line, then lists whatever
- * extra Encounter_Bill_Items rows were added during the visit, then a
- * total — see Encounter_Bill_Items::total_for_encounter().
+ * An itemised bill for one visit: the appointment's own charge first (when
+ * there is one), then every Encounter_Bill_Items row added during the
+ * visit with its rate, discount and final amount, then the totals. The
+ * total is the same sum this bill always used (see
+ * Encounter_Bill_Items::total_for_encounter()).
+ *
+ * Amount paid follows the system's own status rules rather than any new
+ * calculation: the appointment's charge counts as paid when the
+ * appointment's payment status is Paid, and the extra items count as paid
+ * once the encounter is closed — closing checks the patient out, marks the
+ * appointment paid and posts those extras to billing (see
+ * Encounters::close() and Revenue_Ledger::post_for_encounter_extra()).
  */
 class Encounter_Bill_Pdf extends Pdf_Document {
 
 	/**
 	 * Builds the bill PDF for one encounter.
 	 *
-	 * @param array $appointment Row from Appointments::notification_data() (or ::get(), with patient_name/doctor_name resolved).
+	 * @param array $appointment Row from Appointments::notification_data().
 	 * @param array $encounter   Row from Encounters::find().
 	 * @param array $bill_items  Rows from Encounter_Bill_Items::for_encounter().
 	 * @return string Raw PDF file bytes.
 	 */
 	public static function build( array $appointment, array $encounter, array $bill_items ) {
-		$clinic_name    = get_option( Site_Footer::OPTION_CLINIC_NAME, 'Main Clinic' );
-		$clinic_address = get_option( Site_Footer::OPTION_CLINIC_ADDRESS, '' );
-		$clinic_phone   = get_option( Site_Footer::OPTION_CLINIC_PHONE, '' );
-		$bill_number    = sprintf( 'BILL-%05d', (int) $encounter['id'] );
-		$visit_date     = date_i18n( 'd/m/Y h:i A', strtotime( $encounter['checked_in_at'] ) );
-
+		$number        = sprintf( 'BILL-%05d', (int) $encounter['id'] );
+		$is_video      = Appointments::TYPE_VIDEO === $appointment['type'];
 		$service_label = '' !== $appointment['service_name'] ? $appointment['service_name'] : $appointment['type_label'];
 		$appt_charge   = (float) $appointment['charge'];
+		$visit_ts      = strtotime( (string) $encounter['checked_in_at'] );
+		$is_closed     = Encounters::STATUS_CLOSED === $encounter['status'];
+		$appt_paid     = Appointments::PAYMENT_STATUS_PAID === $appointment['payment_status'];
 
-		$logo = self::load_logo_jpeg();
+		$pdf = new Pdf_Builder( __( 'Patient Bill', 'doctor-ak-portal' ), $number );
 
-		$left   = 50;
-		$right  = self::PAGE_WIDTH - 50;
-		$y      = self::PAGE_HEIGHT - 60;
-		$stream = '';
+		$pdf->header(
+			array(
+				array( __( 'Bill no.', 'doctor-ak-portal' ), $number ),
+				array( __( 'Encounter', 'doctor-ak-portal' ), sprintf( 'ENC-%04d', (int) $encounter['id'] ) ),
+				array( __( 'Visit date', 'doctor-ak-portal' ), false !== $visit_ts ? date_i18n( 'd M Y', $visit_ts ) : '' ),
+				array( __( 'Issued', 'doctor-ak-portal' ), date_i18n( 'd M Y' ) ),
+			)
+		);
 
-		$text_x = $left;
+		$pdf->people(
+			array(
+				array(
+					'label' => __( 'Billed to', 'doctor-ak-portal' ),
+					'lines' => Pdf_Builder::patient_lines( $appointment['patient_name'], (int) $appointment['patient_id'], isset( $appointment['patient_age'] ) ? $appointment['patient_age'] : '', isset( $appointment['patient_phone'] ) ? $appointment['patient_phone'] : '' ),
+				),
+				array(
+					'label' => __( 'Doctor', 'doctor-ak-portal' ),
+					'lines' => Pdf_Builder::doctor_lines( (int) $appointment['doctor_id'], $appointment['doctor_name'] ),
+				),
+				array(
+					'label' => $is_video ? __( 'Location', 'doctor-ak-portal' ) : __( 'Clinic', 'doctor-ak-portal' ),
+					'lines' => Pdf_Builder::place_lines( $appointment['type'], (int) $appointment['clinic_id'], $appointment['clinic_name'], $appointment['clinic_address'] ),
+				),
+			)
+		);
 
-		if ( $logo ) {
-			$stream .= self::draw_image( 'Im1', $left, $y - $logo['height'] + 10, $logo['width'], $logo['height'] );
-			$text_x  = $left + $logo['width'] + 15;
-		}
-
-		$stream .= self::draw_text( $text_x, $y, 'F2', 14, $clinic_name );
-		$y      -= 16;
-
-		if ( '' !== $clinic_address ) {
-			$stream .= self::draw_text( $text_x, $y, 'F1', 9, $clinic_address, 0.4 );
-			$y      -= 12;
-		}
-
-		if ( '' !== $clinic_phone ) {
-			$stream .= self::draw_text( $text_x, $y, 'F1', 9, $clinic_phone, 0.4 );
-			$y      -= 12;
-		}
-
-		// "BILL" block, top-right.
-		$bill_block_y = self::PAGE_HEIGHT - 60;
-		$stream      .= self::draw_text_right( $right, $bill_block_y, 'F2', 14, __( 'BILL', 'doctor-ak-portal' ) );
-		$stream      .= self::draw_text_right( $right, $bill_block_y - 16, 'F1', 9, $bill_number, 0.4 );
-		$stream      .= self::draw_text_right( $right, $bill_block_y - 28, 'F1', 9, $visit_date, 0.4 );
-
-		$y = min( $y, $bill_block_y - 28 ) - 40;
-
-		$stream .= self::draw_text( $left, $y, 'F1', 8, strtoupper( __( 'Billed To', 'doctor-ak-portal' ) ), 0.4 );
-		$y      -= 14;
-		$stream .= self::draw_text( $left, $y, 'F2', 11, $appointment['patient_name'] );
-		$y      -= 30;
-
-		// Table header.
-		$stream .= self::draw_line( $left, $y, $right, $y, 0.1, 0.1, 0.1, 1.2 );
-		$y      -= 14;
-		$stream .= self::draw_text( $left, $y, 'F2', 9, strtoupper( __( 'Description', 'doctor-ak-portal' ) ) );
-		$stream .= self::draw_text_right( $right, $y, 'F2', 9, strtoupper( __( 'Amount', 'doctor-ak-portal' ) ) );
-		$y      -= 8;
-		$stream .= self::draw_line( $left, $y, $right, $y, 0.6, 0.6, 0.6 );
-		$y      -= 16;
-
-		$total = 0.0;
+		$rows       = array();
+		$total      = 0.0;
+		$gross      = 0.0;
+		$extras     = 0.0;
+		$line_count = 0;
 
 		if ( $appt_charge > 0 ) {
-			$stream .= self::draw_table_row(
-				array(
-					array( 'x' => $left, 'text' => $service_label ),
+			++$line_count;
+			$rows[] = array(
+				'cells' => array(
+					(string) $line_count,
 					array(
-						'x'     => $right,
-						'text'  => 'PKR ' . number_format( $appt_charge, 0 ),
-						'align' => 'right',
+						'text' => $service_label,
+						/* translators: %s: appointment reference. */
+						'sub'  => sprintf( __( 'Booked consultation · %s', 'doctor-ak-portal' ), sprintf( 'APT-%04d', (int) $appointment['id'] ) ),
 					),
+					Dashboard_Format::money( $appt_charge ),
+					'—',
+					Dashboard_Format::money( $appt_charge ),
 				),
-				$y,
-				'F1',
-				10
 			);
-			$y     -= 18;
 			$total += $appt_charge;
+			$gross += $appt_charge;
 		}
-
-		// The Amount column's own text ("PKR 12,345") needs roughly this
-		// much reserved space to its left — same margin Doctor_Statement_Pdf's
-		// fit_text() leaves for a right-aligned neighbor.
-		$description_max_width = ( $right - $left ) - 90;
 
 		foreach ( $bill_items as $item ) {
-			// 'amount' is already the final, post-discount figure (see
-			// Encounter_Bill_Items::decode_row()) — note the discount
-			// alongside the description instead of a separate column, so a
-			// discounted line's math is still visible on the printed bill.
-			$description = ( isset( $item['discount_percent'] ) && $item['discount_percent'] > 0 )
-				? sprintf(
-					/* translators: 1: item description, 2: discount percent, 3: original pre-discount amount. */
-					__( '%1$s (%2$s%% off PKR %3$s)', 'doctor-ak-portal' ),
+			++$line_count;
+			$has_discount = isset( $item['discount_percent'] ) && (float) $item['discount_percent'] > 0;
+
+			$rows[] = array(
+				'cells' => array(
+					(string) $line_count,
 					$item['description'],
-					rtrim( rtrim( number_format( (float) $item['discount_percent'], 2 ), '0' ), '.' ),
-					number_format( (float) $item['original_amount'], 0 )
-				)
-				: $item['description'];
-
-			$description = self::fit_text( $description, 'F1', 10, $description_max_width );
-
-			$stream .= self::draw_table_row(
-				array(
-					array( 'x' => $left, 'text' => $description ),
-					array(
-						'x'     => $right,
-						'text'  => 'PKR ' . number_format( (float) $item['amount'], 0 ),
-						'align' => 'right',
-					),
+					Dashboard_Format::money( $item['original_amount'] ),
+					$has_discount ? rtrim( rtrim( number_format( (float) $item['discount_percent'], 2 ), '0' ), '.' ) . '%' : '—',
+					Dashboard_Format::money( $item['amount'] ),
 				),
-				$y,
-				'F1',
-				10
 			);
-			$y     -= 18;
-			$total += (float) $item['amount'];
+			$total  += (float) $item['amount'];
+			$extras += (float) $item['amount'];
+			$gross  += (float) $item['original_amount'];
 		}
 
-		$y -= 4;
-		$stream .= self::draw_line( $left, $y, $right, $y, 0.6, 0.6, 0.6 );
-		$y      -= 20;
+		$pdf->section( __( 'Charges', 'doctor-ak-portal' ), 60 );
 
-		$stream .= self::draw_text_right( $right - 90, $y, 'F2', 11, __( 'Total', 'doctor-ak-portal' ) );
-		$stream .= self::draw_text_right( $right, $y, 'F2', 11, 'PKR ' . number_format( $total, 0 ) );
-		$y      -= 40;
-
-		$stream .= self::draw_text( $left, $y, 'F1', 9, __( 'Thank you for choosing us — we look forward to seeing you.', 'doctor-ak-portal' ), 0.4 );
-
-		return self::assemble_single_page( $stream, $logo );
-	}
-
-	/**
-	 * Truncates text with '...' if it's estimated to overflow $max_width —
-	 * same avg-char-width estimate Doctor_Statement_Pdf's fit_text() uses,
-	 * duplicated here rather than shared since Pdf_Document itself has no
-	 * text-fitting helper. Guards a discounted line's now-longer description
-	 * (name + "(X% off PKR Y)") from overlapping the right-aligned Amount
-	 * column.
-	 *
-	 * @param string $text      Text to fit.
-	 * @param string $font      'F1' (regular) or 'F2' (bold).
-	 * @param int    $size      Font size.
-	 * @param float  $max_width Available width, in PDF points.
-	 * @return string
-	 */
-	private static function fit_text( $text, $font, $size, $max_width ) {
-		if ( $max_width <= 0 ) {
-			return $text;
+		if ( empty( $rows ) ) {
+			$pdf->paragraph( __( 'No charges were recorded for this visit.', 'doctor-ak-portal' ), 'muted' );
+		} else {
+			$pdf->table(
+				array(
+					array( 'label' => '#', 'width' => 24 ),
+					array( 'label' => __( 'Description', 'doctor-ak-portal' ), 'width' => null ),
+					array( 'label' => __( 'Rate', 'doctor-ak-portal' ), 'width' => 90, 'align' => 'right' ),
+					array( 'label' => __( 'Discount', 'doctor-ak-portal' ), 'width' => 64, 'align' => 'right' ),
+					array( 'label' => __( 'Amount', 'doctor-ak-portal' ), 'width' => 96, 'align' => 'right' ),
+				),
+				$rows
+			);
 		}
 
-		$bold            = 'F2' === $font;
-		$avg_char_width  = $size * ( $bold ? 0.60 : 0.52 );
-		$estimated_width = self::mb_strlen_safe( $text ) * $avg_char_width;
+		$paid    = ( $appt_paid ? max( 0.0, $appt_charge ) : 0.0 ) + ( $is_closed ? $extras : 0.0 );
+		$paid    = min( $paid, $total );
+		$balance = max( 0.0, $total - $paid );
 
-		if ( $estimated_width <= $max_width ) {
-			return $text;
+		$totals = array();
+
+		if ( $gross - $total > 0.004 ) {
+			$totals[] = array( __( 'Subtotal', 'doctor-ak-portal' ), Dashboard_Format::money( $gross ) );
+			$totals[] = array( __( 'Discounts', 'doctor-ak-portal' ), '– ' . Dashboard_Format::money( $gross - $total ) );
 		}
 
-		$max_chars = max( 1, (int) floor( $max_width / $avg_char_width ) - 3 );
+		$totals[] = array( __( 'Total', 'doctor-ak-portal' ), Dashboard_Format::money( $total ), 'strong' );
+		$totals[] = array( __( 'Amount paid', 'doctor-ak-portal' ), Dashboard_Format::money( $paid ) );
+		$totals[] = array( __( 'Balance due', 'doctor-ak-portal' ), Dashboard_Format::money( $balance ) );
 
-		return function_exists( 'mb_substr' ) ? mb_substr( $text, 0, $max_chars ) . '...' : substr( $text, 0, $max_chars ) . '...';
+		$pdf->totals( $totals );
+
+		if ( $total <= 0 ) {
+			$status = __( 'Nothing to pay', 'doctor-ak-portal' );
+		} elseif ( $balance <= 0.004 ) {
+			$status = __( 'Paid in full', 'doctor-ak-portal' );
+		} elseif ( $paid > 0 ) {
+			$status = __( 'Partly paid', 'doctor-ak-portal' );
+		} else {
+			$status = __( 'Unpaid', 'doctor-ak-portal' );
+		}
+
+		$pdf->section( __( 'Payment details', 'doctor-ak-portal' ), 40 );
+		$pdf->details(
+			array(
+				array( __( 'Payment status', 'doctor-ak-portal' ), $status, 'strong' ),
+				array( __( 'Payment method', 'doctor-ak-portal' ), $paid > 0 ? ( Appointments::PAYMENT_MODE_ONLINE === $appointment['payment_mode'] ? __( 'Online', 'doctor-ak-portal' ) : __( 'At the clinic', 'doctor-ak-portal' ) ) : '' ),
+				array( __( 'Transaction reference', 'doctor-ak-portal' ), isset( $appointment['online_order_id'] ) ? (string) $appointment['online_order_id'] : '' ),
+				array( __( 'Visit status', 'doctor-ak-portal' ), $is_closed ? __( 'Checked out', 'doctor-ak-portal' ) : __( 'Visit in progress', 'doctor-ak-portal' ) ),
+			)
+		);
+
+		$pdf->space( 8 );
+		$pdf->paragraph( __( 'Thank you for choosing us — we look forward to seeing you.', 'doctor-ak-portal' ), 'muted' );
+
+		return $pdf->render();
 	}
 }

@@ -20,6 +20,7 @@ use DoctorAKPortal\Includes\Encounter_Reports;
 use DoctorAKPortal\Includes\Encounter_Prescriptions;
 use DoctorAKPortal\Includes\Encounter_Problems;
 use DoctorAKPortal\Includes\Encounters;
+use DoctorAKPortal\Includes\Medical_History_Pdf;
 use DoctorAKPortal\Includes\Medicines;
 use DoctorAKPortal\Includes\Prescription_Pdf;
 use DoctorAKPortal\Includes\Revenue_Ledger;
@@ -56,6 +57,11 @@ class Encounter_Handler {
 	 * @var string
 	 */
 	const BILL_PDF_NONCE_ACTION = 'doctor_ak_encounter_bill_pdf_download';
+
+	/**
+	 * Nonce action for a patient's own Medical History PDF.
+	 */
+	const MEDICAL_HISTORY_PDF_NONCE_ACTION = 'doctor_ak_medical_history_pdf_download';
 
 	/**
 	 * Report file upload service.
@@ -584,7 +590,7 @@ class Encounter_Handler {
 		$encounter_id = isset( $_GET['encounter_id'] ) ? absint( wp_unslash( $_GET['encounter_id'] ) ) : 0;
 		$encounter    = $encounter_id > 0 ? Encounters::find( $encounter_id ) : null;
 
-		if ( empty( $encounter ) || ! self::can_manage_encounter( $encounter ) ) {
+		if ( empty( $encounter ) || ! self::can_view_encounter( $encounter ) ) {
 			wp_die( esc_html__( 'You do not have permission to do this.', 'doctor-ak-portal' ) );
 		}
 
@@ -670,7 +676,7 @@ class Encounter_Handler {
 		$encounter_id = isset( $_GET['encounter_id'] ) ? absint( wp_unslash( $_GET['encounter_id'] ) ) : 0;
 		$encounter    = $encounter_id > 0 ? Encounters::find( $encounter_id ) : null;
 
-		if ( empty( $encounter ) || ! self::can_manage_encounter( $encounter ) ) {
+		if ( empty( $encounter ) || ! self::can_view_encounter( $encounter ) ) {
 			wp_die( esc_html__( 'You do not have permission to do this.', 'doctor-ak-portal' ) );
 		}
 
@@ -740,6 +746,81 @@ class Encounter_Handler {
 	 */
 	private static function can_manage_encounter( array $encounter ) {
 		return self::can_manage_appointment( $encounter['doctor_id'] );
+	}
+
+	/**
+	 * Read-only access to an encounter's documents (prescription/bill PDF):
+	 * everyone who can manage it, plus the patient it was recorded for —
+	 * their own visits only.
+	 *
+	 * @param array $encounter Decoded encounter row.
+	 * @return bool
+	 */
+	private static function can_view_encounter( array $encounter ) {
+		if ( self::can_manage_encounter( $encounter ) ) {
+			return true;
+		}
+
+		$user_id = get_current_user_id();
+
+		return $user_id > 0 && (int) $encounter['patient_id'] === $user_id;
+	}
+
+	/**
+	 * The logged-in patient's "Print medical history" link.
+	 *
+	 * @return string
+	 */
+	public static function medical_history_pdf_download_url() {
+		return add_query_arg(
+			array(
+				'action' => 'doctor_ak_medical_history_pdf_download',
+				'nonce'  => wp_create_nonce( self::MEDICAL_HISTORY_PDF_NONCE_ACTION ),
+			),
+			admin_url( 'admin-ajax.php' )
+		);
+	}
+
+	/**
+	 * AJAX handler (GET): the logged-in patient's own medical history — every
+	 * encounter recorded for them, newest first — as one PDF. Always the
+	 * current user's own record; no patient ID is taken from the request.
+	 *
+	 * @return void
+	 */
+	public function handle_download_medical_history_pdf() {
+		$nonce = isset( $_GET['nonce'] ) ? sanitize_text_field( wp_unslash( $_GET['nonce'] ) ) : '';
+
+		if ( ! wp_verify_nonce( $nonce, self::MEDICAL_HISTORY_PDF_NONCE_ACTION ) ) {
+			wp_die( esc_html__( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) );
+		}
+
+		$patient = wp_get_current_user();
+
+		if ( ! $patient || ! $patient->ID ) {
+			wp_die( esc_html__( 'You do not have permission to do this.', 'doctor-ak-portal' ) );
+		}
+
+		$encounters = array_map(
+			function ( $encounter ) {
+				$encounter['problems']      = Encounter_Problems::for_encounter( $encounter['id'] );
+				$encounter['prescriptions'] = Encounter_Prescriptions::for_encounter( $encounter['id'] );
+
+				return $encounter;
+			},
+			Encounters::all_flat_for_admin( array( 'patient_id' => $patient->ID ) )
+		);
+
+		$pdf_bytes = Medical_History_Pdf::build( $patient, $encounters );
+
+		nocache_headers();
+		header( 'Content-Type: application/pdf' );
+		header( 'Content-Disposition: inline; filename="medical-history-' . gmdate( 'Ymd' ) . '.pdf"' );
+		header( 'Content-Length: ' . strlen( $pdf_bytes ) );
+
+		echo $pdf_bytes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw binary PDF bytes, not HTML output.
+
+		exit;
 	}
 
 	/**

@@ -10,7 +10,8 @@
  * @var array $doctor_options  Doctor user ID => display name.
  * @var array $patient_options Patient user ID => display name.
  * @var array $status_options  Status slug => label, see Appointments::status_options().
- * @var array $services        [doctor_id][type] => [{id, name, charge}, ...], see Admin_Dashboard::services_by_doctor_and_type().
+ * @var array $services        [doctor_id][type] => [{id, name, charge, clinic_charges}, ...], see Admin_Dashboard::services_by_doctor_and_type().
+ * @var array $clinics         [doctor_id] => [{id, name, place, location_id}, ...] — physical clinics, see Admin_Dashboard::physical_clinics_by_doctor().
  */
 
 // Prevent direct file access.
@@ -18,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 ?>
-<div class="dak-portal dak-modal" id="dak-admin-appointment-modal" aria-hidden="true" data-services="<?php echo esc_attr( wp_json_encode( $services ) ); ?>">
+<div class="dak-portal dak-modal" id="dak-admin-appointment-modal" aria-hidden="true" data-services="<?php echo esc_attr( wp_json_encode( $services ) ); ?>" data-clinics="<?php echo esc_attr( wp_json_encode( isset( $clinics ) ? $clinics : array() ) ); ?>">
 	<div class="dak-modal-overlay" data-dak-admin-appointment-modal-close></div>
 
 	<?php
@@ -114,6 +115,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</select>
 					</div>
 				</div>
+				<?php // Clinic visits only: which of the chosen doctor's clinics (filled by doctor-ak-admin-appointments.js). ?>
+				<div class="dak-field dak-hidden" id="dak-admin-appointment-clinic-field">
+					<label for="dak-admin-appointment-clinic"><?php esc_html_e( 'Clinic', 'doctor-ak-portal' ); ?></label>
+					<select id="dak-admin-appointment-clinic" aria-describedby="dak-admin-appointment-clinic-hint">
+						<option value=""><?php esc_html_e( 'Select a clinic…', 'doctor-ak-portal' ); ?></option>
+					</select>
+					<span class="dak-field-error" data-field="clinic_id"></span>
+					<p class="dak-field-hint" id="dak-admin-appointment-clinic-hint"><?php esc_html_e( 'Services, prices and time slots are shown for this clinic.', 'doctor-ak-portal' ); ?></p>
+				</div>
+				<p class="dak-field-hint dak-hidden" id="dak-admin-appointment-no-clinic-note"><?php esc_html_e( 'This doctor has no clinic set up yet, so the appointment will be saved without one.', 'doctor-ak-portal' ); ?></p>
 				<p class="dak-field-hint dak-hidden" id="dak-admin-appointment-video-fee-note"><?php esc_html_e( 'Video consultations have no services — they are charged at the doctor\'s video consultation fee.', 'doctor-ak-portal' ); ?></p>
 				<div class="dak-field" id="dak-admin-appointment-service-field">
 					<label for="dak-admin-appointment-service"><?php esc_html_e( 'Services', 'doctor-ak-portal' ); ?></label>
@@ -197,11 +208,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 <div class="dak-portal dak-modal" id="dak-admin-appointment-view-modal" aria-hidden="true">
 	<div class="dak-modal-overlay" data-dak-admin-appointment-view-modal-close></div>
 
-	<div class="dak-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="dak-admin-appointment-view-modal-title">
-		<button type="button" class="dak-modal-close" data-dak-admin-appointment-view-modal-close aria-label="<?php esc_attr_e( 'Close', 'doctor-ak-portal' ); ?>">&times;</button>
-
+	<?php // Standard dialog layout: fixed header and footer, the details scroll between them. ?>
+	<div class="dak-modal-dialog dak-modal-dialog-form" role="dialog" aria-modal="true" aria-labelledby="dak-admin-appointment-view-modal-title">
 		<div class="dak-modal-header">
 			<h2 id="dak-admin-appointment-view-modal-title"><?php esc_html_e( 'Appointment details', 'doctor-ak-portal' ); ?></h2>
+			<button type="button" class="dak-modal-close" data-dak-admin-appointment-view-modal-close aria-label="<?php esc_attr_e( 'Close', 'doctor-ak-portal' ); ?>">&times;</button>
 		</div>
 
 		<div class="dak-modal-body">

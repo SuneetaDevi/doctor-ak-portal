@@ -1,27 +1,21 @@
 /**
- * Doctor AK Portal — In-page video call modal.
+ * Doctor AK Portal — Join/Start video call.
  *
- * Any element carrying `data-join-video-call` + `data-room-url="..."`
- * (see templates/dashboard/partials/patient-appointment-row.php and
- * doctor-appointment-row.php) opens the Jitsi Meet room in an iframe inside
- * this page instead of a new browser tab. The modal is built once, lazily,
- * on first use — nothing is added to the DOM (and no iframe is created,
- * so no camera/mic permission prompt fires) until a "Join Call"/"Start
- * Call" button is actually clicked.
+ * Any element carrying `data-join-video-call` + `data-room-url="..."` (the
+ * Join/Start call buttons in the admin, receptionist, doctor and patient
+ * dashboards) opens the Jitsi Meet room in a NEW browser tab, so the
+ * dashboard stays open behind the call. A call in its own tab also avoids
+ * the embedded-frame problems Jitsi has (its sign-in step for whoever
+ * starts the call, e.g. Google, refuses to load inside an iframe).
  *
- * Jitsi's public meet.jit.si server sometimes requires whoever starts a
- * call to log in via a third-party account (Google, GitHub, ...) — those
- * providers' login pages refuse to load inside an iframe (their own
- * anti-clickjacking policy, not something this plugin can change). So the
- * modal always shows a visible "Open in a new tab instead" link alongside
- * the iframe as an escape hatch, in case that login step gets stuck.
+ * The tab is opened straight from the click, which browsers allow. If a
+ * strict popup blocker still stops it, a small notice with a link appears
+ * instead — the call never replaces the dashboard page.
  */
 ( function () {
 	'use strict';
 
-	var modal       = null;
-	var iframe       = null;
-	var fallbackLink = null;
+	var notice = null;
 
 	document.addEventListener( 'DOMContentLoaded', function () {
 		document.addEventListener( 'click', function ( event ) {
@@ -39,88 +33,76 @@
 				return;
 			}
 
-			openModal( roomUrl );
-		} );
-
-		document.addEventListener( 'keydown', function ( event ) {
-			if ( 'Escape' === event.key && modal && modal.classList.contains( 'is-open' ) ) {
-				closeModal();
-			}
+			openCallTab( roomUrl );
 		} );
 	} );
 
-	function ensureModal() {
-		if ( modal ) {
+	/**
+	 * Opens the call in a new tab, detached from this page.
+	 *
+	 * @param {string} roomUrl The Jitsi Meet room URL.
+	 */
+	function openCallTab( roomUrl ) {
+		var callTab = window.open( roomUrl, '_blank' );
+
+		if ( callTab ) {
+			// The call page gets no handle back to the dashboard.
+			try {
+				callTab.opener = null;
+			} catch ( e ) {
+				// Cross-origin already; nothing to detach.
+			}
+
+			hideNotice();
 			return;
 		}
 
-		modal = document.createElement( 'div' );
-		modal.className = 'dak-video-call-modal';
-		modal.setAttribute( 'aria-hidden', 'true' );
-
-		var overlay = document.createElement( 'div' );
-		overlay.className = 'dak-video-call-modal-overlay';
-		overlay.addEventListener( 'click', closeModal );
-
-		var dialog = document.createElement( 'div' );
-		dialog.className = 'dak-video-call-modal-dialog';
-		dialog.setAttribute( 'role', 'dialog' );
-		dialog.setAttribute( 'aria-modal', 'true' );
-
-		var header = document.createElement( 'div' );
-		header.className = 'dak-video-call-modal-header';
-
-		fallbackLink = document.createElement( 'a' );
-		fallbackLink.className = 'dak-link';
-		fallbackLink.target = '_blank';
-		fallbackLink.rel = 'noopener';
-		fallbackLink.textContent = ( window.dakVideoCall && window.dakVideoCall.newTabLabel ) || 'Trouble joining? Open in a new tab instead';
-
-		var closeButton = document.createElement( 'button' );
-		closeButton.type = 'button';
-		closeButton.className = 'dak-video-call-modal-close';
-		closeButton.setAttribute( 'aria-label', 'Close' );
-		closeButton.innerHTML = '&times;';
-		closeButton.addEventListener( 'click', closeModal );
-
-		header.appendChild( fallbackLink );
-		header.appendChild( closeButton );
-
-		iframe = document.createElement( 'iframe' );
-		iframe.className = 'dak-video-call-modal-iframe';
-		iframe.setAttribute( 'allow', 'camera; microphone; fullscreen; display-capture; autoplay; clipboard-write' );
-		iframe.setAttribute( 'allowfullscreen', 'true' );
-
-		dialog.appendChild( header );
-		dialog.appendChild( iframe );
-
-		modal.appendChild( overlay );
-		modal.appendChild( dialog );
-		document.body.appendChild( modal );
+		showNotice( roomUrl );
 	}
 
-	function openModal( roomUrl ) {
-		ensureModal();
+	/**
+	 * Popup blocked: a dismissible notice with a plain link the user can
+	 * click to open the call in a new tab themselves.
+	 *
+	 * @param {string} roomUrl The Jitsi Meet room URL.
+	 */
+	function showNotice( roomUrl ) {
+		if ( ! notice ) {
+			notice = document.createElement( 'div' );
+			notice.className = 'dak-video-call-notice';
+			notice.setAttribute( 'role', 'alert' );
 
-		fallbackLink.href = roomUrl;
-		iframe.src        = roomUrl;
+			var text = document.createElement( 'span' );
+			text.textContent = 'Your browser blocked the call window. ';
 
-		modal.classList.add( 'is-open' );
-		modal.setAttribute( 'aria-hidden', 'false' );
-		document.body.classList.add( 'dak-modal-open' );
-	}
+			var link = document.createElement( 'a' );
+			link.className = 'dak-video-call-notice-link';
+			link.target = '_blank';
+			link.rel = 'noopener noreferrer';
+			link.textContent = 'Open the video call';
+			link.addEventListener( 'click', hideNotice );
 
-	function closeModal() {
-		if ( ! modal ) {
-			return;
+			var close = document.createElement( 'button' );
+			close.type = 'button';
+			close.className = 'dak-video-call-notice-close';
+			close.setAttribute( 'aria-label', 'Dismiss' );
+			close.innerHTML = '&times;';
+			close.addEventListener( 'click', hideNotice );
+
+			notice.appendChild( text );
+			notice.appendChild( link );
+			notice.appendChild( close );
+			document.body.appendChild( notice );
 		}
 
-		modal.classList.remove( 'is-open' );
-		modal.setAttribute( 'aria-hidden', 'true' );
-		document.body.classList.remove( 'dak-modal-open' );
+		notice.querySelector( '.dak-video-call-notice-link' ).href = roomUrl;
+		notice.hidden = false;
+		notice.querySelector( '.dak-video-call-notice-link' ).focus();
+	}
 
-		// Tears down the Jitsi session and releases the camera/mic instead
-		// of leaving it connected in a hidden iframe.
-		iframe.src = 'about:blank';
+	function hideNotice() {
+		if ( notice ) {
+			notice.hidden = true;
+		}
 	}
 } )();

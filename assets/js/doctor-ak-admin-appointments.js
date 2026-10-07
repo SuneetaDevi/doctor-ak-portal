@@ -10,6 +10,9 @@
 	'use strict';
 
 	var servicesByDoctorAndType = {};
+	// [doctorId] => [{ id, name, place, location_id }] — each doctor's
+	// physical clinics, for the Clinic picker (see physical_clinics_by_doctor()).
+	var clinicsByDoctor = {};
 	// The time slot the appointment currently open in the modal already
 	// occupies (edit mode only) — its own slot shouldn't read as "booked"
 	// just because it's already booked by itself.
@@ -61,6 +64,12 @@
 			servicesByDoctorAndType = JSON.parse( modal.getAttribute( 'data-services' ) || '{}' );
 		} catch ( e ) {
 			servicesByDoctorAndType = {};
+		}
+
+		try {
+			clinicsByDoctor = JSON.parse( modal.getAttribute( 'data-clinics' ) || '{}' ) || {};
+		} catch ( e ) {
+			clinicsByDoctor = {};
 		}
 
 		wireModalClose( modal, 'dak-admin-appointment-modal-close' );
@@ -204,6 +213,7 @@
 		document.getElementById( 'dak-admin-appointment-payment-mode' ).value = 'manual';
 		document.getElementById( 'dak-admin-appointment-notes' ).value = '';
 		show( document.getElementById( 'dak-admin-appointment-guest-fields' ) );
+		updateClinicOptions( '', 'clinic', '' );
 		updateServiceOptions( '', 'clinic', [] );
 	}
 
@@ -323,6 +333,89 @@
 	}
 
 	/**
+	 * Fills the Clinic picker with the chosen doctor's physical clinics
+	 * (clinic visits only). One clinic is picked automatically; a doctor
+	 * with none shows a short note instead (the visit is saved without one).
+	 *
+	 * @param {string}        doctorId     Doctor user ID (may be empty).
+	 * @param {string}        type         'clinic' or 'video'.
+	 * @param {string|number} keepClinicId Clinic to reselect if it's still in the list (edit mode).
+	 */
+	function updateClinicOptions( doctorId, type, keepClinicId ) {
+		var field = document.getElementById( 'dak-admin-appointment-clinic-field' );
+		var select = document.getElementById( 'dak-admin-appointment-clinic' );
+		var noClinicNote = document.getElementById( 'dak-admin-appointment-no-clinic-note' );
+
+		if ( ! field || ! select ) {
+			return;
+		}
+
+		var clinics = ( doctorId && clinicsByDoctor[ doctorId ] ) ? clinicsByDoctor[ doctorId ] : [];
+		var applies = 'video' !== type && !! doctorId;
+		var keep = keepClinicId && '0' !== String( keepClinicId ) ? String( keepClinicId ) : '';
+
+		while ( select.options.length > 1 ) {
+			select.remove( 1 );
+		}
+
+		clinics.forEach( function ( clinic ) {
+			var option = document.createElement( 'option' );
+			option.value = clinic.id;
+			option.textContent = clinic.place ? clinic.name + ' \u2014 ' + clinic.place : clinic.name;
+			option.setAttribute( 'data-location-id', clinic.location_id || 0 );
+			select.appendChild( option );
+		} );
+
+		select.value = '';
+
+		if ( keep && select.querySelector( 'option[value="' + keep + '"]' ) ) {
+			select.value = keep;
+		} else if ( 1 === clinics.length ) {
+			select.value = String( clinics[0].id );
+		}
+
+		field.classList.toggle( 'dak-hidden', ! applies || ! clinics.length );
+
+		if ( noClinicNote ) {
+			noClinicNote.classList.toggle( 'dak-hidden', ! applies || clinics.length > 0 );
+		}
+	}
+
+	/**
+	 * The chosen clinic's ID ('' when none), only for a clinic visit.
+	 *
+	 * @return {string}
+	 */
+	function selectedClinicId() {
+		var field = document.getElementById( 'dak-admin-appointment-clinic-field' );
+		var select = document.getElementById( 'dak-admin-appointment-clinic' );
+
+		if ( ! select || ! field || field.classList.contains( 'dak-hidden' ) ) {
+			return '';
+		}
+
+		return select.value;
+	}
+
+	/**
+	 * The chosen clinic's shared location ID — services' per-clinic prices
+	 * are keyed by it. '' when no clinic is chosen.
+	 *
+	 * @return {string}
+	 */
+	function selectedClinicLocationId() {
+		var select = document.getElementById( 'dak-admin-appointment-clinic' );
+
+		if ( ! selectedClinicId() || ! select || ! select.selectedOptions.length ) {
+			return '';
+		}
+
+		var locationId = select.selectedOptions[0].getAttribute( 'data-location-id' );
+
+		return locationId && '0' !== locationId ? locationId : '';
+	}
+
+	/**
 	 * Repopulates the (multi-select) Service <select> for the given doctor +
 	 * type, keeping any IDs in `keepServiceIds` selected if still in the list
 	 * (used when editing). Also updates the running total shown below it.
@@ -361,13 +454,26 @@
 
 		var services = servicesByDoctorAndType[ doctorId ] ? servicesByDoctorAndType[ doctorId ][ type ] : null;
 
+		// With a clinic chosen: only services offered there (an empty
+		// clinic_charges map means "every clinic"), at that clinic's price —
+		// the same rule the server applies when saving.
+		var locationId = 'video' === type ? '' : selectedClinicLocationId();
+
 		if ( services && services.length ) {
 			services.forEach( function ( service ) {
+				var clinicCharges = service.clinic_charges || {};
+				var hasClinicPrices = Object.keys( clinicCharges ).length > 0;
+
+				if ( locationId && hasClinicPrices && ! Object.prototype.hasOwnProperty.call( clinicCharges, locationId ) ) {
+					return;
+				}
+
+				var charge = ( locationId && hasClinicPrices ) ? parseFloat( clinicCharges[ locationId ] ) || 0 : parseFloat( service.charge ) || 0;
 				var option = document.createElement( 'option' );
 				option.value = service.id;
-				option.textContent = service.name + ( service.charge > 0 ? ' (PKR ' + service.charge + ')' : '' );
+				option.textContent = service.name + ( charge > 0 ? ' (PKR ' + charge + ')' : '' );
 				option.selected = -1 !== keepIds.indexOf( String( service.id ) );
-				option.setAttribute( 'data-charge', service.charge || 0 );
+				option.setAttribute( 'data-charge', charge );
 				select.appendChild( option );
 			} );
 		}
@@ -405,11 +511,24 @@
 		}
 
 		function refresh() {
+			updateClinicOptions( doctorSelect.value, typeSelect.value, '' );
 			updateServiceOptions( doctorSelect.value, typeSelect.value, [] );
 		}
 
 		doctorSelect.addEventListener( 'change', refresh );
 		typeSelect.addEventListener( 'change', refresh );
+
+		// A different clinic changes which services are offered and their
+		// prices — keep any still-offered selections.
+		var clinicSelect = document.getElementById( 'dak-admin-appointment-clinic' );
+
+		if ( clinicSelect ) {
+			clinicSelect.addEventListener( 'change', function () {
+				var kept = Array.prototype.map.call( document.getElementById( 'dak-admin-appointment-service' ).selectedOptions, function ( opt ) { return opt.value; } );
+
+				updateServiceOptions( doctorSelect.value, typeSelect.value, kept );
+			} );
+		}
 
 		var serviceSelect = document.getElementById( 'dak-admin-appointment-service' );
 
@@ -458,12 +577,19 @@
 				dateField.value = dateField.min && dateField.min > todayStr ? dateField.min : todayStr;
 			}
 
-			fetchSlots( doctorSelect.value, typeSelect.value, dateField.value );
+			// Times come from the chosen clinic's own sessions.
+			fetchSlots( doctorSelect.value, typeSelect.value, dateField.value, selectedClinicId() );
 		}
 
 		doctorSelect.addEventListener( 'change', refresh );
 		typeSelect.addEventListener( 'change', refresh );
 		dateField.addEventListener( 'change', refresh );
+
+		var clinicSelect = document.getElementById( 'dak-admin-appointment-clinic' );
+
+		if ( clinicSelect ) {
+			clinicSelect.addEventListener( 'change', refresh );
+		}
 	}
 
 	function resetSlots() {
@@ -1292,9 +1418,11 @@
 				editServiceIds = [ trigger.getAttribute( 'data-service-id' ) ];
 			}
 
+			// Clinic first: it decides which services are listed and their prices.
+			updateClinicOptions( trigger.getAttribute( 'data-doctor-id' ) || '', trigger.getAttribute( 'data-type' ) || 'clinic', trigger.getAttribute( 'data-clinic-id' ) || '' );
 			updateServiceOptions( trigger.getAttribute( 'data-doctor-id' ) || '', trigger.getAttribute( 'data-type' ) || 'clinic', editServiceIds );
 
-			fetchSlots( trigger.getAttribute( 'data-doctor-id' ) || '', trigger.getAttribute( 'data-type' ) || 'clinic', dateField.value );
+			fetchSlots( trigger.getAttribute( 'data-doctor-id' ) || '', trigger.getAttribute( 'data-type' ) || 'clinic', dateField.value, selectedClinicId() );
 
 			openModal( modal );
 		} );
@@ -1335,7 +1463,15 @@
 			setText( 'dak-admin-appointment-view-doctor', doctorName ? 'Dr. ' + doctorName : '' );
 			setText( 'dak-admin-appointment-view-service', attr( 'data-service-name' ) );
 			setText( 'dak-admin-appointment-view-type', attr( 'data-type-label' ) );
-			setOptional( 'dak-admin-appointment-view-location', clinicName && clinicAddress ? clinicName + '\n' + clinicAddress : clinicName );
+			// Some clinics' saved street address starts with the clinic's own
+			// name — drop that repeat so the name isn't printed twice.
+			var locationAddress = clinicAddress;
+
+			if ( clinicName && locationAddress && 0 === locationAddress.toLowerCase().indexOf( clinicName.toLowerCase() ) ) {
+				locationAddress = locationAddress.slice( clinicName.length ).replace( /^[\s,.;:–—-]+/, '' );
+			}
+
+			setOptional( 'dak-admin-appointment-view-location', clinicName && locationAddress ? clinicName + '\n' + locationAddress : clinicName );
 			setText( 'dak-admin-appointment-view-status', attr( 'data-status-label' ) );
 
 			// Payment
@@ -1423,6 +1559,20 @@
 			}
 
 			var isVideo = 'video' === document.getElementById( 'dak-admin-appointment-type' ).value;
+			var clinicField = document.getElementById( 'dak-admin-appointment-clinic-field' );
+			var needsClinic = ! isVideo && clinicField && ! clinicField.classList.contains( 'dak-hidden' );
+
+			if ( needsClinic && ! selectedClinicId() ) {
+				var clinicError = document.querySelector( '.dak-field-error[data-field="clinic_id"]' );
+
+				if ( clinicError ) {
+					clinicError.textContent = 'Please select a clinic.';
+				}
+
+				document.getElementById( 'dak-admin-appointment-clinic' ).focus();
+
+				return;
+			}
 
 			if ( ! isVideo && ! document.getElementById( 'dak-admin-appointment-service' ).selectedOptions.length ) {
 				var serviceError = document.querySelector( '.dak-field-error[data-field="service_ids"]' );
@@ -1446,6 +1596,10 @@
 				Array.prototype.forEach.call( document.getElementById( 'dak-admin-appointment-service' ).selectedOptions, function ( opt ) {
 					formData.append( 'service_ids[]', opt.value );
 				} );
+
+				// Always sent for a clinic visit ('0' when the doctor has no
+				// clinic set up), so the server checks it against the doctor.
+				formData.append( 'clinic_id', selectedClinicId() || '0' );
 			}
 			formData.append( 'patient_id', document.getElementById( 'dak-admin-appointment-patient' ).value );
 			formData.append( 'guest_name', document.getElementById( 'dak-admin-appointment-guest-name' ).value );
