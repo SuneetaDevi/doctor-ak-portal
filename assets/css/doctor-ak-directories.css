@@ -24,7 +24,7 @@
 	--dir-subtle: #f6f8fa;
 	--dir-canvas: #f6f8fa;
 	--dir-focus: #245fa8;
-	--dir-positive: #146c43;
+	--dir-positive: #16634b;
 	--dir-positive-tint: #e7f5ee;
 	--dir-shadow: 0 1px 2px rgba( 16, 24, 40, 0.05 );
 	--dir-shadow-hover: 0 4px 14px rgba( 16, 24, 40, 0.08 );
@@ -49,7 +49,7 @@ html[data-theme='dark'] .dak-dir {
 	--dir-canvas: #0b0d10;
 	--dir-focus: #8db8f2;
 	--dir-positive: #7fd3ab;
-	--dir-positive-tint: #10241a;
+	--dir-positive-tint: #12261d;
 	--dir-shadow: 0 1px 2px rgba( 0, 0, 0, 0.4 );
 	--dir-shadow-hover: 0 6px 18px rgba( 0, 0, 0, 0.45 );
 }
@@ -281,8 +281,8 @@ html[data-theme='dark'] .dak-dir {
 }
 
 html[data-theme='dark'] .dak-dir .dak-dir-btn-primary:hover {
-	background: #5cc193 !important;
-	border-color: #5cc193 !important;
+	background: #7fd3ab !important;
+	border-color: #7fd3ab !important;
 }
 
 .dak-dir .dak-dir-btn-secondary {

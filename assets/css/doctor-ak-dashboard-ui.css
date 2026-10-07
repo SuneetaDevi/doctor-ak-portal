@@ -2120,8 +2120,8 @@ body.dak-app-page .dak-dashboard .dak-activity-tools input::placeholder {
 }
 
 html[data-theme='dark'] body.dak-app-page .dak-dashboard .dak-cashflow-bar {
-	background: #1d4a39 !important;
-	border-color: #2f7a5c !important;
+	background: #12261d !important;
+	border-color: #16634b !important;
 }
 
 /* One flush shell for every role. Older per-role "floating card" styles

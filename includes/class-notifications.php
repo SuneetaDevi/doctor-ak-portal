@@ -985,7 +985,7 @@ class Notifications {
 
 		$amount_cell_html = $has_discount
 			? sprintf(
-				'<s style="color:#9ca3af;">PKR%1$s</s><br><span style="color:#111827;">PKR%2$s</span><br><span style="color:#16a34a;font-size:11px;">%3$s%% ' . esc_html__( 'off', 'doctor-ak-portal' ) . '</span>',
+				'<s style="color:#9ca3af;">PKR%1$s</s><br><span style="color:#111827;">PKR%2$s</span><br><span style="color:#16634b;font-size:11px;">%3$s%% ' . esc_html__( 'off', 'doctor-ak-portal' ) . '</span>',
 				esc_html( number_format( $base_charge, 0 ) ),
 				esc_html( number_format( $charge, 0 ) ),
 				esc_html( $discount_percent )
@@ -1025,7 +1025,7 @@ class Notifications {
 			. '<table style="width:100%;border-collapse:collapse;">'
 			. '<tr><th style="text-align:left;padding:0 12px 8px;border-bottom:2px solid #111827;font-size:12px;color:#6b7280;text-transform:uppercase;">' . esc_html__( 'Description', 'doctor-ak-portal' ) . '</th><th style="text-align:right;padding:0 12px 8px;border-bottom:2px solid #111827;font-size:12px;color:#6b7280;text-transform:uppercase;">' . esc_html__( 'Amount', 'doctor-ak-portal' ) . '</th></tr>'
 			. $line_items_html // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built above from esc_html()-wrapped pieces.
-			. ( $has_discount ? '<tr><td style="padding:0 12px;text-align:right;color:#16a34a;font-size:12px;">' . esc_html__( 'You Saved', 'doctor-ak-portal' ) . '</td><td style="padding:0 12px;text-align:right;color:#16a34a;font-size:12px;">PKR' . esc_html( number_format( $base_charge - $charge, 0 ) ) . '</td></tr>' : '' )
+			. ( $has_discount ? '<tr><td style="padding:0 12px;text-align:right;color:#16634b;font-size:12px;">' . esc_html__( 'You Saved', 'doctor-ak-portal' ) . '</td><td style="padding:0 12px;text-align:right;color:#16634b;font-size:12px;">PKR' . esc_html( number_format( $base_charge - $charge, 0 ) ) . '</td></tr>' : '' )
 			. '<tr><td style="padding:12px;text-align:right;font-weight:700;">' . esc_html__( 'Total Paid', 'doctor-ak-portal' ) . '</td><td style="padding:12px;text-align:right;font-weight:700;">PKR' . esc_html( number_format( $charge, 0 ) ) . '</td></tr>'
 			. '</table>'
 			. '<p style="margin:24px 0 0;color:#6b7280;font-size:13px;">' . esc_html__( 'Thank you for choosing us — we look forward to seeing you.', 'doctor-ak-portal' ) . '</p>'

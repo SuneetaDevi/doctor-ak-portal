@@ -24,9 +24,9 @@
 }
 
 .dak-portal {
-	--dak-primary: #7fb52d;
-	--dak-primary-dark: #6a9a24;
-	--dak-primary-tint: #f1f8e6;
+	--dak-primary: #16634b;
+	--dak-primary-dark: #104d3a;
+	--dak-primary-tint: #eaf4ef;
 	--dak-secondary: #16b6a5;
 	--dak-text: #1f2933;
 	--dak-muted: #6b7280;
@@ -43,8 +43,8 @@
 	--dak-tint-teal: #e6f7f5;
 	--dak-tint-amber: #fef3c7;
 	--dak-tint-amber-text: #b45309;
-	--dak-tint-success: #dcfce7;
-	--dak-tint-success-text: #15803d;
+	--dak-tint-success: #eaf4ef;
+	--dak-tint-success-text: #16634b;
 	--dak-tint-danger: #fbeaea;
 	--dak-tint-danger-text: #b42323;
 	--dak-tint-info: #dbeafe;
@@ -101,7 +101,9 @@ html[data-theme='dark'] body {
 }
 
 html[data-theme='dark'] .dak-portal {
-	--dak-primary-tint: #16210f;
+	--dak-primary: #3aa679;
+	--dak-primary-dark: #7fd3ab;
+	--dak-primary-tint: #12261d;
 	--dak-text: #e9eaec;
 	--dak-muted: #9198a3;
 	--dak-border: #26282c;
@@ -114,8 +116,8 @@ html[data-theme='dark'] .dak-portal {
 	--dak-tint-teal: #0f2422;
 	--dak-tint-amber: #2a2110;
 	--dak-tint-amber-text: #f2b84b;
-	--dak-tint-success: #10241a;
-	--dak-tint-success-text: #4ade80;
+	--dak-tint-success: #12261d;
+	--dak-tint-success-text: #7fd3ab;
 	--dak-tint-danger: #2a1414;
 	--dak-tint-danger-text: #f28b8b;
 	--dak-tint-info: #10203a;

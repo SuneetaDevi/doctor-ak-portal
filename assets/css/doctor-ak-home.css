@@ -100,12 +100,12 @@
    nothing that changes size or layout. */
 .dak-home .dak-button-primary {
 	background: linear-gradient( 180deg, color-mix( in srgb, var( --dak-primary ) 100%, white 12% ) 0%, var( --dak-primary ) 100% ) !important;
-	box-shadow: 0 1px 0 rgba( 255, 255, 255, 0.35 ) inset, 0 6px 16px rgba( 20, 60, 40, 0.18 ) !important;
+	box-shadow: 0 1px 0 rgba( 255, 255, 255, 0.35 ) inset, 0 6px 16px rgba( 16, 77, 58, 0.18 ) !important;
 }
 
 .dak-home .dak-button-primary:hover {
 	background: linear-gradient( 180deg, var( --dak-primary ) 0%, var( --dak-primary-dark ) 100% ) !important;
-	box-shadow: 0 1px 0 rgba( 255, 255, 255, 0.3 ) inset, 0 8px 20px rgba( 20, 60, 40, 0.22 ) !important;
+	box-shadow: 0 1px 0 rgba( 255, 255, 255, 0.3 ) inset, 0 8px 20px rgba( 16, 77, 58, 0.22 ) !important;
 }
 
 .dak-home-section {
@@ -172,7 +172,7 @@
 .dak-home-hero-banner-overlay {
 	position: absolute !important;
 	inset: 0 !important;
-	background: linear-gradient( 100deg, rgba( 8, 34, 20, 0.92 ) 0%, rgba( 10, 42, 26, 0.78 ) 34%, rgba( 14, 58, 36, 0.4 ) 62%, rgba( 14, 58, 36, 0.28 ) 100% ) !important;
+	background: linear-gradient( 100deg, rgba( 7, 33, 26, 0.92 ) 0%, rgba( 9, 41, 32, 0.78 ) 34%, rgba( 13, 56, 43, 0.4 ) 62%, rgba( 13, 56, 43, 0.28 ) 100% ) !important;
 }
 
 .dak-home-hero-banner-content {
@@ -187,8 +187,8 @@
 	gap: 0.6rem !important;
 	padding: 0.55rem 1.1rem 0.55rem 0.9rem !important;
 	border-radius: 999px !important;
-	background: #eaf5dc !important;
-	color: #3f6a16 !important;
+	background: #eaf4ef !important;
+	color: #104d3a !important;
 	font-size: 0.8rem !important;
 	font-weight: 700 !important;
 	text-transform: uppercase !important;
@@ -212,7 +212,7 @@
 .dak-home-hero-banner-content .dak-home-hero-accent {
 	display: block !important;
 	font-style: normal !important;
-	color: #c4ec8c !important;
+	color: #7fd3ab !important;
 }
 
 .dak-home-hero-banner-content > p {
@@ -285,7 +285,7 @@
 	flex: 0 0 auto !important;
 	border-radius: 50% !important;
 	background: rgba( 255, 255, 255, 0.16 ) !important;
-	color: #eaf5dc !important;
+	color: #eaf4ef !important;
 }
 
 .dak-home-hero-stat-icon svg {
@@ -1492,8 +1492,8 @@
    page that reaches for hardcoded colors instead of the shared --dak-*
    tokens (which only carry the single brand green). */
 .dak-home-specialty-card:nth-child( 5n + 1 ) .dak-home-specialty-icon {
-	background: #dcf5dd !important;
-	color: #2f9e44 !important;
+	background: #eaf4ef !important;
+	color: #16634b !important;
 }
 
 .dak-home-specialty-card:nth-child( 5n + 2 ) .dak-home-specialty-icon {
@@ -1663,8 +1663,8 @@
 	gap: 0.4rem !important;
 	padding: 0.3rem 0.75rem !important;
 	border-radius: 999px !important;
-	background: #d8f5e7 !important;
-	color: #0a7a4d !important;
+	background: #eaf4ef !important;
+	color: #16634b !important;
 	font-size: var( --dak-text-xs ) !important;
 	font-weight: 700 !important;
 }
@@ -2188,9 +2188,9 @@
 	padding: var( --dak-space-8 ) var( --dak-home-gutter ) !important;
 	border-radius: 0 !important;
 	background:
-		radial-gradient( 720px 420px at 6% 10%, rgba( 127, 181, 45, 0.3 ) 0%, rgba( 127, 181, 45, 0 ) 70% ),
+		radial-gradient( 720px 420px at 6% 10%, rgba( 22, 99, 75, 0.3 ) 0%, rgba( 22, 99, 75, 0 ) 70% ),
 		radial-gradient( 640px 460px at 100% 100%, rgba( 22, 182, 165, 0.26 ) 0%, rgba( 22, 182, 165, 0 ) 70% ),
-		linear-gradient( 165deg, #0f2419 0%, #08130d 100% ) !important;
+		linear-gradient( 165deg, #0d221b 0%, #08130d 100% ) !important;
 }
 
 .dak-home-videos-inner {
@@ -2217,7 +2217,7 @@
 	border-radius: 999px !important;
 	background: rgba( 255, 255, 255, 0.08 ) !important;
 	border: 1px solid rgba( 255, 255, 255, 0.18 ) !important;
-	color: #d9f0c4 !important;
+	color: #7fd3ab !important;
 	font-size: var( --dak-text-xs ) !important;
 	font-weight: 700 !important;
 	text-transform: uppercase !important;
@@ -2256,7 +2256,7 @@
 .dak-home-videos-header h2 em {
 	display: block !important;
 	font-style: italic !important;
-	color: #b8e27a !important;
+	color: #7fd3ab !important;
 }
 
 .dak-home-videos-header p {
@@ -2329,7 +2329,7 @@
 }
 
 .dak-home-videos-nav:hover:not( :disabled ) {
-	border-color: #b8e27a !important;
+	border-color: #7fd3ab !important;
 	background: rgba( 8, 19, 13, 0.85 ) !important;
 	transform: translateY( -50% ) scale( 1.06 ) !important;
 }
@@ -2359,7 +2359,7 @@
 }
 
 .dak-home-videos-dot.is-active {
-	background: #b8e27a !important;
+	background: #7fd3ab !important;
 	transform: scale( 1.2 ) !important;
 }
 
@@ -2387,8 +2387,8 @@
 .dak-home-video-card:hover,
 .dak-home-video-card:focus-visible {
 	transform: translateY( -6px ) !important;
-	border-color: #b8e27a !important;
-	box-shadow: 0 20px 48px rgba( 0, 0, 0, 0.55 ), 0 0 0 3px rgba( 184, 226, 122, 0.28 ) !important;
+	border-color: #7fd3ab !important;
+	box-shadow: 0 20px 48px rgba( 0, 0, 0, 0.55 ), 0 0 0 3px rgba( 127, 211, 171, 0.28 ) !important;
 }
 
 .dak-home-video-card video {
@@ -2427,7 +2427,7 @@
 	padding: 0.4rem 0.85rem 0.4rem 0.5rem !important;
 	border-radius: 999px !important;
 	background: rgba( 255, 255, 255, 0.94 ) !important;
-	color: #16321f !important;
+	color: #104d3a !important;
 	font-size: var( --dak-text-xs ) !important;
 	font-weight: 700 !important;
 	box-shadow: 0 6px 18px rgba( 0, 0, 0, 0.35 ) !important;
@@ -2741,7 +2741,7 @@
 .dak-home-best-link:hover {
 	border-color: var( --dak-primary ) !important;
 	transform: translateY( -2px ) !important;
-	box-shadow: 0 8px 20px rgba( 22, 39, 24, 0.08 ) !important;
+	box-shadow: 0 8px 20px rgba( 16, 77, 58, 0.08 ) !important;
 }
 
 .dak-home-best-link-icon {

@@ -67,8 +67,8 @@
 	background: linear-gradient(
 		100deg,
 		rgba( 6, 20, 12, 0.94 ) 0%,
-		rgba( 8, 28, 17, 0.88 ) 30%,
-		rgba( 15, 46, 30, 0.6 ) 52%,
+		rgba( 7, 28, 22, 0.88 ) 30%,
+		rgba( 14, 45, 35, 0.6 ) 52%,
 		rgba( 22, 182, 165, 0.32 ) 78%,
 		rgba( 22, 182, 165, 0.22 ) 100%
 	) !important;
@@ -90,7 +90,7 @@
 }
 
 .dak-directory-hero-accent {
-	color: #d9f0c4 !important;
+	color: #7fd3ab !important;
 }
 
 .dak-directory-hero-content p {

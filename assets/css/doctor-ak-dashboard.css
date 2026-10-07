@@ -891,7 +891,7 @@
 		linear-gradient( 135deg, var( --dak-primary ) 0%, var( --dak-primary-dark ) 100% ) !important;
 	border-radius: var( --dak-radius-lg ) !important;
 	padding: 1.5rem 1.75rem !important;
-	box-shadow: 0 10px 24px rgba( 127, 181, 45, 0.25 ) !important;
+	box-shadow: 0 10px 24px rgba( 22, 99, 75, 0.25 ) !important;
 }
 
 .dak-hero-banner h1,
@@ -1526,7 +1526,7 @@
 	}
 
 	.dak-dashboard-nav li.is-active a {
-		box-shadow: 0 1px 3px rgba( 127, 181, 45, 0.2 ) !important;
+		box-shadow: 0 1px 3px rgba( 22, 99, 75, 0.2 ) !important;
 	}
 }
 
@@ -3495,7 +3495,7 @@ a.dak-notification-row-link:hover {
 
 /* First KPI = the green hero card. */
 .dak-admin-dashboard .dak-dashboard-statistics .dak-stat-card:first-child {
-	background: linear-gradient( 135deg, #0f7a45 0%, #0b5c34 100% ) !important;
+	background: linear-gradient( 135deg, #16634b 0%, #104d3a 100% ) !important;
 	border-color: transparent !important;
 }
 
@@ -3506,7 +3506,7 @@ a.dak-notification-row-link:hover {
 
 .dak-admin-dashboard .dak-dashboard-statistics .dak-stat-card:first-child .dak-stat-icon {
 	background: #fff !important;
-	color: #0f7a45 !important;
+	color: #16634b !important;
 }
 
 .dak-admin-dashboard .dak-dashboard-statistics .dak-stat-card:first-child .dak-kpi-foot {
@@ -3588,13 +3588,13 @@ a.dak-notification-row-link:hover {
 	max-width: 56px !important;
 	margin-bottom: 1.6rem !important;
 	border-radius: 8px 8px 0 0 !important;
-	background: linear-gradient( 180deg, rgba( 15, 122, 69, 0.28 ) 0%, rgba( 15, 122, 69, 0.08 ) 100% ) !important;
+	background: linear-gradient( 180deg, rgba( 22, 99, 75, 0.28 ) 0%, rgba( 22, 99, 75, 0.08 ) 100% ) !important;
 	transition: background 0.2s ease !important;
 }
 
 .dak-admin-dashboard .dak-cashflow-col:hover .dak-cashflow-bar,
 .dak-admin-dashboard .dak-cashflow-col:focus .dak-cashflow-bar {
-	background: linear-gradient( 180deg, #0f7a45 0%, #14a05f 100% ) !important;
+	background: linear-gradient( 180deg, #16634b 0%, #16634b 100% ) !important;
 }
 
 .dak-admin-dashboard .dak-cashflow-xlabel {
