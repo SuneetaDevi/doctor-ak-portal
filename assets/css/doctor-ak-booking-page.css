@@ -50,7 +50,7 @@
 	margin: 0 auto;
 	padding: 24px 24px 56px;
 	color: var( --bk-text );
-	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	font-family: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif );
 	font-size: 15px;
 	line-height: 1.5;
 }

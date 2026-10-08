@@ -30,7 +30,7 @@
 	--dir-shadow-hover: 0 4px 14px rgba( 16, 24, 40, 0.08 );
 	--dir-radius: 12px;
 	--dir-radius-sm: 8px;
-	--dir-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	--dir-font: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif );
 }
 
 html[data-theme='dark'] .dak-dir {

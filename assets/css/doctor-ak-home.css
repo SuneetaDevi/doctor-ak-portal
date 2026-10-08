@@ -59,13 +59,13 @@
 }
 
 .dak-home-serif {
-	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+	font-family: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif ) !important;
 }
 
 .dak-home h1,
 .dak-home .dak-directory-header h2,
 .dak-home-testimonial-card p {
-	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+	font-family: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif ) !important;
 }
 
 .dak-home .dak-directory-header h2 {
@@ -790,7 +790,7 @@
 	justify-content: center !important;
 	gap: var( --dak-space-4 ) !important;
 	margin: 0 0 var( --dak-space-5 ) !important;
-	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+	font-family: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif ) !important;
 	font-size: var( --dak-text-2xl ) !important;
 	font-weight: 700 !important;
 	text-align: center !important;
@@ -1252,7 +1252,7 @@
 
 .dak-home-faq-intro h2 {
 	margin: var( --dak-space-3 ) 0 var( --dak-space-3 ) !important;
-	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+	font-family: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif ) !important;
 	font-size: 2.2rem !important;
 	font-weight: 700 !important;
 	line-height: 1.15 !important;
@@ -1575,7 +1575,7 @@
 }
 
 .dak-home-doctors .dak-featured-doctors-header h2 {
-	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+	font-family: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif ) !important;
 	font-size: 2.6rem !important;
 	font-weight: 700 !important;
 	line-height: 1.15 !important;
@@ -1984,13 +1984,13 @@
 	border-radius: 50% !important;
 	background: linear-gradient( 135deg, var( --dak-primary ) 0%, var( --dak-secondary ) 100% ) !important;
 	color: #fff !important;
-	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+	font-family: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif ) !important;
 	font-size: 1.9rem !important;
 	font-weight: 700 !important;
 }
 
 .dak-home-clinic-card strong {
-	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+	font-family: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif ) !important;
 	font-size: var( --dak-text-md ) !important;
 	font-weight: 700 !important;
 	line-height: 1.25 !important;
@@ -2124,7 +2124,7 @@
 
 .dak-home-join-doctors-card h3 {
 	margin: 0 0 var( --dak-space-5 ) !important;
-	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+	font-family: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif ) !important;
 	font-size: var( --dak-text-xl ) !important;
 	font-weight: 600 !important;
 	color: var( --dak-text ) !important;
@@ -2246,7 +2246,7 @@
 
 .dak-home-videos-header h2 {
 	margin: var( --dak-space-3 ) 0 0 !important;
-	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+	font-family: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif ) !important;
 	font-size: 3.2rem !important;
 	font-weight: 700 !important;
 	line-height: 1.05 !important;

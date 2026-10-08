@@ -238,7 +238,7 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 		<div class="dak-home-hero-banner-content">
 			<span class="dak-home-hero-eyebrow">
 				<?php echo $dak_home_specialty_icons['stomach']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-				<?php esc_html_e( 'Gastroenterology & Endoscopy · Karachi', 'doctor-ak-portal' ); ?>
+				<?php esc_html_e( 'Healthcare Appointments, Made Simple.', 'doctor-ak-portal' ); ?>
 			</span>
 			<h1>
 				<?php esc_html_e( 'Book your doctor,', 'doctor-ak-portal' ); ?>

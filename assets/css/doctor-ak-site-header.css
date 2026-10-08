@@ -49,7 +49,7 @@ html:has( .dak-site-header ) {
 	--hdr-gutter: 24px;
 	--hdr-row: 76px;
 	--hdr-radius: 14px;
-	--hdr-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	--hdr-font: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif );
 }
 
 html[data-theme='dark'] .dak-site-topbar,
@@ -1552,4 +1552,33 @@ html[data-theme='dark'] .dak-site-header .dak-site-header-cta[aria-expanded='tru
 .dak-coming-soon-toast.is-visible {
 	opacity: 1 !important;
 	transform: translate( -50%, 0 ) !important;
+}
+
+/* ==========================================================================
+   One typeface everywhere
+   ========================================================================== */
+
+/*
+ * The page body and form controls use the site typeface (browsers don't
+ * pass a page's font on to buttons and fields by default), and Elementor's
+ * global fonts are pointed at it too, so content built in Elementor or the
+ * theme matches the plugin's own pages instead of switching to another
+ * font (e.g. Roboto/Roboto Slab from the Elementor kit). The attribute
+ * selector outranks Elementor's own .elementor-kit-N rule.
+ */
+html body,
+html body[class*='elementor-kit-'] {
+	font-family: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif ) !important;
+}
+
+html body :is( button, input, select, textarea, optgroup ) {
+	font-family: inherit;
+}
+
+html body[class*='elementor-kit-'],
+html body[class*='elementor-kit-'] .elementor {
+	--e-global-typography-primary-font-family: var( --dak-font-sans );
+	--e-global-typography-secondary-font-family: var( --dak-font-sans );
+	--e-global-typography-text-font-family: var( --dak-font-sans );
+	--e-global-typography-accent-font-family: var( --dak-font-sans );
 }

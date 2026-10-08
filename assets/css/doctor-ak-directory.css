@@ -1922,7 +1922,7 @@
 
 .dak-home-service-row-body h3 {
 	margin: 0 !important;
-	font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif !important;
+	font-family: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif ) !important;
 	font-size: var( --dak-text-xl, 1.375rem ) !important;
 	font-weight: 600 !important;
 	line-height: 1.25 !important;

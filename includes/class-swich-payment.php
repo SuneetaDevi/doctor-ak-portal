@@ -313,7 +313,7 @@ class Swich_Payment {
 
 		wp_die(
 			sprintf(
-				'<div style="font-family:sans-serif;max-width:520px;margin:80px auto;text-align:center;">
+				'<div style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,sans-serif;max-width:520px;margin:80px auto;text-align:center;">
 					<h1 style="margin-bottom:8px;">%1$s</h1>
 					<p style="color:#555;margin-bottom:24px;">%2$s</p>
 					%3$s

@@ -46,7 +46,7 @@
 	--pub-gutter: 24px;
 	--pub-max: 1180px;
 	--pub-offset: 96px;
-	--pub-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	--pub-font: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif );
 
 	box-sizing: border-box;
 	width: 100%;

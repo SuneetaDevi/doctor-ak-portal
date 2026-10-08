@@ -10,6 +10,16 @@
  */
 
 /*
+ * The site's one typeface. Every page, dashboard, form and the header use
+ * this stack (through var( --dak-font-sans )), so text looks the same
+ * everywhere: Segoe UI on Windows, San Francisco on Apple devices, Roboto
+ * on Android — no web-font download.
+ */
+:root {
+	--dak-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/*
  * Defensive reset: many themes/page builders (Elementor global typography
  * kits especially) apply text-transform/line-height/letter-spacing to every
  * heading, paragraph, label and span inside the content area. Since this
@@ -70,7 +80,7 @@
 	--dak-space-7: 48px;
 	--dak-space-8: 64px;
 
-	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+	font-family: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif ) !important;
 	color: var( --dak-text ) !important;
 }
 
