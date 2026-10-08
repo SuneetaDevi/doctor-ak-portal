@@ -1289,6 +1289,8 @@ class Appointments {
 			'doctor_avatar_url'     => $avatar_url,
 			'doctor_specialization' => $specialization_label,
 			'clinic_name'           => ( $appointment['clinic_id'] > 0 && ( $dak_row_clinic = Clinics::find( $appointment['clinic_id'] ) ) ) ? $dak_row_clinic['name'] : '',
+			// "Get directions" — same Google Maps link as the public clinic pages.
+			'clinic_map_url'        => ( $appointment['clinic_id'] > 0 && ! empty( $dak_row_clinic ) ) ? Clinics::map_url( $dak_row_clinic ) : '',
 			'type'                  => $appointment['type'],
 			'type_label'            => self::type_label( $appointment['type'] ),
 			'date'                  => $appointment['date'],
@@ -2861,11 +2863,13 @@ class Appointments {
 		$clinic_label   = '';
 		$clinic_name    = '';
 		$clinic_address = '';
+		$clinic_map_url = '';
 
 		if ( $appointment['clinic_id'] > 0 ) {
 			$clinic = Clinics::find( $appointment['clinic_id'] );
 
 			if ( $clinic ) {
+				$clinic_map_url = Clinics::map_url( $clinic );
 				$clinic_name    = $clinic['name'];
 				$clinic_label   = $clinic['name'];
 				$clinic_address = implode( ', ', array_filter( array( $clinic['address'], $clinic['area_label'], $clinic['city_label'] ) ) );
@@ -2916,6 +2920,8 @@ class Appointments {
 			// wrapping the full "Name — address" string across several lines.
 			'clinic_name'       => $clinic_name,
 			'clinic_address'    => $clinic_address,
+			// "Get directions" — same Google Maps link as the public clinic pages.
+			'clinic_map_url'    => $clinic_map_url,
 			'date'              => $appointment['date'],
 			'time'              => $appointment['time'],
 			'datetime_label'    => false !== $start_timestamp ? date_i18n( 'd/m/Y h:i A', $start_timestamp ) : trim( $appointment['date'] . ' ' . $appointment['time'] ),

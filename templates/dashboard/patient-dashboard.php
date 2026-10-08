@@ -300,6 +300,7 @@ $appointment_group_labels = array(
 						);
 						?>
 					</span>
+					<?php echo 'video' === $next_appointment['type'] ? '' : \DoctorAKPortal\Includes\Dashboard_Format::map_link_html( $next_appointment['clinic_map_url'], $next_appointment['clinic_name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside map_link_html(). ?>
 				</div>
 				<div class="dak-next-appointment-status">
 					<span class="dak-status-pill dak-status-pill-outline <?php echo esc_attr( \DoctorAKPortal\Includes\Dashboard_Format::status_class( $next_appointment['status'] ) ); ?>"><?php echo esc_html( $next_appointment['status_label'] ); ?></span>

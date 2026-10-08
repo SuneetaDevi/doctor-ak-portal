@@ -108,6 +108,7 @@ $dak_has_filters = '' !== $selected_date || '' !== $selected_status || 'upcoming
 									<span class="dak-cell-primary"><?php echo esc_html( sprintf( 'Dr. %s', $row['doctor_name'] ) ); ?></span>
 									<span class="dak-cell-sub"><?php echo esc_html( '' !== $row['service_name'] ? $row['service_name'] : $row['type_label'] ); ?></span>
 									<span class="dak-cell-sub"><?php echo esc_html( $dak_visit ); ?></span>
+									<?php echo 'video' === $row['type'] ? '' : \DoctorAKPortal\Includes\Dashboard_Format::map_link_html( $row['clinic_map_url'], $row['clinic_name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside map_link_html(). ?>
 								</span>
 							</td>
 							<td class="dak-col-nowrap" data-label="<?php esc_attr_e( 'Date & time', 'doctor-ak-portal' ); ?>">

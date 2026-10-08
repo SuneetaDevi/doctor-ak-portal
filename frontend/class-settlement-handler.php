@@ -132,8 +132,22 @@ class Settlement_Handler {
 			)
 		);
 
+		// The individual charges behind each clinic line (services, video
+		// consultations, extra charges added during a visit, refunds) — same
+		// filters as $balances, so they add up to each line's total.
+		$charges = Revenue_Ledger::charges_by_doctor_and_clinic(
+			array(
+				'doctor_id' => $doctor_id,
+				'date_from' => $date_from,
+				'date_to'   => $date_to,
+			)
+		);
+
 		$line_items = array_map(
-			function ( $row ) {
+			function ( $row ) use ( $charges ) {
+				$pair           = $row['doctor_id'] . ':' . $row['clinic_id'];
+				$row['charges'] = isset( $charges[ $pair ] ) ? $charges[ $pair ] : array();
+
 				if ( 0 === $row['clinic_id'] ) {
 					$row['label'] = __( 'Video Consultation', 'doctor-ak-portal' );
 					return $row;

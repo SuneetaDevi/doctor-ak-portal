@@ -630,6 +630,64 @@ class Revenue_Ledger {
 	}
 
 	/**
+	 * The individual charges behind balances_by_doctor_and_clinic() — the
+	 * same unsettled rows, grouped by doctor, clinic and charge description
+	 * (service name, "Video Consultation", "Additional charges — encounter",
+	 * a refund, …). Each charge's amounts add up to that doctor+clinic row's
+	 * gross_total exactly, so a statement can itemise a clinic line without
+	 * changing its totals.
+	 *
+	 * @param array $filters Same filters as balances_by_doctor_and_clinic().
+	 * @return array Map of "doctor_id:clinic_id" => list of { label, quantity, unit_amount, total_amount }.
+	 */
+	public static function charges_by_doctor_and_clinic( array $filters = array() ) {
+		$rows = self::all_flat_for_admin(
+			array_merge(
+				$filters,
+				array(
+					'settlement_status' => 'unsettled',
+					'number'            => 100000,
+				)
+			)
+		);
+
+		$grouped = array();
+
+		foreach ( $rows as $row ) {
+			$pair  = $row['doctor_id'] . ':' . $row['clinic_id'];
+			$label = '' !== trim( (string) $row['description'] ) ? $row['description'] : __( 'Charge', 'doctor-ak-portal' );
+
+			if ( ! isset( $grouped[ $pair ][ $label ] ) ) {
+				$grouped[ $pair ][ $label ] = array(
+					'label'        => $label,
+					'quantity'     => 0,
+					'total_amount' => 0.0,
+				);
+			}
+
+			++$grouped[ $pair ][ $label ]['quantity'];
+			$grouped[ $pair ][ $label ]['total_amount'] += $row['gross_amount'];
+		}
+
+		$charges = array();
+
+		foreach ( $grouped as $pair => $lines ) {
+			foreach ( $lines as $line ) {
+				$charges[ $pair ][] = array(
+					'label'        => $line['label'],
+					'quantity'     => $line['quantity'],
+					// Per-charge price. Equal to the price charged when every
+					// line was billed at the same price (the usual case).
+					'unit_amount'  => $line['quantity'] > 0 ? round( $line['total_amount'] / $line['quantity'], 2 ) : 0.0,
+					'total_amount' => round( $line['total_amount'], 2 ),
+				);
+			}
+		}
+
+		return $charges;
+	}
+
+	/**
 	 * The current outstanding (unsettled) balance for every doctor+clinic
 	 * pairing that has activity in the given filters — one row per
 	 * (doctor_id, clinic_id), never merging two clinics under the same

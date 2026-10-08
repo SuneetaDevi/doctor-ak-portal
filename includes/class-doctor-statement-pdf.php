@@ -28,6 +28,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Doctor_Statement_Pdf extends Pdf_Document {
 
 	/**
+	 * Money with a refund/reversal shown as "– PKR 2,500" (same style as the
+	 * other documents' discount lines) rather than "PKR -2,500".
+	 *
+	 * @param float $amount Amount.
+	 * @return string
+	 */
+	private static function signed_money( $amount ) {
+		return $amount < 0 ? '– ' . Dashboard_Format::money( abs( $amount ) ) : Dashboard_Format::money( $amount );
+	}
+
+	/**
 	 * Builds the statement PDF for one doctor.
 	 *
 	 * @param \WP_User $doctor       The doctor.
@@ -99,21 +110,50 @@ class Doctor_Statement_Pdf extends Pdf_Document {
 			)
 		);
 
-		$pdf->section( __( 'Earnings by location', 'doctor-ak-portal' ), 60 );
+		$pdf->section( __( 'Charges by location', 'doctor-ak-portal' ), 60 );
 
 		$rows = array();
 
 		foreach ( $line_items as $item ) {
-			$avg_price = $item['appointment_count'] > 0 ? $item['gross_total'] / $item['appointment_count'] : 0.0;
+			$charges = isset( $item['charges'] ) ? $item['charges'] : array();
 
+			// Without itemised charges (older caller), the clinic line stands
+			// alone with its per-visit charge.
+			if ( empty( $charges ) ) {
+				$unit_price = $item['appointment_count'] > 0 ? $item['gross_total'] / $item['appointment_count'] : 0.0;
+
+				$rows[] = array(
+					'cells' => array(
+						array( 'text' => $item['label'] ),
+						Dashboard_Format::money( $unit_price ),
+						(string) $item['appointment_count'],
+						Dashboard_Format::money( $item['gross_total'] ),
+					),
+				);
+				continue;
+			}
+
+			// The clinic (or video consultations) as a subtotal line, then each
+			// charge billed there: services, extra visit charges, refunds.
 			$rows[] = array(
 				'cells' => array(
-					array( 'text' => $item['label'] ),
-					Dashboard_Format::money( $avg_price ),
-					(string) $item['appointment_count'],
-					Dashboard_Format::money( $item['gross_total'] ),
+					array( 'text' => $item['label'], 'bold' => true ),
+					'',
+					array( 'text' => (string) $item['appointment_count'], 'bold' => true ),
+					array( 'text' => Dashboard_Format::money( $item['gross_total'] ), 'bold' => true ),
 				),
 			);
+
+			foreach ( $charges as $charge ) {
+				$rows[] = array(
+					'cells' => array(
+						array( 'text' => $charge['label'], 'indent' => 14 ),
+						self::signed_money( $charge['unit_amount'] ),
+						(string) $charge['quantity'],
+						self::signed_money( $charge['total_amount'] ),
+					),
+				);
+			}
 		}
 
 		if ( $platform_fees > 0 ) {
@@ -125,8 +165,8 @@ class Doctor_Statement_Pdf extends Pdf_Document {
 		} else {
 			$pdf->table(
 				array(
-					array( 'label' => __( 'Clinic / type', 'doctor-ak-portal' ), 'width' => null ),
-					array( 'label' => __( 'Avg. charge', 'doctor-ak-portal' ), 'width' => 96, 'align' => 'right' ),
+					array( 'label' => __( 'Location / charge', 'doctor-ak-portal' ), 'width' => null ),
+					array( 'label' => __( 'Unit charge', 'doctor-ak-portal' ), 'width' => 96, 'align' => 'right' ),
 					array( 'label' => __( 'Qty', 'doctor-ak-portal' ), 'width' => 50, 'align' => 'right' ),
 					array( 'label' => __( 'Amount', 'doctor-ak-portal' ), 'width' => 104, 'align' => 'right' ),
 				),

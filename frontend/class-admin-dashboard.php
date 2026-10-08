@@ -2208,13 +2208,10 @@ class Admin_Dashboard {
 				'date_to'   => $date_to,
 			);
 
-			$balances = Revenue_Ledger::balances_by_doctor_and_clinic(
-				array(
-					'doctor_id' => $doctor_id,
-					'date_from' => $date_from,
-					'date_to'   => $date_to,
-				)
-			);
+			// Same filters as the summary cards above, including the Clinic
+			// filter — so choosing a clinic (with any doctor or "All doctors")
+			// lists only that clinic's records, not every clinic's.
+			$balances = Revenue_Ledger::balances_by_doctor_and_clinic( $ledger_filters );
 
 			foreach ( $balances as &$dak_balance_row ) {
 				if ( 0 === $dak_balance_row['clinic_id'] ) {

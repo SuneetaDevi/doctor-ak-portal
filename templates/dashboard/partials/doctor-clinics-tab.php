@@ -56,6 +56,7 @@ function dak_render_clinic_card( $clinic, array $session_days, array $icons ) {
 					}
 					?>
 				</span>
+				<?php echo ( $is_blank || 'video' === $clinic['type'] ) ? '' : \DoctorAKPortal\Includes\Dashboard_Format::map_link_html( \DoctorAKPortal\Includes\Clinics::map_url( $clinic ), $clinic['name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside map_link_html(). ?>
 				<span class="dak-clinic-card-days" data-clinic-days-display>
 					<?php if ( ! $is_blank ) : ?>
 						<?php if ( empty( $clinic['enabled_days'] ) ) : ?>

@@ -55,6 +55,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<span class="dak-cell-stack">
 									<span class="dak-cell-primary"><?php echo esc_html( $clinic_location['name'] ); ?></span>
 									<span class="dak-cell-sub"><?php echo esc_html( '' !== $clinic_location['address'] ? $clinic_location['address'] : __( 'No street address', 'doctor-ak-portal' ) ); ?></span>
+									<?php echo \DoctorAKPortal\Includes\Dashboard_Format::map_link_html( $clinic_location['map_url'], $clinic_location['name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside map_link_html(). ?>
 								</span>
 							</td>
 							<td data-label="<?php esc_attr_e( 'Location', 'doctor-ak-portal' ); ?>">

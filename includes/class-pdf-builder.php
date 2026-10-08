@@ -775,12 +775,14 @@ class Pdf_Builder extends Pdf_Document {
 		foreach ( $columns as $index => $column ) {
 			$cell  = isset( $row['cells'][ $index ] ) ? $row['cells'][ $index ] : '';
 			$cell  = is_array( $cell ) ? $cell : array( 'text' => (string) $cell );
-			$font  = ! empty( $cell['bold'] ) ? 'F2' : 'F1';
-			$inner = $column['width'] - $pad;
-			$main  = self::wrap_text( $cell['text'], $font, 9.5, $inner );
-			$sub   = ( isset( $cell['sub'] ) && '' !== trim( (string) $cell['sub'] ) ) ? self::wrap_text( $cell['sub'], 'F1', 8.5, $inner ) : array();
+			$font   = ! empty( $cell['bold'] ) ? 'F2' : 'F1';
+			// Optional left indent (points) — e.g. a charge listed under its clinic.
+			$indent = isset( $cell['indent'] ) ? (float) $cell['indent'] : 0.0;
+			$inner  = $column['width'] - $pad - $indent;
+			$main   = self::wrap_text( $cell['text'], $font, 9.5, $inner );
+			$sub    = ( isset( $cell['sub'] ) && '' !== trim( (string) $cell['sub'] ) ) ? self::wrap_text( $cell['sub'], 'F1', 8.5, $inner ) : array();
 
-			$cells[] = array( $main, $sub, $font );
+			$cells[] = array( $main, $sub, $font, $indent );
 			$height  = max( $height, count( $main ) * 12.5 + count( $sub ) * 11 );
 		}
 
@@ -805,7 +807,8 @@ class Pdf_Builder extends Pdf_Document {
 		$top = $this->y;
 
 		foreach ( $columns as $index => $column ) {
-			$line_y = $top;
+			$line_y       = $top;
+			$column['x'] += $cells[ $index ][3];
 
 			foreach ( $cells[ $index ][0] as $line ) {
 				$this->stream .= $this->cell_text( $column, $line_y, $cells[ $index ][2], 9.5, $line, self::TEXT );

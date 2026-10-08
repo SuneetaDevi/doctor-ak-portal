@@ -312,7 +312,7 @@ class Clinic_Locations {
 	 * @param string $country_label Country label, or ''.
 	 * @return string Empty when there's nothing usable to search for (bare name only, no location at all).
 	 */
-	private static function map_url( $name, $address, $area_label, $city_label, $country_label ) {
+	public static function map_url( $name, $address, $area_label, $city_label, $country_label ) {
 		$location_parts = array_filter( array( $address, $area_label, $city_label, $country_label ) );
 
 		if ( empty( $location_parts ) ) {

@@ -190,6 +190,7 @@ $dak_dashboard_url  = \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( \
 										<span><?php echo esc_html( $row['service_name'] ); ?></span>
 									<?php endif; ?>
 									<span class="dak-cell-sub"><?php echo esc_html( $dak_visit_line ); ?></span>
+									<?php echo $dak_is_video ? '' : \DoctorAKPortal\Includes\Dashboard_Format::map_link_html( $row['clinic_map_url'], $row['clinic_name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside map_link_html(). ?>
 								</span>
 							</td>
 							<td class="dak-col-status" data-label="<?php esc_attr_e( 'Status', 'doctor-ak-portal' ); ?>">

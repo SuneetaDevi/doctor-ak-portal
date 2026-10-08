@@ -612,6 +612,7 @@ $dak_more_label = $dak_more_active > 0 ? sprintf( __( 'More filters (%d)', 'doct
 											<span class="dak-cell-sub"><?php echo esc_html( $row['service_name'] ); ?></span>
 										<?php endif; ?>
 										<span class="dak-cell-sub"><?php echo esc_html( $dak_visit ); ?></span>
+										<?php echo $dak_is_video ? '' : \DoctorAKPortal\Includes\Dashboard_Format::map_link_html( $row['clinic_map_url'], $row['clinic_name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside map_link_html(). ?>
 									</span>
 								</td>
 

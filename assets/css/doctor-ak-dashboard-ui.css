@@ -5587,3 +5587,31 @@ body.dak-app-page .dak-portal .dak-results-tools-actions .dak-button {
 	flex: 0 0 auto !important;
 	white-space: nowrap !important;
 }
+/* "Get directions" — Google Maps link under a clinic (same link as the public clinic pages). */
+body.dak-app-page .dak-portal .dak-map-link {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 4px !important;
+	width: max-content !important;
+	max-width: 100% !important;
+	margin-top: 2px !important;
+	color: var( --dak-primary-dark ) !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+	line-height: 1.4 !important;
+	text-decoration: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-map-link:hover {
+	text-decoration: underline !important;
+}
+
+body.dak-app-page .dak-portal .dak-map-link:focus-visible {
+	outline: 2px solid var( --dak-primary ) !important;
+	outline-offset: 2px !important;
+	border-radius: 4px !important;
+}
+
+body.dak-app-page .dak-portal .dak-map-link svg {
+	flex: 0 0 auto !important;
+}

@@ -144,4 +144,28 @@ class Dashboard_Format {
 	public static function email_html( $email ) {
 		return str_replace( array( '@', '.' ), array( '@<wbr>', '.<wbr>' ), esc_html( (string) $email ) );
 	}
+
+	/**
+	 * "Get directions" link to a clinic on Google Maps — the same link the
+	 * public clinic pages use (Clinic_Locations::map_url()). Opens in a new tab.
+	 *
+	 * @param string $url   Map URL; '' renders nothing.
+	 * @param string $place Clinic name, for the screen-reader label.
+	 * @return string Escaped HTML.
+	 */
+	public static function map_link_html( $url, $place = '' ) {
+		if ( '' === (string) $url ) {
+			return '';
+		}
+
+		$label = '' !== (string) $place
+			/* translators: %s: clinic name. */
+			? sprintf( __( 'Get directions to %s (opens Google Maps in a new tab)', 'doctor-ak-portal' ), $place )
+			: __( 'Get directions (opens Google Maps in a new tab)', 'doctor-ak-portal' );
+
+		return '<a class="dak-map-link" href="' . esc_url( $url ) . '" target="_blank" rel="noopener noreferrer" aria-label="' . esc_attr( $label ) . '">'
+			. '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>'
+			. esc_html__( 'Get directions', 'doctor-ak-portal' )
+			. '</a>';
+	}
 }

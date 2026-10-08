@@ -379,6 +379,47 @@ class Clinics {
 	}
 
 	/**
+	 * The "Get directions" Google Maps link for a doctor's clinic — the very
+	 * same link the public clinic pages show (Clinic_Locations::map_url()):
+	 * the linked shared clinic's own link when there is one, otherwise one
+	 * built the same way from this row's name and address. '' for a video
+	 * entry or a clinic with no location details at all.
+	 *
+	 * @param array $clinic Decoded clinic row (see decode_row()).
+	 * @return string
+	 */
+	public static function map_url( array $clinic ) {
+		static $location_links = null;
+
+		if ( isset( $clinic['type'] ) && self::TYPE_PHYSICAL !== $clinic['type'] ) {
+			return '';
+		}
+
+		// Every shared clinic's link, loaded once per request.
+		if ( null === $location_links ) {
+			$location_links = array();
+
+			foreach ( Clinic_Locations::get_all() as $location ) {
+				$location_links[ (int) $location['id'] ] = $location['map_url'];
+			}
+		}
+
+		$location_id = isset( $clinic['clinic_location_id'] ) ? (int) $clinic['clinic_location_id'] : 0;
+
+		if ( $location_id > 0 && ! empty( $location_links[ $location_id ] ) ) {
+			return $location_links[ $location_id ];
+		}
+
+		return Clinic_Locations::map_url(
+			isset( $clinic['name'] ) ? (string) $clinic['name'] : '',
+			isset( $clinic['address'] ) ? (string) $clinic['address'] : '',
+			isset( $clinic['area_label'] ) ? (string) $clinic['area_label'] : '',
+			isset( $clinic['city_label'] ) ? (string) $clinic['city_label'] : '',
+			isset( $clinic['country_label'] ) ? (string) $clinic['country_label'] : ''
+		);
+	}
+
+	/**
 	 * Finds a single clinic by ID.
 	 *
 	 * @param int $clinic_id Clinic ID.

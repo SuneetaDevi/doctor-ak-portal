@@ -110,6 +110,7 @@ $dak_session_period_labels = \DoctorAKPortal\Includes\Clinics::session_periods()
 									<?php if ( '' !== $dak_place_sub ) : ?>
 										<span class="dak-cell-sub"><?php echo esc_html( $dak_place_sub ); ?></span>
 									<?php endif; ?>
+									<?php echo $dak_is_video ? '' : \DoctorAKPortal\Includes\Dashboard_Format::map_link_html( \DoctorAKPortal\Includes\Clinics::map_url( $clinic ), $clinic['name'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside map_link_html(). ?>
 								</span>
 							</td>
 							<td class="dak-col-nowrap" data-label="<?php esc_attr_e( 'Slot length', 'doctor-ak-portal' ); ?>"><?php echo esc_html( $dak_duration_label ); ?></td>
