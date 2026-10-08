@@ -209,6 +209,9 @@ class Home_Page {
 				return array(
 					'name'      => $card['name'],
 					'specialty' => empty( $card['specialization_labels'] ) ? '' : $card['specialization_labels'][0],
+					// Primary clinic and its city, e.g. "Lohana Clinic, Hyderabad"
+					// — '' when the doctor has no physical clinic on file.
+					'location'  => trim( implode( ', ', array_filter( array( $card['clinic_location'], $card['clinic_city_label'] ) ) ), ', ' ),
 					'avatarUrl' => $card['avatar_url'],
 					'url'       => $card['profile_url'],
 					'citySlugs' => $card['city_slugs'],
@@ -290,6 +293,8 @@ class Home_Page {
 						return array(
 							'name'     => $clinic_location['name'],
 							'location' => trim( implode( ', ', array_filter( array( $clinic_location['area_label'], $clinic_location['city_label'] ) ) ), ', ' ),
+							// City slug, so the popup's results follow the chosen city.
+							'citySlug' => isset( $clinic_location['city'] ) ? (string) $clinic_location['city'] : '',
 							'keywords' => isset( $clinic_location['keywords'] ) ? $clinic_location['keywords'] : '',
 							'url'      => $clinic_profile_url ? add_query_arg( 'clinic_id', $clinic_location['id'], $clinic_profile_url ) : '',
 						);
@@ -301,10 +306,27 @@ class Home_Page {
 				// localized here since that file has no server-rendered
 				// markup of its own to read translated strings from.
 				'labels'      => array(
-					'doctors'     => __( 'Doctors', 'doctor-ak-portal' ),
-					'services'    => __( 'Services', 'doctor-ak-portal' ),
-					'specialties' => __( 'Specialities', 'doctor-ak-portal' ),
-					'clinics'     => __( 'Clinics', 'doctor-ak-portal' ),
+					'doctors'         => __( 'Doctors', 'doctor-ak-portal' ),
+					'services'        => __( 'Services', 'doctor-ak-portal' ),
+					'specialties'     => __( 'Specialities', 'doctor-ak-portal' ),
+					'clinics'         => __( 'Clinics', 'doctor-ak-portal' ),
+					'anyCity'         => __( 'Any city', 'doctor-ak-portal' ),
+					/* translators: 1: number shown, 2: total matches. */
+					'shownOf'         => __( '%1$d of %2$d', 'doctor-ak-portal' ),
+					/* translators: %d: number of doctors. */
+					'doctorCount'     => __( '%d doctors', 'doctor-ak-portal' ),
+					'doctorCountOne'  => __( '1 doctor', 'doctor-ak-portal' ),
+					/* translators: %d: number of matching results. */
+					'resultsCount'    => __( '%d results', 'doctor-ak-portal' ),
+					'resultsCountOne' => __( '1 result', 'doctor-ak-portal' ),
+					'noResults'       => __( 'No results found', 'doctor-ak-portal' ),
+					'noCityMatch'     => __( 'No city matches that name.', 'doctor-ak-portal' ),
+					'locating'        => __( 'Finding your location…', 'doctor-ak-portal' ),
+					'locateDenied'    => __( 'Location access is blocked in your browser. Choose your city from the list instead.', 'doctor-ak-portal' ),
+					'locateFailed'    => __( 'We couldn’t determine your location. Choose your city from the list instead.', 'doctor-ak-portal' ),
+					'locateNone'      => __( 'We don’t have clinics near your location yet. Choose a city from the list.', 'doctor-ak-portal' ),
+					/* translators: %s: city name. */
+					'locateFound'     => __( 'Nearest city with our doctors: %s', 'doctor-ak-portal' ),
 				),
 			)
 		);

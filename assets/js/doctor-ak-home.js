@@ -418,548 +418,781 @@
 		{ name: 'Kohat', lat: 33.5900, lng: 71.4400 }
 	];
 
-	// Static, hardcoded icon glyphs for the hero search popup's Service/
-	// Speciality/Clinic result rows (see buildSimpleResultRow()) — matches
-	// the same tag/stethoscope/pin icons used elsewhere on this page
-	// ($dak_home_icons in home-page.php), just duplicated here since this
-	// file has no server-rendered markup to read them from.
+	// Static, hardcoded icon glyphs for the search dialog's result rows —
+	// never built from server/user data, so safe to set via innerHTML.
 	var RESULT_ICONS = {
 		service: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5l6.5 6.5-7.5 7.5-6.5-6.5V3.5z"/><circle cx="6.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"/></svg>',
 		specialty: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.6 3.4v3.9a3 3 0 0 0 6 0V3.4"/><path d="M4.2 3.4h2.6M10.4 3.4H13"/><path d="M8.6 10.3v1.9a3.6 3.6 0 0 0 7.2 0v-1.4"/><circle cx="15.8" cy="9" r="1.6"/></svg>',
-		clinic: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18s6-5.2 6-9.8A6 6 0 0 0 4 8.2C4 12.8 10 18 10 18z"/><circle cx="10" cy="8" r="2"/></svg>'
+		clinic: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 17.5h13"/><path d="M5 17.5V6.5l5-3 5 3v11"/><path d="M10 8v4M8 10h4"/></svg>',
+		chevron: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 4.5l5.5 5.5-5.5 5.5"/></svg>'
 	};
 
 	/**
-	 * Wires the hero search trigger to the "Search for doctors" popup: opens
-	 * it (and runs the first location detection) on click, closes on the
-	 * overlay/×/Escape, and handles both ways the Location field gets set —
-	 * auto-detect and clicking one of the city quick-picks.
+	 * The homepage "Find your care" search dialog.
+	 *
+	 * - Opens from the hero search bar; moved to the end of <body> once so it
+	 *   always stacks above the page and floating chat widgets. Background
+	 *   scrolling is locked, focus is kept inside, Escape closes it, and focus
+	 *   returns to the trigger.
+	 * - Location is a combobox: its city list opens only while the field is
+	 *   active, filters as you type, and offers "Any city" and "Use my
+	 *   location" (asked for only when clicked). Changing city keeps the
+	 *   query and re-filters doctors and clinics.
+	 * - The query is matched in the browser against window.dakHomeSearch
+	 *   (doctors, services, specialities, clinics — no network request per
+	 *   keystroke), rendered as one keyboard-navigable list grouped by type.
+	 *   Selecting a row opens its page; Enter with no row selected (or the
+	 *   footer button) runs the full doctors search with the chosen city.
 	 */
 	function initHeroSearch() {
 		var trigger = document.getElementById( 'dak-home-hero-search-trigger' );
-		var triggerLocation = document.getElementById( 'dak-home-hero-search-trigger-location' );
 		var modal = document.getElementById( 'dak-home-search-modal' );
 
 		if ( ! trigger || ! modal ) {
 			return;
 		}
 
-		var RESULTS_LIMIT = 8;
+		var GROUP_LIMIT = 6;
+		var data = window.dakHomeSearch || {};
+		var labels = data.labels || {};
+		var allDoctors = data.doctors || [];
+		var allServices = data.services || [];
+		var allSpecialties = data.specialties || [];
+		var allClinics = data.clinics || [];
 
-		var overlay = document.getElementById( 'dak-home-search-modal-overlay' );
-		var closeButton = document.getElementById( 'dak-home-search-modal-close' );
-		var queryInput = document.getElementById( 'dak-home-search-modal-query-input' );
-		var queryClearButton = document.getElementById( 'dak-home-search-modal-query-clear' );
-		var locationInput = document.getElementById( 'dak-home-search-modal-location-input' );
-		var cityHidden = document.getElementById( 'dak-home-search-modal-city' );
-		var detectButton = document.getElementById( 'dak-home-search-modal-detect' );
-		var citiesContainer = document.getElementById( 'dak-home-search-modal-cities' );
-		var cityButtons = document.querySelectorAll( '.dak-home-search-modal-city' );
-		var resultsContainer = document.getElementById( 'dak-home-search-modal-results' );
-		var resultsGroups = document.getElementById( 'dak-home-search-modal-results-groups' );
-		var noResultsEl = document.getElementById( 'dak-home-search-modal-no-results' );
-		var allDoctors = ( window.dakHomeSearch && window.dakHomeSearch.doctors ) || [];
-		var allServices = ( window.dakHomeSearch && window.dakHomeSearch.services ) || [];
-		var allSpecialties = ( window.dakHomeSearch && window.dakHomeSearch.specialties ) || [];
-		var allClinics = ( window.dakHomeSearch && window.dakHomeSearch.clinics ) || [];
-		var searchLabels = ( window.dakHomeSearch && window.dakHomeSearch.labels ) || {};
-		var hasDetectedOnce = false;
-		// Whatever the Location field showed before any typing/detecting —
-		// the server-rendered (and already-translated) "Any city" — restored
-		// when the field is cleared back out, rather than a hardcoded string.
-		var defaultLocationLabel = triggerLocation ? triggerLocation.textContent : '';
-		var locationPlaceholder = locationInput ? locationInput.placeholder : '';
+		var $ = function ( id ) {
+			return document.getElementById( id );
+		};
+
+		var triggerLocation = $( 'dak-home-hero-search-trigger-location' );
+		var dialog = modal.querySelector( '.dak-hsm-dialog' );
+		var form = $( 'dak-home-search-modal-form' );
+		var overlay = $( 'dak-home-search-modal-overlay' );
+		var closeButton = $( 'dak-home-search-modal-close' );
+		var queryInput = $( 'dak-home-search-modal-query-input' );
+		var queryClear = $( 'dak-home-search-modal-query-clear' );
+		var locationField = modal.querySelector( '.dak-hsm-field-location' );
+		var locationInput = $( 'dak-home-search-modal-location-input' );
+		var locationClear = $( 'dak-hsm-location-clear' );
+		var cityHidden = $( 'dak-home-search-modal-city' );
+		var cityPopover = $( 'dak-hsm-city-popover' );
+		var cityList = $( 'dak-hsm-city-list' );
+		var cityEmpty = $( 'dak-hsm-city-empty' );
+		var cityOptions = Array.prototype.slice.call( modal.querySelectorAll( '.dak-hsm-city' ) );
+		var locateButton = $( 'dak-home-search-modal-detect' );
+		var locateStatus = $( 'dak-hsm-locate-status' );
+		var body = $( 'dak-home-search-modal-results' );
+		var intro = $( 'dak-hsm-intro' );
+		var results = $( 'dak-hsm-results' );
+		var empty = $( 'dak-home-search-modal-no-results' );
+		var resetButton = $( 'dak-hsm-reset' );
+		var anyCityButton = $( 'dak-hsm-any-city' );
+		var announcer = $( 'dak-hsm-announcer' );
+		var shortcuts = Array.prototype.slice.call( modal.querySelectorAll( '.dak-hsm-shortcut' ) );
+
+		var selectedCity = { slug: '', label: '' };
+		var anyCityLabel = labels.anyCity || ( triggerLocation ? triggerLocation.textContent : '' );
+		var resultOptions = [];
+		var activeResult = -1;
+		var activeCity = -1;
+		var lastFocus = null;
+
+		// Above every wrapper on the page (a transformed or z-indexed parent
+		// would otherwise trap the fixed dialog beneath floating widgets).
+		document.body.appendChild( modal );
 
 		trigger.addEventListener( 'click', openModal );
 		overlay.addEventListener( 'click', closeModal );
 		closeButton.addEventListener( 'click', closeModal );
+		modal.addEventListener( 'keydown', onModalKeydown );
 
-		document.addEventListener( 'keydown', function ( event ) {
-			if ( 'Escape' === event.key && ! modal.hasAttribute( 'aria-hidden' ) ) {
-				closeModal();
+		queryInput.addEventListener( 'input', function () {
+			render();
+		} );
+		queryInput.addEventListener( 'keydown', onQueryKeydown );
+		queryInput.addEventListener( 'focus', closeCityPopover );
+
+		queryClear.addEventListener( 'click', function () {
+			queryInput.value = '';
+			render();
+			queryInput.focus();
+		} );
+
+		resetButton.addEventListener( 'click', function () {
+			queryInput.value = '';
+			render();
+			queryInput.focus();
+		} );
+
+		anyCityButton.addEventListener( 'click', function () {
+			selectCity( '', '' );
+			queryInput.focus();
+		} );
+
+		locationInput.addEventListener( 'focus', function () {
+			openCityPopover();
+			locationInput.select();
+		} );
+		locationInput.addEventListener( 'click', openCityPopover );
+		locationInput.addEventListener( 'input', function () {
+			openCityPopover();
+			filterCities( locationInput.value );
+		} );
+		locationInput.addEventListener( 'keydown', onLocationKeydown );
+
+		locationClear.addEventListener( 'click', function () {
+			selectCity( '', '' );
+			locationInput.focus();
+		} );
+
+		// Leaving the Location field (to anywhere outside it) closes the list
+		// and puts the field back to the chosen city.
+		locationField.addEventListener( 'focusout', function ( event ) {
+			if ( ! event.relatedTarget || ! locationField.contains( event.relatedTarget ) ) {
+				closeCityPopover();
 			}
 		} );
 
-		cityButtons.forEach( function ( button ) {
-			button.addEventListener( 'click', function () {
-				selectCity( button.getAttribute( 'data-city-slug' ), button.getAttribute( 'data-city-label' ) );
+		cityOptions.forEach( function ( option ) {
+			// mousedown, not click: keeps focus in the field so focusout above
+			// doesn't close the list before the choice registers.
+			option.addEventListener( 'mousedown', function ( event ) {
+				event.preventDefault();
+				chooseCityOption( option );
 			} );
 		} );
 
-		if ( detectButton ) {
-			if ( navigator.geolocation ) {
-				detectButton.addEventListener( 'click', detectLocation );
-			} else {
-				detectButton.disabled = true;
-			}
-		}
+		locateButton.addEventListener( 'click', useMyLocation );
 
-		if ( queryInput ) {
-			queryInput.addEventListener( 'input', function () {
-				renderResults( queryInput.value );
-			} );
+		form.addEventListener( 'submit', function () {
+			// Submitting is the full doctors search: the query plus the chosen
+			// city (the directory reads ?s= and ?city=).
+			cityHidden.value = selectedCity.slug;
+		} );
 
-			// The popup's own live results (or the Search button below, for a
-			// deliberate full-directory search) are the only ways out of
-			// here — Enter used to submit the form and jump straight to the
-			// directory page, which is easy to trigger by accident mid-typo.
-			queryInput.addEventListener( 'keydown', function ( event ) {
-				if ( 'Enter' === event.key ) {
-					event.preventDefault();
-				}
-			} );
-		}
+		updateLocationUi();
 
-		if ( queryClearButton ) {
-			queryClearButton.addEventListener( 'click', function () {
-				queryInput.value = '';
-				queryInput.focus();
-				renderResults( '' );
-			} );
-		}
-
-		if ( locationInput ) {
-			locationInput.addEventListener( 'input', handleLocationInput );
-
-			// Same reasoning as the query field above — typing a city and
-			// hitting Enter shouldn't submit the form out from under the
-			// visitor while they're still typing.
-			locationInput.addEventListener( 'keydown', function ( event ) {
-				if ( 'Enter' === event.key ) {
-					event.preventDefault();
-				}
-			} );
-		}
+		/* ------------------------------------------------------------------ */
+		/* Dialog                                                              */
+		/* ------------------------------------------------------------------ */
 
 		function openModal() {
+			lastFocus = document.activeElement;
 			modal.removeAttribute( 'aria-hidden' );
 			modal.classList.add( 'is-open' );
+			lockScroll( true );
+			trackViewport( true );
+			render();
 
-			if ( queryInput ) {
-				// Deferred a tick: at the exact instant this click handler
-				// runs, the browser still considers the popup hidden (the
-				// aria-hidden removal above hasn't been style-recalculated
-				// yet), so a synchronous focus() here is silently ignored.
-				setTimeout( function () {
-					queryInput.focus();
-				}, 0 );
-			}
-
-			if ( ! hasDetectedOnce ) {
-				hasDetectedOnce = true;
-				detectLocation();
-			}
+			// Deferred a tick so the now-visible field can take focus.
+			setTimeout( function () {
+				queryInput.focus();
+			}, 0 );
 		}
 
 		function closeModal() {
+			closeCityPopover();
 			modal.setAttribute( 'aria-hidden', 'true' );
 			modal.classList.remove( 'is-open' );
+			lockScroll( false );
+			trackViewport( false );
 
-			// Reopening always starts from a clean search — Location stays
-			// as last set (detected or picked), since that's meant to
-			// persist across searches.
-			if ( queryInput ) {
-				queryInput.value = '';
-				renderResults( '' );
+			// Each opening starts from a clean query; the chosen city stays.
+			queryInput.value = '';
+			render();
+
+			( lastFocus && lastFocus.focus ? lastFocus : trigger ).focus();
+		}
+
+		function lockScroll( lock ) {
+			var root = document.documentElement;
+
+			if ( lock ) {
+				var scrollbar = window.innerWidth - root.clientWidth;
+				root.classList.add( 'dak-hsm-locked' );
+				document.body.style.paddingRight = scrollbar > 0 ? scrollbar + 'px' : '';
+			} else {
+				root.classList.remove( 'dak-hsm-locked' );
+				document.body.style.paddingRight = '';
 			}
 		}
 
-		function selectCity( slug, label ) {
-			if ( cityHidden ) {
-				cityHidden.value = slug;
-			}
-
-			if ( locationInput ) {
-				locationInput.value = label;
-			}
-
-			if ( triggerLocation ) {
-				triggerLocation.textContent = label;
-			}
-
-			cityButtons.forEach( function ( button ) {
-				button.classList.remove( 'dak-hidden' );
-				button.classList.toggle( 'is-selected', button.getAttribute( 'data-city-slug' ) === slug );
-			} );
-
-			// Picking a city re-filters an already-typed doctor search down
-			// to that city immediately, rather than waiting for the next
-			// keystroke — a no-op (still shows the quick-pick list) while
-			// the search box is empty.
-			if ( queryInput ) {
-				renderResults( queryInput.value );
+		// Phones: keep the dialog sized to the visible area when the on-screen
+		// keyboard opens, so the fields and results aren't hidden behind it.
+		function onViewportResize() {
+			if ( window.visualViewport ) {
+				modal.style.setProperty( '--dak-hsm-vh', window.visualViewport.height + 'px' );
 			}
 		}
 
-		/**
-		 * Free-typing in the Location field (it's no longer read-only —
-		 * Detect and the quick-pick list are conveniences, not the only way
-		 * in): filters the quick-pick list down to matching cities as a
-		 * lightweight autocomplete, and resolves the hidden `city` slug the
-		 * moment what's typed exactly matches one of them (case-insensitive)
-		 * — an unmatched, in-progress fragment just falls back to searching
-		 * every city rather than submitting a stale/wrong slug.
-		 */
-		function handleLocationInput() {
-			var query = locationInput.value.trim().toLowerCase();
-
-			// Editing Location is what the quick-pick list is for — bring it
-			// back to the front even if a doctor search was showing results.
-			if ( resultsContainer ) {
-				resultsContainer.classList.add( 'dak-hidden' );
-			}
-
-			if ( citiesContainer ) {
-				citiesContainer.classList.remove( 'dak-hidden' );
-			}
-
-			var exactMatch = null;
-
-			cityButtons.forEach( function ( button ) {
-				var label = button.getAttribute( 'data-city-label' ) || '';
-				var labelLower = label.toLowerCase();
-				var isVisible = '' === query || labelLower.indexOf( query ) !== -1;
-
-				button.classList.toggle( 'dak-hidden', ! isVisible );
-				button.classList.toggle( 'is-selected', '' !== query && labelLower === query );
-
-				if ( labelLower === query ) {
-					exactMatch = button;
-				}
-			} );
-
-			if ( cityHidden ) {
-				cityHidden.value = exactMatch ? exactMatch.getAttribute( 'data-city-slug' ) : '';
-			}
-
-			if ( triggerLocation ) {
-				triggerLocation.textContent = '' === query
-					? defaultLocationLabel
-					: ( exactMatch ? exactMatch.getAttribute( 'data-city-label' ) : locationInput.value );
-			}
-
-			// Typing out a city's full name (rather than clicking it) is
-			// still a real selection, and clearing the field back to empty
-			// is just as definitively "any city" — both re-filter an
-			// already-typed doctor search immediately, the same way
-			// selectCity() does. A fragment mid-typed that matches neither
-			// is left alone (still just showing the quick-pick suggestions
-			// above) rather than flickering the results through a
-			// momentarily-wrong filter on every keystroke.
-			if ( ( exactMatch || '' === query ) && queryInput && '' !== queryInput.value.trim() ) {
-				renderResults( queryInput.value );
-			}
-		}
-
-		function detectLocation() {
-			if ( ! navigator.geolocation ) {
+		function trackViewport( on ) {
+			if ( ! window.visualViewport ) {
 				return;
 			}
 
-			if ( detectButton ) {
-				detectButton.classList.add( 'is-detecting' );
+			if ( on ) {
+				onViewportResize();
+				window.visualViewport.addEventListener( 'resize', onViewportResize );
+			} else {
+				window.visualViewport.removeEventListener( 'resize', onViewportResize );
+				modal.style.removeProperty( '--dak-hsm-vh' );
+			}
+		}
+
+		function onModalKeydown( event ) {
+			if ( 'Escape' === event.key ) {
+				event.preventDefault();
+
+				if ( ! cityPopover.hidden ) {
+					closeCityPopover();
+					locationInput.focus();
+					return;
+				}
+
+				closeModal();
+				return;
 			}
 
-			if ( locationInput ) {
-				locationInput.placeholder = locationInput.getAttribute( 'data-detecting-placeholder' );
+			if ( 'Tab' === event.key ) {
+				trapFocus( event );
 			}
+		}
+
+		function trapFocus( event ) {
+			var focusable = Array.prototype.filter.call(
+				dialog.querySelectorAll( 'a[href], button, input:not([type="hidden"]), [tabindex]:not([tabindex="-1"])' ),
+				function ( el ) {
+					return ! el.disabled && null !== el.offsetParent && -1 !== el.tabIndex;
+				}
+			);
+
+			if ( ! focusable.length ) {
+				return;
+			}
+
+			var first = focusable[0];
+			var last = focusable[ focusable.length - 1 ];
+
+			if ( event.shiftKey && document.activeElement === first ) {
+				event.preventDefault();
+				last.focus();
+			} else if ( ! event.shiftKey && document.activeElement === last ) {
+				event.preventDefault();
+				first.focus();
+			}
+		}
+
+		/* ------------------------------------------------------------------ */
+		/* Location                                                            */
+		/* ------------------------------------------------------------------ */
+
+		function openCityPopover() {
+			if ( ! cityPopover.hidden ) {
+				return;
+			}
+
+			cityPopover.hidden = false;
+			locationInput.setAttribute( 'aria-expanded', 'true' );
+			filterCities( '' );
+		}
+
+		function closeCityPopover() {
+			if ( cityPopover.hidden ) {
+				return;
+			}
+
+			cityPopover.hidden = true;
+			locationInput.setAttribute( 'aria-expanded', 'false' );
+			locationInput.removeAttribute( 'aria-activedescendant' );
+			activeCity = -1;
+
+			// Back to the chosen city — a half-typed name isn't a selection.
+			locationInput.value = selectedCity.label;
+			updateLocationUi();
+		}
+
+		function visibleCityOptions() {
+			return cityOptions.filter( function ( option ) {
+				return ! option.hidden;
+			} );
+		}
+
+		function filterCities( text ) {
+			var needle = text.trim().toLowerCase();
+			var shown = 0;
+
+			// While the field still shows the chosen city, list every city.
+			if ( needle === selectedCity.label.toLowerCase() ) {
+				needle = '';
+			}
+
+			cityOptions.forEach( function ( option ) {
+				var label = option.getAttribute( 'data-city-label' );
+				var isAny = '' === option.getAttribute( 'data-city-slug' );
+				var visible = '' === needle || ( ! isAny && -1 !== label.toLowerCase().indexOf( needle ) );
+
+				option.hidden = ! visible;
+				option.setAttribute( 'aria-selected', option.getAttribute( 'data-city-slug' ) === selectedCity.slug ? 'true' : 'false' );
+				shown += visible ? 1 : 0;
+			} );
+
+			cityEmpty.hidden = shown > 0;
+			cityEmpty.textContent = shown > 0 ? '' : ( labels.noCityMatch || '' );
+			setActiveCity( '' === needle ? -1 : 0 );
+		}
+
+		function setActiveCity( index ) {
+			var options = visibleCityOptions();
+
+			cityOptions.forEach( function ( option ) {
+				option.classList.remove( 'is-active' );
+			} );
+
+			activeCity = options.length ? Math.max( -1, Math.min( index, options.length - 1 ) ) : -1;
+
+			if ( activeCity >= 0 ) {
+				options[ activeCity ].classList.add( 'is-active' );
+				locationInput.setAttribute( 'aria-activedescendant', options[ activeCity ].id );
+				options[ activeCity ].scrollIntoView( { block: 'nearest' } );
+			} else {
+				locationInput.removeAttribute( 'aria-activedescendant' );
+			}
+		}
+
+		function onLocationKeydown( event ) {
+			var options = visibleCityOptions();
+
+			if ( 'ArrowDown' === event.key || 'ArrowUp' === event.key ) {
+				event.preventDefault();
+				openCityPopover();
+				setActiveCity( activeCity + ( 'ArrowDown' === event.key ? 1 : -1 ) );
+				return;
+			}
+
+			if ( 'Enter' === event.key ) {
+				// Never submits the search from here — Enter picks a city.
+				event.preventDefault();
+
+				if ( activeCity >= 0 && options[ activeCity ] ) {
+					chooseCityOption( options[ activeCity ] );
+				} else if ( 1 === options.length ) {
+					chooseCityOption( options[0] );
+				}
+			}
+		}
+
+		function chooseCityOption( option ) {
+			selectCity( option.getAttribute( 'data-city-slug' ), option.getAttribute( 'data-city-label' ) );
+			closeCityPopover();
+			queryInput.focus();
+		}
+
+		function selectCity( slug, label ) {
+			selectedCity = { slug: slug || '', label: slug ? label : '' };
+			cityHidden.value = selectedCity.slug;
+			locationInput.value = selectedCity.label;
+			updateLocationUi();
+
+			// Keeps whatever was typed in the search box and re-filters it.
+			render();
+		}
+
+		function updateLocationUi() {
+			locationClear.hidden = '' === selectedCity.slug;
+			locationField.classList.toggle( 'has-value', '' !== selectedCity.slug );
+
+			if ( triggerLocation ) {
+				triggerLocation.textContent = selectedCity.slug ? selectedCity.label : anyCityLabel;
+			}
+
+			// Specialty shortcuts open the directory filtered to the chosen city.
+			shortcuts.forEach( function ( link ) {
+				link.href = withParam( link.getAttribute( 'data-base-href' ), 'city', selectedCity.slug );
+			} );
+		}
+
+		function useMyLocation() {
+			if ( ! navigator.geolocation ) {
+				setLocateStatus( labels.locateFailed, 'error' );
+				return;
+			}
+
+			locateButton.disabled = true;
+			locateButton.setAttribute( 'aria-busy', 'true' );
+			setLocateStatus( labels.locating, '' );
 
 			navigator.geolocation.getCurrentPosition(
 				function ( position ) {
-					if ( detectButton ) {
-						detectButton.classList.remove( 'is-detecting' );
+					locateDone();
+
+					var option = nearestOfferedCity( position.coords.latitude, position.coords.longitude );
+
+					if ( ! option ) {
+						setLocateStatus( labels.locateNone, 'error' );
+						return;
 					}
 
-					if ( locationInput ) {
-						locationInput.placeholder = locationPlaceholder;
-					}
-
-					applyNearestCity( position.coords.latitude, position.coords.longitude );
+					selectCity( option.getAttribute( 'data-city-slug' ), option.getAttribute( 'data-city-label' ) );
+					setLocateStatus( '', '' );
+					announce( ( labels.locateFound || '%s' ).replace( '%s', option.getAttribute( 'data-city-label' ) ) );
+					closeCityPopover();
+					queryInput.focus();
 				},
-				function () {
-					// Permission denied, unavailable, or timed out — the
-					// city quick-picks (and typing a city in by hand) cover
-					// the rest, so this fails silently rather than showing
-					// an error.
-					if ( detectButton ) {
-						detectButton.classList.remove( 'is-detecting' );
-					}
-
-					if ( locationInput ) {
-						locationInput.placeholder = locationPlaceholder;
-					}
+				function ( error ) {
+					locateDone();
+					setLocateStatus( error && 1 === error.code ? labels.locateDenied : labels.locateFailed, 'error' );
 				},
 				{ enableHighAccuracy: false, timeout: 8000, maximumAge: 600000 }
 			);
 		}
 
-		function applyNearestCity( lat, lng ) {
-			var nearest = PK_CITIES
-				.map( function ( city ) {
-					return { name: city.name, distance: distanceKm( lat, lng, city.lat, city.lng ) };
-				} )
-				.sort( function ( a, b ) {
-					return a.distance - b.distance;
-				} );
+		function locateDone() {
+			locateButton.disabled = false;
+			locateButton.removeAttribute( 'aria-busy' );
+		}
 
-			for ( var i = 0; i < nearest.length; i++ ) {
-				var button = findCityButtonByLabel( nearest[ i ].name );
+		function setLocateStatus( text, kind ) {
+			locateStatus.textContent = text || '';
+			locateStatus.className = 'dak-hsm-locate-status' + ( kind ? ' is-' + kind : '' );
+		}
 
-				if ( button ) {
-					selectCity( button.getAttribute( 'data-city-slug' ), button.getAttribute( 'data-city-label' ) );
+		/**
+		 * The offered city (one with our doctors) closest to the visitor, using
+		 * approximate city-centre coordinates (PK_CITIES); null when none of
+		 * the offered cities is in that list.
+		 */
+		function nearestOfferedCity( lat, lng ) {
+			var best = null;
+			var bestDistance = Infinity;
+
+			cityOptions.forEach( function ( option ) {
+				var label = ( option.getAttribute( 'data-city-label' ) || '' ).trim().toLowerCase();
+
+				if ( '' === label ) {
 					return;
 				}
-			}
+
+				PK_CITIES.forEach( function ( city ) {
+					if ( city.name.toLowerCase() !== label ) {
+						return;
+					}
+
+					var distance = distanceKm( lat, lng, city.lat, city.lng );
+
+					if ( distance < bestDistance ) {
+						bestDistance = distance;
+						best = option;
+					}
+				} );
+			} );
+
+			return best;
 		}
 
-		function findCityButtonByLabel( label ) {
-			var target = label.trim().toLowerCase();
+		/* ------------------------------------------------------------------ */
+		/* Results                                                             */
+		/* ------------------------------------------------------------------ */
 
-			for ( var i = 0; i < cityButtons.length; i++ ) {
-				if ( cityButtons[ i ].getAttribute( 'data-city-label' ).trim().toLowerCase() === target ) {
-					return cityButtons[ i ];
-				}
-			}
+		function render() {
+			var raw = queryInput.value;
+			var query = raw.trim().toLowerCase();
 
-			return null;
-		}
-
-		/**
-		 * Filters everything window.dakHomeSearch carries — doctors,
-		 * services, specialities, clinics — by the typed query, and renders
-		 * one result group per category that has a match (Doctors also
-		 * narrows to whichever city is currently selected in the Location
-		 * field; the other three aren't location-specific, so aren't
-		 * filtered by it). Swaps out the city quick-picks while a search is
-		 * in progress, and back once the query is cleared.
-		 *
-		 * @param {string} rawQuery Current value of the search input.
-		 */
-		function renderResults( rawQuery ) {
-			var query = rawQuery.trim().toLowerCase();
-			var selectedCity = cityHidden ? cityHidden.value : '';
-
-			if ( queryClearButton ) {
-				queryClearButton.classList.toggle( 'dak-hidden', '' === query );
-			}
+			queryClear.hidden = '' === raw;
+			resultOptions = [];
+			activeResult = -1;
+			queryInput.removeAttribute( 'aria-activedescendant' );
+			results.innerHTML = '';
 
 			if ( '' === query ) {
-				if ( resultsContainer ) {
-					resultsContainer.classList.add( 'dak-hidden' );
-				}
-
-				if ( citiesContainer ) {
-					citiesContainer.classList.remove( 'dak-hidden' );
-				}
-
+				intro.hidden = false;
+				results.hidden = true;
+				empty.hidden = true;
+				queryInput.setAttribute( 'aria-expanded', 'false' );
+				announce( '' );
 				return;
 			}
 
-			if ( citiesContainer ) {
-				citiesContainer.classList.add( 'dak-hidden' );
-			}
+			var city = selectedCity.slug;
 
-			if ( ! resultsContainer || ! resultsGroups ) {
+			var doctors = allDoctors.filter( function ( doctor ) {
+				var matches = contains( doctor.name, query ) || contains( doctor.specialty, query );
+
+				return matches && ( '' === city || ( doctor.citySlugs || [] ).indexOf( city ) !== -1 );
+			} );
+
+			// 'keywords' is admin-only text: matched here, never displayed.
+			var services = allServices.filter( function ( service ) {
+				return contains( service.name, query ) || contains( service.category, query ) || contains( service.keywords, query );
+			} );
+
+			var specialties = allSpecialties.filter( function ( specialty ) {
+				return contains( specialty.label, query );
+			} );
+
+			var clinics = allClinics.filter( function ( clinic ) {
+				var matches = contains( clinic.name, query ) || contains( clinic.location, query ) || contains( clinic.keywords, query );
+
+				return matches && ( '' === city || ! clinic.citySlug || clinic.citySlug === city );
+			} );
+
+			var total = doctors.length + services.length + specialties.length + clinics.length;
+
+			intro.hidden = true;
+			results.hidden = 0 === total;
+			empty.hidden = 0 !== total;
+			anyCityButton.hidden = '' === city;
+			queryInput.setAttribute( 'aria-expanded', total ? 'true' : 'false' );
+
+			if ( 0 === total ) {
+				announce( labels.noResults || '' );
 				return;
 			}
 
-			resultsContainer.classList.remove( 'dak-hidden' );
-			resultsGroups.innerHTML = '';
-
-			var doctorMatches = allDoctors.filter( function ( doctor ) {
-				var name = ( doctor.name || '' ).toLowerCase();
-				var specialty = ( doctor.specialty || '' ).toLowerCase();
-				var matchesQuery = name.indexOf( query ) !== -1 || specialty.indexOf( query ) !== -1;
-				var matchesCity = '' === selectedCity || ( doctor.citySlugs || [] ).indexOf( selectedCity ) !== -1;
-
-				return matchesQuery && matchesCity;
-			} ).slice( 0, RESULTS_LIMIT );
-
-			// 'keywords' is admin-only free text, matched against here but
-			// never shown — buildSimpleResultRow() below is only ever passed
-			// name/category, never it.
-			var serviceMatches = allServices.filter( function ( service ) {
-				var name = ( service.name || '' ).toLowerCase();
-				var category = ( service.category || '' ).toLowerCase();
-				var keywords = ( service.keywords || '' ).toLowerCase();
-
-				return name.indexOf( query ) !== -1 || category.indexOf( query ) !== -1 || keywords.indexOf( query ) !== -1;
-			} ).slice( 0, RESULTS_LIMIT );
-
-			var specialtyMatches = allSpecialties.filter( function ( specialty ) {
-				return ( specialty.label || '' ).toLowerCase().indexOf( query ) !== -1;
-			} ).slice( 0, RESULTS_LIMIT );
-
-			// Same admin-only, never-displayed 'keywords' as services above.
-			var clinicMatches = allClinics.filter( function ( clinic ) {
-				var name = ( clinic.name || '' ).toLowerCase();
-				var location = ( clinic.location || '' ).toLowerCase();
-				var keywords = ( clinic.keywords || '' ).toLowerCase();
-
-				return name.indexOf( query ) !== -1 || location.indexOf( query ) !== -1 || keywords.indexOf( query ) !== -1;
-			} ).slice( 0, RESULTS_LIMIT );
-
-			if ( noResultsEl ) {
-				var totalMatches = doctorMatches.length + serviceMatches.length + specialtyMatches.length + clinicMatches.length;
-				noResultsEl.classList.toggle( 'dak-hidden', totalMatches > 0 );
-			}
-
-			appendResultGroup( searchLabels.doctors, doctorMatches, function ( doctor ) {
-				return buildDoctorResultRow( doctor, query );
+			addGroup( 'doctors', labels.doctors, doctors, function ( doctor ) {
+				return buildOption( 'doctor', {
+					avatarUrl: doctor.avatarUrl,
+					initials: initialsOf( doctor.name || '' ),
+					title: doctor.name,
+					meta: [ doctor.specialty, doctor.location ],
+					url: doctor.url
+				}, query );
 			} );
 
-			appendResultGroup( searchLabels.services, serviceMatches, function ( service ) {
-				return buildSimpleResultRow( RESULT_ICONS.service, service.name, service.category, service.url, query );
+			addGroup( 'services', labels.services, services, function ( service ) {
+				return buildOption( 'service', { title: service.name, meta: [ service.category ], url: service.url }, query );
 			} );
 
-			appendResultGroup( searchLabels.specialties, specialtyMatches, function ( specialty ) {
-				return buildSimpleResultRow( RESULT_ICONS.specialty, specialty.label, '', specialty.url, query );
+			addGroup( 'specialties', labels.specialties, specialties, function ( specialty ) {
+				var count = parseInt( specialty.count, 10 ) || 0;
+
+				return buildOption( 'specialty', {
+					title: specialty.label,
+					meta: [ count ? ( 1 === count ? labels.doctorCountOne : ( labels.doctorCount || '%d' ).replace( '%d', count ) ) : '' ],
+					url: withParam( specialty.url, 'city', city )
+				}, query );
 			} );
 
-			appendResultGroup( searchLabels.clinics, clinicMatches, function ( clinic ) {
-				return buildSimpleResultRow( RESULT_ICONS.clinic, clinic.name, clinic.location, clinic.url, query );
+			addGroup( 'clinics', labels.clinics, clinics, function ( clinic ) {
+				return buildOption( 'clinic', { title: clinic.name, meta: [ clinic.location ], url: clinic.url }, query );
 			} );
+
+			body.scrollTop = 0;
+			announce( 1 === total ? labels.resultsCountOne : ( labels.resultsCount || '%d' ).replace( '%d', total ) );
 		}
 
-		/**
-		 * Appends one category's results as its own heading + list, skipped
-		 * entirely when that category has no matches (rather than showing an
-		 * empty heading).
-		 *
-		 * @param {string}   heading    Category heading text (from window.dakHomeSearch.labels).
-		 * @param {Object[]} items      Matched rows for this category.
-		 * @param {Function} buildRow   Turns one item into its result-row element.
-		 */
-		function appendResultGroup( heading, items, buildRow ) {
-			if ( ! items.length || ! resultsGroups ) {
+		function addGroup( key, heading, items, build ) {
+			if ( ! items.length ) {
 				return;
 			}
 
+			var shown = items.slice( 0, GROUP_LIMIT );
 			var group = document.createElement( 'div' );
-			group.className = 'dak-home-search-modal-result-group';
+			var headingEl = document.createElement( 'div' );
+			var title = document.createElement( 'span' );
+			var count = document.createElement( 'span' );
 
-			var headingEl = document.createElement( 'span' );
-			headingEl.className = 'dak-home-search-modal-results-heading';
-			headingEl.textContent = heading || '';
+			group.className = 'dak-hsm-group dak-hsm-group-' + key;
+			group.setAttribute( 'role', 'group' );
+			group.setAttribute( 'aria-labelledby', 'dak-hsm-group-' + key );
+
+			headingEl.className = 'dak-hsm-group-heading';
+			headingEl.id = 'dak-hsm-group-' + key;
+			title.textContent = heading || '';
+			count.className = 'dak-hsm-group-count';
+			count.textContent = shown.length < items.length
+				? ( labels.shownOf || '%1$d of %2$d' ).replace( '%1$d', shown.length ).replace( '%2$d', items.length )
+				: String( items.length );
+
+			headingEl.appendChild( title );
+			headingEl.appendChild( count );
 			group.appendChild( headingEl );
 
-			var list = document.createElement( 'div' );
-			list.className = 'dak-home-search-modal-results-list';
+			shown.forEach( function ( item ) {
+				var option = build( item );
 
-			items.forEach( function ( item ) {
-				list.appendChild( buildRow( item ) );
-			} );
-
-			group.appendChild( list );
-			resultsGroups.appendChild( group );
-		}
-
-		/**
-		 * Builds one clickable Doctor result row — avatar (or initials), name
-		 * with the matched substring highlighted, specialty underneath. Built
-		 * with DOM nodes rather than innerHTML string-building since doctor
-		 * names are real user-submitted data, not markup this file should
-		 * trust.
-		 *
-		 * @param {Object} doctor { name, specialty, avatarUrl, url }.
-		 * @param {string} query  Lowercased search query to highlight within the name.
-		 * @return {HTMLElement}
-		 */
-		function buildDoctorResultRow( doctor, query ) {
-			var row = document.createElement( 'button' );
-			row.type = 'button';
-			row.className = 'dak-home-search-modal-result';
-
-			row.addEventListener( 'click', function () {
-				if ( doctor.url ) {
-					window.location.href = doctor.url;
+				if ( option ) {
+					group.appendChild( option );
 				}
 			} );
 
-			var avatar = document.createElement( 'span' );
-			avatar.className = 'dak-home-search-modal-result-avatar';
+			results.appendChild( group );
+		}
 
-			if ( doctor.avatarUrl ) {
-				var img = document.createElement( 'img' );
-				img.src = doctor.avatarUrl;
-				img.alt = '';
-				avatar.appendChild( img );
+		/**
+		 * One result row: a real link (so it can also be opened in a new tab),
+		 * exposed as a listbox option for keyboard/screen-reader navigation.
+		 * Built from DOM nodes — names are user data, never parsed as markup.
+		 */
+		function buildOption( type, item, query ) {
+			if ( ! item.url ) {
+				return null;
+			}
+
+			var option = document.createElement( 'a' );
+			var index = resultOptions.length;
+
+			option.className = 'dak-hsm-option dak-hsm-option-' + type;
+			option.href = item.url;
+			option.id = 'dak-hsm-option-' + index;
+			option.setAttribute( 'role', 'option' );
+			option.setAttribute( 'aria-selected', 'false' );
+			option.tabIndex = -1;
+
+			var media = document.createElement( 'span' );
+			media.className = 'dak-hsm-option-media';
+			media.setAttribute( 'aria-hidden', 'true' );
+
+			if ( 'doctor' === type ) {
+				if ( item.avatarUrl ) {
+					var img = document.createElement( 'img' );
+					img.src = item.avatarUrl;
+					img.alt = '';
+					img.loading = 'lazy';
+					media.appendChild( img );
+				} else {
+					media.textContent = item.initials;
+				}
 			} else {
-				avatar.textContent = initialsOf( doctor.name || '' );
+				media.innerHTML = RESULT_ICONS[ type ];
 			}
 
-			var body = document.createElement( 'span' );
-			body.className = 'dak-home-search-modal-result-body';
+			var text = document.createElement( 'span' );
+			text.className = 'dak-hsm-option-text';
 
-			var nameEl = document.createElement( 'strong' );
-			appendHighlighted( nameEl, doctor.name || '', query );
-			body.appendChild( nameEl );
+			var title = document.createElement( 'span' );
+			title.className = 'dak-hsm-option-title';
+			appendHighlighted( title, item.title || '', query );
+			text.appendChild( title );
 
-			if ( doctor.specialty ) {
-				var specialtyEl = document.createElement( 'span' );
-				specialtyEl.textContent = doctor.specialty;
-				body.appendChild( specialtyEl );
+			var metaParts = ( item.meta || [] ).filter( function ( part ) {
+				return part && String( part ).trim();
+			} );
+
+			if ( metaParts.length ) {
+				var meta = document.createElement( 'span' );
+				meta.className = 'dak-hsm-option-meta';
+
+				metaParts.forEach( function ( part, i ) {
+					if ( i > 0 ) {
+						meta.appendChild( document.createTextNode( ' · ' ) );
+					}
+
+					appendHighlighted( meta, String( part ), query );
+				} );
+
+				text.appendChild( meta );
 			}
 
-			row.appendChild( avatar );
-			row.appendChild( body );
+			var arrow = document.createElement( 'span' );
+			arrow.className = 'dak-hsm-option-arrow';
+			arrow.setAttribute( 'aria-hidden', 'true' );
+			arrow.innerHTML = RESULT_ICONS.chevron;
 
-			return row;
-		}
+			option.appendChild( media );
+			option.appendChild( text );
+			option.appendChild( arrow );
 
-		/**
-		 * Builds one clickable Service/Speciality/Clinic result row — a small
-		 * icon (in place of the Doctor row's avatar) instead of a photo,
-		 * title with the matched substring highlighted, optional subtitle
-		 * underneath (a service's category, or a clinic's area/city).
-		 *
-		 * @param {string} iconSvg  Static, hardcoded SVG markup (see RESULT_ICONS) — never from server/user data, so safe to set via innerHTML.
-		 * @param {string} title    Row's main text (service/specialty/clinic name).
-		 * @param {string} subtitle Optional secondary text, or '' for none.
-		 * @param {string} url      Where clicking the row navigates to.
-		 * @param {string} query    Lowercased search query to highlight within the title.
-		 * @return {HTMLElement}
-		 */
-		function buildSimpleResultRow( iconSvg, title, subtitle, url, query ) {
-			var row = document.createElement( 'button' );
-			row.type = 'button';
-			row.className = 'dak-home-search-modal-result';
-
-			row.addEventListener( 'click', function () {
-				if ( url ) {
-					window.location.href = url;
+			option.addEventListener( 'mousemove', function () {
+				if ( activeResult !== index ) {
+					setActiveResult( index, false );
 				}
 			} );
 
-			var icon = document.createElement( 'span' );
-			icon.className = 'dak-home-search-modal-result-avatar';
-			icon.setAttribute( 'aria-hidden', 'true' );
-			icon.innerHTML = iconSvg;
+			resultOptions.push( option );
 
-			var body = document.createElement( 'span' );
-			body.className = 'dak-home-search-modal-result-body';
+			return option;
+		}
 
-			var titleEl = document.createElement( 'strong' );
-			appendHighlighted( titleEl, title || '', query );
-			body.appendChild( titleEl );
-
-			if ( subtitle ) {
-				var subtitleEl = document.createElement( 'span' );
-				subtitleEl.textContent = subtitle;
-				body.appendChild( subtitleEl );
+		function setActiveResult( index, scroll ) {
+			if ( activeResult >= 0 && resultOptions[ activeResult ] ) {
+				resultOptions[ activeResult ].classList.remove( 'is-active' );
+				resultOptions[ activeResult ].setAttribute( 'aria-selected', 'false' );
 			}
 
-			row.appendChild( icon );
-			row.appendChild( body );
+			activeResult = index;
 
-			return row;
+			if ( index < 0 || ! resultOptions[ index ] ) {
+				activeResult = -1;
+				queryInput.removeAttribute( 'aria-activedescendant' );
+				return;
+			}
+
+			resultOptions[ index ].classList.add( 'is-active' );
+			resultOptions[ index ].setAttribute( 'aria-selected', 'true' );
+			queryInput.setAttribute( 'aria-activedescendant', resultOptions[ index ].id );
+
+			if ( false !== scroll ) {
+				resultOptions[ index ].scrollIntoView( { block: 'nearest' } );
+			}
+		}
+
+		function onQueryKeydown( event ) {
+			if ( ( 'ArrowDown' === event.key || 'ArrowUp' === event.key ) && resultOptions.length ) {
+				event.preventDefault();
+
+				var next = activeResult + ( 'ArrowDown' === event.key ? 1 : -1 );
+
+				if ( next >= resultOptions.length ) {
+					next = 0;
+				} else if ( next < -1 ) {
+					next = resultOptions.length - 1;
+				}
+
+				setActiveResult( next );
+				return;
+			}
+
+			// Enter opens the highlighted result; with none highlighted, the
+			// form submits as the full doctors search.
+			if ( 'Enter' === event.key && activeResult >= 0 && resultOptions[ activeResult ] ) {
+				event.preventDefault();
+				window.location.href = resultOptions[ activeResult ].href;
+			}
+		}
+
+		/* ------------------------------------------------------------------ */
+		/* Helpers                                                             */
+		/* ------------------------------------------------------------------ */
+
+		function announce( text ) {
+			// Cleared first so the same message (e.g. "3 results") is re-read.
+			announcer.textContent = '';
+
+			if ( text ) {
+				setTimeout( function () {
+					announcer.textContent = text;
+				}, 120 );
+			}
+		}
+
+		function contains( value, query ) {
+			return !! value && -1 !== String( value ).toLowerCase().indexOf( query );
+		}
+
+		function withParam( url, key, value ) {
+			if ( ! url ) {
+				return url;
+			}
+
+			try {
+				var parsed = new URL( url, window.location.href );
+
+				if ( value ) {
+					parsed.searchParams.set( key, value );
+				} else {
+					parsed.searchParams.delete( key );
+				}
+
+				return parsed.toString();
+			} catch ( e ) {
+				return url;
+			}
 		}
 
 		/**
-		 * Appends `text` to `container` as text nodes, wrapping the first
-		 * case-insensitive match of `query` in a <mark> — plain DOM
-		 * manipulation throughout, so nothing in `text` is ever parsed as
-		 * markup.
+		 * Appends `text` to `container`, wrapping the first case-insensitive
+		 * match of `query` in a <mark>. Text nodes only — the displayed
+		 * spelling and spacing are exactly the original's.
 		 */
 		function appendHighlighted( container, text, query ) {
 			var index = query ? text.toLowerCase().indexOf( query ) : -1;

@@ -404,377 +404,763 @@
 	font-size: var( --dak-text-md ) !important;
 }
 
-/* Detect-my-location button, inside the popup's Location row — see
-   initHeroSearch() in doctor-ak-home.js. */
-.dak-home-hero-search-detect {
-	display: inline-flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	gap: 0.35rem !important;
-	flex: 0 0 auto !important;
-	margin: 0 !important;
-	padding: 0.4rem 0.7rem !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: 999px !important;
-	background: var( --dak-bg-subtle ) !important;
-	color: var( --dak-primary-dark ) !important;
-	font-size: var( --dak-text-xs ) !important;
-	font-weight: 600 !important;
-	white-space: nowrap !important;
-	cursor: pointer !important;
+/* ==========================================================================
+   "Find your care" search dialog (#dak-home-search-modal)
+   Centred card on desktop, full screen on phones. Header and fields stay put,
+   results scroll in one region, the Search action sits in a compact footer.
+   Driven by initHeroSearch() in doctor-ak-home.js; the dialog is moved to the
+   end of <body>, so everything here is scoped to its own classes.
+   ========================================================================== */
+
+html.dak-hsm-locked,
+html.dak-hsm-locked body {
+	overflow: hidden !important;
 }
-
-.dak-home-hero-search-detect:hover {
-	border-color: var( --dak-primary ) !important;
-}
-
-.dak-home-hero-search-detect:disabled {
-	opacity: 0.5 !important;
-	cursor: not-allowed !important;
-}
-
-.dak-home-hero-search-detect svg {
-	width: 14px !important;
-	height: 14px !important;
-}
-
-/* Spins while a detection request is in flight (initHeroSearch()
-   toggles this class from geolocation's request/response callbacks). */
-.dak-home-hero-search-detect.is-detecting svg {
-	animation: dak-home-hero-detect-spin 0.8s linear infinite !important;
-}
-
-@keyframes dak-home-hero-detect-spin {
-	from {
-		transform: rotate( 0deg );
-	}
-
-	to {
-		transform: rotate( 360deg );
-	}
-}
-
-/* "Search for doctors" popup — same fixed-overlay/centered-dialog pattern
-   as .dak-home-video-modal further down, but a plain white card instead of
-   a black video frame. */
 
 .dak-home-search-modal {
+	--dak-hsm-control: 50px;
+	--dak-hsm-pad: 24px;
 	position: fixed !important;
 	inset: 0 !important;
-	z-index: 9999 !important;
+	/* Above floating chat/WhatsApp widgets, which use very high values. */
+	z-index: 2147483000 !important;
 	display: flex !important;
+	/* Pinned near the top, so the dialog grows downward as results appear
+	   instead of jumping around the centre of the screen. */
 	align-items: flex-start !important;
 	justify-content: center !important;
-	padding: 10vh var( --dak-space-5 ) var( --dak-space-5 ) !important;
-	overflow-y: auto !important;
+	padding: min( 10vh, 96px ) 24px 32px !important;
+	margin: 0 !important;
+	box-sizing: border-box !important;
 }
 
 .dak-home-search-modal[aria-hidden='true'] {
 	display: none !important;
 }
 
-.dak-home-search-modal-overlay {
+.dak-home-search-modal *,
+.dak-home-search-modal *::before,
+.dak-home-search-modal *::after {
+	box-sizing: border-box !important;
+}
+
+.dak-home-search-modal .dak-home-search-modal-overlay {
 	position: fixed !important;
 	inset: 0 !important;
-	background: rgba( 10, 12, 15, 0.55 ) !important;
+	background: rgba( 15, 23, 32, 0.55 ) !important;
 }
 
-.dak-home-search-modal-dialog {
+.dak-home-search-modal .dak-hsm-dialog {
 	position: relative !important;
 	z-index: 1 !important;
-	width: 100% !important;
-	background: var( --dak-bg-card ) !important;
-	border-radius: var( --dak-radius-lg ) !important;
-	box-shadow: var( --dak-shadow-lg ) !important;
-	padding: var( --dak-space-5 ) !important;
-}
-
-.dak-home-search-modal-header {
-	display: flex !important;
-	align-items: center !important;
-	justify-content: space-between !important;
-	gap: var( --dak-space-3 ) !important;
-	margin-bottom: var( --dak-space-4 ) !important;
-}
-
-.dak-home-search-modal-header h2 {
-	margin: 0 !important;
-	font-size: var( --dak-text-lg ) !important;
-	font-weight: 700 !important;
-	color: var( --dak-text ) !important;
-}
-
-.dak-home-search-modal-close {
-	display: flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	width: 32px !important;
-	height: 32px !important;
-	flex: 0 0 auto !important;
-	border: none !important;
-	border-radius: 50% !important;
-	background: var( --dak-bg-subtle ) !important;
-	color: var( --dak-muted ) !important;
-	font-size: 1.3rem !important;
-	line-height: 1 !important;
-	cursor: pointer !important;
-}
-
-.dak-home-search-modal-close:hover {
-	background: var( --dak-border ) !important;
-	color: var( --dak-text ) !important;
-}
-
-.dak-home-search-modal-form {
 	display: flex !important;
 	flex-direction: column !important;
-	gap: var( --dak-space-3 ) !important;
-}
-
-/* Location and Specialty/Doctor side by side — two equal columns, each
-   shrinkable below its content's natural width (minmax(0, …)) so the city
-   name/Detect button and the search icon/input don't force the row wider
-   than the popup. Stacks back to one column on narrow screens — see the
-   max-width: 560px breakpoint further down. */
-.dak-home-search-modal-row {
-	display: grid !important;
-	grid-template-columns: minmax( 0, 1fr ) minmax( 0, 1fr ) !important;
-	gap: var( --dak-space-3 ) !important;
-}
-
-.dak-home-search-modal-location,
-.dak-home-search-modal-query {
-	display: flex !important;
-	align-items: center !important;
-	gap: var( --dak-space-2 ) !important;
-	min-width: 0 !important;
-	padding: 0.6rem 0.75rem !important;
+	width: min( 880px, 100% ) !important;
+	/* Compact for the prompt; grows with results up to a cap, after which
+	   only the results region scrolls. */
+	min-height: min( 440px, calc( var( --dak-hsm-vh, 100vh ) - 64px ) ) !important;
+	max-height: min( 680px, calc( var( --dak-hsm-vh, 100vh ) - min( 10vh, 96px ) - 32px ) ) !important;
+	margin: 0 !important;
+	padding: 0 !important;
 	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-md ) !important;
-	background: var( --dak-bg-subtle ) !important;
-}
-
-.dak-home-search-modal-location input,
-.dak-home-search-modal-query input {
-	flex: 1 1 auto !important;
-	min-width: 0 !important;
-	margin: 0 !important;
-	padding: 0 !important;
-	border: 0 !important;
-	background: none !important;
-	font: inherit !important;
-	font-size: 0.9rem !important;
+	border-radius: 18px !important;
+	background: var( --dak-bg-card ) !important;
 	color: var( --dak-text ) !important;
+	box-shadow: 0 24px 64px rgba( 15, 23, 32, 0.22 ) !important;
+	overflow: hidden !important;
 }
 
-.dak-home-search-modal-location input:focus,
-.dak-home-search-modal-query input:focus {
-	outline: none !important;
-}
-
-.dak-home-search-modal-query-clear {
-	display: flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	width: 22px !important;
-	height: 22px !important;
-	flex: 0 0 auto !important;
-	margin: 0 !important;
-	padding: 0 !important;
-	border: 0 !important;
-	border-radius: 50% !important;
-	background: var( --dak-border ) !important;
-	color: var( --dak-text ) !important;
-	font-size: 1rem !important;
-	line-height: 1 !important;
-	cursor: pointer !important;
-}
-
-.dak-home-search-modal-query-clear:hover {
-	background: var( --dak-muted ) !important;
-	color: #fff !important;
-}
-
-/* Quick-pick list of the clinic's own registered cities (see
-   Home_Page::cities_in_use()) — clicking one fills the Location row above
-   without needing Geolocation at all. */
-.dak-home-search-modal-cities {
+.dak-home-search-modal .dak-hsm-form {
 	display: flex !important;
 	flex-direction: column !important;
-	gap: 0.1rem !important;
-	max-height: 260px !important;
-	overflow-y: auto !important;
+	flex: 1 1 auto !important;
+	min-height: 0 !important;
+	margin: 0 !important;
 }
 
-.dak-home-search-modal-city {
+/* Header ------------------------------------------------------------------ */
+
+.dak-home-search-modal .dak-hsm-header {
 	display: flex !important;
-	align-items: center !important;
-	gap: 0.6rem !important;
-	padding: 0.6rem 0.5rem !important;
-	border: 0 !important;
-	border-radius: var( --dak-radius-sm ) !important;
+	align-items: flex-start !important;
+	justify-content: space-between !important;
+	gap: 16px !important;
+	padding: 22px var( --dak-hsm-pad ) 0 !important;
+	margin: 0 !important;
 	background: none !important;
+	border: 0 !important;
+}
+
+.dak-home-search-modal .dak-hsm-title {
+	margin: 0 !important;
 	color: var( --dak-text ) !important;
-	font: inherit !important;
+	font-size: 1.375rem !important;
+	font-weight: 700 !important;
+	line-height: 1.25 !important;
+}
+
+.dak-home-search-modal .dak-hsm-subtitle {
+	margin: 4px 0 0 !important;
+	color: var( --dak-muted ) !important;
 	font-size: 0.9rem !important;
-	text-align: left !important;
-	cursor: pointer !important;
+	line-height: 1.45 !important;
 }
 
-.dak-home-search-modal-city:hover {
-	background: var( --dak-bg-subtle ) !important;
-}
-
-/* .dak-hidden (shared utility) sets display: none !important too — same
-   specificity, and this stylesheet loads after it, so without the extra
-   specificity here the button's own `display: flex !important` would win
-   the tie and handleLocationInput()'s per-city filtering would silently do
-   nothing (same fix as the header mega-menu's search cards). */
-.dak-home-search-modal-city.dak-hidden {
-	display: none !important;
-}
-
-.dak-home-search-modal-city.is-selected {
-	background: var( --dak-primary-tint ) !important;
-	color: var( --dak-primary-dark ) !important;
-	font-weight: 600 !important;
-}
-
-.dak-home-search-modal-city span {
+.dak-home-search-modal .dak-hsm-close {
+	flex: 0 0 auto !important;
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: center !important;
-	width: 26px !important;
-	height: 26px !important;
-	flex: 0 0 auto !important;
-	border-radius: 50% !important;
-	background: var( --dak-primary-tint ) !important;
-	color: var( --dak-primary-dark ) !important;
-}
-
-.dak-home-search-modal-city span svg {
-	width: 13px !important;
-	height: 13px !important;
-}
-
-/* Live "Doctors" results — swaps in over .dak-home-search-modal-cities the
-   moment the search box has anything typed into it (see renderResults() in
-   doctor-ak-home.js), so the visitor never has to leave the popup or press
-   Enter to see whether a name/specialty matches anything. */
-.dak-home-search-modal-results-heading {
-	display: block !important;
-	margin: 0 0 var( --dak-space-2 ) !important;
-	padding: 0.5rem 0.6rem !important;
-	background: var( --dak-bg-subtle ) !important;
-	border-radius: var( --dak-radius-sm ) !important;
-	font-size: 0.72rem !important;
-	font-weight: 700 !important;
-	text-transform: uppercase !important;
-	letter-spacing: 0.04em !important;
+	width: 44px !important;
+	height: 44px !important;
+	margin: -6px -8px 0 0 !important;
+	padding: 0 !important;
+	border: 1px solid transparent !important;
+	border-radius: 12px !important;
+	background: transparent !important;
 	color: var( --dak-muted ) !important;
-}
-
-.dak-home-search-modal-results-list {
-	display: flex !important;
-	flex-direction: column !important;
-	gap: 0.1rem !important;
-	max-height: 300px !important;
-	overflow-y: auto !important;
-}
-
-.dak-home-search-modal-result {
-	display: flex !important;
-	align-items: center !important;
-	gap: 0.65rem !important;
-	width: 100% !important;
-	padding: 0.5rem !important;
-	border: 0 !important;
-	border-radius: var( --dak-radius-sm ) !important;
-	background: none !important;
-	font: inherit !important;
-	text-align: left !important;
 	cursor: pointer !important;
+	box-shadow: none !important;
 }
 
-.dak-home-search-modal-result:hover {
+.dak-home-search-modal .dak-hsm-close svg {
+	width: 20px !important;
+	height: 20px !important;
+}
+
+.dak-home-search-modal .dak-hsm-close:hover {
 	background: var( --dak-bg-subtle ) !important;
-}
-
-.dak-home-search-modal-result-avatar {
-	display: flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	width: 38px !important;
-	height: 38px !important;
-	flex: 0 0 auto !important;
-	overflow: hidden !important;
-	border-radius: 50% !important;
-	background: var( --dak-primary-tint ) !important;
-	color: var( --dak-primary-dark ) !important;
-	font-size: 0.75rem !important;
-	font-weight: 700 !important;
-}
-
-.dak-home-search-modal-result-avatar img {
-	width: 100% !important;
-	height: 100% !important;
-	object-fit: cover !important;
-}
-
-/* Service/Speciality/Clinic result rows reuse this same circle badge (see
-   buildSimpleResultRow() in doctor-ak-home.js) with a small icon in place
-   of a photo/initials. */
-.dak-home-search-modal-result-avatar svg {
-	width: 17px !important;
-	height: 17px !important;
-}
-
-/* Spacing between each category's heading+list block (Doctors, Services,
-   Specialities, Clinics) once more than one has matches — the heading
-   itself already carries its own bottom margin, so only the gap AFTER a
-   group's list needs adding here. */
-.dak-home-search-modal-result-group {
-	margin-bottom: var( --dak-space-3 ) !important;
-}
-
-.dak-home-search-modal-result-group:last-child {
-	margin-bottom: 0 !important;
-}
-
-.dak-home-search-modal-result-body {
-	display: flex !important;
-	flex-direction: column !important;
-	min-width: 0 !important;
-}
-
-.dak-home-search-modal-result-body strong {
-	font-size: 0.92rem !important;
-	font-weight: 600 !important;
 	color: var( --dak-text ) !important;
 }
 
-.dak-home-search-modal-result-body strong mark {
-	background: #fde047 !important;
-	color: inherit !important;
+/* Fields ------------------------------------------------------------------ */
+
+.dak-home-search-modal .dak-hsm-fields {
+	display: grid !important;
+	grid-template-columns: minmax( 0, 0.85fr ) minmax( 0, 1.6fr ) !important;
+	gap: 12px !important;
+	padding: 18px var( --dak-hsm-pad ) 16px !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+.dak-home-search-modal .dak-hsm-field {
+	position: relative !important;
+	min-width: 0 !important;
+	margin: 0 !important;
+}
+
+.dak-home-search-modal .dak-hsm-label {
+	display: block !important;
+	margin: 0 0 6px !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.8125rem !important;
+	font-weight: 600 !important;
+	line-height: 1.3 !important;
+}
+
+.dak-home-search-modal .dak-hsm-control {
+	position: relative !important;
+	display: flex !important;
+	align-items: center !important;
+	height: var( --dak-hsm-control ) !important;
+	border: 1px solid #cfd6dd !important;
+	border-radius: 12px !important;
+	background: var( --dak-bg-card ) !important;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.dak-home-search-modal .dak-hsm-control:focus-within {
+	border-color: var( --dak-primary ) !important;
+	box-shadow: 0 0 0 3px rgba( 22, 99, 75, 0.18 ) !important;
+}
+
+.dak-home-search-modal .dak-hsm-control-icon {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	width: 20px !important;
+	height: 20px !important;
+	margin: 0 0 0 14px !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-home-search-modal .dak-hsm-control-icon svg {
+	width: 20px !important;
+	height: 20px !important;
+}
+
+.dak-home-search-modal .dak-hsm-field-location.has-value .dak-hsm-control-icon {
+	color: var( --dak-primary ) !important;
+}
+
+.dak-home-search-modal .dak-hsm-input {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+	height: 100% !important;
+	margin: 0 !important;
+	padding: 0 10px !important;
+	border: 0 !important;
+	border-radius: 12px !important;
+	background: transparent !important;
+	color: var( --dak-text ) !important;
+	/* 16px keeps phones from zooming into the field. */
+	font-size: 16px !important;
+	line-height: normal !important;
+	box-shadow: none !important;
+	outline: none !important;
+	-webkit-appearance: none !important;
+	appearance: none !important;
+}
+
+.dak-home-search-modal .dak-hsm-input::placeholder {
+	color: #7b8591 !important;
+	opacity: 1 !important;
+}
+
+.dak-home-search-modal .dak-hsm-input::-webkit-search-cancel-button {
+	display: none !important;
+}
+
+.dak-home-search-modal .dak-hsm-clear {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 40px !important;
+	height: 40px !important;
+	margin: 0 4px 0 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 10px !important;
+	background: transparent !important;
+	color: var( --dak-muted ) !important;
+	cursor: pointer !important;
+	box-shadow: none !important;
+}
+
+.dak-home-search-modal .dak-hsm-clear[hidden] {
+	display: none !important;
+}
+
+.dak-home-search-modal .dak-hsm-clear svg {
+	width: 16px !important;
+	height: 16px !important;
+}
+
+.dak-home-search-modal .dak-hsm-clear:hover {
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-text ) !important;
+}
+
+/* City list: open only while the Location field is active. */
+
+.dak-home-search-modal .dak-hsm-popover {
+	position: absolute !important;
+	top: calc( 100% + 6px ) !important;
+	left: 0 !important;
+	z-index: 5 !important;
+	width: max( 100%, 280px ) !important;
+	max-height: 320px !important;
+	overflow-y: auto !important;
+	overscroll-behavior: contain !important;
+	padding: 6px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 12px !important;
+	background: var( --dak-bg-card ) !important;
+	box-shadow: 0 16px 40px rgba( 15, 23, 32, 0.16 ) !important;
+}
+
+.dak-home-search-modal .dak-hsm-popover[hidden] {
+	display: none !important;
+}
+
+.dak-home-search-modal .dak-hsm-locate {
+	display: flex !important;
+	align-items: center !important;
+	gap: 10px !important;
+	width: 100% !important;
+	min-height: 44px !important;
+	margin: 0 !important;
+	padding: 0 10px !important;
+	border: 0 !important;
+	border-radius: 8px !important;
+	background: transparent !important;
+	color: var( --dak-primary ) !important;
+	font-size: 0.9375rem !important;
+	font-weight: 600 !important;
+	text-align: left !important;
+	cursor: pointer !important;
+	box-shadow: none !important;
+}
+
+.dak-home-search-modal .dak-hsm-locate:hover {
+	background: var( --dak-primary-tint ) !important;
+}
+
+.dak-home-search-modal .dak-hsm-locate[aria-busy='true'] {
+	cursor: progress !important;
+	opacity: 0.75 !important;
+}
+
+.dak-home-search-modal .dak-hsm-locate-icon {
+	display: inline-flex !important;
+	width: 20px !important;
+	height: 20px !important;
+}
+
+.dak-home-search-modal .dak-hsm-locate-icon svg {
+	width: 20px !important;
+	height: 20px !important;
+}
+
+.dak-home-search-modal .dak-hsm-locate[aria-busy='true'] .dak-hsm-locate-icon svg {
+	animation: dak-hsm-spin 0.9s linear infinite !important;
+}
+
+@keyframes dak-hsm-spin {
+	to {
+		transform: rotate( 360deg );
+	}
+}
+
+.dak-home-search-modal .dak-hsm-locate-status {
+	margin: 0 !important;
+	padding: 0 10px !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.8125rem !important;
+	line-height: 1.4 !important;
+}
+
+.dak-home-search-modal .dak-hsm-locate-status:not( :empty ) {
+	padding: 2px 10px 8px !important;
+}
+
+.dak-home-search-modal .dak-hsm-locate-status.is-error {
+	color: var( --dak-tint-danger-text ) !important;
+}
+
+.dak-home-search-modal .dak-hsm-city-list {
+	margin: 4px 0 0 !important;
+	padding: 4px 0 0 !important;
+	border-top: 1px solid var( --dak-border ) !important;
+	list-style: none !important;
+}
+
+.dak-home-search-modal .dak-hsm-city {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	min-height: 44px !important;
+	margin: 0 !important;
+	padding: 0 10px !important;
+	border-radius: 8px !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.9375rem !important;
+	list-style: none !important;
+	cursor: pointer !important;
+}
+
+.dak-home-search-modal .dak-hsm-city[hidden] {
+	display: none !important;
+}
+
+.dak-home-search-modal .dak-hsm-city:hover,
+.dak-home-search-modal .dak-hsm-city.is-active {
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-home-search-modal .dak-hsm-city[aria-selected='true'] {
+	color: var( --dak-primary ) !important;
+	font-weight: 600 !important;
+}
+
+.dak-home-search-modal .dak-hsm-city[aria-selected='true']::after {
+	content: '' !important;
+	width: 16px !important;
+	height: 16px !important;
+	background: currentColor !important;
+	-webkit-mask: url( "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 10.5l3.5 3.5 7.5-8'/%3E%3C/svg%3E" ) center / contain no-repeat !important;
+	mask: url( "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 10.5l3.5 3.5 7.5-8'/%3E%3C/svg%3E" ) center / contain no-repeat !important;
+}
+
+.dak-home-search-modal .dak-hsm-city-empty {
+	margin: 0 !important;
+	padding: 10px !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.875rem !important;
+}
+
+.dak-home-search-modal .dak-hsm-city-empty[hidden] {
+	display: none !important;
+}
+
+/* Results region (the only scrolling area) ---------------------------------- */
+
+.dak-home-search-modal .dak-hsm-body {
+	flex: 1 1 auto !important;
+	min-height: 0 !important;
+	overflow-y: auto !important;
+	overscroll-behavior: contain !important;
+	padding: 6px var( --dak-hsm-pad ) 12px !important;
+	-webkit-overflow-scrolling: touch !important;
+}
+
+.dak-home-search-modal .dak-hsm-body [hidden] {
+	display: none !important;
+}
+
+.dak-home-search-modal .dak-hsm-intro {
+	padding: 14px 0 4px !important;
+}
+
+.dak-home-search-modal .dak-hsm-intro-text {
+	margin: 0 0 18px !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.9375rem !important;
+	line-height: 1.5 !important;
+}
+
+.dak-home-search-modal .dak-hsm-section-title {
+	margin: 0 0 10px !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.8125rem !important;
+	font-weight: 600 !important;
+}
+
+.dak-home-search-modal .dak-hsm-shortcuts {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 8px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+.dak-home-search-modal .dak-hsm-shortcuts li {
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+.dak-home-search-modal .dak-hsm-shortcut {
+	display: inline-flex !important;
+	align-items: center !important;
+	min-height: 40px !important;
+	padding: 0 14px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.875rem !important;
+	font-weight: 500 !important;
+	text-decoration: none !important;
+}
+
+.dak-home-search-modal .dak-hsm-shortcut:hover,
+.dak-home-search-modal .dak-hsm-shortcut:focus-visible {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-home-search-modal .dak-hsm-group {
+	padding: 10px 0 4px !important;
+}
+
+.dak-home-search-modal .dak-hsm-group + .dak-hsm-group {
+	border-top: 1px solid var( --dak-border ) !important;
+	margin-top: 6px !important;
+}
+
+.dak-home-search-modal .dak-hsm-group-heading {
+	display: flex !important;
+	align-items: baseline !important;
+	gap: 8px !important;
+	padding: 4px 8px 6px !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.8125rem !important;
+	font-weight: 700 !important;
+}
+
+.dak-home-search-modal .dak-hsm-group-count {
+	color: var( --dak-muted ) !important;
+	font-weight: 500 !important;
+	font-variant-numeric: tabular-nums !important;
+}
+
+.dak-home-search-modal .dak-hsm-option {
+	display: flex !important;
+	align-items: center !important;
+	gap: 12px !important;
+	min-height: 56px !important;
+	padding: 8px !important;
+	border-radius: 10px !important;
+	color: var( --dak-text ) !important;
+	text-decoration: none !important;
+	cursor: pointer !important;
+}
+
+.dak-home-search-modal .dak-hsm-option:hover,
+.dak-home-search-modal .dak-hsm-option.is-active {
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-home-search-modal .dak-hsm-option.is-active {
+	box-shadow: inset 0 0 0 2px var( --dak-primary ) !important;
+}
+
+.dak-home-search-modal .dak-hsm-option:focus-visible {
+	outline: 2px solid var( --dak-primary ) !important;
+	outline-offset: -2px !important;
+}
+
+.dak-home-search-modal .dak-hsm-option-media {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 40px !important;
+	height: 40px !important;
+	overflow: hidden !important;
+	border-radius: 10px !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.8125rem !important;
+	font-weight: 700 !important;
+}
+
+.dak-home-search-modal .dak-hsm-option-media svg {
+	width: 20px !important;
+	height: 20px !important;
+}
+
+/* Doctors: round photo or initials. */
+.dak-home-search-modal .dak-hsm-option-doctor .dak-hsm-option-media {
+	border-radius: 50% !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-home-search-modal .dak-hsm-option-media img {
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+	border-radius: 0 !important;
+}
+
+/* Specialties: brand tint; services: blue tint; clinics: neutral. */
+.dak-home-search-modal .dak-hsm-option-specialty .dak-hsm-option-media {
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary ) !important;
+}
+
+.dak-home-search-modal .dak-hsm-option-service .dak-hsm-option-media {
+	background: var( --dak-tint-info ) !important;
+	color: var( --dak-tint-info-text ) !important;
+}
+
+.dak-home-search-modal .dak-hsm-option-text {
+	display: flex !important;
+	flex: 1 1 auto !important;
+	flex-direction: column !important;
+	gap: 2px !important;
+	min-width: 0 !important;
+}
+
+/* Names may wrap to a second line (never cut mid-name on phones); the
+   secondary line stays on one line. */
+.dak-home-search-modal .dak-hsm-option-title {
+	display: -webkit-box !important;
+	overflow: hidden !important;
+	-webkit-line-clamp: 2 !important;
+	-webkit-box-orient: vertical !important;
+	overflow-wrap: anywhere !important;
+}
+
+.dak-home-search-modal .dak-hsm-option-meta {
+	overflow: hidden !important;
+	white-space: nowrap !important;
+	text-overflow: ellipsis !important;
+}
+
+.dak-home-search-modal .dak-hsm-option-title {
+	color: var( --dak-text ) !important;
+	font-size: 0.9375rem !important;
+	font-weight: 600 !important;
+	line-height: 1.35 !important;
+}
+
+.dak-home-search-modal .dak-hsm-option-meta {
+	color: var( --dak-muted ) !important;
+	font-size: 0.8125rem !important;
+	line-height: 1.35 !important;
+}
+
+.dak-home-search-modal .dak-hsm-option mark {
+	padding: 0 !important;
 	border-radius: 2px !important;
+	background: rgba( 22, 99, 75, 0.14 ) !important;
+	color: inherit !important;
+	font: inherit !important;
 }
 
-.dak-home-search-modal-result-body span {
-	font-size: 0.8rem !important;
-	color: var( --dak-muted ) !important;
+.dak-home-search-modal .dak-hsm-option-arrow {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	width: 18px !important;
+	height: 18px !important;
+	color: #9aa3ad !important;
 }
 
-.dak-home-search-modal-no-results {
-	margin: var( --dak-space-2 ) 0 0 !important;
-	font-size: 0.85rem !important;
-	color: var( --dak-muted ) !important;
+.dak-home-search-modal .dak-hsm-option-arrow svg {
+	width: 18px !important;
+	height: 18px !important;
+}
+
+.dak-home-search-modal .dak-hsm-option:hover .dak-hsm-option-arrow,
+.dak-home-search-modal .dak-hsm-option.is-active .dak-hsm-option-arrow {
+	color: var( --dak-primary ) !important;
+}
+
+/* No results ---------------------------------------------------------------- */
+
+.dak-home-search-modal .dak-hsm-empty {
+	padding: 40px 12px !important;
 	text-align: center !important;
 }
 
-.dak-home-search-modal-submit {
-	width: 100% !important;
+.dak-home-search-modal .dak-hsm-empty-title {
+	margin: 0 0 6px !important;
+	color: var( --dak-text ) !important;
+	font-size: 1rem !important;
+	font-weight: 700 !important;
+}
+
+.dak-home-search-modal .dak-hsm-empty-text {
+	margin: 0 auto 16px !important;
+	max-width: 420px !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.9rem !important;
+	line-height: 1.5 !important;
+}
+
+.dak-home-search-modal .dak-hsm-empty-actions {
+	display: flex !important;
+	flex-wrap: wrap !important;
 	justify-content: center !important;
-	margin-top: var( --dak-space-1 ) !important;
+	gap: 8px !important;
+}
+
+.dak-home-search-modal .dak-hsm-empty-actions .dak-button {
+	min-height: 44px !important;
+}
+
+/* Footer -------------------------------------------------------------------- */
+
+.dak-home-search-modal .dak-hsm-footer {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 16px !important;
+	padding: 12px var( --dak-hsm-pad ) !important;
+	margin: 0 !important;
+	border-top: 1px solid var( --dak-border ) !important;
+	background: var( --dak-bg-card ) !important;
+}
+
+.dak-home-search-modal .dak-hsm-footer-hint {
+	margin: 0 !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.8125rem !important;
+	line-height: 1.4 !important;
+}
+
+.dak-home-search-modal .dak-hsm-submit {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 8px !important;
+	min-height: 46px !important;
+	padding: 0 22px !important;
+	border-radius: 12px !important;
+	font-size: 0.9375rem !important;
+}
+
+.dak-home-search-modal .dak-hsm-submit svg {
+	width: 18px !important;
+	height: 18px !important;
+}
+
+/* Phones and small tablets: full-screen dialog, stacked fields. ------------- */
+
+@media ( max-width: 640px ) {
+	.dak-home-search-modal {
+		--dak-hsm-pad: 16px;
+		align-items: stretch !important;
+		padding: 0 !important;
+	}
+
+	.dak-home-search-modal .dak-hsm-dialog {
+		width: 100% !important;
+		height: var( --dak-hsm-vh, 100vh ) !important;
+		height: var( --dak-hsm-vh, 100dvh ) !important;
+		min-height: 0 !important;
+		max-height: none !important;
+		border: 0 !important;
+		border-radius: 0 !important;
+		box-shadow: none !important;
+	}
+
+	.dak-home-search-modal .dak-hsm-header {
+		padding-top: 14px !important;
+	}
+
+	.dak-home-search-modal .dak-hsm-title {
+		font-size: 1.2rem !important;
+	}
+
+	.dak-home-search-modal .dak-hsm-subtitle {
+		font-size: 0.8125rem !important;
+	}
+
+	.dak-home-search-modal .dak-hsm-close {
+		margin: -4px -8px 0 0 !important;
+	}
+
+	.dak-home-search-modal .dak-hsm-fields {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+		gap: 10px !important;
+		padding-top: 14px !important;
+		padding-bottom: 12px !important;
+	}
+
+	.dak-home-search-modal .dak-hsm-popover {
+		width: 100% !important;
+		max-height: min( 300px, 45vh ) !important;
+	}
+
+	.dak-home-search-modal .dak-hsm-footer {
+		padding-bottom: max( 12px, env( safe-area-inset-bottom ) ) !important;
+	}
+
+	.dak-home-search-modal .dak-hsm-footer-hint {
+		display: none !important;
+	}
+
+	.dak-home-search-modal .dak-hsm-submit {
+		width: 100% !important;
+		min-height: 48px !important;
+	}
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.dak-home-search-modal .dak-hsm-control {
+		transition: none !important;
+	}
+
+	.dak-home-search-modal .dak-hsm-locate[aria-busy='true'] .dak-hsm-locate-icon svg {
+		animation: none !important;
+	}
 }
 
 /* Quick access — a ruled centred heading over four bordered tiles: icon on
@@ -2595,20 +2981,6 @@
 	.dak-home-hero-search-field:last-of-type {
 		border-bottom: 0 !important;
 		padding-bottom: 0 !important;
-	}
-
-	.dak-home-search-modal {
-		padding: var( --dak-space-4 ) !important;
-	}
-
-	.dak-home-search-modal-dialog {
-		padding: var( --dak-space-4 ) !important;
-	}
-
-	/* Back to one column — a phone-width popup has no room for two boxed
-	   fields (each with its own icon and Detect/clear button) side by side. */
-	.dak-home-search-modal-row {
-		grid-template-columns: 1fr !important;
 	}
 
 	.dak-home-quick-links-grid {
