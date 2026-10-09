@@ -92,6 +92,7 @@ $dak_has_filters = '' !== $selected_date || '' !== $selected_status || 'upcoming
 					</tr>
 				</thead>
 				<tbody>
+					<?php $dak_report_counts = \DoctorAKPortal\Frontend\Appointment_Reports_Handler::counts( array_column( $rows, 'id' ) ); ?>
 					<?php foreach ( $rows as $row ) : ?>
 						<?php
 						$dak_ts        = strtotime( $row['date'] . ' ' . $row['time'] );
@@ -140,6 +141,17 @@ $dak_has_filters = '' !== $selected_date || '' !== $selected_status || 'upcoming
 									<?php elseif ( $dak_can_pay ) : ?>
 										<button type="button" class="dak-button dak-button-primary dak-button-sm" data-pay-now data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>"><?php echo esc_html( sprintf( /* translators: %s: amount, e.g. "PKR 2,500". */ __( 'Pay %s', 'doctor-ak-portal' ), \DoctorAKPortal\Includes\Dashboard_Format::money( $row['charge'] ) ) ); ?></button>
 									<?php endif; ?>
+									<?php
+									$dak_report_count = isset( $dak_report_counts[ $row['id'] ] ) ? $dak_report_counts[ $row['id'] ] : 0;
+
+									if ( 'cancelled' !== $row['status'] || $dak_report_count > 0 ) :
+										?>
+										<button type="button" class="dak-button dak-button-secondary dak-button-sm dak-reports-button" data-appointment-reports data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>" data-appointment-label="<?php echo esc_attr( sprintf( 'Dr. %s · %s', $row['doctor_name'], false !== $dak_ts ? date_i18n( 'd M Y, h:i A', $dak_ts ) : $row['date'] ) ); ?>">
+											<?php esc_html_e( 'Reports', 'doctor-ak-portal' ); ?>
+											<span class="dak-reports-count" data-appointment-reports-count="<?php echo esc_attr( $row['id'] ); ?>"<?php echo $dak_report_count > 0 ? '' : ' hidden'; ?>><?php echo $dak_report_count > 0 ? esc_html( $dak_report_count ) : ''; ?></span>
+										</button>
+									<?php endif; ?>
+
 									<?php if ( $dak_has_more ) : ?>
 										<details class="dak-row-menu">
 											<summary class="dak-row-menu-toggle" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: doctor name. */ __( 'More actions for your appointment with Dr. %s', 'doctor-ak-portal' ), $row['doctor_name'] ) ); ?>"><?php esc_html_e( 'More', 'doctor-ak-portal' ); ?></summary>

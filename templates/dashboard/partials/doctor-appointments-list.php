@@ -129,6 +129,7 @@ $dak_dashboard_url  = \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( \
 					</tr>
 				</thead>
 				<tbody>
+					<?php $dak_report_counts = \DoctorAKPortal\Frontend\Appointment_Reports_Handler::counts( array_column( $rows, 'id' ) ); ?>
 					<?php foreach ( $rows as $row ) : ?>
 						<?php
 						$dak_ts         = strtotime( $row['date'] . ' ' . $row['time'] );
@@ -215,6 +216,17 @@ $dak_dashboard_url  = \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( \
 										<button type="button" class="dak-button dak-button-primary dak-button-sm" data-check-in data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>" data-return-query="<?php echo esc_attr( $dak_return_query ); ?>" title="<?php esc_attr_e( 'Check the patient in and open their encounter', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Check in', 'doctor-ak-portal' ); ?></button>
 									<?php elseif ( 'encounter' === $dak_workflow ) : ?>
 										<a class="dak-button dak-button-primary dak-button-sm" href="<?php echo esc_url( $dak_encounter_url ); ?>"><?php esc_html_e( 'Open encounter', 'doctor-ak-portal' ); ?></a>
+									<?php endif; ?>
+
+									<?php
+									$dak_report_count = isset( $dak_report_counts[ $row['id'] ] ) ? $dak_report_counts[ $row['id'] ] : 0;
+
+									if ( 'cancelled' !== $row['status'] || $dak_report_count > 0 ) :
+										?>
+										<button type="button" class="dak-button dak-button-secondary dak-button-sm dak-reports-button" data-appointment-reports data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>" data-appointment-label="<?php echo esc_attr( $row['patient_name'] . ( false !== $dak_ts ? ' · ' . date_i18n( 'd M Y, h:i A', $dak_ts ) : '' ) ); ?>">
+											<?php esc_html_e( 'Reports', 'doctor-ak-portal' ); ?>
+											<span class="dak-reports-count" data-appointment-reports-count="<?php echo esc_attr( $row['id'] ); ?>"<?php echo $dak_report_count > 0 ? '' : ' hidden'; ?>><?php echo $dak_report_count > 0 ? esc_html( $dak_report_count ) : ''; ?></span>
+										</button>
 									<?php endif; ?>
 
 									<details class="dak-row-menu">

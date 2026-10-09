@@ -892,6 +892,9 @@ class Admin_Dashboard {
 				Assets::version( 'assets/css/doctor-ak-booking-page.css' )
 			);
 
+			// "Reports" shared with an appointment before the consultation.
+			Appointment_Reports_Handler::enqueue();
+
 			wp_enqueue_script(
 				'doctor-ak-portal-admin-appointments',
 				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-appointments.js',
@@ -974,6 +977,9 @@ class Admin_Dashboard {
 				array( 'doctor-ak-portal-dashboard' ),
 				Assets::version( 'assets/css/doctor-ak-encounter.css' )
 			);
+
+			// Reports the patient shared before the visit (Encounter screen).
+			Appointment_Reports_Handler::enqueue();
 
 			wp_enqueue_script(
 				'doctor-ak-portal-encounter',

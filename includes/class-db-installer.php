@@ -226,6 +226,20 @@ class Db_Installer {
 	const SERVICE_REQUESTS_DB_VERSION = '1.0.0';
 
 	/**
+	 * Option name tracking the installed appointment-reports-table schema version.
+	 *
+	 * @var string
+	 */
+	const APPOINTMENT_REPORTS_DB_VERSION_OPTION = 'dak_appointment_reports_db_version';
+
+	/**
+	 * Current appointment-reports table schema version.
+	 *
+	 * @var string
+	 */
+	const APPOINTMENT_REPORTS_DB_VERSION = '1.0.0';
+
+	/**
 	 * Option name guarding the one-time legacy-data migration so it never
 	 * runs more than once.
 	 *
@@ -304,6 +318,9 @@ class Db_Installer {
 		self::create_service_requests_table();
 		update_option( self::SERVICE_REQUESTS_DB_VERSION_OPTION, self::SERVICE_REQUESTS_DB_VERSION );
 
+		self::create_appointment_reports_table();
+		update_option( self::APPOINTMENT_REPORTS_DB_VERSION_OPTION, self::APPOINTMENT_REPORTS_DB_VERSION );
+
 		if ( ! get_option( self::MIGRATION_OPTION ) ) {
 			self::migrate_legacy_data();
 			update_option( self::MIGRATION_OPTION, 'yes' );
@@ -346,6 +363,7 @@ class Db_Installer {
 			&& self::BLOGS_DB_VERSION === get_option( self::BLOGS_DB_VERSION_OPTION )
 			&& self::REVIEWS_DB_VERSION === get_option( self::REVIEWS_DB_VERSION_OPTION )
 			&& self::SERVICE_REQUESTS_DB_VERSION === get_option( self::SERVICE_REQUESTS_DB_VERSION_OPTION )
+			&& self::APPOINTMENT_REPORTS_DB_VERSION === get_option( self::APPOINTMENT_REPORTS_DB_VERSION_OPTION )
 		) {
 			return;
 		}
@@ -520,6 +538,38 @@ class Db_Installer {
 			PRIMARY KEY  (id),
 			KEY author_id (author_id),
 			KEY status (status)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Runs dbDelta() against the appointment-reports table schema — files a
+	 * patient (or doctor/staff) shares with an appointment before the
+	 * consultation. Stored outside the Media Library; see Appointment_Reports.
+	 *
+	 * @return void
+	 */
+	private static function create_appointment_reports_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$table_name      = Appointment_Reports::table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table_name} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			appointment_id BIGINT UNSIGNED NOT NULL,
+			file_name VARCHAR(100) NOT NULL,
+			original_name VARCHAR(191) NOT NULL DEFAULT '',
+			mime_type VARCHAR(50) NOT NULL DEFAULT '',
+			file_size BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			uploaded_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			uploader_role VARCHAR(20) NOT NULL DEFAULT '',
+			created_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY appointment_id (appointment_id)
 		) {$charset_collate};";
 
 		dbDelta( $sql );

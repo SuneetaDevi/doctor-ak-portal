@@ -425,6 +425,16 @@ class Appointments {
 			$payment_status = apply_filters( 'doctor_ak_appointment_payment_status', self::PAYMENT_STATUS_PENDING, $data );
 		}
 
+		// Checked again under a lock right before saving, so two bookings
+		// for the same slot arriving together can't both succeed.
+		$slot_lock = self::lock_slot( $doctor_id, $date, $time );
+
+		if ( false === $slot_lock || self::is_slot_taken( $doctor_id, $date, $time ) ) {
+			self::release_slot_lock( $slot_lock );
+
+			return new \WP_Error( 'doctor_ak_slot_taken', __( 'That time slot has just been booked by someone else. Please choose another time.', 'doctor-ak-portal' ) );
+		}
+
 		$post_id = wp_insert_post(
 			array(
 				'post_type'   => self::POST_TYPE,
@@ -437,20 +447,26 @@ class Appointments {
 		);
 
 		if ( is_wp_error( $post_id ) ) {
+			self::release_slot_lock( $slot_lock );
+
 			return $post_id;
 		}
 
+		// The slot-defining fields first, then the lock can go.
 		update_post_meta( $post_id, 'doctor_ak_appointment_doctor_id', $doctor_id );
+		update_post_meta( $post_id, 'doctor_ak_appointment_date', $date );
+		update_post_meta( $post_id, 'doctor_ak_appointment_time', $time );
+		update_post_meta( $post_id, 'doctor_ak_appointment_status', $status );
+		update_post_meta( $post_id, 'doctor_ak_appointment_payment_status', $payment_status );
+		update_post_meta( $post_id, 'doctor_ak_appointment_payment_mode', $payment_mode );
+		self::release_slot_lock( $slot_lock );
+
 		update_post_meta( $post_id, 'doctor_ak_appointment_patient_id', $patient_id );
 		update_post_meta( $post_id, 'doctor_ak_appointment_guest_name', $guest_name );
 		update_post_meta( $post_id, 'doctor_ak_appointment_guest_email', $guest_email );
 		update_post_meta( $post_id, 'doctor_ak_appointment_guest_phone', $guest_phone );
 		update_post_meta( $post_id, 'doctor_ak_appointment_type', $type );
 		update_post_meta( $post_id, 'doctor_ak_appointment_clinic_id', $clinic_id );
-		update_post_meta( $post_id, 'doctor_ak_appointment_date', $date );
-		update_post_meta( $post_id, 'doctor_ak_appointment_time', $time );
-		update_post_meta( $post_id, 'doctor_ak_appointment_status', $status );
-		update_post_meta( $post_id, 'doctor_ak_appointment_payment_status', $payment_status );
 		update_post_meta( $post_id, 'doctor_ak_appointment_notes', $notes );
 		update_post_meta( $post_id, 'doctor_ak_appointment_service_id', $service_id );
 		update_post_meta( $post_id, 'doctor_ak_appointment_service_ids', wp_json_encode( $service_ids ) );
@@ -458,7 +474,6 @@ class Appointments {
 		update_post_meta( $post_id, 'doctor_ak_appointment_charge', $charge );
 		update_post_meta( $post_id, 'doctor_ak_appointment_base_charge', $base_charge );
 		update_post_meta( $post_id, 'doctor_ak_appointment_discount_percent', $discount_percent );
-		update_post_meta( $post_id, 'doctor_ak_appointment_payment_mode', $payment_mode );
 		update_post_meta( $post_id, 'doctor_ak_appointment_is_instant', $is_instant ? 1 : 0 );
 		update_post_meta( $post_id, 'doctor_ak_appointment_surcharge', $surcharge );
 
@@ -651,6 +666,27 @@ class Appointments {
 			return new \WP_Error( 'doctor_ak_appointment_encounter_open', __( 'This patient is checked in with an open encounter — close the encounter first.', 'doctor-ak-portal' ) );
 		}
 
+		// One doctor, one appointment per slot: moving this appointment to
+		// another doctor/date/time needs that slot to be free. Only checked
+		// when the slot actually changes (and the appointment isn't being
+		// cancelled), so editing other details is never blocked.
+		$slot_lock    = false;
+		$slot_changed = (int) get_post_meta( $appointment_id, 'doctor_ak_appointment_doctor_id', true ) !== $doctor_id
+			|| get_post_meta( $appointment_id, 'doctor_ak_appointment_date', true ) !== $date
+			|| get_post_meta( $appointment_id, 'doctor_ak_appointment_time', true ) !== $time
+			// Un-cancelling takes the slot back, so it must still be free.
+			|| self::STATUS_CANCELLED === $current_status;
+
+		if ( $slot_changed && self::STATUS_CANCELLED !== $status ) {
+			$slot_lock = self::lock_slot( $doctor_id, $date, $time );
+
+			if ( false === $slot_lock || self::is_slot_taken( $doctor_id, $date, $time, $appointment_id ) ) {
+				self::release_slot_lock( $slot_lock );
+
+				return new \WP_Error( 'doctor_ak_slot_taken', __( 'This doctor already has an appointment at that date and time. Please choose another time.', 'doctor-ak-portal' ) );
+			}
+		}
+
 		wp_update_post(
 			array(
 				'ID'          => $appointment_id,
@@ -674,6 +710,7 @@ class Appointments {
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_date', $date );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_time', $time );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_status', $status );
+		self::release_slot_lock( $slot_lock );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_payment_status', $payment_status );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_notes', $notes );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_service_id', $service_id );
@@ -733,13 +770,10 @@ class Appointments {
 		// their own days and hours.
 		$clinics = Clinics::clinics_for_slots( $doctor_id, $type, $clinic_id );
 
-		$booked = array();
-
-		foreach ( self::for_doctor( $doctor_id ) as $appointment ) {
-			if ( self::PAYMENT_STATUS_PAID === $appointment['payment_status'] && self::STATUS_CANCELLED !== $appointment['status'] ) {
-				$booked[ $appointment['date'] ][ $appointment['time'] ] = true;
-			}
-		}
+		// Every slot already taken this month — paid or not (see occupies_slot()).
+		$first  = sprintf( '%04d-%02d-01', $year, $month );
+		$booked = self::occupied_slots( $doctor_id, $first, gmdate( 'Y-m-t', strtotime( $first ) ) );
+		$booked = isset( $booked[ (int) $doctor_id ] ) ? $booked[ (int) $doctor_id ] : array();
 
 		$days_in_month = (int) gmdate( 't', mktime( 0, 0, 0, $month, 1, $year ) );
 		$today         = current_time( 'Y-m-d' );
@@ -778,8 +812,8 @@ class Appointments {
 	 * with its booking status — for the booking page's slot-card calendar,
 	 * which shows the whole day's grid (not just openings) color-coded by
 	 * status. Built from the doctor's full session grid
-	 * (Clinics::slot_grid_for_date()), with slots already locked by a paid,
-	 * non-cancelled booking marked 'booked', slots earlier than the current
+	 * (Clinics::slot_grid_for_date()), with slots already taken by another
+	 * appointment (paid or not, see occupies_slot()) marked 'booked', slots earlier than the current
 	 * time on today marked 'past', and everything else 'available'.
 	 *
 	 * @param int    $doctor_id Doctor's user ID.
@@ -795,16 +829,9 @@ class Appointments {
 			return array();
 		}
 
-		$booked = array();
-
-		foreach ( self::for_doctor( $doctor_id ) as $appointment ) {
-			if ( $appointment['date'] === $date
-				&& self::PAYMENT_STATUS_PAID === $appointment['payment_status']
-				&& self::STATUS_CANCELLED !== $appointment['status']
-			) {
-				$booked[ $appointment['time'] ] = true;
-			}
-		}
+		// Taken slots that day — paid or not (see occupies_slot()).
+		$booked = self::occupied_slots( $doctor_id, $date, $date );
+		$booked = isset( $booked[ (int) $doctor_id ][ $date ] ) ? $booked[ (int) $doctor_id ][ $date ] : array();
 
 		$today             = current_time( 'Y-m-d' );
 		$now               = current_time( 'H:i' );
@@ -1753,12 +1780,17 @@ class Appointments {
 			return new \WP_Error( 'doctor_ak_reschedule_in_past', __( 'Please choose a date and time in the future.', 'doctor-ak-portal' ) );
 		}
 
-		if ( self::is_slot_taken( $appointment['doctor_id'], $date, $time, $appointment_id ) ) {
+		$slot_lock = self::lock_slot( $appointment['doctor_id'], $date, $time );
+
+		if ( false === $slot_lock || self::is_slot_taken( $appointment['doctor_id'], $date, $time, $appointment_id ) ) {
+			self::release_slot_lock( $slot_lock );
+
 			return new \WP_Error( 'doctor_ak_slot_taken', __( 'That time slot is already booked. Please choose another time.', 'doctor-ak-portal' ) );
 		}
 
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_date', $date );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_time', $time );
+		self::release_slot_lock( $slot_lock );
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_RESCHEDULED );
 
 		/**
@@ -3350,29 +3382,159 @@ class Appointments {
 	}
 
 	/**
-	 * Whether a doctor already has a paid (confirmed) appointment at the
-	 * given date/time. Pending (unpaid) requests don't block the slot —
-	 * only a paid booking locks it, so multiple pending requests for the
-	 * same slot can exist until one of them is paid.
+	 * How long an unfinished online checkout holds its slot. A booking made
+	 * through the online-payment flow starts as "pending payment"; if it is
+	 * still unpaid after this many minutes the checkout was abandoned and the
+	 * slot is offered again (the record itself is kept).
+	 *
+	 * @var int
+	 */
+	const ONLINE_PAYMENT_HOLD_MINUTES = 30;
+
+	/**
+	 * Whether an appointment occupies its doctor's time slot: one doctor, one
+	 * appointment per slot. Every appointment that isn't cancelled counts —
+	 * paid or not, including "pay at the clinic" bookings — except an online
+	 * checkout left unpaid for longer than ONLINE_PAYMENT_HOLD_MINUTES.
+	 *
+	 * @param int $post_id Appointment post ID (meta already primed).
+	 * @return bool
+	 */
+	private static function occupies_slot( $post_id ) {
+		$status = get_post_meta( $post_id, 'doctor_ak_appointment_status', true );
+
+		if ( self::STATUS_CANCELLED === $status ) {
+			return false;
+		}
+
+		$abandoned_checkout = self::STATUS_PENDING_PAYMENT === $status
+			&& self::PAYMENT_STATUS_PAID !== get_post_meta( $post_id, 'doctor_ak_appointment_payment_status', true )
+			&& self::PAYMENT_MODE_ONLINE === get_post_meta( $post_id, 'doctor_ak_appointment_payment_mode', true );
+
+		if ( $abandoned_checkout ) {
+			$created = strtotime( (string) get_post_field( 'post_date_gmt', $post_id ) . ' UTC' );
+
+			if ( false !== $created && time() - $created > self::ONLINE_PAYMENT_HOLD_MINUTES * MINUTE_IN_SECONDS ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Every occupied slot (see occupies_slot()) for one or more doctors in a
+	 * date range, straight from the database — all of the doctor's
+	 * appointments in the range, not a recent-only list.
+	 *
+	 * @param int|int[] $doctor_ids             Doctor user ID(s); an empty array means every doctor.
+	 * @param string    $date_from              'YYYY-MM-DD'.
+	 * @param string    $date_to                'YYYY-MM-DD' (inclusive).
+	 * @param int       $exclude_appointment_id An appointment to ignore (the one being moved).
+	 * @return array doctor_id => date => time => appointment ID.
+	 */
+	public static function occupied_slots( $doctor_ids, $date_from, $date_to, $exclude_appointment_id = 0 ) {
+		$doctor_ids = array_values( array_filter( array_map( 'intval', (array) $doctor_ids ) ) );
+		$meta_query = array(
+			'relation' => 'AND',
+			array(
+				'key'     => 'doctor_ak_appointment_date',
+				'value'   => array( $date_from, $date_to ),
+				'compare' => 'BETWEEN',
+			),
+		);
+
+		if ( ! empty( $doctor_ids ) ) {
+			$meta_query[] = array(
+				'key'     => 'doctor_ak_appointment_doctor_id',
+				'value'   => $doctor_ids,
+				'compare' => 'IN',
+			);
+		}
+
+		$query = new \WP_Query(
+			array(
+				'post_type'      => self::POST_TYPE,
+				'post_status'    => 'publish',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+				'no_found_rows'  => true,
+				'meta_query'     => $meta_query, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- bounded by doctor and date range.
+			)
+		);
+
+		$slots = array();
+
+		if ( empty( $query->posts ) ) {
+			return $slots;
+		}
+
+		update_meta_cache( 'post', $query->posts );
+
+		foreach ( $query->posts as $post_id ) {
+			if ( (int) $post_id === (int) $exclude_appointment_id || ! self::occupies_slot( $post_id ) ) {
+				continue;
+			}
+
+			$doctor_id = (int) get_post_meta( $post_id, 'doctor_ak_appointment_doctor_id', true );
+			$date      = (string) get_post_meta( $post_id, 'doctor_ak_appointment_date', true );
+			$time      = (string) get_post_meta( $post_id, 'doctor_ak_appointment_time', true );
+
+			if ( ! isset( $slots[ $doctor_id ][ $date ][ $time ] ) ) {
+				$slots[ $doctor_id ][ $date ][ $time ] = (int) $post_id;
+			}
+		}
+
+		return $slots;
+	}
+
+	/**
+	 * Whether a doctor already has an appointment at the given date/time —
+	 * one doctor, one appointment per slot (see occupies_slot()).
+	 *
+	 * @param int    $doctor_id              Doctor's user ID.
+	 * @param string $date                   'YYYY-MM-DD'.
+	 * @param string $time                   'HH:MM'.
+	 * @param int    $exclude_appointment_id The appointment being moved/edited, if any.
+	 * @return bool
+	 */
+	private static function is_slot_taken( $doctor_id, $date, $time, $exclude_appointment_id = 0 ) {
+		$slots = self::occupied_slots( $doctor_id, $date, $date, $exclude_appointment_id );
+
+		return isset( $slots[ (int) $doctor_id ][ $date ][ $time ] );
+	}
+
+	/**
+	 * A database lock on one doctor's slot, held while it is checked and
+	 * written, so two people booking the same slot at the same moment can't
+	 * both get it. Returns false only if the lock couldn't be had within a
+	 * few seconds (the booking is then refused rather than risked).
 	 *
 	 * @param int    $doctor_id Doctor's user ID.
 	 * @param string $date      'YYYY-MM-DD'.
 	 * @param string $time      'HH:MM'.
-	 * @return bool
+	 * @return string|false Lock name to pass to release_slot_lock(), or false.
 	 */
-	private static function is_slot_taken( $doctor_id, $date, $time, $exclude_appointment_id = 0 ) {
-		foreach ( self::for_doctor( $doctor_id ) as $appointment ) {
-			if ( $appointment['date'] === $date
-				&& $appointment['time'] === $time
-				&& self::PAYMENT_STATUS_PAID === $appointment['payment_status']
-				&& self::STATUS_CANCELLED !== $appointment['status']
-				&& (int) $appointment['id'] !== (int) $exclude_appointment_id
-			) {
-				return true;
-			}
-		}
+	private static function lock_slot( $doctor_id, $date, $time ) {
+		global $wpdb;
 
-		return false;
+		$name = 'dak_slot_' . md5( (int) $doctor_id . '|' . $date . '|' . $time );
+
+		return '1' === (string) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 5)', $name ) ) ? $name : false;
+	}
+
+	/**
+	 * Releases a lock_slot() lock.
+	 *
+	 * @param string|false $name Lock name.
+	 * @return void
+	 */
+	private static function release_slot_lock( $name ) {
+		global $wpdb;
+
+		if ( $name ) {
+			$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $name ) );
+		}
 	}
 
 	/**

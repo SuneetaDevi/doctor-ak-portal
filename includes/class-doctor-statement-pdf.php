@@ -89,8 +89,10 @@ class Doctor_Statement_Pdf extends Pdf_Document {
 		}
 
 		foreach ( $ledger_rows as $row ) {
-			$platform_fees += $row['platform_fee'];
-			$doctor_total  += $row['doctor_amount'];
+			// A reversal takes the doctor's share (and the fee) back.
+			$sign           = Revenue_Ledger::TRANSACTION_REFUND === $row['transaction_type'] ? -1 : 1;
+			$platform_fees += $sign * $row['platform_fee'];
+			$doctor_total  += $sign * $row['doctor_amount'];
 		}
 
 		$pdf->people(
@@ -181,13 +183,35 @@ class Doctor_Statement_Pdf extends Pdf_Document {
 			)
 		);
 
-		$list = array();
+		// One line per appointment: its consultation and any extra charges
+		// billed during the visit add up to one amount.
+		$by_appointment = array();
 
 		foreach ( $ledger_rows as $row ) {
 			if ( Revenue_Ledger::TRANSACTION_REFUND === $row['transaction_type'] ) {
 				continue;
 			}
 
+			$key = (int) $row['appointment_id'];
+
+			if ( ! isset( $by_appointment[ $key ] ) ) {
+				$by_appointment[ $key ] = array(
+					'row'    => $row,
+					'amount' => 0.0,
+				);
+			}
+
+			$by_appointment[ $key ]['amount'] += $row['gross_amount'];
+
+			if ( $row['transaction_date'] < $by_appointment[ $key ]['row']['transaction_date'] ) {
+				$by_appointment[ $key ]['row']['transaction_date'] = $row['transaction_date'];
+			}
+		}
+
+		$list = array();
+
+		foreach ( $by_appointment as $entry ) {
+			$row         = $entry['row'];
 			$appointment = Appointments::notification_data( $row['appointment_id'] );
 
 			if ( empty( $appointment ) ) {
@@ -205,7 +229,7 @@ class Doctor_Statement_Pdf extends Pdf_Document {
 					Dashboard_Format::date( $row['transaction_date'], (string) $row['transaction_date'] ),
 					array( 'text' => $appointment['patient_name'], 'sub' => sprintf( 'APT-%04d', (int) $row['appointment_id'] ) ),
 					$location,
-					Dashboard_Format::money( $row['gross_amount'] ),
+					Dashboard_Format::money( $entry['amount'] ),
 				),
 			);
 		}

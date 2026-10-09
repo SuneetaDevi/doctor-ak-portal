@@ -38,6 +38,7 @@ use DoctorAKPortal\Frontend\Doctor_Profile_View;
 use DoctorAKPortal\Frontend\Doctor_Requests_Handler;
 use DoctorAKPortal\Frontend\Doctors_Directory;
 use DoctorAKPortal\Frontend\Encounter_Handler;
+use DoctorAKPortal\Frontend\Appointment_Reports_Handler;
 use DoctorAKPortal\Frontend\Featured_Doctors;
 use DoctorAKPortal\Frontend\Forgot_Password_Handler;
 use DoctorAKPortal\Frontend\Google_Reviews_Handler;
@@ -456,6 +457,14 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_prescription_pdf_download', $encounter_handler, 'handle_download_prescription_pdf' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_encounter_bill_pdf_download', $encounter_handler, 'handle_download_bill_pdf' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_medical_history_pdf_download', $encounter_handler, 'handle_download_medical_history_pdf' );
+
+		// Reports shared with an appointment before the consultation
+		// (patient, doctor and staff dashboards). Logged-in users only.
+		$appointment_reports_handler = new Appointment_Reports_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_appointment_reports_list', $appointment_reports_handler, 'handle_list' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_appointment_reports_upload', $appointment_reports_handler, 'handle_upload' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_appointment_reports_delete', $appointment_reports_handler, 'handle_delete' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_appointment_report_view', $appointment_reports_handler, 'handle_view' );
 
 		$role_permissions_handler = new Role_Permissions_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_role_permissions_save', $role_permissions_handler, 'handle_save' );

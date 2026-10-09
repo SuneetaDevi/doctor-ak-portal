@@ -359,59 +359,16 @@ class Doctors_Directory {
 	}
 
 	/**
-	 * Paid, not-cancelled appointment times per doctor and date in a date
-	 * range — what makes a slot "booked" on the booking page
-	 * (Appointments::slot_statuses_for_date()). One query for every doctor.
+	 * Taken appointment times per doctor and date in a date range — the
+	 * same "one doctor, one appointment per slot" rule the booking page
+	 * applies (Appointments::occupied_slots()). One query for every doctor.
 	 *
 	 * @param string $from 'Y-m-d'.
 	 * @param string $to   'Y-m-d'.
-	 * @return array doctor_id => date => time => true
+	 * @return array doctor_id => date => time => appointment ID
 	 */
 	private static function booked_slots( $from, $to ) {
-		$query = new \WP_Query(
-			array(
-				'post_type'      => Appointments::POST_TYPE,
-				'post_status'    => 'publish',
-				'posts_per_page' => -1,
-				'fields'         => 'ids',
-				'no_found_rows'  => true,
-				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- one bounded query for the whole page.
-					'relation' => 'AND',
-					array(
-						'key'     => 'doctor_ak_appointment_date',
-						'value'   => array( $from, $to ),
-						'compare' => 'BETWEEN',
-					),
-					array(
-						'key'   => 'doctor_ak_appointment_payment_status',
-						'value' => Appointments::PAYMENT_STATUS_PAID,
-					),
-					array(
-						'key'     => 'doctor_ak_appointment_status',
-						'value'   => Appointments::STATUS_CANCELLED,
-						'compare' => '!=',
-					),
-				),
-			)
-		);
-
-		$booked = array();
-
-		if ( empty( $query->posts ) ) {
-			return $booked;
-		}
-
-		update_meta_cache( 'post', $query->posts );
-
-		foreach ( $query->posts as $post_id ) {
-			$doctor_id = (int) get_post_meta( $post_id, 'doctor_ak_appointment_doctor_id', true );
-			$date      = (string) get_post_meta( $post_id, 'doctor_ak_appointment_date', true );
-			$time      = (string) get_post_meta( $post_id, 'doctor_ak_appointment_time', true );
-
-			$booked[ $doctor_id ][ $date ][ $time ] = true;
-		}
-
-		return $booked;
+		return Appointments::occupied_slots( array(), $from, $to );
 	}
 
 	/**

@@ -220,8 +220,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<div class="dak-detail-group">
 				<h3 class="dak-detail-group-title"><?php esc_html_e( 'Patient', 'doctor-ak-portal' ); ?></h3>
 				<dl class="dak-detail-list">
-					<div><dt><?php esc_html_e( 'Name', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-patient"></dd></div>
-					<div><dt><?php esc_html_e( 'Appointment ID', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-id"></dd></div>
+					<div><dt data-copy-label="<?php esc_attr_e( 'Patient', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Name', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-patient"></dd></div>
+					<div data-copy-skip><dt><?php esc_html_e( 'Appointment ID', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-id"></dd></div>
 					<div><dt><?php esc_html_e( 'Phone', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-phone"></dd></div>
 					<div data-optional><dt><?php esc_html_e( 'Age', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-age"></dd></div>
 				</dl>
@@ -236,7 +236,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<div><dt><?php esc_html_e( 'Service', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-service"></dd></div>
 					<div><dt><?php esc_html_e( 'Visit type', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-type"></dd></div>
 					<div data-optional><dt><?php esc_html_e( 'Location', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-location"></dd></div>
-					<div><dt><?php esc_html_e( 'Appointment status', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-status"></dd></div>
+					<div><dt data-copy-label="<?php esc_attr_e( 'Status', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Appointment status', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-status"></dd></div>
 				</dl>
 			</div>
 
@@ -246,19 +246,86 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<div><dt><?php esc_html_e( 'Amount', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-charge"></dd></div>
 					<div><dt><?php esc_html_e( 'Payment status', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-payment-status"></dd></div>
 					<?php // payment_mode is set at booking/edit time only — it isn't updated when a payment is collected later, so it's labelled as such rather than as "paid via". ?>
-					<div><dt><?php esc_html_e( 'Payment mode (set at booking)', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-payment-mode"></dd></div>
-					<div data-optional><dt><?php esc_html_e( 'Online payment reference', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-order"></dd></div>
-					<div data-optional><dt><?php esc_html_e( 'Refund', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-refund"></dd></div>
+					<div><dt data-copy-label="<?php esc_attr_e( 'Payment mode', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Payment mode (set at booking)', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-payment-mode"></dd></div>
+					<div data-optional data-copy-skip><dt><?php esc_html_e( 'Online payment reference', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-order"></dd></div>
+					<div data-optional data-copy-skip><dt><?php esc_html_e( 'Refund', 'doctor-ak-portal' ); ?></dt><dd id="dak-admin-appointment-view-refund"></dd></div>
 				</dl>
 			</div>
 
-			<div class="dak-detail-group">
+			<div class="dak-detail-group" data-copy-skip>
 				<h3 class="dak-detail-group-title"><?php esc_html_e( 'Notes', 'doctor-ak-portal' ); ?></h3>
 				<p class="dak-detail-notes" id="dak-admin-appointment-view-notes"></p>
 			</div>
 		</div>
 
 		<div class="dak-modal-footer">
+			<?php
+			// "Copy details": the shareable part of what this dialog shows
+			// (patient, schedule, visit, amount and payment status — not
+			// internal notes or the payment gateway reference), as plain text
+			// for WhatsApp/SMS and a formatted table for email. See
+			// copyAppointment() in doctor-ak-admin-appointments.js.
+			// The copied text is a short message to the patient, laid out like
+			// a clinic's confirmation: greeting, a sentence that follows the
+			// appointment's status (the doctor's name in bold), a bulleted list
+			// of details with bold labels, fee, a closing line and a thank-you.
+			// Bold is *asterisks* in the plain-text copy (WhatsApp shows it as
+			// bold) and real bold in the formatted (email) copy.
+			$dak_copy_strings = array(
+				'site'     => wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ),
+				'copy'     => __( 'Copy details', 'doctor-ak-portal' ),
+				'copied'   => __( 'Copied', 'doctor-ak-portal' ),
+				'done'     => __( 'Appointment details copied to the clipboard.', 'doctor-ak-portal' ),
+				'failed'   => __( 'Could not copy automatically. The details are selected — press Ctrl+C (or Cmd+C) to copy.', 'doctor-ak-portal' ),
+				/* translators: %s: patient's name. */
+				'greeting' => __( 'Dear %s,', 'doctor-ak-portal' ),
+				'greetingNoName' => __( 'Hello,', 'doctor-ak-portal' ),
+				'intros'   => array(
+					/* translators: %s: doctor's name, e.g. "Dr. Ajeet Kumar Lohana" (shown in bold). */
+					'scheduled'   => __( 'Your appointment with %s has been scheduled successfully.', 'doctor-ak-portal' ),
+					/* translators: %s: doctor's name. */
+					'pending'     => __( 'Your appointment with %s has been booked and is awaiting payment.', 'doctor-ak-portal' ),
+					/* translators: %s: doctor's name. */
+					'rescheduled' => __( 'Your appointment with %s has been rescheduled. Please note the new date and time below.', 'doctor-ak-portal' ),
+					/* translators: %s: doctor's name. */
+					'cancelled'   => __( 'Your appointment with %s has been cancelled.', 'doctor-ak-portal' ),
+					/* translators: %s: doctor's name. */
+					'checkedin'   => __( 'You have been checked in for your appointment with %s.', 'doctor-ak-portal' ),
+					/* translators: %s: doctor's name. */
+					'completed'   => __( 'Thank you for visiting %s.', 'doctor-ak-portal' ),
+					'other'       => __( 'Here are the details of your appointment.', 'doctor-ak-portal' ),
+				),
+				'detailsHeading' => __( 'Appointment Details', 'doctor-ak-portal' ),
+				'labels'   => array(
+					'id'       => __( 'Appointment ID', 'doctor-ak-portal' ),
+					'date'     => __( 'Date', 'doctor-ak-portal' ),
+					'time'     => __( 'Time', 'doctor-ak-portal' ),
+					'doctor'   => __( 'Doctor', 'doctor-ak-portal' ),
+					'service'  => __( 'Service', 'doctor-ak-portal' ),
+					'type'     => __( 'Visit Type', 'doctor-ak-portal' ),
+					'location' => __( 'Location', 'doctor-ak-portal' ),
+					'amount'   => __( 'Fee', 'doctor-ak-portal' ),
+					'payment'  => __( 'Payment Status', 'doctor-ak-portal' ),
+				),
+				'visitTypes' => array(
+					'clinic' => __( 'In-person (clinic visit)', 'doctor-ak-portal' ),
+					'video'  => __( 'Online video consultation', 'doctor-ak-portal' ),
+				),
+				'closings' => array(
+					'default'   => __( 'For rescheduling or assistance, please contact the clinic.', 'doctor-ak-portal' ),
+					'cancelled' => __( 'To book a new appointment or for any assistance, please contact the clinic.', 'doctor-ak-portal' ),
+					'completed' => __( 'For follow-up or assistance, please contact the clinic.', 'doctor-ak-portal' ),
+				),
+				/* translators: %s: site name, e.g. "Doctoraklohana.com" (shown in bold). */
+				'thanks'     => __( 'Thank you for choosing %s.', 'doctor-ak-portal' ),
+			);
+			?>
+			<span class="dak-visually-hidden" id="dak-admin-appointment-view-copy-status" role="status" aria-live="polite"></span>
+			<button type="button" class="dak-button dak-button-secondary dak-appointment-copy" id="dak-admin-appointment-view-copy" data-strings="<?php echo esc_attr( wp_json_encode( $dak_copy_strings ) ); ?>">
+				<svg class="dak-appointment-copy-icon" viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M13 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/></svg>
+				<svg class="dak-appointment-copied-icon" viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4.5 10.5l3.5 3.5 7.5-8"/></svg>
+				<span data-dak-copy-label><?php echo esc_html( $dak_copy_strings['copy'] ); ?></span>
+			</button>
 			<a class="dak-button dak-button-primary" id="dak-admin-appointment-view-print" href="#" target="_blank" rel="noopener noreferrer">
 				<?php esc_html_e( 'Print slip', 'doctor-ak-portal' ); ?>
 			</a>

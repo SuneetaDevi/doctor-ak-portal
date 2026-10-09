@@ -98,6 +98,18 @@ $dak_row_contact  = array_filter( array( $appointment['is_guest'] ? __( 'Guest b
 			<?php elseif ( 'encounter' === $dak_row_workflow ) : ?>
 				<a class="dak-button dak-button-primary dak-button-sm" href="<?php echo esc_url( $dak_row_enc_url ); ?>"><?php esc_html_e( 'Open encounter', 'doctor-ak-portal' ); ?></a>
 			<?php endif; ?>
+			<?php
+			$dak_report_count = isset( $appointment['report_count'] ) ? (int) $appointment['report_count'] : 0;
+
+			// Reports shared before the consultation — open while the
+			// appointment is active, view-only afterwards if any were shared.
+			if ( 'cancelled' !== $appointment['status'] || $dak_report_count > 0 ) :
+				?>
+				<button type="button" class="dak-button dak-button-secondary dak-button-sm dak-reports-button" data-appointment-reports data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>" data-appointment-label="<?php echo esc_attr( $appointment['patient_name'] . ( $dak_row_ts ? ' · ' . date_i18n( 'd M Y, h:i A', $dak_row_ts ) : '' ) ); ?>">
+					<?php esc_html_e( 'Reports', 'doctor-ak-portal' ); ?>
+					<span class="dak-reports-count" data-appointment-reports-count="<?php echo esc_attr( $appointment['id'] ); ?>"<?php echo $dak_report_count > 0 ? '' : ' hidden'; ?>><?php echo $dak_report_count > 0 ? esc_html( $dak_report_count ) : ''; ?></span>
+				</button>
+			<?php endif; ?>
 			<?php if ( $dak_row_has_more ) : ?>
 				<details class="dak-row-menu">
 					<summary class="dak-row-menu-toggle" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: patient name. */ __( 'More actions for %s', 'doctor-ak-portal' ), $appointment['patient_name'] ) ); ?>"><?php esc_html_e( 'More', 'doctor-ak-portal' ); ?></summary>

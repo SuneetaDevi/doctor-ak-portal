@@ -1373,6 +1373,312 @@ body.dak-app-page .dak-modal .dak-modal-dialog-form .dak-modal-body {
 	overscroll-behavior: contain !important;
 }
 
+/* "Reports" — files shared with an appointment before the consultation
+   (doctor-ak-appointment-reports.js). Row button with a count badge, and the
+   shared dialog: upload area, file list, status messages. */
+body.dak-app-page .dak-reports-button,
+body.dak-app-page .dak-row-menu-item[data-appointment-reports] {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+}
+
+body.dak-app-page .dak-reports-count {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	min-width: 18px !important;
+	height: 18px !important;
+	padding: 0 5px !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+	font-size: 11px !important;
+	font-weight: 700 !important;
+	line-height: 1 !important;
+}
+
+body.dak-app-page .dak-reports-count[hidden] {
+	display: none !important;
+}
+
+body.dak-app-page .dak-appt-reports-modal .dak-modal-dialog.dak-modal-dialog-form {
+	width: min( 620px, calc( 100vw - 32px ) ) !important;
+}
+
+body.dak-app-page .dak-appt-reports-subtitle {
+	margin: 2px 0 0 !important;
+	font-size: 13px !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-appt-reports-subtitle:empty {
+	display: none !important;
+}
+
+body.dak-app-page .dak-appt-reports-intro {
+	margin: 0 0 14px !important;
+	font-size: 14px !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-appt-reports-drop {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: center !important;
+	gap: 6px !important;
+	padding: 20px 16px !important;
+	border: 2px dashed var( --dak-border ) !important;
+	border-radius: var( --dak-radius-md ) !important;
+	background: var( --dak-bg-subtle ) !important;
+	text-align: center !important;
+	transition: border-color 0.15s ease, background-color 0.15s ease !important;
+}
+
+body.dak-app-page .dak-appt-reports-drop[hidden] {
+	display: none !important;
+}
+
+body.dak-app-page .dak-appt-reports-drop.is-dragging {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary-tint ) !important;
+}
+
+body.dak-app-page .dak-appt-reports-drop.is-busy {
+	opacity: 0.6 !important;
+	pointer-events: none !important;
+}
+
+body.dak-app-page .dak-appt-reports-add {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	cursor: pointer !important;
+}
+
+body.dak-app-page .dak-appt-reports-add svg {
+	width: 18px !important;
+	height: 18px !important;
+	fill: none !important;
+	stroke: currentColor !important;
+}
+
+body.dak-app-page #dak-appt-reports-input:focus-visible + .dak-appt-reports-add {
+	outline: 2px solid var( --dak-primary ) !important;
+	outline-offset: 2px !important;
+}
+
+body.dak-app-page .dak-appt-reports-drop-hint {
+	font-size: 13px !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-appt-reports-limits {
+	font-size: 12px !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-appt-reports-closed {
+	margin: 0 0 12px !important;
+	padding: 10px 12px !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+	font-size: 13px !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-appt-reports-closed[hidden] {
+	display: none !important;
+}
+
+body.dak-app-page .dak-appt-reports-status {
+	margin: 10px 0 0 !important;
+	font-size: 13px !important;
+	color: var( --dak-tint-success-text ) !important;
+}
+
+body.dak-app-page .dak-appt-reports-status.is-error {
+	color: var( --dak-tint-danger-text ) !important;
+}
+
+body.dak-app-page .dak-appt-reports-status p {
+	margin: 0 0 2px !important;
+}
+
+body.dak-app-page .dak-appt-reports-list {
+	list-style: none !important;
+	margin: 14px 0 0 !important;
+	padding: 0 !important;
+}
+
+body.dak-app-page .dak-appt-reports-item {
+	display: flex !important;
+	align-items: center !important;
+	gap: 12px !important;
+	margin: 0 !important;
+	padding: 10px 0 !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+body.dak-app-page .dak-appt-reports-item::before {
+	content: none !important;
+}
+
+body.dak-app-page .dak-appt-reports-icon {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	flex: 0 0 auto !important;
+	width: 36px !important;
+	height: 36px !important;
+	border-radius: 8px !important;
+	background: var( --dak-tint-danger ) !important;
+	color: var( --dak-tint-danger-text ) !important;
+}
+
+body.dak-app-page .dak-appt-reports-icon.is-image {
+	background: var( --dak-tint-info ) !important;
+	color: var( --dak-tint-info-text ) !important;
+}
+
+body.dak-app-page .dak-appt-reports-icon svg {
+	width: 20px !important;
+	height: 20px !important;
+	fill: none !important;
+	stroke: currentColor !important;
+}
+
+body.dak-app-page .dak-appt-reports-info {
+	display: flex !important;
+	flex-direction: column !important;
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+}
+
+body.dak-app-page .dak-appt-reports-name {
+	font-size: 14px !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+	text-decoration: none !important;
+	overflow-wrap: anywhere !important;
+}
+
+body.dak-app-page .dak-appt-reports-name:hover {
+	color: var( --dak-primary ) !important;
+	text-decoration: underline !important;
+}
+
+body.dak-app-page .dak-appt-reports-meta {
+	font-size: 12px !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-appt-reports-actions {
+	display: flex !important;
+	flex: 0 0 auto !important;
+	gap: 6px !important;
+}
+
+body.dak-app-page .dak-appt-reports-empty {
+	margin: 14px 0 0 !important;
+	font-size: 14px !important;
+	color: var( --dak-muted ) !important;
+	text-align: center !important;
+}
+
+body.dak-app-page .dak-appt-reports-empty[hidden] {
+	display: none !important;
+}
+
+body.dak-app-page .dak-encounter-shared-reports {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	flex-wrap: wrap !important;
+	gap: 8px 12px !important;
+	margin: 0 0 12px !important;
+	padding: 10px 12px !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+	font-size: 13px !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-encounter-shared-reports.has-reports {
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-text ) !important;
+	font-weight: 600 !important;
+}
+
+@media ( max-width: 480px ) {
+	body.dak-app-page .dak-appt-reports-item {
+		flex-wrap: wrap !important;
+	}
+
+	body.dak-app-page .dak-appt-reports-actions {
+		width: 100% !important;
+		padding-left: 48px !important;
+	}
+}
+
+/* Appointment details: "Copy details" — copy icon, swapped for a check
+   (and the label for "Copied") for a moment after a successful copy. */
+body.dak-app-page .dak-modal .dak-appointment-copy {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+}
+
+body.dak-app-page .dak-appointment-copy svg {
+	flex: 0 0 auto !important;
+	width: 18px !important;
+	height: 18px !important;
+	fill: none !important;
+	stroke: currentColor !important;
+}
+
+body.dak-app-page .dak-appointment-copy .dak-appointment-copied-icon,
+body.dak-app-page .dak-appointment-copy.is-copied .dak-appointment-copy-icon {
+	display: none !important;
+}
+
+body.dak-app-page .dak-appointment-copy.is-copied .dak-appointment-copied-icon {
+	display: block !important;
+}
+
+body.dak-app-page .dak-modal .dak-appointment-copy.is-copied {
+	border-color: var( --dak-tint-success-text ) !important;
+	color: var( --dak-tint-success-text ) !important;
+	background: var( --dak-tint-success ) !important;
+}
+
+/* Shown only when the browser refuses to copy: the summary, selected. */
+body.dak-app-page .dak-appointment-copy-fallback {
+	display: block !important;
+	width: 100% !important;
+	margin-top: 16px !important;
+	padding: 10px 12px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-text ) !important;
+	font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+	resize: vertical !important;
+	box-sizing: border-box !important;
+}
+
+@media ( max-width: 480px ) {
+	body.dak-app-page #dak-admin-appointment-view-modal .dak-modal-footer {
+		flex-direction: column-reverse !important;
+		align-items: stretch !important;
+	}
+
+	body.dak-app-page #dak-admin-appointment-view-modal .dak-modal-footer .dak-button {
+		justify-content: center !important;
+		width: 100% !important;
+	}
+}
+
 /* Billing "View details": per-service breakdown for one doctor + clinic. */
 body.dak-app-page #dak-billing-details-modal .dak-modal-dialog.dak-modal-dialog-form {
 	width: min( 560px, calc( 100vw - 32px ) ) !important;

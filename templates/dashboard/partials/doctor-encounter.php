@@ -145,6 +145,30 @@ $dak_back_label = ! empty( $back_url ) && ! empty( $back_label ) ? $back_label :
 						</div>
 						<span class="dak-encounter-section-count" id="dak-encounter-reports-count">0</span>
 					</div>
+					<?php
+					// Reports the patient (or staff) shared with the appointment
+					// before this visit — opened in the shared Reports dialog.
+					$dak_encounter_row    = $encounter_id > 0 ? \DoctorAKPortal\Includes\Encounters::find( $encounter_id ) : null;
+					$dak_pre_visit_appt   = $dak_encounter_row ? (int) $dak_encounter_row['appointment_id'] : 0;
+					$dak_pre_visit_count  = $dak_pre_visit_appt > 0 ? \DoctorAKPortal\Includes\Appointment_Reports::count_for( $dak_pre_visit_appt ) : 0;
+					?>
+					<?php if ( $dak_pre_visit_appt > 0 ) : ?>
+						<div class="dak-encounter-shared-reports<?php echo $dak_pre_visit_count > 0 ? ' has-reports' : ''; ?>">
+							<span>
+								<?php
+								echo esc_html(
+									$dak_pre_visit_count > 0
+										/* translators: %d: number of reports. */
+										? sprintf( _n( '%d report was shared before this visit.', '%d reports were shared before this visit.', $dak_pre_visit_count, 'doctor-ak-portal' ), $dak_pre_visit_count )
+										: __( 'No reports were shared before this visit.', 'doctor-ak-portal' )
+								);
+								?>
+							</span>
+							<button type="button" class="dak-button dak-button-secondary dak-button-sm" data-appointment-reports data-appointment-id="<?php echo esc_attr( $dak_pre_visit_appt ); ?>">
+								<?php echo esc_html( $dak_pre_visit_count > 0 ? __( 'View shared reports', 'doctor-ak-portal' ) : __( 'Add pre-visit reports', 'doctor-ak-portal' ) ); ?>
+							</button>
+						</div>
+					<?php endif; ?>
 					<div id="dak-encounter-reports-list"></div>
 					<form id="dak-encounter-upload-report-form">
 						<label class="dak-encounter-upload-dropzone" for="dak-encounter-report-file">

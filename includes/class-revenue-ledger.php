@@ -472,9 +472,119 @@ class Revenue_Ledger {
 			$params
 		);
 
-		$rows = $wpdb->get_results( $sql, ARRAY_A );
+		$rows = array_map( array( __CLASS__, 'decode_row' ), $wpdb->get_results( $sql, ARRAY_A ) );
 
-		return array_map( array( __CLASS__, 'decode_row' ), $rows );
+		// Posted rows only: hide reversals that merely cancel an entry that
+		// was never settled (see without_cancelled_pairs()).
+		if ( self::STATUS_POSTED === ( ! empty( $filters['status'] ) ? $filters['status'] : self::STATUS_POSTED ) ) {
+			$rows = self::without_cancelled_pairs( $rows );
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * Removes reversal rows that cancel an entry nobody was ever paid for.
+	 *
+	 * reverse_for_appointment() and reverse_encounter_extra() keep the
+	 * original entry (marked `reversed`, so it already drops out of every
+	 * posted-rows report) AND post a negating reversal row. When the original
+	 * was never settled, that reversal has nothing left to cancel: counting
+	 * it would deduct the amount a second time from the doctor's balance and
+	 * list a "Reversal" line (with a positive gross) on statements — e.g.
+	 * re-saving a closed encounter's bill showed "Reversal — Additional
+	 * charges" and inflated the clinic's total. So a reversal row is left out
+	 * when both it and its original are unsettled; once the original has
+	 * been paid out in a settlement, the reversal is real (it recovers that
+	 * money) and stays. Nothing in the database is changed.
+	 *
+	 * A reversal is matched to its original by reference and appointment
+	 * (the reversal copies both, plus the gross amount), one to one.
+	 *
+	 * @param array $rows Decoded posted rows.
+	 * @return array
+	 */
+	private static function without_cancelled_pairs( array $rows ) {
+		global $wpdb;
+
+		$references = array();
+
+		foreach ( $rows as $row ) {
+			if ( self::TRANSACTION_REFUND === $row['transaction_type'] && 0 === (int) $row['settlement_id'] && '' !== (string) $row['reference'] ) {
+				$references[ $row['reference'] ] = true;
+			}
+		}
+
+		if ( empty( $references ) ) {
+			return $rows;
+		}
+
+		$references   = array_keys( $references );
+		$placeholders = implode( ',', array_fill( 0, count( $references ), '%s' ) );
+
+		// The reversed originals for those references — any date, since a
+		// reversal is dated when it happened, not when the visit was.
+		$originals = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT id, reference, appointment_id, gross_amount, settlement_id FROM ' . self::table_name() . " WHERE status = %s AND reference IN ({$placeholders}) ORDER BY id ASC", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name and placeholders only.
+				array_merge( array( self::STATUS_REVERSED ), $references )
+			),
+			ARRAY_A
+		);
+
+		// Unsettled originals waiting to be paired, keyed by what the
+		// reversal copies from them.
+		$open = array();
+
+		foreach ( (array) $originals as $original ) {
+			$key = $original['reference'] . '|' . (int) $original['appointment_id'] . '|' . number_format( (float) $original['gross_amount'], 2, '.', '' );
+
+			$open[ $key ][] = 0 === (int) $original['settlement_id'];
+		}
+
+		// Oldest reversal pairs with the oldest original.
+		$reversals = array_filter(
+			$rows,
+			function ( $row ) {
+				return self::TRANSACTION_REFUND === $row['transaction_type'];
+			}
+		);
+
+		usort(
+			$reversals,
+			function ( $a, $b ) {
+				return $a['id'] - $b['id'];
+			}
+		);
+
+		$drop = array();
+
+		foreach ( $reversals as $reversal ) {
+			$key = $reversal['reference'] . '|' . (int) $reversal['appointment_id'] . '|' . number_format( (float) $reversal['gross_amount'], 2, '.', '' );
+
+			if ( empty( $open[ $key ] ) ) {
+				continue;
+			}
+
+			$original_unsettled = array_shift( $open[ $key ] );
+
+			if ( $original_unsettled && 0 === (int) $reversal['settlement_id'] ) {
+				$drop[ $reversal['id'] ] = true;
+			}
+		}
+
+		if ( empty( $drop ) ) {
+			return $rows;
+		}
+
+		return array_values(
+			array_filter(
+				$rows,
+				function ( $row ) use ( $drop ) {
+					return ! isset( $drop[ $row['id'] ] );
+				}
+			)
+		);
 	}
 
 	/**
@@ -666,7 +776,8 @@ class Revenue_Ledger {
 			}
 
 			++$grouped[ $pair ][ $label ]['quantity'];
-			$grouped[ $pair ][ $label ]['total_amount'] += $row['gross_amount'];
+			// A reversal takes money back, so it counts against the total.
+			$grouped[ $pair ][ $label ]['total_amount'] += self::TRANSACTION_REFUND === $row['transaction_type'] ? -$row['gross_amount'] : $row['gross_amount'];
 		}
 
 		$charges = array();
@@ -720,22 +831,31 @@ class Revenue_Ledger {
 					'balance'           => 0.0,
 					'appointment_count' => 0,
 					'gross_total'       => 0.0,
+					'appointments'      => array(),
 				);
 			}
 
-			$grouped[ $key ]['balance']     += $row['net_amount'];
-			$grouped[ $key ]['gross_total'] += $row['gross_amount'];
+			$grouped[ $key ]['balance'] += $row['net_amount'];
 
-			if ( self::TRANSACTION_REFUND !== $row['transaction_type'] ) {
-				++$grouped[ $key ]['appointment_count'];
+			if ( self::TRANSACTION_REFUND === $row['transaction_type'] ) {
+				// A reversal takes money back, so it reduces the gross.
+				$grouped[ $key ]['gross_total'] -= $row['gross_amount'];
+			} else {
+				$grouped[ $key ]['gross_total'] += $row['gross_amount'];
+
+				// Appointments, not ledger lines: a visit with extra charges
+				// added during it is still one appointment.
+				$grouped[ $key ]['appointments'][ $row['appointment_id'] > 0 ? 'a' . $row['appointment_id'] : 'r' . $row['id'] ] = true;
 			}
 		}
 
 		return array_values(
 			array_map(
 				function ( $group ) {
-					$group['balance']     = round( $group['balance'], 2 );
-					$group['gross_total'] = round( $group['gross_total'], 2 );
+					$group['balance']           = round( $group['balance'], 2 );
+					$group['gross_total']       = round( $group['gross_total'], 2 );
+					$group['appointment_count'] = count( $group['appointments'] );
+					unset( $group['appointments'] );
 					return $group;
 				},
 				$grouped

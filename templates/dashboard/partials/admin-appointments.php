@@ -515,6 +515,10 @@ $dak_more_label = $dak_more_active > 0 ? sprintf( __( 'More filters (%d)', 'doct
 					</tr>
 				</thead>
 
+				<?php
+				// Reports shared with each listed appointment (one query).
+				$dak_report_counts = \DoctorAKPortal\Frontend\Appointment_Reports_Handler::counts( array_column( $appointments, 'id' ) );
+				?>
 				<?php foreach ( $dak_buckets as $dak_bucket ) : ?>
 					<?php if ( empty( $dak_bucket['rows'] ) ) : ?>
 						<?php continue; ?>
@@ -668,6 +672,11 @@ $dak_more_label = $dak_more_active > 0 ? sprintf( __( 'More filters (%d)', 'doct
 											data-clinic-name="<?php echo esc_attr( $row['clinic_name'] ); ?>"
 											data-clinic-address="<?php echo esc_attr( $row['clinic_address'] ); ?>"
 											data-status-label="<?php echo esc_attr( $row['status_label'] ); ?>"
+											data-status="<?php echo esc_attr( $row['status'] ); ?>"
+											data-type="<?php echo esc_attr( $row['type'] ); ?>"
+											data-message-date="<?php echo esc_attr( false !== $dak_ts ? date_i18n( 'j F Y', $dak_ts ) : $dak_date_label ); ?>"
+											data-message-time="<?php echo esc_attr( false !== $dak_ts ? date_i18n( 'g:i A', $dak_ts ) : $dak_time_label ); ?>"
+											data-payment-status="<?php echo esc_attr( $row['payment_status'] ); ?>"
 											data-charge="<?php echo esc_attr( $dak_charge ); ?>"
 											data-payment-status-label="<?php echo esc_attr( $dak_payment[0] ); ?>"
 											data-payment-mode="<?php echo esc_attr( $dak_view_payment_mode ); ?>"
@@ -683,6 +692,11 @@ $dak_more_label = $dak_more_active > 0 ? sprintf( __( 'More filters (%d)', 'doct
 											<div class="dak-row-menu-panel" role="menu">
 												<?php // Always here — Reschedule only changes date/time; anything broader is a full edit. ?>
 												<button type="button" class="dak-row-menu-item" role="menuitem"<?php echo $dak_edit_attrs( $row ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- every value escaped with esc_attr() inside $dak_edit_attrs. ?>><?php esc_html_e( 'Edit appointment', 'doctor-ak-portal' ); ?></button>
+												<?php $dak_report_count = isset( $dak_report_counts[ $row['id'] ] ) ? $dak_report_counts[ $row['id'] ] : 0; ?>
+												<button type="button" class="dak-row-menu-item" role="menuitem" data-appointment-reports data-appointment-id="<?php echo esc_attr( $row['id'] ); ?>" data-appointment-label="<?php echo esc_attr( $dak_appt_id . ' · ' . $row['patient_name'] ); ?>">
+													<?php esc_html_e( 'Reports', 'doctor-ak-portal' ); ?>
+													<span class="dak-reports-count" data-appointment-reports-count="<?php echo esc_attr( $row['id'] ); ?>"<?php echo $dak_report_count > 0 ? '' : ' hidden'; ?>><?php echo $dak_report_count > 0 ? esc_html( $dak_report_count ) : ''; ?></span>
+												</button>
 												<?php if ( 'join_call' !== $dak_workflow && ! empty( $row['video_call']['can_join'] ) ) : ?>
 													<button type="button" class="dak-row-menu-item" role="menuitem" data-join-video-call data-room-url="<?php echo esc_url( $row['video_call']['room_url'] ); ?>"><?php esc_html_e( 'Join video call', 'doctor-ak-portal' ); ?></button>
 												<?php endif; ?>

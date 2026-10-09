@@ -91,6 +91,18 @@ $dak_has_more       = ( $dak_can_join && $can_pay_now ) || $can_request_refund |
 			<?php elseif ( $can_pay_now ) : ?>
 				<button type="button" class="dak-button dak-button-primary dak-button-sm" data-pay-now data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>"><?php echo esc_html( sprintf( /* translators: %s: amount. */ __( 'Pay %s', 'doctor-ak-portal' ), \DoctorAKPortal\Includes\Dashboard_Format::money( $appointment['charge'] ) ) ); ?></button>
 			<?php endif; ?>
+			<?php
+			$dak_report_count = isset( $appointment['report_count'] ) ? (int) $appointment['report_count'] : 0;
+
+			// Reports shared before the consultation — open while the
+			// appointment is active, view-only afterwards if any were shared.
+			if ( 'cancelled' !== $appointment['status'] || $dak_report_count > 0 ) :
+				?>
+				<button type="button" class="dak-button dak-button-secondary dak-button-sm dak-reports-button" data-appointment-reports data-appointment-id="<?php echo esc_attr( $appointment['id'] ); ?>" data-appointment-label="<?php echo esc_attr( sprintf( 'Dr. %s · %s', $appointment['doctor_name'], $datetime_timestamp ? date_i18n( 'd M Y, h:i A', $datetime_timestamp ) : $appointment['date'] ) ); ?>">
+					<?php esc_html_e( 'Reports', 'doctor-ak-portal' ); ?>
+					<span class="dak-reports-count" data-appointment-reports-count="<?php echo esc_attr( $appointment['id'] ); ?>"<?php echo $dak_report_count > 0 ? '' : ' hidden'; ?>><?php echo $dak_report_count > 0 ? esc_html( $dak_report_count ) : ''; ?></span>
+				</button>
+			<?php endif; ?>
 			<?php if ( $dak_has_more ) : ?>
 				<details class="dak-row-menu">
 					<summary class="dak-row-menu-toggle" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: doctor name. */ __( 'More actions for your appointment with Dr. %s', 'doctor-ak-portal' ), $appointment['doctor_name'] ) ); ?>"><?php esc_html_e( 'More', 'doctor-ak-portal' ); ?></summary>

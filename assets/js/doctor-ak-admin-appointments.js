@@ -82,6 +82,7 @@
 		wireEdit( modal );
 		wireReschedule( modal );
 		wireView( viewModal );
+		wireCopy( viewModal );
 		wireSave( modal );
 		wireDelete();
 		wireViewportHeight( modal );
@@ -1490,8 +1491,311 @@
 				printLink.href = trigger.getAttribute( 'data-print-url' ) || '#';
 			}
 
+			var staleCopy = viewModal.querySelector( '.dak-appointment-copy-fallback' );
+
+			if ( staleCopy ) {
+				staleCopy.parentNode.removeChild( staleCopy );
+			}
+
+			// For the copied message's wording (see appointmentSummary()).
+			viewModal.setAttribute( 'data-copy-status', attr( 'data-status' ) );
+			viewModal.setAttribute( 'data-copy-payment-status', attr( 'data-payment-status' ) );
+			viewModal.setAttribute( 'data-copy-type', attr( 'data-type' ) );
+			viewModal.setAttribute( 'data-copy-date', attr( 'data-message-date' ) );
+			viewModal.setAttribute( 'data-copy-time', attr( 'data-message-time' ) );
+
+			resetCopyButton();
 			openModal( viewModal );
 		} );
+	}
+
+	/*
+	 * "Copy details" in the Appointment details dialog. Builds a short,
+	 * ready-to-send message to the patient from what the dialog shows:
+	 * greeting, an opening sentence that follows the appointment's status
+	 * ("Your appointment with *Dr. X* has been scheduled successfully."),
+	 * a bulleted list of details with bold labels, fee and payment status,
+	 * a closing line and a thank-you. Copied twice over:
+	 *   - text/plain, for WhatsApp, SMS or chat (WhatsApp shows *x* bold);
+	 *   - text/html, a formatted version, so pasting into an email keeps
+	 *     the layout.
+	 * Phone, age, payment mode/reference, refund and internal notes are not
+	 * part of the message; empty fields are left out. Wording comes from the
+	 * template (data-strings), so it is translatable.
+	 */
+	var copyResetTimer = 0;
+
+	function copyStrings() {
+		var button = document.getElementById( 'dak-admin-appointment-view-copy' );
+
+		try {
+			return JSON.parse( ( button && button.getAttribute( 'data-strings' ) ) || '{}' );
+		} catch ( e ) {
+			return {};
+		}
+	}
+
+	function resetCopyButton() {
+		var button = document.getElementById( 'dak-admin-appointment-view-copy' );
+		var status = document.getElementById( 'dak-admin-appointment-view-copy-status' );
+
+		if ( ! button ) {
+			return;
+		}
+
+		window.clearTimeout( copyResetTimer );
+		button.classList.remove( 'is-copied' );
+		button.querySelector( '[data-dak-copy-label]' ).textContent = copyStrings().copy || 'Copy details';
+
+		if ( status ) {
+			status.textContent = '';
+		}
+	}
+
+	function appointmentSummary( viewModal ) {
+		var strings = copyStrings();
+		var labels = strings.labels || {};
+		var status = viewModal.getAttribute( 'data-copy-status' ) || '';
+		var type = viewModal.getAttribute( 'data-copy-type' ) || '';
+
+		// The dialog's own (already formatted) values; '' when empty.
+		var field = function ( id ) {
+			var el = document.getElementById( 'dak-admin-appointment-view-' + id );
+			var wrapper = el ? el.closest( '[data-optional]' ) : null;
+			var value = el && ! ( wrapper && wrapper.hidden ) ? el.textContent.trim() : '';
+
+			// A multi-line value (clinic name + address) reads as one line.
+			return '—' === value ? '' : value.split( /\s*\n\s*/ ).join( ', ' );
+		};
+
+		var patient = field( 'patient' );
+		var doctor = field( 'doctor' );
+		var site = strings.site || '';
+
+		// Which wording: scheduled, awaiting payment, rescheduled, cancelled, checked in, completed.
+		var kind = {
+			confirmed: 'scheduled',
+			paid: 'scheduled',
+			pending_payment: 'pending',
+			rescheduled: 'rescheduled',
+			cancelled: 'cancelled',
+			checked_in: 'checkedin',
+			completed: 'completed'
+		}[ status ] || 'other';
+		var intros = strings.intros || {};
+		var closings = strings.closings || {};
+		var visitTypes = strings.visitTypes || {};
+
+		var location = field( 'location' );
+
+		if ( location && ! /[.!?]$/.test( location ) ) {
+			location += '.';
+		}
+
+		var fee = field( 'charge' );
+
+		if ( /^PKR\s*0(\.0+)?$/i.test( fee ) ) {
+			fee = '';
+		}
+
+		var details = [
+			[ labels.id, field( 'id' ) ],
+			// Friendlier long forms ("10 October 2026", "7:20 PM") sent by the row.
+			[ labels.date, viewModal.getAttribute( 'data-copy-date' ) || field( 'date' ) ],
+			[ labels.time, viewModal.getAttribute( 'data-copy-time' ) || field( 'time' ) ],
+			// The doctor is named in the opening sentence; listed only when it isn't.
+			[ labels.doctor, doctor && intros[ kind ] ? '' : doctor ],
+			[ labels.service, field( 'service' ) ],
+			[ labels.type, visitTypes[ type ] || field( 'type' ) ],
+			[ labels.location, location ]
+		].filter( function ( row ) {
+			return row[0] && row[1];
+		} );
+
+		// Fee and payment aren't repeated on a cancelled appointment's message.
+		var payment = 'cancelled' === kind ? [] : [
+			[ labels.amount, fee ],
+			[ labels.payment, field( 'payment-status' ) ]
+		].filter( function ( row ) {
+			return row[0] && row[1];
+		} );
+
+		var greeting = patient ? strings.greeting.replace( '%s', patient ) : ( strings.greetingNoName || '' );
+		var intro = intros[ kind ] && doctor ? intros[ kind ] : ( intros.other || '' );
+		var closing = closings[ kind ] || closings[ 'default' ] || '';
+
+		// Plain text: WhatsApp shows *text* as bold.
+		var b = function ( value ) {
+			return '*' + value + '*';
+		};
+		var text = [
+			greeting,
+			intro.replace( '%s', b( doctor ) ),
+			b( strings.detailsHeading || 'Appointment Details' ),
+			details.map( function ( row ) {
+				return '• ' + b( row[0] + ':' ) + ' ' + row[1];
+			} ).join( '\n' ),
+			payment.map( function ( row ) {
+				return b( row[0] + ':' ) + ' ' + row[1];
+			} ).join( '\n' ),
+			closing,
+			site ? ( strings.thanks || '%s' ).replace( '%s', b( site ) ) : ''
+		].filter( function ( part ) {
+			return '' !== String( part ).trim();
+		} ).join( '\n\n' );
+
+		// Formatted copy for email: the same message with real bold and a list.
+		var esc = function ( value ) {
+			return String( value ).replace( /&/g, '&amp;' ).replace( /</g, '&lt;' ).replace( />/g, '&gt;' ).replace( /"/g, '&quot;' );
+		};
+		var font = 'font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#182b3a;';
+		var p = function ( inner, extra ) {
+			return inner ? '<p style="margin:0 0 14px;' + font + ( extra || '' ) + '">' + inner + '</p>' : '';
+		};
+		var strong = function ( value ) {
+			return '<strong>' + esc( value ) + '</strong>';
+		};
+
+		var html = '<div style="' + font + '">'
+			+ p( esc( greeting ) )
+			+ p( esc( intro ).replace( '%s', strong( doctor ) ) )
+			+ p( strong( strings.detailsHeading || 'Appointment Details' ), 'margin-bottom:6px;' )
+			+ ( details.length ? '<ul style="margin:0 0 14px;padding-left:22px;' + font + '">' + details.map( function ( row ) {
+				return '<li style="margin:0 0 4px;">' + strong( row[0] + ':' ) + ' ' + esc( row[1] ) + '</li>';
+			} ).join( '' ) + '</ul>' : '' )
+			+ p( payment.map( function ( row ) {
+				return strong( row[0] + ':' ) + ' ' + esc( row[1] );
+			} ).join( '<br>' ) )
+			+ p( esc( closing ) )
+			+ ( site ? p( esc( strings.thanks || '%s' ).replace( '%s', strong( site ) ), 'margin-bottom:0;' ) : '' )
+			+ '</div>';
+
+		return { text: text, html: html };
+	}
+
+	function wireCopy( viewModal ) {
+		var button = document.getElementById( 'dak-admin-appointment-view-copy' );
+
+		if ( ! button ) {
+			return;
+		}
+
+		button.addEventListener( 'click', function () {
+			var summary = appointmentSummary( viewModal );
+
+			copyToClipboard( summary ).then( showCopied, function () {
+				// Last resort: show the text selected, so Ctrl+C copies it.
+				selectForManualCopy( summary.text, viewModal );
+				announce( copyStrings().failed || '' );
+			} );
+		} );
+
+		function showCopied() {
+			var strings = copyStrings();
+
+			button.classList.add( 'is-copied' );
+			button.querySelector( '[data-dak-copy-label]' ).textContent = strings.copied || 'Copied';
+			announce( strings.done || '' );
+
+			window.clearTimeout( copyResetTimer );
+			copyResetTimer = window.setTimeout( resetCopyButton, 2500 );
+		}
+
+		function announce( message ) {
+			var status = document.getElementById( 'dak-admin-appointment-view-copy-status' );
+
+			if ( ! status ) {
+				return;
+			}
+
+			// Cleared first, so copying twice is announced twice.
+			status.textContent = '';
+			window.setTimeout( function () {
+				status.textContent = message;
+			}, 30 );
+		}
+	}
+
+	/*
+	 * Rich copy (plain text + HTML) where the browser supports it, then
+	 * plain text through the async API, then the older execCommand route
+	 * (older browsers, or a page that isn't served over HTTPS).
+	 */
+	function copyToClipboard( summary ) {
+		if ( window.isSecureContext && navigator.clipboard ) {
+			if ( window.ClipboardItem && navigator.clipboard.write ) {
+				try {
+					var item = new window.ClipboardItem( {
+						'text/plain': new Blob( [ summary.text ], { type: 'text/plain' } ),
+						'text/html': new Blob( [ summary.html ], { type: 'text/html' } )
+					} );
+
+					return navigator.clipboard.write( [ item ] ).catch( function () {
+						return plainCopy( summary.text );
+					} );
+				} catch ( e ) {
+					return plainCopy( summary.text );
+				}
+			}
+
+			return plainCopy( summary.text );
+		}
+
+		return legacyCopy( summary.text ) ? Promise.resolve() : Promise.reject();
+	}
+
+	function plainCopy( text ) {
+		if ( navigator.clipboard && navigator.clipboard.writeText ) {
+			return navigator.clipboard.writeText( text ).catch( function () {
+				return legacyCopy( text ) ? undefined : Promise.reject();
+			} );
+		}
+
+		return legacyCopy( text ) ? Promise.resolve() : Promise.reject();
+	}
+
+	function legacyCopy( text ) {
+		var field = document.createElement( 'textarea' );
+		var active = document.activeElement;
+		var ok = false;
+
+		field.value = text;
+		field.setAttribute( 'readonly', '' );
+		field.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
+		document.body.appendChild( field );
+		field.select();
+
+		try {
+			ok = document.execCommand( 'copy' );
+		} catch ( e ) {
+			ok = false;
+		}
+
+		document.body.removeChild( field );
+
+		if ( active && active.focus ) {
+			active.focus();
+		}
+
+		return ok;
+	}
+
+	function selectForManualCopy( text, viewModal ) {
+		var body = viewModal.querySelector( '.dak-modal-body' );
+		var field = viewModal.querySelector( '.dak-appointment-copy-fallback' );
+
+		if ( ! field ) {
+			field = document.createElement( 'textarea' );
+			field.className = 'dak-appointment-copy-fallback';
+			field.setAttribute( 'readonly', '' );
+			field.setAttribute( 'aria-label', copyStrings().copy || 'Copy details' );
+			body.appendChild( field );
+		}
+
+		field.value = text;
+		field.rows = Math.min( 16, text.split( '\n' ).length + 1 );
+		field.focus();
+		field.select();
 	}
 
 	function setText( id, value ) {

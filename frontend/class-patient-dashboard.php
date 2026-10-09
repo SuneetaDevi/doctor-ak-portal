@@ -167,6 +167,9 @@ class Patient_Dashboard {
 			)
 		);
 
+		// "Reports" shared with an appointment before the consultation.
+		Appointment_Reports_Handler::enqueue();
+
 		wp_enqueue_script(
 			'doctor-ak-portal-appointment-reschedule',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-appointment-reschedule.js',
@@ -696,9 +699,14 @@ class Patient_Dashboard {
 
 		$appointment_groups_html = array();
 
+		// How many reports were shared with each appointment (one query).
+		$report_counts = Appointment_Reports_Handler::counts( array_column( array_merge( array(), ...array_values( $dashboard_data['groups'] ) ), 'id' ) );
+
 		foreach ( $dashboard_data['groups'] as $group_key => $rows ) {
 			$appointment_groups_html[ $group_key ] = array_map(
-				function ( $row ) {
+				function ( $row ) use ( $report_counts ) {
+					$row['report_count'] = isset( $report_counts[ $row['id'] ] ) ? $report_counts[ $row['id'] ] : 0;
+
 					return $this->template_loader->get_template( 'dashboard/partials/patient-appointment-row.php', array( 'appointment' => $row ) );
 				},
 				$rows
