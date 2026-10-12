@@ -29,6 +29,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * be turned off from Settings → Email Notifications
  * (Admin\Notification_Settings), which also controls the From name/email
  * used on every email this class sends.
+ *
+ * Every email is rendered by Email_Template (one shared HTML design plus a
+ * plain-text version); this class decides who gets what, and what each
+ * recipient needs to see and do. The review-request email (sent later, see
+ * Review_Requests) is built here too, so all email wording lives in one
+ * place.
  */
 class Notifications {
 
@@ -96,6 +102,7 @@ class Notifications {
 			'refund'              => self::OPTION_NOTIFY_REFUND,
 			'rescheduled'         => self::OPTION_NOTIFY_RESCHEDULED,
 			'patient_welcome'     => self::OPTION_NOTIFY_PATIENT_WELCOME,
+			'review_request'      => Review_Requests::OPTION_ENABLED,
 		);
 
 		if ( ! isset( $option_map[ $type ] ) ) {
@@ -111,14 +118,15 @@ class Notifications {
 	 * Notifications on the Admin/Doctor/Receptionist/Patient dashboards),
 	 * default on until that account explicitly turns it off. Covers
 	 * 'booking'/'paid'/'cancelled' (sent to a specific patient/doctor
-	 * involved in an appointment) and 'announcements' (sent to every
+	 * involved in an appointment), 'announcements' (sent to every
 	 * account in the directory when a new blog post is published — see
 	 * notify_new_blog_post(); a new service only emails administrators, see
-	 * notify_new_service()). Guests (no account, no `user_id`) always
-	 * receive — there's nowhere to store their preference.
+	 * notify_new_service()) and 'review_request' (a patient's "How was your
+	 * appointment?" email, see Review_Requests). Guests (no account, no
+	 * `user_id`) always receive — there's nowhere to store their preference.
 	 *
 	 * @param int    $user_id WP user ID, or 0 for a guest.
-	 * @param string $type    'booking', 'paid', 'cancelled', or 'announcements'.
+	 * @param string $type    'booking', 'paid', 'cancelled', 'announcements', or 'review_request'.
 	 * @return bool
 	 */
 	public static function user_wants( $user_id, $type ) {
@@ -134,18 +142,23 @@ class Notifications {
 	/**
 	 * Saves an account's own notification preferences.
 	 *
-	 * @param int  $user_id      WP user ID.
-	 * @param bool $booking      Receive "appointment booked" emails.
-	 * @param bool $paid         Receive "payment received" emails.
-	 * @param bool $cancelled    Receive "cancellation" emails.
-	 * @param bool $announcements Receive "new blog post/service" announcement emails.
+	 * @param int       $user_id        WP user ID.
+	 * @param bool      $booking        Receive "appointment booked" emails.
+	 * @param bool      $paid           Receive "payment received" emails.
+	 * @param bool      $cancelled      Receive "cancellation" emails.
+	 * @param bool      $announcements  Receive "new blog post/service" announcement emails.
+	 * @param bool|null $review_request Receive "How was your appointment?" emails; null leaves it unchanged (only patients see this toggle).
 	 * @return void
 	 */
-	public static function save_user_preferences( $user_id, $booking, $paid, $cancelled, $announcements = true ) {
+	public static function save_user_preferences( $user_id, $booking, $paid, $cancelled, $announcements = true, $review_request = null ) {
 		update_user_meta( $user_id, 'doctor_ak_notify_booking', $booking ? '1' : '0' );
 		update_user_meta( $user_id, 'doctor_ak_notify_paid', $paid ? '1' : '0' );
 		update_user_meta( $user_id, 'doctor_ak_notify_cancelled', $cancelled ? '1' : '0' );
 		update_user_meta( $user_id, 'doctor_ak_notify_announcements', $announcements ? '1' : '0' );
+
+		if ( null !== $review_request ) {
+			update_user_meta( $user_id, 'doctor_ak_notify_review_request', $review_request ? '1' : '0' );
+		}
 	}
 
 	/**
@@ -153,14 +166,15 @@ class Notifications {
 	 * Settings → Notifications toggles.
 	 *
 	 * @param int $user_id WP user ID.
-	 * @return array { booking: bool, paid: bool, cancelled: bool, announcements: bool }
+	 * @return array { booking: bool, paid: bool, cancelled: bool, announcements: bool, review_request: bool }
 	 */
 	public static function user_preferences( $user_id ) {
 		return array(
-			'booking'       => self::user_wants( $user_id, 'booking' ),
-			'paid'          => self::user_wants( $user_id, 'paid' ),
-			'cancelled'     => self::user_wants( $user_id, 'cancelled' ),
-			'announcements' => self::user_wants( $user_id, 'announcements' ),
+			'booking'        => self::user_wants( $user_id, 'booking' ),
+			'paid'           => self::user_wants( $user_id, 'paid' ),
+			'cancelled'      => self::user_wants( $user_id, 'cancelled' ),
+			'announcements'  => self::user_wants( $user_id, 'announcements' ),
+			'review_request' => self::user_wants( $user_id, 'review_request' ),
 		);
 	}
 
@@ -197,42 +211,27 @@ class Notifications {
 	 * @return void
 	 */
 	public function notify_new_service( $service_id, $doctor_id, array $fields ) {
-		$doctor      = get_userdata( $doctor_id );
-		$doctor_name = '';
-
-		if ( $doctor ) {
-			$doctor_name = trim( $doctor->first_name . ' ' . $doctor->last_name );
-			$doctor_name = '' !== $doctor_name ? $doctor_name : $doctor->display_name;
-		}
-
-		$charge = isset( $fields['charge'] ) ? (float) $fields['charge'] : 0.0;
-
-		$intro = '' !== $doctor_name
-			? sprintf(
-				/* translators: 1: service name, 2: doctor's display name, 3: price. */
-				__( 'A new service, "%1$s", was added for Dr. %2$s at PKR%3$s.', 'doctor-ak-portal' ),
-				$fields['name'],
-				$doctor_name,
-				number_format( $charge, 0 )
-			)
-			: sprintf(
-				/* translators: 1: service name, 2: price. */
-				__( 'A new service, "%1$s", was added at PKR%2$s.', 'doctor-ak-portal' ),
-				$fields['name'],
-				number_format( $charge, 0 )
-			);
-
-		$dashboard_url = Page_Finder::url_for_shortcode( 'admin_dashboard' );
-		$services_url  = $dashboard_url ? add_query_arg( 'section', 'services', $dashboard_url ) : '';
+		$doctor_name = self::user_display_name( $doctor_id );
+		$charge      = isset( $fields['charge'] ) ? (float) $fields['charge'] : 0.0;
+		$services    = self::admin_url_for( 'services' );
 
 		foreach ( self::admin_emails() as $admin_email ) {
-			$this->send_simple(
+			self::deliver(
 				$admin_email,
 				__( 'New Service Added', 'doctor-ak-portal' ),
-				__( 'New Service Added', 'doctor-ak-portal' ),
-				$intro,
-				$services_url ? $services_url : '',
-				$services_url ? __( 'View Services', 'doctor-ak-portal' ) : ''
+				array(
+					'preheader'   => sprintf( /* translators: %s: service name. */ __( '%s was added to the services list.', 'doctor-ak-portal' ), $fields['name'] ),
+					'eyebrow'     => __( 'Services', 'doctor-ak-portal' ),
+					'heading'     => __( 'New service added', 'doctor-ak-portal' ),
+					'paragraphs'  => array( __( 'A new service has been added and is now listed on the website.', 'doctor-ak-portal' ) ),
+					'details'     => array(
+						array( __( 'Service', 'doctor-ak-portal' ), $fields['name'] ),
+						array( __( 'Doctor', 'doctor-ak-portal' ), '' !== $doctor_name ? sprintf( 'Dr. %s', $doctor_name ) : '' ),
+						array( __( 'Price', 'doctor-ak-portal' ), self::money( $charge ) ),
+					),
+					'button'      => $services ? array( 'label' => __( 'View services', 'doctor-ak-portal' ), 'url' => $services ) : array(),
+					'footer_note' => self::footer_note( 'admin' ),
+				)
 			);
 		}
 	}
@@ -265,13 +264,18 @@ class Notifications {
 				continue;
 			}
 
-			$this->send_simple(
+			self::deliver(
 				$user->user_email,
 				__( 'New Blog Post', 'doctor-ak-portal' ),
-				$post->post_title,
-				$intro,
-				$permalink ? $permalink : '',
-				$permalink ? __( 'Read More', 'doctor-ak-portal' ) : ''
+				array(
+					'preheader'   => $intro,
+					'eyebrow'     => __( 'New article', 'doctor-ak-portal' ),
+					'heading'     => $post->post_title,
+					'greeting'    => self::greeting( $user->first_name ),
+					'paragraphs'  => array( $intro ),
+					'button'      => $permalink ? array( 'label' => __( 'Read the article', 'doctor-ak-portal' ), 'url' => $permalink ) : array(),
+					'footer_note' => __( 'You’re receiving this because announcement emails are turned on for your account. You can turn them off in your dashboard’s Settings.', 'doctor-ak-portal' ),
+				)
 			);
 		}
 	}
@@ -294,6 +298,7 @@ class Notifications {
 		// chose "Pay Later", or is a guest awaiting manual payment) isn't
 		// really "confirmed" — say so plainly instead of overstating it.
 		$has_pending_charge = (float) $appt['charge'] > 0 && ! $appt['is_paid'];
+		$is_registered      = (int) $appt['patient_id'] > 0;
 
 		$subject = $has_pending_charge
 			? __( 'Appointment Scheduled — Payment Pending', 'doctor-ak-portal' )
@@ -302,7 +307,7 @@ class Notifications {
 		$patient_intro = $has_pending_charge
 			? sprintf(
 				/* translators: %s: doctor's display name. */
-				(int) $appt['patient_id'] > 0
+				$is_registered
 					? __( 'Your appointment with Dr. %s is scheduled, but payment is still pending. Please pay from your dashboard to confirm it.', 'doctor-ak-portal' )
 					: __( 'Your appointment with Dr. %s is scheduled, but payment is still pending. Please contact us to arrange payment and confirm it.', 'doctor-ak-portal' ),
 				$appt['doctor_name']
@@ -314,12 +319,25 @@ class Notifications {
 			);
 
 		if ( self::user_wants( $appt['patient_id'], 'booking' ) ) {
-			$this->send(
+			$paragraphs = array( $patient_intro );
+
+			if ( 'video' === $appt['type'] ) {
+				$paragraphs[] = __( 'This is an online video consultation. We’ll email you the link to join shortly before it starts.', 'doctor-ak-portal' );
+			}
+
+			self::deliver(
 				$appt['patient_email'],
 				$subject,
-				$has_pending_charge ? __( 'Your appointment is scheduled — payment pending', 'doctor-ak-portal' ) : __( 'Your appointment is confirmed', 'doctor-ak-portal' ),
-				$patient_intro,
-				$appt
+				array(
+					'preheader'   => sprintf( /* translators: 1: doctor name, 2: date and time. */ __( 'Dr. %1$s · %2$s', 'doctor-ak-portal' ), $appt['doctor_name'], self::date_label( $appt ) ),
+					'eyebrow'     => $has_pending_charge ? __( 'Payment pending', 'doctor-ak-portal' ) : __( 'Appointment confirmed', 'doctor-ak-portal' ),
+					'heading'     => $has_pending_charge ? __( 'Your appointment is scheduled', 'doctor-ak-portal' ) : __( 'Your appointment is confirmed', 'doctor-ak-portal' ),
+					'greeting'    => self::greeting( self::patient_first_name( $appt ) ),
+					'paragraphs'  => $paragraphs,
+					'details'     => self::appointment_details( $appt, 'patient' ),
+					'button'      => self::patient_button( $appt, $has_pending_charge ),
+					'footer_note' => self::footer_note( 'patient' ),
+				)
 			);
 		}
 
@@ -336,12 +354,19 @@ class Notifications {
 			);
 
 		if ( self::user_wants( $appt['doctor_id'], 'booking' ) ) {
-			$this->send(
+			self::deliver(
 				$appt['doctor_email'],
 				$subject,
-				__( 'New appointment booked', 'doctor-ak-portal' ),
-				$doctor_intro,
-				$appt
+				array(
+					'preheader'   => sprintf( /* translators: 1: patient name, 2: date and time. */ __( '%1$s · %2$s', 'doctor-ak-portal' ), $appt['patient_name'], self::date_label( $appt ) ),
+					'eyebrow'     => __( 'New booking', 'doctor-ak-portal' ),
+					'heading'     => __( 'New appointment booked', 'doctor-ak-portal' ),
+					'greeting'    => self::greeting( 'Dr. ' . $appt['doctor_name'] ),
+					'paragraphs'  => array( $doctor_intro ),
+					'details'     => self::appointment_details( $appt, 'doctor' ),
+					'button'      => self::doctor_button( $appt ),
+					'footer_note' => self::footer_note( 'doctor' ),
+				)
 			);
 		}
 	}
@@ -362,30 +387,53 @@ class Notifications {
 		$subject = __( 'Appointment Cancelled', 'doctor-ak-portal' );
 
 		if ( self::user_wants( $appt['patient_id'], 'cancelled' ) ) {
-			$this->send(
+			$book_url = Page_Finder::url_for_shortcode( 'book_appointment' );
+
+			self::deliver(
 				$appt['patient_email'],
 				$subject,
-				__( 'Your appointment was cancelled', 'doctor-ak-portal' ),
-				sprintf(
-					/* translators: %s: doctor's display name. */
-					__( 'Your appointment with Dr. %s has been cancelled.', 'doctor-ak-portal' ),
-					$appt['doctor_name']
-				),
-				$appt
+				array(
+					'preheader'   => sprintf( /* translators: 1: doctor name, 2: date and time. */ __( 'Dr. %1$s · %2$s', 'doctor-ak-portal' ), $appt['doctor_name'], self::date_label( $appt ) ),
+					'eyebrow'     => __( 'Appointment cancelled', 'doctor-ak-portal' ),
+					'heading'     => __( 'Your appointment was cancelled', 'doctor-ak-portal' ),
+					'greeting'    => self::greeting( self::patient_first_name( $appt ) ),
+					'paragraphs'  => array(
+						sprintf(
+							/* translators: %s: doctor's display name. */
+							__( 'Your appointment with Dr. %s has been cancelled.', 'doctor-ak-portal' ),
+							$appt['doctor_name']
+						),
+						$appt['is_paid'] && 'online' === $appt['payment_mode'] && '' === (string) $appt['refund_status'] && (int) $appt['patient_id'] > 0
+							? __( 'As you paid online, you can request a refund from your dashboard.', 'doctor-ak-portal' )
+							: '',
+					),
+					'details'     => self::appointment_details( $appt, 'patient' ),
+					'button'      => $book_url ? array( 'label' => __( 'Book another appointment', 'doctor-ak-portal' ), 'url' => $book_url ) : array(),
+					'footer_note' => self::footer_note( 'patient' ),
+				)
 			);
 		}
 
 		if ( self::user_wants( $appt['doctor_id'], 'cancelled' ) ) {
-			$this->send(
+			self::deliver(
 				$appt['doctor_email'],
 				$subject,
-				__( 'Appointment cancelled', 'doctor-ak-portal' ),
-				sprintf(
-					/* translators: %s: patient's display name. */
-					__( 'Your appointment with %s has been cancelled.', 'doctor-ak-portal' ),
-					$appt['patient_name']
-				),
-				$appt
+				array(
+					'preheader'   => sprintf( /* translators: 1: patient name, 2: date and time. */ __( '%1$s · %2$s', 'doctor-ak-portal' ), $appt['patient_name'], self::date_label( $appt ) ),
+					'eyebrow'     => __( 'Appointment cancelled', 'doctor-ak-portal' ),
+					'heading'     => __( 'Appointment cancelled', 'doctor-ak-portal' ),
+					'greeting'    => self::greeting( 'Dr. ' . $appt['doctor_name'] ),
+					'paragraphs'  => array(
+						sprintf(
+							/* translators: %s: patient's display name. */
+							__( 'Your appointment with %s has been cancelled.', 'doctor-ak-portal' ),
+							$appt['patient_name']
+						),
+					),
+					'details'     => self::appointment_details( $appt, 'doctor' ),
+					'button'      => self::doctor_button( $appt ),
+					'footer_note' => self::footer_note( 'doctor' ),
+				)
 			);
 		}
 	}
@@ -409,28 +457,46 @@ class Notifications {
 
 		$subject = __( 'Appointment Rescheduled', 'doctor-ak-portal' );
 
-		$this->send(
+		self::deliver(
 			$appt['patient_email'],
 			$subject,
-			__( 'Your appointment has been rescheduled', 'doctor-ak-portal' ),
-			sprintf(
-				/* translators: %s: doctor's display name. */
-				__( 'Your appointment with Dr. %s has been rescheduled to a new date/time — see the details below.', 'doctor-ak-portal' ),
-				$appt['doctor_name']
-			),
-			$appt
+			array(
+				'preheader'   => sprintf( /* translators: %s: new date and time. */ __( 'New time: %s', 'doctor-ak-portal' ), self::date_label( $appt ) ),
+				'eyebrow'     => __( 'Appointment rescheduled', 'doctor-ak-portal' ),
+				'heading'     => __( 'Your appointment has a new time', 'doctor-ak-portal' ),
+				'greeting'    => self::greeting( self::patient_first_name( $appt ) ),
+				'paragraphs'  => array(
+					sprintf(
+						/* translators: %s: doctor's display name. */
+						__( 'Your appointment with Dr. %s has been rescheduled to a new date/time — see the details below.', 'doctor-ak-portal' ),
+						$appt['doctor_name']
+					),
+				),
+				'details'     => self::appointment_details( $appt, 'patient' ),
+				'button'      => self::patient_button( $appt, false ),
+				'footer_note' => self::footer_note( 'patient' ),
+			)
 		);
 
-		$this->send(
+		self::deliver(
 			$appt['doctor_email'],
 			$subject,
-			__( 'Appointment rescheduled', 'doctor-ak-portal' ),
-			sprintf(
-				/* translators: %s: patient's display name. */
-				__( 'Your appointment with %s has been rescheduled to a new date/time — see the details below.', 'doctor-ak-portal' ),
-				$appt['patient_name']
-			),
-			$appt
+			array(
+				'preheader'   => sprintf( /* translators: 1: patient name, 2: new date and time. */ __( '%1$s · new time %2$s', 'doctor-ak-portal' ), $appt['patient_name'], self::date_label( $appt ) ),
+				'eyebrow'     => __( 'Appointment rescheduled', 'doctor-ak-portal' ),
+				'heading'     => __( 'Appointment rescheduled', 'doctor-ak-portal' ),
+				'greeting'    => self::greeting( 'Dr. ' . $appt['doctor_name'] ),
+				'paragraphs'  => array(
+					sprintf(
+						/* translators: %s: patient's display name. */
+						__( 'Your appointment with %s has been rescheduled to a new date/time — see the details below.', 'doctor-ak-portal' ),
+						$appt['patient_name']
+					),
+				),
+				'details'     => self::appointment_details( $appt, 'doctor' ),
+				'button'      => self::doctor_button( $appt ),
+				'footer_note' => self::footer_note( 'doctor' ),
+			)
 		);
 	}
 
@@ -452,16 +518,25 @@ class Notifications {
 		}
 
 		if ( self::user_wants( $appt['doctor_id'], 'paid' ) ) {
-			$this->send(
+			self::deliver(
 				$appt['doctor_email'],
 				__( 'Payment Received', 'doctor-ak-portal' ),
-				__( 'Appointment paid', 'doctor-ak-portal' ),
-				sprintf(
-					/* translators: %s: patient's display name. */
-					__( '%s has paid for their appointment.', 'doctor-ak-portal' ),
-					$appt['patient_name']
-				),
-				$appt
+				array(
+					'preheader'   => sprintf( /* translators: %s: patient name. */ __( '%s has paid for their appointment.', 'doctor-ak-portal' ), $appt['patient_name'] ),
+					'eyebrow'     => __( 'Payment received', 'doctor-ak-portal' ),
+					'heading'     => __( 'Appointment paid', 'doctor-ak-portal' ),
+					'greeting'    => self::greeting( 'Dr. ' . $appt['doctor_name'] ),
+					'paragraphs'  => array(
+						sprintf(
+							/* translators: %s: patient's display name. */
+							__( '%s has paid for their appointment.', 'doctor-ak-portal' ),
+							$appt['patient_name']
+						),
+					),
+					'details'     => self::appointment_details( $appt, 'doctor' ),
+					'button'      => self::doctor_button( $appt ),
+					'footer_note' => self::footer_note( 'doctor' ),
+				)
 			);
 		}
 	}
@@ -491,24 +566,33 @@ class Notifications {
 
 		$has_pending_charge = (float) $appt['charge'] > 0 && ! $appt['is_paid'];
 
-		$this->send(
+		self::deliver(
 			$appt['patient_email'],
 			__( 'Appointment Reminder', 'doctor-ak-portal' ),
-			__( 'Your appointment reminder', 'doctor-ak-portal' ),
-			$has_pending_charge
-				? sprintf(
-					/* translators: 1: doctor's display name, 2: appointment date/time. */
-					__( 'Reminder: your appointment with Dr. %1$s is on %2$s — payment is still pending.', 'doctor-ak-portal' ),
-					$appt['doctor_name'],
-					$appt['datetime_label']
-				)
-				: sprintf(
-					/* translators: 1: doctor's display name, 2: appointment date/time. */
-					__( 'Reminder: your appointment with Dr. %1$s is on %2$s.', 'doctor-ak-portal' ),
-					$appt['doctor_name'],
-					$appt['datetime_label']
+			array(
+				'preheader'   => sprintf( /* translators: 1: doctor name, 2: date and time. */ __( 'Dr. %1$s · %2$s', 'doctor-ak-portal' ), $appt['doctor_name'], self::date_label( $appt ) ),
+				'eyebrow'     => __( 'Reminder', 'doctor-ak-portal' ),
+				'heading'     => __( 'Your appointment reminder', 'doctor-ak-portal' ),
+				'greeting'    => self::greeting( self::patient_first_name( $appt ) ),
+				'paragraphs'  => array(
+					$has_pending_charge
+						? sprintf(
+							/* translators: 1: doctor's display name, 2: appointment date/time. */
+							__( 'Reminder: your appointment with Dr. %1$s is on %2$s — payment is still pending.', 'doctor-ak-portal' ),
+							$appt['doctor_name'],
+							self::date_label( $appt )
+						)
+						: sprintf(
+							/* translators: 1: doctor's display name, 2: appointment date/time. */
+							__( 'Reminder: your appointment with Dr. %1$s is on %2$s.', 'doctor-ak-portal' ),
+							$appt['doctor_name'],
+							self::date_label( $appt )
+						),
 				),
-			$appt
+				'details'     => self::appointment_details( $appt, 'patient' ),
+				'button'      => self::patient_button( $appt, $has_pending_charge ),
+				'footer_note' => self::footer_note( 'patient' ),
+			)
 		);
 	}
 
@@ -534,28 +618,46 @@ class Notifications {
 
 			$subject = __( 'Appointment Reminder', 'doctor-ak-portal' );
 
-			$this->send(
+			self::deliver(
 				$appt['patient_email'],
 				$subject,
-				__( 'Your appointment is tomorrow', 'doctor-ak-portal' ),
-				sprintf(
-					/* translators: %s: doctor's display name. */
-					__( 'This is a reminder that your appointment with Dr. %s is tomorrow.', 'doctor-ak-portal' ),
-					$appt['doctor_name']
-				),
-				$appt
+				array(
+					'preheader'   => sprintf( /* translators: 1: doctor name, 2: date and time. */ __( 'Tomorrow with Dr. %1$s · %2$s', 'doctor-ak-portal' ), $appt['doctor_name'], self::date_label( $appt ) ),
+					'eyebrow'     => __( 'Reminder', 'doctor-ak-portal' ),
+					'heading'     => __( 'Your appointment is tomorrow', 'doctor-ak-portal' ),
+					'greeting'    => self::greeting( self::patient_first_name( $appt ) ),
+					'paragraphs'  => array(
+						sprintf(
+							/* translators: %s: doctor's display name. */
+							__( 'This is a reminder that your appointment with Dr. %s is tomorrow.', 'doctor-ak-portal' ),
+							$appt['doctor_name']
+						),
+					),
+					'details'     => self::appointment_details( $appt, 'patient' ),
+					'button'      => self::patient_button( $appt, (float) $appt['charge'] > 0 && ! $appt['is_paid'] ),
+					'footer_note' => self::footer_note( 'patient' ),
+				)
 			);
 
-			$this->send(
+			self::deliver(
 				$appt['doctor_email'],
 				$subject,
-				__( 'Appointment tomorrow', 'doctor-ak-portal' ),
-				sprintf(
-					/* translators: %s: patient's display name. */
-					__( 'This is a reminder that you have an appointment with %s tomorrow.', 'doctor-ak-portal' ),
-					$appt['patient_name']
-				),
-				$appt
+				array(
+					'preheader'   => sprintf( /* translators: 1: patient name, 2: date and time. */ __( 'Tomorrow with %1$s · %2$s', 'doctor-ak-portal' ), $appt['patient_name'], self::date_label( $appt ) ),
+					'eyebrow'     => __( 'Reminder', 'doctor-ak-portal' ),
+					'heading'     => __( 'Appointment tomorrow', 'doctor-ak-portal' ),
+					'greeting'    => self::greeting( 'Dr. ' . $appt['doctor_name'] ),
+					'paragraphs'  => array(
+						sprintf(
+							/* translators: %s: patient's display name. */
+							__( 'This is a reminder that you have an appointment with %s tomorrow.', 'doctor-ak-portal' ),
+							$appt['patient_name']
+						),
+					),
+					'details'     => self::appointment_details( $appt, 'doctor' ),
+					'button'      => self::doctor_button( $appt ),
+					'footer_note' => self::footer_note( 'doctor' ),
+				)
 			);
 
 			Appointments::mark_reminder_sent( $appointment['id'] );
@@ -588,34 +690,52 @@ class Notifications {
 				continue;
 			}
 
-			$appt['video_room_url'] = $video['room_url'];
-
 			$subject = __( 'Your Video Consultation Link Is Ready', 'doctor-ak-portal' );
+			$button  = array( 'label' => __( 'Join video consultation', 'doctor-ak-portal' ), 'url' => $video['room_url'] );
 
-			$this->send(
+			self::deliver(
 				$appt['patient_email'],
 				$subject,
-				__( 'Your video consultation link is ready', 'doctor-ak-portal' ),
-				sprintf(
-					/* translators: 1: doctor's display name, 2: minutes before the appointment. */
-					__( 'Your video consultation with Dr. %1$s starts in about %2$d minutes. Use the link below to join.', 'doctor-ak-portal' ),
-					$appt['doctor_name'],
-					Appointments::VIDEO_JOIN_WINDOW_BEFORE_MINUTES
-				),
-				$appt
+				array(
+					'preheader'   => sprintf( /* translators: %d: minutes. */ __( 'Starts in about %d minutes.', 'doctor-ak-portal' ), Appointments::VIDEO_JOIN_WINDOW_BEFORE_MINUTES ),
+					'eyebrow'     => __( 'Video consultation', 'doctor-ak-portal' ),
+					'heading'     => __( 'Your video consultation link is ready', 'doctor-ak-portal' ),
+					'greeting'    => self::greeting( self::patient_first_name( $appt ) ),
+					'paragraphs'  => array(
+						sprintf(
+							/* translators: 1: doctor's display name, 2: minutes before the appointment. */
+							__( 'Your video consultation with Dr. %1$s starts in about %2$d minutes. Use the link below to join.', 'doctor-ak-portal' ),
+							$appt['doctor_name'],
+							Appointments::VIDEO_JOIN_WINDOW_BEFORE_MINUTES
+						),
+					),
+					'details'     => self::appointment_details( $appt, 'patient' ),
+					'button'      => $button,
+					'notes'       => array( __( 'Join from a quiet place with a stable internet connection, and allow camera and microphone access when your browser asks.', 'doctor-ak-portal' ) ),
+					'footer_note' => self::footer_note( 'patient' ),
+				)
 			);
 
-			$this->send(
+			self::deliver(
 				$appt['doctor_email'],
 				$subject,
-				__( 'Your video consultation link is ready', 'doctor-ak-portal' ),
-				sprintf(
-					/* translators: 1: patient's display name, 2: minutes before the appointment. */
-					__( 'Your video consultation with %1$s starts in about %2$d minutes. Use the link below to join.', 'doctor-ak-portal' ),
-					$appt['patient_name'],
-					Appointments::VIDEO_JOIN_WINDOW_BEFORE_MINUTES
-				),
-				$appt
+				array(
+					'preheader'   => sprintf( /* translators: 1: patient name, 2: minutes. */ __( '%1$s · starts in about %2$d minutes.', 'doctor-ak-portal' ), $appt['patient_name'], Appointments::VIDEO_JOIN_WINDOW_BEFORE_MINUTES ),
+					'eyebrow'     => __( 'Video consultation', 'doctor-ak-portal' ),
+					'heading'     => __( 'Your video consultation link is ready', 'doctor-ak-portal' ),
+					'greeting'    => self::greeting( 'Dr. ' . $appt['doctor_name'] ),
+					'paragraphs'  => array(
+						sprintf(
+							/* translators: 1: patient's display name, 2: minutes before the appointment. */
+							__( 'Your video consultation with %1$s starts in about %2$d minutes. Use the link below to join.', 'doctor-ak-portal' ),
+							$appt['patient_name'],
+							Appointments::VIDEO_JOIN_WINDOW_BEFORE_MINUTES
+						),
+					),
+					'details'     => self::appointment_details( $appt, 'doctor' ),
+					'button'      => $button,
+					'footer_note' => self::footer_note( 'doctor' ),
+				)
 			);
 
 			Appointments::mark_video_link_sent( $appointment['id'] );
@@ -624,7 +744,9 @@ class Notifications {
 
 	/**
 	 * Hook callback: a new doctor account was created and is awaiting admin
-	 * approval — emails every administrator.
+	 * approval — emails every administrator. The button only opens the
+	 * Doctor Requests page (sign-in and admin checks apply as usual);
+	 * approving or rejecting still happens there.
 	 *
 	 * @param int $doctor_id New doctor's user ID.
 	 * @return void
@@ -640,19 +762,62 @@ class Notifications {
 			return;
 		}
 
-		$name = trim( $doctor->first_name . ' ' . $doctor->last_name );
-		$name = '' !== $name ? $name : $doctor->display_name;
+		$name        = self::user_display_name( $doctor_id );
+		$review_url  = self::admin_url_for( 'doctor-requests' );
+		$review_url  = $review_url ? $review_url . '#dak-doctor-request-' . (int) $doctor_id : '';
+		$specialties = array();
+		$all         = Specializations::get_all();
 
-		$heading = __( 'New Doctor Registration', 'doctor-ak-portal' );
-		$intro   = sprintf(
-			/* translators: 1: doctor's display name, 2: doctor's email address. */
-			__( 'Dr. %1$s (%2$s) has registered and is awaiting your approval. Review the request from the "Doctor Requests" tab on the admin dashboard.', 'doctor-ak-portal' ),
-			$name,
-			$doctor->user_email
+		foreach ( (array) get_user_meta( $doctor_id, 'doctor_ak_specializations', true ) as $slug ) {
+			if ( isset( $all[ $slug ] ) ) {
+				$specialties[] = $all[ $slug ];
+			}
+		}
+
+		$years    = (string) get_user_meta( $doctor_id, 'doctor_ak_years_experience', true );
+		$country  = (string) get_user_meta( $doctor_id, 'doctor_ak_country', true );
+		$city     = (string) get_user_meta( $doctor_id, 'doctor_ak_city', true );
+		$area     = (string) get_user_meta( $doctor_id, 'doctor_ak_area', true );
+		$location = array_filter(
+			array(
+				'' !== $area ? Locations::area_label( $country, $city, $area ) : '',
+				'' !== $city ? Locations::city_label( $country, $city ) : '',
+				'' !== $country ? Locations::country_label( $country ) : '',
+			)
 		);
 
+		$registered = strtotime( $doctor->user_registered . ' UTC' );
+
 		foreach ( self::admin_emails() as $admin_email ) {
-			$this->send_simple( $admin_email, __( 'New Doctor Registration', 'doctor-ak-portal' ), $heading, $intro );
+			self::deliver(
+				$admin_email,
+				__( 'New Doctor Registration', 'doctor-ak-portal' ),
+				array(
+					'preheader'   => sprintf( /* translators: %s: doctor name. */ __( 'Dr. %s is awaiting your review.', 'doctor-ak-portal' ), $name ),
+					'eyebrow'     => __( 'Doctor requests', 'doctor-ak-portal' ),
+					'heading'     => __( 'New doctor registration', 'doctor-ak-portal' ),
+					'paragraphs'  => array( __( 'A doctor has registered and is awaiting your review.', 'doctor-ak-portal' ) ),
+					'details'     => array(
+						array( __( 'Name', 'doctor-ak-portal' ), sprintf( 'Dr. %s', $name ) ),
+						array( __( 'Email', 'doctor-ak-portal' ), $doctor->user_email ),
+						array( __( 'Phone', 'doctor-ak-portal' ), (string) get_user_meta( $doctor_id, 'doctor_ak_phone_number', true ) ),
+						array( __( 'Specialities', 'doctor-ak-portal' ), implode( ', ', $specialties ) ),
+						array( __( 'Qualification', 'doctor-ak-portal' ), (string) get_user_meta( $doctor_id, 'doctor_ak_qualification', true ) ),
+						array(
+							__( 'Experience', 'doctor-ak-portal' ),
+							'' !== $years
+								/* translators: %s: number of years. */
+								? sprintf( _n( '%s year', '%s years', (int) $years, 'doctor-ak-portal' ), $years )
+								: '',
+						),
+						array( __( 'Location', 'doctor-ak-portal' ), implode( ', ', array_filter( $location ) ) ),
+						array( __( 'Registered', 'doctor-ak-portal' ), false !== $registered ? wp_date( 'j F Y, h:i A T', $registered ) : '' ),
+					),
+					'button'      => $review_url ? array( 'label' => __( 'Review doctor request', 'doctor-ak-portal' ), 'url' => $review_url ) : array(),
+					'notes'       => array( __( 'You’ll be asked to sign in. Opening this link doesn’t approve or reject the request — you decide on the Doctor Requests page.', 'doctor-ak-portal' ) ),
+					'footer_note' => self::footer_note( 'admin' ),
+				)
+			);
 		}
 	}
 
@@ -674,11 +839,20 @@ class Notifications {
 			return;
 		}
 
-		$this->send_simple(
+		self::deliver(
 			$doctor->user_email,
 			__( 'Your Account Is Pending Approval', 'doctor-ak-portal' ),
-			__( 'Registration Received', 'doctor-ak-portal' ),
-			__( 'Thanks for registering. Your account has been created and is now awaiting admin approval. We will email you as soon as it has been approved.', 'doctor-ak-portal' )
+			array(
+				'preheader'   => __( 'We’ve received your registration and will email you once it’s approved.', 'doctor-ak-portal' ),
+				'eyebrow'     => __( 'Registration received', 'doctor-ak-portal' ),
+				'heading'     => __( 'Thanks for registering', 'doctor-ak-portal' ),
+				'greeting'    => self::greeting( 'Dr. ' . self::user_display_name( $doctor_id ) ),
+				'paragraphs'  => array(
+					__( 'Your account has been created and is now awaiting admin approval.', 'doctor-ak-portal' ),
+					__( 'We will email you as soon as it has been approved. You don’t need to do anything else for now.', 'doctor-ak-portal' ),
+				),
+				'footer_note' => __( 'You’re receiving this because you registered as a doctor.', 'doctor-ak-portal' ),
+			)
 		);
 	}
 
@@ -702,13 +876,18 @@ class Notifications {
 
 		$login_url = Page_Finder::url_for_shortcode( 'doctor_login' );
 
-		$this->send_simple(
+		self::deliver(
 			$doctor->user_email,
 			__( 'Your Account Has Been Approved', 'doctor-ak-portal' ),
-			__( 'Account Approved', 'doctor-ak-portal' ),
-			__( 'Your account has been approved. You can now log in and start managing your clinic and appointments.', 'doctor-ak-portal' ),
-			$login_url,
-			__( 'Log In to Your Dashboard', 'doctor-ak-portal' )
+			array(
+				'preheader'   => __( 'You can now sign in and set up your clinics and appointments.', 'doctor-ak-portal' ),
+				'eyebrow'     => __( 'Account approved', 'doctor-ak-portal' ),
+				'heading'     => __( 'Your account is approved', 'doctor-ak-portal' ),
+				'greeting'    => self::greeting( 'Dr. ' . self::user_display_name( $doctor_id ) ),
+				'paragraphs'  => array( __( 'Your account has been approved. You can now log in and start managing your clinic and appointments.', 'doctor-ak-portal' ) ),
+				'button'      => $login_url ? array( 'label' => __( 'Log in to your dashboard', 'doctor-ak-portal' ), 'url' => $login_url ) : array(),
+				'footer_note' => self::footer_note( 'doctor' ),
+			)
 		);
 	}
 
@@ -737,13 +916,19 @@ class Notifications {
 
 		$login_url = Page_Finder::url_for_shortcode( 'doctor_login' );
 
-		$this->send_simple(
+		self::deliver(
 			$patient->user_email,
 			__( 'Welcome', 'doctor-ak-portal' ),
-			__( 'Welcome!', 'doctor-ak-portal' ),
-			__( "Your account has been created. Once you've set your password, you can log in to book and manage your appointments.", 'doctor-ak-portal' ),
-			$login_url,
-			__( 'Log In to Your Dashboard', 'doctor-ak-portal' )
+			array(
+				'preheader'   => __( 'Your account is ready — book and manage your appointments online.', 'doctor-ak-portal' ),
+				'eyebrow'     => __( 'Welcome', 'doctor-ak-portal' ),
+				'heading'     => __( 'Your account has been created', 'doctor-ak-portal' ),
+				'greeting'    => self::greeting( $patient->first_name ),
+				'paragraphs'  => array( __( "Your account has been created. Once you've set your password, you can log in to book and manage your appointments.", 'doctor-ak-portal' ) ),
+				'button'      => $login_url ? array( 'label' => __( 'Log in to your dashboard', 'doctor-ak-portal' ), 'url' => $login_url ) : array(),
+				'notes'       => array( __( 'Look out for a separate email with the link to set your password.', 'doctor-ak-portal' ) ),
+				'footer_note' => self::footer_note( 'patient' ),
+			)
 		);
 	}
 
@@ -766,18 +951,35 @@ class Notifications {
 			return;
 		}
 
-		$heading = __( 'Refund Requested', 'doctor-ak-portal' );
-		$intro   = sprintf(
-			/* translators: 1: patient's display name, 2: doctor's display name, 3: refund reason, 4: amount. */
-			__( '%1$s requested a refund for their appointment with Dr. %2$s (PKR%4$s). Reason: %3$s. Review and process it from the admin dashboard\'s Appointments section.', 'doctor-ak-portal' ),
-			$appt['patient_name'],
-			$appt['doctor_name'],
-			$appt['refund_reason'],
-			number_format( (float) $appt['refund_amount'], 0 )
-		);
+		$url = self::admin_url_for( 'appointments' );
 
 		foreach ( self::admin_emails() as $admin_email ) {
-			$this->send_simple( $admin_email, $heading, $heading, $intro );
+			self::deliver(
+				$admin_email,
+				__( 'Refund Requested', 'doctor-ak-portal' ),
+				array(
+					'preheader'   => sprintf( /* translators: 1: patient name, 2: amount. */ __( '%1$s requested a refund of %2$s.', 'doctor-ak-portal' ), $appt['patient_name'], self::money( $appt['refund_amount'] ) ),
+					'eyebrow'     => __( 'Refunds', 'doctor-ak-portal' ),
+					'heading'     => __( 'Refund requested', 'doctor-ak-portal' ),
+					'paragraphs'  => array(
+						sprintf(
+							/* translators: 1: patient's display name, 2: doctor's display name. */
+							__( '%1$s requested a refund for their appointment with Dr. %2$s. Review and process it from the admin dashboard’s Appointments section.', 'doctor-ak-portal' ),
+							$appt['patient_name'],
+							$appt['doctor_name']
+						),
+					),
+					'details'     => array(
+						array( __( 'Reference', 'doctor-ak-portal' ), self::reference( $appt['id'] ) ),
+						array( __( 'Patient', 'doctor-ak-portal' ), $appt['patient_name'] ),
+						array( __( 'Doctor', 'doctor-ak-portal' ), sprintf( 'Dr. %s', $appt['doctor_name'] ) ),
+						array( __( 'Amount', 'doctor-ak-portal' ), self::money( $appt['refund_amount'] ) ),
+						array( __( 'Reason', 'doctor-ak-portal' ), (string) $appt['refund_reason'] ),
+					),
+					'button'      => $url ? array( 'label' => __( 'Review refund request', 'doctor-ak-portal' ), 'url' => $url . '#dak-appointment-' . (int) $appt['id'] ) : array(),
+					'footer_note' => self::footer_note( 'admin' ),
+				)
+			);
 		}
 	}
 
@@ -799,15 +1001,128 @@ class Notifications {
 			return;
 		}
 
-		$this->send_simple(
+		self::deliver(
 			$appt['patient_email'],
 			__( 'Refund Processed', 'doctor-ak-portal' ),
-			__( 'Refund Processed', 'doctor-ak-portal' ),
-			sprintf(
-				/* translators: 1: amount, 2: doctor's display name. */
-				__( 'We\'ve processed a refund of PKR%1$s for your appointment with Dr. %2$s. It may take a few business days to appear in your account.', 'doctor-ak-portal' ),
-				number_format( (float) $appt['refund_amount'], 0 ),
-				$appt['doctor_name']
+			array(
+				'preheader'   => sprintf( /* translators: %s: amount. */ __( 'We’ve refunded %s.', 'doctor-ak-portal' ), self::money( $appt['refund_amount'] ) ),
+				'eyebrow'     => __( 'Refund processed', 'doctor-ak-portal' ),
+				'heading'     => __( 'Your refund has been processed', 'doctor-ak-portal' ),
+				'greeting'    => self::greeting( self::patient_first_name( $appt ) ),
+				'paragraphs'  => array(
+					sprintf(
+						/* translators: 1: amount, 2: doctor's display name. */
+						__( 'We’ve processed a refund of %1$s for your appointment with Dr. %2$s. It may take a few business days to appear in your account.', 'doctor-ak-portal' ),
+						self::money( $appt['refund_amount'] ),
+						$appt['doctor_name']
+					),
+				),
+				'details'     => array(
+					array( __( 'Reference', 'doctor-ak-portal' ), self::reference( $appt['id'] ) ),
+					array( __( 'Doctor', 'doctor-ak-portal' ), sprintf( 'Dr. %s', $appt['doctor_name'] ) ),
+					array( __( 'Appointment', 'doctor-ak-portal' ), self::date_label( $appt ) ),
+					array( __( 'Amount refunded', 'doctor-ak-portal' ), self::money( $appt['refund_amount'] ), true ),
+				),
+				'footer_note' => self::footer_note( 'patient' ),
+			)
+		);
+	}
+
+	/**
+	 * Sends the patient's "How was your appointment?" email — called by
+	 * Review_Requests::maybe_send() once the appointment is eligible. Each
+	 * star links to the review form on the doctor's profile with that
+	 * rating preselected; every rating leads to the same form.
+	 *
+	 * @param array  $appt  Row from Appointments::notification_data().
+	 * @param string $token Raw review token for the links.
+	 * @return bool Whether the email was handed to the mailer.
+	 */
+	public static function send_review_request( array $appt, $token ) {
+		if ( empty( $appt ) || '' === (string) $token ) {
+			return false;
+		}
+
+		$write_url = Review_Requests::review_url( $appt['doctor_id'], $token );
+
+		if ( '' === $write_url ) {
+			return false;
+		}
+
+		$font      = Email_Template::FONT_STACK;
+		$cells     = '';
+		$fallbacks = array();
+		$text      = array( __( 'Choose a rating to continue to your review:', 'doctor-ak-portal' ) );
+
+		for ( $rating = 1; $rating <= 5; $rating++ ) {
+			$url = Review_Requests::review_url( $appt['doctor_id'], $token, $rating );
+			/* translators: %d: number of stars. */
+			$label = sprintf( _n( '%d star', '%d stars', $rating, 'doctor-ak-portal' ), $rating );
+			/* translators: %d: number of stars. */
+			$title = sprintf( _n( 'Rate %d star out of 5', 'Rate %d stars out of 5', $rating, 'doctor-ak-portal' ), $rating );
+
+			$cells .= '<td align="center" style="padding:0 4px;">'
+				. '<a href="' . esc_url( $url ) . '" title="' . esc_attr( $title ) . '" aria-label="' . esc_attr( $title ) . '" target="_blank" class="dak-panel" style="display:block;width:52px;padding:8px 0 6px;border:1px solid ' . Email_Template::COLOR_BORDER . ';border-radius:8px;background-color:#ffffff;text-decoration:none;text-align:center;">'
+				. '<span style="display:block;font-family:Arial,Helvetica,sans-serif;font-size:30px;line-height:32px;color:#c8940e;">&#9733;</span>'
+				. '<span class="dak-muted" style="display:block;font-family:' . $font . ';font-size:13px;line-height:18px;font-weight:600;color:' . Email_Template::COLOR_MUTED . ';">' . esc_html( (string) $rating ) . '</span>'
+				. '</a>'
+				. '</td>';
+
+			$fallbacks[] = array( $label, $url );
+			$text[]      = $label . ': ' . $url;
+		}
+
+		$stars_html = '<p class="dak-text" style="margin:8px 0 12px;font-family:' . $font . ';font-size:16px;line-height:24px;font-weight:600;color:' . Email_Template::COLOR_TEXT . ';">' . esc_html__( 'Choose a rating to continue to your review.', 'doctor-ak-portal' ) . '</p>'
+			. '<table role="presentation" class="dak-stars" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px -4px;"><tr>' . $cells . '</tr></table>'
+			. '<p class="dak-muted" style="margin:0 0 24px;font-family:' . $font . ';font-size:13px;line-height:20px;color:' . Email_Template::COLOR_MUTED . ';">' . esc_html__( '1 = poor, 5 = excellent', 'doctor-ak-portal' ) . '</p>';
+
+		$settings_url = self::patient_dashboard_url( 'settings' );
+		$first_name   = self::patient_first_name( $appt );
+
+		return Email_Template::send(
+			$appt['patient_email'],
+			__( 'How was your appointment?', 'doctor-ak-portal' ),
+			array(
+				'preheader'   => sprintf( /* translators: %s: doctor name. */ __( 'Share your feedback about your appointment with Dr. %s.', 'doctor-ak-portal' ), $appt['doctor_name'] ),
+				'heading'     => __( 'How was your experience?', 'doctor-ak-portal' ),
+				'greeting'    => self::greeting( $first_name ),
+				'paragraphs'  => array(
+					sprintf(
+						/* translators: %s: doctor's display name. */
+						__( 'Thank you for attending your appointment with Dr. %s. We’d appreciate your feedback about your experience.', 'doctor-ak-portal' ),
+						$appt['doctor_name']
+					),
+				),
+				'details'     => array(
+					array( __( 'Doctor', 'doctor-ak-portal' ), sprintf( 'Dr. %s', $appt['doctor_name'] ) ),
+					array( __( 'Date', 'doctor-ak-portal' ), self::date_label( $appt, false ) ),
+					array( __( 'Visit', 'doctor-ak-portal' ), self::visit_label( $appt, false ) ),
+				),
+				'body_html'   => $stars_html,
+				'body_text'   => implode( "\n", $text ),
+				'button'      => array( 'label' => __( 'Write a review', 'doctor-ak-portal' ), 'url' => $write_url ),
+				'links'       => $fallbacks,
+				'notes'       => array_filter( array(
+					__( 'Your rating is selected on the next page. You can change it before submitting.', 'doctor-ak-portal' ),
+					sprintf(
+						/* translators: 1: number of days, 2: doctor name. */
+						__( 'This link is personal to you and works for %1$d days. Reviews appear on Dr. %2$s’s profile with your first name only.', 'doctor-ak-portal' ),
+						Review_Requests::TOKEN_TTL_DAYS,
+						$appt['doctor_name']
+					),
+					$settings_url
+						? array(
+							'text'       => __( 'Prefer not to get review requests?', 'doctor-ak-portal' ),
+							'link_label' => __( 'Turn them off in your settings', 'doctor-ak-portal' ),
+							'url'        => $settings_url,
+						)
+						: '',
+				) ),
+				'footer_note' => sprintf(
+					/* translators: %s: doctor name. */
+					__( 'You’re receiving this one-time email because you had a completed appointment with Dr. %s.', 'doctor-ak-portal' ),
+					$appt['doctor_name']
+				),
 			)
 		);
 	}
@@ -827,73 +1142,28 @@ class Notifications {
 	}
 
 	/**
-	 * Sends one simple, non-appointment email — a heading and one-line
-	 * intro, no details table (see render_email() for the appointment-shaped
-	 * version used elsewhere in this class).
+	 * Sends one email in the shared design, with the usual "[Clinic Name] "
+	 * subject prefix. Invalid/empty addresses (e.g. a deleted patient
+	 * account with no guest email) are skipped silently.
 	 *
-	 * @param string $to      Recipient email.
-	 * @param string $subject_suffix Appended after "[Clinic Name] " in the subject.
-	 * @param string $heading Email body heading.
-	 * @param string $intro   One-line message.
-	 * @return void
+	 * @param string   $to             Recipient email.
+	 * @param string   $subject_suffix Appended after "[Clinic Name] " in the subject.
+	 * @param array    $email          Email description, see Email_Template.
+	 * @param string[] $attachments    File paths to attach.
+	 * @return bool
 	 */
-	private function send_simple( $to, $subject_suffix, $heading, $intro, $cta_url = '', $cta_label = '' ) {
-		if ( '' === $to || ! is_email( $to ) ) {
-			return;
-		}
-
-		$cta_html = '';
-
-		if ( '' !== $cta_url && '' !== $cta_label ) {
-			$cta_html = '<p style="margin:20px 0 0;">'
-				. '<a href="' . esc_url( $cta_url ) . '" style="display:inline-block;padding:10px 20px;background:#2563eb;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;">' . esc_html( $cta_label ) . '</a>'
-				. '</p>';
-		}
-
+	private static function deliver( $to, $subject_suffix, array $email, array $attachments = array() ) {
 		/* translators: 1: clinic name, 2: email subject. */
 		$subject = sprintf( __( '[%1$s] %2$s', 'doctor-ak-portal' ), self::clinic_name(), $subject_suffix );
-		$html    = '<div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;">'
-			. '<div style="padding:20px;border:1px solid #e3e6ea;border-radius:8px;">'
-			. '<h2 style="margin:0 0 12px;font-size:17px;color:#111827;">' . esc_html( $heading ) . '</h2>'
-			. '<p style="margin:0;color:#374151;">' . esc_html( $intro ) . '</p>'
-			. $cta_html // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built above from esc_url()/esc_html()-wrapped pieces.
-			. '</div>'
-			. '</div>';
-		$headers = array_merge( array( 'Content-Type: text/html; charset=UTF-8' ), self::mail_headers() );
 
-		wp_mail( $to, $subject, $html, $headers );
+		$email['notes'] = array_values( array_filter( isset( $email['notes'] ) ? (array) $email['notes'] : array() ) );
+
+		return Email_Template::send( $to, $subject, $email, $attachments );
 	}
 
 	/**
-	 * Sends one notification email, silently skipping invalid/empty
-	 * addresses (e.g. a deleted patient account with no guest email).
-	 *
-	 * @param string $to             Recipient email.
-	 * @param string $subject_suffix Appended after "[Clinic Name] " in the subject.
-	 * @param string $heading        Email body heading.
-	 * @param string $intro          One-line intro sentence.
-	 * @param array  $appointment    Row from Appointments::notification_data().
-	 * @return void
-	 */
-	private function send( $to, $subject_suffix, $heading, $intro, array $appointment ) {
-		if ( '' === $to || ! is_email( $to ) ) {
-			return;
-		}
-
-		/* translators: 1: clinic name, 2: email subject. */
-		$subject = sprintf( __( '[%1$s] %2$s', 'doctor-ak-portal' ), self::clinic_name(), $subject_suffix );
-		$html    = self::render_email( $heading, $intro, $appointment );
-		$headers = array_merge( array( 'Content-Type: text/html; charset=UTF-8' ), self::mail_headers() );
-
-		wp_mail( $to, $subject, $html, $headers );
-	}
-
-	/**
-	 * Sends the patient's payment invoice — branded with the clinic's logo
-	 * and full contact details (unlike the plain notification template
-	 * render_email() uses elsewhere, which deliberately omits that banner
-	 * since it's redundant there). Fired once, right after mark_paid(), see
-	 * notify_paid() above.
+	 * Sends the patient's payment invoice, with the PDF invoice attached.
+	 * Fired once, right after mark_paid(), see notify_paid() above.
 	 *
 	 * @param string $to          Patient's email.
 	 * @param array  $appointment Row from Appointments::notification_data().
@@ -904,16 +1174,58 @@ class Notifications {
 			return;
 		}
 
-		$invoice_number = self::invoice_number( $appointment['id'] );
+		$invoice_number   = self::invoice_number( $appointment['id'] );
+		$service_label    = '' !== $appointment['service_name'] ? $appointment['service_name'] : $appointment['type_label'];
+		$charge           = (float) $appointment['charge'];
+		$base_charge      = (float) $appointment['base_charge'] + (float) $appointment['surcharge'];
+		$discount_percent = (int) $appointment['discount_percent'];
+		$has_discount     = $discount_percent > 0 && $base_charge > $charge;
 
-		/* translators: 1: clinic name, 2: invoice number. */
-		$subject = sprintf( __( '[%1$s] Payment Invoice #%2$s', 'doctor-ak-portal' ), self::clinic_name(), $invoice_number );
-		$html    = self::render_invoice_email( $appointment );
-		$headers = array_merge( array( 'Content-Type: text/html; charset=UTF-8' ), self::mail_headers() );
+		$details = array(
+			array( __( 'Invoice', 'doctor-ak-portal' ), $invoice_number ),
+			array( __( 'Payment date', 'doctor-ak-portal' ), date_i18n( get_option( 'date_format' ) ) ),
+			array( __( 'Billed to', 'doctor-ak-portal' ), $appointment['patient_name'] ),
+			array( __( 'Service', 'doctor-ak-portal' ), $service_label ),
+			array( __( 'Doctor', 'doctor-ak-portal' ), sprintf( 'Dr. %s', $appointment['doctor_name'] ) ),
+			array( __( 'Appointment', 'doctor-ak-portal' ), self::date_label( $appointment ) ),
+		);
+
+		if ( $has_discount ) {
+			$details[] = array( __( 'Price', 'doctor-ak-portal' ), self::money( $base_charge ) );
+			/* translators: 1: discount percent, 2: amount saved. */
+			$details[] = array( __( 'Discount', 'doctor-ak-portal' ), sprintf( __( '%1$d%% off (you saved %2$s)', 'doctor-ak-portal' ), $discount_percent, self::money( $base_charge - $charge ) ) );
+		}
+
+		$details[] = array( __( 'Total paid', 'doctor-ak-portal' ), self::money( $charge ), true );
 
 		$pdf_path = self::write_invoice_pdf_tempfile( $appointment, $invoice_number );
 
-		wp_mail( $to, $subject, $html, $headers, $pdf_path ? array( $pdf_path ) : array() );
+		/* translators: 1: clinic name, 2: invoice number. */
+		$subject = sprintf( __( '[%1$s] Payment Invoice #%2$s', 'doctor-ak-portal' ), self::clinic_name(), $invoice_number );
+
+		Email_Template::send(
+			$to,
+			$subject,
+			array(
+				'preheader'   => sprintf( /* translators: 1: amount, 2: invoice number. */ __( 'We’ve received %1$s · Invoice %2$s', 'doctor-ak-portal' ), self::money( $charge ), $invoice_number ),
+				'eyebrow'     => __( 'Payment received', 'doctor-ak-portal' ),
+				'heading'     => __( 'Thank you — your payment is confirmed', 'doctor-ak-portal' ),
+				'greeting'    => self::greeting( self::patient_first_name( $appointment ) ),
+				'paragraphs'  => array(
+					sprintf(
+						/* translators: %s: doctor name. */
+						__( 'We’ve received your payment for your appointment with Dr. %s.', 'doctor-ak-portal' ),
+						$appointment['doctor_name']
+					),
+					$pdf_path ? __( 'Your invoice is attached to this email as a PDF.', 'doctor-ak-portal' ) : '',
+				),
+				'details'     => $details,
+				'details_title' => __( 'Invoice', 'doctor-ak-portal' ),
+				'button'      => self::patient_button( $appointment, false ),
+				'footer_note' => self::footer_note( 'patient' ),
+			),
+			$pdf_path ? array( $pdf_path ) : array()
+		);
 
 		if ( $pdf_path ) {
 			wp_delete_file( $pdf_path );
@@ -957,83 +1269,6 @@ class Notifications {
 	}
 
 	/**
-	 * Renders the patient's payment invoice — clinic logo/name/address/phone
-	 * header, an invoice number + paid date, a "Bill To" block, the
-	 * appointment/service line item, and the amount paid.
-	 *
-	 * @param array $appointment Row from Appointments::notification_data().
-	 * @return string
-	 */
-	private static function render_invoice_email( array $appointment ) {
-		$logo_url       = Site_Footer::bundled_logo_url();
-		$clinic_name    = self::clinic_name();
-		$clinic_address = get_option( Site_Footer::OPTION_CLINIC_ADDRESS, '' );
-		$clinic_phone   = get_option( Site_Footer::OPTION_CLINIC_PHONE, '' );
-		$paid_date      = date_i18n( get_option( 'date_format' ) );
-
-		$logo_html = '';
-
-		if ( '' !== $logo_url ) {
-			$logo_html = sprintf( '<img src="%s" alt="%s" style="max-height:56px;max-width:220px;display:block;margin-bottom:10px;">', esc_url( $logo_url ), esc_attr( $clinic_name ) );
-		}
-
-		$service_label    = '' !== $appointment['service_name'] ? $appointment['service_name'] : $appointment['type_label'];
-		$charge           = (float) $appointment['charge'];
-		$base_charge      = (float) $appointment['base_charge'] + (float) $appointment['surcharge'];
-		$discount_percent = (int) $appointment['discount_percent'];
-		$has_discount     = $discount_percent > 0 && $base_charge > $charge;
-
-		$amount_cell_html = $has_discount
-			? sprintf(
-				'<s style="color:#9ca3af;">PKR%1$s</s><br><span style="color:#111827;">PKR%2$s</span><br><span style="color:#16634b;font-size:11px;">%3$s%% ' . esc_html__( 'off', 'doctor-ak-portal' ) . '</span>',
-				esc_html( number_format( $base_charge, 0 ) ),
-				esc_html( number_format( $charge, 0 ) ),
-				esc_html( $discount_percent )
-			)
-			: 'PKR' . esc_html( number_format( $charge, 0 ) );
-
-		$line_items_html = sprintf(
-			'<tr>
-				<td style="padding:10px 12px;border-bottom:1px solid #e3e6ea;">%1$s<br><span style="color:#6b7280;font-size:12px;">%2$s with Dr. %3$s</span></td>
-				<td style="padding:10px 12px;border-bottom:1px solid #e3e6ea;text-align:right;white-space:nowrap;">%4$s</td>
-			</tr>',
-			esc_html( $service_label ),
-			esc_html( date_i18n( 'd/m/Y h:i A', strtotime( $appointment['date'] . ' ' . $appointment['time'] ) ) ),
-			esc_html( $appointment['doctor_name'] ),
-			$amount_cell_html // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built above from esc_html()-wrapped pieces.
-		);
-
-		return '<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#111827;">'
-			. '<div style="padding:24px;border:1px solid #e3e6ea;border-radius:8px;">'
-			. '<table style="width:100%;border-collapse:collapse;margin-bottom:20px;">'
-			. '<tr>'
-			. '<td style="vertical-align:top;">'
-			. $logo_html // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built above from esc_url()/esc_attr()-wrapped pieces.
-			. '<strong style="font-size:16px;">' . esc_html( $clinic_name ) . '</strong><br>'
-			. ( '' !== $clinic_address ? '<span style="color:#6b7280;font-size:13px;">' . esc_html( $clinic_address ) . '</span><br>' : '' )
-			. ( '' !== $clinic_phone ? '<span style="color:#6b7280;font-size:13px;">' . esc_html( $clinic_phone ) . '</span>' : '' )
-			. '</td>'
-			. '<td style="vertical-align:top;text-align:right;">'
-			. '<strong style="font-size:16px;">' . esc_html__( 'INVOICE', 'doctor-ak-portal' ) . '</strong><br>'
-			. '<span style="color:#6b7280;font-size:13px;">' . esc_html( self::invoice_number( $appointment['id'] ) ) . '</span><br>'
-			. '<span style="color:#6b7280;font-size:13px;">' . esc_html( $paid_date ) . '</span>'
-			. '</td>'
-			. '</tr>'
-			. '</table>'
-			. '<p style="margin:0 0 4px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:.03em;">' . esc_html__( 'Billed To', 'doctor-ak-portal' ) . '</p>'
-			. '<p style="margin:0 0 20px;">' . esc_html( $appointment['patient_name'] ) . '</p>'
-			. '<table style="width:100%;border-collapse:collapse;">'
-			. '<tr><th style="text-align:left;padding:0 12px 8px;border-bottom:2px solid #111827;font-size:12px;color:#6b7280;text-transform:uppercase;">' . esc_html__( 'Description', 'doctor-ak-portal' ) . '</th><th style="text-align:right;padding:0 12px 8px;border-bottom:2px solid #111827;font-size:12px;color:#6b7280;text-transform:uppercase;">' . esc_html__( 'Amount', 'doctor-ak-portal' ) . '</th></tr>'
-			. $line_items_html // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built above from esc_html()-wrapped pieces.
-			. ( $has_discount ? '<tr><td style="padding:0 12px;text-align:right;color:#16634b;font-size:12px;">' . esc_html__( 'You Saved', 'doctor-ak-portal' ) . '</td><td style="padding:0 12px;text-align:right;color:#16634b;font-size:12px;">PKR' . esc_html( number_format( $base_charge - $charge, 0 ) ) . '</td></tr>' : '' )
-			. '<tr><td style="padding:12px;text-align:right;font-weight:700;">' . esc_html__( 'Total Paid', 'doctor-ak-portal' ) . '</td><td style="padding:12px;text-align:right;font-weight:700;">PKR' . esc_html( number_format( $charge, 0 ) ) . '</td></tr>'
-			. '</table>'
-			. '<p style="margin:24px 0 0;color:#6b7280;font-size:13px;">' . esc_html__( 'Thank you for choosing us — we look forward to seeing you.', 'doctor-ak-portal' ) . '</p>'
-			. '</div>'
-			. '</div>';
-	}
-
-	/**
 	 * The clinic's configured name (Settings → Footer Settings), falling
 	 * back to 'Main Clinic' if unset — used as every notification email's
 	 * From name and subject-line prefix instead of the WordPress site title.
@@ -1045,78 +1280,268 @@ class Notifications {
 	}
 
 	/**
-	 * Builds the From header from the configured (or default) name/email.
+	 * The appointment's reference, as shown across the dashboards and PDFs.
 	 *
-	 * @return array
+	 * @param int $appointment_id Appointment post ID.
+	 * @return string
 	 */
-	private static function mail_headers() {
-		$name  = get_option( self::OPTION_FROM_NAME, '' );
-		$email = get_option( self::OPTION_FROM_EMAIL, '' );
-
-		if ( '' === $name ) {
-			$name = self::clinic_name();
-		}
-
-		if ( '' === $email || ! is_email( $email ) ) {
-			$email = get_option( 'admin_email' );
-		}
-
-		return array( sprintf( 'From: %s <%s>', $name, $email ) );
+	public static function reference( $appointment_id ) {
+		return sprintf( 'APT-%04d', (int) $appointment_id );
 	}
 
 	/**
-	 * Renders the shared HTML template every notification email uses: a
-	 * heading, a one-line intro, and a details table built from whichever of
-	 * Doctor/Patient/Type/Date/Time/Service/Charge apply. No site/clinic
-	 * name banner — the clinic name is already the email's visible "From"
-	 * sender, so repeating it in the body would be redundant.
+	 * "Monday, 13 October 2026, 03:30 PM PKT" — the appointment's local
+	 * date and time with the site's time zone spelled out.
 	 *
-	 * @param string $heading     Body heading.
-	 * @param string $intro       One-line intro sentence.
-	 * @param array  $appointment Row from Appointments::notification_data().
+	 * @param array $appt      Row from Appointments::notification_data().
+	 * @param bool  $with_time Include the time and zone.
 	 * @return string
 	 */
-	private static function render_email( $heading, $intro, array $appointment ) {
+	public static function date_label( array $appt, $with_time = true ) {
+		$timezone = wp_timezone();
+		$moment   = date_create( $appt['date'] . ' ' . $appt['time'], $timezone );
+
+		if ( ! $moment ) {
+			return trim( $appt['date'] . ' ' . $appt['time'] );
+		}
+
+		$date = wp_date( 'l, j F Y', $moment->getTimestamp(), $timezone );
+
+		if ( ! $with_time ) {
+			return $date;
+		}
+
+		$zone = $moment->format( 'T' );
+
+		// Zones without an abbreviation come back as "+05".
+		if ( preg_match( '/^[+-]/', $zone ) ) {
+			$zone = 'UTC' . $zone;
+		}
+
+		return $date . ', ' . wp_date( 'h:i A', $moment->getTimestamp(), $timezone ) . ' ' . $zone;
+	}
+
+	/**
+	 * Where the visit happens: the clinic (name and address) or the
+	 * consultation type.
+	 *
+	 * @param array $appt         Row from Appointments::notification_data().
+	 * @param bool  $with_address Include the clinic's address on a second line.
+	 * @return string
+	 */
+	public static function visit_label( array $appt, $with_address = true ) {
+		if ( 'video' === $appt['type'] ) {
+			return __( 'Online video consultation', 'doctor-ak-portal' );
+		}
+
+		if ( '' !== (string) $appt['clinic_name'] ) {
+			return $with_address && '' !== (string) $appt['clinic_address']
+				? $appt['clinic_name'] . "\n" . $appt['clinic_address']
+				: $appt['clinic_name'];
+		}
+
+		return $appt['type_label'];
+	}
+
+	/**
+	 * The appointment's payment state in words.
+	 *
+	 * @param array $appt Row from Appointments::notification_data().
+	 * @return string
+	 */
+	private static function payment_label( array $appt ) {
+		$charge = (float) $appt['charge'];
+
+		if ( 'processed' === $appt['refund_status'] ) {
+			return __( 'Refunded', 'doctor-ak-portal' );
+		}
+
+		if ( $charge <= 0 ) {
+			return __( 'No charge', 'doctor-ak-portal' );
+		}
+
+		return $appt['is_paid']
+			/* translators: %s: amount. */
+			? sprintf( __( 'Paid · %s', 'doctor-ak-portal' ), self::money( $charge ) )
+			/* translators: %s: amount. */
+			: sprintf( __( 'Payment pending · %s', 'doctor-ak-portal' ), self::money( $charge ) );
+	}
+
+	/**
+	 * The compact, labelled appointment summary — tailored to who reads it
+	 * (a patient sees the doctor; a doctor sees the patient). No notes or
+	 * clinical details.
+	 *
+	 * @param array  $appt     Row from Appointments::notification_data().
+	 * @param string $audience 'patient', 'doctor' or 'admin'.
+	 * @return array
+	 */
+	private static function appointment_details( array $appt, $audience ) {
 		$rows = array(
-			__( 'Doctor', 'doctor-ak-portal' )      => sprintf( 'Dr. %s', $appointment['doctor_name'] ),
-			__( 'Patient', 'doctor-ak-portal' )     => $appointment['patient_name'],
-			__( 'Type', 'doctor-ak-portal' )        => $appointment['type_label'],
-			__( 'Date & Time', 'doctor-ak-portal' ) => date_i18n( 'd/m/Y h:i A', strtotime( $appointment['date'] . ' ' . $appointment['time'] ) ),
+			array( __( 'Reference', 'doctor-ak-portal' ), self::reference( $appt['id'] ) ),
 		);
 
-		if ( '' !== $appointment['service_name'] ) {
-			$rows[ __( 'Service', 'doctor-ak-portal' ) ] = $appointment['service_name'];
+		if ( 'doctor' !== $audience ) {
+			$rows[] = array( __( 'Doctor', 'doctor-ak-portal' ), sprintf( 'Dr. %s', $appt['doctor_name'] ) );
 		}
 
-		if ( $appointment['charge'] > 0 ) {
-			$rows[ __( 'Charge', 'doctor-ak-portal' ) ] = 'PKR' . number_format( (float) $appointment['charge'], 0 );
+		if ( 'patient' !== $audience ) {
+			$rows[] = array( __( 'Patient', 'doctor-ak-portal' ), $appt['patient_name'] );
 		}
 
-		$rows_html = '';
+		$rows[] = array( __( 'Service', 'doctor-ak-portal' ), (string) $appt['service_name'] );
+		$rows[] = array( 'video' === $appt['type'] ? __( 'Consultation', 'doctor-ak-portal' ) : __( 'Clinic', 'doctor-ak-portal' ), self::visit_label( $appt ) );
+		$rows[] = array( __( 'Date & time', 'doctor-ak-portal' ), self::date_label( $appt ) );
+		$rows[] = array( __( 'Payment', 'doctor-ak-portal' ), self::payment_label( $appt ) );
 
-		foreach ( $rows as $label => $value ) {
-			$rows_html .= sprintf(
-				'<tr><td style="padding:8px 12px;color:#6b7280;border-bottom:1px solid #e3e6ea;">%s</td><td style="padding:8px 12px;font-weight:600;border-bottom:1px solid #e3e6ea;">%s</td></tr>',
-				esc_html( $label ),
-				esc_html( $value )
-			);
+		return $rows;
+	}
+
+	/**
+	 * The patient's primary action: pay (when a charge is pending) or view
+	 * the appointment — for registered patients only (a guest has no
+	 * dashboard to go to).
+	 *
+	 * @param array $appt        Row from Appointments::notification_data().
+	 * @param bool  $pay_pending Whether payment is still due.
+	 * @return array
+	 */
+	private static function patient_button( array $appt, $pay_pending ) {
+		if ( (int) $appt['patient_id'] < 1 ) {
+			return array();
 		}
 
-		if ( ! empty( $appointment['video_room_url'] ) ) {
-			$rows_html .= sprintf(
-				'<tr><td style="padding:8px 12px;color:#6b7280;border-bottom:1px solid #e3e6ea;">%s</td><td style="padding:8px 12px;font-weight:600;border-bottom:1px solid #e3e6ea;"><a href="%s" style="color:#2563eb;">%s</a></td></tr>',
-				esc_html__( 'Join Link', 'doctor-ak-portal' ),
-				esc_url( $appointment['video_room_url'] ),
-				esc_html__( 'Click to Join', 'doctor-ak-portal' )
-			);
+		$url = self::patient_dashboard_url( $pay_pending ? 'payments' : 'appointments' );
+
+		if ( '' === $url ) {
+			return array();
 		}
 
-		return '<div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;">'
-			. '<div style="padding:20px;border:1px solid #e3e6ea;border-radius:8px;">'
-			. '<h2 style="margin:0 0 12px;font-size:17px;color:#111827;">' . esc_html( $heading ) . '</h2>'
-			. '<p style="margin:0 0 16px;color:#374151;">' . esc_html( $intro ) . '</p>'
-			. '<table style="width:100%;border-collapse:collapse;">' . $rows_html . '</table>'
-			. '</div>'
-			. '</div>';
+		return $pay_pending
+			? array( 'label' => __( 'Pay now', 'doctor-ak-portal' ), 'url' => $url )
+			: array( 'label' => __( 'View appointment', 'doctor-ak-portal' ), 'url' => $url . '#dak-appointment-' . (int) $appt['id'] );
+	}
+
+	/**
+	 * The doctor's primary action: the appointment in their dashboard.
+	 *
+	 * @param array $appt Row from Appointments::notification_data().
+	 * @return array
+	 */
+	private static function doctor_button( array $appt ) {
+		$dashboard = Page_Finder::url_for_shortcode( 'doctor_dashboard' );
+
+		if ( '' === $dashboard ) {
+			return array();
+		}
+
+		return array(
+			'label' => __( 'View in your dashboard', 'doctor-ak-portal' ),
+			'url'   => add_query_arg( 'tab', 'appointments', $dashboard ) . '#dak-appointment-' . (int) $appt['id'],
+		);
+	}
+
+	/**
+	 * A patient-dashboard tab URL, or ''.
+	 *
+	 * @param string $tab Tab key.
+	 * @return string
+	 */
+	private static function patient_dashboard_url( $tab ) {
+		$dashboard = Page_Finder::url_for_shortcode( 'patient_dashboard' );
+
+		return '' !== $dashboard ? add_query_arg( 'tab', $tab, $dashboard ) : '';
+	}
+
+	/**
+	 * An admin-dashboard section URL, or ''.
+	 *
+	 * @param string $section Section key.
+	 * @return string
+	 */
+	private static function admin_url_for( $section ) {
+		$dashboard = Page_Finder::url_for_shortcode( 'admin_dashboard' );
+
+		return '' !== $dashboard ? add_query_arg( 'section', $section, $dashboard ) : '';
+	}
+
+	/**
+	 * The patient's first name — account first name, else the first word
+	 * of the guest name — or '' (the greeting then falls back to "Hello,").
+	 *
+	 * @param array $appt Row from Appointments::notification_data().
+	 * @return string
+	 */
+	private static function patient_first_name( array $appt ) {
+		if ( (int) $appt['patient_id'] > 0 ) {
+			$user = get_userdata( (int) $appt['patient_id'] );
+
+			if ( $user && '' !== trim( (string) $user->first_name ) ) {
+				return trim( (string) $user->first_name );
+			}
+		}
+
+		$name  = trim( '' !== (string) $appt['guest_name'] ? $appt['guest_name'] : (string) $appt['patient_name'] );
+		$parts = preg_split( '/\s+/u', $name );
+
+		return $parts && '' !== $parts[0] ? $parts[0] : '';
+	}
+
+	/**
+	 * "Hi Ayesha," / "Hello,".
+	 *
+	 * @param string $name Name to greet, or ''.
+	 * @return string
+	 */
+	private static function greeting( $name ) {
+		$name = trim( (string) $name );
+
+		/* translators: %s: person's name. */
+		return '' !== $name && 'Dr.' !== $name ? sprintf( __( 'Hi %s,', 'doctor-ak-portal' ), $name ) : __( 'Hello,', 'doctor-ak-portal' );
+	}
+
+	/**
+	 * A user's "First Last", falling back to the display name.
+	 *
+	 * @param int $user_id User ID.
+	 * @return string
+	 */
+	private static function user_display_name( $user_id ) {
+		$user = get_userdata( $user_id );
+
+		if ( ! $user ) {
+			return '';
+		}
+
+		$name = trim( $user->first_name . ' ' . $user->last_name );
+
+		return '' !== $name ? $name : $user->display_name;
+	}
+
+	/**
+	 * "PKR 3,500".
+	 *
+	 * @param float $amount Amount.
+	 * @return string
+	 */
+	private static function money( $amount ) {
+		return 'PKR ' . number_format_i18n( (float) $amount, 0 );
+	}
+
+	/**
+	 * Why the recipient received the email.
+	 *
+	 * @param string $audience 'patient', 'doctor' or 'admin'.
+	 * @return string
+	 */
+	private static function footer_note( $audience ) {
+		switch ( $audience ) {
+			case 'doctor':
+				return __( 'You’re receiving this because you’re a doctor on our platform. You can choose which emails you get in your dashboard’s Settings.', 'doctor-ak-portal' );
+			case 'admin':
+				return __( 'Sent to the site’s administrators.', 'doctor-ak-portal' );
+			default:
+				return __( 'You’re receiving this because you have an appointment booked through our website.', 'doctor-ak-portal' );
+		}
 	}
 }

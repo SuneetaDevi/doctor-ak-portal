@@ -12,6 +12,7 @@ use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Doctor_Awards;
 use DoctorAKPortal\Includes\Doctor_Reviews;
 use DoctorAKPortal\Includes\Page_Finder;
+use DoctorAKPortal\Includes\Review_Requests;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Specializations;
@@ -186,6 +187,23 @@ class Doctor_Profile_View {
 
 		$clinics_with_services = $this->clinics_with_services( $doctor->ID, $raw_clinics );
 
+		// The form a patient reaches from their review-request email — only
+		// when such a link was opened for this doctor (see Review_Requests).
+		$review_request      = Review_Requests::page_context( $doctor->ID );
+		$review_request_html = null !== $review_request
+			? $this->template_loader->get_template(
+				'directory/review-request-panel.php',
+				array(
+					'review_request' => $review_request,
+					'doctor'         => array(
+						'id'   => $doctor->ID,
+						'name' => $display_name,
+					),
+					'login_url'      => Page_Finder::url_for_shortcode( 'doctor_login' ),
+				)
+			)
+			: '';
+
 		return $this->template_loader->get_template(
 			'directory/doctor-profile-view.php',
 			array(
@@ -212,6 +230,9 @@ class Doctor_Profile_View {
 				'can_review'             => is_user_logged_in() && Doctor_Reviews::can_review( get_current_user_id(), $doctor->ID ),
 				'my_review'              => is_user_logged_in() ? Doctor_Reviews::find_for_patient( get_current_user_id(), $doctor->ID ) : null,
 				'is_logged_in'           => is_user_logged_in(),
+				'review_request_html'    => $review_request_html,
+				// One review form per page: the emailed link's form replaces the usual one.
+				'review_request_active'  => null !== $review_request && 'valid' === $review_request['status'],
 				'directory_url'          => Page_Finder::url_for_shortcode( 'doctors_directory' ),
 				'starting_fee_summary'   => $this->starting_fee_summary( $doctor->ID ),
 				'cancellation_note'      => $this->cancellation_note( $doctor->ID ),

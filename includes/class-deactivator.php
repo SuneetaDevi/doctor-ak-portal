@@ -29,6 +29,9 @@ class Deactivator {
 	public static function deactivate() {
 		wp_clear_scheduled_hook( Notifications::CRON_HOOK );
 		wp_clear_scheduled_hook( Notifications::VIDEO_LINK_CRON_HOOK );
+		// Pending review requests keep their due time on the appointment, so
+		// the hourly sweep picks them up again after reactivation.
+		wp_unschedule_hook( Review_Requests::CRON_HOOK );
 		flush_rewrite_rules();
 	}
 }

@@ -89,6 +89,7 @@ class Blogs_Directory {
 	 */
 	public function render() {
 		$single_url = Page_Finder::url_for_shortcode( 'blog_single' );
+		$blogs      = Blogs::published_for_public_directory();
 
 		$blogs_html = array_map(
 			function ( $blog ) use ( $single_url ) {
@@ -96,16 +97,85 @@ class Blogs_Directory {
 
 				return $this->template_loader->get_template( 'directory/blog-card.php', $blog );
 			},
-			Blogs::published_for_public_directory()
+			$blogs
 		);
+
+		$topics = self::topic_counts( $blogs );
 
 		return $this->template_loader->get_template(
 			'directory/blogs-directory.php',
 			array(
-				'blogs_html' => $blogs_html,
-				'topics'     => Blogs::topics( true ),
+				'blogs_html'   => $blogs_html,
+				'topics'       => $topics,
+				'quick_topics' => self::quick_topics( $topics ),
 			)
 		);
+	}
+
+	/**
+	 * How many chips sit in the filter row before "All topics".
+	 *
+	 * @var int
+	 */
+	const QUICK_TOPIC_COUNT = 6;
+
+	/**
+	 * Every topic used by the listed posts, alphabetical, with its post count
+	 * — keyed by the same slug the cards carry in data-topic, so labels that
+	 * differ only in case ("Stones"/"stones") are one filter.
+	 *
+	 * @param array $blogs Decoded published posts.
+	 * @return array slug => array( 'slug', 'label', 'count' ).
+	 */
+	private static function topic_counts( array $blogs ) {
+		$topics = array();
+
+		foreach ( $blogs as $blog ) {
+			$slug = '' !== $blog['topic'] ? sanitize_title( $blog['topic'] ) : '';
+
+			if ( '' === $slug ) {
+				continue;
+			}
+
+			if ( ! isset( $topics[ $slug ] ) ) {
+				$topics[ $slug ] = array(
+					'slug'  => $slug,
+					'label' => $blog['topic'],
+					'count' => 0,
+				);
+			}
+
+			++$topics[ $slug ]['count'];
+		}
+
+		uasort(
+			$topics,
+			function ( $a, $b ) {
+				return strcasecmp( $a['label'], $b['label'] );
+			}
+		);
+
+		return $topics;
+	}
+
+	/**
+	 * The most-used topics (ties alphabetical) for the always-visible chips;
+	 * every topic stays reachable from the "All topics" panel.
+	 *
+	 * @param array $topics See topic_counts().
+	 * @return array
+	 */
+	private static function quick_topics( array $topics ) {
+		$sorted = array_values( $topics );
+
+		usort(
+			$sorted,
+			function ( $a, $b ) {
+				return $b['count'] !== $a['count'] ? $b['count'] - $a['count'] : strcasecmp( $a['label'], $b['label'] );
+			}
+		);
+
+		return array_slice( $sorted, 0, self::QUICK_TOPIC_COUNT );
 	}
 
 	/**

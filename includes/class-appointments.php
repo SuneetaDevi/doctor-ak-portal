@@ -731,6 +731,16 @@ class Appointments {
 			do_action( 'doctor_ak_appointment_paid', $appointment_id );
 		}
 
+		// An admin/receptionist editing the status to Completed is a real
+		// completion too — announce it like the other completion paths, but
+		// only on the change (not on every later edit of a completed one).
+		if ( self::STATUS_COMPLETED === $status && self::STATUS_COMPLETED !== $current_status ) {
+			update_post_meta( $appointment_id, Review_Requests::META_COMPLETED_VIA, 'admin' );
+
+			/** This action is documented in mark_completed() above. */
+			do_action( 'doctor_ak_appointment_completed', $appointment_id );
+		}
+
 		return true;
 	}
 
@@ -2155,6 +2165,7 @@ class Appointments {
 		}
 
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_COMPLETED );
+		update_post_meta( $appointment_id, Review_Requests::META_COMPLETED_VIA, 'doctor' );
 
 		/**
 		 * Fires after an appointment is marked completed (manually or automatically).
@@ -2231,6 +2242,7 @@ class Appointments {
 	 */
 	public static function checkout( $appointment_id ) {
 		update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_COMPLETED );
+		update_post_meta( $appointment_id, Review_Requests::META_COMPLETED_VIA, 'encounter' );
 
 		/** This action is documented in mark_completed() above. */
 		do_action( 'doctor_ak_appointment_completed', $appointment_id );
@@ -2284,6 +2296,10 @@ class Appointments {
 			}
 
 			update_post_meta( $appointment_id, 'doctor_ak_appointment_status', self::STATUS_COMPLETED );
+
+			// Assumed over, not confirmed — Review_Requests treats this
+			// differently from a doctor/encounter completion (could be a no-show).
+			update_post_meta( $appointment_id, Review_Requests::META_COMPLETED_VIA, 'auto' );
 
 			/** This action is documented in mark_completed() above. */
 			do_action( 'doctor_ak_appointment_completed', $appointment_id );

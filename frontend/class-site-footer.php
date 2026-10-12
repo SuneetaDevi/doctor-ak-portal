@@ -171,6 +171,19 @@ class Site_Footer {
 	}
 
 	/**
+	 * The support phone and email the site footer shows — reused by every
+	 * system email's footer (Email_Template) so both say the same thing.
+	 *
+	 * @return array { phone: string, email: string } — either may be ''.
+	 */
+	public static function support_contact() {
+		return array(
+			'phone' => (string) get_option( self::OPTION_PHONE, '0303-3638304' ),
+			'email' => self::primary_email(),
+		);
+	}
+
+	/**
 	 * Resolves a contact email for the footer — the first clinic location
 	 * with one on file, mirroring Site_Header::primary_email() (the plugin
 	 * has no separate site-wide "contact email" setting).
@@ -238,7 +251,7 @@ class Site_Footer {
 
 	/**
 	 * Resolves the bundled logo's URL (same file the header uses) — public
-	 * so email templates (Notifications::render_invoice_email()) can embed
+	 * so system emails (Email_Template) can embed
 	 * it too, since an email needs a real absolute image URL, not markup.
 	 *
 	 * @return string Logo URL, or '' if no bundled logo file exists.

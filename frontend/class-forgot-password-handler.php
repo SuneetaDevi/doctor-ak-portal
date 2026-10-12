@@ -8,6 +8,7 @@
 namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Assets;
+use DoctorAKPortal\Includes\Email_Template;
 use DoctorAKPortal\Includes\Page_Finder;
 
 // Prevent direct file access.
@@ -189,16 +190,26 @@ class Forgot_Password_Handler {
 		/* translators: %s: site name. */
 		$subject = sprintf( __( '[%s] Password Reset Request', 'doctor-ak-portal' ), $site_name );
 
-		$message  = sprintf(
-			/* translators: %s: user's display name. */
-			__( 'Hi %s,', 'doctor-ak-portal' ),
-			$user->display_name
-		) . "\n\n";
-		$message .= __( 'We received a request to reset your password. Click the link below to choose a new password:', 'doctor-ak-portal' ) . "\n\n";
-		$message .= $reset_url . "\n\n";
-		$message .= __( 'If you did not request this, you can safely ignore this email — your password will not be changed.', 'doctor-ak-portal' ) . "\n";
+		$first_name = trim( (string) $user->first_name );
 
-		wp_mail( $user->user_email, $subject, $message );
+		Email_Template::send(
+			$user->user_email,
+			$subject,
+			array(
+				'preheader'   => __( 'Use the link inside to choose a new password.', 'doctor-ak-portal' ),
+				'eyebrow'     => __( 'Account security', 'doctor-ak-portal' ),
+				'heading'     => __( 'Reset your password', 'doctor-ak-portal' ),
+				/* translators: %s: user's name. */
+				'greeting'    => sprintf( __( 'Hi %s,', 'doctor-ak-portal' ), '' !== $first_name ? $first_name : $user->display_name ),
+				'paragraphs'  => array( __( 'We received a request to reset your password. Click the button below to choose a new password.', 'doctor-ak-portal' ) ),
+				'button'      => array(
+					'label' => __( 'Choose a new password', 'doctor-ak-portal' ),
+					'url'   => $reset_url,
+				),
+				'notes'       => array( __( 'If you did not request this, you can safely ignore this email — your password will not be changed.', 'doctor-ak-portal' ) ),
+				'footer_note' => __( 'You’re receiving this because a password reset was requested for your account.', 'doctor-ak-portal' ),
+			)
+		);
 	}
 
 	/**

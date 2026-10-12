@@ -9,6 +9,7 @@ namespace DoctorAKPortal\Admin;
 
 use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Notifications;
+use DoctorAKPortal\Includes\Review_Requests;
 
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -55,6 +56,33 @@ class Notification_Settings {
 			);
 		}
 
+		register_setting(
+			'doctor_ak_notification_settings',
+			Review_Requests::OPTION_ENABLED,
+			array(
+				'sanitize_callback' => array( $this, 'sanitize_checkbox' ),
+				'default'           => '1',
+			)
+		);
+
+		register_setting(
+			'doctor_ak_notification_settings',
+			Review_Requests::OPTION_INCLUDE_AUTO,
+			array(
+				'sanitize_callback' => array( $this, 'sanitize_checkbox' ),
+				'default'           => '0',
+			)
+		);
+
+		register_setting(
+			'doctor_ak_notification_settings',
+			Review_Requests::OPTION_DELAY_HOURS,
+			array(
+				'sanitize_callback' => array( $this, 'sanitize_delay_hours' ),
+				'default'           => Review_Requests::DEFAULT_DELAY_HOURS,
+			)
+		);
+
 		register_setting( 'doctor_ak_notification_settings', Notifications::OPTION_FROM_NAME, array( 'sanitize_callback' => 'sanitize_text_field' ) );
 		register_setting( 'doctor_ak_notification_settings', Notifications::OPTION_FROM_EMAIL, array( 'sanitize_callback' => 'sanitize_email' ) );
 	}
@@ -65,6 +93,14 @@ class Notification_Settings {
 	 */
 	public function sanitize_checkbox( $value ) {
 		return ! empty( $value ) ? '1' : '0';
+	}
+
+	/**
+	 * @param mixed $value Raw posted value.
+	 * @return int Hours, clamped to 0..MAX_DELAY_HOURS.
+	 */
+	public function sanitize_delay_hours( $value ) {
+		return max( 0, min( Review_Requests::MAX_DELAY_HOURS, absint( $value ) ) );
 	}
 
 	/**
@@ -144,6 +180,25 @@ class Notification_Settings {
 								<input type="checkbox" name="<?php echo esc_attr( Notifications::OPTION_NOTIFY_REFUND ); ?>" value="1" <?php checked( '1', get_option( Notifications::OPTION_NOTIFY_REFUND, '1' ) ); ?>>
 								<?php esc_html_e( 'Email every administrator when a patient requests a refund, and email the patient once an admin processes it.', 'doctor-ak-portal' ); ?>
 							</label>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Review Request', 'doctor-ak-portal' ); ?></th>
+						<td>
+							<label>
+								<input type="checkbox" name="<?php echo esc_attr( Review_Requests::OPTION_ENABLED ); ?>" value="1" <?php checked( '1', get_option( Review_Requests::OPTION_ENABLED, '1' ) ); ?>>
+								<?php esc_html_e( 'Email a patient once after their appointment is completed, asking them to review the doctor.', 'doctor-ak-portal' ); ?>
+							</label>
+							<p>
+								<label for="dak-review-delay-hours"><?php esc_html_e( 'Send it', 'doctor-ak-portal' ); ?></label>
+								<input type="number" class="small-text" id="dak-review-delay-hours" min="0" max="<?php echo esc_attr( Review_Requests::MAX_DELAY_HOURS ); ?>" step="1" name="<?php echo esc_attr( Review_Requests::OPTION_DELAY_HOURS ); ?>" value="<?php echo esc_attr( Review_Requests::delay_hours() ); ?>">
+								<?php esc_html_e( 'hours after the appointment is marked Completed.', 'doctor-ak-portal' ); ?>
+							</p>
+							<label>
+								<input type="checkbox" name="<?php echo esc_attr( Review_Requests::OPTION_INCLUDE_AUTO ); ?>" value="1" <?php checked( '1', get_option( Review_Requests::OPTION_INCLUDE_AUTO, '0' ) ); ?>>
+								<?php esc_html_e( 'Also send for appointments completed automatically (nobody marked them completed, so the patient may not have attended).', 'doctor-ak-portal' ); ?>
+							</label>
+							<p class="description"><?php esc_html_e( 'Never sent for cancelled or rescheduled appointments, guest bookings without an account, patients who turned review emails off, or patients who have already reviewed that doctor. Each appointment gets at most one request.', 'doctor-ak-portal' ); ?></p>
 						</td>
 					</tr>
 					<tr>

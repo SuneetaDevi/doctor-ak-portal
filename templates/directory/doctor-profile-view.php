@@ -27,6 +27,8 @@
  * @var string $directory_url         "All Doctors" breadcrumb link.
  * @var array  $starting_fee_summary  Doctor_Profile_View::starting_fee_summary() — { state: 'none'|'unset'|'paid'|'range', label }, for the sidebar's pre-selection teaser.
  * @var string $cancellation_note     Doctor's real cancellation policy text.
+ * @var string $review_request_html   Pre-rendered review-request-panel.php (a review link from an email was opened), or ''.
+ * @var bool   $review_request_active Whether that panel holds a review form (the usual form is then hidden).
  */
 
 // Prevent direct file access.
@@ -500,6 +502,10 @@ if ( ! function_exists( 'dak_profile_view_truncate' ) ) {
 				<div class="dak-profile-card dak-reviews dak-profile-card-secondary" id="dak-profile-reviews">
 					<h2><?php esc_html_e( 'Patient Reviews', 'doctor-ak-portal' ); ?></h2>
 
+					<?php if ( ! empty( $review_request_html ) ) : ?>
+						<?php echo $review_request_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- partial escapes its own output. ?>
+					<?php endif; ?>
+
 					<?php if ( $dak_rs['count'] > 0 ) : ?>
 						<div class="dak-reviews-summary">
 							<div class="dak-reviews-score">
@@ -521,7 +527,7 @@ if ( ! function_exists( 'dak_profile_view_truncate' ) ) {
 						<p class="dak-reviews-note"><?php esc_html_e( 'No patient reviews yet.', 'doctor-ak-portal' ); ?></p>
 					<?php endif; ?>
 
-					<?php if ( $can_review ) : ?>
+					<?php if ( $can_review && empty( $review_request_active ) ) : ?>
 						<form class="dak-review-form" id="dak-review-form" data-doctor-id="<?php echo esc_attr( $doctor['id'] ); ?>" data-rating="<?php echo esc_attr( $dak_my ? $dak_my['rating'] : 0 ); ?>">
 							<strong><?php echo esc_html( $dak_my ? __( 'Update your review', 'doctor-ak-portal' ) : __( 'Rate your experience', 'doctor-ak-portal' ) ); ?></strong>
 							<div class="dak-review-picker" role="radiogroup" aria-label="<?php esc_attr_e( 'Rating', 'doctor-ak-portal' ); ?>">

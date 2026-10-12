@@ -9,6 +9,8 @@
 
 namespace DoctorAKPortal\Frontend;
 
+use DoctorAKPortal\Includes\Email_Template;
+use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Service_Requests;
 
 // Prevent direct file access.
@@ -140,20 +142,27 @@ class Service_Request_Handler {
 			$fields['service_name']
 		);
 
-		$lines = array(
-			sprintf( /* translators: %s: service name. */ __( 'Service: %s', 'doctor-ak-portal' ), $fields['service_name'] ),
-			sprintf( /* translators: %s: patient name. */ __( 'Name: %s', 'doctor-ak-portal' ), $fields['patient_name'] ),
-			sprintf( /* translators: %s: patient phone. */ __( 'Phone: %s', 'doctor-ak-portal' ), $fields['patient_phone'] ),
+		$dashboard = Page_Finder::url_for_shortcode( 'admin_dashboard' );
+		$list_url  = '' !== $dashboard ? add_query_arg( 'section', 'service-requests', $dashboard ) : '';
+
+		Email_Template::send(
+			$to,
+			$subject,
+			array(
+				'preheader'   => sprintf( /* translators: 1: patient name, 2: service name. */ __( '%1$s asked about %2$s.', 'doctor-ak-portal' ), $fields['patient_name'], $fields['service_name'] ),
+				'eyebrow'     => __( 'Service requests', 'doctor-ak-portal' ),
+				'heading'     => __( 'New service request', 'doctor-ak-portal' ),
+				'paragraphs'  => array( __( 'Someone asked to be contacted about a service. Their details are below.', 'doctor-ak-portal' ) ),
+				'details'     => array(
+					array( __( 'Service', 'doctor-ak-portal' ), $fields['service_name'] ),
+					array( __( 'Name', 'doctor-ak-portal' ), $fields['patient_name'] ),
+					array( __( 'Phone', 'doctor-ak-portal' ), $fields['patient_phone'] ),
+					array( __( 'Email', 'doctor-ak-portal' ), $fields['patient_email'] ),
+					array( __( 'Notes', 'doctor-ak-portal' ), $fields['notes'] ),
+				),
+				'button'      => '' !== $list_url ? array( 'label' => __( 'View service requests', 'doctor-ak-portal' ), 'url' => $list_url ) : array(),
+				'footer_note' => __( 'Sent to the site’s administrators.', 'doctor-ak-portal' ),
+			)
 		);
-
-		if ( '' !== $fields['patient_email'] ) {
-			$lines[] = sprintf( /* translators: %s: patient email. */ __( 'Email: %s', 'doctor-ak-portal' ), $fields['patient_email'] );
-		}
-
-		if ( '' !== $fields['notes'] ) {
-			$lines[] = sprintf( /* translators: %s: patient's notes. */ __( 'Notes: %s', 'doctor-ak-portal' ), $fields['notes'] );
-		}
-
-		wp_mail( $to, $subject, implode( "\n", $lines ) );
 	}
 }

@@ -35,12 +35,27 @@ class Blogs {
 	const STATUS_PUBLISHED = 'published';
 
 	/**
-	 * How many words a public listing's auto-generated excerpt is trimmed
-	 * to — mirrors service-card.php's own excerpt length.
+	 * Rough length (characters) a public card's auto-generated excerpt is
+	 * cut to, at a word boundary — about three lines on a card.
 	 *
 	 * @var int
 	 */
-	const EXCERPT_WORD_COUNT = 30;
+	const EXCERPT_MAX_CHARS = 180;
+
+	/**
+	 * Width/height of the blog card's image frame (16:10) and of the article
+	 * page's featured-image area (1000 × 440), for image_fit().
+	 */
+	const CARD_FRAME_RATIO = 1.6;
+	const HERO_FRAME_RATIO = 2.27;
+
+	/**
+	 * Smallest original width shown across the article page's full image
+	 * area; anything narrower is shown at its own size instead of enlarged.
+	 *
+	 * @var int
+	 */
+	const HERO_MIN_WIDTH = 640;
 
 	/**
 	 * Longest a topic label may be (matches the `topic` column).
@@ -316,10 +331,30 @@ class Blogs {
 	private static function decode_row( array $row ) {
 		$image_id  = isset( $row['image_id'] ) ? (int) $row['image_id'] : 0;
 		$image_url = '';
+		$image     = array(
+			'url'    => '',
+			'width'  => 0,
+			'height' => 0,
+			'srcset' => '',
+		);
 
 		if ( $image_id > 0 ) {
 			$found     = wp_get_attachment_image_url( $image_id, 'large' );
 			$image_url = $found ? $found : '';
+
+			// The original upload, with its real pixel size — the public pages
+			// use it to reserve space and to never stretch a small image.
+			$full = wp_get_attachment_image_src( $image_id, 'full' );
+
+			if ( $full ) {
+				$srcset = wp_get_attachment_image_srcset( $image_id, 'full' );
+				$image  = array(
+					'url'    => (string) $full[0],
+					'width'  => (int) $full[1],
+					'height' => (int) $full[2],
+					'srcset' => $srcset ? (string) $srcset : '',
+				);
+			}
 		}
 
 		$author       = get_userdata( (int) $row['author_id'] );
@@ -340,14 +375,54 @@ class Blogs {
 			'topic'        => isset( $row['topic'] ) ? (string) $row['topic'] : '',
 			'content'      => $content,
 			'read_minutes' => self::read_minutes( $content ),
-			'excerpt'      => wp_trim_words( wp_strip_all_tags( $content ), self::EXCERPT_WORD_COUNT ),
+			// Blocks keep a space between them and a leading repeat of the
+			// title is left out — display only, the stored content is untouched.
+			'excerpt'      => Services::plain_excerpt( $content, $row['title'], self::EXCERPT_MAX_CHARS ),
 			'image_id'     => $image_id,
 			'image_url'    => $image_url,
+			'image'        => $image,
 			'status'       => $row['status'],
 			'status_label' => isset( self::status_options()[ $row['status'] ] ) ? self::status_options()[ $row['status'] ] : $row['status'],
 			'published_at' => isset( $row['published_at'] ) ? $row['published_at'] : null,
 			'created_at'   => $row['created_at'],
 		);
+	}
+
+	/**
+	 * How a featured image fits a fixed frame without distortion:
+	 *  - 'cover'   — shapes close enough to the frame that filling it crops at
+	 *                most ~13% (a photo loses a sliver, never its subject);
+	 *  - 'contain' — anything else (diagrams, text-heavy graphics, portrait
+	 *                or square images) is shown whole on a neutral panel;
+	 *  - 'natural' — (article page only) originals too small for the area,
+	 *                shown at their own size rather than blown up.
+	 *
+	 * @param array $image       The decoded row's 'image' (url/width/height).
+	 * @param float $frame_ratio Frame width ÷ height.
+	 * @param int   $min_width   Narrower originals get 'natural'; 0 to never.
+	 * @return string '' when there is no usable image.
+	 */
+	public static function image_fit( array $image, $frame_ratio, $min_width = 0 ) {
+		if ( empty( $image['url'] ) ) {
+			return '';
+		}
+
+		$width  = (int) $image['width'];
+		$height = (int) $image['height'];
+
+		// Size unknown (e.g. an SVG) — show it whole.
+		if ( $width <= 0 || $height <= 0 ) {
+			return 'contain';
+		}
+
+		if ( $min_width > 0 && $width < $min_width ) {
+			return 'natural';
+		}
+
+		$ratio = $width / $height;
+		$crop  = 1 - min( $ratio, $frame_ratio ) / max( $ratio, $frame_ratio );
+
+		return $crop <= 0.13 ? 'cover' : 'contain';
 	}
 
 	/**

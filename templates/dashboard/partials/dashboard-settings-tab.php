@@ -15,6 +15,7 @@
  * @var bool $notify_paid          Whether the current account receives "payment received" emails. Defaults true if unset.
  * @var bool $notify_cancelled     Whether the current account receives "cancellation" emails. Defaults true if unset.
  * @var bool $notify_announcements Whether the current account receives "new blog post/service" announcement emails. Defaults true if unset.
+ * @var bool|null $notify_review_request Whether the current patient receives "How was your appointment?" emails — only the patient dashboard passes it; the toggle is hidden otherwise.
  * @var bool $show_save_button     Whether to render this section's own "Save preferences" button. Defaults true; the admin dashboard's Settings page passes false and saves this alongside Clinic Branding via its own single "Save Settings" button instead (see admin-settings-section.php).
  */
 
@@ -28,6 +29,7 @@ $notify_paid          = isset( $notify_paid ) ? $notify_paid : true;
 $notify_cancelled     = isset( $notify_cancelled ) ? $notify_cancelled : true;
 $notify_announcements = isset( $notify_announcements ) ? $notify_announcements : true;
 $show_save_button     = ! isset( $show_save_button ) || $show_save_button;
+$notify_review_request = isset( $notify_review_request ) ? $notify_review_request : null;
 ?>
 <div class="dak-settings-section" id="dak-notification-preferences-form">
 	<h2><?php esc_html_e( 'Notifications', 'doctor-ak-portal' ); ?></h2>
@@ -79,6 +81,19 @@ $show_save_button     = ! isset( $show_save_button ) || $show_save_button;
 			<span></span>
 		</label>
 	</div>
+
+	<?php if ( null !== $notify_review_request ) : ?>
+		<div class="dak-settings-row">
+			<div class="dak-settings-row-text">
+				<strong><?php esc_html_e( 'Review requests', 'doctor-ak-portal' ); ?></strong>
+				<p><?php esc_html_e( 'After a completed appointment, email me once to ask how it went.', 'doctor-ak-portal' ); ?></p>
+			</div>
+			<label class="dak-toggle-switch">
+				<input type="checkbox" id="dak-notify-review-request" aria-label="<?php esc_attr_e( 'Review requests', 'doctor-ak-portal' ); ?>" <?php checked( $notify_review_request ); ?>>
+				<span></span>
+			</label>
+		</div>
+	<?php endif; ?>
 
 	<?php if ( $show_save_button ) : ?>
 		<button type="button" class="dak-button dak-button-primary" id="dak-notification-preferences-save">

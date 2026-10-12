@@ -1,10 +1,14 @@
 <?php
 /**
  * Template: Public single blog post page for the [blog_single] shortcode —
- * breadcrumb, category, title and summary, a wide photo, the author line, then
- * a two-column layout: a sticky sidebar (share buttons + table of contents,
+ * breadcrumb, category, title, then author / date / reading time, the
+ * featured image in a centred editorial frame (never enlarged past its own
+ * size, and cropped at most a sliver — see Blogs::image_fit()), then a
+ * two-column layout: a sticky sidebar (share buttons + table of contents,
  * the latter built by doctor-ak-blog-single.js from the post's own headings)
- * beside the article, and a "Related articles" row underneath.
+ * beside the article, and a "Related articles" row underneath. On narrow
+ * screens the share buttons are one compact row and the contents a
+ * collapsible section above the article.
  *
  * @package DoctorAKPortal\Templates
  *
@@ -17,7 +21,8 @@
  *     @type int    $read_minutes Estimated reading time in minutes.
  *     @type string $excerpt      Plain-text summary.
  *     @type string $content      Full body — rich-text HTML (bold/italic/lists/links) from the admin's formatting toolbar.
- *     @type string $image_url    Featured image URL, or '' if none uploaded.
+ *     @type string $image_url    Featured image URL ('large' size), or '' if none uploaded.
+ *     @type array  $image        Original image: url/width/height/srcset.
  *     @type string $author_name  Author's display name.
  *     @type string $published_at Published date/time (MySQL format).
  * }
@@ -71,65 +76,81 @@ $dak_share_links = array(
 $dak_copy_icon = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="9.5" height="9.5" rx="1.5"/><path d="M13 7V4.5A1.5 1.5 0 0 0 11.5 3h-7A1.5 1.5 0 0 0 3 4.5v7A1.5 1.5 0 0 0 4.5 13H7"/></svg>';
 ?>
 <div class="dak-portal dak-directory dak-blog-single">
-	<div class="dak-profile-breadcrumb">
-		<?php if ( $directory_url ) : ?>
-			<a href="<?php echo esc_url( $directory_url ); ?>"><?php esc_html_e( 'Blog', 'doctor-ak-portal' ); ?></a>
-			<span>&rsaquo;</span>
-		<?php endif; ?>
-		<span><?php echo esc_html( $blog ? $blog['title'] : __( 'Post not found', 'doctor-ak-portal' ) ); ?></span>
-	</div>
+	<nav class="dak-blog-crumbs" aria-label="<?php esc_attr_e( 'Breadcrumb', 'doctor-ak-portal' ); ?>">
+		<ol>
+			<?php if ( $directory_url ) : ?>
+				<li><a href="<?php echo esc_url( $directory_url ); ?>"><?php esc_html_e( 'Health Articles', 'doctor-ak-portal' ); ?></a></li>
+			<?php endif; ?>
+			<li><span aria-current="page"><?php echo esc_html( $blog ? $blog['title'] : __( 'Article not found', 'doctor-ak-portal' ) ); ?></span></li>
+		</ol>
+	</nav>
 
 	<?php if ( ! $blog ) : ?>
-		<p class="dak-empty-state"><?php esc_html_e( 'This post is no longer available.', 'doctor-ak-portal' ); ?></p>
+		<div class="dak-blog-noresults">
+			<h1><?php esc_html_e( 'This article is no longer available', 'doctor-ak-portal' ); ?></h1>
+			<p><?php esc_html_e( 'It may have been moved or unpublished.', 'doctor-ak-portal' ); ?></p>
+			<?php if ( $directory_url ) : ?>
+				<a class="dak-blog-reset-btn" href="<?php echo esc_url( $directory_url ); ?>"><?php esc_html_e( 'Browse all articles', 'doctor-ak-portal' ); ?></a>
+			<?php endif; ?>
+		</div>
 	<?php else : ?>
+		<?php
+		$dak_image = isset( $blog['image'] ) ? $blog['image'] : array( 'url' => $blog['image_url'], 'width' => 0, 'height' => 0, 'srcset' => '' );
+		$dak_fit   = \DoctorAKPortal\Includes\Blogs::image_fit( $dak_image, \DoctorAKPortal\Includes\Blogs::HERO_FRAME_RATIO, \DoctorAKPortal\Includes\Blogs::HERO_MIN_WIDTH );
+		$dak_date  = $blog['published_at'] ? strtotime( $blog['published_at'] ) : false;
+		?>
 		<header class="dak-blog-single-head">
 			<?php if ( '' !== $blog['topic'] ) : ?>
 				<span class="dak-blog-single-category"><?php echo esc_html( $blog['topic'] ); ?></span>
 			<?php endif; ?>
-			<h1><?php echo esc_html( $blog['title'] ); ?></h1>
-			<?php if ( '' !== $blog['excerpt'] ) : ?>
-				<p class="dak-blog-single-summary"><?php echo esc_html( $blog['excerpt'] ); ?></p>
-			<?php endif; ?>
+			<h1 id="dak-blog-title"><?php echo esc_html( $blog['title'] ); ?></h1>
+			<?php // There is no separate summary field: the card excerpt would only repeat the first paragraph, so the article introduces itself. ?>
+			<p class="dak-blog-single-meta">
+				<?php // Separators come from CSS on each following item, so they wrap with it. ?>
+				<?php if ( $blog['author_name'] ) : ?>
+					<span class="dak-blog-meta-item dak-blog-single-author">
+						<span class="dak-blog-single-avatar" aria-hidden="true"><?php echo esc_html( mb_strtoupper( mb_substr( $blog['author_name'], 0, 1 ) ) ); ?></span>
+						<?php
+						/* translators: %s: author name. */
+						echo esc_html( sprintf( __( 'By %s', 'doctor-ak-portal' ), $blog['author_name'] ) );
+						?>
+					</span>
+				<?php endif; ?>
+				<?php if ( $dak_date ) : ?>
+					<time class="dak-blog-meta-item" datetime="<?php echo esc_attr( gmdate( 'Y-m-d', $dak_date ) ); ?>"><?php echo esc_html( date_i18n( get_option( 'date_format' ), $dak_date ) ); ?></time>
+				<?php endif; ?>
+				<span class="dak-blog-meta-item">
+					<?php
+					/* translators: %d: estimated reading time in minutes. */
+					echo esc_html( sprintf( __( '%d min read', 'doctor-ak-portal' ), (int) $blog['read_minutes'] ) );
+					?>
+				</span>
+			</p>
 		</header>
 
-		<?php if ( $blog['image_url'] ) : ?>
-			<img class="dak-blog-single-hero" src="<?php echo esc_url( $blog['image_url'] ); ?>" alt="">
+		<?php if ( '' !== $dak_fit ) : ?>
+			<figure class="dak-blog-hero is-<?php echo esc_attr( $dak_fit ); ?>">
+				<img
+					src="<?php echo esc_url( $dak_image['url'] ); ?>"
+					<?php if ( '' !== $dak_image['srcset'] ) : ?>
+						srcset="<?php echo esc_attr( $dak_image['srcset'] ); ?>"
+						sizes="(max-width: 1032px) calc(100vw - 32px), 1000px"
+					<?php endif; ?>
+					<?php if ( $dak_image['width'] > 0 && $dak_image['height'] > 0 ) : ?>
+						width="<?php echo esc_attr( $dak_image['width'] ); ?>"
+						height="<?php echo esc_attr( $dak_image['height'] ); ?>"
+					<?php endif; ?>
+					alt=""
+					fetchpriority="high"
+					decoding="async"
+				>
+			</figure>
 		<?php endif; ?>
 
-		<div class="dak-blog-single-byline">
-			<?php if ( $blog['author_name'] ) : ?>
-				<span class="dak-blog-single-avatar" aria-hidden="true"><?php echo esc_html( mb_strtoupper( mb_substr( $blog['author_name'], 0, 1 ) ) ); ?></span>
-				<span class="dak-blog-single-byline-text">
-					<span><?php esc_html_e( 'Published by', 'doctor-ak-portal' ); ?></span>
-					<strong><?php echo esc_html( $blog['author_name'] ); ?></strong>
-				</span>
-			<?php endif; ?>
-			<?php if ( $blog['published_at'] ) : ?>
-				<span class="dak-blog-single-byline-text">
-					<span><?php esc_html_e( 'Published on', 'doctor-ak-portal' ); ?></span>
-					<strong><?php echo esc_html( date_i18n( get_option( 'date_format' ), strtotime( $blog['published_at'] ) ) ); ?></strong>
-				</span>
-			<?php endif; ?>
-			<span class="dak-blog-single-byline-text">
-				<span><?php esc_html_e( 'Reading time', 'doctor-ak-portal' ); ?></span>
-				<strong>
-					<?php
-					echo esc_html(
-						sprintf(
-							/* translators: %d: estimated reading time in minutes. */
-							__( '%d min read', 'doctor-ak-portal' ),
-							(int) $blog['read_minutes']
-						)
-					);
-					?>
-				</strong>
-			</span>
-		</div>
-
 		<div class="dak-blog-single-layout">
-			<aside class="dak-blog-single-sidebar">
+			<aside class="dak-blog-single-sidebar" aria-label="<?php esc_attr_e( 'Share and contents', 'doctor-ak-portal' ); ?>">
 				<?php if ( '' !== $share_url ) : ?>
-					<section class="dak-blog-side-card">
+					<section class="dak-blog-side-card dak-blog-share-card">
 						<h2><?php esc_html_e( 'Share this article', 'doctor-ak-portal' ); ?></h2>
 						<div class="dak-blog-share">
 							<?php foreach ( $dak_share_links as $dak_network => $dak_share ) : ?>
@@ -142,24 +163,30 @@ $dak_copy_icon = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" str
 							<?php echo $dak_copy_icon; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							<span><?php esc_html_e( 'Copy link', 'doctor-ak-portal' ); ?></span>
 						</button>
+						<span class="dak-blog-visually-hidden" role="status" data-copy-status></span>
 					</section>
 				<?php endif; ?>
 
-				<section class="dak-blog-side-card dak-blog-toc dak-hidden" id="dak-blog-toc">
-					<h2><?php esc_html_e( 'Table of contents', 'doctor-ak-portal' ); ?></h2>
-					<ul id="dak-blog-toc-list"></ul>
-				</section>
+				<details class="dak-blog-side-card dak-blog-toc dak-hidden" id="dak-blog-toc" open>
+					<summary>
+						<span><?php esc_html_e( 'Table of contents', 'doctor-ak-portal' ); ?></span>
+						<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8l5 5 5-5"/></svg>
+					</summary>
+					<nav aria-label="<?php esc_attr_e( 'Table of contents', 'doctor-ak-portal' ); ?>">
+						<ul id="dak-blog-toc-list"></ul>
+					</nav>
+				</details>
 			</aside>
 
-			<article class="dak-blog-single-body dak-rich-text-content" id="dak-blog-article"><?php echo wp_kses_post( $blog['content'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></article>
+			<article class="dak-blog-single-body dak-rich-text-content" id="dak-blog-article" aria-labelledby="dak-blog-title"><?php echo wp_kses_post( $blog['content'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></article>
 		</div>
 
 		<?php if ( ! empty( $related_html ) ) : ?>
-			<section class="dak-blog-related">
+			<section class="dak-blog-related" aria-labelledby="dak-blog-related-title">
 				<div class="dak-blog-related-head">
-					<h2><?php esc_html_e( 'Related Articles', 'doctor-ak-portal' ); ?></h2>
+					<h2 id="dak-blog-related-title"><?php esc_html_e( 'Related articles', 'doctor-ak-portal' ); ?></h2>
 					<?php if ( $directory_url ) : ?>
-						<a href="<?php echo esc_url( $directory_url ); ?>"><?php esc_html_e( 'View all posts', 'doctor-ak-portal' ); ?></a>
+						<a href="<?php echo esc_url( $directory_url ); ?>"><?php esc_html_e( 'View all articles', 'doctor-ak-portal' ); ?></a>
 					<?php endif; ?>
 				</div>
 				<div class="dak-blog-grid">

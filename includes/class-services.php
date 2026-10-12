@@ -745,6 +745,16 @@ class Services {
 		$text = str_replace( "\xc2\xa0", ' ', $text );
 		$text = preg_replace( '/[ \t\r\n]+/u', ' ', $text );
 		$text = trim( preg_replace( '/ ?\x1f[ \x1f]*/u', "\x1f", $text ), " \x1f" );
+
+		// A first block that is only the title again (a pasted "Hepatitis C
+		// (HCV)" heading above the body) — dropped whole, never part of a
+		// sentence, and only on an exact match (case/punctuation aside).
+		$first_break = mb_strpos( $text, "\x1f" );
+
+		if ( '' !== trim( (string) $title ) && false !== $first_break && self::excerpt_key( mb_substr( $text, 0, $first_break ) ) === self::excerpt_key( $title ) ) {
+			$text = mb_substr( $text, $first_break + 1 );
+		}
+
 		$text = preg_replace( '/([.!?:;])\x1f/u', '$1 ', $text );
 		$text = trim( str_replace( "\x1f", ' · ', $text ) );
 
@@ -777,6 +787,17 @@ class Services {
 		}
 
 		return rtrim( $cut, " ,;:.-–—" ) . '…';
+	}
+
+	/**
+	 * Comparison key for plain_excerpt()'s repeated-title check: lowercase
+	 * letters and digits only.
+	 *
+	 * @param string $text Text.
+	 * @return string
+	 */
+	private static function excerpt_key( $text ) {
+		return preg_replace( '/[^\p{L}\p{N}]+/u', '', mb_strtolower( (string) $text ) );
 	}
 
 	/**

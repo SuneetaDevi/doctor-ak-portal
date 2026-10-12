@@ -104,7 +104,10 @@ class Notification_Handler {
 			isset( $_POST['booking'] ) && '1' === $_POST['booking'],
 			isset( $_POST['paid'] ) && '1' === $_POST['paid'],
 			isset( $_POST['cancelled'] ) && '1' === $_POST['cancelled'],
-			isset( $_POST['announcements'] ) && '1' === $_POST['announcements']
+			isset( $_POST['announcements'] ) && '1' === $_POST['announcements'],
+			// Only the patient dashboard shows this toggle; other dashboards
+			// don't send it, which leaves the stored preference untouched.
+			isset( $_POST['review_request'] ) ? '1' === $_POST['review_request'] : null
 		);
 
 		wp_send_json_success( array( 'message' => __( 'Notification preferences saved.', 'doctor-ak-portal' ) ) );

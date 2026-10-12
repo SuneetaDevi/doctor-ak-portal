@@ -30,6 +30,12 @@
 			formData.append( 'cancelled', document.getElementById( 'dak-notify-cancelled' ).checked ? '1' : '0' );
 			formData.append( 'announcements', document.getElementById( 'dak-notify-announcements' ).checked ? '1' : '0' );
 
+			var reviewRequest = document.getElementById( 'dak-notify-review-request' );
+
+			if ( reviewRequest ) {
+				formData.append( 'review_request', reviewRequest.checked ? '1' : '0' );
+			}
+
 			fetch( window.dakNotifications.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
 				.then( function ( response ) { return response.json(); } )
 				.then( function ( result ) {

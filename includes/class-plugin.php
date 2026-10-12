@@ -325,6 +325,18 @@ class Plugin {
 		$this->loader->add_filter( 'cron_schedules', 'DoctorAKPortal\\Includes\\Notifications', 'add_cron_interval' );
 		$this->loader->add_action( Notifications::VIDEO_LINK_CRON_HOOK, $notifications, 'send_video_link_emails' );
 
+		// "How was your appointment?" — scheduled when an appointment is
+		// completed, sent by its own single event (the hourly cron sweeps up
+		// anything a lost event missed); the email links land on the doctor's
+		// profile review form (template_redirect strips the token from the
+		// URL first) and only the form's own POST saves a review.
+		$this->loader->add_action( 'doctor_ak_appointment_completed', 'DoctorAKPortal\Includes\Review_Requests', 'on_completed', 20 );
+		$this->loader->add_action( Review_Requests::CRON_HOOK, 'DoctorAKPortal\Includes\Review_Requests', 'send_scheduled' );
+		$this->loader->add_action( Notifications::CRON_HOOK, 'DoctorAKPortal\Includes\Review_Requests', 'sweep', 20 );
+		$this->loader->add_action( 'template_redirect', 'DoctorAKPortal\Includes\Review_Requests', 'handle_landing', 1 );
+		$this->loader->add_action( 'admin_post_' . Review_Requests::SUBMIT_ACTION, 'DoctorAKPortal\Includes\Review_Requests', 'handle_submit' );
+		$this->loader->add_action( 'admin_post_nopriv_' . Review_Requests::SUBMIT_ACTION, 'DoctorAKPortal\Includes\Review_Requests', 'handle_submit' );
+
 		// Self-healing: installs that were activated before this cron event
 		// existed only get it scheduled on Activator::activate(), which
 		// doesn't re-run on a plugin code update — so make sure it's there
