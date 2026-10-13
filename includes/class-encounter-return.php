@@ -33,7 +33,7 @@ class Encounter_Return {
 	 * @var array
 	 */
 	const LISTS = array(
-		'encounters'   => array( 'date_from', 'date_to', 'doctor_id', 'patient_id', 'status' ),
+		'encounters'   => array( 'date_from', 'date_to', 'doctor_id', 'patient_id', 'status', 'search', 'clinic', 'visit', 'service', 'payment_status', 'sort' ),
 		'appointments' => array( 'range', 'date_from', 'date_to', 'doctor_id', 'payment_status', 'search', 'sort', 'patient_id' ),
 		'dashboard'    => array(),
 	);

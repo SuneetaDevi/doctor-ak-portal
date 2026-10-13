@@ -56,9 +56,8 @@
 
 	function wireAddEncounterModal() {
 		var modal = document.getElementById( 'dak-admin-add-encounter-modal' );
-		var addButton = document.getElementById( 'dak-admin-add-encounter' );
 
-		if ( ! modal || ! addButton ) {
+		if ( ! modal ) {
 			return;
 		}
 
@@ -68,7 +67,13 @@
 		var saveButton = document.getElementById( 'dak-admin-add-encounter-save' );
 		var patientOptionsHtml = patientSelect.innerHTML;
 
-		addButton.addEventListener( 'click', function () {
+		// Delegated: the live filters replace the section (and this button)
+		// each time the list is re-filtered.
+		document.addEventListener( 'click', function ( event ) {
+			if ( ! event.target.closest( '#dak-admin-add-encounter' ) ) {
+				return;
+			}
+
 			clearErrors();
 			resetModal();
 			openModal( modal );

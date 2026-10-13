@@ -53,6 +53,21 @@
 			sidebar.classList.toggle( 'is-collapsed', collapsed );
 			toggle.setAttribute( 'aria-expanded', collapsed ? 'false' : 'true' );
 			storePreference( collapsed );
+			setTooltips( collapsed );
+		}
+
+		// Icons only while collapsed, so each link shows its name on hover.
+		// Only tooltips added here are removed again.
+		function setTooltips( collapsed ) {
+			sidebar.querySelectorAll( '.dak-dashboard-nav a, .dak-sidebar-footer-link, .dak-sidebar-logout' ).forEach( function ( link ) {
+				if ( collapsed && ! link.hasAttribute( 'title' ) ) {
+					link.setAttribute( 'title', link.textContent.replace( /\s+/g, ' ' ).replace( /\s*\d+\s*$/, '' ).trim() );
+					link.setAttribute( 'data-dak-collapsed-title', '' );
+				} else if ( ! collapsed && link.hasAttribute( 'data-dak-collapsed-title' ) ) {
+					link.removeAttribute( 'title' );
+					link.removeAttribute( 'data-dak-collapsed-title' );
+				}
+			} );
 		}
 
 		function readStoredPreference() {

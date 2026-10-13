@@ -389,6 +389,96 @@ body.dak-app-page .dak-dashboard .dak-sidebar-footer .dak-sidebar-logout {
 		padding-left: 0 !important;
 		padding-right: 0 !important;
 	}
+
+	/* Icons only. The nav rules above (14px labels, group headings, side
+	   padding) outrank the original collapse rules in doctor-ak-dashboard.css,
+	   which left labels squeezed into the 72px rail and pushed the icons
+	   out of view — so the collapse is restated here at the same weight.
+	   Labels stay in the markup (font-size 0) for screen readers; the
+	   name shows as a tooltip (doctor-ak-dashboard.js). */
+	body.dak-app-page .dak-dashboard .dak-dashboard-sidebar.is-collapsed .dak-nav-group-label,
+	body.dak-app-page .dak-dashboard .dak-dashboard-sidebar.is-collapsed .dak-nav-badge,
+	body.dak-app-page .dak-dashboard .dak-dashboard-sidebar.is-collapsed .dak-sidebar-identity-text {
+		display: none !important;
+	}
+
+	/* The whole menu scrolls as one area (never each group on its own),
+	   with a slim scrollbar that only shows while the pointer is over it. */
+	body.dak-app-page .dak-dashboard .dak-dashboard-sidebar.is-collapsed .dak-dashboard-nav {
+		overflow-x: hidden !important;
+		overflow-y: auto !important;
+		scrollbar-width: none !important;
+		scrollbar-gutter: auto !important;
+	}
+
+	body.dak-app-page .dak-dashboard .dak-dashboard-sidebar.is-collapsed .dak-dashboard-nav:hover,
+	body.dak-app-page .dak-dashboard .dak-dashboard-sidebar.is-collapsed .dak-dashboard-nav:focus-within {
+		scrollbar-width: thin !important;
+		scrollbar-color: var( --dak-border ) transparent !important;
+	}
+
+	body.dak-app-page .dak-dashboard .dak-dashboard-sidebar.is-collapsed .dak-dashboard-nav::-webkit-scrollbar {
+		width: 0 !important;
+	}
+
+	body.dak-app-page .dak-dashboard .dak-dashboard-sidebar.is-collapsed .dak-dashboard-nav:hover::-webkit-scrollbar {
+		width: 4px !important;
+	}
+
+	body.dak-app-page .dak-dashboard .dak-dashboard-sidebar.is-collapsed .dak-nav-group,
+	body.dak-app-page .dak-dashboard .dak-dashboard-sidebar.is-collapsed .dak-dashboard-nav ul {
+		flex-shrink: 0 !important;
+		overflow: visible !important;
+	}
+
+	body.dak-app-page .dak-dashboard .dak-dashboard-sidebar.is-collapsed .dak-nav-group + .dak-nav-group {
+		margin-top: 8px !important;
+		padding-top: 8px !important;
+		border-top: 1px solid var( --dak-border ) !important;
+	}
+
+	body.dak-app-page .dak-dashboard .dak-dashboard-sidebar.is-collapsed .dak-dashboard-nav a,
+	body.dak-app-page .dak-dashboard .dak-dashboard-sidebar.is-collapsed .dak-sidebar-logout,
+	body.dak-app-page .dak-dashboard .dak-dashboard-sidebar.is-collapsed .dak-sidebar-footer-link {
+		position: relative !important;
+		justify-content: center !important;
+		gap: 0 !important;
+		width: 44px !important;
+		min-height: 40px !important;
+		margin: 0 auto !important;
+		padding: 0 !important;
+		font-size: 0 !important;
+		white-space: nowrap !important;
+		overflow: hidden !important;
+	}
+
+	body.dak-app-page .dak-dashboard .dak-dashboard-sidebar.is-collapsed .dak-dashboard-nav li.is-active a {
+		box-shadow: none !important;
+	}
+
+	body.dak-app-page .dak-dashboard .dak-dashboard-sidebar.is-collapsed .dak-nav-icon {
+		width: 20px !important;
+		height: 20px !important;
+		flex: 0 0 20px !important;
+	}
+
+	body.dak-app-page .dak-dashboard .dak-dashboard-sidebar.is-collapsed .dak-nav-icon svg {
+		width: 20px !important;
+		height: 20px !important;
+	}
+
+	/* An unread count still shows, as a dot on the icon. */
+	body.dak-app-page .dak-dashboard .dak-dashboard-sidebar.is-collapsed .dak-dashboard-nav a:has( .dak-nav-badge:not( [hidden] ):not( .dak-hidden ) )::after {
+		content: '' !important;
+		position: absolute !important;
+		top: 8px !important;
+		right: 10px !important;
+		width: 8px !important;
+		height: 8px !important;
+		border-radius: 50% !important;
+		background: var( --dak-danger ) !important;
+		box-shadow: 0 0 0 2px var( --dak-bg-card ) !important;
+	}
 }
 
 /* Main column + sticky topbar. */
@@ -5435,7 +5525,7 @@ body.dak-app-page .dak-portal .dak-locations-editor .dak-area-name {
 /* Readable measure: forms don't stretch across a wide desktop. */
 body.dak-app-page .dak-portal .dak-admin-user-form-card,
 body.dak-app-page .dak-portal .dak-dashboard-profile-form.dak-form-card {
-	max-width: 920px !important;
+	/* max-width: 920px !important; */
 }
 
 /* Screens without the top bar (full-screen add/edit forms) still get the

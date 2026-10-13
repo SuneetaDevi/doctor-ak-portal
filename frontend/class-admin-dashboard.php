@@ -1429,6 +1429,40 @@ class Admin_Dashboard {
 	}
 
 	/**
+	 * Encounters search: everything the Appointments search matches on the
+	 * encounter's appointment (patient, doctor, phone, APT number), plus the
+	 * ENC number — and the patient/doctor recorded on the encounter itself
+	 * when its appointment has since been deleted.
+	 *
+	 * @param array  $encounter Encounter row with its 'appointment'.
+	 * @param string $needle    Lower-case search text.
+	 * @return bool
+	 */
+	private static function encounter_matches_search( array $encounter, $needle ) {
+		if ( false !== mb_strpos( sprintf( 'enc-%04d', $encounter['id'] ), $needle ) ) {
+			return true;
+		}
+
+		$appointment = isset( $encounter['appointment'] ) && is_array( $encounter['appointment'] ) ? $encounter['appointment'] : array();
+
+		if ( ! empty( $appointment ) && self::appointment_matches_search( $appointment, $needle ) ) {
+			return true;
+		}
+
+		$names = array();
+
+		foreach ( array( 'patient_id', 'doctor_id' ) as $key ) {
+			$user = ! empty( $encounter[ $key ] ) ? get_userdata( (int) $encounter[ $key ] ) : false;
+
+			if ( $user ) {
+				$names[] = $user->display_name . ' ' . $user->first_name . ' ' . $user->last_name;
+			}
+		}
+
+		return false !== mb_strpos( mb_strtolower( implode( ' ', $names ) ), $needle );
+	}
+
+	/**
 	 * Whether an appointment row matches a search term: patient, doctor or
 	 * guest name, the APT-0123 reference, or the patient's phone. Phone
 	 * matching ignores spaces/dashes and a leading 0 or +92, so
@@ -1686,6 +1720,28 @@ class Admin_Dashboard {
 		}
 
 		wp_send_json_success( array( 'html' => $this->section_content_html( 'appointments' ) ) );
+	}
+
+	/**
+	 * AJAX: re-renders the Encounters section for a new set of filters —
+	 * same approach as handle_filter_appointments().
+	 *
+	 * @return void
+	 */
+	public function handle_filter_encounters() {
+		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) && ! self::is_receptionist() ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		foreach ( array( 'patient_id', 'date_from', 'date_to', 'doctor_id', 'status', 'search', 'sort', 'clinic', 'visit', 'service', 'payment_status' ) as $key ) {
+			$_GET[ $key ] = isset( $_POST[ $key ] ) ? $_POST[ $key ] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- nonce verified above; section_content_html() sanitizes each value.
+		}
+
+		wp_send_json_success( array( 'html' => $this->section_content_html( 'encounters' ) ) );
 	}
 
 	/**
@@ -2179,12 +2235,30 @@ class Admin_Dashboard {
 		}
 
 		if ( 'encounters' === $section ) {
+			// Same filters as the Appointments list, applied to each
+			// encounter's appointment (patient, phone, visit type, clinic,
+			// procedure, payment) plus the encounter's own status and
+			// check-in date.
 			$date_from  = isset( $_GET['date_from'] ) ? sanitize_text_field( wp_unslash( $_GET['date_from'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			$date_to    = isset( $_GET['date_to'] ) ? sanitize_text_field( wp_unslash( $_GET['date_to'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			$doctor_id  = isset( $_GET['doctor_id'] ) ? absint( wp_unslash( $_GET['doctor_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			$patient_id = isset( $_GET['patient_id'] ) ? absint( wp_unslash( $_GET['patient_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			$status     = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			$status     = in_array( $status, array( Encounters::STATUS_OPEN, Encounters::STATUS_CLOSED ), true ) ? $status : '';
+			$search     = isset( $_GET['search'] ) ? sanitize_text_field( wp_unslash( $_GET['search'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+
+			$clinic_filter  = isset( $_GET['clinic'] ) ? absint( wp_unslash( $_GET['clinic'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$visit_filter   = isset( $_GET['visit'] ) ? sanitize_key( wp_unslash( $_GET['visit'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$visit_filter   = in_array( $visit_filter, array( 'clinic', 'video' ), true ) ? $visit_filter : '';
+			$service_filter = isset( $_GET['service'] ) ? sanitize_text_field( wp_unslash( $_GET['service'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$payment_status = isset( $_GET['payment_status'] ) ? sanitize_key( wp_unslash( $_GET['payment_status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$sort           = isset( $_GET['sort'] ) && 'asc' === sanitize_key( wp_unslash( $_GET['sort'] ) ) ? 'asc' : 'desc'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+
+			$payment_status_options = array(
+				Appointments::PAYMENT_STATUS_PENDING => __( 'Pending', 'doctor-ak-portal' ),
+				Appointments::PAYMENT_STATUS_PAID    => __( 'Paid', 'doctor-ak-portal' ),
+			);
+			$payment_status = array_key_exists( $payment_status, $payment_status_options ) ? $payment_status : '';
 
 			$dashboard_url    = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
 			$encounters_url   = $dashboard_url ? add_query_arg( 'section', 'encounters', $dashboard_url ) : '';
@@ -2213,6 +2287,7 @@ class Admin_Dashboard {
 						'doctor_id'  => $doctor_id,
 						'patient_id' => $patient_id,
 						'status'     => $status,
+						'number'     => 1000,
 					)
 				)
 			);
@@ -2233,20 +2308,91 @@ class Admin_Dashboard {
 				);
 			}
 
+			// Clinic and procedure options, exactly as on Appointments.
+			$clinic_options = array();
+
+			foreach ( Clinic_Locations::get_all() as $location ) {
+				if ( empty( $assigned_clinic_location_ids ) || in_array( (int) $location['id'], $assigned_clinic_location_ids, true ) ) {
+					$clinic_options[ (int) $location['id'] ] = $location['name'];
+				}
+			}
+
+			$clinic_filter   = isset( $clinic_options[ $clinic_filter ] ) ? $clinic_filter : 0;
+			$service_options = array();
+
+			foreach ( Services::all_flat_for_admin( array( 'number' => 2000 ) ) as $service_row ) {
+				$service_name = trim( (string) $service_row['name'] );
+
+				if ( '' !== $service_name ) {
+					$service_options[ mb_strtolower( $service_name ) ] = $service_name;
+				}
+			}
+
+			natcasesort( $service_options );
+
+			$needle = mb_strtolower( $search );
+
+			$encounter_rows = array_values(
+				array_filter(
+					$encounter_rows,
+					function ( $encounter ) use ( $needle, $clinic_filter, $visit_filter, $service_filter, $payment_status ) {
+						$appointment = isset( $encounter['appointment'] ) && is_array( $encounter['appointment'] ) ? $encounter['appointment'] : array();
+
+						if ( '' !== $needle && ! self::encounter_matches_search( $encounter, $needle ) ) {
+							return false;
+						}
+
+						// Filters that come from the appointment can't match an
+						// encounter whose appointment no longer exists.
+						if ( empty( $appointment ) ) {
+							return '' === $visit_filter && 0 === $clinic_filter && '' === $service_filter && '' === $payment_status;
+						}
+
+						if ( '' !== $visit_filter && ( 'video' === $visit_filter ) !== ( 'video' === $appointment['type'] ) ) {
+							return false;
+						}
+
+						if ( $clinic_filter > 0 && self::clinic_location_id_for_clinic( $appointment['clinic_id'] ) !== $clinic_filter ) {
+							return false;
+						}
+
+						if ( '' !== $payment_status && $payment_status !== $appointment['payment_status'] ) {
+							return false;
+						}
+
+						return '' === $service_filter || in_array( mb_strtolower( $service_filter ), self::appointment_service_names( $appointment ), true );
+					}
+				)
+			);
+
+			// Newest first by default (the query's order); oldest first on request.
+			if ( 'asc' === $sort ) {
+				$encounter_rows = array_reverse( $encounter_rows );
+			}
+
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-encounters.php',
 				array(
-					'encounters'       => $encounter_rows,
-					'encounters_url'   => $encounters_url,
-					'encounter_url'    => $encounter_url,
-					'doctors'          => $doctors,
-					'filtered_patient' => $filtered_patient ? self::display_name( $filtered_patient ) : '',
-					'filters'          => array(
-						'date_from'  => $date_from,
-						'date_to'    => $date_to,
-						'doctor_id'  => $doctor_id,
-						'patient_id' => $patient_id,
-						'status'     => $status,
+					'encounters'             => $encounter_rows,
+					'encounters_url'         => $encounters_url,
+					'encounter_url'          => $encounter_url,
+					'doctors'                => $doctors,
+					'filtered_patient'       => $filtered_patient ? self::display_name( $filtered_patient ) : '',
+					'clinic_options'         => $clinic_options,
+					'service_options'        => $service_options,
+					'payment_status_options' => $payment_status_options,
+					'filters'                => array(
+						'date_from'      => $date_from,
+						'date_to'        => $date_to,
+						'doctor_id'      => $doctor_id,
+						'patient_id'     => $patient_id,
+						'status'         => $status,
+						'search'         => $search,
+						'clinic'         => $clinic_filter,
+						'visit'          => $visit_filter,
+						'service'        => $service_filter,
+						'payment_status' => $payment_status,
+						'sort'           => $sort,
 					),
 				)
 			);
