@@ -51,7 +51,7 @@ $dak_icons = array(
 ?>
 <div class="dak-portal dak-auth-page dak-registration-page">
 	<div class="dak-auth-visual" aria-hidden="true">
-		<span class="dak-eyebrow"><?php esc_html_e( 'Dr. AK Lohana Clinic', 'doctor-ak-portal' ); ?></span>
+		<span class="dak-eyebrow"><?php esc_html_e( 'Healthcare Appointments, Made Simple.', 'doctor-ak-portal' ); ?></span>
 		<h2><?php esc_html_e( 'Join a healthcare platform built around you.', 'doctor-ak-portal' ); ?></h2>
 		<div class="dak-auth-visual-benefits">
 			<div class="dak-auth-visual-benefit">
@@ -136,6 +136,23 @@ $dak_icons = array(
 						</div>
 					</div>
 
+					<div class="dak-field-row">
+						<div class="dak-field">
+							<label for="dak-doctor-phone-code"><span class="dak-field-icon dak-field-icon-phone"><?php echo $dak_icons['phone']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Phone Number', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
+							<?php
+							echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- template escapes its own output.
+								'partials/phone-field.php',
+								array(
+									'id_prefix' => 'dak-doctor-phone',
+									'dial_code' => \DoctorAKPortal\Includes\Phone::DEFAULT_DIAL_CODE,
+									'number'    => '',
+									'required'  => true,
+								)
+							);
+							?>
+							<span class="dak-field-error" data-field="phone_number"></span>
+						</div>
+
 					<div class="dak-field">
 						<label for="dak-gender"><span class="dak-field-icon dak-field-icon-experience"><?php echo $dak_icons['user']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Gender', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
 						<select id="dak-gender" name="gender" required>
@@ -145,6 +162,7 @@ $dak_icons = array(
 								<?php endforeach; ?>
 							</select>
 						<span class="dak-field-error" data-field="gender"></span>
+					</div>
 					</div>
 
 					<div class="dak-field">

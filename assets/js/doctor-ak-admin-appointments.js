@@ -80,6 +80,7 @@
 		wirePatientToggle();
 		wireAdd( modal );
 		wireEdit( modal );
+		openForPatientFromUrl( modal );
 		wireReschedule( modal );
 		wireView( viewModal );
 		wireCopy( viewModal );
@@ -216,6 +217,77 @@
 		show( document.getElementById( 'dak-admin-appointment-guest-fields' ) );
 		updateClinicOptions( '', 'clinic', '' );
 		updateServiceOptions( '', 'clinic', [] );
+		updatePatientCard();
+	}
+
+	/**
+	 * Shows the selected registered patient's P number, name and phone
+	 * under the patient search (hidden for a guest booking).
+	 */
+	function updatePatientCard() {
+		var select = document.getElementById( 'dak-admin-appointment-patient' );
+		var card = document.getElementById( 'dak-admin-appointment-patient-card' );
+
+		if ( ! select || ! card ) {
+			return;
+		}
+
+		var option = select.value ? select.querySelector( 'option[value="' + select.value + '"]' ) : null;
+
+		card.hidden = ! option;
+
+		if ( ! option ) {
+			return;
+		}
+
+		card.querySelector( '[data-patient-card-number]' ).textContent = option.getAttribute( 'data-patient-number' ) || '';
+		card.querySelector( '[data-patient-card-name]' ).textContent = option.getAttribute( 'data-patient-name' ) || '';
+		card.querySelector( '[data-patient-card-phone]' ).textContent = option.getAttribute( 'data-patient-phone' ) || '—';
+	}
+
+	/**
+	 * "Book appointment" from the Patients list lands here with
+	 * ?book_patient=ID — open the Add Appointment dialog with that patient
+	 * already selected, then drop the parameter so a reload doesn't reopen it.
+	 *
+	 * @param {HTMLElement} modal The .dak-modal wrapper.
+	 */
+	function openForPatientFromUrl( modal ) {
+		var params;
+
+		try {
+			params = new URLSearchParams( window.location.search );
+		} catch ( e ) {
+			return;
+		}
+
+		var patientId = params.get( 'book_patient' );
+		var select = document.getElementById( 'dak-admin-appointment-patient' );
+
+		if ( ! patientId || ! select ) {
+			return;
+		}
+
+		params.delete( 'book_patient' );
+
+		if ( window.history && window.history.replaceState ) {
+			var query = params.toString();
+			window.history.replaceState( null, '', window.location.pathname + ( query ? '?' + query : '' ) + window.location.hash );
+		}
+
+		if ( ! select.querySelector( 'option[value="' + patientId.replace( /\D/g, '' ) + '"]' ) ) {
+			return;
+		}
+
+		clearErrors();
+		setMode( modal, 'add' );
+		resetModalFields();
+		setModalTitle( 'Add Appointment' );
+		select.value = patientId.replace( /\D/g, '' );
+		refreshSearchable( 'dak-admin-appointment-patient' );
+		hide( document.getElementById( 'dak-admin-appointment-guest-fields' ) );
+		updatePatientCard();
+		openModal( modal );
 	}
 
 	function wireAdd( modal ) {
@@ -1367,6 +1439,7 @@
 
 		patientSelect.addEventListener( 'change', function () {
 			guestFields.classList.toggle( 'dak-hidden', '' !== patientSelect.value );
+			updatePatientCard();
 		} );
 	}
 
@@ -1388,6 +1461,7 @@
 			document.getElementById( 'dak-admin-appointment-type' ).value = trigger.getAttribute( 'data-type' ) || 'clinic';
 			document.getElementById( 'dak-admin-appointment-patient' ).value = trigger.getAttribute( 'data-patient-id' ) && '0' !== trigger.getAttribute( 'data-patient-id' ) ? trigger.getAttribute( 'data-patient-id' ) : '';
 			refreshSearchable( 'dak-admin-appointment-patient' );
+			updatePatientCard();
 			document.getElementById( 'dak-admin-appointment-guest-name' ).value = trigger.getAttribute( 'data-guest-name' ) || '';
 			document.getElementById( 'dak-admin-appointment-guest-email' ).value = trigger.getAttribute( 'data-guest-email' ) || '';
 			document.getElementById( 'dak-admin-appointment-guest-phone' ).value = trigger.getAttribute( 'data-guest-phone' ) || '';

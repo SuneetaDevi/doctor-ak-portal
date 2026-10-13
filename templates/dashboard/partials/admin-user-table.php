@@ -57,7 +57,7 @@ $dak_noun        = $dak_is_patients ? __( 'Patients', 'doctor-ak-portal' ) : __(
 		<input type="hidden" name="section" value="<?php echo esc_attr( $section ); ?>">
 		<div class="dak-field is-search">
 			<label for="dak-admin-users-filter-search"><?php esc_html_e( 'Search', 'doctor-ak-portal' ); ?></label>
-			<input type="search" id="dak-admin-users-filter-search" name="search" value="<?php echo esc_attr( $filters['search'] ); ?>" placeholder="<?php esc_attr_e( 'Name or email…', 'doctor-ak-portal' ); ?>">
+			<input type="search" id="dak-admin-users-filter-search" name="search" value="<?php echo esc_attr( $filters['search'] ); ?>" placeholder="<?php echo esc_attr( $dak_is_patients ? __( 'Name, email, phone or P number…', 'doctor-ak-portal' ) : __( 'Name or email…', 'doctor-ak-portal' ) ); ?>">
 		</div>
 
 		<?php if ( $dak_is_patients ) : ?>
@@ -147,7 +147,12 @@ $dak_noun        = $dak_is_patients ? __( 'Patients', 'doctor-ak-portal' ) : __(
 								$dak_menu[] = array( __( 'View encounters', 'doctor-ak-portal' ), add_query_arg( 'patient_id', $row['id'], $encounters_url ) );
 							}
 
-							if ( $booking_url ) {
+							// Opens the Add Appointment dialog on the Appointments page
+							// with this patient already selected (falls back to the
+							// public booking page if that section can't be resolved).
+							if ( $appointments_url ) {
+								$dak_menu[] = array( __( 'Book appointment', 'doctor-ak-portal' ), add_query_arg( array( 'book_patient' => $row['id'], 'range' => 'upcoming' ), $appointments_url ) );
+							} elseif ( $booking_url ) {
 								$dak_menu[] = array( __( 'Book appointment', 'doctor-ak-portal' ), add_query_arg( 'patient_id', $row['id'], $booking_url ) );
 							}
 

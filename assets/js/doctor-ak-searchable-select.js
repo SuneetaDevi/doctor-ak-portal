@@ -92,8 +92,11 @@
 				}
 
 				var label = opt.textContent;
+				// data-search lets an option be found by more than its label
+				// (e.g. a patient by P number written as "P041" or phone digits).
+				var haystack = ( label + ' ' + ( opt.getAttribute( 'data-search' ) || '' ) ).toLowerCase();
 
-				if ( needle && -1 === label.toLowerCase().indexOf( needle ) ) {
+				if ( needle && -1 === haystack.indexOf( needle ) ) {
 					return;
 				}
 

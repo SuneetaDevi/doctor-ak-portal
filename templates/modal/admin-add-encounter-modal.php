@@ -9,7 +9,7 @@
  * @package DoctorAKPortal\Templates
  *
  * @var array $clinic_locations Rows from Clinic_Locations::get_all().
- * @var array $patient_options  Patient user ID => display name, see Appointments::patient_options().
+ * @var array $patient_options  Patient user ID => { name, number, phone, search }, see Appointments::patient_picker_options().
  */
 
 // Prevent direct file access.
@@ -62,8 +62,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<label for="dak-admin-add-encounter-patient"><?php esc_html_e( '3. Patient', 'doctor-ak-portal' ); ?></label>
 			<select id="dak-admin-add-encounter-patient" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search patients…', 'doctor-ak-portal' ); ?>" disabled>
 				<option value="0"><?php esc_html_e( 'Select a doctor first…', 'doctor-ak-portal' ); ?></option>
-				<?php foreach ( $patient_options as $dak_patient_id => $dak_patient_name ) : ?>
-					<option value="<?php echo esc_attr( $dak_patient_id ); ?>"><?php echo esc_html( $dak_patient_name ); ?></option>
+				<?php foreach ( $patient_options as $dak_patient_id => $dak_patient ) : ?>
+					<option value="<?php echo esc_attr( $dak_patient_id ); ?>" data-search="<?php echo esc_attr( $dak_patient['search'] ); ?>"><?php echo esc_html( $dak_patient['number'] . ' · ' . $dak_patient['name'] . ( '' !== $dak_patient['phone'] ? ' · ' . $dak_patient['phone'] : '' ) ); ?></option>
 				<?php endforeach; ?>
 			</select>
 			<span class="dak-field-error" data-field="patient_id"></span>

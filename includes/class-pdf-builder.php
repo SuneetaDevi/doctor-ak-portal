@@ -167,6 +167,29 @@ class Pdf_Builder extends Pdf_Document {
 	}
 
 	/**
+	 * A registered patient's unique P number ("P-041"), as shown on the
+	 * Patients list — '' for a guest booking (no account, so no number).
+	 *
+	 * @param int $patient_id Patient's user ID, or 0.
+	 * @return string
+	 */
+	public static function patient_number( $patient_id ) {
+		return (int) $patient_id > 0 ? sprintf( 'P-%03d', (int) $patient_id ) : '';
+	}
+
+	/**
+	 * The "Patient ID" row for a document header, or no row for a guest.
+	 *
+	 * @param int $patient_id Patient's user ID, or 0.
+	 * @return array Zero or one [label, value] rows, for array_merge() into header().
+	 */
+	public static function patient_number_row( $patient_id ) {
+		$number = self::patient_number( $patient_id );
+
+		return '' !== $number ? array( array( __( 'Patient ID', 'doctor-ak-portal' ), $number ) ) : array();
+	}
+
+	/**
 	 * Lines describing the patient, for a people column.
 	 *
 	 * @param string $name       Display name.
@@ -177,7 +200,7 @@ class Pdf_Builder extends Pdf_Document {
 	 */
 	public static function patient_lines( $name, $patient_id, $age = '', $phone = '' ) {
 		$lines = array( array( 'text' => '' !== trim( (string) $name ) ? $name : __( 'Patient', 'doctor-ak-portal' ), 'style' => 'strong' ) );
-		$meta  = array( $patient_id > 0 ? sprintf( 'P-%03d', $patient_id ) : __( 'Guest booking', 'doctor-ak-portal' ) );
+		$meta  = array( $patient_id > 0 ? self::patient_number( $patient_id ) : __( 'Guest booking', 'doctor-ak-portal' ) );
 
 		if ( '' !== (string) $age ) {
 			/* translators: %s: age in years. */

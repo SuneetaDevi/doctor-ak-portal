@@ -22,7 +22,7 @@ $register_url         = \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode(
 ?>
 <div class="dak-portal dak-auth-page">
 	<div class="dak-auth-visual" aria-hidden="true">
-		<span class="dak-eyebrow"><?php esc_html_e( 'Dr. AK Lohana Clinic', 'doctor-ak-portal' ); ?></span>
+		<span class="dak-eyebrow"><?php esc_html_e( 'Healthcare Appointments, Made Simple.', 'doctor-ak-portal' ); ?></span>
 		<h2><?php esc_html_e( 'Your care, your records, one login away.', 'doctor-ak-portal' ); ?></h2>
 		<div class="dak-auth-visual-benefits">
 			<div class="dak-auth-visual-benefit">
@@ -42,7 +42,7 @@ $register_url         = \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode(
 
 	<div class="dak-auth-card">
 		<div class="dak-auth-header">
-			<span class="dak-eyebrow"><?php esc_html_e( 'Dr. AK Lohana Clinic & Endoscopy Services', 'doctor-ak-portal' ); ?></span>
+			<span class="dak-eyebrow"><?php esc_html_e( 'Healthcare Appointments, Made Simple.', 'doctor-ak-portal' ); ?></span>
 			<h1><?php esc_html_e( 'Welcome Back', 'doctor-ak-portal' ); ?></h1>
 			<p><?php esc_html_e( 'Log in to access your dashboard.', 'doctor-ak-portal' ); ?></p>
 		</div>

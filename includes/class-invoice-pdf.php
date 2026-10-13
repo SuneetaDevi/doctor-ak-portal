@@ -59,10 +59,15 @@ class Invoice_Pdf extends Pdf_Document {
 		$pdf   = new Pdf_Builder( $title, $number );
 
 		$pdf->header(
-			array(
-				array( $is_paid ? __( 'Receipt no.', 'doctor-ak-portal' ) : __( 'Invoice no.', 'doctor-ak-portal' ), $number ),
-				array( __( 'Appointment', 'doctor-ak-portal' ), sprintf( 'APT-%04d', (int) $appointment['id'] ) ),
-				array( __( 'Issued', 'doctor-ak-portal' ), date_i18n( 'd M Y' ) ),
+			array_merge(
+				array(
+					array( $is_paid ? __( 'Receipt no.', 'doctor-ak-portal' ) : __( 'Invoice no.', 'doctor-ak-portal' ), $number ),
+				),
+				Pdf_Builder::patient_number_row( (int) $appointment['patient_id'] ),
+				array(
+					array( __( 'Appointment', 'doctor-ak-portal' ), sprintf( 'APT-%04d', (int) $appointment['id'] ) ),
+					array( __( 'Issued', 'doctor-ak-portal' ), date_i18n( 'd M Y' ) ),
+				)
 			)
 		);
 

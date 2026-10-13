@@ -54,10 +54,15 @@ class Appointment_Slip_Pdf extends Pdf_Document {
 		$pdf = new Pdf_Builder( __( 'Appointment Slip', 'doctor-ak-portal' ), sprintf( 'SLIP-%05d', (int) $appointment['id'] ) );
 
 		$pdf->header(
-			array(
-				array( __( 'Slip no.', 'doctor-ak-portal' ), sprintf( 'SLIP-%05d', (int) $appointment['id'] ) ),
-				array( __( 'Appointment', 'doctor-ak-portal' ), sprintf( 'APT-%04d', (int) $appointment['id'] ) ),
-				array( __( 'Issued', 'doctor-ak-portal' ), date_i18n( 'd M Y' ) ),
+			array_merge(
+				array(
+					array( __( 'Slip no.', 'doctor-ak-portal' ), sprintf( 'SLIP-%05d', (int) $appointment['id'] ) ),
+				),
+				Pdf_Builder::patient_number_row( (int) $appointment['patient_id'] ),
+				array(
+					array( __( 'Appointment', 'doctor-ak-portal' ), sprintf( 'APT-%04d', (int) $appointment['id'] ) ),
+					array( __( 'Issued', 'doctor-ak-portal' ), date_i18n( 'd M Y' ) ),
+				)
 			)
 		);
 

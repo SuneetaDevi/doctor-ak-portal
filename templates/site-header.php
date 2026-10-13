@@ -692,6 +692,12 @@ $dak_nav_strings = array(
 								</a>
 							</li>
 						<?php endif; ?>
+						<?php
+						// Lab tests and Pharmacy aren't offered yet — hidden until they are.
+						// Set to true to show them again with their "Coming soon" label.
+						$dak_show_upcoming_options = false;
+						?>
+						<?php if ( $dak_show_upcoming_options ) : ?>
 						<li>
 							<button type="button" class="dak-book-option is-unavailable" data-dak-coming-soon="<?php echo esc_attr( $dak_header_coming_soon_note( __( 'Lab Test Booking', 'doctor-ak-portal' ) ) ); ?>">
 								<span class="dak-book-option-icon"><?php echo $dak_header_icons['flask']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?></span>
@@ -716,6 +722,7 @@ $dak_nav_strings = array(
 								</span>
 							</button>
 						</li>
+						<?php endif; ?>
 					</ul>
 				</div>
 			</div>

@@ -50,10 +50,13 @@ class Prescription_Pdf extends Pdf_Document {
 		$pdf = new Pdf_Builder( __( 'Prescription', 'doctor-ak-portal' ), $encounter_ref );
 
 		$pdf->header(
-			array(
+			array_merge(
+				Pdf_Builder::patient_number_row( $patient_id ),
+				array(
 				array( __( 'Encounter', 'doctor-ak-portal' ), $encounter_ref ),
 				array( __( 'Visit date', 'doctor-ak-portal' ), false !== $visit_ts ? date_i18n( 'd M Y, h:i A', $visit_ts ) : '' ),
 				array( __( 'Issued', 'doctor-ak-portal' ), date_i18n( 'd M Y' ) ),
+				)
 			)
 		);
 

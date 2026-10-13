@@ -8,7 +8,7 @@
  * @package DoctorAKPortal\Templates
  *
  * @var array $doctor_options  Doctor user ID => display name.
- * @var array $patient_options Patient user ID => display name.
+ * @var array $patient_options Patient user ID => { name, number, phone, search }, see Appointments::patient_picker_options().
  * @var array $status_options  Status slug => label, see Appointments::status_options().
  * @var array $services        [doctor_id][type] => [{id, name, charge, clinic_charges}, ...], see Admin_Dashboard::services_by_doctor_and_type().
  * @var array $clinics         [doctor_id] => [{id, name, place, location_id}, ...] — physical clinics, see Admin_Dashboard::physical_clinics_by_doctor().
@@ -68,13 +68,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<legend><?php esc_html_e( 'Patient', 'doctor-ak-portal' ); ?></legend>
 				<div class="dak-field">
 					<label for="dak-admin-appointment-patient"><?php esc_html_e( 'Registered patient', 'doctor-ak-portal' ); ?> <span class="dak-optional"><?php esc_html_e( '(optional)', 'doctor-ak-portal' ); ?></label>
-					<select id="dak-admin-appointment-patient" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search patients…', 'doctor-ak-portal' ); ?>">
+					<select id="dak-admin-appointment-patient" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search by P number, name or phone…', 'doctor-ak-portal' ); ?>">
 						<option value=""><?php esc_html_e( '— Guest (enter details below) —', 'doctor-ak-portal' ); ?></option>
-						<?php foreach ( $patient_options as $patient_id => $patient_name ) : ?>
-							<option value="<?php echo esc_attr( $patient_id ); ?>"><?php echo esc_html( $patient_name ); ?></option>
+						<?php foreach ( $patient_options as $patient_id => $patient ) : ?>
+							<option
+								value="<?php echo esc_attr( $patient_id ); ?>"
+								data-search="<?php echo esc_attr( $patient['search'] ); ?>"
+								data-patient-number="<?php echo esc_attr( $patient['number'] ); ?>"
+								data-patient-name="<?php echo esc_attr( $patient['name'] ); ?>"
+								data-patient-phone="<?php echo esc_attr( $patient['phone'] ); ?>"
+							><?php echo esc_html( $patient['number'] . ' · ' . $patient['name'] . ( '' !== $patient['phone'] ? ' · ' . $patient['phone'] : '' ) ); ?></option>
 						<?php endforeach; ?>
 					</select>
+					<p class="dak-field-hint"><?php esc_html_e( 'Find a registered patient by their P number (e.g. P-041), name or phone.', 'doctor-ak-portal' ); ?></p>
 				</div>
+
+				<?php // Filled by doctor-ak-admin-appointments.js whenever a registered patient is selected. ?>
+				<dl class="dak-appt-patient-card" id="dak-admin-appointment-patient-card" hidden>
+					<div><dt><?php esc_html_e( 'Patient ID', 'doctor-ak-portal' ); ?></dt><dd data-patient-card-number></dd></div>
+					<div><dt><?php esc_html_e( 'Name', 'doctor-ak-portal' ); ?></dt><dd data-patient-card-name></dd></div>
+					<div><dt><?php esc_html_e( 'Phone', 'doctor-ak-portal' ); ?></dt><dd data-patient-card-phone></dd></div>
+				</dl>
 				<div id="dak-admin-appointment-guest-fields">
 					<div class="dak-field">
 						<label for="dak-admin-appointment-guest-name"><?php esc_html_e( 'Guest Name', 'doctor-ak-portal' ); ?></label>

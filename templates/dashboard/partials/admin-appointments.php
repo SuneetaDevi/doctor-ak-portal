@@ -19,7 +19,10 @@
  * @var array  $doctors                 Doctor users { ID, display_name }, for the filter's Doctor select.
  * @var array  $payment_status_options  Payment status slug => label.
  * @var array  $range_options           Range slug => label ('', 'upcoming', 'past'), see Appointments::range_options().
- * @var array  $filters                 Active filter values: patient_id, date_from, date_to, doctor_id, payment_status, range, search, sort ('desc'|'asc').
+ * @var array  $filters                 Active filter values: patient_id, date_from, date_to, doctor_id, payment_status, range, search, sort ('desc'|'asc'), clinic (Clinic_Locations ID), visit ('clinic'|'video'), service (procedure name).
+ * @var array  $clinic_options          Clinic_Locations ID => name, for the Clinic filter.
+ * @var array  $service_options         Procedure (service) names, for the Procedure filter.
+ * @var string $patients_url            Patients section URL — a patient's name links to their row there.
  * @var bool   $is_receptionist         Whether the viewer is a Receptionist — full Add/Edit/Delete/Mark Paid access, but no Refund (Billing/Revenue stays administrator-only).
  */
 
@@ -126,6 +129,9 @@ $dak_current_query = array(
 	'payment_status' => $filters['payment_status'],
 	'sort'           => $filters['sort'],
 	'patient_id'     => $filters['patient_id'] > 0 ? $filters['patient_id'] : '',
+	'clinic'         => $filters['clinic'] > 0 ? $filters['clinic'] : '',
+	'visit'          => $filters['visit'],
+	'service'        => $filters['service'],
 );
 
 $dak_without = function ( $key, $replacement = null ) use ( $dak_current_query, $appointments_url ) {
@@ -191,6 +197,29 @@ if ( '' !== $filters['payment_status'] ) {
 		sprintf( __( 'Payment: %s', 'doctor-ak-portal' ), isset( $payment_status_options[ $filters['payment_status'] ] ) ? $payment_status_options[ $filters['payment_status'] ] : $filters['payment_status'] ),
 		$dak_without( 'payment_status' ),
 	);
+}
+
+$dak_visit_options = array(
+	'clinic' => __( 'Clinic visit', 'doctor-ak-portal' ),
+	'video'  => __( 'Video consultation', 'doctor-ak-portal' ),
+);
+
+if ( '' !== $filters['visit'] ) {
+	/* translators: %s: "Clinic visit" or "Video consultation". */
+	$dak_chips[] = array( sprintf( __( 'Visit: %s', 'doctor-ak-portal' ), $dak_visit_options[ $filters['visit'] ] ), $dak_without( 'visit' ) );
+}
+
+if ( $filters['clinic'] > 0 ) {
+	$dak_chips[] = array(
+		/* translators: %s: clinic name. */
+		sprintf( __( 'Clinic: %s', 'doctor-ak-portal' ), isset( $clinic_options[ $filters['clinic'] ] ) ? $clinic_options[ $filters['clinic'] ] : '#' . (int) $filters['clinic'] ),
+		$dak_without( 'clinic' ),
+	);
+}
+
+if ( '' !== $filters['service'] ) {
+	/* translators: %s: procedure/service name. */
+	$dak_chips[] = array( sprintf( __( 'Procedure: %s', 'doctor-ak-portal' ), $filters['service'] ), $dak_without( 'service' ) );
 }
 
 // "Clear all" returns to the default view (Upcoming, newest first), keeping
@@ -315,6 +344,36 @@ $dak_more_label = $dak_more_active > 0 ? sprintf( __( 'More filters (%d)', 'doct
 				<option value="0"><?php esc_html_e( 'All doctors', 'doctor-ak-portal' ); ?></option>
 				<?php foreach ( $doctors as $dak_doctor_option ) : ?>
 					<option value="<?php echo esc_attr( $dak_doctor_option->ID ); ?>" <?php selected( $filters['doctor_id'], $dak_doctor_option->ID ); ?>><?php echo esc_html( $dak_doctor_option->display_name ); ?></option>
+				<?php endforeach; ?>
+			</select>
+		</div>
+
+		<div class="dak-field dak-appts-filter-visit">
+			<label for="dak-admin-appointments-filter-visit"><?php esc_html_e( 'Visit type', 'doctor-ak-portal' ); ?></label>
+			<select id="dak-admin-appointments-filter-visit" name="visit">
+				<option value=""><?php esc_html_e( 'All visits', 'doctor-ak-portal' ); ?></option>
+				<?php foreach ( $dak_visit_options as $dak_visit_slug => $dak_visit_label ) : ?>
+					<option value="<?php echo esc_attr( $dak_visit_slug ); ?>" <?php selected( $filters['visit'], $dak_visit_slug ); ?>><?php echo esc_html( $dak_visit_label ); ?></option>
+				<?php endforeach; ?>
+			</select>
+		</div>
+
+		<div class="dak-field dak-appts-filter-clinic">
+			<label for="dak-admin-appointments-filter-clinic"><?php esc_html_e( 'Clinic', 'doctor-ak-portal' ); ?></label>
+			<select id="dak-admin-appointments-filter-clinic" name="clinic" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search clinics…', 'doctor-ak-portal' ); ?>">
+				<option value="0"><?php esc_html_e( 'All clinics', 'doctor-ak-portal' ); ?></option>
+				<?php foreach ( $clinic_options as $dak_clinic_id => $dak_clinic_name ) : ?>
+					<option value="<?php echo esc_attr( $dak_clinic_id ); ?>" <?php selected( (int) $filters['clinic'], (int) $dak_clinic_id ); ?>><?php echo esc_html( $dak_clinic_name ); ?></option>
+				<?php endforeach; ?>
+			</select>
+		</div>
+
+		<div class="dak-field dak-appts-filter-service">
+			<label for="dak-admin-appointments-filter-service"><?php esc_html_e( 'Procedure', 'doctor-ak-portal' ); ?></label>
+			<select id="dak-admin-appointments-filter-service" name="service" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search procedures…', 'doctor-ak-portal' ); ?>">
+				<option value=""><?php esc_html_e( 'All procedures', 'doctor-ak-portal' ); ?></option>
+				<?php foreach ( $service_options as $dak_service_name ) : ?>
+					<option value="<?php echo esc_attr( $dak_service_name ); ?>" <?php selected( mb_strtolower( $filters['service'] ), mb_strtolower( $dak_service_name ) ); ?>><?php echo esc_html( $dak_service_name ); ?></option>
 				<?php endforeach; ?>
 			</select>
 		</div>
@@ -592,7 +651,14 @@ $dak_more_label = $dak_more_active > 0 ? sprintf( __( 'More filters (%d)', 'doct
 
 								<td class="dak-col-primary dak-appts-cell-patient" data-label="<?php esc_attr_e( 'Patient', 'doctor-ak-portal' ); ?>">
 									<span class="dak-cell-stack">
+										<?php
+									$dak_patient_user = (int) $row['patient_id'] > 0 && $patients_url ? get_userdata( (int) $row['patient_id'] ) : false;
+									?>
+									<?php if ( $dak_patient_user ) : ?>
+										<a class="dak-cell-primary dak-appts-patient-link" href="<?php echo esc_url( add_query_arg( 'search', $dak_patient_user->user_email, $patients_url ) . '#dak-user-' . (int) $row['patient_id'] ); ?>" title="<?php esc_attr_e( 'View patient details', 'doctor-ak-portal' ); ?>"><?php echo esc_html( $row['patient_name'] ); ?></a>
+									<?php else : ?>
 										<span class="dak-cell-primary"><?php echo esc_html( $row['patient_name'] ); ?></span>
+									<?php endif; ?>
 										<span class="dak-cell-sub is-tabular"><?php echo esc_html( $dak_appt_id ); ?></span>
 										<?php if ( '' !== trim( (string) $row['patient_phone'] ) ) : ?>
 											<a class="dak-cell-sub dak-cell-phone is-tabular" href="tel:<?php echo esc_attr( preg_replace( '/[^\d+]/', '', $row['patient_phone'] ) ); ?>"><?php echo esc_html( $row['patient_phone'] ); ?></a>

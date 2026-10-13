@@ -229,7 +229,7 @@ class Booking_Page {
 				'contact_url'             => self::contact_url(),
 				'timezone_label'          => self::timezone_label(),
 				'is_staff'                => self::is_staff(),
-				'patient_options'         => self::is_staff() ? Appointments::patient_options() : array(),
+				'patient_options'         => self::is_staff() ? Appointments::patient_picker_options() : array(),
 				'selected_patient_id'     => $selected_patient_id,
 			)
 		);

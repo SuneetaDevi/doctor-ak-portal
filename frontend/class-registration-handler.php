@@ -319,6 +319,19 @@ class Registration_Handler {
 	private function validate_doctor_fields( array &$errors ) {
 		$meta = array();
 
+		// Required, same rules as a patient's — admins need a number to
+		// reach a doctor about their registration.
+		$phone = Phone::sanitize_from_request(
+			isset( $_POST['phone_country_code'] ) ? wp_unslash( $_POST['phone_country_code'] ) : '',
+			isset( $_POST['phone_number'] ) ? wp_unslash( $_POST['phone_number'] ) : ''
+		);
+
+		if ( is_wp_error( $phone ) ) {
+			$errors['phone_number'] = $phone->get_error_message();
+		} else {
+			$meta['doctor_ak_phone_number'] = $phone;
+		}
+
 		$years_experience = isset( $_POST['years_experience'] ) && '' !== $_POST['years_experience']
 			? absint( wp_unslash( $_POST['years_experience'] ) )
 			: null;

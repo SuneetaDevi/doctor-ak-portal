@@ -73,22 +73,7 @@ $dak_dir_strings = array(
 	<header class="dak-dir-intro">
 		<div class="dak-dir-intro-text">
 			<h1 class="dak-dir-title"><?php esc_html_e( 'Find a doctor', 'doctor-ak-portal' ); ?></h1>
-			<p class="dak-dir-lead">
-				<?php
-				if ( $doctors_count > 0 ) {
-					echo esc_html(
-						sprintf(
-							/* translators: 1: number of doctors, 2: number of specialties. */
-							__( '%1$s doctors across %2$s specialties. Book a clinic visit or a video consultation.', 'doctor-ak-portal' ),
-							number_format_i18n( $doctors_count ),
-							number_format_i18n( count( $specialities ) )
-						)
-					);
-				} else {
-					esc_html_e( 'Book a clinic visit or a video consultation with our doctors.', 'doctor-ak-portal' );
-				}
-				?>
-			</p>
+			<p class="dak-dir-lead"><?php esc_html_e( 'Book a clinic visit or a video consultation with our doctors.', 'doctor-ak-portal' ); ?></p>
 		</div>
 
 		<?php if ( $doctors_count > 0 ) : ?>

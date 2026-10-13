@@ -50,11 +50,16 @@ class Encounter_Bill_Pdf extends Pdf_Document {
 		$pdf = new Pdf_Builder( __( 'Patient Bill', 'doctor-ak-portal' ), $number );
 
 		$pdf->header(
-			array(
-				array( __( 'Bill no.', 'doctor-ak-portal' ), $number ),
+			array_merge(
+				array(
+					array( __( 'Bill no.', 'doctor-ak-portal' ), $number ),
+				),
+				Pdf_Builder::patient_number_row( (int) $appointment['patient_id'] ),
+				array(
 				array( __( 'Encounter', 'doctor-ak-portal' ), sprintf( 'ENC-%04d', (int) $encounter['id'] ) ),
 				array( __( 'Visit date', 'doctor-ak-portal' ), false !== $visit_ts ? date_i18n( 'd M Y', $visit_ts ) : '' ),
 				array( __( 'Issued', 'doctor-ak-portal' ), date_i18n( 'd M Y' ) ),
+				)
 			)
 		);
 

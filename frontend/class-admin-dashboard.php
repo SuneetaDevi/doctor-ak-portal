@@ -1080,6 +1080,39 @@ class Admin_Dashboard {
 	}
 
 	/**
+	 * Every service name on an appointment (all its services, plus the name
+	 * saved on the booking), lowercased — for the Procedure filter.
+	 *
+	 * @param array $row Row from Appointments::all_for_admin().
+	 * @return string[]
+	 */
+	private static function appointment_service_names( array $row ) {
+		static $names_by_id = array();
+
+		$ids   = array_filter( array_merge( (array) $row['service_ids'], array( (int) $row['service_id'] ) ) );
+		$names = array();
+
+		foreach ( array_unique( array_map( 'intval', $ids ) ) as $service_id ) {
+			if ( ! array_key_exists( $service_id, $names_by_id ) ) {
+				$service                    = Services::find( $service_id );
+				$names_by_id[ $service_id ] = $service ? mb_strtolower( trim( (string) $service['name'] ) ) : '';
+			}
+
+			if ( '' !== $names_by_id[ $service_id ] ) {
+				$names[] = $names_by_id[ $service_id ];
+			}
+		}
+
+		// The name saved on the appointment itself (older bookings, or a
+		// service since renamed/deleted).
+		if ( '' !== trim( (string) $row['service_name'] ) ) {
+			$names[] = mb_strtolower( trim( (string) $row['service_name'] ) );
+		}
+
+		return array_values( array_unique( $names ) );
+	}
+
+	/**
 	 * Resolves an appointment's Clinic_Locations ID from its Clinics row ID
 	 * (0 for a video consultation, which has no physical location) — shared
 	 * by every place that scopes a receptionist's view down to their
@@ -1297,12 +1330,23 @@ class Admin_Dashboard {
 	}
 
 	/**
-	 * Up to 5 users of a given role whose name/email match the query, shaped
-	 * for handle_search()'s dropdown response.
+	 * The user ID in a typed P number ("P-041", "P041", "p - 41"), or 0
+	 * when the text isn't one.
 	 *
-	 * @param string $role       WP role slug.
-	 * @param string $query      Search term.
-	 * @param string $section_url Base URL of the section the result links into ('' if unresolvable).
+	 * @param string $query Search text.
+	 * @return int
+	 */
+	private static function patient_id_from_number( $query ) {
+		return preg_match( '/^\s*p\s*-?\s*0*(\d+)\s*$/i', (string) $query, $m ) ? (int) $m[1] : 0;
+	}
+
+	/**
+	 * Up to 5 users of a role matching a search, shaped for handle_search()'s
+	 * dropdown response.
+	 *
+	 * @param string $role        Role slug.
+	 * @param string $query       Search text.
+	 * @param string $section_url Section URL the result links into.
 	 * @return array
 	 */
 	private static function search_users_for_dropdown( $role, $query, $section_url ) {
@@ -1316,11 +1360,29 @@ class Admin_Dashboard {
 			)
 		);
 
+		// A patient's P number ("P-041", "P041", "p-41") finds that patient.
+		if ( Roles::PATIENT_ROLE === $role ) {
+			$by_number = self::patient_id_from_number( $query );
+			$match     = $by_number > 0 ? get_userdata( $by_number ) : false;
+
+			if ( $match && in_array( Roles::PATIENT_ROLE, (array) $match->roles, true ) ) {
+				$users = array_merge(
+					array( $match ),
+					array_filter(
+						$users,
+						function ( $user ) use ( $by_number ) {
+							return (int) $user->ID !== $by_number;
+						}
+					)
+				);
+			}
+		}
+
 		return array_map(
-			function ( $user ) use ( $section_url ) {
+			function ( $user ) use ( $section_url, $role ) {
 				return array(
 					'label'    => $user->display_name,
-					'sublabel' => $user->user_email,
+					'sublabel' => Roles::PATIENT_ROLE === $role ? Appointments::patient_number( $user->ID ) . ' · ' . $user->user_email : $user->user_email,
 					'url'      => $section_url ? esc_url_raw( $section_url . '#dak-user-' . $user->ID ) : '',
 				);
 			},
@@ -1619,7 +1681,7 @@ class Admin_Dashboard {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		foreach ( array( 'patient_id', 'date_from', 'date_to', 'doctor_id', 'payment_status', 'range', 'search', 'sort' ) as $key ) {
+		foreach ( array( 'patient_id', 'date_from', 'date_to', 'doctor_id', 'payment_status', 'range', 'search', 'sort', 'clinic', 'visit', 'service' ) as $key ) {
 			$_GET[ $key ] = isset( $_POST[ $key ] ) ? $_POST[ $key ] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- nonce already verified above; section_content_html() sanitizes each value itself, same as it does for a real $_GET.
 		}
 
@@ -1954,6 +2016,13 @@ class Admin_Dashboard {
 			$doctor_id  = isset( $_GET['doctor_id'] ) ? absint( wp_unslash( $_GET['doctor_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			$payment_status = isset( $_GET['payment_status'] ) ? sanitize_key( wp_unslash( $_GET['payment_status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			$search    = isset( $_GET['search'] ) ? sanitize_text_field( wp_unslash( $_GET['search'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			// Clinic (a shared Clinic_Locations entry, since each doctor has
+			// their own Clinics row for the same place), visit type, and
+			// procedure (service name, so it spans every doctor offering it).
+			$clinic_filter  = isset( $_GET['clinic'] ) ? absint( wp_unslash( $_GET['clinic'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$visit_filter   = isset( $_GET['visit'] ) ? sanitize_key( wp_unslash( $_GET['visit'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$visit_filter   = in_array( $visit_filter, array( 'clinic', 'video' ), true ) ? $visit_filter : '';
+			$service_filter = isset( $_GET['service'] ) ? sanitize_text_field( wp_unslash( $_GET['service'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			// Defaults to 'upcoming' only on first load (no `range` in the
 			// request at all) — once a range is explicitly submitted
 			// (including '' for "All"), that choice sticks.
@@ -2035,6 +2104,49 @@ class Admin_Dashboard {
 				);
 			}
 
+			// Clinic / visit type / procedure options. A receptionist scoped
+			// to specific clinics is only offered those clinics.
+			$clinic_options = array();
+
+			foreach ( Clinic_Locations::get_all() as $location ) {
+				if ( empty( $assigned_clinic_location_ids ) || in_array( (int) $location['id'], $assigned_clinic_location_ids, true ) ) {
+					$clinic_options[ (int) $location['id'] ] = $location['name'];
+				}
+			}
+
+			$clinic_filter = isset( $clinic_options[ $clinic_filter ] ) ? $clinic_filter : 0;
+
+			$service_options = array();
+
+			foreach ( Services::all_flat_for_admin( array( 'number' => 2000 ) ) as $service_row ) {
+				$service_name = trim( (string) $service_row['name'] );
+
+				if ( '' !== $service_name ) {
+					$service_options[ mb_strtolower( $service_name ) ] = $service_name;
+				}
+			}
+
+			natcasesort( $service_options );
+
+			if ( $clinic_filter > 0 || '' !== $visit_filter || '' !== $service_filter ) {
+				$appointments = array_values(
+					array_filter(
+						$appointments,
+						function ( $row ) use ( $clinic_filter, $visit_filter, $service_filter ) {
+							if ( '' !== $visit_filter && ( 'video' === $visit_filter ) !== ( 'video' === $row['type'] ) ) {
+								return false;
+							}
+
+							if ( $clinic_filter > 0 && self::clinic_location_id_for_clinic( $row['clinic_id'] ) !== $clinic_filter ) {
+								return false;
+							}
+
+							return '' === $service_filter || in_array( mb_strtolower( $service_filter ), self::appointment_service_names( $row ), true );
+						}
+					)
+				);
+			}
+
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-appointments.php',
 				array(
@@ -2045,6 +2157,10 @@ class Admin_Dashboard {
 					'payment_status_options' => $payment_status_options,
 					'range_options'          => Appointments::range_options(),
 					'is_receptionist'        => self::is_receptionist(),
+					'clinic_options'         => $clinic_options,
+					'service_options'        => $service_options,
+					// Patient names link to that patient's row in Patients.
+					'patients_url'           => $dashboard_url ? add_query_arg( 'section', 'patients', $dashboard_url ) : '',
 					'filters'           => array(
 						'patient_id'     => $patient_id,
 						'date_from'      => $date_from,
@@ -2054,6 +2170,9 @@ class Admin_Dashboard {
 						'range'          => $range,
 						'search'         => $search,
 						'sort'           => $sort,
+						'clinic'         => $clinic_filter,
+						'visit'          => $visit_filter,
+						'service'        => $service_filter,
 					),
 				)
 			);
@@ -2531,7 +2650,7 @@ class Admin_Dashboard {
 			'modal/admin-add-encounter-modal.php',
 			array(
 				'clinic_locations' => Clinic_Locations::get_all(),
-				'patient_options'  => Appointments::patient_options(),
+				'patient_options'  => Appointments::patient_picker_options(),
 			)
 		);
 	}
@@ -2604,7 +2723,7 @@ class Admin_Dashboard {
 			'modal/admin-appointment-modal.php',
 			array(
 				'doctor_options'  => $this->doctor_options(),
-				'patient_options' => Appointments::patient_options(),
+				'patient_options' => Appointments::patient_picker_options(),
 				'status_options'  => Appointments::status_options(),
 				'services'        => $this->services_by_doctor_and_type(),
 				'clinics'         => $this->physical_clinics_by_doctor(),
@@ -3091,12 +3210,22 @@ class Admin_Dashboard {
 		$search = isset( $_GET['search'] ) ? sanitize_text_field( wp_unslash( $_GET['search'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 
 		if ( '' !== $search ) {
-			$needle = mb_strtolower( $search );
-			$users  = array_values(
+			$needle     = mb_strtolower( $search );
+			$by_number  = 'patients' === $section ? self::patient_id_from_number( $search ) : 0;
+			$users      = array_values(
 				array_filter(
 					$users,
-					function ( $row ) use ( $needle ) {
-						$haystack = mb_strtolower( $row['name'] . ' ' . $row['email'] );
+					function ( $row ) use ( $needle, $by_number, $section ) {
+						// "P-041" / "P041" / "p-41" — that one patient.
+						if ( $by_number > 0 ) {
+							return (int) $row['id'] === $by_number;
+						}
+
+						$haystack = mb_strtolower( $row['name'] . ' ' . $row['email'] . ' ' . ( isset( $row['phone'] ) ? $row['phone'] : '' ) );
+
+						if ( 'patients' === $section ) {
+							$haystack .= ' ' . mb_strtolower( Appointments::patient_number( $row['id'] ) );
+						}
 
 						return false !== mb_strpos( $haystack, $needle );
 					}

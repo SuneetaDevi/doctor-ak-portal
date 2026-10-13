@@ -31,7 +31,7 @@
  * @var string $contact_url            "Need help?" link target.
  * @var string $timezone_label         Site timezone every slot time is expressed in, e.g. "Asia/Karachi (UTC+05:00)".
  * @var bool   $is_staff               Whether the current viewer is an Administrator/Receptionist booking on behalf of a patient.
- * @var array  $patient_options        Patient user ID => display name, only populated when $is_staff.
+ * @var array  $patient_options        Patient user ID => { name, number, phone, search } (Appointments::patient_picker_options()), only populated when $is_staff.
  * @var int    $selected_patient_id    Preselected patient's user ID, or 0. Only meaningful when $is_staff.
  */
 
@@ -277,7 +277,7 @@ $dak_bk_icon_check = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"
 							<input type="hidden" id="dak-booking-patient-id" name="patient_id" value="<?php echo esc_attr( $selected_patient_id ); ?>">
 
 							<?php if ( count( $patient_options ) > 8 ) : ?>
-								<input type="search" class="dak-booking-patient-search" id="dak-booking-patient-search" placeholder="<?php esc_attr_e( 'Search patients…', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search patients', 'doctor-ak-portal' ); ?>">
+								<input type="search" class="dak-booking-patient-search" id="dak-booking-patient-search" placeholder="<?php esc_attr_e( 'Search by P number, name or phone…', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Search patients by P number, name or phone', 'doctor-ak-portal' ); ?>">
 							<?php endif; ?>
 
 							<div class="dak-booking-patient-cards dak-bk-options" id="dak-booking-patient-cards" role="group" aria-labelledby="dak-bk-patient-label">
@@ -285,17 +285,17 @@ $dak_bk_icon_check = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"
 									<span class="dak-bk-option-text"><strong><?php esc_html_e( 'Add new patient', 'doctor-ak-portal' ); ?></strong><span><?php esc_html_e( 'Enter their details below', 'doctor-ak-portal' ); ?></span></span>
 									<span class="dak-bk-check" aria-hidden="true"><?php echo $dak_bk_icon_check; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?></span>
 								</button>
-								<?php foreach ( $patient_options as $dak_patient_id => $dak_patient_name ) : ?>
+								<?php foreach ( $patient_options as $dak_patient_id => $dak_patient ) : ?>
 									<button
 										type="button"
 										class="dak-booking-patient-card dak-bk-option<?php echo $selected_patient_id === $dak_patient_id ? ' is-selected' : ''; ?>"
 										aria-pressed="<?php echo $selected_patient_id === $dak_patient_id ? 'true' : 'false'; ?>"
 										data-patient-card
 										data-patient-id="<?php echo esc_attr( $dak_patient_id ); ?>"
-										data-patient-name="<?php echo esc_attr( mb_strtolower( $dak_patient_name ) ); ?>"
-										data-patient-label="<?php echo esc_attr( $dak_patient_name ); ?>"
+										data-patient-name="<?php echo esc_attr( $dak_patient['search'] ); ?>"
+										data-patient-label="<?php echo esc_attr( $dak_patient['name'] ); ?>"
 									>
-										<span class="dak-bk-option-text"><strong><?php echo esc_html( $dak_patient_name ); ?></strong></span>
+										<span class="dak-bk-option-text"><strong><?php echo esc_html( $dak_patient['name'] ); ?></strong><span><?php echo esc_html( $dak_patient['number'] . ( '' !== $dak_patient['phone'] ? ' · ' . $dak_patient['phone'] : '' ) ); ?></span></span>
 										<span class="dak-bk-check" aria-hidden="true"><?php echo $dak_bk_icon_check; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?></span>
 									</button>
 								<?php endforeach; ?>

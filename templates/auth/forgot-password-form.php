@@ -27,7 +27,7 @@ if ( $is_reset_mode ) {
 ?>
 <div class="dak-portal dak-auth-page">
 	<div class="dak-auth-visual" aria-hidden="true">
-		<span class="dak-eyebrow"><?php esc_html_e( 'Dr. AK Lohana Clinic', 'doctor-ak-portal' ); ?></span>
+		<span class="dak-eyebrow"><?php esc_html_e( 'Healthcare Appointments, Made Simple.', 'doctor-ak-portal' ); ?></span>
 		<h2><?php esc_html_e( "We'll get you back in.", 'doctor-ak-portal' ); ?></h2>
 		<div class="dak-auth-visual-benefits">
 			<div class="dak-auth-visual-benefit">
@@ -46,7 +46,7 @@ if ( $is_reset_mode ) {
 		<?php if ( $is_reset_mode && $reset_key_valid ) : ?>
 
 			<div class="dak-auth-header">
-				<span class="dak-eyebrow"><?php esc_html_e( 'Dr. AK Lohana Clinic & Endoscopy Services', 'doctor-ak-portal' ); ?></span>
+				<span class="dak-eyebrow"><?php esc_html_e( 'Healthcare Appointments, Made Simple.', 'doctor-ak-portal' ); ?></span>
 				<h1><?php esc_html_e( 'Set a New Password', 'doctor-ak-portal' ); ?></h1>
 				<p><?php esc_html_e( 'Choose a new password for your account.', 'doctor-ak-portal' ); ?></p>
 			</div>
@@ -78,7 +78,7 @@ if ( $is_reset_mode ) {
 		<?php else : ?>
 
 			<div class="dak-auth-header">
-				<span class="dak-eyebrow"><?php esc_html_e( 'Dr. AK Lohana Clinic & Endoscopy Services', 'doctor-ak-portal' ); ?></span>
+				<span class="dak-eyebrow"><?php esc_html_e( 'Healthcare Appointments, Made Simple.', 'doctor-ak-portal' ); ?></span>
 				<h1><?php esc_html_e( 'Forgot Your Password?', 'doctor-ak-portal' ); ?></h1>
 				<p><?php esc_html_e( "Enter your username or email address and we'll send you a link to reset your password.", 'doctor-ak-portal' ); ?></p>
 			</div>

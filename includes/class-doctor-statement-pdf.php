@@ -227,7 +227,7 @@ class Doctor_Statement_Pdf extends Pdf_Document {
 			$list[] = array(
 				'cells' => array(
 					Dashboard_Format::date( $row['transaction_date'], (string) $row['transaction_date'] ),
-					array( 'text' => $appointment['patient_name'], 'sub' => sprintf( 'APT-%04d', (int) $row['appointment_id'] ) ),
+					array( 'text' => $appointment['patient_name'], 'sub' => implode( ' · ', array_filter( array( sprintf( 'APT-%04d', (int) $row['appointment_id'] ), Pdf_Builder::patient_number( (int) $appointment['patient_id'] ) ) ) ) ),
 					$location,
 					Dashboard_Format::money( $entry['amount'] ),
 				),

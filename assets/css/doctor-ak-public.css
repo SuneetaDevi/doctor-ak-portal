@@ -181,7 +181,6 @@ body .dak-pub :focus-visible {
 
 .dak-pub .pub-wrap {
 	width: 100%;
-	max-width: var( --pub-max );
 	margin: 0 auto;
 	padding: 0 var( --pub-gutter );
 }

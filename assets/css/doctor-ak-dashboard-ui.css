@@ -5921,3 +5921,120 @@ body.dak-app-page .dak-portal .dak-map-link:focus-visible {
 body.dak-app-page .dak-portal .dak-map-link svg {
 	flex: 0 0 auto !important;
 }
+
+/* ---- Appointments filters: Visit type / Clinic / Procedure ----------------
+   Desktop: row 1 Search · Show · Doctor · buttons; row 2 the three new
+   filters. Tablet: three columns. Phone: two. */
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filters {
+	grid-template-columns: repeat( 5, minmax( 0, 1fr ) ) auto !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filter-search,
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filter-doctor,
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filter-clinic,
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filter-service {
+	grid-column: span 2 !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filter-buttons {
+	grid-column: 6 !important;
+	grid-row: 1 !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filter-visit {
+	grid-column: 1 !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-patient-link {
+	color: var( --dak-text ) !important;
+	text-decoration: underline !important;
+	text-decoration-color: color-mix( in srgb, var( --dak-primary ) 45%, transparent ) !important;
+	text-underline-offset: 3px !important;
+}
+
+body.dak-app-page .dak-portal .dak-appts-page .dak-appts-patient-link:hover {
+	color: var( --dak-primary ) !important;
+	text-decoration-color: currentColor !important;
+}
+
+@media ( max-width: 1100px ) {
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filters {
+		grid-template-columns: repeat( 3, minmax( 0, 1fr ) ) !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filter-search {
+		grid-column: 1 / -1 !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filter-doctor,
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filter-clinic,
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filter-service,
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filter-visit {
+		grid-column: auto !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filter-buttons {
+		grid-column: 3 !important;
+		grid-row: 2 !important;
+	}
+}
+
+@media ( max-width: 600px ) {
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filters {
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filter-service {
+		grid-column: 1 / -1 !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-appts-page .dak-appts-filter-buttons {
+		grid-column: 1 / -1 !important;
+		grid-row: auto !important;
+	}
+}
+
+/* ---- Add/Edit Appointment: selected patient card (P number, name, phone) */
+body.dak-app-page .dak-appt-patient-card {
+	display: grid !important;
+	grid-template-columns: auto minmax( 0, 1fr ) auto !important;
+	gap: 4px 20px !important;
+	margin: 4px 0 12px !important;
+	padding: 12px 14px !important;
+	border: 1px solid color-mix( in srgb, var( --dak-primary ) 30%, var( --dak-border ) ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-primary-tint ) !important;
+}
+
+body.dak-app-page .dak-appt-patient-card[hidden] {
+	display: none !important;
+}
+
+body.dak-app-page .dak-appt-patient-card > div {
+	min-width: 0 !important;
+}
+
+body.dak-app-page .dak-appt-patient-card dt {
+	margin: 0 0 2px !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-appt-patient-card dd {
+	margin: 0 !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+	overflow-wrap: anywhere !important;
+}
+
+@media ( max-width: 480px ) {
+	body.dak-app-page .dak-appt-patient-card {
+		grid-template-columns: minmax( 0, 1fr ) minmax( 0, 1fr ) !important;
+	}
+
+	body.dak-app-page .dak-appt-patient-card > div:nth-child( 2 ) {
+		grid-column: 1 / -1 !important;
+		grid-row: 1 !important;
+	}
+}

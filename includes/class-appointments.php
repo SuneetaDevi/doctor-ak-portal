@@ -2409,6 +2409,42 @@ class Appointments {
 	}
 
 	/**
+	 * A registered patient's unique P number ("P-041") — the ID shown on
+	 * the Patients list and printed on every slip, bill and prescription.
+	 *
+	 * @param int $patient_id Patient user ID.
+	 * @return string '' for 0 (a guest booking has no account/number).
+	 */
+	public static function patient_number( $patient_id ) {
+		return (int) $patient_id > 0 ? sprintf( 'P-%03d', (int) $patient_id ) : '';
+	}
+
+	/**
+	 * Registered patients for staff "choose a patient" pickers, with what
+	 * they can be found by: name, P number (typed as "P-041", "P041" or
+	 * "41") and phone.
+	 *
+	 * @return array user ID => { name, number, phone, search }.
+	 */
+	public static function patient_picker_options() {
+		$options = array();
+
+		foreach ( self::patient_options() as $patient_id => $name ) {
+			$number = self::patient_number( $patient_id );
+			$phone  = (string) get_user_meta( $patient_id, 'doctor_ak_phone_number', true );
+
+			$options[ $patient_id ] = array(
+				'name'   => $name,
+				'number' => $number,
+				'phone'  => $phone,
+				'search' => mb_strtolower( implode( ' ', array( $name, $number, str_replace( '-', '', $number ), (string) $patient_id, preg_replace( '/\D/', '', $phone ), $phone ) ) ),
+			);
+		}
+
+		return $options;
+	}
+
+	/**
 	 * Total number of appointments ever booked, for the admin dashboard's
 	 * "Total Appointments" stat card.
 	 *
