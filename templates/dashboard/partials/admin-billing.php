@@ -102,7 +102,7 @@ $dak_direction = function ( $balance, $payable_label, $receivable_label ) {
 
 		<div class="dak-field">
 			<label for="dak-billing-clinic"><?php esc_html_e( 'Clinic', 'doctor-ak-portal' ); ?></label>
-			<select id="dak-billing-clinic" name="clinic_id">
+			<select id="dak-billing-clinic" name="clinic_id" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search clinics…', 'doctor-ak-portal' ); ?>">
 				<option value=""><?php esc_html_e( 'All clinics', 'doctor-ak-portal' ); ?></option>
 				<option value="-1" <?php selected( '-1' === (string) $filters['clinic_id'] ); ?>><?php esc_html_e( 'Video consultations only', 'doctor-ak-portal' ); ?></option>
 				<?php foreach ( $clinic_location_groups as $dak_location_key => $dak_clinic_group ) : ?>
