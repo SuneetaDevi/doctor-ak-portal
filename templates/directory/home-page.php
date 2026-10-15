@@ -19,6 +19,7 @@
  * @var int      $videos_total     How many videos the Videos page has in all.
  * @var string   $videos_page_url  URL of the [videos_gallery] page, or ''.
  * @var string   $directory_url    URL of the [doctors_directory] page, or '' if not found.
+ * @var string   $symptom_checker_url URL of the [symptom_checker] page when it's available to patients, else ''.
  * @var string   $doctor_register_url URL of the [doctor_register] page, or '' if not found — for the "Join as a Doctor" section.
  * @var string   $services_url     URL of the [services_directory] page, or '' if not found.
  * @var string   $clinics_url      URL of the [clinics_directory] page, or '' if not found.
@@ -452,6 +453,19 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 				<p class="dak-visually-hidden" id="dak-hsm-announcer" role="status" aria-live="polite"></p>
 			</div>
 		</div>
+	<?php endif; ?>
+
+	<?php if ( ! empty( $symptom_checker_url ) ) : ?>
+		<section class="dak-home-section dak-home-symptom-check" aria-labelledby="dak-home-symptom-check-title">
+			<div class="dak-home-symptom-check-card">
+				<span class="dak-home-symptom-check-icon" aria-hidden="true"><?php echo $dak_home_specialty_icons['stethoscope']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+				<div class="dak-home-symptom-check-text">
+					<h2 id="dak-home-symptom-check-title"><?php esc_html_e( 'Not sure which doctor you need?', 'doctor-ak-portal' ); ?></h2>
+					<p><?php esc_html_e( 'Answer a few questions about your symptoms and we\'ll suggest the right kind of care near you. General guidance only — not a diagnosis.', 'doctor-ak-portal' ); ?></p>
+				</div>
+				<a class="dak-button dak-button-primary dak-home-symptom-check-button" href="<?php echo esc_url( $symptom_checker_url ); ?>"><?php esc_html_e( 'Check Your Symptoms', 'doctor-ak-portal' ); ?></a>
+			</div>
+		</section>
 	<?php endif; ?>
 
 	<?php if ( ! empty( $dak_home_quick_links ) ) : ?>

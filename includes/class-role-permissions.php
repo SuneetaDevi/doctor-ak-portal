@@ -137,6 +137,7 @@ class Role_Permissions {
 			'doctor-sessions'    => __( 'Doctor Sessions', 'doctor-ak-portal' ),
 			'blogs'              => __( 'Blogs', 'doctor-ak-portal' ),
 			'videos'             => __( 'Videos', 'doctor-ak-portal' ),
+			'symptom-checker'    => __( 'Symptom Checker', 'doctor-ak-portal' ),
 			'locations'          => __( 'Locations', 'doctor-ak-portal' ),
 			'settings'           => __( 'Settings', 'doctor-ak-portal' ),
 		);

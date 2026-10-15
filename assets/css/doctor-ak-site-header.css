@@ -1582,3 +1582,32 @@ html body[class*='elementor-kit-'] .elementor {
 	--e-global-typography-text-font-family: var( --dak-font-sans );
 	--e-global-typography-accent-font-family: var( --dak-font-sans );
 }
+
+/* ---- Doctors menu: "Check your symptoms" link (Symptom Checker live only) ---- */
+.dak-nav-panel-foot.has-symptom-link {
+	justify-content: space-between !important;
+	flex-wrap: wrap !important;
+	gap: 8px 16px !important;
+	align-items: center !important;
+}
+
+.dak-nav-symptom-link {
+	display: inline-flex !important;
+	align-items: center !important;
+	min-height: 44px !important;
+	color: var( --hdr-primary, var( --dak-primary ) ) !important;
+	font-weight: 600 !important;
+	text-decoration: underline !important;
+	text-underline-offset: 3px !important;
+}
+
+@media ( max-width: 1023px ) {
+	.dak-nav-panel-foot.has-symptom-link {
+		flex-direction: column !important;
+		align-items: stretch !important;
+	}
+
+	.dak-nav-symptom-link {
+		justify-content: center !important;
+	}
+}

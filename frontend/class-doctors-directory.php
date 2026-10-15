@@ -9,6 +9,7 @@ namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
+use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Roles;
@@ -186,6 +187,19 @@ class Doctors_Directory {
 	}
 
 	/**
+	 * Every listed doctor with the directory's details plus a per-clinic
+	 * breakdown (see with_directory_details()'s $per_clinic) — for the
+	 * Symptom Checker, which shows each doctor at their nearest clinic.
+	 *
+	 * @return array doctor_cards_data() rows with directory details and 'clinic_details'.
+	 */
+	public function cards_with_clinic_details() {
+		$cards = $this->doctor_cards_data();
+
+		return empty( $cards ) ? array() : $this->with_directory_details( $cards, true );
+	}
+
+	/**
 	 * Sort order for the directory: most years of experience first, doctors
 	 * with no experience on file last, then alphabetical — the same order
 	 * doctor-ak-directory.js applies for "Most experienced".
@@ -239,10 +253,16 @@ class Doctors_Directory {
 	 * pricing, and the next open slot in the coming week from their session
 	 * hours minus paid bookings (the same rule the booking page applies).
 	 *
-	 * @param array $cards doctor_cards_data() rows.
+	 * With $per_clinic, each card also gets 'clinic_details': one entry per
+	 * physical clinic with that clinic's own fee, next open slot, booking
+	 * link (clinic pre-selected), map link and — when the shared clinic has
+	 * map coordinates — its latitude/longitude.
+	 *
+	 * @param array $cards      doctor_cards_data() rows.
+	 * @param bool  $per_clinic Add the per-clinic breakdown.
 	 * @return array
 	 */
-	private function with_directory_details( array $cards ) {
+	private function with_directory_details( array $cards, $per_clinic = false ) {
 		$doctor_ids         = wp_list_pluck( $cards, 'id' );
 		$clinics_by_doctor  = Clinics::get_for_doctors( $doctor_ids );
 		$services_by_doctor = array();
@@ -254,6 +274,15 @@ class Doctors_Directory {
 		$today       = current_time( 'Y-m-d' );
 		$booked      = self::booked_slots( $today, gmdate( 'Y-m-d', strtotime( $today . ' +6 days' ) ) );
 		$booking_url = Page_Finder::url_for_shortcode( 'book_appointment' );
+		$coordinates = array();
+
+		if ( $per_clinic ) {
+			foreach ( Clinic_Locations::get_all() as $location ) {
+				if ( null !== $location['latitude'] && null !== $location['longitude'] ) {
+					$coordinates[ (int) $location['id'] ] = array( $location['latitude'], $location['longitude'] );
+				}
+			}
+		}
 
 		foreach ( $cards as &$card ) {
 			$doctor_id = $card['id'];
@@ -321,6 +350,41 @@ class Doctors_Directory {
 			$card['next_at']            = $next ? $next['date'] . ' ' . $next['time'] : '';
 			$card['clinic_booking_url'] = $booking_url && $offers_clinic ? add_query_arg( array( 'doctor_id' => $doctor_id, 'type' => 'clinic' ), $booking_url ) : '';
 			$card['video_booking_url']  = $booking_url && $offers_video ? add_query_arg( array( 'doctor_id' => $doctor_id, 'type' => 'video' ), $booking_url ) : '';
+
+			if ( $per_clinic ) {
+				$card['clinic_details'] = array();
+
+				foreach ( $physical as $clinic ) {
+					$slot        = self::next_open_slot( array( $clinic ), 'clinic', $doctor_booked, $today );
+					$location_id = (int) $clinic['clinic_location_id'];
+
+					$card['clinic_details'][] = array(
+						'id'             => (int) $clinic['id'],
+						'name'           => '' !== $clinic['name'] ? $clinic['name'] : $clinic['address'],
+						'place'          => implode( ', ', array_filter( array( $clinic['area_label'], $clinic['city_label'] ) ) ),
+						'city'           => $clinic['city'],
+						'city_label'     => $clinic['city_label'],
+						'map_url'        => Clinics::map_url( $clinic ),
+						'lat'            => isset( $coordinates[ $location_id ] ) ? $coordinates[ $location_id ][0] : null,
+						'lng'            => isset( $coordinates[ $location_id ] ) ? $coordinates[ $location_id ][1] : null,
+						'fee'            => self::clinic_fee( $services, array( $clinic ) ),
+						'next_available' => $slot ? self::slot_label( $slot, $today ) : '',
+						'next_at'        => $slot ? $slot['date'] . ' ' . $slot['time'] : '',
+						'booking_url'    => $booking_url ? add_query_arg(
+							array(
+								'doctor_id' => $doctor_id,
+								'type'      => 'clinic',
+								'clinic_id' => (int) $clinic['id'],
+							),
+							$booking_url
+						) : '',
+					);
+				}
+
+				$video_slot = $offers_video ? self::next_open_slot( $clinics, 'video', $doctor_booked, $today ) : null;
+
+				$card['video_next_available'] = $video_slot ? self::slot_label( $video_slot, $today ) : '';
+			}
 		}
 		unset( $card );
 

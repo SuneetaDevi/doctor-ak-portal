@@ -34,6 +34,7 @@ use DoctorAKPortal\Includes\Service_Requests;
 use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Settlement_Manager;
 use DoctorAKPortal\Includes\Specializations;
+use DoctorAKPortal\Includes\Symptom_Rules;
 use DoctorAKPortal\Includes\Template_Loader;
 use DoctorAKPortal\Includes\Video_Pricing;
 
@@ -100,8 +101,9 @@ class Admin_Dashboard {
 			'doctor-sessions'    => 'Doctor Sessions',
 		),
 		'Content' => array(
-			'blogs'  => 'Blogs',
-			'videos' => 'Videos',
+			'blogs'           => 'Blogs',
+			'videos'          => 'Videos',
+			'symptom-checker' => 'Symptom Checker',
 		),
 		'Account' => array(
 			'role-permissions' => 'Roles & Permissions',
@@ -805,6 +807,37 @@ class Admin_Dashboard {
 			);
 		}
 
+		// Symptom Checker rules, approval and switch (administrators only —
+		// not in RECEPTIONIST_ALLOWED_SECTIONS).
+		if ( 'symptom-checker' === self::requested_section() && current_user_can( 'manage_options' ) ) {
+			// The form editor clinicians use instead of JSON.
+			wp_enqueue_script(
+				'doctor-ak-portal-admin-symptom-editor',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-symptom-editor.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-admin-symptom-editor.js' ),
+				true
+			);
+
+			wp_enqueue_script(
+				'doctor-ak-portal-admin-symptom-checker',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-symptom-checker.js',
+				array( 'doctor-ak-portal-admin-symptom-editor' ),
+				Assets::version( 'assets/js/doctor-ak-admin-symptom-checker.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-admin-symptom-editor',
+				'dakAdminSymptomChecker',
+				array(
+					'ajaxUrl'     => admin_url( 'admin-ajax.php' ),
+					'nonce'       => wp_create_nonce( Symptom_Checker_Admin_Handler::NONCE_ACTION ),
+					'specialties' => Specializations::get_all(),
+				)
+			);
+		}
+
 		if ( 'blogs' === self::requested_section() ) {
 			wp_enqueue_script(
 				'doctor-ak-portal-admin-blogs',
@@ -1047,6 +1080,43 @@ class Admin_Dashboard {
 				)
 			);
 		}
+	}
+
+	/**
+	 * The Symptom Checker section: status, approval, draft editor, history.
+	 *
+	 * @return string
+	 */
+	private function symptom_checker_section_html() {
+		$draft     = Symptom_Rules::get_draft();
+		$published = Symptom_Rules::get_published();
+		$parsed    = '' !== trim( $draft['json'] ) ? Symptom_Rules::parse( $draft['json'] ) : array(
+			'rules'  => null,
+			'errors' => array(),
+		);
+
+		return $this->template_loader->get_template(
+			'dashboard/partials/admin-symptom-checker.php',
+			array(
+				'draft'         => $draft,
+				'published'     => $published,
+				'history'       => Symptom_Rules::get_history(),
+				'reviewers'     => Symptom_Rules::get_reviewers(),
+				'admins'        => get_users(
+					array(
+						'role'    => 'administrator',
+						'orderby' => 'display_name',
+					)
+				),
+				'enabled'       => Symptom_Rules::is_enabled(),
+				'is_public'     => Symptom_Rules::is_public(),
+				'draft_errors'  => $parsed['errors'],
+				'draft_is_demo' => $parsed['rules'] && Symptom_Rules::is_demo( $parsed['rules'] ),
+				'draft_changed' => ! $published || ! $parsed['rules'] || wp_json_encode( $parsed['rules'] ) !== wp_json_encode( $published['rules'] ),
+				'page_url'      => Page_Finder::url_for_shortcode( Symptom_Checker::SHORTCODE_TAG ),
+				'current_user'  => get_current_user_id(),
+			)
+		);
 	}
 
 	/**
@@ -2627,6 +2697,10 @@ class Admin_Dashboard {
 					'max_videos'      => Home_Videos::MAX_VIDEOS,
 				)
 			);
+		}
+
+		if ( 'symptom-checker' === $section && current_user_can( 'manage_options' ) ) {
+			return $this->symptom_checker_section_html();
 		}
 
 		if ( 'video-consultation' === $section ) {

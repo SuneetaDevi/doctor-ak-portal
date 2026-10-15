@@ -80,7 +80,7 @@ class Db_Installer {
 	 *
 	 * @var string
 	 */
-	const CLINIC_LOCATIONS_DB_VERSION = '1.1.0';
+	const CLINIC_LOCATIONS_DB_VERSION = '1.2.0';
 
 	/**
 	 * Option name tracking the installed encounters-table schema version.
@@ -436,6 +436,8 @@ class Db_Installer {
 			phone VARCHAR(30) NOT NULL DEFAULT '',
 			contact_email VARCHAR(191) NOT NULL DEFAULT '',
 			keywords TEXT NOT NULL DEFAULT '',
+			latitude DECIMAL(10,7) NULL DEFAULT NULL,
+			longitude DECIMAL(10,7) NULL DEFAULT NULL,
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),

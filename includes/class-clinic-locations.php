@@ -117,6 +117,12 @@ class Clinic_Locations {
 			return new \WP_Error( 'doctor_ak_clinic_location_email_invalid', __( 'Please provide a valid contact email address.', 'doctor-ak-portal' ) );
 		}
 
+		$coordinates = self::parse_coordinates( isset( $posted['coordinates'] ) ? wp_unslash( $posted['coordinates'] ) : '' );
+
+		if ( is_wp_error( $coordinates ) ) {
+			return $coordinates;
+		}
+
 		return array(
 			'name'          => $name,
 			'address'       => $address,
@@ -126,7 +132,40 @@ class Clinic_Locations {
 			'phone'         => $phone,
 			'contact_email' => $contact_email,
 			'keywords'      => self::sanitize_keywords( isset( $posted['keywords'] ) ? wp_unslash( $posted['keywords'] ) : '' ),
+			'latitude'      => $coordinates ? $coordinates[0] : null,
+			'longitude'     => $coordinates ? $coordinates[1] : null,
 		);
+	}
+
+	/**
+	 * Parses the optional "Map coordinates" field — "24.8138, 67.0299", the
+	 * format Google Maps copies when you right-click a spot. Used only to
+	 * work out approximate straight-line distances (e.g. the Symptom
+	 * Checker's "nearby doctors"); a clinic without them is simply listed
+	 * without a distance.
+	 *
+	 * @param string $raw Raw input.
+	 * @return array|null|\WP_Error [ lat, lng ], null when left empty, or an error.
+	 */
+	public static function parse_coordinates( $raw ) {
+		$raw = trim( (string) $raw );
+
+		if ( '' === $raw ) {
+			return null;
+		}
+
+		if ( ! preg_match( '/^\s*(-?\d{1,2}(?:\.\d+)?)\s*[,\s]\s*(-?\d{1,3}(?:\.\d+)?)\s*$/', $raw, $m ) ) {
+			return new \WP_Error( 'doctor_ak_clinic_location_coordinates_invalid', __( 'Please enter map coordinates as "latitude, longitude", e.g. 24.8138, 67.0299 — or leave the field empty.', 'doctor-ak-portal' ) );
+		}
+
+		$lat = (float) $m[1];
+		$lng = (float) $m[2];
+
+		if ( $lat < -90 || $lat > 90 || $lng < -180 || $lng > 180 || ( 0.0 === $lat && 0.0 === $lng ) ) {
+			return new \WP_Error( 'doctor_ak_clinic_location_coordinates_range', __( 'Those map coordinates are out of range. Latitude goes from -90 to 90 and longitude from -180 to 180.', 'doctor-ak-portal' ) );
+		}
+
+		return array( round( $lat, 7 ), round( $lng, 7 ) );
 	}
 
 	/**
@@ -176,6 +215,10 @@ class Clinic_Locations {
 			array( '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
 		);
 
+		if ( $inserted ) {
+			self::save_coordinates( (int) $wpdb->insert_id, $fields );
+		}
+
 		return $inserted ? (int) $wpdb->insert_id : false;
 	}
 
@@ -207,7 +250,34 @@ class Clinic_Locations {
 			array( '%d' )
 		);
 
+		if ( false !== $updated ) {
+			self::save_coordinates( (int) $id, $fields );
+		}
+
 		return false !== $updated;
+	}
+
+	/**
+	 * Writes (or clears) a row's coordinates. A separate query so NULL is
+	 * stored for "not set" rather than 0,0.
+	 *
+	 * @param int   $id     Row ID.
+	 * @param array $fields Sanitized fields (latitude/longitude may be absent or null).
+	 * @return void
+	 */
+	private static function save_coordinates( $id, array $fields ) {
+		global $wpdb;
+
+		if ( ! array_key_exists( 'latitude', $fields ) ) {
+			return;
+		}
+
+		if ( null === $fields['latitude'] || null === $fields['longitude'] ) {
+			$wpdb->query( $wpdb->prepare( 'UPDATE ' . self::table_name() . ' SET latitude = NULL, longitude = NULL WHERE id = %d', $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
+			return;
+		}
+
+		$wpdb->query( $wpdb->prepare( 'UPDATE ' . self::table_name() . ' SET latitude = %f, longitude = %f WHERE id = %d', $fields['latitude'], $fields['longitude'], $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
 	}
 
 	/**
@@ -296,6 +366,9 @@ class Clinic_Locations {
 			'contact_email' => $row['contact_email'],
 			'keywords'      => isset( $row['keywords'] ) ? $row['keywords'] : '',
 			'map_url'       => self::map_url( $row['name'], $row['address'], $area_label, $city_label, $country_label ),
+			// Optional — null when the admin hasn't entered map coordinates.
+			'latitude'      => isset( $row['latitude'] ) && null !== $row['latitude'] && '' !== $row['latitude'] ? (float) $row['latitude'] : null,
+			'longitude'     => isset( $row['longitude'] ) && null !== $row['longitude'] && '' !== $row['longitude'] ? (float) $row['longitude'] : null,
 		);
 	}
 

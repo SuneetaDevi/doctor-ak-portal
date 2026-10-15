@@ -49,7 +49,7 @@ class Page_Installer {
 	 *
 	 * @var string
 	 */
-	const VERSION = '1.3.0';
+	const VERSION = '1.4.0';
 
 	/**
 	 * Self-healing install, safe to run on every request: does nothing once
@@ -87,6 +87,7 @@ class Page_Installer {
 		'blogs_directory'         => 'Blog',
 		'blog_single'             => 'Blog Post',
 		'videos_gallery'          => 'Videos',
+		'symptom_checker'         => 'Symptom Checker',
 		'clinics_directory'       => 'Our Clinics',
 		'clinic_profile_view'     => 'Clinic Details',
 		'book_appointment'        => 'Book Appointment',

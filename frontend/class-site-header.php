@@ -206,6 +206,13 @@ class Site_Header {
 			'email'              => self::primary_email(),
 			'location'           => self::primary_location(),
 			'directory_url'      => $directory_url,
+			// Only once clinically approved rules are published and switched on.
+			'symptom_checker_url' => Symptom_Checker::public_url(),
+			// Top-level menu item: everyone once it's live; administrators
+			// also before that, so they can open their staff preview.
+			'symptom_checker_nav_url' => '' !== Symptom_Checker::public_url()
+				? Symptom_Checker::public_url()
+				: ( current_user_can( 'manage_options' ) ? Page_Finder::url_for_shortcode( Symptom_Checker::SHORTCODE_TAG ) : '' ),
 			'services_url'       => Page_Finder::url_for_shortcode( 'services_directory' ),
 			'videos_url'         => '' !== Page_Finder::url_for_shortcode( 'videos_gallery' ) ? Page_Finder::url_for_shortcode( 'videos_gallery' ) : $home_url . '#dak-home-videos',
 			'clinics_url'        => Page_Finder::url_for_shortcode( 'clinics_directory' ),

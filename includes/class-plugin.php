@@ -46,6 +46,8 @@ use DoctorAKPortal\Frontend\Home_Page;
 use DoctorAKPortal\Frontend\Home_Testimonials_Handler;
 use DoctorAKPortal\Frontend\Home_Videos_Handler;
 use DoctorAKPortal\Frontend\Videos_Gallery;
+use DoctorAKPortal\Frontend\Symptom_Checker;
+use DoctorAKPortal\Frontend\Symptom_Checker_Admin_Handler;
 use DoctorAKPortal\Frontend\Login_Handler;
 use DoctorAKPortal\Frontend\Notification_Handler;
 use DoctorAKPortal\Frontend\Patient_Appointment_Handler;
@@ -500,6 +502,21 @@ class Plugin {
 		$videos_gallery = new Videos_Gallery( new Template_Loader() );
 		$this->loader->add_action( 'init', $videos_gallery, 'register' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $videos_gallery, 'enqueue_assets' );
+
+		// Public Symptom Checker page (patients see it only once clinically
+		// approved rules are published and it's switched on — see
+		// Symptom_Rules) and its dashboard section's endpoints.
+		$symptom_checker = new Symptom_Checker( new Template_Loader() );
+		$this->loader->add_action( 'init', $symptom_checker, 'register' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $symptom_checker, 'enqueue_assets' );
+
+		$symptom_checker_admin = new Symptom_Checker_Admin_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_symptom_rules_save', $symptom_checker_admin, 'handle_save_draft' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_symptom_rules_validate', $symptom_checker_admin, 'handle_validate' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_symptom_rules_load_demo', $symptom_checker_admin, 'handle_load_demo' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_symptom_rules_approve', $symptom_checker_admin, 'handle_approve' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_symptom_rules_reviewers', $symptom_checker_admin, 'handle_save_reviewers' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_symptom_checker_toggle', $symptom_checker_admin, 'handle_toggle' );
 
 		$home_testimonials_handler = new Home_Testimonials_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_home_testimonials_save', $home_testimonials_handler, 'handle_save' );

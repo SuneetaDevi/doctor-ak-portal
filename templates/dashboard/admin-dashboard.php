@@ -53,6 +53,8 @@ $dak_admin_icons = array(
 	'inbox'       => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 11 5 4.5h10L17.5 11"/><path d="M2.5 11v4a1.5 1.5 0 0 0 1.5 1.5h12a1.5 1.5 0 0 0 1.5-1.5v-4h-4.3a2.2 2.2 0 0 1-4.4 0H2.5z"/></svg>',
 );
 
+$dak_admin_icons['stethoscope'] = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5H3.5v4.5a4 4 0 0 0 8 0V2.5h-1"/><path d="M7.5 11v1.5a4.5 4.5 0 0 0 9 0V11"/><circle cx="16.5" cy="9" r="1.8"/></svg>';
+
 $dak_admin_icons['play'] = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="15" height="12" rx="2"/><path d="M8.5 7.6v4.8l4-2.4z"/></svg>';
 
 $dak_admin_section_icons = array(
@@ -73,6 +75,7 @@ $dak_admin_section_icons = array(
 	'locations'        => 'pin',
 	'settings'         => 'settings',
 	'videos'           => 'play',
+	'symptom-checker'  => 'stethoscope',
 );
 ?>
 <div class="dak-portal dak-dashboard dak-admin-dashboard" data-role="<?php echo esc_attr( $is_receptionist ? 'receptionist' : 'administrator' ); ?>">

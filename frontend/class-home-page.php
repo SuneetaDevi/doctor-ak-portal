@@ -347,6 +347,8 @@ class Home_Page {
 				// The bundled clips are now part of the managed list (Home_Videos::maybe_seed()).
 				'marketing_videos' => array(),
 				'directory_url'    => $directory_url,
+				// Only once clinically approved rules are published and switched on.
+				'symptom_checker_url' => Symptom_Checker::public_url(),
 				'doctor_register_url' => Page_Finder::url_for_shortcode( 'doctor_register' ),
 				'services_url'     => Page_Finder::url_for_shortcode( 'services_directory' ),
 				'clinics_url'      => Page_Finder::url_for_shortcode( 'clinics_directory' ),

@@ -71,6 +71,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 
 		<div class="dak-field">
+			<label for="dak-admin-clinic-location-coordinates"><?php esc_html_e( 'Map coordinates (optional)', 'doctor-ak-portal' ); ?></label>
+			<input type="text" id="dak-admin-clinic-location-coordinates" inputmode="decimal" autocomplete="off" placeholder="<?php esc_attr_e( 'e.g. 24.8138, 67.0299', 'doctor-ak-portal' ); ?>">
+			<p class="dak-field-hint"><?php esc_html_e( 'Latitude, longitude. In Google Maps, right-click the clinic and click the numbers to copy them. Used to show patients an approximate distance (e.g. in the Symptom Checker); without them the clinic is listed with no distance.', 'doctor-ak-portal' ); ?></p>
+			<span class="dak-field-error" data-field="coordinates"></span>
+		</div>
+
+		<div class="dak-field">
 			<label for="dak-admin-clinic-location-keywords"><?php esc_html_e( 'Search Keywords (optional)', 'doctor-ak-portal' ); ?></label>
 			<input type="text" id="dak-admin-clinic-location-keywords" placeholder="<?php esc_attr_e( 'e.g. free parking, wheelchair accessible, near metro station', 'doctor-ak-portal' ); ?>">
 			<p class="dak-field-hint"><?php esc_html_e( 'Comma-separated. Never shown to patients — only used so this clinic turns up when someone searches the site for one of these words.', 'doctor-ak-portal' ); ?></p>

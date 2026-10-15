@@ -52,6 +52,7 @@ class Page_Finder {
 		'blogs_directory',
 		'blog_single',
 		'videos_gallery',
+		'symptom_checker',
 		'clinics_directory',
 		'clinic_profile_view',
 	);

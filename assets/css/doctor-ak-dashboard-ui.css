@@ -6336,3 +6336,534 @@ body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-title-label inpu
 	outline: 2px solid var( --dak-primary-tint ) !important;
 	outline-offset: 0 !important;
 }
+
+
+/* ---- Symptom Checker section (administrators) ---------------------------- */
+body.dak-app-page .dak-portal .dak-admin-sc .dak-sr-only {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	margin: -1px !important;
+	padding: 0 !important;
+	overflow: hidden !important;
+	clip: rect( 0, 0, 0, 0 ) !important;
+	border: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-card {
+	margin: 0 0 16px !important;
+	padding: 20px !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-card h2 {
+	margin: 0 0 12px !important;
+	font-size: 1.125rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-card h3 {
+	margin: 16px 0 8px !important;
+	font-size: 1rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-message {
+	margin: 0 0 16px !important;
+	padding: 10px 14px !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-tint-success ) !important;
+	color: var( --dak-tint-success-text ) !important;
+	font-weight: 600 !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-message.is-error {
+	background: var( --dak-tint-danger ) !important;
+	color: var( --dak-tint-danger-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-message[hidden],
+body.dak-app-page .dak-portal .dak-admin-sc-errors[hidden] {
+	display: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-status {
+	display: grid !important;
+	gap: 0 !important;
+	margin: 0 0 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-status > div {
+	display: grid !important;
+	grid-template-columns: 180px minmax( 0, 1fr ) !important;
+	gap: 4px 16px !important;
+	padding: 10px 0 !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-status dt {
+	margin: 0 !important;
+	color: var( --dak-muted ) !important;
+	font-weight: 600 !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-status dd {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: flex-start !important;
+	gap: 2px !important;
+	margin: 0 !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-toggle,
+body.dak-app-page .dak-portal .dak-admin-sc-check {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 10px !important;
+	min-height: 44px !important;
+	padding: 10px 0 !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+	cursor: pointer !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-toggle input,
+body.dak-app-page .dak-portal .dak-admin-sc-check input {
+	flex: 0 0 auto !important;
+	width: 18px !important;
+	height: 18px !important;
+	margin: 2px 0 0 !important;
+	accent-color: var( --dak-primary ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-check .dak-cell-sub {
+	display: block !important;
+	font-weight: 400 !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-reviewers {
+	margin: 12px 0 0 !important;
+	padding: 12px 16px 16px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-reviewers legend {
+	padding: 0 6px !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-approve .dak-field textarea {
+	width: 100% !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-json {
+	display: block !important;
+	width: 100% !important;
+	min-height: 420px !important;
+	padding: 12px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-text ) !important;
+	font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace !important;
+	font-size: 13px !important;
+	line-height: 1.5 !important;
+	tab-size: 4 !important;
+	white-space: pre !important;
+	overflow: auto !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-errors {
+	margin: 12px 0 0 !important;
+	padding: 12px 16px !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-tint-danger ) !important;
+	color: var( --dak-tint-danger-text ) !important;
+	max-height: 260px !important;
+	overflow: auto !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-errors p,
+body.dak-app-page .dak-portal .dak-admin-sc-errors ul {
+	margin: 0 0 6px !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-errors ul {
+	padding-left: 20px !important;
+	font-family: ui-monospace, SFMono-Regular, Consolas, monospace !important;
+	font-size: 12.5px !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-actions {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 10px !important;
+	margin: 14px 0 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-history {
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-sc-history li {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 2px !important;
+	padding: 10px 0 !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+@media ( max-width: 782px ) {
+	body.dak-app-page .dak-portal .dak-admin-sc-status > div {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-admin-sc-actions .dak-button {
+		flex: 1 1 100% !important;
+	}
+}
+
+/* ---- Symptom Checker: form editor (instead of JSON) ---------------------- */
+body.dak-app-page .dak-portal .dak-sce {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 10px !important;
+	margin: 12px 0 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-section {
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-section > summary {
+	display: flex !important;
+	align-items: center !important;
+	gap: 10px !important;
+	min-height: 48px !important;
+	padding: 10px 16px !important;
+	font-size: 1rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	cursor: pointer !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-section[open] > summary {
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-section > :not( summary ) {
+	margin-left: 16px !important;
+	margin-right: 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-section > :last-child {
+	margin-bottom: 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-count {
+	min-width: 26px !important;
+	padding: 1px 8px !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 12px !important;
+	font-weight: 700 !important;
+	text-align: center !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-hint {
+	margin: 8px 0 !important;
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+	line-height: 1.5 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-item {
+	margin: 0 0 8px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-item > summary {
+	display: flex !important;
+	align-items: center !important;
+	min-height: 44px !important;
+	padding: 8px 14px !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+	cursor: pointer !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-item-title {
+	overflow: hidden !important;
+	text-overflow: ellipsis !important;
+	white-space: nowrap !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-body {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 12px !important;
+	padding: 12px 14px !important;
+	border-top: 1px solid var( --dak-border ) !important;
+	background: var( --dak-bg-card ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-item-actions,
+body.dak-app-page .dak-portal .dak-sce-row-actions {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 8px !important;
+	padding: 10px 14px !important;
+	background: var( --dak-bg-card ) !important;
+	border-radius: 0 0 var( --dak-radius-sm ) var( --dak-radius-sm ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-row-actions {
+	padding: 8px 0 0 !important;
+	background: transparent !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-field {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 4px !important;
+	min-width: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-field.is-narrow {
+	max-width: 140px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-field > label,
+body.dak-app-page .dak-portal .dak-sce-checkgroup > legend,
+body.dak-app-page .dak-portal .dak-sce-subtitle {
+	margin: 0 !important;
+	font-size: 13px !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-field .dak-sce-hint {
+	margin: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-input {
+	width: 100% !important;
+	min-height: 40px !important;
+	padding: 8px 10px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font: inherit !important;
+	font-size: 14px !important;
+}
+
+body.dak-app-page .dak-portal textarea.dak-sce-input {
+	resize: vertical !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-mono {
+	font-family: ui-monospace, SFMono-Regular, Consolas, monospace !important;
+	font-size: 12.5px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-check {
+	display: inline-flex !important;
+	align-items: flex-start !important;
+	gap: 8px !important;
+	min-height: 32px !important;
+	font-size: 14px !important;
+	color: var( --dak-text ) !important;
+	cursor: pointer !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-check input {
+	flex: 0 0 auto !important;
+	width: 16px !important;
+	height: 16px !important;
+	margin: 3px 0 0 !important;
+	accent-color: var( --dak-primary ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-checkgroup {
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	min-width: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-checkgrid {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 6px !important;
+	margin: 6px 0 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-check.is-chip {
+	align-items: center !important;
+	padding: 4px 10px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-card ) !important;
+	font-size: 13px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-check.is-chip:has( input:checked ) {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary-tint ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-check.is-chip input {
+	margin: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-options {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 8px !important;
+	padding: 12px !important;
+	border: 1px dashed var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-option {
+	display: grid !important;
+	grid-template-columns: minmax( 0, 1fr ) auto auto !important;
+	gap: 8px 12px !important;
+	align-items: end !important;
+	padding: 0 0 8px !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-option-controls {
+	grid-column: 1 / -1 !important;
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 8px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-cond {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 10px !important;
+	padding: 12px !important;
+	border-left: 4px solid var( --dak-secondary ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-cond-title {
+	margin: 0 !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-row {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 8px !important;
+	padding: 10px 12px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-row-head {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 8px !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-link {
+	min-height: 32px !important;
+	padding: 0 4px !important;
+	border: 0 !important;
+	background: none !important;
+	color: var( --dak-primary ) !important;
+	font: inherit !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+	text-decoration: underline !important;
+	cursor: pointer !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-link.is-danger,
+body.dak-app-page .dak-portal .dak-sce-small.is-danger {
+	color: var( --dak-tint-danger-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-small {
+	min-height: 34px !important;
+	padding: 4px 12px !important;
+	font-size: 13px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-add {
+	align-self: flex-start !important;
+	margin-top: 4px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-demo {
+	padding: 10px 12px !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-demo.is-on {
+	background: var( --dak-tint-amber ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-error {
+	margin: 0 !important;
+	padding: 8px 12px !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-tint-danger ) !important;
+	color: var( --dak-tint-danger-text ) !important;
+	font-weight: 600 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-error[hidden] {
+	display: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-advanced {
+	margin: 14px 0 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sce-advanced > summary {
+	min-height: 40px !important;
+	display: flex !important;
+	align-items: center !important;
+	color: var( --dak-muted ) !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+}
+
+@media ( max-width: 782px ) {
+	body.dak-app-page .dak-portal .dak-sce-option {
+		grid-template-columns: minmax( 0, 1fr ) minmax( 0, 1fr ) !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-sce-option > .dak-sce-field:first-child {
+		grid-column: 1 / -1 !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-sce-field.is-narrow {
+		max-width: none !important;
+	}
+}

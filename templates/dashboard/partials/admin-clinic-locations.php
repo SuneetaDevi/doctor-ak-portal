@@ -62,6 +62,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 								<span class="dak-cell-stack">
 									<span><?php echo esc_html( '' !== $dak_place ? $dak_place : '—' ); ?></span>
 									<span class="dak-cell-sub"><?php echo esc_html( $clinic_location['country_label'] ); ?></span>
+									<span class="dak-cell-sub"><?php echo null !== $clinic_location['latitude'] ? esc_html__( 'Map coordinates set', 'doctor-ak-portal' ) : esc_html__( 'No map coordinates', 'doctor-ak-portal' ); ?></span>
 								</span>
 							</td>
 							<td data-label="<?php esc_attr_e( 'Contact', 'doctor-ak-portal' ); ?>">
@@ -93,6 +94,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 										data-phone="<?php echo esc_attr( $clinic_location['phone'] ); ?>"
 										data-contact-email="<?php echo esc_attr( $clinic_location['contact_email'] ); ?>"
 										data-keywords="<?php echo esc_attr( $clinic_location['keywords'] ); ?>"
+										data-coordinates="<?php echo esc_attr( null !== $clinic_location['latitude'] ? $clinic_location['latitude'] . ', ' . $clinic_location['longitude'] : '' ); ?>"
 										aria-label="<?php echo esc_attr( sprintf( /* translators: %s: clinic name. */ __( 'Edit %s', 'doctor-ak-portal' ), $clinic_location['name'] ) ); ?>"
 									><?php esc_html_e( 'Edit', 'doctor-ak-portal' ); ?></button>
 									<details class="dak-row-menu">
