@@ -45,6 +45,7 @@ use DoctorAKPortal\Frontend\Google_Reviews_Handler;
 use DoctorAKPortal\Frontend\Home_Page;
 use DoctorAKPortal\Frontend\Home_Testimonials_Handler;
 use DoctorAKPortal\Frontend\Home_Videos_Handler;
+use DoctorAKPortal\Frontend\Videos_Gallery;
 use DoctorAKPortal\Frontend\Login_Handler;
 use DoctorAKPortal\Frontend\Notification_Handler;
 use DoctorAKPortal\Frontend\Patient_Appointment_Handler;
@@ -493,6 +494,12 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_home_video_upload', $home_videos_handler, 'handle_upload_video' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_home_video_poster_upload', $home_videos_handler, 'handle_upload_poster' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_home_videos_save', $home_videos_handler, 'handle_save' );
+
+		// Public Videos page — every video staff manage from the dashboard's
+		// Videos section (the home page shows the first few).
+		$videos_gallery = new Videos_Gallery( new Template_Loader() );
+		$this->loader->add_action( 'init', $videos_gallery, 'register' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $videos_gallery, 'enqueue_assets' );
 
 		$home_testimonials_handler = new Home_Testimonials_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_home_testimonials_save', $home_testimonials_handler, 'handle_save' );

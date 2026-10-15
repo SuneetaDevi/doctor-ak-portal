@@ -32,19 +32,53 @@ class Home_Videos {
 	const OPTION_NAME = 'doctor_ak_home_videos';
 
 	/**
-	 * Upper bound on how many videos can be saved, so the option (and the
-	 * home page section) can't grow unbounded.
+	 * Upper bound on how many videos can be saved, so the option can't grow
+	 * unbounded. The home page shows the first HOME_LIMIT; the Videos page
+	 * shows them all.
 	 *
 	 * @var int
 	 */
-	const MAX_VIDEOS = 12;
+	const MAX_VIDEOS = 60;
 
 	/**
-	 * Every saved video row, ready for display.
+	 * How many videos the home page's video section shows before "View all".
+	 *
+	 * @var int
+	 */
+	const HOME_LIMIT = 8;
+
+	/**
+	 * Flag: the clips that used to be hard-coded on the home page have been
+	 * copied into the managed list (once), so staff can now edit, reorder or
+	 * remove them like any other video.
+	 *
+	 * @var string
+	 */
+	const SEEDED_OPTION = 'doctor_ak_home_videos_seeded';
+
+	/**
+	 * The clips bundled with the plugin that the home page used to show
+	 * unconditionally — now just the starting content of the managed list.
+	 *
+	 * @var string[]
+	 */
+	const BUNDLED_VIDEO_PATHS = array(
+		'assets/videos/video-1.mp4',
+		'assets/videos/video-2.mp4',
+		'assets/videos/video-3.mp4',
+		'assets/videos/video-4.mp4',
+		'assets/videos/video-5.mp4',
+		'assets/videos/video-6.mp4',
+	);
+
+	/**
+	 * Every saved video row, ready for display, in the order staff set.
 	 *
 	 * @return array List of { title, video_url, poster_url }.
 	 */
 	public static function get_all() {
+		self::maybe_seed();
+
 		$rows = get_option( self::OPTION_NAME, array() );
 
 		if ( ! is_array( $rows ) ) {
@@ -66,6 +100,53 @@ class Home_Videos {
 		}
 
 		return $decoded;
+	}
+
+	/**
+	 * The first few videos, for the home page.
+	 *
+	 * @return array
+	 */
+	public static function for_home() {
+		return array_slice( self::get_all(), 0, self::HOME_LIMIT );
+	}
+
+	/**
+	 * One-time: copies the bundled clips (previously hard-coded on the home
+	 * page) in front of any videos already saved, so nothing disappears from
+	 * the site when the home page switches to showing only the managed list.
+	 *
+	 * @return void
+	 */
+	private static function maybe_seed() {
+		if ( get_option( self::SEEDED_OPTION ) ) {
+			return;
+		}
+
+		$existing = get_option( self::OPTION_NAME, array() );
+		$existing = is_array( $existing ) ? $existing : array();
+		$seeded   = array();
+
+		foreach ( self::BUNDLED_VIDEO_PATHS as $path ) {
+			if ( file_exists( DOCTOR_AK_PORTAL_PATH . $path ) ) {
+				$seeded[] = array(
+					'title'      => '',
+					'video_url'  => DOCTOR_AK_PORTAL_URL . $path,
+					'poster_url' => '',
+				);
+			}
+		}
+
+		$urls = wp_list_pluck( $seeded, 'video_url' );
+
+		foreach ( $existing as $row ) {
+			if ( ! empty( $row['video_url'] ) && ! in_array( $row['video_url'], $urls, true ) ) {
+				$seeded[] = $row;
+			}
+		}
+
+		update_option( self::OPTION_NAME, array_slice( $seeded, 0, self::MAX_VIDEOS ) );
+		update_option( self::SEEDED_OPTION, '1' );
 	}
 
 	/**

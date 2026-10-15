@@ -23,7 +23,7 @@
  * @var string   $email              Contact email (first clinic location with one on file), or ''.
  * @var string   $directory_url      [doctors_directory] page URL, or ''. Reads ?q= (name/specialty search) and ?specialization=.
  * @var string   $services_url       [services_directory] page URL, or ''.
- * @var string   $videos_url         Home page's videos section anchor.
+ * @var string   $videos_url         The Videos page ([videos_gallery]), or the home page's videos section if that page is missing.
  * @var string   $clinics_url        [clinics_directory] page URL, or ''. Reads ?q= (name/address search) and ?city=.
  * @var string   $blogs_url          [blogs_directory] page URL, or ''.
  * @var string   $booking_url        [book_appointment] page URL, or ''.
@@ -623,8 +623,9 @@ $dak_nav_strings = array(
 						</li>
 					<?php endif; ?>
 
+					<?php $dak_videos_current = false === strpos( $videos_url, '#' ) && $dak_path_of( $videos_url ) === $current_path; ?>
 					<li class="dak-nav-item">
-						<a class="dak-nav-link" href="<?php echo esc_url( $videos_url ); ?>"><?php esc_html_e( 'Videos', 'doctor-ak-portal' ); ?></a>
+						<a class="dak-nav-link<?php echo $dak_videos_current ? ' is-current' : ''; ?>" href="<?php echo esc_url( $videos_url ); ?>"<?php echo $dak_videos_current ? ' aria-current="page"' : ''; ?>><?php esc_html_e( 'Videos', 'doctor-ak-portal' ); ?></a>
 					</li>
 
 					<?php if ( $gallery_url ) : ?>

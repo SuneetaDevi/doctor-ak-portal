@@ -15,7 +15,9 @@
  * @var array      $videos           Home_Videos::get_all() rows — { title, video_url, poster_url } — admin-uploaded videos.
  * @var string   $hero_video_url   Bundled hero tour video URL (assets/videos/thumbnail.mp4), or '' if missing.
  * @var string   $hero_banner_url  Bundled hero banner photo URL (assets/images/doctor-banner.avif), or '' if missing.
- * @var string[] $marketing_videos Bundled marketing reel video URLs (assets/videos/video-1..6.mp4).
+ * @var string[] $marketing_videos Unused now (always empty) — the bundled clips were moved into the managed Home_Videos list.
+ * @var int      $videos_total     How many videos the Videos page has in all.
+ * @var string   $videos_page_url  URL of the [videos_gallery] page, or ''.
  * @var string   $directory_url    URL of the [doctors_directory] page, or '' if not found.
  * @var string   $doctor_register_url URL of the [doctor_register] page, or '' if not found — for the "Join as a Doctor" section.
  * @var string   $services_url     URL of the [services_directory] page, or '' if not found.
@@ -688,6 +690,22 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 				<span class="dak-home-videos-live"><?php esc_html_e( 'Inside our clinics', 'doctor-ak-portal' ); ?></span>
 				<h2><?php esc_html_e( 'More From', 'doctor-ak-portal' ); ?> <em><?php esc_html_e( 'Our Clinic', 'doctor-ak-portal' ); ?></em></h2>
 				<p><?php esc_html_e( 'Real moments from our clinics. Tap any clip to watch it full screen, with sound.', 'doctor-ak-portal' ); ?></p>
+
+				<?php if ( ! empty( $videos_page_url ) ) : ?>
+					<div class="dak-home-videos-more">
+						<a class="dak-home-videos-viewall" href="<?php echo esc_url( $videos_page_url ); ?>">
+							<?php
+							echo esc_html(
+								! empty( $videos_total ) && $videos_total > count( $videos )
+									/* translators: %d: number of videos. */
+									? sprintf( __( 'View all %d videos', 'doctor-ak-portal' ), $videos_total )
+									: __( 'View all videos', 'doctor-ak-portal' )
+							);
+							?>
+							<?php echo $dak_home_icons['chevron']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+						</a>
+					</div>
+				<?php endif; ?>
 			</div>
 
 			<div class="dak-home-videos-slider">

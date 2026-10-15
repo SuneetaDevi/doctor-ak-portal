@@ -3459,3 +3459,101 @@
 .dak-reviews-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
 .dak-reviews-head time { margin-left: auto; font-size: 0.78rem; color: var( --dak-muted ); }
 .dak-reviews-list p { margin: 0.35rem 0 0; line-height: 1.55; overflow-wrap: anywhere; }
+
+/* ==========================================================================
+   Videos page ([videos_gallery]) — every staff-managed video in a grid.
+   ========================================================================== */
+
+.dak-videos-page {
+	box-sizing: border-box !important;
+	width: 100% !important;
+	max-width: calc( 1200px + 48px ) !important;
+	margin: 0 auto !important;
+	padding: 40px 24px 72px !important;
+}
+
+.dak-videos-page-head {
+	margin: 0 0 28px !important;
+}
+
+.dak-videos-page-head h1 {
+	margin: 0 0 8px !important;
+	font-size: 2.25rem !important;
+	font-weight: 800 !important;
+	line-height: 1.2 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-videos-page-head p {
+	max-width: 640px !important;
+	margin: 0 !important;
+	font-size: 1.0625rem !important;
+	line-height: 1.6 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-videos-grid {
+	display: grid !important;
+	grid-template-columns: repeat( 3, minmax( 0, 1fr ) ) !important;
+	gap: 24px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+.dak-videos-card {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 10px !important;
+	min-width: 0 !important;
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+/* Clinic clips are mostly shot on phones (portrait); a 4:5 frame suits
+   those and still shows landscape clips whole (letterboxed). */
+.dak-videos-frame {
+	position: relative !important;
+	aspect-ratio: 4 / 5 !important;
+	overflow: hidden !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 14px !important;
+	background: #0b1512 !important;
+}
+
+.dak-videos-frame video {
+	display: block !important;
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: contain !important;
+	background: #0b1512 !important;
+}
+
+.dak-videos-title {
+	margin: 0 !important;
+	font-size: 1rem !important;
+	font-weight: 600 !important;
+	line-height: 1.4 !important;
+	color: var( --dak-text ) !important;
+}
+
+@media ( max-width: 1024px ) {
+	.dak-videos-grid {
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+	}
+}
+
+@media ( max-width: 600px ) {
+	.dak-videos-page {
+		padding: 24px 16px 56px !important;
+	}
+
+	.dak-videos-page-head h1 {
+		font-size: 1.75rem !important;
+	}
+
+	.dak-videos-grid {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+		gap: 20px !important;
+	}
+}

@@ -100,7 +100,8 @@ class Admin_Dashboard {
 			'doctor-sessions'    => 'Doctor Sessions',
 		),
 		'Content' => array(
-			'blogs' => 'Blogs',
+			'blogs'  => 'Blogs',
+			'videos' => 'Videos',
 		),
 		'Account' => array(
 			'role-permissions' => 'Roles & Permissions',
@@ -124,7 +125,7 @@ class Admin_Dashboard {
 	 *
 	 * @var array
 	 */
-	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'patients', 'doctors', 'clinic', 'services', 'service-requests', 'doctor-sessions', 'settings', 'encounter', 'encounters', 'notifications' );
+	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'patients', 'doctors', 'clinic', 'services', 'service-requests', 'doctor-sessions', 'settings', 'encounter', 'encounters', 'notifications', 'videos' );
 
 	/**
 	 * Section slugs that exist and are reachable, but deliberately have no
@@ -778,6 +779,28 @@ class Admin_Dashboard {
 				array(
 					'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 					'nonce'   => wp_create_nonce( self::NONCE_ACTION ),
+				)
+			);
+		}
+
+		// Videos (home page + Videos page): the upload/title/remove editor.
+		if ( 'videos' === self::requested_section() ) {
+			wp_enqueue_script(
+				'doctor-ak-portal-admin-home-videos',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-home-videos.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-admin-home-videos.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-admin-home-videos',
+				'dakHomeVideos',
+				array(
+					'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+					'nonce'     => wp_create_nonce( Home_Videos_Handler::NONCE_ACTION ),
+					'rows'      => Home_Videos::get_all(),
+					'maxVideos' => Home_Videos::MAX_VIDEOS,
 				)
 			);
 		}
@@ -2591,6 +2614,17 @@ class Admin_Dashboard {
 				array(
 					'blogs'       => Blogs::all_flat_for_admin(),
 					'section_url' => add_query_arg( 'section', $section, Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ) ),
+				)
+			);
+		}
+
+		if ( 'videos' === $section ) {
+			return $this->template_loader->get_template(
+				'dashboard/partials/admin-videos.php',
+				array(
+					'videos_page_url' => Page_Finder::url_for_shortcode( 'videos_gallery' ),
+					'home_limit'      => Home_Videos::HOME_LIMIT,
+					'max_videos'      => Home_Videos::MAX_VIDEOS,
 				)
 			);
 		}

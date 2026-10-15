@@ -10,6 +10,8 @@
 namespace DoctorAKPortal\Frontend;
 
 use DoctorAKPortal\Includes\Home_Videos;
+use DoctorAKPortal\Includes\Role_Permissions;
+use DoctorAKPortal\Includes\Roles;
 
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -143,7 +145,13 @@ class Home_Videos_Handler {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		// Administrators, and receptionists whose Videos tab is switched on
+		// (Settings → Roles & Permissions) — the same people who see the
+		// dashboard's Videos section.
+		$is_receptionist = in_array( Roles::RECEPTIONIST_ROLE, (array) wp_get_current_user()->roles, true )
+			&& Role_Permissions::is_tab_allowed( Roles::RECEPTIONIST_ROLE, 'videos' );
+
+		if ( ! current_user_can( 'manage_options' ) && ! $is_receptionist ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do that.', 'doctor-ak-portal' ) ), 403 );
 		}
 	}

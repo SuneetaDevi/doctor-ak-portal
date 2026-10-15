@@ -6128,3 +6128,211 @@ body.dak-app-page .dak-appt-patient-card dd {
 		grid-row: 1 !important;
 	}
 }
+
+/* ---- Videos section (admin + receptionist) ------------------------------ */
+body.dak-app-page .dak-portal .dak-admin-videos {
+	padding: 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos-toolbar {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 12px !important;
+	margin: 0 0 8px !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos-count {
+	margin: 0 !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos-rows {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 10px !important;
+	margin-top: 12px !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos-empty {
+	margin: 16px 0 0 !important;
+	padding: 24px !important;
+	border: 1px dashed var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	text-align: center !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos-empty[hidden] {
+	display: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-row {
+	display: grid !important;
+	grid-template-columns: 28px 132px minmax( 0, 1fr ) auto !important;
+	align-items: start !important;
+	gap: 14px !important;
+	margin: 0 !important;
+	padding: 12px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-number {
+	align-self: center !important;
+	font-weight: 700 !important;
+	color: var( --dak-muted ) !important;
+	text-align: center !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-poster-picker {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: stretch !important;
+	gap: 6px !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-poster-preview {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 132px !important;
+	height: 132px !important;
+	overflow: hidden !important;
+	border-radius: 8px !important;
+	background: #0b1512 !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-poster-preview img,
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-poster-preview video {
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-poster-empty {
+	padding: 8px !important;
+	font-size: 12px !important;
+	color: rgba( 255, 255, 255, 0.7 ) !important;
+	text-align: center !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-badge {
+	align-self: flex-start !important;
+	padding: 2px 8px !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+	font-size: 11px !important;
+	font-weight: 600 !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-badge[hidden] {
+	display: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-fields {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 10px !important;
+	min-width: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-title-label {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 4px !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-title-label input {
+	width: 100% !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-picker {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 8px 12px !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-status {
+	min-width: 0 !important;
+	font-size: 13px !important;
+	color: var( --dak-muted ) !important;
+	overflow-wrap: anywhere !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-actions {
+	display: flex !important;
+	gap: 6px !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-icon-btn {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 34px !important;
+	height: 34px !important;
+	padding: 0 !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 8px !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 16px !important;
+	line-height: 1 !important;
+	cursor: pointer !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-icon-btn:disabled {
+	opacity: 0.35 !important;
+	cursor: default !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-remove:hover {
+	border-color: var( --dak-danger ) !important;
+	color: var( --dak-danger ) !important;
+}
+
+@media ( max-width: 640px ) {
+	body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-row {
+		grid-template-columns: 96px minmax( 0, 1fr ) !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-number {
+		display: none !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-poster-preview {
+		width: 96px !important;
+		height: 96px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-actions {
+		grid-column: 1 / -1 !important;
+		justify-content: flex-end !important;
+	}
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-title-label input {
+	box-sizing: border-box !important;
+	min-height: var( --dui-control-h, 40px ) !important;
+	padding: 0 12px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 8px !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font: inherit !important;
+	font-size: 14px !important;
+}
+
+body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-title-label input:focus {
+	border-color: var( --dak-primary ) !important;
+	outline: 2px solid var( --dak-primary-tint ) !important;
+	outline-offset: 0 !important;
+}

@@ -338,10 +338,14 @@ class Home_Page {
 				'services_html'    => $services_html,
 				'specialties'      => $specialties_in_use,
 				'cities'           => self::cities_in_use( $all_doctor_cards ),
-				'videos'           => Home_Videos::get_all(),
+				// The first few staff-managed videos; "View all videos" opens the Videos page.
+				'videos'           => Home_Videos::for_home(),
+				'videos_total'     => count( Home_Videos::get_all() ),
+				'videos_page_url'  => Page_Finder::url_for_shortcode( 'videos_gallery' ),
 				'hero_video_url'   => $this->bundled_asset_url( self::HERO_VIDEO_PATH ),
 				'hero_banner_url'  => $this->bundled_asset_url( self::HERO_BANNER_IMAGE_PATH ),
-				'marketing_videos' => array_values( array_filter( array_map( array( $this, 'bundled_asset_url' ), self::MARKETING_VIDEO_PATHS ) ) ),
+				// The bundled clips are now part of the managed list (Home_Videos::maybe_seed()).
+				'marketing_videos' => array(),
 				'directory_url'    => $directory_url,
 				'doctor_register_url' => Page_Finder::url_for_shortcode( 'doctor_register' ),
 				'services_url'     => Page_Finder::url_for_shortcode( 'services_directory' ),

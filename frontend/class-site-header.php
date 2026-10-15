@@ -207,7 +207,7 @@ class Site_Header {
 			'location'           => self::primary_location(),
 			'directory_url'      => $directory_url,
 			'services_url'       => Page_Finder::url_for_shortcode( 'services_directory' ),
-			'videos_url'         => $home_url . '#dak-home-videos',
+			'videos_url'         => '' !== Page_Finder::url_for_shortcode( 'videos_gallery' ) ? Page_Finder::url_for_shortcode( 'videos_gallery' ) : $home_url . '#dak-home-videos',
 			'clinics_url'        => Page_Finder::url_for_shortcode( 'clinics_directory' ),
 			'blogs_url'          => Page_Finder::url_for_shortcode( 'blogs_directory' ),
 			'doctor_specialties' => Home_Page::specialties_in_use( $directory_url ),
