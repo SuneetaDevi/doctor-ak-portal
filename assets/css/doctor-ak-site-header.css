@@ -1583,7 +1583,7 @@ html body[class*='elementor-kit-'] .elementor {
 	--e-global-typography-accent-font-family: var( --dak-font-sans );
 }
 
-/* ---- Doctors menu: "Check your symptoms" link (Symptom Checker live only) ---- */
+/* ---- Doctors menu: "Find doctors by symptoms" link (only when that page is live) ---- */
 .dak-nav-panel-foot.has-symptom-link {
 	justify-content: space-between !important;
 	flex-wrap: wrap !important;

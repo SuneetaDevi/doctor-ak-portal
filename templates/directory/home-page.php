@@ -461,9 +461,9 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 				<span class="dak-home-symptom-check-icon" aria-hidden="true"><?php echo $dak_home_specialty_icons['stethoscope']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 				<div class="dak-home-symptom-check-text">
 					<h2 id="dak-home-symptom-check-title"><?php esc_html_e( 'Not sure which doctor you need?', 'doctor-ak-portal' ); ?></h2>
-					<p><?php esc_html_e( 'Answer a few questions about your symptoms and we\'ll suggest the right kind of care near you. General guidance only — not a diagnosis.', 'doctor-ak-portal' ); ?></p>
+					<p><?php esc_html_e( 'Find doctors based on your symptoms. Enter what you\'re experiencing to see doctors in related specialties — it helps you find a doctor, it isn\'t a diagnosis.', 'doctor-ak-portal' ); ?></p>
 				</div>
-				<a class="dak-button dak-button-primary dak-home-symptom-check-button" href="<?php echo esc_url( $symptom_checker_url ); ?>"><?php esc_html_e( 'Check Your Symptoms', 'doctor-ak-portal' ); ?></a>
+				<a class="dak-button dak-button-primary dak-home-symptom-check-button" href="<?php echo esc_url( $symptom_checker_url ); ?>"><?php esc_html_e( 'Find doctors by symptoms', 'doctor-ak-portal' ); ?></a>
 			</div>
 		</section>
 	<?php endif; ?>

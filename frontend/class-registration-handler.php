@@ -96,6 +96,14 @@ class Registration_Handler {
 			Assets::version( 'assets/css/doctor-ak-booking-modal.css' )
 		);
 
+		// Account pages' own layout — scoped to .dak-acct, loaded last.
+		wp_enqueue_style(
+			'doctor-ak-portal-account',
+			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-account.css',
+			array( 'doctor-ak-portal-registration', 'doctor-ak-portal-booking-modal' ),
+			Assets::version( 'assets/css/doctor-ak-account.css' )
+		);
+
 		wp_enqueue_script(
 			'doctor-ak-portal-password-toggle',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-password-toggle.js',
@@ -125,6 +133,15 @@ class Registration_Handler {
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-registration.js',
 			array( 'doctor-ak-portal-city-area-select' ),
 			Assets::version( 'assets/js/doctor-ak-registration.js' ),
+			true
+		);
+
+		// The page's own flow (roles, doctor steps, review, submission).
+		wp_enqueue_script(
+			'doctor-ak-portal-account-register',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-account-register.js',
+			array( 'doctor-ak-portal-registration', 'doctor-ak-portal-city-area-select', 'doctor-ak-portal-password-toggle', 'doctor-ak-portal-rich-text-editor' ),
+			Assets::version( 'assets/js/doctor-ak-account-register.js' ),
 			true
 		);
 

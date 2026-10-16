@@ -1,6 +1,6 @@
 <?php
 /**
- * Backs the [symptom_checker] shortcode — the public Symptom Checker page.
+ * Backs the [symptom_checker] shortcode — "Find a doctor by symptoms".
  *
  * @package DoctorAKPortal\Frontend
  */
@@ -11,7 +11,7 @@ use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Specializations;
-use DoctorAKPortal\Includes\Symptom_Rules;
+use DoctorAKPortal\Includes\Symptom_Mappings;
 use DoctorAKPortal\Includes\Template_Loader;
 
 // Prevent direct file access.
@@ -22,17 +22,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class Symptom_Checker
  *
- * The page embeds the published ruleset plus the same public doctor and
- * clinic information the Find a Doctor page shows; everything the visitor
- * types, answers or shares (including their location) is processed in
- * their browser by doctor-ak-symptom-engine.js and never sent to the site —
- * no AJAX, no URL parameters, no storage.
+ * Patients enter symptoms, confirm what was recognised, and see doctors in
+ * the specialties those symptoms are mapped to (Symptom_Mappings), nearest
+ * first. It helps people find a doctor — it gives no diagnosis, urgency
+ * assessment or treatment advice.
  *
- * Patients only see it once a designated clinical reviewer has approved a
- * (non-demonstration) version and an administrator has switched it on
- * (Symptom_Rules::is_public()). Until then administrators get a clearly
- * labelled preview of the draft, and everyone else a short "not available"
- * notice.
+ * Everything the visitor types, and their location, stays in their browser
+ * (doctor-ak-symptom-match.js / doctor-ak-symptom-finder.js): no AJAX, no
+ * URL parameters, no storage. The page only receives Active mappings, the
+ * approved emergency notice and the same public doctor/clinic details the
+ * Find a Doctor page shows.
+ *
+ * Patients see it only when Symptom_Mappings::is_public(); until then,
+ * administrators and clinical reviewers get a labelled preview and everyone
+ * else a short "not available" notice.
  */
 class Symptom_Checker {
 
@@ -53,9 +56,9 @@ class Symptom_Checker {
 	/**
 	 * What this request shows, worked out once.
 	 *
-	 * @var array|null
+	 * @var string|null 'live', 'preview' or 'unavailable'.
 	 */
-	private $mode = null;
+	private $state = null;
 
 	/**
 	 * Sets up collaborators.
@@ -76,81 +79,47 @@ class Symptom_Checker {
 	}
 
 	/**
-	 * URL of the Symptom Checker page when patients may use it, else ''.
-	 * Entry points (home page, site header) only appear when this is set.
+	 * URL of the page when patients may use it, else ''. Entry points (home
+	 * page, site header) only appear when this is set.
 	 *
 	 * @return string
 	 */
 	public static function public_url() {
-		return Symptom_Rules::is_public() ? Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ) : '';
+		return Symptom_Mappings::is_public() ? Page_Finder::url_for_shortcode( self::SHORTCODE_TAG ) : '';
 	}
 
 	/**
-	 * Which rules this request uses: the published version for everyone
-	 * when the checker is public; for an administrator, the draft (with
-	 * ?sc_preview=draft, or whenever it isn't public yet); nothing for
-	 * other visitors while it isn't public.
+	 * Whether the current user is staff who may preview the page before
+	 * it's public.
 	 *
-	 * @return array { state: 'live'|'preview'|'unavailable', rules: array|null, label: string, errors: string[], is_demo: bool }
+	 * @return bool
 	 */
-	private function mode() {
-		if ( null !== $this->mode ) {
-			return $this->mode;
+	private static function is_staff() {
+		return Symptom_Mappings::can_manage();
+	}
+
+	/**
+	 * 'live' for everyone once public; 'preview' for staff (before that, or
+	 * with ?sc_preview=1); otherwise 'unavailable'.
+	 *
+	 * @return string
+	 */
+	private function state() {
+		if ( null !== $this->state ) {
+			return $this->state;
 		}
 
-		$is_admin  = current_user_can( 'manage_options' );
-		$published = Symptom_Rules::get_published();
-		$wants     = isset( $_GET['sc_preview'] ) && 'draft' === sanitize_key( wp_unslash( $_GET['sc_preview'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only, staff-only preview switch.
+		$wants_preview = isset( $_GET['sc_preview'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only, staff-only preview switch.
 
-		if ( Symptom_Rules::is_public() && ! ( $is_admin && $wants ) ) {
-			$this->mode = array(
-				'state'   => 'live',
-				'rules'   => $published['rules'],
-				'label'   => '',
-				'errors'  => array(),
-				'is_demo' => false,
-			);
-
-			return $this->mode;
-		}
-
-		if ( ! $is_admin ) {
-			$this->mode = array(
-				'state'   => 'unavailable',
-				'rules'   => null,
-				'label'   => '',
-				'errors'  => array(),
-				'is_demo' => false,
-			);
-
-			return $this->mode;
-		}
-
-		$draft  = Symptom_Rules::get_draft();
-		$parsed = '' !== trim( $draft['json'] ) ? Symptom_Rules::parse( $draft['json'] ) : null;
-
-		if ( $parsed && $parsed['rules'] ) {
-			$rules = $parsed['rules'];
-			/* translators: %s: ruleset name. */
-			$label = sprintf( __( 'Draft: %s', 'doctor-ak-portal' ), isset( $rules['meta']['name'] ) ? $rules['meta']['name'] : __( 'untitled', 'doctor-ak-portal' ) );
-		} elseif ( $published ) {
-			$rules = $published['rules'];
-			/* translators: %d: version number. */
-			$label = sprintf( __( 'Approved version %d', 'doctor-ak-portal' ), $published['version'] );
+		if ( Symptom_Mappings::is_public() && ! ( self::is_staff() && $wants_preview ) ) {
+			$this->state = 'live';
+		} elseif ( self::is_staff() ) {
+			$this->state = 'preview';
 		} else {
-			$rules = null;
-			$label = '';
+			$this->state = 'unavailable';
 		}
 
-		$this->mode = array(
-			'state'   => $rules ? 'preview' : 'unavailable',
-			'rules'   => $rules,
-			'label'   => $label,
-			'errors'  => $parsed ? $parsed['errors'] : array(),
-			'is_demo' => $rules && Symptom_Rules::is_demo( $rules ),
-		);
-
-		return $this->mode;
+		return $this->state;
 	}
 
 	/**
@@ -168,30 +137,39 @@ class Symptom_Checker {
 		wp_enqueue_style( 'doctor-ak-portal-auth', DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-auth.css', array(), Assets::version( 'assets/css/doctor-ak-auth.css' ) );
 		wp_enqueue_style( 'doctor-ak-portal-symptom-checker', DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-symptom-checker.css', array( 'doctor-ak-portal-auth' ), Assets::version( 'assets/css/doctor-ak-symptom-checker.css' ) );
 
-		$mode = $this->mode();
-
-		if ( ! $mode['rules'] ) {
+		if ( 'unavailable' === $this->state() ) {
 			return;
 		}
 
-		wp_enqueue_script( 'doctor-ak-portal-symptom-engine', DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-symptom-engine.js', array(), Assets::version( 'assets/js/doctor-ak-symptom-engine.js' ), true );
-		wp_enqueue_script( 'doctor-ak-portal-symptom-checker', DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-symptom-checker.js', array( 'doctor-ak-portal-symptom-engine' ), Assets::version( 'assets/js/doctor-ak-symptom-checker.js' ), true );
+		wp_enqueue_script( 'doctor-ak-portal-symptom-match', DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-symptom-match.js', array(), Assets::version( 'assets/js/doctor-ak-symptom-match.js' ), true );
+		wp_enqueue_script( 'doctor-ak-portal-symptom-finder', DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-symptom-finder.js', array( 'doctor-ak-portal-symptom-match' ), Assets::version( 'assets/js/doctor-ak-symptom-finder.js' ), true );
 
-		wp_localize_script( 'doctor-ak-portal-symptom-checker', 'dakSymptomChecker', $this->script_data( $mode['rules'] ) );
+		wp_localize_script( 'doctor-ak-portal-symptom-finder', 'dakSymptomFinder', $this->script_data() );
 	}
 
 	/**
-	 * Data the page script needs — the rules and public directory data only.
+	 * Data the page script needs: mappings, specialty names and public
+	 * directory details. Nothing about the visitor.
 	 *
-	 * @param array $rules Ruleset.
 	 * @return array
 	 */
-	private function script_data( array $rules ) {
-		$directory   = new Doctors_Directory( $this->template_loader );
+	private function script_data() {
+		$live        = 'live' === $this->state();
 		$specialties = Specializations::get_all();
-		$doctors     = array();
-		$cities      = array();
-		$places      = array();
+		$mappings    = array();
+
+		foreach ( $live ? Symptom_Mappings::active() : Symptom_Mappings::all() as $row ) {
+			$mappings[] = array(
+				'id'          => (int) $row['id'],
+				'name'        => $row['name'],
+				'synonyms'    => $row['synonyms'],
+				'specialties' => array_values( array_intersect( $row['specialties'], array_keys( $specialties ) ) ),
+			);
+		}
+
+		$directory = new Doctors_Directory( $this->template_loader );
+		$doctors   = array();
+		$cities    = array();
 
 		foreach ( $directory->cards_with_clinic_details() as $card ) {
 			$slugs = array_values( array_intersect( (array) $card['specialization_slugs'], array_keys( $specialties ) ) );
@@ -208,16 +186,29 @@ class Symptom_Checker {
 					'label'          => $clinic['name'],
 					'place'          => $clinic['place'],
 					'city_slug'      => $clinic['city'],
+					'area_slug'      => $clinic['area'],
 					'lat'            => $clinic['lat'],
 					'lng'            => $clinic['lng'],
 					'fee'            => 'unset' !== $clinic['fee']['state'] ? $clinic['fee']['label'] : '',
 					'next_available' => $clinic['next_available'],
 					'booking_url'    => $clinic['booking_url'],
-					'map_url'        => $clinic['map_url'],
 				);
 
-				if ( '' !== $clinic['city'] && ! isset( $cities[ $clinic['city'] ] ) ) {
-					$cities[ $clinic['city'] ] = '' !== $clinic['city_label'] ? $clinic['city_label'] : ucwords( str_replace( '-', ' ', $clinic['city'] ) );
+				if ( '' !== $clinic['city'] ) {
+					if ( ! isset( $cities[ $clinic['city'] ] ) ) {
+						$cities[ $clinic['city'] ] = array(
+							'slug'  => $clinic['city'],
+							'label' => '' !== $clinic['city_label'] ? $clinic['city_label'] : ucwords( str_replace( '-', ' ', $clinic['city'] ) ),
+							'areas' => array(),
+						);
+					}
+
+					if ( '' !== $clinic['area'] ) {
+						$cities[ $clinic['city'] ]['areas'][ $clinic['area'] ] = array(
+							'slug'  => $clinic['area'],
+							'label' => '' !== $clinic['area_label'] ? $clinic['area_label'] : ucwords( str_replace( '-', ' ', $clinic['area'] ) ),
+						);
+					}
 				}
 			}
 
@@ -238,39 +229,50 @@ class Symptom_Checker {
 			);
 		}
 
-		// Named places for "Near …": shared clinics with map coordinates.
-		foreach ( Clinic_Locations::get_all() as $location ) {
-			if ( null === $location['latitude'] ) {
-				continue;
+		uasort(
+			$cities,
+			function ( $a, $b ) {
+				return strcasecmp( $a['label'], $b['label'] );
 			}
+		);
 
-			$places[] = array(
-				'label' => '' !== $location['area_label'] ? $location['area_label'] : $location['city_label'],
-				'lat'   => $location['latitude'],
-				'lng'   => $location['longitude'],
+		$locations = array();
+
+		foreach ( $cities as $city ) {
+			$areas = array_values( $city['areas'] );
+			usort(
+				$areas,
+				function ( $a, $b ) {
+					return strcasecmp( $a['label'], $b['label'] );
+				}
 			);
+			$city['areas'] = $areas;
+			$locations[]   = $city;
 		}
 
-		asort( $cities );
+		// Named clinic areas, to say "near Clifton" instead of coordinates.
+		$places = array();
 
-		$city_list = array();
-
-		foreach ( $cities as $slug => $label ) {
-			$city_list[] = array(
-				'slug'  => $slug,
-				'label' => $label,
-			);
+		foreach ( Clinic_Locations::get_all() as $location ) {
+			if ( null !== $location['latitude'] ) {
+				$places[] = array(
+					'label' => '' !== $location['area_label'] ? $location['area_label'] : $location['city_label'],
+					'lat'   => $location['latitude'],
+					'lng'   => $location['longitude'],
+				);
+			}
 		}
+
+		$directory_url = Page_Finder::url_for_shortcode( 'doctors_directory' );
 
 		return array(
-			'rules'           => $rules,
-			'doctors'         => $doctors,
+			'mappings'        => $mappings,
 			'specialtyLabels' => $specialties,
-			'cities'          => $city_list,
+			'doctors'         => $doctors,
+			'locations'       => $locations,
 			'places'          => $places,
-			'directoryUrl'    => Page_Finder::url_for_shortcode( 'doctors_directory' ),
-			'radiusKm'        => 25,
-			'expandedKm'      => 100,
+			'directoryUrl'    => $directory_url,
+			'gpUrl'           => $directory_url && isset( $specialties['general-physician'] ) ? add_query_arg( 'specialization', 'general-physician', $directory_url ) : '',
 		);
 	}
 
@@ -280,18 +282,36 @@ class Symptom_Checker {
 	 * @return string
 	 */
 	public function render() {
-		$mode = $this->mode();
+		$state  = $this->state();
+		$notice = Symptom_Mappings::notice();
 
 		return $this->template_loader->get_template(
 			'directory/symptom-checker.php',
 			array(
-				'state'         => $mode['state'],
-				'preview_label' => $mode['label'],
-				'is_demo'       => $mode['is_demo'],
-				'errors'        => $mode['errors'],
-				'directory_url' => Page_Finder::url_for_shortcode( 'doctors_directory' ),
-				'admin_url'     => current_user_can( 'manage_options' ) && Page_Finder::url_for_shortcode( Admin_Dashboard::SHORTCODE_TAG ) ? add_query_arg( 'section', 'symptom-checker', Page_Finder::url_for_shortcode( Admin_Dashboard::SHORTCODE_TAG ) ) : '',
+				'state'          => $state,
+				'notice_text'    => 'approved' === $notice['status'] || 'preview' === $state ? $notice['text'] : '',
+				'notice_pending' => 'approved' !== $notice['status'],
+				'missing'        => Symptom_Mappings::missing_requirements(),
+				'directory_url'  => Page_Finder::url_for_shortcode( 'doctors_directory' ),
+				'manage_url'     => self::is_staff() ? self::manage_url() : '',
 			)
 		);
+	}
+
+	/**
+	 * Where staff manage the mappings: the admin dashboard section, or the
+	 * reviewer tab on the doctor dashboard.
+	 *
+	 * @return string
+	 */
+	private static function manage_url() {
+		if ( current_user_can( 'manage_options' ) ) {
+			$url = Page_Finder::url_for_shortcode( Admin_Dashboard::SHORTCODE_TAG );
+			return $url ? add_query_arg( 'section', 'symptom-checker', $url ) : '';
+		}
+
+		$url = Page_Finder::url_for_shortcode( Doctor_Dashboard::SHORTCODE_TAG );
+
+		return $url ? add_query_arg( 'tab', 'symptom-review', $url ) : '';
 	}
 }

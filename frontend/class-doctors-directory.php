@@ -364,6 +364,8 @@ class Doctors_Directory {
 						'place'          => implode( ', ', array_filter( array( $clinic['area_label'], $clinic['city_label'] ) ) ),
 						'city'           => $clinic['city'],
 						'city_label'     => $clinic['city_label'],
+						'area'           => $clinic['area'],
+						'area_label'     => $clinic['area_label'],
 						'map_url'        => Clinics::map_url( $clinic ),
 						'lat'            => isset( $coordinates[ $location_id ] ) ? $coordinates[ $location_id ][0] : null,
 						'lng'            => isset( $coordinates[ $location_id ] ) ? $coordinates[ $location_id ][1] : null,

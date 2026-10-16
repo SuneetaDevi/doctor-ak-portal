@@ -416,6 +416,12 @@
 	font-weight: 600 !important;
 }
 
+/* The suggestion reached with the arrow keys. */
+.dak-multiselect-option.is-active {
+	background: var( --dak-bg-subtle ) !important;
+	box-shadow: inset 3px 0 0 var( --dak-primary ) !important;
+}
+
 /* Consultation preference card */
 .dak-check-card {
 	display: flex !important;

@@ -3214,7 +3214,7 @@ html.dak-hsm-locked body {
 	}
 }
 
-/* ---- "Check Your Symptoms" band (only when the Symptom Checker is live) ---- */
+/* ---- "Find doctors by symptoms" band (only when that page is live) ---- */
 .dak-home-symptom-check {
 	margin-top: var( --dak-space-7 ) !important;
 }

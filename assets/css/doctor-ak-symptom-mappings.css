@@ -1,0 +1,526 @@
+/**
+ * Doctor AK Portal — "Symptom mappings" screen (admin dashboard section and
+ * the clinical reviewers' doctor-dashboard tab). Scoped to .dak-sm and the
+ * #dak-sm-dialog modal; uses the dashboard tokens from doctor-ak-dashboard-ui.css.
+ */
+
+body.dak-app-page .dak-portal .dak-sm [hidden],
+body.dak-app-page .dak-sm-modal [hidden] {
+	display: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-card {
+	margin: 0 0 16px !important;
+	padding: 20px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-card h2 {
+	margin: 0 0 8px !important;
+	font-size: 1.125rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-card-head {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 12px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-help,
+body.dak-app-page .dak-sm-modal .dak-sm-help {
+	margin: 4px 0 10px !important;
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+	line-height: 1.5 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-flash {
+	margin: 0 0 16px !important;
+	padding: 10px 14px !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-tint-success ) !important;
+	color: var( --dak-tint-success-text ) !important;
+	font-weight: 600 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-flash.is-error {
+	background: var( --dak-tint-danger ) !important;
+	color: var( --dak-tint-danger-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-alert,
+body.dak-app-page .dak-sm-modal .dak-sm-alert {
+	margin: 0 0 12px !important;
+	padding: 10px 14px !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-tint-amber ) !important;
+	color: var( --dak-tint-amber-text ) !important;
+	font-size: 14px !important;
+	line-height: 1.5 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-missing {
+	margin: 0 0 8px !important;
+	padding-left: 20px !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-missing li {
+	margin: 2px 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-meta {
+	margin: 8px 0 0 !important;
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-check,
+body.dak-app-page .dak-sm-modal .dak-sm-check {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 10px !important;
+	min-height: 44px !important;
+	padding: 10px 0 0 !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+	cursor: pointer !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-check input {
+	flex: 0 0 auto !important;
+	width: 18px !important;
+	height: 18px !important;
+	margin: 2px 0 0 !important;
+	accent-color: var( --dak-primary ) !important;
+}
+
+/* Fields ------------------------------------------------------------------ */
+body.dak-app-page .dak-portal .dak-sm-label,
+body.dak-app-page .dak-sm-modal .dak-sm-label {
+	display: block !important;
+	margin: 0 !important;
+	font-size: 14px !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-input,
+body.dak-app-page .dak-sm-modal .dak-sm-input {
+	box-sizing: border-box !important;
+	width: 100% !important;
+	min-height: var( --dui-control-h, 40px ) !important;
+	padding: 8px 12px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font: inherit !important;
+	font-size: 14px !important;
+	line-height: 1.5 !important;
+}
+
+body.dak-app-page .dak-portal textarea.dak-sm-input,
+body.dak-app-page .dak-sm-modal textarea.dak-sm-input {
+	resize: vertical !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-input:focus,
+body.dak-app-page .dak-sm-modal .dak-sm-input:focus {
+	border-color: var( --dak-primary ) !important;
+	outline: 2px solid var( --dak-primary-tint ) !important;
+	outline-offset: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-input[readonly] {
+	background: var( --dak-bg-subtle ) !important;
+}
+
+body.dak-app-page .dak-sm-modal .dak-sm-mono {
+	font-family: ui-monospace, SFMono-Regular, Consolas, monospace !important;
+	font-size: 13px !important;
+}
+
+body.dak-app-page .dak-sm-modal .dak-sm-form,
+body.dak-app-page .dak-portal .dak-sm-form {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-field,
+body.dak-app-page .dak-sm-modal .dak-sm-field {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 4px !important;
+	min-width: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-field .dak-sm-help,
+body.dak-app-page .dak-sm-modal .dak-sm-field .dak-sm-help {
+	margin: 0 0 4px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-error,
+body.dak-app-page .dak-sm-modal .dak-sm-error {
+	margin: 2px 0 0 !important;
+	color: var( --dak-tint-danger-text ) !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-actions,
+body.dak-app-page .dak-sm-modal .dak-sm-actions {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 10px !important;
+	margin: 12px 0 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-inline {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 10px !important;
+	margin: 12px 0 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-inline .dak-sm-input {
+	flex: 1 1 240px !important;
+	width: auto !important;
+}
+
+/* Specialty picker -------------------------------------------------------- */
+body.dak-app-page .dak-sm-modal .dak-sm-spec-list {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 6px !important;
+	max-height: 220px !important;
+	margin: 6px 0 0 !important;
+	padding: 2px !important;
+	overflow-y: auto !important;
+}
+
+body.dak-app-page .dak-sm-modal .dak-sm-spec {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	min-height: 36px !important;
+	padding: 4px 12px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 13px !important;
+	cursor: pointer !important;
+}
+
+body.dak-app-page .dak-sm-modal .dak-sm-spec:has( input:checked ) {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary-tint ) !important;
+	font-weight: 600 !important;
+}
+
+body.dak-app-page .dak-sm-modal .dak-sm-spec input {
+	width: 16px !important;
+	height: 16px !important;
+	margin: 0 !important;
+	accent-color: var( --dak-primary ) !important;
+}
+
+/* Toolbar + list ---------------------------------------------------------- */
+body.dak-app-page .dak-portal .dak-sm-toolbar {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 8px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-toolbar .dak-sm-input {
+	width: auto !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-toolbar .dak-sm-search {
+	min-width: 240px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-empty {
+	padding: 24px 16px !important;
+	border: 1px dashed var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	color: var( --dak-muted ) !important;
+	text-align: center !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-bulk {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 8px !important;
+	margin: 0 0 10px !important;
+	padding: 8px 12px !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-tint-info ) !important;
+	color: var( --dak-tint-info-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-table-wrap,
+body.dak-app-page .dak-sm-modal .dak-sm-table-wrap {
+	max-width: 100% !important;
+	overflow-x: auto !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-table,
+body.dak-app-page .dak-sm-modal .dak-sm-table {
+	width: 100% !important;
+	border-collapse: collapse !important;
+	font-size: 14px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-table th,
+body.dak-app-page .dak-sm-modal .dak-sm-table th {
+	padding: 8px 10px !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 12px !important;
+	font-weight: 700 !important;
+	text-align: left !important;
+	text-transform: uppercase !important;
+	letter-spacing: 0.03em !important;
+	white-space: nowrap !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-table td,
+body.dak-app-page .dak-sm-modal .dak-sm-table td {
+	padding: 10px !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	color: var( --dak-text ) !important;
+	vertical-align: top !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-table tbody tr:hover {
+	background: var( --dui-row-hover, var( --dak-bg-subtle ) ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-table td:first-child {
+	width: 28px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-table input[type='checkbox'] {
+	width: 18px !important;
+	height: 18px !important;
+	margin: 2px 0 0 !important;
+	accent-color: var( --dak-primary ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-name strong,
+body.dak-app-page .dak-portal .dak-sm-when span {
+	display: block !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-when {
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-source {
+	display: inline-block !important;
+	margin: 4px 0 0 !important;
+	padding: 1px 8px !important;
+	border-radius: 999px !important;
+	background: var( --dak-tint-info ) !important;
+	color: var( --dak-tint-info-text ) !important;
+	font-size: 12px !important;
+	font-weight: 600 !important;
+	white-space: nowrap !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-source.is-example {
+	background: var( --dak-tint-amber ) !important;
+	color: var( --dak-tint-amber-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-warn,
+body.dak-app-page .dak-sm-modal .dak-sm-warn {
+	display: block !important;
+	margin: 4px 0 0 !important;
+	color: var( --dak-tint-danger-text ) !important;
+	font-size: 12.5px !important;
+	font-weight: 600 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-row-actions {
+	display: flex !important;
+	flex-wrap: nowrap !important;
+	justify-content: flex-end !important;
+	gap: 6px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm .dak-status-pill {
+	display: inline-flex !important;
+	width: max-content !important;
+}
+
+body.dak-app-page .dak-sm-modal .dak-sm-table tr.is-duplicate td,
+body.dak-app-page .dak-sm-modal .dak-sm-table tr.is-invalid td {
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-sm-modal .dak-sm-table td .dak-sm-help {
+	display: block !important;
+	margin: 2px 0 0 !important;
+}
+
+body.dak-app-page .dak-sm-modal .dak-sm-import-out {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: flex-start !important;
+	gap: 12px !important;
+}
+
+body.dak-app-page .dak-sm-modal .dak-sm-dialog {
+	width: min( 720px, calc( 100vw - 32px ) ) !important;
+	max-height: calc( 100vh - 48px ) !important;
+	overflow-y: auto !important;
+}
+
+/* Try matching ------------------------------------------------------------ */
+body.dak-app-page .dak-portal .dak-sm-try-list {
+	display: grid !important;
+	grid-template-columns: 200px minmax( 0, 1fr ) !important;
+	gap: 6px 16px !important;
+	margin: 12px 0 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-try-list dt {
+	color: var( --dak-muted ) !important;
+	font-weight: 600 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-try-list dd {
+	margin: 0 !important;
+	color: var( --dak-text ) !important;
+}
+
+/* Reviewers + legacy ------------------------------------------------------ */
+body.dak-app-page .dak-portal .dak-sm-people {
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-people li {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 12px !important;
+	padding: 8px 0 !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-legacy {
+	padding: 14px 16px !important;
+	border: 1px dashed var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-legacy p {
+	margin: 0 0 10px !important;
+}
+
+/* Phones: table rows become stacked cards -------------------------------- */
+@media ( max-width: 782px ) {
+	body.dak-app-page .dak-portal .dak-sm-card {
+		padding: 16px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-sm-toolbar,
+	body.dak-app-page .dak-portal .dak-sm-toolbar .dak-sm-input,
+	body.dak-app-page .dak-portal .dak-sm-toolbar .dak-sm-search,
+	body.dak-app-page .dak-portal .dak-sm-toolbar .dak-button {
+		width: 100% !important;
+		min-width: 0 !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-sm-try-list {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-sm-try-list dd {
+		margin: 0 0 8px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-sm-actions .dak-button,
+	body.dak-app-page .dak-sm-modal .dak-sm-actions .dak-button {
+		flex: 1 1 100% !important;
+	}
+}
+
+/* The list has 7 columns; with the dashboard sidebar it only fits on wide
+ * screens, so below that each row becomes a labelled card. */
+@media ( max-width: 1100px ) {
+	body.dak-app-page .dak-portal [data-sm-list] .dak-sm-table-wrap {
+		overflow-x: visible !important;
+	}
+
+	body.dak-app-page .dak-portal [data-sm-list] .dak-sm-table thead {
+		position: absolute !important;
+		width: 1px !important;
+		height: 1px !important;
+		overflow: hidden !important;
+		clip: rect( 0, 0, 0, 0 ) !important;
+	}
+
+	body.dak-app-page .dak-portal [data-sm-list] .dak-sm-table,
+	body.dak-app-page .dak-portal [data-sm-list] .dak-sm-table tbody,
+	body.dak-app-page .dak-portal [data-sm-list] .dak-sm-table tr,
+	body.dak-app-page .dak-portal [data-sm-list] .dak-sm-table td {
+		display: block !important;
+		width: 100% !important;
+		box-sizing: border-box !important;
+	}
+
+	body.dak-app-page .dak-portal [data-sm-list] .dak-sm-table tr {
+		margin: 0 0 12px !important;
+		padding: 8px 12px !important;
+		border: 1px solid var( --dak-border ) !important;
+		border-radius: var( --dak-radius-sm ) !important;
+	}
+
+	body.dak-app-page .dak-portal [data-sm-list] .dak-sm-table td {
+		padding: 6px 0 !important;
+		border: 0 !important;
+	}
+
+	body.dak-app-page .dak-portal [data-sm-list] .dak-sm-table td:first-child {
+		width: 100% !important;
+	}
+
+	body.dak-app-page .dak-portal [data-sm-list] .dak-sm-table td::before {
+		content: attr( data-label ) !important;
+		display: block !important;
+		color: var( --dak-muted ) !important;
+		font-size: 12px !important;
+		font-weight: 700 !important;
+		text-transform: uppercase !important;
+	}
+
+	body.dak-app-page .dak-portal [data-sm-list] .dak-sm-table td[data-label='Select']::before,
+	body.dak-app-page .dak-portal [data-sm-list] .dak-sm-table td[data-label='Actions']::before {
+		content: none !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-sm-row-actions {
+		flex-wrap: wrap !important;
+		justify-content: flex-start !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-sm-row-actions .dak-button {
+		flex: 1 1 auto !important;
+		min-height: 44px !important;
+	}
+}

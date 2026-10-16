@@ -23,6 +23,7 @@ use DoctorAKPortal\Includes\Service_Categories;
 use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Settlement_Manager;
 use DoctorAKPortal\Includes\Specializations;
+use DoctorAKPortal\Includes\Symptom_Mappings;
 use DoctorAKPortal\Includes\Template_Loader;
 use DoctorAKPortal\Includes\Video_Pricing;
 
@@ -338,6 +339,12 @@ class Doctor_Dashboard {
 				)
 			);
 		}
+
+		// Clinical reviewers' "Symptom mappings" tab (requested_tab() only
+		// returns it for them).
+		if ( 'symptom-review' === self::requested_tab() ) {
+			Symptom_Mappings_Handler::enqueue_screen_assets();
+		}
 	}
 
 	/**
@@ -352,6 +359,12 @@ class Doctor_Dashboard {
 		}
 
 		$tab = sanitize_key( wp_unslash( $_GET['tab'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+
+		// Symptom mappings review: only for doctors an administrator has made
+		// clinical reviewers (not a Roles & Permissions tab).
+		if ( 'symptom-review' === $tab ) {
+			return Symptom_Mappings::can_review() ? $tab : 'dashboard';
+		}
 
 		if ( ! in_array( $tab, array( 'profile', 'clinics', 'services', 'video-consultation', 'appointments', 'patients', 'earnings', 'encounters', 'encounter', 'notifications', 'settings' ), true ) ) {
 			return 'dashboard';
@@ -1037,6 +1050,8 @@ class Doctor_Dashboard {
 			'notifications_tab_html' => 'notifications' === $active_tab ? $this->render_notifications_tab( $user ) : '',
 			'unread_notifications_count' => Notification_Center::unread_count( $user->ID ),
 			'settings_tab_html'     => 'settings' === $active_tab ? $this->render_settings_tab( $user ) : '',
+			'symptom_review_tab_html' => 'symptom-review' === $active_tab ? Symptom_Mappings_Handler::screen_html( $this->template_loader ) : '',
+			'symptom_review_url'    => '' !== $dashboard_url && Symptom_Mappings::can_review() ? add_query_arg( 'tab', 'symptom-review', $dashboard_url ) : '',
 			'dashboard_url'         => $dashboard_url,
 			'profile_url'           => self::tab_url( $dashboard_url, 'profile' ),
 			'clinics_url'           => self::tab_url( $dashboard_url, 'clinics' ),

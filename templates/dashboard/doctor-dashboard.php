@@ -41,6 +41,8 @@
  * @var string   $services_url          Same-page URL for the Services tab.
  * @var string   $video_consultation_url Same-page URL for the Video Consultation tab.
  * @var string   $settings_url          Same-page URL for the Settings tab.
+ * @var string   $symptom_review_url    "Symptom mappings" tab URL — clinical reviewers only, else ''.
+ * @var string   $symptom_review_tab_html Pre-rendered symptom-mappings.php output when $active_tab is 'symptom-review'.
  * @var string   $logout_url            Nonce-protected logout URL.
  * @var int      $total_patients        Count of registered patient accounts.
  * @var int      $today_appointments    Today's appointment count (0 until a booking module exists).
@@ -140,6 +142,9 @@ $dak_dash_icons = array(
 				<?php if ( $encounters_url ) : ?>
 					<li class="<?php echo 'encounters' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $encounters_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['clipboard']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Encounters', 'doctor-ak-portal' ); ?></a></li>
 				<?php endif; ?>
+				<?php if ( ! empty( $symptom_review_url ) ) : ?>
+					<li class="<?php echo 'symptom-review' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $symptom_review_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['clipboard']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Symptom mappings', 'doctor-ak-portal' ); ?></a></li>
+				<?php endif; ?>
 				<?php if ( $notifications_url ) : ?>
 					<li class="<?php echo 'notifications' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $notifications_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['bell']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Notifications', 'doctor-ak-portal' ); ?><?php if ( $unread_notifications_count > 0 ) : ?><?php echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( 'dashboard/partials/unread-badge.php', array( 'count' => $unread_notifications_count, 'class' => 'dak-nav-badge', 'id' => 'dak-notifications-badge' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- partial escapes its own output. ?><?php endif; ?></a></li>
 				<?php endif; ?>
@@ -232,6 +237,10 @@ $dak_dash_icons = array(
 		<?php elseif ( 'services' === $active_tab ) : ?>
 
 			<?php echo $services_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-services-tab.php template, which escapes its own output (including its own page header). ?>
+
+		<?php elseif ( 'symptom-review' === $active_tab ) : ?>
+
+			<?php echo $symptom_review_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own symptom-mappings.php template, which escapes its own output (including its own page header). ?>
 
 		<?php elseif ( 'dashboard' !== $active_tab ) : ?>
 

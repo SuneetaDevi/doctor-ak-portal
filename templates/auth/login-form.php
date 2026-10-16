@@ -2,8 +2,10 @@
 /**
  * Template: Login form body for the [doctor_login] shortcode.
  *
- * Renders body content only — the active theme supplies header, navigation
- * and footer around this markup.
+ * One shared sign-in for patients, doctors, administrators and receptionists
+ * — the account's own role decides where it lands (Login_Handler). Renders
+ * body content only — the active theme supplies header, navigation and
+ * footer around this markup.
  *
  * @package DoctorAKPortal\Templates
  *
@@ -16,81 +18,89 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $redirect_to = isset( $redirect_to ) ? $redirect_to : '';
+$loader      = new \DoctorAKPortal\Includes\Template_Loader();
 
 $forgot_password_url = \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( 'doctor_forgot_password' );
-$register_url         = \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( 'doctor_register' );
+$register_url        = \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( 'doctor_register' );
+
+// Signing up from a booking flow should come back to it too.
+if ( '' !== $redirect_to && $register_url ) {
+	$register_url = add_query_arg( 'redirect_to', rawurlencode( $redirect_to ), $register_url );
+}
 ?>
-<div class="dak-portal dak-auth-page">
-	<div class="dak-auth-visual" aria-hidden="true">
-		<span class="dak-eyebrow"><?php esc_html_e( 'Healthcare Appointments, Made Simple.', 'doctor-ak-portal' ); ?></span>
-		<h2><?php esc_html_e( 'Your care, your records, one login away.', 'doctor-ak-portal' ); ?></h2>
-		<div class="dak-auth-visual-benefits">
-			<div class="dak-auth-visual-benefit">
-				<span class="dak-auth-visual-benefit-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5l6.5 2.5v4.3c0 4-2.8 7.2-6.5 8.2-3.7-1-6.5-4.2-6.5-8.2V5z"/><path d="M7.2 10l2 2 3.6-4"/></svg></span>
-				<div><strong><?php esc_html_e( 'Verified specialists', 'doctor-ak-portal' ); ?></strong><span><?php esc_html_e( 'Every doctor here is a credentialed specialist.', 'doctor-ak-portal' ); ?></span></div>
-			</div>
-			<div class="dak-auth-visual-benefit">
-				<span class="dak-auth-visual-benefit-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="15" height="13" rx="1.5"/><path d="M2.5 8h15"/><path d="M6 2.5v3M14 2.5v3"/></svg></span>
-				<div><strong><?php esc_html_e( 'Book in under a minute', 'doctor-ak-portal' ); ?></strong><span><?php esc_html_e( 'Pick a clinic visit or video consult and go.', 'doctor-ak-portal' ); ?></span></div>
-			</div>
-			<div class="dak-auth-visual-benefit">
-				<span class="dak-auth-visual-benefit-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5l6.5 2.5v4.3c0 4-2.8 7.2-6.5 8.2-3.7-1-6.5-4.2-6.5-8.2V5z"/></svg></span>
-				<div><strong><?php esc_html_e( 'Your records, private', 'doctor-ak-portal' ); ?></strong><span><?php esc_html_e( 'Appointments, history and bills, kept secure.', 'doctor-ak-portal' ); ?></span></div>
-			</div>
-		</div>
-	</div>
+<div class="dak-portal dak-acct dak-acct--login">
+	<div class="dak-acct-shell">
+		<?php
+		echo $loader->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- partial escapes its own output.
+			'auth/partials/account-aside.php',
+			array(
+				'title' => __( 'Your healthcare appointments, in one place', 'doctor-ak-portal' ),
+				'text'  => __( 'Book visits, check what’s coming up and keep your details up to date.', 'doctor-ak-portal' ),
+			)
+		);
+		?>
 
-	<div class="dak-auth-card">
-		<div class="dak-auth-header">
-			<span class="dak-eyebrow"><?php esc_html_e( 'Healthcare Appointments, Made Simple.', 'doctor-ak-portal' ); ?></span>
-			<h1><?php esc_html_e( 'Welcome Back', 'doctor-ak-portal' ); ?></h1>
-			<p><?php esc_html_e( 'Log in to access your dashboard.', 'doctor-ak-portal' ); ?></p>
-		</div>
+		<main class="dak-acct-card">
+			<div class="dak-acct-main">
+			<header class="dak-acct-header">
+				<h1><?php esc_html_e( 'Welcome back', 'doctor-ak-portal' ); ?></h1>
+				<p><?php esc_html_e( 'Sign in to manage your appointments and account.', 'doctor-ak-portal' ); ?></p>
+			</header>
 
-		<div class="dak-alert dak-alert-success dak-hidden" id="dak-login-success" role="status"></div>
-		<div class="dak-alert dak-alert-error dak-hidden" id="dak-login-error" role="alert"></div>
+			<div class="dak-alert dak-alert-success dak-hidden" id="dak-login-success" role="status" aria-live="polite"></div>
+			<div class="dak-alert dak-alert-error dak-hidden" id="dak-login-error" role="alert" tabindex="-1"></div>
 
-		<form id="dak-login-form" novalidate>
-			<?php if ( '' !== $redirect_to ) : ?>
-				<input type="hidden" name="redirect_to" value="<?php echo esc_attr( $redirect_to ); ?>">
-			<?php endif; ?>
-			<div class="dak-field">
-				<label for="dak-login-username"><?php esc_html_e( 'Username or Email', 'doctor-ak-portal' ); ?></label>
-				<input type="text" id="dak-login-username" name="login" required autocomplete="username">
-			</div>
-
-			<div class="dak-field">
-				<label for="dak-login-password"><?php esc_html_e( 'Password', 'doctor-ak-portal' ); ?></label>
-				<div class="dak-password-field">
-					<input type="password" id="dak-login-password" name="password" required autocomplete="current-password">
-					<button type="button" class="dak-password-toggle" aria-label="<?php esc_attr_e( 'Show password', 'doctor-ak-portal' ); ?>">
-						<svg class="dak-icon-eye" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 10S4.5 4 10 4s8.5 6 8.5 6-3 6-8.5 6-8.5-6-8.5-6z"/><circle cx="10" cy="10" r="2.5"/></svg>
-						<svg class="dak-icon-eye-off" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 2.5l15 15"/><path d="M8.3 4.3C8.85 4.1 9.42 4 10 4c5.5 0 8.5 6 8.5 6a14.9 14.9 0 0 1-3 3.9M5.5 5.6C3 7.2 1.5 10 1.5 10s3 6 8.5 6c1.1 0 2.1-.24 3-.63"/><path d="M7.8 7.8a2.5 2.5 0 0 0 3.4 3.5"/></svg>
-					</button>
-				</div>
-			</div>
-
-			<div class="dak-field dak-field-inline">
-				<label class="dak-checkbox">
-					<input type="checkbox" name="remember" value="1">
-					<span><?php esc_html_e( 'Remember Me', 'doctor-ak-portal' ); ?></span>
-				</label>
-
-				<?php if ( $forgot_password_url ) : ?>
-					<a href="<?php echo esc_url( $forgot_password_url ); ?>" class="dak-link"><?php esc_html_e( 'Forgot Password?', 'doctor-ak-portal' ); ?></a>
+			<form id="dak-login-form" class="dak-acct-form" novalidate>
+				<?php if ( '' !== $redirect_to ) : ?>
+					<input type="hidden" name="redirect_to" value="<?php echo esc_attr( $redirect_to ); ?>">
 				<?php endif; ?>
-			</div>
 
-			<button type="submit" class="dak-button dak-button-primary dak-button-block" id="dak-login-submit">
-				<span class="dak-button-label"><?php esc_html_e( 'Log In', 'doctor-ak-portal' ); ?></span>
-			</button>
+				<div class="dak-field">
+					<label for="dak-login-username"><?php esc_html_e( 'Username or email', 'doctor-ak-portal' ); ?></label>
+					<input type="text" id="dak-login-username" name="login" required aria-required="true" autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="dak-login-username-error">
+					<span class="dak-field-error" id="dak-login-username-error" data-field="login"></span>
+				</div>
+
+				<div class="dak-field">
+					<label for="dak-login-password"><?php esc_html_e( 'Password', 'doctor-ak-portal' ); ?></label>
+					<?php
+					echo $loader->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- partial escapes its own output.
+						'auth/partials/password-input.php',
+						array(
+							'id'           => 'dak-login-password',
+							'name'         => 'password',
+							'autocomplete' => 'current-password',
+							'describedby'  => 'dak-login-password-error',
+						)
+					);
+					?>
+					<span class="dak-field-error" id="dak-login-password-error" data-field="password"></span>
+				</div>
+
+				<div class="dak-acct-row">
+					<label class="dak-checkbox">
+						<input type="checkbox" name="remember" value="1">
+						<span><?php esc_html_e( 'Remember me', 'doctor-ak-portal' ); ?></span>
+					</label>
+
+					<?php if ( $forgot_password_url ) : ?>
+						<a href="<?php echo esc_url( $forgot_password_url ); ?>" class="dak-acct-link"><?php esc_html_e( 'Forgot password?', 'doctor-ak-portal' ); ?></a>
+					<?php endif; ?>
+				</div>
+
+				<button type="submit" class="dak-button dak-button-primary dak-button-block dak-acct-submit" id="dak-login-submit" data-loading-label="<?php esc_attr_e( 'Signing in…', 'doctor-ak-portal' ); ?>">
+					<span class="dak-button-label"><?php esc_html_e( 'Sign in', 'doctor-ak-portal' ); ?></span>
+				</button>
+			</form>
 
 			<?php if ( $register_url ) : ?>
-				<p class="dak-form-footer-link">
-					<?php esc_html_e( 'New user?', 'doctor-ak-portal' ); ?>
-					<a href="<?php echo esc_url( $register_url ); ?>"><?php esc_html_e( 'Register', 'doctor-ak-portal' ); ?></a>
+				<p class="dak-acct-switch">
+					<?php esc_html_e( 'New here?', 'doctor-ak-portal' ); ?>
+					<a href="<?php echo esc_url( $register_url ); ?>" class="dak-acct-link"><?php esc_html_e( 'Create an account', 'doctor-ak-portal' ); ?></a>
 				</p>
 			<?php endif; ?>
-		</form>
+			</div>
+		</main>
 	</div>
+	<?php echo $loader->get_template( 'auth/partials/account-footer.php' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- partial escapes its own output. ?>
 </div>

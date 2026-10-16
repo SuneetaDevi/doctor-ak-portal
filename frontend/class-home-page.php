@@ -349,7 +349,8 @@ class Home_Page {
 				'directory_url'    => $directory_url,
 				// Only once clinically approved rules are published and switched on.
 				'symptom_checker_url' => Symptom_Checker::public_url(),
-				'doctor_register_url' => Page_Finder::url_for_shortcode( 'doctor_register' ),
+				// "Join as a Doctor" opens registration with Doctor preselected.
+				'doctor_register_url' => '' !== Page_Finder::url_for_shortcode( 'doctor_register' ) ? add_query_arg( 'role', 'doctor', Page_Finder::url_for_shortcode( 'doctor_register' ) ) : '',
 				'services_url'     => Page_Finder::url_for_shortcode( 'services_directory' ),
 				'clinics_url'      => Page_Finder::url_for_shortcode( 'clinics_directory' ),
 				'clinic_profile_url' => $clinic_profile_url,

@@ -1,728 +1,483 @@
 /**
- * Doctor AK Portal — Symptom Checker page ([symptom_checker]).
+ * Doctor AK Portal — "Find a doctor by symptoms" page ([symptom_checker]).
  *
- * Everything is scoped to .dak-sc and built from the shared tokens in
- * doctor-ak-auth.css (so dark mode follows automatically). Touch targets
- * are at least 44px. !important is used for the same reason as the rest
- * of the plugin's public pages: theme/page-builder styles otherwise win.
+ * Scoped to .dak-sf and built from the shared tokens in doctor-ak-auth.css
+ * (dark mode follows them). Touch targets are at least 44px. !important
+ * matches the rest of the plugin's public pages: theme styles otherwise win.
  */
 
-.dak-sc {
+.dak-sf {
 	box-sizing: border-box !important;
 	width: 100% !important;
-	max-width: calc( 760px + 48px ) !important;
+	max-width: calc( 820px + 48px ) !important;
 	margin: 0 auto !important;
-	padding: 32px 24px 72px !important;
+	padding: 36px 24px 88px !important;
 	color: var( --dak-text ) !important;
 	font-family: var( --dak-font-sans ) !important;
 	font-size: 1rem !important;
-	line-height: 1.6 !important;
+	line-height: 1.55 !important;
 }
 
-.dak-sc *,
-.dak-sc *::before,
-.dak-sc *::after {
+.dak-sf *,
+.dak-sf *::before,
+.dak-sf *::after {
 	box-sizing: border-box !important;
 }
 
-.dak-sc [hidden] {
+.dak-sf [hidden] {
 	display: none !important;
 }
 
-.dak-sc-sr,
-.dak-sc-live {
-	position: absolute !important;
-	width: 1px !important;
-	height: 1px !important;
-	margin: -1px !important;
-	padding: 0 !important;
-	overflow: hidden !important;
-	clip: rect( 0, 0, 0, 0 ) !important;
-	white-space: nowrap !important;
-	border: 0 !important;
-}
-
-/* Cards / stages ------------------------------------------------------ */
-
-.dak-sc-card {
-	margin: 0 0 20px !important;
-	padding: 28px !important;
-	background: var( --dak-bg-card ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-lg ) !important;
-	box-shadow: var( --dak-shadow ) !important;
-}
-
-.dak-sc h1,
-.dak-sc h2 {
+:where( .dak-sf ) p {
 	margin: 0 0 10px !important;
-	color: var( --dak-text ) !important;
-	font-weight: 800 !important;
-	line-height: 1.25 !important;
-}
-
-.dak-sc h1 {
-	font-size: 2rem !important;
-}
-
-.dak-sc h2 {
-	font-size: 1.375rem !important;
-}
-
-.dak-sc h3 {
-	margin: 0 0 4px !important;
-	color: var( --dak-text ) !important;
-	font-size: 1.0625rem !important;
-	font-weight: 700 !important;
-	line-height: 1.35 !important;
-}
-
-.dak-sc h1:focus,
-.dak-sc h2:focus,
-.dak-sc h3:focus {
-	outline: none !important;
-}
-
-/* Headings only receive focus programmatically (each step moves focus to
-   its heading so screen readers announce it) — they aren't controls, so no
-   focus ring. */
-.dak-sc [tabindex='-1']:focus,
-.dak-sc [tabindex='-1']:focus-visible {
-	outline: none !important;
-}
-
-/* :where() keeps this at element specificity, so the classes below win. */
-:where( .dak-sc ) p {
-	margin: 0 0 12px !important;
 	color: inherit !important;
 }
 
-.dak-sc-lead {
+.dak-sf h1,
+.dak-sf h2,
+.dak-sf h3 {
+	margin: 0 0 8px !important;
+	color: var( --dak-text ) !important;
+	line-height: 1.25 !important;
+}
+
+.dak-sf h1 {
+	font-size: 1.9rem !important;
+	font-weight: 800 !important;
+}
+
+.dak-sf h2 {
+	font-size: 1.35rem !important;
+	font-weight: 700 !important;
+}
+
+.dak-sf h3 {
+	font-size: 1.05rem !important;
+	font-weight: 700 !important;
+}
+
+.dak-sf [tabindex='-1']:focus {
+	outline: none !important;
+}
+
+.dak-sf-head p {
 	color: var( --dak-muted ) !important;
-	font-size: 1.0625rem !important;
+	font-size: 1.02rem !important;
 }
 
-.dak-sc-note {
-	padding: 12px 14px !important;
-	background: var( --dak-tint-info ) !important;
-	color: var( --dak-tint-info-text ) !important;
-	border-radius: var( --dak-radius-md ) !important;
-	font-size: var( --dak-text-sm ) !important;
-	font-weight: 600 !important;
-}
-
-.dak-sc-small {
-	color: var( --dak-muted ) !important;
-	font-size: var( --dak-text-sm ) !important;
-}
-
-.dak-sc-error {
-	margin: 12px 0 0 !important;
-	padding: 10px 14px !important;
-	background: var( --dak-tint-danger ) !important;
-	color: var( --dak-tint-danger-text ) !important;
-	border-radius: var( --dak-radius-md ) !important;
-	font-weight: 600 !important;
-}
-
-/* Staff preview banner -------------------------------------------------- */
-
-.dak-sc-preview {
+.dak-sf-preview {
 	display: flex !important;
 	flex-direction: column !important;
 	gap: 4px !important;
 	margin: 0 0 20px !important;
-	padding: 14px 18px !important;
+	padding: 12px 16px !important;
+	border: 2px dashed currentColor !important;
+	border-radius: 12px !important;
 	background: var( --dak-tint-amber ) !important;
 	color: var( --dak-tint-amber-text ) !important;
-	border: 2px dashed currentColor !important;
-	border-radius: var( --dak-radius-md ) !important;
-	font-size: var( --dak-text-sm ) !important;
+	font-size: 0.9rem !important;
 }
 
-.dak-sc-preview strong {
-	font-size: 1rem !important;
-}
-
-.dak-sc-preview a {
+.dak-sf-preview a {
 	color: inherit !important;
 	font-weight: 700 !important;
 	text-decoration: underline !important;
 }
 
-/* Form controls ------------------------------------------------------------ */
-
-.dak-sc-label {
-	display: block !important;
-	margin: 18px 0 6px !important;
+/* Emergency notice — shown whatever the matching does. */
+.dak-sf-notice {
+	display: flex !important;
+	gap: 12px !important;
+	align-items: flex-start !important;
+	margin: 0 0 18px !important;
+	padding: 14px 16px !important;
+	border-left: 4px solid var( --dak-tint-danger-text ) !important;
+	border-radius: 10px !important;
+	background: var( --dak-tint-danger ) !important;
 	color: var( --dak-text ) !important;
-	font-size: var( --dak-text-sm ) !important;
-	font-weight: 700 !important;
 }
 
-.dak-sc-textarea,
-.dak-sc-input {
+.dak-sf-notice svg {
+	flex: 0 0 22px !important;
+	width: 22px !important;
+	height: 22px !important;
+	color: var( --dak-tint-danger-text ) !important;
+}
+
+.dak-sf-notice p {
+	margin: 0 !important;
+	font-weight: 600 !important;
+}
+
+.dak-sf-notice.is-draft {
+	border-left-style: dashed !important;
+}
+
+.dak-sf-card {
+	margin: 0 0 20px !important;
+	padding: 26px 28px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 16px !important;
+	background: var( --dak-bg-card ) !important;
+	box-shadow: 0 1px 2px rgba( 16, 24, 40, 0.04 ), 0 8px 24px rgba( 16, 24, 40, 0.05 ) !important;
+}
+
+.dak-sf-label {
+	display: block !important;
+	margin: 0 0 4px !important;
+	font-size: 0.95rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-sf-hint {
+	font-size: 0.88rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-sf-input {
 	display: block !important;
 	width: 100% !important;
-	min-height: 48px !important;
+	min-height: 52px !important;
 	margin: 0 !important;
 	padding: 12px 14px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 10px !important;
 	background: var( --dak-bg-card ) !important;
 	color: var( --dak-text ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-md ) !important;
 	font: inherit !important;
 	font-size: 1rem !important;
-	line-height: 1.5 !important;
 	box-shadow: none !important;
 }
 
-.dak-sc-textarea {
-	min-height: 112px !important;
-	resize: vertical !important;
-}
-
-.dak-sc-textarea:focus,
-.dak-sc-input:focus {
-	outline: 2px solid var( --dak-primary ) !important;
-	outline-offset: 1px !important;
+.dak-sf-input:focus {
+	outline: none !important;
 	border-color: var( --dak-primary ) !important;
+	box-shadow: 0 0 0 3px var( --dak-primary-tint ) !important;
 }
 
-.dak-sc-btn {
-	min-height: 44px !important;
-	min-width: 44px !important;
-	height: auto !important;
-	max-width: 100% !important;
+/* Combobox. */
+.dak-sf-combo {
+	position: relative !important;
+	display: flex !important;
+	gap: 8px !important;
+	margin: 6px 0 0 !important;
+}
+
+.dak-sf-combo .dak-sf-input {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+}
+
+.dak-sf .dak-button {
+	min-height: 48px !important;
+	padding: 10px 20px !important;
+	border-radius: 10px !important;
+	font-size: 1rem !important;
+	font-weight: 600 !important;
+	text-decoration: none !important;
 	white-space: normal !important;
-	text-align: center !important;
-	line-height: 1.3 !important;
 }
 
-.dak-sc-actions {
+.dak-sf-add {
+	flex: 0 0 auto !important;
+	min-height: 52px !important;
+}
+
+.dak-sf-suggestions {
+	position: absolute !important;
+	top: calc( 100% + 4px ) !important;
+	left: 0 !important;
+	right: 0 !important;
+	z-index: 30 !important;
+	max-height: 280px !important;
+	overflow-y: auto !important;
+	margin: 0 !important;
+	padding: 6px 0 !important;
+	list-style: none !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 10px !important;
+	background: var( --dak-bg-card ) !important;
+	box-shadow: 0 12px 32px rgba( 16, 24, 40, 0.12 ) !important;
+}
+
+.dak-sf-option {
+	display: flex !important;
+	align-items: baseline !important;
+	justify-content: space-between !important;
+	gap: 12px !important;
+	min-height: 44px !important;
+	margin: 0 !important;
+	padding: 10px 14px !important;
+	cursor: pointer !important;
+}
+
+.dak-sf-option small {
+	color: var( --dak-muted ) !important;
+	font-size: 0.82rem !important;
+}
+
+.dak-sf-option:hover,
+.dak-sf-option.is-active {
+	background: var( --dak-primary-tint ) !important;
+}
+
+/* Chips. */
+.dak-sf-selected {
+	margin: 18px 0 0 !important;
+}
+
+.dak-sf-chips {
 	display: flex !important;
 	flex-wrap: wrap !important;
-	gap: 12px !important;
+	gap: 8px !important;
+	margin: 6px 0 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+.dak-sf-chip {
+	display: inline-flex !important;
 	align-items: center !important;
-	margin: 24px 0 0 !important;
-}
-
-.dak-sc-actions .dak-button-primary {
-	margin-left: auto !important;
-}
-
-.dak-sc-actions-end {
-	justify-content: center !important;
-}
-
-.dak-sc-actions-end .dak-button {
+	gap: 2px !important;
 	margin: 0 !important;
+	padding: 4px 4px 4px 14px !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+	font-weight: 600 !important;
 }
 
-.dak-sc-location-line {
-	margin: 10px 0 0 !important;
-	text-align: right !important;
+.dak-sf-chip-remove {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 36px !important;
+	height: 36px !important;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 50% !important;
+	background: none !important;
+	color: inherit !important;
+	font-size: 1.2rem !important;
+	cursor: pointer !important;
 }
 
-.dak-sc-emergency-hint {
-	margin: 24px 0 0 !important;
-	padding: 12px 0 0 !important;
-	border-top: 1px solid var( --dak-border ) !important;
+.dak-sf-chip-remove:hover,
+.dak-sf-chip-remove:focus-visible {
+	background: rgba( 0, 0, 0, 0.08 ) !important;
+	outline: none !important;
+}
+
+/* "Did you mean". */
+.dak-sf-clarify {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 10px !important;
+	margin: 16px 0 0 !important;
+}
+
+.dak-sf-q {
+	padding: 12px 14px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-left: 4px solid var( --dak-secondary ) !important;
+	border-radius: 10px !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-sf-q.is-unknown {
+	border-left-color: var( --dak-tint-amber-text ) !important;
+	background: var( --dak-tint-amber ) !important;
+}
+
+.dak-sf-q p {
+	margin: 0 0 8px !important;
+}
+
+.dak-sf-q-choices {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 8px !important;
+}
+
+.dak-sf-choice {
+	min-height: 44px !important;
+	padding: 8px 14px !important;
+	border: 1px solid var( --dak-primary ) !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-primary-dark ) !important;
+	font: inherit !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+}
+
+.dak-sf-choice:hover {
+	background: var( --dak-primary-tint ) !important;
+}
+
+.dak-sf-choice.is-none {
+	border-color: var( --dak-border ) !important;
 	color: var( --dak-muted ) !important;
-	font-size: var( --dak-text-sm ) !important;
 }
 
-.dak-sc-link {
+.dak-sf-link {
 	display: inline-flex !important;
 	align-items: center !important;
 	min-height: 44px !important;
 	padding: 0 4px !important;
-	background: none !important;
 	border: 0 !important;
+	background: none !important;
 	color: var( --dak-primary ) !important;
 	font: inherit !important;
-	font-weight: 700 !important;
+	font-weight: 600 !important;
 	text-decoration: underline !important;
 	text-underline-offset: 3px !important;
 	cursor: pointer !important;
 }
 
-.dak-sc a:not( .dak-button ):not( .dak-sc-link ) {
-	color: var( --dak-primary ) !important;
-	font-weight: 700 !important;
-	text-decoration: underline !important;
-}
-
-.dak-sc-link:focus-visible,
-.dak-sc a:focus-visible,
-.dak-sc button:focus-visible {
-	outline: 2px solid var( --dak-primary ) !important;
-	outline-offset: 2px !important;
-}
-
-/* Symptom chips ------------------------------------------------------------- */
-
-.dak-sc-chips {
-	display: flex !important;
-	flex-wrap: wrap !important;
-	gap: 8px !important;
-	margin: 12px 0 0 !important;
-}
-
-.dak-sc-chip {
-	display: inline-flex !important;
-	align-items: center !important;
-	min-height: 44px !important;
-	margin: 0 !important;
-	padding: 8px 16px !important;
-	background: var( --dak-bg-subtle ) !important;
-	color: var( --dak-text ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: 999px !important;
-	font: inherit !important;
-	font-size: var( --dak-text-sm ) !important;
-	font-weight: 600 !important;
-	line-height: 1.3 !important;
-	text-align: left !important;
-	cursor: pointer !important;
-}
-
-.dak-sc-chip:hover {
-	border-color: var( --dak-primary ) !important;
-}
-
-.dak-sc-chip.is-selected {
-	background: var( --dak-primary ) !important;
-	border-color: var( --dak-primary ) !important;
-	color: #ffffff !important;
-}
-
-.dak-sc-chip.is-selected::before {
-	content: '\2713' !important;
-	margin-right: 6px !important;
-}
-
-.dak-sc-selected {
-	display: flex !important;
-	flex-direction: column !important;
-	gap: 8px !important;
-	margin: 16px 0 !important;
-	padding: 0 !important;
-	list-style: none !important;
-}
-
-.dak-sc-selected-item {
-	display: flex !important;
-	flex-wrap: wrap !important;
-	align-items: center !important;
-	gap: 8px 12px !important;
-	margin: 0 !important;
-	padding: 6px 8px 6px 16px !important;
-	background: var( --dak-primary-tint ) !important;
-	border-radius: var( --dak-radius-md ) !important;
-	font-weight: 700 !important;
-}
-
-.dak-sc-selected-item > span:first-child {
-	flex: 1 1 auto !important;
-}
-
-.dak-sc-tag {
-	padding: 2px 10px !important;
-	background: var( --dak-tint-amber ) !important;
-	color: var( --dak-tint-amber-text ) !important;
-	border-radius: 999px !important;
-	font-size: var( --dak-text-xs ) !important;
-	font-weight: 700 !important;
-}
-
-.dak-sc-remove {
-	min-height: 44px !important;
-	min-width: 44px !important;
-	padding: 0 12px !important;
-	background: transparent !important;
-	border: 0 !important;
-	color: var( --dak-tint-danger-text ) !important;
-	font: inherit !important;
-	font-size: var( --dak-text-sm ) !important;
-	font-weight: 700 !important;
-	text-decoration: underline !important;
-	cursor: pointer !important;
-}
-
-/* Info boxes ------------------------------------------------------------------ */
-
-.dak-sc-info {
-	margin: 16px 0 !important;
-	padding: 12px 16px !important;
-	background: var( --dak-bg-subtle ) !important;
-	border-left: 4px solid var( --dak-secondary ) !important;
-	border-radius: var( --dak-radius-sm ) !important;
-}
-
-.dak-sc-info.is-warning {
-	background: var( --dak-tint-amber ) !important;
-	border-left-color: var( --dak-tint-amber-text ) !important;
-}
-
-.dak-sc-info.is-danger {
+.dak-sf-error {
+	margin: 14px 0 0 !important;
+	padding: 10px 14px !important;
+	border-radius: 10px !important;
 	background: var( --dak-tint-danger ) !important;
-	border-left-color: var( --dak-tint-danger-text ) !important;
 	color: var( --dak-tint-danger-text ) !important;
-	font-weight: 700 !important;
+	font-weight: 600 !important;
 }
 
-.dak-sc-info p:last-child,
-.dak-sc-info ul:last-child {
-	margin-bottom: 0 !important;
+.dak-sf-actions {
+	margin: 20px 0 0 !important;
 }
 
-.dak-sc-info ul {
-	margin: 0 0 8px !important;
-	padding-left: 20px !important;
-}
-
-.dak-sc-inline {
-	display: flex !important;
-	flex-wrap: wrap !important;
-	align-items: center !important;
-	gap: 4px 12px !important;
-}
-
-.dak-sc-inline .dak-sc-input {
-	flex: 1 1 200px !important;
-	width: auto !important;
-}
-
-/* Questions ---------------------------------------------------------------------- */
-
-.dak-sc-progress {
-	display: flex !important;
-	align-items: center !important;
-	gap: 12px !important;
-	margin: 0 0 16px !important;
-}
-
-.dak-sc-progress-text {
-	color: var( --dak-muted ) !important;
-	font-size: var( --dak-text-sm ) !important;
-	font-weight: 700 !important;
-	white-space: nowrap !important;
-}
-
-.dak-sc-progress-bar {
-	position: relative !important;
-	flex: 1 1 auto !important;
-	height: 6px !important;
-	background: var( --dak-bg-subtle ) !important;
-	border-radius: 999px !important;
-	overflow: hidden !important;
-}
-
-.dak-sc-progress-fill {
-	position: absolute !important;
-	top: 0 !important;
-	bottom: 0 !important;
-	left: 0 !important;
-	background: var( --dak-primary ) !important;
-	border-radius: 999px !important;
-	transition: width 0.25s ease !important;
-}
-
-.dak-sc-options {
-	display: grid !important;
-	gap: 10px !important;
-	margin: 16px 0 0 !important;
-	padding: 0 !important;
-	border: 0 !important;
-	min-width: 0 !important;
-}
-
-.dak-sc-option {
-	display: flex !important;
-	align-items: center !important;
-	gap: 12px !important;
+.dak-sf-actions .dak-button-primary {
+	width: 100% !important;
 	min-height: 52px !important;
-	margin: 0 !important;
-	padding: 12px 16px !important;
-	background: var( --dak-bg-card ) !important;
-	border: 1.5px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-md ) !important;
-	color: var( --dak-text ) !important;
-	font-weight: 600 !important;
-	line-height: 1.4 !important;
-	cursor: pointer !important;
 }
 
-.dak-sc-option:hover {
-	border-color: var( --dak-primary ) !important;
-}
-
-.dak-sc-option input {
-	flex: 0 0 auto !important;
-	width: 20px !important;
-	height: 20px !important;
-	margin: 0 !important;
-	accent-color: var( --dak-primary ) !important;
-}
-
-.dak-sc-option:has( input:checked ) {
-	background: var( --dak-primary-tint ) !important;
-	border-color: var( --dak-primary ) !important;
-}
-
-.dak-sc-option:has( input:focus-visible ) {
-	outline: 2px solid var( --dak-primary ) !important;
-	outline-offset: 2px !important;
-}
-
-.dak-sc-option.is-unsure {
-	border-style: dashed !important;
-}
-
-/* Emergency ------------------------------------------------------------------------- */
-
-.dak-sc-emergency {
-	background: var( --dak-tint-danger ) !important;
-	border: 2px solid var( --dak-tint-danger-text ) !important;
-}
-
-.dak-sc-emergency h2 {
-	color: var( --dak-tint-danger-text ) !important;
-	font-size: 1.625rem !important;
-}
-
-.dak-sc-em-message {
-	font-size: 1.125rem !important;
-	font-weight: 700 !important;
-}
-
-.dak-sc-em-contact {
-	padding: 12px 14px !important;
-	background: var( --dak-bg-card ) !important;
-	border-radius: var( --dak-radius-md ) !important;
-	font-size: 1.125rem !important;
-	font-weight: 800 !important;
-}
-
-.dak-sc-em-because {
-	margin-bottom: 4px !important;
-	font-weight: 700 !important;
-}
-
-.dak-sc-em-list {
-	margin: 0 0 12px !important;
-	padding-left: 20px !important;
-}
-
-.dak-sc-emergency .dak-sc-small {
-	color: var( --dak-text ) !important;
-}
-
-/* Summary --------------------------------------------------------------------- */
-
-.dak-sc-summary {
-	margin: 16px 0 0 !important;
-	padding: 0 !important;
-	border-top: 1px solid var( --dak-border ) !important;
-}
-
-.dak-sc-summary-row {
-	display: grid !important;
-	grid-template-columns: minmax( 0, 1fr ) minmax( 0, 1fr ) auto !important;
-	gap: 4px 16px !important;
-	align-items: center !important;
-	padding: 8px 0 !important;
-	border-bottom: 1px solid var( --dak-border ) !important;
-}
-
-.dak-sc-summary dt {
-	margin: 0 !important;
-	color: var( --dak-muted ) !important;
-	font-size: var( --dak-text-sm ) !important;
-	font-weight: 600 !important;
-}
-
-.dak-sc-summary dd {
-	margin: 0 !important;
-	font-weight: 700 !important;
-	overflow-wrap: anywhere !important;
-}
-
-.dak-sc-summary-edit {
-	justify-self: end !important;
-}
-
-.dak-sc-details {
+.dak-sf-actions .dak-sf-hint {
 	margin: 8px 0 0 !important;
 }
 
-.dak-sc-details summary {
-	display: flex !important;
-	align-items: center !important;
-	min-height: 44px !important;
-	color: var( --dak-primary ) !important;
-	font-weight: 700 !important;
-	cursor: pointer !important;
+.dak-sf a:focus-visible,
+.dak-sf button:focus-visible {
+	outline: 2px solid var( --dak-primary ) !important;
+	outline-offset: 2px !important;
 }
 
-.dak-sc-details .dak-sc-summary-row {
-	grid-template-columns: minmax( 0, 1fr ) minmax( 0, 1fr ) !important;
-}
-
-/* Results ------------------------------------------------------------------------ */
-
-.dak-sc-step {
-	margin: 0 0 14px !important;
-	padding: 16px !important;
+/* Results. */
+.dak-sf-results {
+	margin: 0 !important;
+	padding: 26px 28px !important;
 	border: 1px solid var( --dak-border ) !important;
-	border-left-width: 5px !important;
-	border-radius: var( --dak-radius-md ) !important;
+	border-radius: 16px !important;
+	background: var( --dak-bg-card ) !important;
 }
 
-.dak-sc-step.is-urgent {
-	border-left-color: var( --dak-tint-danger-text ) !important;
+.dak-sf-explain {
+	color: var( --dak-muted ) !important;
 }
 
-.dak-sc-step.is-soon {
-	border-left-color: var( --dak-tint-amber-text ) !important;
-}
-
-.dak-sc-step.is-routine {
-	border-left-color: var( --dak-primary ) !important;
-}
-
-.dak-sc-step p {
-	margin: 0 !important;
-}
-
-.dak-sc-badge {
-	display: inline-block !important;
-	margin: 0 0 6px !important;
-	padding: 2px 10px !important;
-	border-radius: 999px !important;
-	font-size: var( --dak-text-xs ) !important;
-	font-weight: 800 !important;
-}
-
-.dak-sc-badge.is-urgent {
-	background: var( --dak-tint-danger ) !important;
-	color: var( --dak-tint-danger-text ) !important;
-}
-
-.dak-sc-badge.is-soon {
-	background: var( --dak-tint-amber ) !important;
-	color: var( --dak-tint-amber-text ) !important;
-}
-
-.dak-sc-badge.is-routine {
-	background: var( --dak-tint-success ) !important;
-	color: var( --dak-tint-success-text ) !important;
-}
-
-.dak-sc-ex-list,
-.dak-sc-sp-list {
-	margin: 0 !important;
+.dak-sf-specs {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 8px !important;
+	margin: 6px 0 16px !important;
 	padding: 0 !important;
 	list-style: none !important;
 }
 
-.dak-sc-ex-list li,
-.dak-sc-sp-list li {
-	margin: 0 !important;
-	padding: 12px 0 !important;
-	border-top: 1px solid var( --dak-border ) !important;
-}
-
-.dak-sc-ex-list p {
-	margin: 0 !important;
-	color: var( --dak-muted ) !important;
-}
-
-.dak-sc-sp-list li {
+.dak-sf-specs li {
 	display: flex !important;
 	flex-direction: column !important;
-	gap: 2px !important;
+	margin: 0 !important;
+	padding: 8px 12px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 10px !important;
 }
 
-.dak-sc-sp-list span {
+.dak-sf-specs span {
+	font-size: 0.82rem !important;
 	color: var( --dak-muted ) !important;
-	font-size: var( --dak-text-sm ) !important;
 }
 
-/* Location bar ------------------------------------------------------------------ */
-
-.dak-sc-locbar {
+.dak-sf-locbar {
 	display: flex !important;
 	flex-wrap: wrap !important;
 	align-items: center !important;
 	justify-content: space-between !important;
 	gap: 4px 12px !important;
 	margin: 0 0 12px !important;
-	padding: 4px 4px 4px 14px !important;
+	padding: 4px 6px 4px 14px !important;
+	border-radius: 10px !important;
 	background: var( --dak-bg-subtle ) !important;
-	border-radius: var( --dak-radius-md ) !important;
 }
 
-.dak-sc-locbar-text {
-	display: inline-flex !important;
-	align-items: center !important;
-	gap: 8px !important;
-	font-weight: 700 !important;
+.dak-sf-locbar p {
+	margin: 0 !important;
+	font-weight: 600 !important;
 }
 
-.dak-sc-pin {
-	width: 10px !important;
-	height: 10px !important;
-	background: var( --dak-primary ) !important;
-	border-radius: 50% 50% 50% 0 !important;
-	transform: rotate( -45deg ) !important;
-}
-
-.dak-sc-locpanel {
+.dak-sf-locpanel {
 	margin: 0 0 16px !important;
 	padding: 16px !important;
 	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-md ) !important;
+	border-radius: 12px !important;
 }
 
-.dak-sc-locpanel .dak-sc-label {
-	margin-top: 12px !important;
+.dak-sf-place {
+	display: grid !important;
+	grid-template-columns: 1fr 1fr auto !important;
+	gap: 10px !important;
+	align-items: end !important;
+	margin: 12px 0 4px !important;
 }
 
-.dak-sc-loading {
-	padding: 16px 0 !important;
+.dak-sf-place select:disabled {
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-sf-loading {
+	padding: 12px 0 !important;
 	color: var( --dak-muted ) !important;
 	font-weight: 600 !important;
 }
 
-/* Doctor cards ---------------------------------------------------------------- */
-
-.dak-sc-doc-group {
-	margin: 20px 0 0 !important;
+.dak-sf-empty {
+	margin: 8px 0 !important;
+	padding: 16px !important;
+	border-radius: 12px !important;
+	background: var( --dak-bg-subtle ) !important;
 }
 
-.dak-sc-group-title {
-	font-size: 1.0625rem !important;
+.dak-sf-fallback {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 10px !important;
+	margin: 12px 0 0 !important;
 }
 
-.dak-sc-doc-list {
+.dak-sf-group {
+	margin: 18px 0 0 !important;
+}
+
+.dak-sf-doc-list {
 	display: grid !important;
 	gap: 14px !important;
 	margin: 10px 0 12px !important;
 }
 
-.dak-sc-doc {
+.dak-sf-doc {
 	display: flex !important;
 	gap: 16px !important;
 	align-items: flex-start !important;
 	padding: 18px !important;
-	background: var( --dak-bg-card ) !important;
 	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-md ) !important;
+	border-radius: 14px !important;
+	background: var( --dak-bg-card ) !important;
 }
 
-.dak-sc-doc-photo {
+.dak-sf-photo {
 	flex: 0 0 64px !important;
 	width: 64px !important;
 	height: 64px !important;
@@ -732,7 +487,7 @@
 	background: var( --dak-primary-tint ) !important;
 }
 
-.dak-sc-doc-photo.is-initials {
+.dak-sf-photo.is-initials {
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: center !important;
@@ -741,155 +496,122 @@
 	font-weight: 800 !important;
 }
 
-.dak-sc-doc-body {
+.dak-sf-doc-body {
 	flex: 1 1 auto !important;
 	min-width: 0 !important;
 }
 
-.dak-sc-doc-body p {
+.dak-sf-doc-body p {
 	margin: 0 0 4px !important;
 }
 
-.dak-sc-doc-spec {
+.dak-sf-doc-spec {
 	color: var( --dak-primary ) !important;
 	font-weight: 700 !important;
 }
 
-.dak-sc-doc-reason {
-	color: var( --dak-muted ) !important;
-	font-size: var( --dak-text-sm ) !important;
-}
-
-.dak-sc-doc-clinic {
-	margin: 8px 0 0 !important;
-}
-
-.dak-sc-doc-clinic-name {
+.dak-sf-doc-clinic {
 	font-weight: 600 !important;
 	overflow-wrap: anywhere !important;
 }
 
-.dak-sc-doc-distance {
+.dak-sf-doc-distance {
 	color: var( --dak-muted ) !important;
-	font-size: var( --dak-text-sm ) !important;
+	font-size: 0.9rem !important;
 }
 
-.dak-sc-doc-facts {
+.dak-sf-facts {
 	display: flex !important;
 	flex-wrap: wrap !important;
 	gap: 4px 24px !important;
 	margin: 8px 0 0 !important;
 }
 
-.dak-sc-doc-facts div {
+.dak-sf-facts div {
 	margin: 0 !important;
 }
 
-.dak-sc-doc-facts dt {
+.dak-sf-facts dt {
 	margin: 0 !important;
 	color: var( --dak-muted ) !important;
-	font-size: var( --dak-text-xs ) !important;
+	font-size: 0.78rem !important;
 	font-weight: 700 !important;
 }
 
-.dak-sc-doc-facts dd {
+.dak-sf-facts dd {
 	margin: 0 !important;
-	font-size: var( --dak-text-sm ) !important;
+	font-size: 0.92rem !important;
 	font-weight: 700 !important;
 }
 
-.dak-sc-doc-others {
+.dak-sf-more {
 	margin: 8px 0 0 !important;
+	font-size: 0.9rem !important;
 }
 
-.dak-sc-doc-others summary {
+.dak-sf-more summary {
 	display: flex !important;
 	align-items: center !important;
 	min-height: 44px !important;
 	color: var( --dak-primary ) !important;
-	font-size: var( --dak-text-sm ) !important;
 	font-weight: 700 !important;
 	cursor: pointer !important;
 }
 
-.dak-sc-doc-other {
-	padding: 8px 0 !important;
-	border-top: 1px solid var( --dak-border ) !important;
+.dak-sf-more a {
+	color: var( --dak-primary ) !important;
+	font-weight: 700 !important;
 }
 
-.dak-sc-doc-other .dak-sc-doc-clinic {
-	margin: 0 !important;
-}
-
-.dak-sc-doc-actions {
+.dak-sf-doc-actions {
 	display: flex !important;
 	flex-wrap: wrap !important;
 	gap: 10px !important;
 	margin: 14px 0 0 !important;
 }
 
-.dak-sc-unavailable .dak-button {
-	margin: 4px 0 !important;
+/* Floating chat buttons never sit over the form on phones. */
+@media ( max-width: 782px ) {
+	body:has( .dak-sf ) .joinchat,
+	body:has( .dak-sf ) #wp-chatbot-ball-container,
+	body:has( .dak-sf ) #wp-chatbot-integration-container {
+		display: none !important;
+	}
 }
 
-/* Small screens ------------------------------------------------------------------ */
-
-@media ( max-width: 640px ) {
-	.dak-sc {
-		padding: 20px 16px 56px !important;
+@media ( max-width: 600px ) {
+	.dak-sf {
+		padding: 18px 16px 48px !important;
 	}
 
-	.dak-sc-card {
+	.dak-sf h1 {
+		font-size: 1.55rem !important;
+	}
+
+	.dak-sf-card,
+	.dak-sf-results {
 		padding: 20px 16px !important;
-		border-radius: var( --dak-radius-md ) !important;
+		border-radius: 14px !important;
 	}
 
-	.dak-sc h1 {
-		font-size: 1.625rem !important;
+	.dak-sf-place {
+		grid-template-columns: 1fr !important;
 	}
 
-	.dak-sc h2 {
-		font-size: 1.25rem !important;
-	}
-
-	.dak-sc-actions .dak-button {
-		flex: 1 1 140px !important;
-	}
-
-	.dak-sc-actions .dak-button-primary {
-		margin-left: 0 !important;
-	}
-
-	.dak-sc-location-line {
-		text-align: left !important;
-	}
-
-	.dak-sc-summary-row,
-	.dak-sc-details .dak-sc-summary-row {
-		grid-template-columns: minmax( 0, 1fr ) auto !important;
-	}
-
-	.dak-sc-summary-row dt {
-		grid-column: 1 / -1 !important;
-	}
-
-	.dak-sc-doc {
+	.dak-sf-doc {
 		padding: 14px !important;
 		gap: 12px !important;
 	}
 
-	.dak-sc-doc-photo {
+	.dak-sf-photo {
 		flex-basis: 48px !important;
 		width: 48px !important;
 		height: 48px !important;
 	}
 
-	.dak-sc-doc-actions .dak-button {
-		flex: 1 1 120px !important;
+	.dak-sf-doc-actions .dak-button,
+	.dak-sf-fallback .dak-button {
+		flex: 1 1 100% !important;
+		width: 100% !important;
 	}
-}
-
-.dak-sc a.dak-button,
-.dak-sc a.dak-button:hover {
-	text-decoration: none !important;
 }

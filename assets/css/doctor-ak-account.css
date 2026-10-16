@@ -1,0 +1,1149 @@
+/**
+ * Doctor AK Portal — Account pages (sign in, registration, password
+ * recovery).
+ *
+ * Everything is scoped to .dak-acct and layered on the shared component
+ * styles in doctor-ak-auth.css / doctor-ak-registration.css, which the
+ * dashboards and profile editor also use — so nothing here changes those
+ * screens. Colours come from the shared tokens (dark mode follows them).
+ * !important matches the rest of the plugin: theme and page-builder styles
+ * otherwise win.
+ */
+
+/* ---------------------------------------------------------------------
+ * Layout
+ * ------------------------------------------------------------------- */
+
+.dak-acct {
+	box-sizing: border-box !important;
+	width: 100% !important;
+	padding: 48px 24px 56px !important;
+	background: var( --dak-bg-page ) !important;
+	color: var( --dak-text ) !important;
+	font-family: var( --dak-font-sans ) !important;
+	font-size: 1rem !important;
+	line-height: 1.5 !important;
+}
+
+.dak-acct *,
+.dak-acct *::before,
+.dak-acct *::after {
+	box-sizing: border-box !important;
+}
+
+.dak-acct [hidden] {
+	display: none !important;
+}
+
+/* One surface: a quiet brand panel (about 40%) and the form. */
+.dak-acct-shell {
+	display: grid !important;
+	grid-template-columns: minmax( 0, 2fr ) minmax( 0, 3fr ) !important;
+	align-items: stretch !important;
+	max-width: 1040px !important;
+	margin: 0 auto !important;
+	overflow: hidden !important;
+	overflow: clip !important; /* Rounds the corners without breaking the panel's sticky content. */
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 16px !important;
+	box-shadow: 0 1px 2px rgba( 16, 24, 40, 0.04 ), 0 6px 20px rgba( 16, 24, 40, 0.04 ) !important;
+}
+
+/* Registration has more to fill in — a slightly narrower panel. */
+.dak-acct--register .dak-acct-shell {
+	grid-template-columns: minmax( 0, 9fr ) minmax( 0, 16fr ) !important;
+}
+
+.dak-acct-aside {
+	padding: 40px 36px !important;
+	background: var( --dak-primary-tint ) !important;
+	border-right: 1px solid var( --dak-border ) !important;
+	color: var( --dak-text ) !important;
+}
+
+/* Stays in view beside the longer registration form. */
+.dak-acct-aside-inner {
+	position: sticky !important;
+	top: 32px !important;
+}
+
+.dak-acct-brand {
+	display: flex !important;
+	align-items: center !important;
+	gap: 10px !important;
+	margin: 0 0 36px !important;
+	font-size: 1rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-acct-brand-logo {
+	width: 40px !important;
+	height: 40px !important;
+	object-fit: contain !important;
+	border-radius: 10px !important;
+	background: var( --dak-bg-card ) !important;
+}
+
+.dak-acct-illustration {
+	display: block !important;
+	width: 100% !important;
+	max-width: 220px !important;
+	height: auto !important;
+	margin: 0 0 28px !important;
+	color: var( --dak-primary ) !important;
+}
+
+.dak-acct-aside-title {
+	margin: 0 0 8px !important;
+	font-size: 1.2rem !important;
+	font-weight: 700 !important;
+	line-height: 1.35 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-acct-aside-text {
+	margin: 0 !important;
+	font-size: 0.95rem !important;
+	line-height: 1.55 !important;
+	color: var( --dak-muted ) !important;
+}
+
+/* Form side: the form keeps a comfortable reading width. */
+.dak-acct-card {
+	display: flex !important;
+	justify-content: center !important;
+	min-width: 0 !important;
+	padding: 48px 40px !important;
+	background: var( --dak-bg-card ) !important;
+}
+
+.dak-acct-main {
+	width: 100% !important;
+	max-width: 420px !important;
+	min-width: 0 !important;
+}
+
+.dak-acct--register .dak-acct-main {
+	max-width: 560px !important;
+}
+
+.dak-acct-header {
+	margin: 0 0 28px !important;
+}
+
+.dak-acct-header h1 {
+	margin: 0 0 8px !important;
+	font-size: 1.75rem !important;
+	font-weight: 700 !important;
+	line-height: 1.25 !important;
+	letter-spacing: -0.01em !important;
+	color: var( --dak-text ) !important;
+	text-align: left !important;
+}
+
+.dak-acct-header h1:focus {
+	outline: none !important;
+}
+
+.dak-acct-header p {
+	margin: 0 !important;
+	font-size: 0.98rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+/* ---------------------------------------------------------------------
+ * Fields
+ * ------------------------------------------------------------------- */
+
+.dak-acct .dak-field {
+	margin: 0 0 18px !important;
+	min-width: 0 !important;
+}
+
+.dak-acct .dak-field label,
+.dak-acct .dak-field-label,
+.dak-acct legend {
+	display: block !important;
+	margin: 0 0 6px !important;
+	padding: 0 !important;
+	font-size: 0.9rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-acct .dak-required {
+	margin-left: 2px !important;
+	color: var( --dak-danger ) !important;
+}
+
+.dak-acct-optional {
+	font-weight: 400 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-acct .dak-field input[type='text'],
+.dak-acct .dak-field input[type='email'],
+.dak-acct .dak-field input[type='password'],
+.dak-acct .dak-field input[type='tel'],
+.dak-acct .dak-field input[type='number'],
+.dak-acct .dak-field select,
+.dak-acct .dak-field textarea {
+	width: 100% !important;
+	min-height: 48px !important;
+	padding: 11px 14px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 10px !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font: inherit !important;
+	font-size: 1rem !important;
+	line-height: 1.4 !important;
+	box-shadow: none !important;
+}
+
+.dak-acct .dak-field textarea {
+	min-height: 76px !important;
+	resize: vertical !important;
+}
+
+.dak-acct .dak-field select:disabled {
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+	cursor: not-allowed !important;
+}
+
+.dak-acct .dak-field input:focus,
+.dak-acct .dak-field select:focus,
+.dak-acct .dak-field textarea:focus {
+	outline: none !important;
+	border-color: var( --dak-primary ) !important;
+	box-shadow: 0 0 0 3px var( --dak-primary-tint ) !important;
+}
+
+.dak-acct [aria-invalid='true'],
+.dak-acct .dak-field.has-error input,
+.dak-acct .dak-field.has-error select,
+.dak-acct .dak-field.has-error .dak-multiselect-control {
+	border-color: var( --dak-danger ) !important;
+}
+
+.dak-acct .dak-field-error {
+	margin: 6px 0 0 !important;
+	font-size: 0.86rem !important;
+	font-weight: 500 !important;
+	color: var( --dak-danger ) !important;
+}
+
+.dak-acct-hint {
+	margin: 6px 0 0 !important;
+	padding: 0 !important;
+	font-size: 0.85rem !important;
+	line-height: 1.45 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-acct .dak-field-row {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0 16px !important;
+}
+
+.dak-acct .dak-field-row > .dak-field {
+	flex: 1 1 220px !important;
+}
+
+.dak-acct .dak-field-row > .dak-field-narrow {
+	flex: 0 1 190px !important;
+}
+
+.dak-acct .dak-field-row-3 > .dak-field {
+	flex: 1 1 160px !important;
+}
+
+.dak-acct fieldset {
+	min-width: 0 !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+}
+
+.dak-acct-group {
+	margin: 4px 0 0 !important;
+}
+
+.dak-acct-group > legend {
+	margin-bottom: 10px !important;
+	font-size: 0.95rem !important;
+}
+
+/* Phone: compact country-code select so the number has room. */
+.dak-acct .dak-phone-field {
+	display: flex !important;
+	gap: 8px !important;
+}
+
+.dak-acct .dak-phone-field .dak-phone-field-code {
+	flex: 0 0 8.5rem !important;
+	width: 8.5rem !important;
+	max-width: 8.5rem !important;
+	padding-right: 28px !important;
+	text-overflow: ellipsis !important;
+}
+
+.dak-acct .dak-phone-field .dak-phone-field-number {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+}
+
+/* Date of birth: Day / Month / Year. */
+.dak-acct-dob-parts {
+	display: grid !important;
+	grid-template-columns: 84px minmax( 0, 1fr ) 104px !important;
+	gap: 10px !important;
+	max-width: 440px !important;
+}
+
+.dak-acct .dak-acct-sublabel {
+	margin: 0 0 4px !important;
+	font-size: 0.8rem !important;
+	font-weight: 500 !important;
+	color: var( --dak-muted ) !important;
+}
+
+/* Password with Show/Hide. */
+.dak-acct .dak-password-field {
+	position: relative !important;
+}
+
+.dak-acct .dak-password-field input[type='password'],
+.dak-acct .dak-password-field input[type='text'] {
+	padding-right: 86px !important;
+}
+
+.dak-acct .dak-password-toggle {
+	position: absolute !important;
+	top: 50% !important;
+	right: 6px !important;
+	transform: translateY( -50% ) !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 5px !important;
+	width: auto !important;
+	height: 38px !important;
+	padding: 0 10px !important;
+	border: 0 !important;
+	border-radius: 8px !important;
+	background: transparent !important;
+	color: var( --dak-muted ) !important;
+	font: inherit !important;
+	font-size: 0.85rem !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+}
+
+.dak-acct .dak-password-toggle:hover {
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-acct .dak-password-toggle:focus-visible,
+.dak-acct-link:focus-visible,
+.dak-acct .dak-button:focus-visible,
+.dak-acct .dak-multiselect-control:focus-visible {
+	outline: 2px solid var( --dak-primary ) !important;
+	outline-offset: 2px !important;
+}
+
+.dak-acct .dak-password-toggle svg {
+	width: 17px !important;
+	height: 17px !important;
+}
+
+/* Checkboxes. */
+.dak-acct .dak-checkbox {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	font-size: 0.95rem !important;
+	font-weight: 500 !important;
+	cursor: pointer !important;
+}
+
+.dak-acct .dak-checkbox input[type='checkbox'] {
+	flex: 0 0 auto !important;
+	width: 18px !important;
+	height: 18px !important;
+	margin: 0 !important;
+	accent-color: var( --dak-primary ) !important;
+}
+
+.dak-acct .dak-acct-terms {
+	align-items: flex-start !important;
+	font-weight: 400 !important;
+	line-height: 1.5 !important;
+}
+
+.dak-acct .dak-acct-terms input[type='checkbox'] {
+	margin-top: 3px !important;
+}
+
+.dak-acct .dak-acct-terms label {
+	display: inline !important;
+	margin: 0 !important;
+	font-size: inherit !important;
+	font-weight: 400 !important;
+	cursor: pointer !important;
+}
+
+/* Links. */
+.dak-acct-link,
+.dak-acct button.dak-acct-link {
+	display: inline !important;
+	width: auto !important;
+	min-width: 0 !important;
+	height: auto !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 2px !important;
+	background: none !important;
+	box-shadow: none !important;
+	color: var( --dak-primary ) !important;
+	font: inherit !important;
+	font-weight: 600 !important;
+	text-decoration: none !important;
+	cursor: pointer !important;
+}
+
+.dak-acct-link:hover {
+	text-decoration: underline !important;
+	text-underline-offset: 3px !important;
+}
+
+.dak-acct-row {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 10px 16px !important;
+	margin: -2px 0 22px !important;
+	font-size: 0.95rem !important;
+}
+
+.dak-acct-switch {
+	margin: 22px 0 0 !important;
+	text-align: center !important;
+	font-size: 0.95rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-acct-back {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 4px !important;
+}
+
+.dak-acct-back svg {
+	width: 16px !important;
+	height: 16px !important;
+}
+
+/* Buttons. */
+.dak-acct .dak-button {
+	min-height: 48px !important;
+	padding: 12px 22px !important;
+	border-radius: 10px !important;
+	font-size: 1rem !important;
+	font-weight: 600 !important;
+	white-space: normal !important;
+}
+
+.dak-acct .dak-button-sm {
+	min-height: 40px !important;
+	padding: 8px 14px !important;
+	font-size: 0.9rem !important;
+}
+
+.dak-acct .dak-acct-submit {
+	min-height: 48px !important;
+}
+
+/* Alerts. */
+.dak-acct .dak-alert {
+	margin: 0 0 18px !important;
+	padding: 12px 14px !important;
+	border-radius: 10px !important;
+	font-size: 0.95rem !important;
+	line-height: 1.5 !important;
+}
+
+.dak-acct .dak-alert:focus {
+	outline: 2px solid currentColor !important;
+	outline-offset: 2px !important;
+}
+
+.dak-acct .dak-alert-warning {
+	background: var( --dak-tint-amber ) !important;
+	color: var( --dak-tint-amber-text ) !important;
+}
+
+.dak-acct .dak-alert-warning strong {
+	display: block !important;
+	margin-bottom: 2px !important;
+}
+
+.dak-acct-summary-title {
+	margin: 0 !important;
+	font-weight: 600 !important;
+}
+
+.dak-acct-summary-list {
+	margin: 8px 0 0 !important;
+	padding-left: 20px !important;
+}
+
+.dak-acct-summary-list li {
+	margin: 2px 0 !important;
+}
+
+.dak-acct-summary-list a {
+	color: inherit !important;
+	text-decoration: underline !important;
+}
+
+/* ---------------------------------------------------------------------
+ * Registration: roles, steps, review
+ * ------------------------------------------------------------------- */
+
+.dak-acct .dak-acct-roles {
+	margin: 0 0 24px !important;
+}
+
+.dak-acct .dak-acct-roles > legend {
+	margin-bottom: 10px !important;
+}
+
+.dak-acct .dak-role-cards {
+	display: grid !important;
+	grid-template-columns: 1fr 1fr !important;
+	gap: 12px !important;
+	margin: 0 !important;
+}
+
+.dak-acct .dak-role-card {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 12px !important;
+	min-height: 0 !important;
+	margin: 0 !important;
+	padding: 14px 16px !important;
+	border: 1.5px solid var( --dak-border ) !important;
+	border-radius: 12px !important;
+	background: var( --dak-bg-card ) !important;
+	cursor: pointer !important;
+}
+
+.dak-acct .dak-role-card:hover {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-acct .dak-role-card.is-selected {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary-tint ) !important;
+}
+
+.dak-acct .dak-role-card:has( input:focus-visible ) {
+	outline: 2px solid var( --dak-primary ) !important;
+	outline-offset: 2px !important;
+}
+
+.dak-acct .dak-role-card-icon {
+	width: 36px !important;
+	height: 36px !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-primary ) !important;
+}
+
+.dak-acct .dak-role-card.is-selected .dak-role-card-icon {
+	background: var( --dak-primary ) !important;
+	color: #ffffff !important;
+}
+
+.dak-acct .dak-role-card-text strong {
+	font-size: 1rem !important;
+	font-weight: 700 !important;
+}
+
+.dak-acct .dak-role-card-text small {
+	font-size: 0.86rem !important;
+	line-height: 1.4 !important;
+}
+
+/* Step progress. */
+.dak-acct-steps {
+	display: flex !important;
+	gap: 8px !important;
+	margin: 0 0 6px !important;
+	padding: 0 !important;
+	list-style: none !important;
+	counter-reset: none !important;
+}
+
+.dak-acct-steps li {
+	flex: 1 1 0 !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	margin: 0 !important;
+	padding: 0 0 10px !important;
+	border-bottom: 3px solid var( --dak-border ) !important;
+	font-size: 0.88rem !important;
+	font-weight: 600 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-acct-step-num {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	flex: 0 0 26px !important;
+	width: 26px !important;
+	height: 26px !important;
+	border-radius: 50% !important;
+	background: var( --dak-bg-subtle ) !important;
+	font-size: 0.82rem !important;
+}
+
+.dak-acct-steps li.is-current {
+	border-color: var( --dak-primary ) !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-acct-steps li.is-current .dak-acct-step-num {
+	background: var( --dak-primary ) !important;
+	color: #ffffff !important;
+}
+
+.dak-acct-steps li.is-done {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-acct-steps li.is-done .dak-acct-step-num {
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-acct-step-status {
+	margin: 0 0 20px !important;
+	font-size: 0.85rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-acct-step h2 {
+	margin: 0 0 16px !important;
+	font-size: 1.2rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+	text-transform: none !important;
+	letter-spacing: normal !important;
+}
+
+.dak-acct-step h2:focus {
+	outline: none !important;
+}
+
+.dak-acct-note {
+	margin: 4px 0 0 !important;
+	padding: 12px 14px !important;
+	border-radius: 10px !important;
+	background: var( --dak-bg-subtle ) !important;
+	font-size: 0.9rem !important;
+	color: var( --dak-muted ) !important;
+}
+
+/* Review. */
+.dak-acct-review {
+	margin: 0 0 22px !important;
+}
+
+.dak-acct-review h3 {
+	margin: 0 0 10px !important;
+	font-size: 1rem !important;
+	font-weight: 700 !important;
+}
+
+.dak-acct-review-group {
+	margin: 0 0 12px !important;
+	padding: 14px 16px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 12px !important;
+}
+
+.dak-acct-review-head {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 12px !important;
+	margin: 0 0 8px !important;
+}
+
+.dak-acct-review-head h4 {
+	margin: 0 !important;
+	font-size: 0.95rem !important;
+	font-weight: 700 !important;
+}
+
+.dak-acct-review-head .dak-acct-link {
+	padding: 6px 4px !important;
+}
+
+.dak-acct-review dl {
+	display: grid !important;
+	grid-template-columns: 150px minmax( 0, 1fr ) !important;
+	gap: 6px 14px !important;
+	margin: 0 !important;
+	font-size: 0.92rem !important;
+}
+
+.dak-acct-review dt {
+	color: var( --dak-muted ) !important;
+}
+
+.dak-acct-review dd {
+	margin: 0 !important;
+	overflow-wrap: anywhere !important;
+}
+
+/* Actions. */
+.dak-acct-actions {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 12px !important;
+	margin: 22px 0 0 !important;
+}
+
+.dak-acct-actions .dak-button-primary {
+	flex: 1 1 220px !important;
+	margin-left: auto !important;
+}
+
+.dak-acct--register .dak-acct-actions .dak-button-secondary {
+	flex: 0 0 auto !important;
+	min-width: 120px !important;
+}
+
+/* Photo. */
+.dak-acct-photo {
+	display: flex !important;
+	align-items: center !important;
+	gap: 16px !important;
+}
+
+.dak-acct-photo-preview {
+	flex: 0 0 72px !important;
+	width: 72px !important;
+	height: 72px !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	overflow: hidden !important;
+	border-radius: 50% !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-acct-photo-preview svg {
+	width: 30px !important;
+	height: 30px !important;
+}
+
+.dak-acct-photo-preview img {
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+}
+
+.dak-acct-photo-actions {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 8px !important;
+}
+
+/* "Upload photo" is a <label> styled as a button — keep it a button. */
+.dak-acct .dak-field .dak-acct-photo-actions label.dak-button {
+	display: inline-flex !important;
+	align-items: center !important;
+	min-height: 40px !important;
+	margin: 0 !important;
+	padding: 8px 14px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 10px !important;
+	background: var( --dak-bg-card ) !important;
+	font-size: 0.9rem !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+}
+
+.dak-acct .dak-field .dak-acct-photo-actions label.dak-button:hover {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-acct .dak-field .dak-acct-photo-actions label.dak-button:focus-visible {
+	outline: 2px solid var( --dak-primary ) !important;
+	outline-offset: 2px !important;
+}
+
+.dak-acct .dak-upload-status {
+	margin: 4px 0 0 !important;
+	font-size: 0.85rem !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-acct .dak-upload-status:empty {
+	display: none !important;
+}
+
+/* Tag pickers: same height as inputs, bounded suggestions, quiet copy/cut. */
+.dak-acct .dak-multiselect-control {
+	min-height: 48px !important;
+	padding: 8px 12px !important;
+	border-radius: 10px !important;
+}
+
+.dak-acct .dak-multiselect-placeholder {
+	font-size: 1rem !important;
+}
+
+.dak-acct .dak-chip {
+	padding: 4px 4px 4px 10px !important;
+	font-size: 0.88rem !important;
+}
+
+.dak-acct .dak-chip-remove {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 24px !important;
+	height: 24px !important;
+	border-radius: 50% !important;
+	font-size: 1rem !important;
+}
+
+.dak-acct .dak-chip-remove:hover,
+.dak-acct .dak-chip-remove:focus-visible {
+	background: rgba( 0, 0, 0, 0.08 ) !important;
+	outline: none !important;
+}
+
+.dak-acct .dak-multiselect-dropdown {
+	max-height: 260px !important;
+	border-radius: 10px !important;
+}
+
+.dak-acct .dak-multiselect-search {
+	min-height: 46px !important;
+	font-size: 1rem !important;
+}
+
+.dak-acct .dak-multiselect-options {
+	max-height: 210px !important;
+	overflow-y: auto !important;
+}
+
+.dak-acct .dak-multiselect-option {
+	padding: 10px 14px !important;
+	font-size: 0.95rem !important;
+}
+
+.dak-acct .dak-multiselect-option.is-selected::after {
+	content: '\2713' !important;
+	float: right !important;
+	color: var( --dak-primary ) !important;
+}
+
+.dak-acct .dak-multiselect-toolbar {
+	position: absolute !important;
+	top: -30px !important;
+	right: 0 !important;
+	margin: 0 !important;
+	gap: 2px !important;
+}
+
+.dak-acct .dak-multiselect-tool {
+	padding: 2px 6px !important;
+	border: 0 !important;
+	background: none !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.78rem !important;
+	font-weight: 500 !important;
+}
+
+.dak-acct .dak-multiselect-tool:hover {
+	color: var( --dak-primary-dark ) !important;
+	text-decoration: underline !important;
+}
+
+/* Rich text: compact, matching toolbar. */
+.dak-acct .dak-rich-text {
+	border-radius: 10px !important;
+}
+
+.dak-acct .dak-rich-text-toolbar {
+	padding: 4px 6px !important;
+	border-radius: 10px 10px 0 0 !important;
+}
+
+.dak-acct .dak-rich-text-button {
+	width: 32px !important;
+	height: 32px !important;
+	border-radius: 6px !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-acct .dak-rich-text-editor {
+	min-height: 96px !important;
+	padding: 12px 14px !important;
+	font-size: 1rem !important;
+	border-radius: 0 0 10px 10px !important;
+}
+
+/* Shared password + terms block. */
+.dak-acct-security {
+	margin-top: 4px !important;
+	padding-top: 20px !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+.dak-acct-step .dak-acct-security {
+	margin-top: 0 !important;
+	padding-top: 0 !important;
+	border-top: 0 !important;
+}
+
+.dak-acct-consent {
+	margin-top: 4px !important;
+}
+
+.dak-acct .dak-terms-field {
+	margin-bottom: 0 !important;
+}
+
+/* Password requirement: a quiet hint that becomes a tick once met. */
+.dak-acct-rule::before {
+	content: '' !important;
+	display: inline-block !important;
+	width: 8px !important;
+	height: 8px !important;
+	margin: 0 8px 1px 2px !important;
+	border: 1.5px solid currentColor !important;
+	border-radius: 50% !important;
+}
+
+.dak-acct-rule.is-met {
+	color: var( --dak-primary ) !important;
+}
+
+.dak-acct-rule.is-met::before {
+	content: '\2713' !important;
+	width: auto !important;
+	height: auto !important;
+	margin: 0 6px 0 0 !important;
+	border: 0 !important;
+	font-weight: 700 !important;
+}
+
+/* Links under the form. */
+.dak-acct-footer {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 8px 20px !important;
+	max-width: 1040px !important;
+	margin: 18px auto 0 !important;
+	padding: 0 4px !important;
+	font-size: 0.88rem !important;
+}
+
+.dak-acct-footer a {
+	color: var( --dak-muted ) !important;
+	text-decoration: none !important;
+}
+
+.dak-acct-footer a:hover {
+	color: var( --dak-text ) !important;
+	text-decoration: underline !important;
+	text-underline-offset: 3px !important;
+}
+
+.dak-acct-footer a:focus-visible {
+	outline: 2px solid var( --dak-primary ) !important;
+	outline-offset: 2px !important;
+	border-radius: 2px !important;
+}
+
+.dak-acct-footer-home {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 4px !important;
+	min-height: 32px !important;
+}
+
+.dak-acct-footer-home svg {
+	width: 16px !important;
+	height: 16px !important;
+}
+
+.dak-acct-footer-policies {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 4px 18px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+.dak-acct-footer-policies li {
+	margin: 0 !important;
+}
+
+/* Dialogs on these pages. */
+.dak-acct-modal .dak-terms-modal-footer {
+	display: flex !important;
+	justify-content: flex-end !important;
+}
+
+.dak-acct-modal .dak-modal-dialog:focus {
+	outline: none !important;
+}
+
+.dak-acct-modal .dak-register-success-dialog p {
+	margin-bottom: 12px !important;
+}
+
+/* ---------------------------------------------------------------------
+ * Floating chat widgets: never over the form on phones
+ * ------------------------------------------------------------------- */
+
+@media ( max-width: 782px ) {
+	body:has( .dak-acct ) .joinchat,
+	body:has( .dak-acct ) #wp-chatbot-ball-container,
+	body:has( .dak-acct ) #wp-chatbot-integration-container {
+		display: none !important;
+	}
+}
+
+/* ---------------------------------------------------------------------
+ * Responsive: form first on narrow screens
+ * ------------------------------------------------------------------- */
+
+@media ( max-width: 899px ) {
+	.dak-acct-shell,
+	.dak-acct--register .dak-acct-shell {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+		max-width: 640px !important;
+	}
+
+	.dak-acct-aside {
+		display: none !important;
+	}
+
+	.dak-acct-card {
+		padding: 36px 32px !important;
+	}
+
+	.dak-acct-main,
+	.dak-acct--register .dak-acct-main {
+		max-width: none !important;
+	}
+
+	.dak-acct-footer {
+		max-width: 640px !important;
+	}
+}
+
+@media ( max-width: 600px ) {
+	.dak-acct {
+		padding: 16px 16px 32px !important;
+	}
+
+	.dak-acct-card {
+		padding: 24px 18px !important;
+	}
+
+	.dak-acct-shell {
+		border-radius: 14px !important;
+	}
+
+	.dak-acct-header {
+		margin-bottom: 22px !important;
+	}
+
+	.dak-acct-footer {
+		flex-direction: column !important;
+		align-items: flex-start !important;
+	}
+
+	.dak-acct-header h1 {
+		font-size: 1.5rem !important;
+	}
+
+	.dak-acct .dak-role-cards {
+		grid-template-columns: 1fr !important;
+	}
+
+	.dak-acct-steps li {
+		gap: 0 !important;
+	}
+
+	.dak-acct-steps li:not( .is-current ) .dak-acct-step-name {
+		position: absolute !important;
+		width: 1px !important;
+		height: 1px !important;
+		overflow: hidden !important;
+		clip: rect( 0, 0, 0, 0 ) !important;
+	}
+
+	.dak-acct-steps li.is-current {
+		flex-grow: 3 !important;
+	}
+
+	.dak-acct-steps li.is-current .dak-acct-step-num {
+		margin-right: 8px !important;
+	}
+
+	.dak-acct .dak-field-row > .dak-field-narrow {
+		flex: 1 1 100% !important;
+	}
+
+	.dak-acct .dak-phone-field .dak-phone-field-code {
+		flex-basis: 6.75rem !important;
+		width: 6.75rem !important;
+		max-width: 6.75rem !important;
+	}
+
+	.dak-acct-review dl {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+		gap: 0 !important;
+	}
+
+	.dak-acct-review dd {
+		margin-bottom: 8px !important;
+	}
+
+	/* Primary action first, full width. */
+	.dak-acct-actions {
+		flex-direction: column-reverse !important;
+		align-items: stretch !important;
+	}
+
+	.dak-acct-actions .dak-button,
+	.dak-acct--register .dak-acct-actions .dak-button-secondary {
+		flex: 0 0 auto !important;
+		width: 100% !important;
+		margin-left: 0 !important;
+	}
+}

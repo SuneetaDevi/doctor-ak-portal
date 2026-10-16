@@ -1,95 +1,25 @@
 /**
- * Doctor AK Portal — Registration form behaviour.
+ * Doctor AK Portal — Shared form helpers.
  *
- * Everything here is vanilla JS (no jQuery/Select2 dependency) and talks to
- * WordPress exclusively through admin-ajax.php using the localized
- * `dakRegister` object (ajaxUrl + nonce).
+ * The searchable tag picker (initMultiSelect), day pills, check cards and
+ * field-error helpers, used by the registration page (whose own flow is in
+ * doctor-ak-account-register.js), the profile editor and the dashboards.
+ * Vanilla JS, no jQuery/Select2 dependency.
  */
 ( function () {
 	'use strict';
 
+	// Gives each enhanced multi-select unique ids for its ARIA wiring.
+	var multiSelectCount = 0;
+
+	// Shared helpers only. The public registration page's own flow (roles,
+	// doctor steps, review, submission) lives in doctor-ak-account-register.js;
+	// this file is also loaded by the profile editor and the dashboards for
+	// initMultiSelect() and the field-error helpers exported at the bottom.
 	document.addEventListener( 'DOMContentLoaded', function () {
-		initRoleToggle();
 		initDayPills();
 		initCheckCards();
-		initProfilePictureUpload();
-		initMultiSelect( document.getElementById( 'dak-specializations' ), { copyCut: true } );
-		initMultiSelect( document.getElementById( 'dak-keywords' ), {
-			allowCustom: true,
-			copyCut: true,
-			placeholder: 'Search or type a keyword…',
-		} );
-		initTermsModal();
-		initRegistrationForm();
-
-		if ( window.dakCityArea && window.dakRegister ) {
-			window.dakCityArea.wire(
-				document.getElementById( 'dak-country' ),
-				document.getElementById( 'dak-city' ),
-				document.getElementById( 'dak-area' ),
-				window.dakRegister.locations
-			);
-		}
 	} );
-
-	/**
-	 * Shows/hides the doctor vs. patient field groups based on the
-	 * selected "Register As" radio, highlights the selected role card, and
-	 * updates the submit button's label to match.
-	 */
-	function initRoleToggle() {
-		var radios = document.querySelectorAll( 'input[name="register_as"]' );
-		var doctorFields = document.getElementById( 'dak-doctor-fields' );
-		var patientFields = document.getElementById( 'dak-patient-fields' );
-		var submitLabel = document.querySelector( '#dak-register-submit .dak-button-label' );
-
-		if ( ! radios.length || ! doctorFields || ! patientFields ) {
-			return;
-		}
-
-		function setFieldsDisabled( container, disabled ) {
-			container.querySelectorAll( 'input, select, textarea' ).forEach( function ( field ) {
-				field.disabled = disabled;
-			} );
-		}
-
-		function update() {
-			var selected = document.querySelector( 'input[name="register_as"]:checked' );
-			var value = selected ? selected.value : 'doctor';
-
-			doctorFields.classList.toggle( 'dak-hidden', 'doctor' !== value );
-			patientFields.classList.toggle( 'dak-hidden', 'patient' !== value );
-
-			var doctorTerms = document.getElementById( 'dak-doctor-terms-content' );
-			var patientTerms = document.getElementById( 'dak-patient-terms-content' );
-
-			if ( doctorTerms && patientTerms ) {
-				doctorTerms.classList.toggle( 'dak-hidden', 'doctor' !== value );
-				patientTerms.classList.toggle( 'dak-hidden', 'patient' !== value );
-			}
-
-			// Hidden role fields share input names ("first_name", "email", etc.)
-			// with the visible ones; disabling them keeps FormData from picking
-			// up the empty hidden copy and overwriting the filled-in one.
-			setFieldsDisabled( doctorFields, 'doctor' !== value );
-			setFieldsDisabled( patientFields, 'patient' !== value );
-
-			document.querySelectorAll( '.dak-role-card' ).forEach( function ( card ) {
-				card.classList.toggle( 'is-selected', card.getAttribute( 'data-role' ) === value );
-			} );
-
-			if ( submitLabel ) {
-				var labelAttr = 'doctor' === value ? 'data-doctor-label' : 'data-patient-label';
-				submitLabel.textContent = submitLabel.getAttribute( labelAttr ) || submitLabel.textContent;
-			}
-		}
-
-		radios.forEach( function ( radio ) {
-			radio.addEventListener( 'change', update );
-		} );
-
-		update();
-	}
 
 	/**
 	 * Wires the Weekly Availability day pills: clicking a pill toggles its
@@ -155,121 +85,6 @@
 	}
 
 	/**
-	 * Uploads the chosen profile picture immediately via AJAX so the form
-	 * can preview it and store the resulting attachment ID.
-	 */
-	function initProfilePictureUpload() {
-		var input = document.getElementById( 'dak-profile-picture-input' );
-		var preview = document.getElementById( 'dak-profile-picture-preview' );
-		var hiddenId = document.getElementById( 'dak-profile-picture-id' );
-		var status = document.getElementById( 'dak-upload-status' );
-
-		if ( ! input || ! preview || ! hiddenId || ! status ) {
-			return;
-		}
-
-		input.addEventListener( 'change', function () {
-			var file = input.files[0];
-
-			if ( ! file ) {
-				return;
-			}
-
-			status.textContent = 'Uploading…';
-			hiddenId.value = '';
-
-			var formData = new FormData();
-			formData.append( 'action', 'doctor_ak_upload_profile_picture' );
-			formData.append( 'nonce', dakRegister.nonce );
-			formData.append( 'profile_picture', file );
-
-			fetch( dakRegister.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
-				.then( function ( response ) { return response.json(); } )
-				.then( function ( result ) {
-					if ( result.success ) {
-						hiddenId.value = result.data.attachment_id;
-						preview.innerHTML = '';
-
-						var img = document.createElement( 'img' );
-						img.src = result.data.url;
-						img.alt = '';
-						preview.appendChild( img );
-
-						status.textContent = '';
-					} else {
-						status.textContent = ( result.data && result.data.message ) || 'Upload failed. Please try again.';
-					}
-				} )
-				.catch( function () {
-					status.textContent = 'Upload failed. Please try again.';
-				} );
-		} );
-	}
-
-	/**
-	 * Wires the "Terms & Conditions" link (inside the mandatory acceptance
-	 * checkbox's label) to open a modal showing the doctor or patient terms
-	 * — whichever role is currently selected — and its close controls.
-	 */
-	function initTermsModal() {
-		var modal = document.getElementById( 'dak-terms-modal' );
-		var openLink = document.getElementById( 'dak-terms-view-link' );
-
-		if ( ! modal || ! openLink ) {
-			return;
-		}
-
-		openLink.addEventListener( 'click', function () {
-			modal.classList.add( 'is-open' );
-			modal.setAttribute( 'aria-hidden', 'false' );
-			document.body.classList.add( 'dak-modal-open' );
-		} );
-
-		document.addEventListener( 'click', function ( event ) {
-			if ( event.target.closest( '[data-dak-terms-close]' ) ) {
-				modal.classList.remove( 'is-open' );
-				modal.setAttribute( 'aria-hidden', 'true' );
-				document.body.classList.remove( 'dak-modal-open' );
-			}
-		} );
-
-		document.addEventListener( 'keydown', function ( event ) {
-			if ( 'Escape' === event.key && modal.classList.contains( 'is-open' ) ) {
-				modal.classList.remove( 'is-open' );
-				modal.setAttribute( 'aria-hidden', 'true' );
-				document.body.classList.remove( 'dak-modal-open' );
-			}
-		} );
-	}
-
-	/**
-	 * Shows the post-registration success modal with the server's message
-	 * (worded differently for a doctor awaiting approval vs. a patient who
-	 * can log in right away) — its only way out is the "OK" button, which
-	 * navigates to the site's home page.
-	 *
-	 * @param {string} message Message from the AJAX response.
-	 */
-	function showSuccessModal( message ) {
-		var modal = document.getElementById( 'dak-register-success-modal' );
-		var messageEl = document.getElementById( 'dak-register-success-modal-message' );
-		var okButton = document.getElementById( 'dak-register-success-ok' );
-
-		if ( ! modal || ! messageEl || ! okButton ) {
-			return;
-		}
-
-		messageEl.textContent = message;
-		modal.classList.add( 'is-open' );
-		modal.setAttribute( 'aria-hidden', 'false' );
-		document.body.classList.add( 'dak-modal-open' );
-
-		okButton.addEventListener( 'click', function () {
-			window.location.href = modal.getAttribute( 'data-redirect-url' ) || '/';
-		}, { once: true } );
-	}
-
-	/**
 	 * Writes text to the clipboard — the modern Clipboard API where
 	 * available (requires a secure/HTTPS context), falling back to a
 	 * hidden, off-screen textarea + execCommand('copy') for older or
@@ -331,12 +146,53 @@
 
 		opts = opts || {};
 
+		multiSelectCount += 1;
+
+		var uid = ( select.id || 'dak-multiselect' ) + '-' + multiSelectCount;
+		var fieldLabel = select.id ? document.querySelector( 'label[for="' + select.id + '"]' ) : null;
+
+		if ( fieldLabel && ! fieldLabel.id ) {
+			fieldLabel.id = uid + '-label';
+		}
+
 		var wrapper = document.createElement( 'div' );
 		wrapper.className = 'dak-multiselect';
 
+		// Opens the suggestion list. A button-like control (not a text box)
+		// so screen readers announce it as "<label>, collapsed".
 		var control = document.createElement( 'div' );
 		control.className = 'dak-multiselect-control';
 		control.setAttribute( 'tabindex', '0' );
+		control.setAttribute( 'role', 'button' );
+		control.setAttribute( 'aria-haspopup', 'listbox' );
+		control.setAttribute( 'aria-expanded', 'false' );
+
+		if ( fieldLabel ) {
+			control.setAttribute( 'aria-labelledby', fieldLabel.id );
+
+			// The native <select> is visually hidden, so its label would focus
+			// nothing — send clicks to the control instead.
+			fieldLabel.addEventListener( 'click', function ( event ) {
+				event.preventDefault();
+				control.focus();
+			} );
+		}
+
+		if ( select.getAttribute( 'aria-describedby' ) ) {
+			control.setAttribute( 'aria-describedby', select.getAttribute( 'aria-describedby' ) );
+		}
+
+		// Screen-reader announcements ("Cardiology added").
+		var announcer = document.createElement( 'span' );
+		announcer.className = 'dak-visually-hidden';
+		announcer.setAttribute( 'aria-live', 'polite' );
+
+		function announce( text ) {
+			announcer.textContent = '';
+			setTimeout( function () {
+				announcer.textContent = text;
+			}, 30 );
+		}
 
 		var chipsContainer = document.createElement( 'div' );
 		chipsContainer.className = 'dak-multiselect-chips';
@@ -355,15 +211,33 @@
 		search.type = 'text';
 		search.className = 'dak-multiselect-search';
 		search.setAttribute( 'placeholder', opts.allowCustom ? 'Search or type to add new…' : 'Search…' );
+		search.setAttribute( 'role', 'combobox' );
+		search.setAttribute( 'aria-autocomplete', 'list' );
+		search.setAttribute( 'aria-expanded', 'true' );
+		search.setAttribute( 'aria-controls', uid + '-list' );
+		search.setAttribute( 'autocomplete', 'off' );
+		search.setAttribute( 'aria-label', ( fieldLabel ? fieldLabel.textContent.replace( /\*/g, '' ).trim() + ': ' : '' ) + ( opts.allowCustom ? 'search or add' : 'search' ) );
 
 		var optionsList = document.createElement( 'ul' );
 		optionsList.className = 'dak-multiselect-options';
+		optionsList.id = uid + '-list';
+		optionsList.setAttribute( 'role', 'listbox' );
+		optionsList.setAttribute( 'aria-multiselectable', 'true' );
+
+		if ( fieldLabel ) {
+			optionsList.setAttribute( 'aria-labelledby', fieldLabel.id );
+		}
+
+		var optionCount = 0;
 
 		function addOptionRow( option ) {
 			var li = document.createElement( 'li' );
 			li.className = 'dak-multiselect-option';
 			li.setAttribute( 'data-value', option.value );
+			li.setAttribute( 'role', 'option' );
+			li.id = uid + '-opt-' + ( optionCount += 1 );
 			li.textContent = option.textContent;
+			li.setAttribute( 'aria-selected', option.selected ? 'true' : 'false' );
 
 			if ( option.selected ) {
 				li.classList.add( 'is-selected' );
@@ -372,8 +246,15 @@
 			li.addEventListener( 'click', function () {
 				option.selected = ! option.selected;
 				li.classList.toggle( 'is-selected', option.selected );
+				li.setAttribute( 'aria-selected', option.selected ? 'true' : 'false' );
 				renderChips();
+				announce( option.textContent + ( option.selected ? ' added' : ' removed' ) );
 				select.dispatchEvent( new Event( 'change' ) );
+			} );
+
+			// Keep focus in the search box when picking with the mouse.
+			li.addEventListener( 'mousedown', function ( event ) {
+				event.preventDefault();
 			} );
 
 			optionsList.appendChild( li );
@@ -393,11 +274,26 @@
 		 * @return {void}
 		 */
 		function addCustomOption( label ) {
-			var alreadyExists = Array.prototype.some.call( select.options, function ( option ) {
-				return option.textContent.toLowerCase() === label.toLowerCase();
-			} );
+			var existing = Array.prototype.filter.call( select.options, function ( option ) {
+				return option.textContent.trim().toLowerCase() === label.trim().toLowerCase();
+			} )[ 0 ];
 
-			if ( alreadyExists ) {
+			// Never a duplicate tag: typing an existing one (any letter case)
+			// selects that one instead.
+			if ( existing ) {
+				if ( ! existing.selected ) {
+					existing.selected = true;
+					Array.prototype.forEach.call( optionsList.children, function ( li ) {
+						if ( li.getAttribute( 'data-value' ) === existing.value ) {
+							li.classList.add( 'is-selected' );
+							li.setAttribute( 'aria-selected', 'true' );
+						}
+					} );
+					renderChips();
+					announce( existing.textContent + ' added' );
+					select.dispatchEvent( new Event( 'change' ) );
+				}
+
 				return;
 			}
 
@@ -409,6 +305,7 @@
 
 			addOptionRow( option );
 			renderChips();
+			announce( label + ' added' );
 			select.dispatchEvent( new Event( 'change' ) );
 		}
 
@@ -448,9 +345,68 @@
 
 		wrapper.appendChild( control );
 		wrapper.appendChild( dropdown );
+		wrapper.appendChild( announcer );
 
 		select.classList.add( 'dak-visually-hidden' );
+		select.setAttribute( 'tabindex', '-1' );
+		select.setAttribute( 'aria-hidden', 'true' );
 		select.parentNode.insertBefore( wrapper, select );
+
+		var activeIndex = -1;
+
+		function visibleOptions() {
+			return Array.prototype.filter.call( optionsList.children, function ( li ) {
+				return ! li.classList.contains( 'dak-hidden' );
+			} );
+		}
+
+		function setActive( index ) {
+			var items = visibleOptions();
+
+			Array.prototype.forEach.call( optionsList.children, function ( li ) {
+				li.classList.remove( 'is-active' );
+			} );
+
+			// -1 means "nothing highlighted".
+			if ( ! items.length || index < 0 ) {
+				activeIndex = -1;
+				search.removeAttribute( 'aria-activedescendant' );
+				return;
+			}
+
+			activeIndex = Math.max( 0, Math.min( index, items.length - 1 ) );
+			items[ activeIndex ].classList.add( 'is-active' );
+			items[ activeIndex ].scrollIntoView( { block: 'nearest' } );
+			search.setAttribute( 'aria-activedescendant', items[ activeIndex ].id );
+		}
+
+		function openList() {
+			resetSearch();
+			dropdown.classList.remove( 'dak-hidden' );
+			control.setAttribute( 'aria-expanded', 'true' );
+			search.focus();
+		}
+
+		function closeList( returnFocus ) {
+			if ( dropdown.classList.contains( 'dak-hidden' ) ) {
+				return;
+			}
+
+			dropdown.classList.add( 'dak-hidden' );
+			control.setAttribute( 'aria-expanded', 'false' );
+			setActive( -1 );
+
+			if ( returnFocus ) {
+				control.focus();
+			}
+		}
+
+		// Closes once focus moves on to the rest of the form.
+		wrapper.addEventListener( 'focusout', function ( event ) {
+			if ( event.relatedTarget && ! wrapper.contains( event.relatedTarget ) ) {
+				closeList( false );
+			}
+		} );
 
 		function renderChips() {
 			chipsContainer.innerHTML = '';
@@ -477,7 +433,9 @@
 					option.selected = false;
 					deselectOptionInList( option.value );
 					renderChips();
+					announce( option.textContent + ' removed' );
 					select.dispatchEvent( new Event( 'change' ) );
+					control.focus();
 				} );
 
 				chip.appendChild( remove );
@@ -489,20 +447,32 @@
 			Array.prototype.forEach.call( optionsList.children, function ( li ) {
 				if ( li.getAttribute( 'data-value' ) === value ) {
 					li.classList.remove( 'is-selected' );
+					li.setAttribute( 'aria-selected', 'false' );
 				}
 			} );
 		}
 
-		control.addEventListener( 'click', function () {
-			var isHidden = dropdown.classList.contains( 'dak-hidden' );
-			dropdown.classList.toggle( 'dak-hidden' );
+		control.addEventListener( 'click', function ( event ) {
+			// A chip's own × button handles itself.
+			if ( event.target.closest( '.dak-chip-remove' ) ) {
+				return;
+			}
 
-			if ( isHidden ) {
-				search.value = '';
-				Array.prototype.forEach.call( optionsList.children, function ( li ) {
-					li.classList.remove( 'dak-hidden' );
-				} );
-				search.focus();
+			if ( dropdown.classList.contains( 'dak-hidden' ) ) {
+				openList();
+			} else {
+				closeList( false );
+			}
+		} );
+
+		control.addEventListener( 'keydown', function ( event ) {
+			if ( event.target !== control ) {
+				return;
+			}
+
+			if ( 'Enter' === event.key || ' ' === event.key || 'ArrowDown' === event.key ) {
+				event.preventDefault();
+				openList();
 			}
 		} );
 
@@ -568,6 +538,35 @@
 				var matches = li.textContent.toLowerCase().indexOf( query ) !== -1;
 				li.classList.toggle( 'dak-hidden', ! matches );
 			} );
+
+			// Highlight the first match not chosen yet, so Enter adds it — never
+			// one already chosen (Enter would remove it). With no unchosen
+			// match, Enter falls through to "add as typed" (or nothing).
+			var firstNew = '' === query ? -1 : visibleOptions().findIndex( function ( li ) {
+				return ! li.classList.contains( 'is-selected' );
+			} );
+
+			setActive( firstNew );
+		} );
+
+		// Arrow keys move through the suggestions, Escape closes the list.
+		search.addEventListener( 'keydown', function ( event ) {
+			if ( 'ArrowDown' === event.key || 'ArrowUp' === event.key ) {
+				event.preventDefault();
+				setActive( activeIndex + ( 'ArrowDown' === event.key ? 1 : -1 ) );
+			} else if ( 'Escape' === event.key ) {
+				event.preventDefault();
+				event.stopPropagation();
+				closeList( true );
+			} else if ( 'Enter' === event.key && activeIndex > -1 ) {
+				var items = visibleOptions();
+
+				if ( items[ activeIndex ] ) {
+					event.preventDefault();
+					event.stopImmediatePropagation();
+					items[ activeIndex ].click();
+				}
+			}
 		} );
 
 		function resetSearch() {
@@ -575,6 +574,7 @@
 			Array.prototype.forEach.call( optionsList.children, function ( li ) {
 				li.classList.remove( 'dak-hidden' );
 			} );
+			setActive( -1 );
 		}
 
 		// Pasting a comma-separated list ("Cardiology, Neurology,
@@ -640,7 +640,7 @@
 
 		document.addEventListener( 'click', function ( event ) {
 			if ( ! wrapper.contains( event.target ) ) {
-				dropdown.classList.add( 'dak-hidden' );
+				closeList( false );
 			}
 		} );
 
@@ -850,90 +850,6 @@
 		}
 
 		renderChips();
-	}
-
-	/**
-	 * Submits the registration form over AJAX and renders field-level and
-	 * general errors returned by the server.
-	 */
-	function initRegistrationForm() {
-		var form = document.getElementById( 'dak-registration-form' );
-
-		if ( ! form ) {
-			return;
-		}
-
-		var submitBtn = document.getElementById( 'dak-register-submit' );
-		var errorAlert = document.getElementById( 'dak-register-general-error' );
-
-		form.addEventListener( 'submit', function ( event ) {
-			event.preventDefault();
-
-			clearFieldErrors( form );
-			errorAlert.classList.add( 'dak-hidden' );
-
-			var password = form.querySelector( '[name="password"]' ).value;
-			var confirmPassword = form.querySelector( '[name="confirm_password"]' ).value;
-
-			if ( password !== confirmPassword ) {
-				showFieldError( form, 'confirm_password', 'Passwords do not match.' );
-				return;
-			}
-
-			var termsCheckbox = document.getElementById( 'dak-terms-accepted' );
-
-			if ( termsCheckbox && ! termsCheckbox.checked ) {
-				showFieldError( form, 'terms_accepted', 'Please accept the Terms & Conditions to continue.' );
-				return;
-			}
-
-			submitBtn.disabled = true;
-			submitBtn.classList.add( 'is-loading' );
-
-			var formData = new FormData( form );
-			formData.append( 'action', 'doctor_ak_register' );
-			formData.append( 'nonce', dakRegister.nonce );
-
-			fetch( dakRegister.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
-				.then( function ( response ) { return response.json(); } )
-				.then( function ( result ) {
-					submitBtn.disabled = false;
-					submitBtn.classList.remove( 'is-loading' );
-
-					if ( result.success ) {
-						form.reset();
-
-						// form.reset() clears checkbox/radio state natively, but
-						// not the JS-driven visual classes layered on top of them.
-						document.querySelectorAll( '.dak-day-pill.is-selected' ).forEach( function ( pill ) {
-							pill.classList.remove( 'is-selected' );
-						} );
-						document.querySelectorAll( '.dak-check-card.is-selected' ).forEach( function ( card ) {
-							card.classList.remove( 'is-selected' );
-						} );
-						document.getElementById( 'dak-profile-picture-id' ).value = '';
-						document.getElementById( 'dak-profile-picture-preview' ).innerHTML =
-							document.getElementById( 'dak-profile-picture-preview' ).getAttribute( 'data-empty-html' ) || '';
-
-						showSuccessModal( result.data.message );
-					} else if ( result.data && result.data.errors ) {
-						Object.keys( result.data.errors ).forEach( function ( field ) {
-							showFieldError( form, field, result.data.errors[ field ] );
-						} );
-						errorAlert.textContent = 'Please correct the errors below and try again.';
-						errorAlert.classList.remove( 'dak-hidden' );
-					} else {
-						errorAlert.textContent = ( result.data && result.data.message ) || 'Something went wrong. Please try again.';
-						errorAlert.classList.remove( 'dak-hidden' );
-					}
-				} )
-				.catch( function () {
-					submitBtn.disabled = false;
-					submitBtn.classList.remove( 'is-loading' );
-					errorAlert.textContent = 'Something went wrong. Please try again.';
-					errorAlert.classList.remove( 'dak-hidden' );
-				} );
-		} );
 	}
 
 	/**

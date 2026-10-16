@@ -22,8 +22,8 @@
  * @var string   $location           "City, Country" of the first clinic location with a city on file, or ''.
  * @var string   $email              Contact email (first clinic location with one on file), or ''.
  * @var string   $directory_url      [doctors_directory] page URL, or ''. Reads ?q= (name/specialty search) and ?specialization=.
- * @var string   $symptom_checker_url [symptom_checker] page URL when it's available to patients, else ''.
- * @var string   $symptom_checker_nav_url Same, plus the page URL for administrators before it's live (staff preview), else ''.
+ * @var string   $symptom_checker_url [symptom_checker] ("Find a doctor by symptoms") page URL when it's available to patients, else ''.
+ * @var string   $symptom_checker_nav_url Same, plus the page URL for administrators and clinical reviewers before it's live (staff preview), else ''.
  * @var string   $services_url       [services_directory] page URL, or ''.
  * @var string   $videos_url         The Videos page ([videos_gallery]), or the home page's videos section if that page is missing.
  * @var string   $clinics_url        [clinics_directory] page URL, or ''. Reads ?q= (name/address search) and ?city=.
@@ -471,7 +471,7 @@ $dak_nav_strings = array(
 
 									<div class="dak-nav-panel-foot<?php echo ! empty( $symptom_checker_url ) ? ' has-symptom-link' : ''; ?>">
 										<?php if ( ! empty( $symptom_checker_url ) ) : ?>
-											<a class="dak-nav-symptom-link" href="<?php echo esc_url( $symptom_checker_url ); ?>"><?php esc_html_e( 'Not sure who to see? Check your symptoms', 'doctor-ak-portal' ); ?></a>
+											<a class="dak-nav-symptom-link" href="<?php echo esc_url( $symptom_checker_url ); ?>"><?php esc_html_e( 'Not sure who to see? Find doctors by symptoms', 'doctor-ak-portal' ); ?></a>
 										<?php endif; ?>
 										<?php $dak_view_all( $directory_url, __( 'View all doctors', 'doctor-ak-portal' ) ); ?>
 									</div>
@@ -631,7 +631,7 @@ $dak_nav_strings = array(
 					<?php if ( ! empty( $symptom_checker_nav_url ) ) : ?>
 						<?php $dak_symptom_current = $dak_path_of( $symptom_checker_nav_url ) === $current_path; ?>
 						<li class="dak-nav-item">
-							<a class="dak-nav-link<?php echo $dak_symptom_current ? ' is-current' : ''; ?>" href="<?php echo esc_url( $symptom_checker_nav_url ); ?>"<?php echo $dak_symptom_current ? ' aria-current="page"' : ''; ?>><?php esc_html_e( 'Symptom Checker', 'doctor-ak-portal' ); ?></a>
+							<a class="dak-nav-link<?php echo $dak_symptom_current ? ' is-current' : ''; ?>" href="<?php echo esc_url( $symptom_checker_nav_url ); ?>"<?php echo $dak_symptom_current ? ' aria-current="page"' : ''; ?>><?php esc_html_e( 'Find by symptoms', 'doctor-ak-portal' ); ?></a>
 						</li>
 					<?php endif; ?>
 

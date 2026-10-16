@@ -52,6 +52,22 @@ class Forgot_Password_Handler {
 			Assets::version( 'assets/css/doctor-ak-auth.css' )
 		);
 
+		wp_enqueue_style(
+			'doctor-ak-portal-account',
+			DOCTOR_AK_PORTAL_URL . 'assets/css/doctor-ak-account.css',
+			array( 'doctor-ak-portal-auth' ),
+			Assets::version( 'assets/css/doctor-ak-account.css' )
+		);
+
+		// Show/Hide on the "choose a new password" fields.
+		wp_enqueue_script(
+			'doctor-ak-portal-password-toggle',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-password-toggle.js',
+			array(),
+			Assets::version( 'assets/js/doctor-ak-password-toggle.js' ),
+			true
+		);
+
 		wp_enqueue_script(
 			'doctor-ak-portal-forgot-password',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-forgot-password.js',

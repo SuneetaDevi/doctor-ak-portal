@@ -1,0 +1,39 @@
+{
+	"meta": {
+		"name": "EXAMPLE symptom mappings — NOT clinically reviewed",
+		"notes": "Illustrative starting points written by the software team so reviewers don't start from a blank page. They are only ever loaded as Drafts. A clinical reviewer must check every symptom, phrase and specialty before marking any of them Reviewed and activating them."
+	},
+	"mappings": [
+		{ "name": "Fever", "synonyms": [ "high temperature", "temperature", "feverish", "bukhar" ], "specialties": [ "general-physician" ] },
+		{ "name": "Cough", "synonyms": [ "coughing", "khansi", "dry cough", "wet cough" ], "specialties": [ "general-physician", "pulmonologist" ] },
+		{ "name": "Shortness of breath", "synonyms": [ "breathlessness", "short of breath", "difficulty breathing", "saans phoolna" ], "specialties": [ "pulmonologist", "cardiologist" ] },
+		{ "name": "Chest pain", "synonyms": [ "pain in chest", "chest tightness", "seene mein dard" ], "specialties": [ "cardiologist" ] },
+		{ "name": "Palpitations", "synonyms": [ "racing heart", "heart pounding", "fast heartbeat" ], "specialties": [ "cardiologist" ] },
+		{ "name": "Stomach pain", "synonyms": [ "abdominal pain", "tummy pain", "stomach ache", "pet dard", "pain in stomach" ], "specialties": [ "gastroenterologist" ] },
+		{ "name": "Heartburn", "synonyms": [ "acid reflux", "acidity", "reflux", "tezabiyat" ], "specialties": [ "gastroenterologist" ] },
+		{ "name": "Diarrhoea", "synonyms": [ "diarrhea", "loose motions", "loose stools", "dast" ], "specialties": [ "gastroenterologist", "general-physician" ] },
+		{ "name": "Constipation", "synonyms": [ "constipated", "hard stools", "qabz" ], "specialties": [ "gastroenterologist" ] },
+		{ "name": "Vomiting", "synonyms": [ "throwing up", "being sick", "ulti" ], "specialties": [ "gastroenterologist", "general-physician" ] },
+		{ "name": "Bloating", "synonyms": [ "bloated", "gas", "wind", "afara" ], "specialties": [ "gastroenterologist" ] },
+		{ "name": "Yellow eyes or skin", "synonyms": [ "jaundice", "yellow eyes", "yellow skin", "peeliya", "yarqan" ], "specialties": [ "gastroenterologist" ] },
+		{ "name": "Headache", "synonyms": [ "head pain", "migraine", "sar dard" ], "specialties": [ "neurologist", "general-physician" ] },
+		{ "name": "Dizziness", "synonyms": [ "dizzy", "lightheaded", "chakkar" ], "specialties": [ "general-physician", "neurologist", "ent-specialist" ] },
+		{ "name": "Numbness or tingling", "synonyms": [ "numbness", "tingling", "pins and needles" ], "specialties": [ "neurologist" ] },
+		{ "name": "Skin rash", "synonyms": [ "rash", "red spots on skin", "hives" ], "specialties": [ "dermatologist" ] },
+		{ "name": "Itchy skin", "synonyms": [ "itching", "itchy", "kharish" ], "specialties": [ "dermatologist" ] },
+		{ "name": "Acne", "synonyms": [ "pimples", "spots", "daane" ], "specialties": [ "dermatologist" ] },
+		{ "name": "Ear pain", "synonyms": [ "earache", "kaan dard" ], "specialties": [ "ent-specialist" ] },
+		{ "name": "Sore throat", "synonyms": [ "throat pain", "gala kharab" ], "specialties": [ "ent-specialist", "general-physician" ] },
+		{ "name": "Blocked nose", "synonyms": [ "stuffy nose", "nasal congestion", "runny nose" ], "specialties": [ "ent-specialist" ] },
+		{ "name": "Red eyes", "synonyms": [ "eye redness", "pink eye", "bloodshot eyes" ], "specialties": [ "ophthalmologist" ] },
+		{ "name": "Blurred vision", "synonyms": [ "blurry vision", "can't see clearly", "weak eyesight" ], "specialties": [ "ophthalmologist" ] },
+		{ "name": "Joint pain", "synonyms": [ "painful joints", "knee pain", "jodon ka dard" ], "specialties": [ "orthopedic-surgeon", "rheumatologist" ] },
+		{ "name": "Back pain", "synonyms": [ "lower back pain", "kamar dard" ], "specialties": [ "orthopedic-surgeon" ] },
+		{ "name": "Painful urination", "synonyms": [ "burning urine", "burning when peeing", "pain when urinating" ], "specialties": [ "urologist", "general-physician" ] },
+		{ "name": "Toothache", "synonyms": [ "tooth pain", "daant dard" ], "specialties": [ "dentist" ] },
+		{ "name": "Low mood", "synonyms": [ "feeling down", "sadness", "depressed mood" ], "specialties": [ "psychiatrist", "psychologist" ] },
+		{ "name": "Anxiety", "synonyms": [ "anxious", "worry", "nervousness", "ghabrahat" ], "specialties": [ "psychiatrist", "psychologist" ] },
+		{ "name": "Irregular periods", "synonyms": [ "irregular menstruation", "missed periods" ], "specialties": [ "gynecologist" ] },
+		{ "name": "Excessive thirst", "synonyms": [ "always thirsty", "very thirsty" ], "specialties": [ "endocrinologist", "general-physician" ] }
+	]
+}

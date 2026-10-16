@@ -15,6 +15,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class Symptom_Rules
  *
+ * LEGACY — no longer used on the site. "Find a doctor by symptoms" now uses
+ * Symptom_Mappings. This class is kept so the previous configuration stays
+ * in the database untouched and its symptoms can be copied into mappings as
+ * drafts (Symptom_Mappings::legacy_rows()). Nothing writes these options
+ * any more.
+ *
  * The Symptom Checker's clinical content — symptoms and their synonyms,
  * follow-up questions and branching, warning signs, possible explanations,
  * next steps, conflict checks and the specialties each one points to — is

@@ -2,9 +2,16 @@
 /**
  * Template: Registration form body for the [doctor_register] shortcode.
  *
- * Renders body content only — the active theme supplies header, navigation
- * and footer around this markup. All interactivity and submission is
- * handled by assets/js/doctor-ak-registration.js over AJAX.
+ * Patient sign-up is one short page; doctor sign-up is three steps
+ * (account → professional profile → location & review).
+ * Everything is one form posted once at the end — nothing is created on
+ * "Continue" — and the server validates the whole submission again
+ * (Registration_Handler::handle_register()). Behaviour lives in
+ * assets/js/doctor-ak-account-register.js (flow) and doctor-ak-registration.js
+ * (shared tag picker), over AJAX.
+ *
+ * Role context: general links open Patient; `?role=doctor` (e.g. "Join as a
+ * Doctor") opens Doctor. Only those two roles are ever accepted server-side.
  *
  * @package DoctorAKPortal\Templates
  */
@@ -15,9 +22,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $specializations = \DoctorAKPortal\Includes\Specializations::get_all();
-$keywords         = \DoctorAKPortal\Includes\Doctor_Keywords::get_all();
+$keywords        = \DoctorAKPortal\Includes\Doctor_Keywords::get_all();
 $login_url       = \DoctorAKPortal\Includes\Page_Finder::url_for_shortcode( 'doctor_login' );
 $home_url        = home_url( '/' );
+$loader          = new \DoctorAKPortal\Includes\Template_Loader();
 
 // A caller (e.g. the booking page's "Create an account" link) can ask to be
 // returned somewhere after signing up. Patient registration doesn't log the
@@ -28,358 +36,413 @@ $dak_register_redirect_to = isset( $_GET['redirect_to'] ) ? wp_validate_redirect
 
 if ( '' !== $dak_register_redirect_to && $login_url ) {
 	$login_url = add_query_arg( 'redirect_to', rawurlencode( $dak_register_redirect_to ), $login_url );
-	$home_url  = $login_url;
 }
 
-// Small, hand-drawn line icons (no external icon library dependency).
-$dak_icons = array(
-	'doctor'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3v4.5a3.5 3.5 0 0 0 7 0V3"/><path d="M6.5 5H5M13.5 5H15"/><path d="M13.5 9v2a3.5 3.5 0 0 1-7 0v-1"/><circle cx="15.5" cy="11.5" r="1.5"/></svg>',
-	'patient'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="6.5" r="3"/><path d="M4 17c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/></svg>',
-	'person'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.2"/><path d="M4 17c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/></svg>',
-	'briefcase'  => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="14" height="9" rx="1.5"/><path d="M8 7V5.5A1.5 1.5 0 0 1 9.5 4h1A1.5 1.5 0 0 1 12 5.5V7"/></svg>',
-	'camera'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="14" height="10" rx="2"/><path d="M7.2 6L8.4 4h3.2l1.2 2"/><circle cx="10" cy="11" r="3"/></svg>',
-	'video'      => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="11" height="10" rx="1.5"/><path d="M13 8.3l5-2.8v9l-5-2.8"/></svg>',
-	'clock'      => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 2"/></svg>',
-	'lock'       => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="9" width="12" height="8" rx="1.5"/><path d="M6.5 9V6.5a3.5 3.5 0 0 1 7 0V9"/></svg>',
-	'upload'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12.5V3.5"/><path d="M6.2 7.3L10 3.5l3.8 3.8"/><path d="M4 14v1.5A1.5 1.5 0 0 0 5.5 17h9a1.5 1.5 0 0 0 1.5-1.5V14"/></svg>',
-	'check'      => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l3.5 3.5L16 5.5"/></svg>',
-	'mail'       => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4.5" width="15" height="11" rx="1.5"/><path d="M3 5.5l7 5.5 7-5.5"/></svg>',
-	'graduation' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7.5l8-3.5 8 3.5-8 3.5-8-3.5z"/><path d="M5.5 9.2v3.3c0 1.1 2 2 4.5 2s4.5-.9 4.5-2V9.2"/><path d="M17 7.5v4.5"/></svg>',
-	'pin'        => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17.5s6-5.1 6-9.5a6 6 0 1 0-12 0c0 4.4 6 9.5 6 9.5z"/><circle cx="10" cy="8" r="2"/></svg>',
-	'phone'      => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.3 2.8L7 3.4l0.8 2.6-1.8 1.5c0.9 2 2.5 3.6 4.5 4.5l1.5-1.8 2.6 0.8 0.6 2.7c0.1 0.5-0.3 1-0.8 1-5.8-0.3-10.5-5-10.8-10.8 0-0.5 0.5-0.9 1-0.8z"/></svg>',
-);
+// Which role the form opens with — Patient unless a doctor link asked otherwise.
+$dak_requested_role = isset( $_GET['role'] ) ? sanitize_key( wp_unslash( $_GET['role'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display preference.
+$dak_initial_role   = 'doctor' === $dak_requested_role ? 'doctor' : 'patient';
+
+$dak_privacy_page = function_exists( 'get_page_by_path' ) ? get_page_by_path( 'privacy-policy' ) : null;
+$dak_privacy_url  = $dak_privacy_page ? get_permalink( $dak_privacy_page ) : '';
+
+/**
+ * An inline error slot linked to its field.
+ *
+ * @param string $field Field name the server reports errors under.
+ * @param string $id    Element id (referenced by the field's aria-describedby).
+ */
+$dak_error = function ( $field, $id ) {
+	echo '<span class="dak-field-error" id="' . esc_attr( $id ) . '" data-field="' . esc_attr( $field ) . '"></span>';
+};
+
+$dak_req = '<span class="dak-required" aria-hidden="true">*</span>';
+
+$dak_months = array();
+for ( $dak_m = 1; $dak_m <= 12; $dak_m++ ) {
+	$dak_months[ $dak_m ] = date_i18n( 'F', mktime( 0, 0, 0, $dak_m, 1, 2000 ) );
+}
 ?>
-<div class="dak-portal dak-auth-page dak-registration-page">
-	<div class="dak-auth-visual" aria-hidden="true">
-		<span class="dak-eyebrow"><?php esc_html_e( 'Healthcare Appointments, Made Simple.', 'doctor-ak-portal' ); ?></span>
-		<h2><?php esc_html_e( 'Join a healthcare platform built around you.', 'doctor-ak-portal' ); ?></h2>
-		<div class="dak-auth-visual-benefits">
-			<div class="dak-auth-visual-benefit">
-				<span class="dak-auth-visual-benefit-icon"><?php echo $dak_icons['check']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-				<div><strong><?php esc_html_e( 'For patients', 'doctor-ak-portal' ); ?></strong><span><?php esc_html_e( 'Book clinic visits or video consults, and keep every record in one place.', 'doctor-ak-portal' ); ?></span></div>
-			</div>
-			<div class="dak-auth-visual-benefit">
-				<span class="dak-auth-visual-benefit-icon"><?php echo $dak_icons['briefcase']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-				<div><strong><?php esc_html_e( 'For doctors', 'doctor-ak-portal' ); ?></strong><span><?php esc_html_e( 'Reach more patients and manage your schedule, services and earnings.', 'doctor-ak-portal' ); ?></span></div>
-			</div>
-			<div class="dak-auth-visual-benefit">
-				<span class="dak-auth-visual-benefit-icon"><?php echo $dak_icons['lock']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-				<div><strong><?php esc_html_e( 'Private by default', 'doctor-ak-portal' ); ?></strong><span><?php esc_html_e( 'Your information is never shared without your consent.', 'doctor-ak-portal' ); ?></span></div>
-			</div>
-		</div>
-	</div>
+<div class="dak-portal dak-acct dak-acct--register" data-dak-register data-initial-role="<?php echo esc_attr( $dak_initial_role ); ?>">
+	<div class="dak-acct-shell">
+		<?php
+		echo $loader->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- partial escapes its own output.
+			'auth/partials/account-aside.php',
+			array(
+				'title' => __( 'Book and manage care with trusted doctors', 'doctor-ak-portal' ),
+				'text'  => __( 'Patients can start booking straight away. Doctors join after a short review by our team.', 'doctor-ak-portal' ),
+			)
+		);
+		?>
 
-	<div class="dak-auth-card dak-registration-card">
-		<div class="dak-auth-header">
-			<span class="dak-eyebrow"><?php esc_html_e( 'Join Us', 'doctor-ak-portal' ); ?></span>
-			<h1><?php esc_html_e( 'Create your', 'doctor-ak-portal' ); ?> <span class="dak-accent"><?php esc_html_e( 'account', 'doctor-ak-portal' ); ?></span></h1>
-			<p><?php esc_html_e( 'Register as a doctor to reach more patients, or as a patient to book consultations with our specialists.', 'doctor-ak-portal' ); ?></p>
-		</div>
+		<main class="dak-acct-card">
+			<div class="dak-acct-main">
+			<header class="dak-acct-header">
+				<h1 id="dak-register-title" tabindex="-1"
+					data-patient="<?php esc_attr_e( 'Create your patient account', 'doctor-ak-portal' ); ?>"
+					data-doctor="<?php esc_attr_e( 'Register as a doctor', 'doctor-ak-portal' ); ?>"
+				><?php echo 'doctor' === $dak_initial_role ? esc_html__( 'Register as a doctor', 'doctor-ak-portal' ) : esc_html__( 'Create your patient account', 'doctor-ak-portal' ); ?></h1>
+				<p id="dak-register-intro"
+					data-patient="<?php esc_attr_e( 'Book appointments and manage your visits in one place.', 'doctor-ak-portal' ); ?>"
+					data-doctor="<?php esc_attr_e( 'Tell us about yourself and your practice. Our team reviews every doctor registration before the account can sign in, and we email you once it is approved.', 'doctor-ak-portal' ); ?>"
+				><?php echo 'doctor' === $dak_initial_role ? esc_html__( 'Tell us about yourself and your practice. Our team reviews every doctor registration before the account can sign in, and we email you once it is approved.', 'doctor-ak-portal' ) : esc_html__( 'Book appointments and manage your visits in one place.', 'doctor-ak-portal' ); ?></p>
+			</header>
 
-		<div class="dak-alert dak-alert-error dak-hidden" id="dak-register-general-error" role="alert"></div>
-
-		<form id="dak-registration-form" novalidate>
-
-			<div class="dak-role-cards">
-				<label class="dak-role-card is-selected" data-role="doctor">
-					<input type="radio" name="register_as" value="doctor" checked>
-					<span class="dak-role-card-icon"><?php echo $dak_icons['doctor']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static, trusted inline SVG. ?></span>
-					<span class="dak-role-card-text">
-						<strong><?php esc_html_e( "I'm a Doctor", 'doctor-ak-portal' ); ?></strong>
-						<small><?php esc_html_e( 'Offer consultations & manage availability', 'doctor-ak-portal' ); ?></small>
-					</span>
-					<span class="dak-role-card-radio" aria-hidden="true"></span>
-				</label>
-
-				<label class="dak-role-card" data-role="patient">
-					<input type="radio" name="register_as" value="patient">
-					<span class="dak-role-card-icon"><?php echo $dak_icons['patient']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static, trusted inline SVG. ?></span>
-					<span class="dak-role-card-text">
-						<strong><?php esc_html_e( "I'm a Patient", 'doctor-ak-portal' ); ?></strong>
-						<small><?php esc_html_e( 'Book appointments & video consultations', 'doctor-ak-portal' ); ?></small>
-					</span>
-					<span class="dak-role-card-radio" aria-hidden="true"></span>
-				</label>
+			<div class="dak-alert dak-alert-error dak-hidden" id="dak-register-general-error" role="alert" tabindex="-1">
+				<p class="dak-acct-summary-title" data-summary-title></p>
+				<ul class="dak-acct-summary-list" data-summary-list></ul>
 			</div>
 
-			<div id="dak-doctor-fields" class="dak-role-fields">
+			<form id="dak-registration-form" class="dak-acct-form" novalidate>
 
-				<div class="dak-section">
-					<div class="dak-section-header">
-						<span class="dak-section-icon"><?php echo $dak_icons['person']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-						<h2><?php esc_html_e( 'Personal Information', 'doctor-ak-portal' ); ?></h2>
+				<fieldset class="dak-acct-roles">
+					<legend><?php esc_html_e( 'I am registering as', 'doctor-ak-portal' ); ?></legend>
+					<div class="dak-role-cards">
+						<label class="dak-role-card<?php echo 'patient' === $dak_initial_role ? ' is-selected' : ''; ?>" data-role="patient">
+							<input type="radio" name="register_as" value="patient" <?php checked( 'patient', $dak_initial_role ); ?>>
+							<span class="dak-role-card-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="6.5" r="3"/><path d="M4 17c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/></svg></span>
+							<span class="dak-role-card-text">
+								<strong><?php esc_html_e( 'Patient', 'doctor-ak-portal' ); ?></strong>
+								<small><?php esc_html_e( 'Book appointments and manage your care.', 'doctor-ak-portal' ); ?></small>
+							</span>
+						</label>
+						<label class="dak-role-card<?php echo 'doctor' === $dak_initial_role ? ' is-selected' : ''; ?>" data-role="doctor">
+							<input type="radio" name="register_as" value="doctor" <?php checked( 'doctor', $dak_initial_role ); ?>>
+							<span class="dak-role-card-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3v4.5a3.5 3.5 0 0 0 7 0V3"/><path d="M6.5 5H5M13.5 5H15"/><path d="M13.5 9v2a3.5 3.5 0 0 1-7 0v-1"/><circle cx="15.5" cy="11.5" r="1.5"/></svg></span>
+							<span class="dak-role-card-text">
+								<strong><?php esc_html_e( 'Doctor', 'doctor-ak-portal' ); ?></strong>
+								<small><?php esc_html_e( 'Manage your practice and connect with patients.', 'doctor-ak-portal' ); ?></small>
+							</span>
+						</label>
 					</div>
+				</fieldset>
 
+				<?php // ------------------------------------------------------------ Patient. ?>
+				<div id="dak-patient-fields" class="dak-role-fields" data-role-fields="patient"<?php echo 'patient' !== $dak_initial_role ? ' hidden' : ''; ?>>
 					<div class="dak-field-row">
 						<div class="dak-field">
-							<label for="dak-doctor-first-name"><?php esc_html_e( 'First Name', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
-							<input type="text" id="dak-doctor-first-name" name="first_name" required>
-							<span class="dak-field-error" data-field="first_name"></span>
+							<label for="dak-patient-first-name"><?php esc_html_e( 'First name', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
+							<input type="text" id="dak-patient-first-name" name="first_name" required aria-required="true" autocomplete="given-name" data-share="first_name" aria-describedby="dak-patient-first-name-error">
+							<?php $dak_error( 'first_name', 'dak-patient-first-name-error' ); ?>
 						</div>
 						<div class="dak-field">
-							<label for="dak-doctor-last-name"><?php esc_html_e( 'Last Name', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
-							<input type="text" id="dak-doctor-last-name" name="last_name" required>
-							<span class="dak-field-error" data-field="last_name"></span>
+							<label for="dak-patient-last-name"><?php esc_html_e( 'Last name', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
+							<input type="text" id="dak-patient-last-name" name="last_name" required aria-required="true" autocomplete="family-name" data-share="last_name" aria-describedby="dak-patient-last-name-error">
+							<?php $dak_error( 'last_name', 'dak-patient-last-name-error' ); ?>
 						</div>
 					</div>
-
-					<div class="dak-field-row">
-						<div class="dak-field">
-							<label for="dak-doctor-email"><span class="dak-field-icon dak-field-icon-email"><?php echo $dak_icons['mail']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Email Address', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
-							<input type="email" id="dak-doctor-email" name="email" required autocomplete="email">
-							<span class="dak-field-error" data-field="email"></span>
-						</div>
-						<div class="dak-field">
-							<label for="dak-years-experience"><span class="dak-field-icon dak-field-icon-experience"><?php echo $dak_icons['graduation']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Years of Experience', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
-							<input type="number" min="0" max="80" id="dak-years-experience" name="years_experience" required>
-							<span class="dak-field-error" data-field="years_experience"></span>
-						</div>
-					</div>
-
-					<div class="dak-field-row">
-						<div class="dak-field">
-							<label for="dak-doctor-phone-code"><span class="dak-field-icon dak-field-icon-phone"><?php echo $dak_icons['phone']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Phone Number', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
-							<?php
-							echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- template escapes its own output.
-								'partials/phone-field.php',
-								array(
-									'id_prefix' => 'dak-doctor-phone',
-									'dial_code' => \DoctorAKPortal\Includes\Phone::DEFAULT_DIAL_CODE,
-									'number'    => '',
-									'required'  => true,
-								)
-							);
-							?>
-							<span class="dak-field-error" data-field="phone_number"></span>
-						</div>
 
 					<div class="dak-field">
-						<label for="dak-gender"><span class="dak-field-icon dak-field-icon-experience"><?php echo $dak_icons['user']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Gender', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
-						<select id="dak-gender" name="gender" required>
-								<option value=""><?php esc_html_e( 'Select gender', 'doctor-ak-portal' ); ?></option>
-								<?php foreach ( \DoctorAKPortal\Includes\Doctor_Gender::get_all() as $dak_gender_slug => $dak_gender_label ) : ?>
-									<option value="<?php echo esc_attr( $dak_gender_slug ); ?>"><?php echo esc_html( $dak_gender_label ); ?></option>
+						<label for="dak-patient-email"><?php esc_html_e( 'Email', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
+						<input type="email" id="dak-patient-email" name="email" required aria-required="true" autocomplete="email" autocapitalize="none" spellcheck="false" data-share="email" aria-describedby="dak-patient-email-hint dak-patient-email-error">
+						<p class="dak-acct-hint" id="dak-patient-email-hint"><?php esc_html_e( 'You will use this email to sign in.', 'doctor-ak-portal' ); ?></p>
+						<?php $dak_error( 'email', 'dak-patient-email-error' ); ?>
+					</div>
+
+					<div class="dak-field">
+						<label for="dak-phone-number-number"><?php esc_html_e( 'Phone number', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
+						<?php
+						echo $loader->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- template escapes its own output.
+							'partials/phone-field.php',
+							array(
+								'id_prefix' => 'dak-phone-number',
+								'dial_code' => \DoctorAKPortal\Includes\Phone::DEFAULT_DIAL_CODE,
+								'number'    => '',
+								'required'  => true,
+							)
+						);
+						?>
+						<?php $dak_error( 'phone_number', 'dak-phone-number-error' ); ?>
+					</div>
+
+					<fieldset class="dak-field dak-acct-dob" aria-describedby="dak-patient-dob-hint dak-patient-dob-error">
+						<legend class="dak-field-label"><?php esc_html_e( 'Date of birth', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></legend>
+						<div class="dak-acct-dob-parts" data-dob>
+							<div class="dak-acct-dob-part">
+								<label for="dak-patient-dob-day" class="dak-acct-sublabel"><?php esc_html_e( 'Day', 'doctor-ak-portal' ); ?></label>
+								<input type="text" id="dak-patient-dob-day" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="bday-day" placeholder="<?php esc_attr_e( 'DD', 'doctor-ak-portal' ); ?>" data-dob-day>
+							</div>
+							<div class="dak-acct-dob-part dak-acct-dob-month">
+								<label for="dak-patient-dob-month" class="dak-acct-sublabel"><?php esc_html_e( 'Month', 'doctor-ak-portal' ); ?></label>
+								<select id="dak-patient-dob-month" autocomplete="bday-month" data-dob-month>
+									<option value=""><?php esc_html_e( 'Month', 'doctor-ak-portal' ); ?></option>
+									<?php foreach ( $dak_months as $dak_num => $dak_name ) : ?>
+										<option value="<?php echo esc_attr( $dak_num ); ?>"><?php echo esc_html( $dak_name ); ?></option>
+									<?php endforeach; ?>
+								</select>
+							</div>
+							<div class="dak-acct-dob-part">
+								<label for="dak-patient-dob-year" class="dak-acct-sublabel"><?php esc_html_e( 'Year', 'doctor-ak-portal' ); ?></label>
+								<input type="text" id="dak-patient-dob-year" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="bday-year" placeholder="<?php esc_attr_e( 'YYYY', 'doctor-ak-portal' ); ?>" data-dob-year>
+							</div>
+						</div>
+						<input type="hidden" name="date_of_birth" id="dak-patient-dob" data-dob-value>
+						<p class="dak-acct-hint" id="dak-patient-dob-hint"><?php esc_html_e( 'For example 14 March 1985.', 'doctor-ak-portal' ); ?></p>
+						<?php $dak_error( 'date_of_birth', 'dak-patient-dob-error' ); ?>
+					</fieldset>
+				</div>
+
+				<?php // ------------------------------------------------------------ Doctor. ?>
+				<div id="dak-doctor-fields" class="dak-role-fields" data-role-fields="doctor"<?php echo 'doctor' !== $dak_initial_role ? ' hidden' : ''; ?>>
+					<ol class="dak-acct-steps" aria-label="<?php esc_attr_e( 'Registration steps', 'doctor-ak-portal' ); ?>">
+						<li data-step-indicator="1"><span class="dak-acct-step-num">1</span><span class="dak-acct-step-name"><?php esc_html_e( 'Account', 'doctor-ak-portal' ); ?></span></li>
+						<li data-step-indicator="2"><span class="dak-acct-step-num">2</span><span class="dak-acct-step-name"><?php esc_html_e( 'Professional profile', 'doctor-ak-portal' ); ?></span></li>
+						<li data-step-indicator="3"><span class="dak-acct-step-num">3</span><span class="dak-acct-step-name"><?php esc_html_e( 'Review', 'doctor-ak-portal' ); ?></span></li>
+					</ol>
+					<p class="dak-acct-step-status" aria-live="polite" data-step-status></p>
+
+					<section class="dak-acct-step" data-step="1" aria-labelledby="dak-doctor-step-1-title">
+						<h2 id="dak-doctor-step-1-title" tabindex="-1"><?php esc_html_e( 'Account details', 'doctor-ak-portal' ); ?></h2>
+
+						<div class="dak-field-row">
+							<div class="dak-field">
+								<label for="dak-doctor-first-name"><?php esc_html_e( 'First name', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
+								<input type="text" id="dak-doctor-first-name" name="first_name" required aria-required="true" autocomplete="given-name" data-share="first_name" aria-describedby="dak-doctor-first-name-error">
+								<?php $dak_error( 'first_name', 'dak-doctor-first-name-error' ); ?>
+							</div>
+							<div class="dak-field">
+								<label for="dak-doctor-last-name"><?php esc_html_e( 'Last name', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
+								<input type="text" id="dak-doctor-last-name" name="last_name" required aria-required="true" autocomplete="family-name" data-share="last_name" aria-describedby="dak-doctor-last-name-error">
+								<?php $dak_error( 'last_name', 'dak-doctor-last-name-error' ); ?>
+							</div>
+						</div>
+
+						<div class="dak-field">
+							<label for="dak-doctor-email"><?php esc_html_e( 'Email', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
+							<input type="email" id="dak-doctor-email" name="email" required aria-required="true" autocomplete="email" autocapitalize="none" spellcheck="false" data-share="email" aria-describedby="dak-doctor-email-hint dak-doctor-email-error">
+							<p class="dak-acct-hint" id="dak-doctor-email-hint"><?php esc_html_e( 'You will use this email to sign in.', 'doctor-ak-portal' ); ?></p>
+							<?php $dak_error( 'email', 'dak-doctor-email-error' ); ?>
+						</div>
+
+						<div class="dak-field-row">
+							<div class="dak-field">
+								<label for="dak-doctor-phone-number"><?php esc_html_e( 'Phone number', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
+								<?php
+								echo $loader->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- template escapes its own output.
+									'partials/phone-field.php',
+									array(
+										'id_prefix' => 'dak-doctor-phone',
+										'dial_code' => \DoctorAKPortal\Includes\Phone::DEFAULT_DIAL_CODE,
+										'number'    => '',
+										'required'  => true,
+									)
+								);
+								?>
+								<?php $dak_error( 'phone_number', 'dak-doctor-phone-error' ); ?>
+							</div>
+							<div class="dak-field dak-field-narrow">
+								<label for="dak-gender"><?php esc_html_e( 'Gender', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
+								<select id="dak-gender" name="gender" required aria-required="true" aria-describedby="dak-gender-error">
+									<option value=""><?php esc_html_e( 'Select', 'doctor-ak-portal' ); ?></option>
+									<?php foreach ( \DoctorAKPortal\Includes\Doctor_Gender::get_all() as $dak_gender_slug => $dak_gender_label ) : ?>
+										<option value="<?php echo esc_attr( $dak_gender_slug ); ?>"><?php echo esc_html( $dak_gender_label ); ?></option>
+									<?php endforeach; ?>
+								</select>
+								<?php $dak_error( 'gender', 'dak-gender-error' ); ?>
+							</div>
+						</div>
+
+						<div data-password-slot="doctor"></div>
+					</section>
+
+					<section class="dak-acct-step" data-step="2" aria-labelledby="dak-doctor-step-2-title" hidden>
+						<h2 id="dak-doctor-step-2-title" tabindex="-1"><?php esc_html_e( 'Professional profile', 'doctor-ak-portal' ); ?></h2>
+
+						<div class="dak-field-row">
+							<div class="dak-field">
+								<label for="dak-qualification"><?php esc_html_e( 'Qualifications', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
+								<input type="text" id="dak-qualification" name="qualification" required aria-required="true" placeholder="<?php esc_attr_e( 'e.g. MBBS, FCPS (Gastroenterology)', 'doctor-ak-portal' ); ?>" aria-describedby="dak-qualification-error">
+								<?php $dak_error( 'qualification', 'dak-qualification-error' ); ?>
+							</div>
+							<div class="dak-field dak-field-narrow">
+								<label for="dak-years-experience"><?php esc_html_e( 'Years of experience', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
+								<input type="number" min="0" max="80" step="1" inputmode="numeric" id="dak-years-experience" name="years_experience" required aria-required="true" aria-describedby="dak-years-experience-error">
+								<?php $dak_error( 'years_experience', 'dak-years-experience-error' ); ?>
+							</div>
+						</div>
+
+						<div class="dak-field">
+							<label for="dak-specializations" id="dak-specializations-label"><?php esc_html_e( 'Specializations', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
+							<select id="dak-specializations" name="specializations[]" multiple aria-describedby="dak-specializations-hint dak-specializations-error">
+								<?php foreach ( $specializations as $slug => $label ) : ?>
+									<option value="<?php echo esc_attr( $slug ); ?>"><?php echo esc_html( $label ); ?></option>
 								<?php endforeach; ?>
 							</select>
-						<span class="dak-field-error" data-field="gender"></span>
-					</div>
-					</div>
+							<p class="dak-acct-hint" id="dak-specializations-hint"><?php esc_html_e( 'Choose at least one. Search, then press Enter or click to add.', 'doctor-ak-portal' ); ?></p>
+							<?php $dak_error( 'specializations', 'dak-specializations-error' ); ?>
+						</div>
 
-					<div class="dak-field">
-						<label for="dak-qualification"><span class="dak-field-icon dak-field-icon-specialization"><?php echo $dak_icons['graduation']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Qualification', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
-						<input type="text" id="dak-qualification" name="qualification" placeholder="<?php esc_attr_e( 'e.g. MBBS, FCPS (Gastroenterology)', 'doctor-ak-portal' ); ?>" required>
-						<span class="dak-field-error" data-field="qualification"></span>
-					</div>
-
-					<div class="dak-field-row">
 						<div class="dak-field">
-							<label for="dak-country"><span class="dak-field-icon dak-field-icon-specialization"><?php echo $dak_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Country', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
-							<select id="dak-country" name="country"></select>
-							<span class="dak-field-error" data-field="country"></span>
+							<label for="dak-short-description"><?php esc_html_e( 'Short description', 'doctor-ak-portal' ); ?> <span class="dak-acct-optional"><?php esc_html_e( '(optional)', 'doctor-ak-portal' ); ?></span></label>
+							<textarea id="dak-short-description" name="short_description" rows="2" maxlength="300" placeholder="<?php esc_attr_e( 'e.g. Consultant gastroenterologist focusing on liver disease', 'doctor-ak-portal' ); ?>" aria-describedby="dak-short-description-hint dak-short-description-error"></textarea>
+							<p class="dak-acct-hint" id="dak-short-description-hint"><?php esc_html_e( 'One line shown on your public profile.', 'doctor-ak-portal' ); ?></p>
+							<?php $dak_error( 'short_description', 'dak-short-description-error' ); ?>
 						</div>
+
 						<div class="dak-field">
-							<label for="dak-city"><span class="dak-field-icon dak-field-icon-specialization"><?php echo $dak_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'City', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
-							<select id="dak-city" name="city"></select>
-							<span class="dak-field-error" data-field="city"></span>
+							<label for="dak-keywords" id="dak-keywords-label"><?php esc_html_e( 'Keywords', 'doctor-ak-portal' ); ?> <span class="dak-acct-optional"><?php esc_html_e( '(optional)', 'doctor-ak-portal' ); ?></span></label>
+							<select id="dak-keywords" name="keywords[]" multiple aria-describedby="dak-keywords-hint dak-keywords-error">
+								<?php foreach ( $keywords as $dak_keyword ) : ?>
+									<option value="<?php echo esc_attr( $dak_keyword ); ?>"><?php echo esc_html( $dak_keyword ); ?></option>
+								<?php endforeach; ?>
+							</select>
+							<p class="dak-acct-hint" id="dak-keywords-hint"><?php esc_html_e( 'Procedures or conditions patients search for, e.g. Colonoscopy. Type one and press Enter.', 'doctor-ak-portal' ); ?></p>
+							<?php $dak_error( 'keywords', 'dak-keywords-error' ); ?>
 						</div>
+
 						<div class="dak-field">
-							<label for="dak-area"><span class="dak-field-icon dak-field-icon-specialization"><?php echo $dak_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Area', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
-							<select id="dak-area" name="area"></select>
-							<span class="dak-field-error" data-field="area"></span>
+							<label for="dak-expertise" id="dak-expertise-label"><?php esc_html_e( 'Other expertise', 'doctor-ak-portal' ); ?> <span class="dak-acct-optional"><?php esc_html_e( '(optional)', 'doctor-ak-portal' ); ?></span></label>
+							<div class="dak-rich-text" data-rich-text>
+								<?php echo \DoctorAKPortal\Includes\Rich_Text::toolbar_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapes its own output. ?>
+								<div
+									id="dak-expertise"
+									class="dak-rich-text-editor"
+									contenteditable="true"
+									role="textbox"
+									aria-multiline="true"
+									aria-labelledby="dak-expertise-label"
+									data-placeholder="<?php esc_attr_e( 'Skills, procedures or interests not covered above.', 'doctor-ak-portal' ); ?>"
+								></div>
+								<input type="hidden" name="expertise" data-rich-text-value>
+							</div>
+							<?php $dak_error( 'expertise', 'dak-expertise-error' ); ?>
 						</div>
-					</div>
 
-					<div class="dak-field">
-						<label for="dak-short-description"><span class="dak-field-icon dak-field-icon-specialization"><?php echo $dak_icons['briefcase']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Short Description', 'doctor-ak-portal' ); ?></label>
-						<textarea id="dak-short-description" name="short_description" rows="3" placeholder="<?php esc_attr_e( 'e.g. Compassionate primary care with 12+ years of experience', 'doctor-ak-portal' ); ?>"></textarea>
-						<p class="dak-field-hint"><?php esc_html_e( 'A tagline shown on your public profile.', 'doctor-ak-portal' ); ?></p>
-						<span class="dak-field-error" data-field="short_description"></span>
-					</div>
-
-					<div class="dak-field">
-						<label for="dak-keywords"><span class="dak-field-icon dak-field-icon-specialization"><?php echo $dak_icons['briefcase']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Keywords', 'doctor-ak-portal' ); ?></label>
-						<select id="dak-keywords" name="keywords[]" multiple>
-							<?php foreach ( $keywords as $dak_keyword ) : ?>
-								<option value="<?php echo esc_attr( $dak_keyword ); ?>"><?php echo esc_html( $dak_keyword ); ?></option>
-							<?php endforeach; ?>
-						</select>
-						<p class="dak-field-hint"><?php esc_html_e( 'Procedures or conditions patients might search for, e.g. "Colonoscopy", "Gallbladder Removal". Type one and press Enter to add it — new keywords become suggestions for other doctors too.', 'doctor-ak-portal' ); ?></p>
-						<span class="dak-field-error" data-field="keywords"></span>
-					</div>
-
-					<div class="dak-field">
-						<label for="dak-specializations"><span class="dak-field-icon dak-field-icon-specialization"><?php echo $dak_icons['briefcase']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Specialization', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
-						<select id="dak-specializations" name="specializations[]" multiple>
-							<?php foreach ( $specializations as $slug => $label ) : ?>
-								<option value="<?php echo esc_attr( $slug ); ?>"><?php echo esc_html( $label ); ?></option>
-							<?php endforeach; ?>
-						</select>
-						<span class="dak-field-error" data-field="specializations"></span>
-					</div>
-
-					<div class="dak-field">
-						<label for="dak-expertise"><span class="dak-field-icon dak-field-icon-specialization"><?php echo $dak_icons['briefcase']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Other Expertise', 'doctor-ak-portal' ); ?></label>
-						<div class="dak-rich-text" data-rich-text>
-							<?php echo \DoctorAKPortal\Includes\Rich_Text::toolbar_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escapes its own output. ?>
-							<div
-								id="dak-expertise"
-								class="dak-rich-text-editor"
-								contenteditable="true"
-								role="textbox"
-								aria-multiline="true"
-								aria-label="<?php esc_attr_e( 'Other Expertise', 'doctor-ak-portal' ); ?>"
-								data-placeholder="<?php esc_attr_e( 'Any additional skills, procedures, or areas of interest not covered above (optional).', 'doctor-ak-portal' ); ?>"
-							></div>
-							<input type="hidden" name="expertise" data-rich-text-value>
+						<div class="dak-field">
+							<span class="dak-field-label" id="dak-photo-label"><?php esc_html_e( 'Profile photo', 'doctor-ak-portal' ); ?> <span class="dak-acct-optional"><?php esc_html_e( '(optional)', 'doctor-ak-portal' ); ?></span></span>
+							<div class="dak-acct-photo" data-photo>
+								<div class="dak-acct-photo-preview" id="dak-profile-picture-preview" aria-hidden="true">
+									<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.2"/><path d="M4 17c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/></svg>
+								</div>
+								<div class="dak-acct-photo-body">
+									<div class="dak-acct-photo-actions">
+										<label class="dak-button dak-button-secondary dak-button-sm" for="dak-profile-picture-input" data-photo-choose><?php esc_html_e( 'Upload photo', 'doctor-ak-portal' ); ?></label>
+										<button type="button" class="dak-button dak-button-secondary dak-button-sm" data-photo-remove hidden><?php esc_html_e( 'Remove', 'doctor-ak-portal' ); ?></button>
+									</div>
+									<input type="file" id="dak-profile-picture-input" accept="image/jpeg,image/png,image/webp" class="dak-visually-hidden" aria-labelledby="dak-photo-label" aria-describedby="dak-photo-hint dak-upload-status">
+									<input type="hidden" name="profile_picture_id" id="dak-profile-picture-id" value="">
+									<p class="dak-acct-hint" id="dak-photo-hint"><?php esc_html_e( 'JPG, PNG or WebP, up to 5 MB.', 'doctor-ak-portal' ); ?></p>
+									<p class="dak-upload-status" id="dak-upload-status" role="status" aria-live="polite"></p>
+								</div>
+							</div>
+							<?php $dak_error( 'profile_picture', 'dak-profile-picture-error' ); ?>
 						</div>
-						<span class="dak-field-error" data-field="expertise"></span>
-					</div>
+					</section>
 
-					<p class="dak-field-hint"><?php esc_html_e( "You'll add your clinics and set your weekly session hours after registering, from your dashboard.", 'doctor-ak-portal' ); ?></p>
+					<section class="dak-acct-step" data-step="3" aria-labelledby="dak-doctor-step-3-title" hidden>
+						<h2 id="dak-doctor-step-3-title" tabindex="-1"><?php esc_html_e( 'Location and review', 'doctor-ak-portal' ); ?></h2>
+
+						<fieldset class="dak-acct-group">
+							<legend><?php esc_html_e( 'Where you practise', 'doctor-ak-portal' ); ?></legend>
+							<div class="dak-field-row dak-field-row-3">
+								<div class="dak-field">
+									<label for="dak-country"><?php esc_html_e( 'Country', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
+									<select id="dak-country" name="country" required aria-required="true" aria-describedby="dak-country-error"></select>
+									<?php $dak_error( 'country', 'dak-country-error' ); ?>
+								</div>
+								<div class="dak-field">
+									<label for="dak-city"><?php esc_html_e( 'City', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
+									<select id="dak-city" name="city" required aria-required="true" aria-describedby="dak-city-hint dak-city-error"></select>
+									<p class="dak-acct-hint" id="dak-city-hint" data-location-hint="city"><?php esc_html_e( 'Choose a country first.', 'doctor-ak-portal' ); ?></p>
+									<?php $dak_error( 'city', 'dak-city-error' ); ?>
+								</div>
+								<div class="dak-field">
+									<label for="dak-area"><?php esc_html_e( 'Area', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
+									<select id="dak-area" name="area" required aria-required="true" aria-describedby="dak-area-hint dak-area-error"></select>
+									<p class="dak-acct-hint" id="dak-area-hint" data-location-hint="area"><?php esc_html_e( 'Choose a city first.', 'doctor-ak-portal' ); ?></p>
+									<?php $dak_error( 'area', 'dak-area-error' ); ?>
+								</div>
+							</div>
+						</fieldset>
+
+						<div class="dak-acct-review" data-review aria-label="<?php esc_attr_e( 'Review your details', 'doctor-ak-portal' ); ?>"></div>
+
+						<div data-terms-slot="doctor"></div>
+
+						<p class="dak-acct-note"><strong><?php esc_html_e( 'What happens next:', 'doctor-ak-portal' ); ?></strong> <?php esc_html_e( 'our team reviews your registration and we email you once it is approved. You can then sign in and add your clinics and weekly session hours.', 'doctor-ak-portal' ); ?></p>
+					</section>
 				</div>
 
-				<div class="dak-section">
-					<div class="dak-section-header">
-						<span class="dak-section-icon"><?php echo $dak_icons['camera']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-						<h2><?php esc_html_e( 'Profile Picture', 'doctor-ak-portal' ); ?></h2>
-					</div>
-
-					<div class="dak-upload-control">
-						<div class="dak-upload-preview" id="dak-profile-picture-preview" data-empty-html="<?php echo esc_attr( '<span class="dak-upload-placeholder-icon" aria-hidden="true">' . $dak_icons['person'] . '</span>' ); ?>">
-							<span class="dak-upload-placeholder-icon" aria-hidden="true"><?php echo $dak_icons['person']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-						</div>
-						<div class="dak-upload-control-text">
-							<label class="dak-button dak-button-secondary dak-button-small" for="dak-profile-picture-input">
-								<span class="dak-button-icon"><?php echo $dak_icons['upload']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-								<?php esc_html_e( 'Upload photo', 'doctor-ak-portal' ); ?>
-							</label>
-							<input type="file" id="dak-profile-picture-input" accept="image/jpeg,image/png,image/webp" class="dak-visually-hidden">
-							<input type="hidden" name="profile_picture_id" id="dak-profile-picture-id" value="">
-							<small><?php esc_html_e( 'JPG or PNG, up to 5MB', 'doctor-ak-portal' ); ?></small>
-							<span class="dak-upload-status" id="dak-upload-status"></span>
-						</div>
-					</div>
-					<span class="dak-field-error" data-field="profile_picture"></span>
-				</div>
-
-			</div>
-
-			<div id="dak-patient-fields" class="dak-role-fields dak-hidden">
-				<div class="dak-section">
-					<div class="dak-section-header">
-						<span class="dak-section-icon"><?php echo $dak_icons['person']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-						<h2><?php esc_html_e( 'Your Information', 'doctor-ak-portal' ); ?></h2>
-					</div>
-
+				<?php // ------------------------------------------------------------ Shared: password, then consent (each moved by JS into the active role's slot). ?>
+				<div data-password-slot="patient"></div>
+				<div class="dak-acct-security" data-password-block>
 					<div class="dak-field-row">
 						<div class="dak-field">
-							<label for="dak-patient-first-name"><?php esc_html_e( 'First Name', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
-							<input type="text" id="dak-patient-first-name" name="first_name" required>
-							<span class="dak-field-error" data-field="first_name"></span>
-						</div>
-						<div class="dak-field">
-							<label for="dak-patient-last-name"><?php esc_html_e( 'Last Name', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
-							<input type="text" id="dak-patient-last-name" name="last_name" required>
-							<span class="dak-field-error" data-field="last_name"></span>
-						</div>
-					</div>
-
-					<div class="dak-field-row">
-						<div class="dak-field">
-							<label for="dak-patient-email"><span class="dak-field-icon dak-field-icon-email"><?php echo $dak_icons['mail']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Email Address', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
-							<input type="email" id="dak-patient-email" name="email" required autocomplete="email">
-							<span class="dak-field-error" data-field="email"></span>
-						</div>
-						<div class="dak-field">
-							<label for="dak-phone-number-code"><span class="dak-field-icon dak-field-icon-phone"><?php echo $dak_icons['phone']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Phone Number', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
+							<label for="dak-password"><?php esc_html_e( 'Password', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
 							<?php
-							echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- template escapes its own output.
-								'partials/phone-field.php',
+							echo $loader->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- partial escapes its own output.
+								'auth/partials/password-input.php',
 								array(
-									'id_prefix' => 'dak-phone-number',
-									'dial_code' => \DoctorAKPortal\Includes\Phone::DEFAULT_DIAL_CODE,
-									'number'    => '',
-									'required'  => true,
+									'id'           => 'dak-password',
+									'name'         => 'password',
+									'autocomplete' => 'new-password',
+									'describedby'  => 'dak-password-hint dak-password-error',
 								)
 							);
 							?>
-							<span class="dak-field-error" data-field="phone_number"></span>
+							<p class="dak-acct-hint dak-acct-rule" id="dak-password-hint" data-password-rule><?php esc_html_e( 'At least 8 characters.', 'doctor-ak-portal' ); ?></p>
+							<?php $dak_error( 'password', 'dak-password-error' ); ?>
 						</div>
-					</div>
-
-					<div class="dak-field-row">
 						<div class="dak-field">
-							<label for="dak-patient-dob"><?php esc_html_e( 'Date of Birth', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
-							<input type="date" id="dak-patient-dob" name="date_of_birth" max="<?php echo esc_attr( gmdate( 'Y-m-d' ) ); ?>" required>
-							<span class="dak-field-error" data-field="date_of_birth"></span>
+							<label for="dak-confirm-password"><?php esc_html_e( 'Confirm password', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
+							<?php
+							echo $loader->get_template( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- partial escapes its own output.
+								'auth/partials/password-input.php',
+								array(
+									'id'           => 'dak-confirm-password',
+									'name'         => 'confirm_password',
+									'autocomplete' => 'new-password',
+									'describedby'  => 'dak-confirm-password-error',
+								)
+							);
+							?>
+							<?php $dak_error( 'confirm_password', 'dak-confirm-password-error' ); ?>
 						</div>
 					</div>
 				</div>
-			</div>
 
-			<div class="dak-section">
-				<div class="dak-section-header">
-					<span class="dak-section-icon"><?php echo $dak_icons['lock']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-					<h2><?php esc_html_e( 'Set Your Password', 'doctor-ak-portal' ); ?></h2>
-				</div>
-
-				<div class="dak-field-row">
-					<div class="dak-field">
-						<label for="dak-password"><?php esc_html_e( 'Password', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
-						<div class="dak-password-field">
-							<input type="password" id="dak-password" name="password" required autocomplete="new-password" placeholder="<?php esc_attr_e( 'At least 8 characters', 'doctor-ak-portal' ); ?>">
-							<button type="button" class="dak-password-toggle" aria-label="<?php esc_attr_e( 'Show password', 'doctor-ak-portal' ); ?>">
-								<svg class="dak-icon-eye" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 10S4.5 4 10 4s8.5 6 8.5 6-3 6-8.5 6-8.5-6-8.5-6z"/><circle cx="10" cy="10" r="2.5"/></svg>
-								<svg class="dak-icon-eye-off" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 2.5l15 15"/><path d="M8.3 4.3C8.85 4.1 9.42 4 10 4c5.5 0 8.5 6 8.5 6a14.9 14.9 0 0 1-3 3.9M5.5 5.6C3 7.2 1.5 10 1.5 10s3 6 8.5 6c1.1 0 2.1-.24 3-.63"/><path d="M7.8 7.8a2.5 2.5 0 0 0 3.4 3.5"/></svg>
-							</button>
+				<div data-terms-slot="patient"></div>
+				<div class="dak-acct-consent" data-terms-block>
+					<div class="dak-field dak-terms-field">
+						<div class="dak-checkbox dak-acct-terms">
+							<input type="checkbox" id="dak-terms-accepted" name="terms_accepted" value="1" required aria-required="true" aria-describedby="dak-terms-accepted-error">
+							<span>
+								<label for="dak-terms-accepted"><?php esc_html_e( 'I have read and agree to the', 'doctor-ak-portal' ); ?></label>
+								<button type="button" id="dak-terms-view-link" class="dak-acct-link" aria-haspopup="dialog"><?php esc_html_e( 'Terms & Conditions', 'doctor-ak-portal' ); ?></button><?php if ( '' !== $dak_privacy_url ) : ?><?php esc_html_e( '. See our', 'doctor-ak-portal' ); ?>
+									<a href="<?php echo esc_url( $dak_privacy_url ); ?>" class="dak-acct-link" target="_blank" rel="noopener"><?php esc_html_e( 'Privacy Policy', 'doctor-ak-portal' ); ?><span class="dak-visually-hidden"> <?php esc_html_e( '(opens in a new tab)', 'doctor-ak-portal' ); ?></span></a><?php endif; ?>.
+							</span>
 						</div>
-						<span class="dak-field-error" data-field="password"></span>
-					</div>
-					<div class="dak-field">
-						<label for="dak-confirm-password"><?php esc_html_e( 'Confirm Password', 'doctor-ak-portal' ); ?> <span class="dak-required">*</span></label>
-						<div class="dak-password-field">
-							<input type="password" id="dak-confirm-password" name="confirm_password" required autocomplete="new-password" placeholder="<?php esc_attr_e( 'Re-enter password', 'doctor-ak-portal' ); ?>">
-							<button type="button" class="dak-password-toggle" aria-label="<?php esc_attr_e( 'Show password', 'doctor-ak-portal' ); ?>">
-								<svg class="dak-icon-eye" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 10S4.5 4 10 4s8.5 6 8.5 6-3 6-8.5 6-8.5-6-8.5-6z"/><circle cx="10" cy="10" r="2.5"/></svg>
-								<svg class="dak-icon-eye-off" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 2.5l15 15"/><path d="M8.3 4.3C8.85 4.1 9.42 4 10 4c5.5 0 8.5 6 8.5 6a14.9 14.9 0 0 1-3 3.9M5.5 5.6C3 7.2 1.5 10 1.5 10s3 6 8.5 6c1.1 0 2.1-.24 3-.63"/><path d="M7.8 7.8a2.5 2.5 0 0 0 3.4 3.5"/></svg>
-							</button>
-						</div>
-						<span class="dak-field-error" data-field="confirm_password"></span>
+						<?php $dak_error( 'terms_accepted', 'dak-terms-accepted-error' ); ?>
 					</div>
 				</div>
 
-				<p class="dak-field-hint"><?php esc_html_e( 'Use your email along with this password to sign in later.', 'doctor-ak-portal' ); ?></p>
-			</div>
-
-			<div class="dak-field dak-terms-field">
-				<label class="dak-checkbox">
-					<input type="checkbox" id="dak-terms-accepted" name="terms_accepted" value="1" required>
-					<span>
-						<?php esc_html_e( 'I have read and agree to the', 'doctor-ak-portal' ); ?>
-						<button type="button" id="dak-terms-view-link" class="dak-link-button"><?php esc_html_e( 'Terms & Conditions', 'doctor-ak-portal' ); ?></button>.
-					</span>
-				</label>
-				<span class="dak-field-error" data-field="terms_accepted"></span>
-			</div>
-
-			<button type="submit" class="dak-button dak-button-primary dak-button-block" id="dak-register-submit">
-				<span class="dak-button-label" data-doctor-label="<?php esc_attr_e( 'Create Doctor Account', 'doctor-ak-portal' ); ?>" data-patient-label="<?php esc_attr_e( 'Create Patient Account', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Create Doctor Account', 'doctor-ak-portal' ); ?></span>
-			</button>
+				<div class="dak-acct-actions">
+					<button type="button" class="dak-button dak-button-secondary" data-step-back hidden><?php esc_html_e( 'Back', 'doctor-ak-portal' ); ?></button>
+					<button type="button" class="dak-button dak-button-primary" data-step-next hidden><?php esc_html_e( 'Continue', 'doctor-ak-portal' ); ?></button>
+					<button type="submit" class="dak-button dak-button-primary dak-acct-submit" id="dak-register-submit"
+						data-patient-label="<?php esc_attr_e( 'Create account', 'doctor-ak-portal' ); ?>"
+						data-doctor-label="<?php esc_attr_e( 'Submit registration', 'doctor-ak-portal' ); ?>"
+						data-loading-label="<?php esc_attr_e( 'Submitting…', 'doctor-ak-portal' ); ?>">
+						<span class="dak-button-label"><?php echo 'doctor' === $dak_initial_role ? esc_html__( 'Submit registration', 'doctor-ak-portal' ) : esc_html__( 'Create account', 'doctor-ak-portal' ); ?></span>
+					</button>
+				</div>
+			</form>
 
 			<?php if ( $login_url ) : ?>
-				<p class="dak-form-footer-link">
+				<p class="dak-acct-switch">
 					<?php esc_html_e( 'Already have an account?', 'doctor-ak-portal' ); ?>
-					<a href="<?php echo esc_url( $login_url ); ?>"><?php esc_html_e( 'Sign in', 'doctor-ak-portal' ); ?></a>
+					<a href="<?php echo esc_url( $login_url ); ?>" class="dak-acct-link"><?php esc_html_e( 'Sign in', 'doctor-ak-portal' ); ?></a>
 				</p>
 			<?php endif; ?>
-		</form>
+			</div>
+		</main>
 	</div>
+	<?php echo $loader->get_template( 'auth/partials/account-footer.php' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- partial escapes its own output. ?>
 </div>
 
-<div class="dak-portal dak-modal" id="dak-terms-modal" aria-hidden="true">
+<div class="dak-portal dak-modal dak-acct-modal" id="dak-terms-modal" aria-hidden="true">
 	<div class="dak-modal-overlay" data-dak-terms-close></div>
 
-	<div class="dak-modal-dialog dak-terms-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="dak-terms-modal-title">
+	<div class="dak-modal-dialog dak-terms-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="dak-terms-modal-title" tabindex="-1">
 		<button type="button" class="dak-modal-close" data-dak-terms-close aria-label="<?php esc_attr_e( 'Close', 'doctor-ak-portal' ); ?>">&times;</button>
 
 		<div class="dak-modal-header">
@@ -387,31 +450,39 @@ $dak_icons = array(
 		</div>
 
 		<div class="dak-terms-modal-body">
-			<div id="dak-doctor-terms-content">
-				<?php echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( 'auth/partials/doctor-terms-content.php' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-terms-content.php template, which escapes its own output. ?>
+			<div id="dak-doctor-terms-content"<?php echo 'doctor' !== $dak_initial_role ? ' class="dak-hidden"' : ''; ?>>
+				<?php echo $loader->get_template( 'auth/partials/doctor-terms-content.php' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-terms-content.php template, which escapes its own output. ?>
 			</div>
-			<div id="dak-patient-terms-content" class="dak-hidden">
-				<?php echo ( new \DoctorAKPortal\Includes\Template_Loader() )->get_template( 'auth/partials/patient-terms-content.php' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own patient-terms-content.php template, which escapes its own output. ?>
+			<div id="dak-patient-terms-content"<?php echo 'patient' !== $dak_initial_role ? ' class="dak-hidden"' : ''; ?>>
+				<?php echo $loader->get_template( 'auth/partials/patient-terms-content.php' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own patient-terms-content.php template, which escapes its own output. ?>
 			</div>
 		</div>
 
 		<div class="dak-terms-modal-footer">
-			<button type="button" class="dak-button dak-button-primary" id="dak-terms-accept-close" data-dak-terms-close><?php esc_html_e( 'I Understand', 'doctor-ak-portal' ); ?></button>
+			<?php // Closing the terms never ticks the box — agreeing is a separate, deliberate action. ?>
+			<button type="button" class="dak-button dak-button-secondary" data-dak-terms-close><?php esc_html_e( 'Close', 'doctor-ak-portal' ); ?></button>
 		</div>
 	</div>
 </div>
 
-<div class="dak-portal dak-modal" id="dak-register-success-modal" aria-hidden="true" data-redirect-url="<?php echo esc_url( $home_url ); ?>">
+<div class="dak-portal dak-modal dak-acct-modal" id="dak-register-success-modal" aria-hidden="true"
+	data-patient-url="<?php echo esc_url( $login_url ? $login_url : $home_url ); ?>"
+	data-doctor-url="<?php echo esc_url( $home_url ); ?>">
 	<div class="dak-modal-overlay"></div>
 
-	<div class="dak-modal-dialog dak-register-success-dialog" role="dialog" aria-modal="true" aria-labelledby="dak-register-success-modal-title">
+	<div class="dak-modal-dialog dak-register-success-dialog" role="dialog" aria-modal="true" aria-labelledby="dak-register-success-modal-title" aria-describedby="dak-register-success-modal-message" tabindex="-1">
 		<div class="dak-register-success-icon" aria-hidden="true">
 			<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="8"/><path d="M6.5 10.2l2.3 2.3 4.7-5"/></svg>
 		</div>
 
-		<h2 id="dak-register-success-modal-title"><?php esc_html_e( 'Account Created', 'doctor-ak-portal' ); ?></h2>
+		<h2 id="dak-register-success-modal-title"
+			data-patient="<?php esc_attr_e( 'Account created', 'doctor-ak-portal' ); ?>"
+			data-doctor="<?php esc_attr_e( 'Registration submitted', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Account created', 'doctor-ak-portal' ); ?></h2>
 		<p id="dak-register-success-modal-message"></p>
+		<p class="dak-acct-hint" data-doctor-only hidden><?php esc_html_e( 'Your account is pending review. You can sign in once it has been approved.', 'doctor-ak-portal' ); ?></p>
 
-		<button type="button" class="dak-button dak-button-primary dak-button-block" id="dak-register-success-ok"><?php esc_html_e( 'OK', 'doctor-ak-portal' ); ?></button>
+		<button type="button" class="dak-button dak-button-primary dak-button-block" id="dak-register-success-ok"
+			data-patient="<?php esc_attr_e( 'Go to sign in', 'doctor-ak-portal' ); ?>"
+			data-doctor="<?php esc_attr_e( 'Back to home', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'OK', 'doctor-ak-portal' ); ?></button>
 	</div>
 </div>
