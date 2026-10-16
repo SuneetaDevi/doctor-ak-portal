@@ -120,9 +120,13 @@ class Revenue_Ledger {
 	 * nothing if this encounter already has a posted entry, so it's safe to
 	 * call more than once.
 	 *
+	 * A walk-in encounter (no appointment, $appointment_id 0) posts its whole
+	 * bill the same way: the doctor, clinic and visit date come from the
+	 * encounter, and it counts as collected at the clinic (cash/manual).
+	 *
 	 * @param int $encounter_id   Encounter ID the extra charges belong to.
-	 * @param int $appointment_id Its appointment's post ID (for the revenue split's doctor/clinic/type/payment_mode context).
-	 * @return int|false New ledger row ID, false if not postable (nothing to bill, appointment missing, or already posted).
+	 * @param int $appointment_id Its appointment's post ID (for the revenue split's doctor/clinic/type/payment_mode context), or 0 for a walk-in.
+	 * @return int|false New ledger row ID, false if not postable (nothing to bill, appointment/encounter missing, or already posted).
 	 */
 	public static function post_for_encounter_extra( $encounter_id, $appointment_id ) {
 		$extra_amount = Encounter_Bill_Items::total_for_encounter( $encounter_id );
@@ -131,7 +135,8 @@ class Revenue_Ledger {
 			return false;
 		}
 
-		$appointment = Appointments::find( $appointment_id );
+		$is_walk_in  = (int) $appointment_id <= 0;
+		$appointment = $is_walk_in ? self::walk_in_context( $encounter_id ) : Appointments::find( $appointment_id );
 
 		if ( empty( $appointment ) ) {
 			return false;
@@ -177,7 +182,7 @@ class Revenue_Ledger {
 				'doctor_amount'    => number_format( $breakdown['doctor_amount'], 2, '.', '' ),
 				'clinic_amount'    => number_format( $breakdown['clinic_amount'], 2, '.', '' ),
 				'net_amount'       => number_format( $breakdown['net_amount'], 2, '.', '' ),
-				'description'      => __( 'Additional charges — encounter', 'doctor-ak-portal' ),
+				'description'      => $is_walk_in ? __( 'Walk-in visit charges', 'doctor-ak-portal' ) : __( 'Additional charges — encounter', 'doctor-ak-portal' ),
 				'reference'        => $reference,
 				'status'           => self::STATUS_POSTED,
 				'is_legacy'        => 0,
@@ -210,6 +215,63 @@ class Revenue_Ledger {
 	public static function resync_encounter_extra( $encounter_id, $appointment_id ) {
 		self::reverse_encounter_extra( $encounter_id );
 		self::post_for_encounter_extra( $encounter_id, $appointment_id );
+	}
+
+	/**
+	 * Takes an encounter's posted charges back out of billing (e.g. when the
+	 * encounter itself is deleted).
+	 *
+	 * @param int $encounter_id Encounter ID.
+	 * @return void
+	 */
+	public static function reverse_for_encounter( $encounter_id ) {
+		self::reverse_encounter_extra( $encounter_id );
+	}
+
+	/**
+	 * What the revenue split needs to know about a walk-in visit, in the
+	 * shape Revenue_Calculator::calculate_for_appointment() reads: the
+	 * encounter's doctor and clinic, a clinic visit, paid at the clinic.
+	 *
+	 * @param int $encounter_id Encounter ID.
+	 * @return array Empty when the encounter doesn't exist.
+	 */
+	private static function walk_in_context( $encounter_id ) {
+		$encounter = Encounters::find( $encounter_id );
+
+		if ( ! $encounter ) {
+			return array();
+		}
+
+		return array(
+			'doctor_id'    => (int) $encounter['doctor_id'],
+			'clinic_id'    => (int) $encounter['clinic_id'],
+			'type'         => Appointments::TYPE_CLINIC,
+			'payment_mode' => Appointments::PAYMENT_MODE_MANUAL,
+			'service_id'   => 0,
+			'charge'       => 0.0,
+			'date'         => substr( (string) $encounter['checked_in_at'], 0, 10 ),
+		);
+	}
+
+	/**
+	 * Which visit a ledger row belongs to, for counting visits rather than
+	 * ledger lines: the appointment, or — for a walk-in, which has none —
+	 * its encounter (every row for one encounter shares its reference).
+	 *
+	 * @param array $row Decoded ledger row.
+	 * @return string
+	 */
+	public static function visit_key( array $row ) {
+		if ( $row['appointment_id'] > 0 ) {
+			return 'a' . $row['appointment_id'];
+		}
+
+		if ( preg_match( '/^ENC-(\d+)-/', (string) $row['reference'], $m ) ) {
+			return 'e' . $m[1];
+		}
+
+		return 'r' . $row['id'];
 	}
 
 	/**
@@ -843,9 +905,9 @@ class Revenue_Ledger {
 			} else {
 				$grouped[ $key ]['gross_total'] += $row['gross_amount'];
 
-				// Appointments, not ledger lines: a visit with extra charges
-				// added during it is still one appointment.
-				$grouped[ $key ]['appointments'][ $row['appointment_id'] > 0 ? 'a' . $row['appointment_id'] : 'r' . $row['id'] ] = true;
+				// Visits, not ledger lines: a visit with extra charges added
+				// during it (or a walk-in whose bill was edited) is still one.
+				$grouped[ $key ]['appointments'][ self::visit_key( $row ) ] = true;
 			}
 		}
 

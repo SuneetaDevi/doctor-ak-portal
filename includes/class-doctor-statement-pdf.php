@@ -192,7 +192,7 @@ class Doctor_Statement_Pdf extends Pdf_Document {
 				continue;
 			}
 
-			$key = (int) $row['appointment_id'];
+			$key = Revenue_Ledger::visit_key( $row );
 
 			if ( ! isset( $by_appointment[ $key ] ) ) {
 				$by_appointment[ $key ] = array(
@@ -210,9 +210,18 @@ class Doctor_Statement_Pdf extends Pdf_Document {
 
 		$list = array();
 
-		foreach ( $by_appointment as $entry ) {
-			$row         = $entry['row'];
-			$appointment = Appointments::notification_data( $row['appointment_id'] );
+		foreach ( $by_appointment as $key => $entry ) {
+			$row = $entry['row'];
+
+			if ( 'e' === $key[0] ) {
+				// A walk-in visit: no appointment, details from its encounter.
+				$encounter   = Encounters::find( (int) substr( $key, 1 ) );
+				$appointment = $encounter ? Encounters::visit_data( $encounter ) : array();
+				$reference   = sprintf( 'ENC-%04d', (int) substr( $key, 1 ) );
+			} else {
+				$appointment = Appointments::notification_data( $row['appointment_id'] );
+				$reference   = sprintf( 'APT-%04d', (int) $row['appointment_id'] );
+			}
 
 			if ( empty( $appointment ) ) {
 				continue;
@@ -227,17 +236,18 @@ class Doctor_Statement_Pdf extends Pdf_Document {
 			$list[] = array(
 				'cells' => array(
 					Dashboard_Format::date( $row['transaction_date'], (string) $row['transaction_date'] ),
-					array( 'text' => $appointment['patient_name'], 'sub' => implode( ' · ', array_filter( array( sprintf( 'APT-%04d', (int) $row['appointment_id'] ), Pdf_Builder::patient_number( (int) $appointment['patient_id'] ) ) ) ) ),
+					array( 'text' => $appointment['patient_name'], 'sub' => implode( ' · ', array_filter( array( $reference, Pdf_Builder::patient_number( (int) $appointment['patient_id'] ) ) ) ) ),
 					$location,
 					Dashboard_Format::money( $entry['amount'] ),
 				),
 			);
 		}
 
-		$pdf->section( __( 'Appointments', 'doctor-ak-portal' ), 60 );
+		// Appointments and walk-in visits alike.
+		$pdf->section( __( 'Visits', 'doctor-ak-portal' ), 60 );
 
 		if ( empty( $list ) ) {
-			$pdf->paragraph( __( 'No appointments in this period.', 'doctor-ak-portal' ), 'muted' );
+			$pdf->paragraph( __( 'No visits in this period.', 'doctor-ak-portal' ), 'muted' );
 		} else {
 			$pdf->table(
 				array(

@@ -428,6 +428,11 @@
 			metaParts.push( data.appointment.datetime_label );
 		}
 
+		// No pre-booked appointment behind this visit.
+		if ( data.appointment.is_walk_in ) {
+			metaParts.push( 'Walk-in' );
+		}
+
 		setText( 'dak-encounter-meta', metaParts.join( ' · ' ) );
 
 		// Problems/Prescriptions/Bill/Reports stay fully editable even once

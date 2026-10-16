@@ -167,7 +167,7 @@ foreach ( $balances as $dak_balance_row ) {
 				<thead>
 					<tr>
 						<th scope="col"><?php echo $dak_is_clinic_view ? esc_html__( 'Doctor', 'doctor-ak-portal' ) : esc_html__( 'Clinic / visit type', 'doctor-ak-portal' ); ?></th>
-						<th scope="col"><?php esc_html_e( 'Paid appointments', 'doctor-ak-portal' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Paid visits', 'doctor-ak-portal' ); ?></th>
 						<th scope="col"><?php esc_html_e( 'Direction', 'doctor-ak-portal' ); ?></th>
 						<th scope="col" class="dak-col-num"><?php esc_html_e( 'Balance', 'doctor-ak-portal' ); ?></th>
 						<th scope="col" class="dak-col-actions"><?php esc_html_e( 'Actions', 'doctor-ak-portal' ); ?></th>
@@ -191,7 +191,7 @@ foreach ( $balances as $dak_balance_row ) {
 								<td class="dak-col-primary" data-label="<?php echo $dak_is_clinic_view ? esc_attr__( 'Doctor', 'doctor-ak-portal' ) : esc_attr__( 'Clinic / visit type', 'doctor-ak-portal' ); ?>">
 									<span class="dak-cell-strong"><?php echo esc_html( $dak_is_clinic_view ? $dak_row['doctor_name'] : $dak_row['clinic_name'] ); ?></span>
 								</td>
-								<td class="is-tabular" data-label="<?php esc_attr_e( 'Paid appointments', 'doctor-ak-portal' ); ?>"><?php echo esc_html( number_format_i18n( $dak_row['appointment_count'] ) ); ?></td>
+								<td class="is-tabular" data-label="<?php esc_attr_e( 'Paid visits', 'doctor-ak-portal' ); ?>"><?php echo esc_html( number_format_i18n( $dak_row['appointment_count'] ) ); ?></td>
 								<td data-label="<?php esc_attr_e( 'Direction', 'doctor-ak-portal' ); ?>"><span class="dak-status-pill <?php echo esc_attr( $dak_dir_class ); ?>"><?php echo esc_html( $dak_dir_label ); ?></span></td>
 								<td class="dak-col-num" data-label="<?php esc_attr_e( 'Balance', 'doctor-ak-portal' ); ?>"><span class="dak-cell-strong"><?php echo esc_html( call_user_func( $dak_money, abs( $dak_row['balance'] ) ) ); ?></span></td>
 								<td class="dak-col-actions" data-label="<?php esc_attr_e( 'Actions', 'doctor-ak-portal' ); ?>">

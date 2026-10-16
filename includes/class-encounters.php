@@ -110,6 +110,102 @@ class Encounters {
 	}
 
 	/**
+	 * Opens an encounter for a walk-in patient — someone seen at the clinic
+	 * without a pre-booked appointment (the Encounters list's "Add
+	 * Encounter"). No appointment is created: appointments are only for
+	 * pre-booked visits. The encounter stands on its own (appointment_id
+	 * 0); its bill items are what the visit costs, posted to billing when
+	 * it closes (see Revenue_Ledger::post_for_encounter_extra()).
+	 *
+	 * A repeat submit for the same patient, doctor and clinic within two
+	 * minutes returns the encounter already opened instead of a duplicate.
+	 *
+	 * @param int $doctor_id        Doctor's user ID.
+	 * @param int $patient_id       Patient's user ID.
+	 * @param int $clinic_id        The doctor's Clinics row ID for this visit.
+	 * @param int $checked_in_by_id User ID opening it.
+	 * @return int|\WP_Error Encounter ID.
+	 */
+	public static function open_walk_in( $doctor_id, $patient_id, $clinic_id, $checked_in_by_id ) {
+		global $wpdb;
+
+		$now = current_time( 'mysql' );
+
+		$recent = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT id FROM ' . self::table_name() . ' WHERE appointment_id = 0 AND doctor_id = %d AND patient_id = %d AND clinic_id = %d AND status = %s AND checked_in_at >= %s ORDER BY id DESC LIMIT 1', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
+				(int) $doctor_id,
+				(int) $patient_id,
+				(int) $clinic_id,
+				self::STATUS_OPEN,
+				gmdate( 'Y-m-d H:i:s', strtotime( $now ) - 2 * MINUTE_IN_SECONDS )
+			)
+		);
+
+		if ( $recent > 0 ) {
+			return $recent;
+		}
+
+		$inserted = $wpdb->insert(
+			self::table_name(),
+			array(
+				'appointment_id' => 0,
+				'doctor_id'      => (int) $doctor_id,
+				'patient_id'     => (int) $patient_id,
+				'clinic_id'      => (int) $clinic_id,
+				'status'         => self::STATUS_OPEN,
+				'legacy_note'    => '',
+				'checked_in_at'  => $now,
+				'checked_in_by'  => (int) $checked_in_by_id,
+				'created_at'     => $now,
+				'updated_at'     => $now,
+			),
+			array( '%d', '%d', '%d', '%d', '%s', '%s', '%s', '%d', '%s', '%s' )
+		);
+
+		if ( ! $inserted ) {
+			return new \WP_Error( 'doctor_ak_encounter_not_created', __( 'The encounter could not be created. Please try again.', 'doctor-ak-portal' ) );
+		}
+
+		$encounter_id = (int) $wpdb->insert_id;
+
+		/** This action is documented in check_in(). */
+		do_action( 'doctor_ak_encounter_checked_in', $encounter_id, 0 );
+
+		return $encounter_id;
+	}
+
+	/**
+	 * Whether an encounter is a walk-in visit (no appointment behind it).
+	 *
+	 * @param array $encounter Row from find().
+	 * @return bool
+	 */
+	public static function is_walk_in( array $encounter ) {
+		return (int) $encounter['appointment_id'] <= 0;
+	}
+
+	/**
+	 * The visit's details (patient, doctor, clinic, date, …) in the shape of
+	 * Appointments::notification_data() — from the appointment when there is
+	 * one, otherwise built from the encounter itself (a walk-in, or an
+	 * appointment deleted after the visit).
+	 *
+	 * @param array $encounter Row from find().
+	 * @return array
+	 */
+	public static function visit_data( array $encounter ) {
+		$data = self::is_walk_in( $encounter ) ? array() : Appointments::notification_data( $encounter['appointment_id'] );
+
+		if ( empty( $data ) ) {
+			$data               = Appointments::walk_in_row_data( $encounter );
+			$data['is_walk_in'] = self::is_walk_in( $encounter );
+		}
+
+		return $data;
+	}
+
+	/**
 	 * Closes an encounter and checks the patient out.
 	 *
 	 * @param int $encounter_id   Encounter ID.
@@ -150,21 +246,25 @@ class Encounters {
 		// to be paid before the encounter could open, so this only ever
 		// triggers for a checked-in-free appointment that picked up paid
 		// extras during the visit.)
-		$appointment = Appointments::find( $encounter['appointment_id'] );
+		// A walk-in has no appointment to settle or check out — its charges
+		// reach billing through the 'doctor_ak_encounter_closed' hook below.
+		if ( ! self::is_walk_in( $encounter ) ) {
+			$appointment = Appointments::find( $encounter['appointment_id'] );
 
-		if ( $appointment && Appointments::PAYMENT_STATUS_PAID !== $appointment['payment_status']
-			&& ( (float) $appointment['charge'] > 0 || Encounter_Bill_Items::total_for_encounter( $encounter_id ) > 0 )
-		) {
-			Appointments::mark_paid( $encounter['appointment_id'] );
+			if ( $appointment && Appointments::PAYMENT_STATUS_PAID !== $appointment['payment_status']
+				&& ( (float) $appointment['charge'] > 0 || Encounter_Bill_Items::total_for_encounter( $encounter_id ) > 0 )
+			) {
+				Appointments::mark_paid( $encounter['appointment_id'] );
+			}
+
+			Appointments::checkout( $encounter['appointment_id'] );
 		}
-
-		Appointments::checkout( $encounter['appointment_id'] );
 
 		/**
 		 * Fires after an encounter is closed (patient checked out).
 		 *
 		 * @param int $encounter_id   Closed encounter's ID.
-		 * @param int $appointment_id Its appointment's post ID.
+		 * @param int $appointment_id Its appointment's post ID (0 for a walk-in).
 		 */
 		do_action( 'doctor_ak_encounter_closed', $encounter_id, $encounter['appointment_id'] );
 
@@ -207,7 +307,13 @@ class Encounters {
 
 		$deleted = false !== $wpdb->delete( self::table_name(), array( 'id' => $encounter_id ), array( '%d' ) );
 
-		if ( $deleted && self::STATUS_OPEN === $encounter['status'] ) {
+		// A closed walk-in's charges were posted to billing — take them back
+		// out, since the visit record (and its bill) no longer exists.
+		if ( $deleted && self::STATUS_CLOSED === $encounter['status'] && self::is_walk_in( $encounter ) ) {
+			Revenue_Ledger::reverse_for_encounter( $encounter_id );
+		}
+
+		if ( $deleted && self::STATUS_OPEN === $encounter['status'] && ! self::is_walk_in( $encounter ) ) {
 			$appointment = Appointments::get( $encounter['appointment_id'] );
 
 			if ( $appointment ) {
@@ -245,6 +351,11 @@ class Encounters {
 	 */
 	public static function find_by_appointment( $appointment_id, $status = null ) {
 		global $wpdb;
+
+		// Walk-ins are stored with appointment_id 0 — never match those.
+		if ( (int) $appointment_id <= 0 ) {
+			return null;
+		}
 
 		if ( null !== $status ) {
 			$row = $wpdb->get_row(
@@ -348,7 +459,7 @@ class Encounters {
 		return array_map(
 			function ( $row ) {
 				$encounter                = self::decode_row( $row );
-				$encounter['appointment'] = Appointments::notification_data( $encounter['appointment_id'] );
+				$encounter['appointment'] = self::visit_data( $encounter );
 
 				$problems                     = Encounter_Problems::for_encounter( $encounter['id'] );
 				$encounter['problem_summary'] = ! empty( $problems ) ? implode( ', ', wp_list_pluck( $problems, 'description' ) ) : '';

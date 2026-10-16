@@ -345,6 +345,11 @@ $dak_more_label = $dak_more_active > 0 ? sprintf( __( 'More filters (%d)', 'doct
 						$dak_encounter_place        = ! empty( $dak_appt['clinic_name'] ) ? $dak_appt['clinic_name'] : ( isset( $dak_appt['type_label'] ) ? $dak_appt['type_label'] : '' );
 						$dak_is_open                = \DoctorAKPortal\Includes\Encounters::STATUS_OPEN === $row['status'];
 						$dak_enc_label              = sprintf( 'ENC-%04d', $row['id'] );
+
+						// No pre-booked appointment behind this visit.
+						if ( \DoctorAKPortal\Includes\Encounters::is_walk_in( $row ) ) {
+							$dak_enc_label .= ' · ' . __( 'Walk-in', 'doctor-ak-portal' );
+						}
 						?>
 						<tr id="dak-encounter-<?php echo esc_attr( $row['id'] ); ?>" data-row data-encounter-row="<?php echo esc_attr( $row['id'] ); ?>" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $dak_encounter_patient_name . ' ' . $dak_encounter_doctor_name . ' ' . $dak_enc_label ) ); ?>">
 							<td class="dak-col-primary" data-label="<?php esc_attr_e( 'Patient / encounter', 'doctor-ak-portal' ); ?>">

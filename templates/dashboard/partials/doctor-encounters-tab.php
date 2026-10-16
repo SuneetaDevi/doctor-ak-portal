@@ -121,7 +121,7 @@ $dak_status_labels = array(
 						// The appointment may have been deleted after the visit; the encounter still records who it was for.
 						$dak_encounter_patient_user = empty( $dak_appt['patient_name'] ) && $row['patient_id'] > 0 ? get_userdata( $row['patient_id'] ) : false;
 						$dak_encounter_patient_name = ! empty( $dak_appt['patient_name'] ) ? $dak_appt['patient_name'] : ( $dak_encounter_patient_user ? $dak_encounter_patient_user->display_name : __( 'Unknown patient', 'doctor-ak-portal' ) );
-						$dak_enc_label              = sprintf( 'ENC-%04d', $row['id'] );
+						$dak_enc_label              = sprintf( 'ENC-%04d', $row['id'] ) . ( \DoctorAKPortal\Includes\Encounters::is_walk_in( $row ) ? ' · ' . __( 'Walk-in', 'doctor-ak-portal' ) : '' );
 						$dak_place                  = ! empty( $dak_appt['clinic_name'] ) ? $dak_appt['clinic_name'] : ( isset( $dak_appt['type_label'] ) ? $dak_appt['type_label'] : '' );
 						$dak_checked_in_ts          = strtotime( (string) $row['checked_in_at'] );
 						$dak_is_open                = \DoctorAKPortal\Includes\Encounters::STATUS_OPEN === $row['status'];

@@ -1957,6 +1957,66 @@ class Appointments {
 	}
 
 	/**
+	 * The same shape as notification_data(), for a walk-in visit that has no
+	 * appointment — built from the encounter itself (patient, doctor,
+	 * clinic, check-in time) so every encounter screen, list and PDF can
+	 * treat both kinds of visit alike. 'id' is 0 and 'is_walk_in' is true;
+	 * there is no booked consultation charge (a walk-in's charges are its
+	 * encounter bill items).
+	 *
+	 * @param array $encounter Row from Encounters::find().
+	 * @return array
+	 */
+	public static function walk_in_row_data( array $encounter ) {
+		$checked_in = (string) $encounter['checked_in_at'];
+		$is_closed  = Encounters::STATUS_CLOSED === $encounter['status'];
+
+		$row = self::admin_row_data(
+			array(
+				'id'                  => 0,
+				'doctor_id'           => (int) $encounter['doctor_id'],
+				'patient_id'          => (int) $encounter['patient_id'],
+				'guest_name'          => '',
+				'guest_email'         => '',
+				'guest_phone'         => '',
+				'type'                => self::TYPE_CLINIC,
+				'clinic_id'           => (int) $encounter['clinic_id'],
+				'date'                => substr( $checked_in, 0, 10 ),
+				'time'                => substr( $checked_in, 11, 5 ),
+				'status'              => $is_closed ? self::STATUS_COMPLETED : self::STATUS_CHECKED_IN,
+				// Settled at the clinic when the visit is checked out.
+				'payment_status'      => $is_closed ? self::PAYMENT_STATUS_PAID : self::PAYMENT_STATUS_PENDING,
+				'notes'               => '',
+				'encounter_notes'     => '',
+				'service_id'          => 0,
+				'service_ids'         => array(),
+				'service_name'        => '',
+				'charge'              => 0.0,
+				'base_charge'         => 0.0,
+				'discount_percent'    => 0,
+				'payment_mode'        => self::PAYMENT_MODE_MANUAL,
+				'is_instant'          => false,
+				'surcharge'           => 0.0,
+				'video_room'          => '',
+				'refund_status'       => '',
+				'refund_reason'       => '',
+				'refund_amount'       => 0.0,
+				'refund_requested_at' => '',
+				'refund_processed_at' => '',
+			)
+		);
+
+		$patient = $row['patient_id'] > 0 ? get_userdata( $row['patient_id'] ) : false;
+
+		$row['type_label']      = __( 'Walk-in visit', 'doctor-ak-portal' );
+		$row['online_order_id'] = '';
+		$row['patient_email']   = $patient ? $patient->user_email : '';
+		$row['is_walk_in']      = true;
+
+		return $row;
+	}
+
+	/**
 	 * Upcoming appointments on a given date that haven't had a reminder
 	 * email sent yet, for the daily reminder cron job.
 	 *

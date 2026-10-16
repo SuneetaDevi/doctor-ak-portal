@@ -137,14 +137,12 @@ class Encounter_Handler {
 	}
 
 	/**
-	 * AJAX handler: creates a brand-new "walk-in" encounter with no
-	 * pre-existing appointment — admin/receptionist picks a Clinic, then a
-	 * Doctor practicing there, then a registered Patient (see the
-	 * Encounters list's "Add Encounter" modal). Every encounter still needs
-	 * a real Appointments record underneath it (Prescription/Bill PDFs,
-	 * admin_row_data(), etc. all read from one), so this creates a
-	 * same-moment clinic appointment behind the scenes first, then
-	 * immediately checks it in via the normal check-in path.
+	 * AJAX handler: opens an encounter for a walk-in patient — admin/
+	 * receptionist picks a Clinic, then a Doctor practicing there, then a
+	 * registered Patient (see the Encounters list's "Add Encounter" modal).
+	 * No appointment is created (appointments are only for pre-booked
+	 * visits): the encounter stands on its own, and the charges added to
+	 * its bill reach billing when it closes (Encounters::open_walk_in()).
 	 *
 	 * @return void
 	 */
@@ -192,34 +190,7 @@ class Encounter_Handler {
 			wp_send_json_error( array( 'errors' => array( 'clinic_location_id' => __( 'This doctor does not practice at the chosen clinic.', 'doctor-ak-portal' ) ) ) );
 		}
 
-		// A minute in the future, not "now" — check_in()'s overdue guard
-		// rejects an appointment whose start time has already passed by the
-		// time it actually runs, and "now" would already be in the past by
-		// the time this request reaches that check.
-		$today = current_time( 'Y-m-d' ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- building a local date/time for a new appointment, not doing UTC math.
-		$time  = date_i18n( 'H:i', current_time( 'timestamp' ) + MINUTE_IN_SECONDS ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- building a near-future local time, not doing UTC math.
-
-		$appointment_id = Appointments::create(
-			array(
-				'doctor_id'      => $doctor_id,
-				'patient_id'     => $patient_id,
-				'type'           => Appointments::TYPE_CLINIC,
-				'date'           => $today,
-				'time'           => $time,
-				'notes'          => __( 'Walk-in — added directly from the Encounters list.', 'doctor-ak-portal' ),
-				'clinic_id'      => $clinic_id,
-				'status'         => Appointments::STATUS_CONFIRMED,
-				'payment_status' => Appointments::PAYMENT_STATUS_PAID,
-				'payment_mode'   => Appointments::PAYMENT_MODE_MANUAL,
-				'admin_override' => true,
-			)
-		);
-
-		if ( is_wp_error( $appointment_id ) ) {
-			wp_send_json_error( array( 'message' => $appointment_id->get_error_message() ) );
-		}
-
-		$encounter_id = Encounters::check_in( $appointment_id, $doctor_id, $patient_id, $clinic_id, get_current_user_id() );
+		$encounter_id = Encounters::open_walk_in( $doctor_id, $patient_id, $clinic_id, get_current_user_id() );
 
 		if ( is_wp_error( $encounter_id ) ) {
 			wp_send_json_error( array( 'message' => $encounter_id->get_error_message() ) );
@@ -594,18 +565,9 @@ class Encounter_Handler {
 			wp_die( esc_html__( 'You do not have permission to do this.', 'doctor-ak-portal' ) );
 		}
 
-		$appointment = Appointments::notification_data( $encounter['appointment_id'] );
-
-		if ( empty( $appointment ) ) {
-			// The appointment was deleted after the visit (deleting an
-			// appointment leaves its encounter in place). The prescription
-			// only needs the patient's and doctor's names, which the
-			// encounter still records, so it can still be issued.
-			$appointment = array(
-				'patient_name' => self::user_display_name( $encounter['patient_id'], __( 'Guest', 'doctor-ak-portal' ) ),
-				'doctor_name'  => self::user_display_name( $encounter['doctor_id'], __( 'Unknown Doctor', 'doctor-ak-portal' ) ),
-			);
-		}
+		// The appointment's details, or — for a walk-in, or an appointment
+		// deleted after the visit — the same details from the encounter.
+		$appointment = Encounters::visit_data( $encounter );
 
 		$pdf_bytes = Prescription_Pdf::build(
 			$appointment,
@@ -622,26 +584,6 @@ class Encounter_Handler {
 		echo $pdf_bytes; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw binary PDF bytes, not HTML output.
 
 		exit;
-	}
-
-	/**
-	 * A user's "First Last" name (display name if those are empty), or
-	 * $fallback when the user no longer exists.
-	 *
-	 * @param int    $user_id  User ID.
-	 * @param string $fallback Name to use when there's no such user.
-	 * @return string
-	 */
-	private static function user_display_name( $user_id, $fallback ) {
-		$user = $user_id > 0 ? get_userdata( $user_id ) : false;
-
-		if ( ! $user ) {
-			return $fallback;
-		}
-
-		$full_name = trim( $user->first_name . ' ' . $user->last_name );
-
-		return '' !== $full_name ? $full_name : $user->display_name;
 	}
 
 	/**
@@ -680,11 +622,7 @@ class Encounter_Handler {
 			wp_die( esc_html__( 'You do not have permission to do this.', 'doctor-ak-portal' ) );
 		}
 
-		$appointment = Appointments::notification_data( $encounter['appointment_id'] );
-
-		if ( empty( $appointment ) ) {
-			wp_die( esc_html__( 'That appointment could not be found.', 'doctor-ak-portal' ) );
-		}
+		$appointment = Encounters::visit_data( $encounter );
 
 		$pdf_bytes = Encounter_Bill_Pdf::build(
 			$appointment,
@@ -831,7 +769,7 @@ class Encounter_Handler {
 	 * @return array
 	 */
 	private static function encounter_view_model( array $encounter ) {
-		$appointment = Appointments::notification_data( $encounter['appointment_id'] );
+		$appointment = Encounters::visit_data( $encounter );
 		$clinic      = $encounter['clinic_id'] > 0 ? Clinics::find( $encounter['clinic_id'] ) : null;
 
 		$bill_items = Encounter_Bill_Items::for_encounter( $encounter['id'] );
