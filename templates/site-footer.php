@@ -9,7 +9,7 @@
  * @var string $description   Clinic description paragraph.
  * @var string $phone         Booking phone number.
  * @var string $email         Contact email, see Site_Footer::primary_email() — or '' if none on file.
- * @var string $address       Postal address, see Site_Footer::primary_address() — or '' if none on file.
+ * @var string $address       Postal address, see Site_Footer::primary_address() — or '' if none on file. Not shown (removed from the footer on request).
  * @var string $facebook_url  Facebook page URL, or '' to hide the icon.
  * @var string $twitter_url   X (Twitter) profile URL, or '' to hide the icon.
  * @var string $instagram_url Instagram profile URL, or '' to hide the icon.
@@ -83,13 +83,6 @@ $dak_footer_link_columns = array_chunk( $dak_numbered_quick_links, (int) ceil( c
 		<?php endforeach; ?>
 
 		<div class="dak-site-footer-col dak-site-footer-contact-col">
-			<?php if ( $address ) : ?>
-				<div class="dak-site-footer-contact-group">
-					<h3><?php esc_html_e( 'Address', 'doctor-ak-portal' ); ?></h3>
-					<p><?php echo esc_html( $address ); ?></p>
-				</div>
-			<?php endif; ?>
-
 			<?php if ( $phone || $email ) : ?>
 				<div class="dak-site-footer-contact-group">
 					<h3><?php esc_html_e( 'Contact', 'doctor-ak-portal' ); ?></h3>
