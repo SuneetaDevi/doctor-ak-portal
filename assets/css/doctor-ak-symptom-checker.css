@@ -9,7 +9,6 @@
 .dak-sf {
 	box-sizing: border-box !important;
 	width: 100% !important;
-	max-width: calc( 820px + 48px ) !important;
 	margin: 0 auto !important;
 	padding: 36px 24px 88px !important;
 	color: var( --dak-text ) !important;

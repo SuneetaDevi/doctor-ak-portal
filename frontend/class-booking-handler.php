@@ -293,6 +293,31 @@ class Booking_Handler {
 			wp_send_json_error( array( 'errors' => $errors ) );
 		}
 
+		// Never charge an instant-booking fee the patient wasn't shown: a
+		// slot can cross into the doctor's instant window while the page
+		// sits open. The booking page sends the fee it displayed; if
+		// Appointments::create() would now charge a different one, stop and
+		// let them re-pick with fresh slots. (Older cached pages that don't
+		// send it fall through to the previous behaviour.)
+		if ( isset( $_POST['quoted_surcharge'] ) ) {
+			$quoted_surcharge = (float) sanitize_text_field( wp_unslash( $_POST['quoted_surcharge'] ) );
+			$actual_surcharge = 'video' === $type && Video_Pricing::is_instant_booking( $doctor_id, $date, $time )
+				? Video_Pricing::instant_surcharge_for_doctor( $doctor_id )
+				: 0.0;
+
+			if ( abs( $actual_surcharge - $quoted_surcharge ) > 0.009 ) {
+				wp_send_json_error(
+					array(
+						'code'    => 'price_changed',
+						'message' => $actual_surcharge > 0
+							/* translators: %s: instant booking fee, e.g. "PKR 500". */
+							? sprintf( __( 'This time is now within the short-notice window, so it includes an instant booking fee of %s. Please review the times below and choose again.', 'doctor-ak-portal' ), 'PKR ' . number_format_i18n( $actual_surcharge ) )
+							: __( 'The price for this time has changed. Please review the times below and choose again.', 'doctor-ak-portal' ),
+					)
+				);
+			}
+		}
+
 		$appointment_id = Appointments::create(
 			array(
 				'doctor_id'   => $doctor_id,

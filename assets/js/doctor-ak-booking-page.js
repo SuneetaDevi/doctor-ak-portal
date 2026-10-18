@@ -1537,7 +1537,7 @@
 
 			if ( keep ) {
 				state.time = keep.time;
-				state.slotSurcharge = keep.is_instant ? parseFloat( keep.surcharge ) || 0 : 0;
+				state.slotSurcharge = 'video' === state.type && keep.is_instant ? parseFloat( keep.surcharge ) || 0 : 0;
 			} else {
 				showStepAlert( 'schedule', 'The time you picked earlier (' + timeLabel( state.restoreTime ) + ') is no longer available. Please choose another time.' );
 			}
@@ -1546,6 +1546,8 @@
 		} else if ( state.time && ! bookable.some( function ( s ) { return s.time === state.time; } ) ) {
 			clearTime();
 		}
+
+		renderInstantNotice( bookable );
 
 		if ( ! bookable.length ) {
 			setSlotsStatus( 'empty' );
@@ -1613,6 +1615,42 @@
 		renderProgress();
 	}
 
+	/**
+	 * Explains the "+PKR …" on instant slots up front, so the fee is never
+	 * a surprise: which times carry it, why, and that later times don't.
+	 *
+	 * @param {Array} bookable Available slots from the current response.
+	 */
+	function renderInstantNotice( bookable ) {
+		var notice = document.getElementById( 'dak-bk-instant-notice' );
+
+		if ( ! notice ) {
+			return;
+		}
+
+		var fees = 'video' === state.type
+			? bookable.filter( function ( s ) { return s.is_instant && parseFloat( s.surcharge ) > 0; } )
+			: [];
+
+		if ( ! fees.length ) {
+			notice.textContent = '';
+			hide( notice );
+			return;
+		}
+
+		var fee = money( parseFloat( fees[ 0 ].surcharge ) );
+		var rules = cfg.bookingRules ? cfg.bookingRules[ state.doctorId ] : null;
+		var hours = rules ? parseFloat( rules.instant_lead_hours ) : 0;
+		var within = hours > 0 ? ' (within ' + hours + ' hour' + ( 1 === hours ? '' : 's' ) + ' from now)' : '';
+		var allInstant = fees.length === bookable.length;
+
+		notice.innerHTML = '<strong>Instant booking fee: ' + escapeHtml( fee ) + '.</strong> ' + escapeHtml(
+			'Times marked +' + fee + ' are short-notice bookings' + within + ' and include this fee on top of the consultation price.' +
+			( allInstant ? ' Choose a later date to avoid it.' : ' Later times have no extra fee.' )
+		);
+		show( notice );
+	}
+
 	function selectSlot( time, surcharge ) {
 		// Only accept a time from the CURRENT slot list (never a stale card).
 		var slot = ( state.slots || [] ).filter( function ( s ) { return s.time === time && 'available' === s.status; } )[ 0 ];
@@ -1646,7 +1684,8 @@
 		}
 
 		if ( state.date && state.time ) {
-			text.textContent = dateLong( state.date ) + ' at ' + timeLabel( state.time );
+			text.textContent = dateLong( state.date ) + ' at ' + timeLabel( state.time ) +
+				( 'video' === state.type && state.slotSurcharge > 0 ? ' · includes ' + money( state.slotSurcharge ) + ' instant booking fee' : '' );
 			show( bar );
 		} else {
 			text.textContent = '';
@@ -2220,6 +2259,8 @@
 			}
 		} );
 
+		renderSummaryCharges( c );
+
 		var total = document.getElementById( 'dak-booking-summary-total-amount' );
 		var mini = document.getElementById( 'dak-bk-summary-total-mini' );
 		var note = document.getElementById( 'dak-bk-summary-note' );
@@ -2241,13 +2282,49 @@
 			} else if ( ! c.known ) {
 				note.textContent = 'Final price depends on the clinic you choose.';
 			} else if ( 'video' === state.type && state.time && state.slotSurcharge > 0 ) {
-				note.textContent = 'Includes an instant booking fee of ' + money( state.slotSurcharge ) + '.';
+				note.textContent = 'Instant booking fee applies because this time is at short notice. Choose a later time to avoid it.';
 			} else {
 				note.textContent = '';
 			}
 
 			toggle( note, !! note.textContent );
 		}
+	}
+
+	/**
+	 * Price breakdown above the total — only when there's more than one
+	 * line (an instant fee or a discount), so a plain price stays uncluttered.
+	 *
+	 * @param {Object} c charges() result.
+	 */
+	function renderSummaryCharges( c ) {
+		var list = document.getElementById( 'dak-bk-summary-charges' );
+
+		if ( ! list ) {
+			return;
+		}
+
+		list.innerHTML = '';
+
+		if ( ! c.ready || ! c.known || c.lines.length < 2 ) {
+			hide( list );
+			return;
+		}
+
+		c.lines.forEach( function ( line ) {
+			var li = document.createElement( 'li' );
+			var label = document.createElement( 'span' );
+			var amount = document.createElement( 'span' );
+
+			label.textContent = line.label;
+			amount.textContent = line.discount ? money( line.amount ) : ( line.amount > 0 ? money( line.amount ) : 'Free' );
+			li.className = line.discount ? 'is-discount' : ( 'Instant booking fee' === line.label ? 'is-fee' : '' );
+			li.appendChild( label );
+			li.appendChild( amount );
+			list.appendChild( li );
+		} );
+
+		show( list );
 	}
 
 	function placeholderFor( key ) {
@@ -2661,6 +2738,9 @@
 
 		body.append( 'clinic_id', 'clinic' === state.type ? state.clinicId : '' );
 		body.append( 'payment_choice', choice );
+		// The instant fee the patient was shown; the server refuses the
+		// booking if it would now charge a different one (see Booking_Handler).
+		body.append( 'quoted_surcharge', 'video' === state.type ? state.slotSurcharge : 0 );
 
 		if ( cfg.isStaff && staffPatientId() ) {
 			body.append( 'patient_id', staffPatientId() );
@@ -2740,6 +2820,14 @@
 		}
 
 		var message = data.message || 'Something went wrong. Please try again.';
+
+		if ( 'price_changed' === data.code ) {
+			clearTime();
+			goToStep( 'schedule', { focus: false } );
+			fetchSlots();
+			showStepAlert( 'schedule', message );
+			return;
+		}
 
 		// The chosen time was taken in the meantime: return to Date & time
 		// with fresh availability rather than leaving a dead time selected.

@@ -249,6 +249,7 @@ $dak_bk_icon_check = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"
 					<div class="dak-bk-slots">
 						<h3 class="dak-bk-subhead" id="dak-bk-slots-title"><?php esc_html_e( 'Available times', 'doctor-ak-portal' ); ?></h3>
 						<div class="dak-bk-slots-status" id="dak-bk-slots-status" role="status" aria-live="polite"></div>
+						<p class="dak-bk-notice is-info dak-bk-instant-notice dak-hidden" id="dak-bk-instant-notice"></p>
 						<div id="dak-booking-slots-groups" aria-labelledby="dak-bk-slots-title"></div>
 					</div>
 					<span class="dak-field-error" data-field="time"></span>
@@ -443,6 +444,7 @@ $dak_bk_icon_check = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"
 						<li data-summary-row="service"><span class="dak-bk-summary-k"><?php esc_html_e( 'Services', 'doctor-ak-portal' ); ?></span><span class="dak-bk-summary-v" data-summary-value></span></li>
 						<li data-summary-row="when"><span class="dak-bk-summary-k"><?php esc_html_e( 'Date & time', 'doctor-ak-portal' ); ?></span><span class="dak-bk-summary-v" data-summary-value></span><button type="button" class="dak-link-button" data-goto-step="schedule"><?php esc_html_e( 'Edit', 'doctor-ak-portal' ); ?><span class="dak-visually-hidden"> <?php esc_html_e( 'date and time', 'doctor-ak-portal' ); ?></span></button></li>
 					</ul>
+					<ul class="dak-bk-summary-charges dak-hidden" id="dak-bk-summary-charges" aria-label="<?php esc_attr_e( 'Charges', 'doctor-ak-portal' ); ?>"></ul>
 					<div class="dak-bk-summary-total">
 						<span><?php esc_html_e( 'Total', 'doctor-ak-portal' ); ?></span>
 						<strong id="dak-booking-summary-total-amount"></strong>

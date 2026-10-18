@@ -1556,6 +1556,46 @@ html[data-theme='dark'] .dak-booking-page .dak-bk-slot.is-selected {
 	color: var( --bk-muted );
 }
 
+/* Price breakdown (shown only with an instant fee or a discount). */
+.dak-booking-page .dak-bk-summary-charges {
+	display: grid;
+	gap: 6px;
+	margin: 0;
+	padding: 12px 16px 0;
+	border-top: 1px solid var( --bk-border );
+	list-style: none;
+	font-size: 14px;
+}
+
+.dak-booking-page .dak-bk-summary-charges li {
+	display: flex;
+	justify-content: space-between;
+	gap: 12px;
+	margin: 0;
+	padding: 0;
+}
+
+.dak-booking-page .dak-bk-summary-charges li span:last-child {
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.dak-booking-page .dak-bk-summary-charges li.is-fee {
+	font-weight: 600;
+}
+
+.dak-booking-page .dak-bk-summary-charges li.is-discount {
+	color: var( --bk-primary );
+}
+
+.dak-booking-page .dak-bk-summary-charges:not(.dak-hidden) + .dak-bk-summary-total {
+	border-top: 0;
+}
+
+.dak-booking-page .dak-bk-instant-notice {
+	margin: 0 0 12px;
+}
+
 /* ==========================================================================
    11. Result
    ========================================================================== */
