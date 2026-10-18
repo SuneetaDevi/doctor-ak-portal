@@ -1,14 +1,24 @@
 /**
  * Doctor AK Portal — "Find a doctor by symptoms" page.
  *
- * Enter symptoms → confirm anything unclear → doctors in related
- * specialties, nearest first → the normal profile / booking pages.
+ * 1. Enter symptoms (confirm anything unclear).
+ * 2. Answer the clinician-approved follow-up questions, one at a time, with
+ *    a chance to review and change answers. Questions only appear when a
+ *    symptom has approved ones.
+ * 3. Doctors in related specialties, nearest first → the normal profile /
+ *    booking pages.
+ *
+ * Safety: approved safety rules are checked after every change. A matching
+ * rule's instructions appear at once, above everything else, and can't be
+ * dismissed while it applies. Emergency rules (and urgent rules set to
+ * interrupt) stop the remaining questions. Nothing here scores, diagnoses
+ * or says that anything has been ruled out.
  *
  * Privacy: everything stays in this page's memory — nothing is sent to the
  * site, written to the URL, cookies or storage, or logged. The location is
- * only requested after "Find doctors", only used to sort by straight-line
+ * only requested on the results step, only used to sort by straight-line
  * distance, and forgotten when the page is left. Booking links carry the
- * doctor and clinic only, never symptoms.
+ * doctor and clinic only, never symptoms or answers.
  */
 ( function () {
 	'use strict';
@@ -22,6 +32,7 @@
 	}
 
 	var m = Match.create( data.mappings || [] );
+	var rules = data.rules || [];
 	var input = root.querySelector( '[data-sf-input]' );
 	var list = root.querySelector( '[data-sf-suggestions]' );
 	var clarify = root.querySelector( '[data-sf-clarify]' );
@@ -30,13 +41,29 @@
 	var errorEl = root.querySelector( '[data-sf-error]' );
 	var results = root.querySelector( '[data-sf-results]' );
 	var live = root.querySelector( '[data-sf-live]' );
+	var alerts = root.querySelector( '[data-sf-alerts]' );
+	var stepSymptoms = root.querySelector( '[data-sf-step="symptoms"]' );
+	var stepQuestions = root.querySelector( '[data-sf-step="questions"]' );
+
+	// Keeps a triggered safety message one tap away while the patient
+	// scrolls through questions or doctors (it never replaces the message).
+	var dock = h( 'div', { class: 'dak-sf-dock', hidden: true } );
+	root.appendChild( dock );
 
 	var selected = [];      // mapping ids, in the order added
 	var questions = [];     // { phrase, candidates } awaiting a choice
 	var unmatched = [];     // phrases with no reliable match
 	var suggestions = [];
 	var active = -1;
-	var searched = false;
+
+	var flow = {
+		step: 'symptoms',   // 'symptoms' | 'questions' | 'results'
+		answers: {},        // 'symptomId:questionId' → answer
+		index: 0,           // position among the visible questions
+		reviewing: false,   // showing the "check your answers" list
+		shownRules: {},     // rule ids already on screen
+		editing: false,     // the patient chose to change answers after a stop
+	};
 
 	var loc = { status: 'idle', origin: null, place: '', mode: 'auto', city: '', area: '', panel: false };
 
@@ -56,6 +83,10 @@
 				el.className = v;
 			} else if ( 'text' === k ) {
 				el.textContent = v;
+			} else if ( 'checked' === k ) {
+				el.checked = !! v;
+			} else if ( 'value' === k ) {
+				el.value = v;
 			} else if ( 'on' === k.slice( 0, 2 ) ) {
 				el.addEventListener( k.slice( 2 ), v );
 			} else {
@@ -94,6 +125,188 @@
 	function showError( text ) {
 		errorEl.textContent = text;
 		errorEl.hidden = ! text;
+	}
+
+	function focusEl( el ) {
+		if ( ! el ) {
+			return;
+		}
+
+		if ( ! el.hasAttribute( 'tabindex' ) && ! /^(A|BUTTON|INPUT|SELECT|TEXTAREA)$/.test( el.tagName ) ) {
+			el.setAttribute( 'tabindex', '-1' );
+		}
+
+		el.focus();
+	}
+
+	/** Splits clinician-written text into paragraphs. */
+	function paragraphs( text, cls ) {
+		return String( text || '' ).split( /\n+/ ).map( function ( line ) {
+			return line.trim();
+		} ).filter( Boolean ).map( function ( line ) {
+			return h( 'p', { class: cls || null, text: line } );
+		} );
+	}
+
+	/* ------------------------------------------------------------------
+	 * Steps
+	 * ---------------------------------------------------------------- */
+
+	function visible() {
+		return m.visibleQuestions( selected, flow.answers );
+	}
+
+	function triggered() {
+		return m.triggeredRules( rules, selected, flow.answers );
+	}
+
+	function stopRule() {
+		return triggered().filter( function ( r ) {
+			return r.interrupt || 'emergency' === r.level;
+		} )[ 0 ] || null;
+	}
+
+	function renderSteps() {
+		var order = [ 'symptoms', 'questions', 'results' ];
+		var current = order.indexOf( flow.step );
+		var noQuestions = ! m.questionsFor( selected ).length;
+
+		Array.prototype.forEach.call( root.querySelectorAll( '[data-sf-step-item]' ), function ( li ) {
+			var i = order.indexOf( li.getAttribute( 'data-sf-step-item' ) );
+
+			li.classList.toggle( 'is-current', i === current );
+			li.classList.toggle( 'is-done', i < current );
+			li.classList.toggle( 'is-skipped', 'questions' === order[ i ] && noQuestions && selected.length > 0 );
+
+			if ( i === current ) {
+				li.setAttribute( 'aria-current', 'step' );
+			} else {
+				li.removeAttribute( 'aria-current' );
+			}
+		} );
+	}
+
+	/**
+	 * @param {string}  step  'symptoms' | 'questions' | 'results'.
+	 * @param {boolean} focus Move focus to the step's heading.
+	 */
+	function goTo( step, focus ) {
+		flow.step = step;
+		stepSymptoms.hidden = 'symptoms' !== step;
+		stepQuestions.hidden = 'questions' !== step;
+		results.hidden = 'results' !== step;
+
+		renderSteps();
+		renderAlerts( false );
+
+		if ( 'questions' === step ) {
+			renderQuestions( focus );
+		} else if ( 'results' === step ) {
+			if ( m.specialtiesFor( selected, flow.answers ).length ) {
+				startLocation();
+			}
+
+			renderResults( 'Results updated.', focus );
+		} else if ( focus ) {
+			input.focus();
+		}
+
+		if ( focus ) {
+			var top = alerts.hidden ? root.querySelector( '.dak-sf-steps' ) : alerts;
+
+			if ( top && top.scrollIntoView ) {
+				top.scrollIntoView( { block: 'start' } );
+			}
+		}
+	}
+
+	/* ------------------------------------------------------------------
+	 * Safety messages
+	 * ---------------------------------------------------------------- */
+
+	/**
+	 * Shows every approved safety rule the current symptoms and answers
+	 * meet. New ones are announced; an interrupting one takes focus.
+	 *
+	 * @param {boolean} takeFocus Whether a newly shown stopping rule may take focus.
+	 * @return {boolean} Whether a stopping rule appeared just now.
+	 */
+	function renderAlerts( takeFocus ) {
+		var now = triggered();
+		var ids = {};
+		var fresh = [];
+
+		now.forEach( function ( rule ) {
+			ids[ rule.id ] = true;
+
+			if ( ! flow.shownRules[ rule.id ] ) {
+				fresh.push( rule );
+			}
+		} );
+
+		flow.shownRules = ids;
+		alerts.textContent = '';
+		alerts.hidden = ! now.length;
+		renderDock( now );
+
+		now.forEach( function ( rule ) {
+			var emergency = 'emergency' === rule.level;
+			var box = h( 'section', {
+				class: 'dak-sf-alert ' + ( emergency ? 'is-emergency' : 'is-urgent' ),
+				'aria-labelledby': 'dak-sf-alert-' + rule.id,
+				'data-rule': String( rule.id ),
+			} );
+
+			box.appendChild( h( 'p', { class: 'dak-sf-alert-tag', text: emergency ? 'Emergency' : 'Urgent' } ) );
+			box.appendChild( h( 'h2', { id: 'dak-sf-alert-' + rule.id, class: 'dak-sf-alert-title', text: rule.title } ) );
+			paragraphs( rule.message ).forEach( function ( p ) {
+				box.appendChild( p );
+			} );
+
+			if ( data.preview ) {
+				box.appendChild( h( 'p', { class: 'dak-sf-alert-meta', text: 'Staff preview: safety rule #' + rule.id + '.' } ) );
+			}
+
+			alerts.appendChild( box );
+		} );
+
+		if ( ! fresh.length ) {
+			return false;
+		}
+
+		var stopping = fresh.filter( function ( r ) {
+			return r.interrupt || 'emergency' === r.level;
+		} )[ 0 ];
+
+		announce( ( 'emergency' === fresh[ 0 ].level ? 'Emergency: ' : 'Important: ' ) + fresh[ 0 ].title + '. ' + fresh[ 0 ].message );
+
+		if ( stopping && takeFocus ) {
+			var heading = document.getElementById( 'dak-sf-alert-' + stopping.id );
+			alerts.scrollIntoView( { block: 'start' } );
+			focusEl( heading );
+		}
+
+		return !! stopping;
+	}
+
+	function renderDock( now ) {
+		dock.textContent = '';
+		dock.hidden = ! now.length;
+		root.classList.toggle( 'has-dock', !! now.length );
+
+		if ( ! now.length ) {
+			return;
+		}
+
+		var first = now[ 0 ];
+		var emergency = 'emergency' === first.level;
+
+		dock.className = 'dak-sf-dock ' + ( emergency ? 'is-emergency' : 'is-urgent' );
+		dock.appendChild( h( 'p', {}, [ h( 'strong', { text: ( emergency ? 'Emergency' : 'Urgent' ) + ': ' } ), first.title ] ) );
+		dock.appendChild( h( 'button', { type: 'button', class: 'dak-sf-dock-btn', text: 'See instructions', onclick: function () {
+			alerts.scrollIntoView( { block: 'start' } );
+			focusEl( document.getElementById( 'dak-sf-alert-' + first.id ) );
+		} } ) );
 	}
 
 	/* ------------------------------------------------------------------
@@ -171,7 +384,8 @@
 
 		showError( '' );
 		renderChips();
-		refreshIfSearched();
+		renderSteps();
+		renderAlerts( false );
 	}
 
 	function removeSymptom( id ) {
@@ -180,7 +394,14 @@
 		} );
 		announce( nameOf( id ) + ' removed' );
 		renderChips();
-		refreshIfSearched();
+		renderSteps();
+		renderAlerts( false );
+	}
+
+	function chipLabel( id ) {
+		var row = m.byId[ id ];
+
+		return nameOf( id ) + ( data.preview && row && row.status && 'active' !== row.status ? ' (' + row.status + ')' : '' );
 	}
 
 	function renderChips() {
@@ -188,9 +409,11 @@
 		chipsWrap.hidden = ! selected.length;
 
 		selected.forEach( function ( id ) {
+			var row = m.byId[ id ];
+
 			chips.appendChild(
 				h( 'li', { class: 'dak-sf-chip' }, [
-					h( 'span', { text: nameOf( id ) } ),
+					h( 'span', { text: chipLabel( id ) } ),
 					h( 'button', {
 						type: 'button',
 						class: 'dak-sf-chip-remove',
@@ -203,7 +426,27 @@
 					} ),
 				] )
 			);
+
+			if ( row && row.description ) {
+				chips.lastChild.setAttribute( 'title', row.description );
+			}
 		} );
+
+		var guidance = selected.map( function ( id ) {
+			return m.byId[ id ] && m.byId[ id ].description ? { name: nameOf( id ), text: m.byId[ id ].description } : null;
+		} ).filter( Boolean );
+
+		var old = chipsWrap.querySelector( '.dak-sf-guidance' );
+
+		if ( old ) {
+			old.remove();
+		}
+
+		if ( guidance.length ) {
+			chipsWrap.appendChild( h( 'div', { class: 'dak-sf-guidance' }, guidance.map( function ( g ) {
+				return h( 'p', {}, [ h( 'strong', { text: g.name + ': ' } ), g.text ] );
+			} ) ) );
+		}
 	}
 
 	/** Reads typed text: exact matches become chips, the rest is asked about. */
@@ -237,7 +480,7 @@
 		renderClarify();
 
 		if ( questions.length || unmatched.length ) {
-			announce( 'Some of what you typed needs checking. See the questions below the box.' );
+			announce( 'Some of what you typed needs checking. See below the box.' );
 		}
 	}
 
@@ -287,7 +530,7 @@
 
 			note.appendChild( h( 'p', { text: 'We couldn’t match ' + unmatched.map( function ( p ) {
 				return '“' + p + '”';
-			} ).join( ', ' ) + ' to a symptom in our list. Try different words, or browse doctors yourself.' } ) );
+			} ).join( ', ' ) + ' to a symptom in our list. Try other words (English or Roman Urdu), or browse doctors yourself.' } ) );
 			note.appendChild( h( 'button', {
 				type: 'button',
 				class: 'dak-sf-link',
@@ -336,6 +579,316 @@
 		input.focus();
 	} );
 
+	root.querySelector( '[data-sf-find]' ).addEventListener( 'click', function () {
+		// Anything still in the box counts too.
+		if ( input.value.trim() ) {
+			readText( input.value );
+		}
+
+		if ( ! selected.length && questions.length ) {
+			showError( 'Please answer “did you mean” above, or choose “None of these”.' );
+			clarify.querySelector( 'button' ).focus();
+			return;
+		}
+
+		if ( ! selected.length && ! unmatched.length ) {
+			showError( 'Add at least one symptom first.' );
+			input.focus();
+			return;
+		}
+
+		showError( '' );
+		flow.index = 0;
+		flow.reviewing = false;
+		flow.editing = false;
+
+		goTo( stopRule() || visible().length ? 'questions' : 'results', true );
+	} );
+
+	/* ------------------------------------------------------------------
+	 * Follow-up questions
+	 * ---------------------------------------------------------------- */
+
+	function answerText( q, a ) {
+		if ( 'number' === q.type ) {
+			return Match.isAnswered( q, a ) ? String( a ) + ( q.number && q.number.unit ? ' ' + q.number.unit : '' ) : 'Not answered';
+		}
+
+		var labels = ( q.options || [] ).filter( function ( o ) {
+			return Array.isArray( a ) ? a.indexOf( o.id ) !== -1 : a === o.id;
+		} ).map( function ( o ) {
+			return o.label;
+		} );
+
+		return labels.length ? labels.join( ', ' ) : 'Not answered';
+	}
+
+	function numberRange( q ) {
+		var n = q.number || {};
+		var unit = n.unit ? ' ' + n.unit : '';
+
+		if ( 'number' === typeof n.min && 'number' === typeof n.max ) {
+			return 'Enter a number from ' + n.min + ' to ' + n.max + unit + '.';
+		}
+
+		if ( 'number' === typeof n.min ) {
+			return 'Enter a number of at least ' + n.min + unit + '.';
+		}
+
+		if ( 'number' === typeof n.max ) {
+			return 'Enter a number up to ' + n.max + unit + '.';
+		}
+
+		return 'Enter a number.';
+	}
+
+	/** Records an answer, then re-checks safety rules straight away. */
+	function setAnswer( key, value ) {
+		if ( undefined === value || null === value || '' === value || ( Array.isArray( value ) && ! value.length ) ) {
+			delete flow.answers[ key ];
+		} else {
+			flow.answers[ key ] = value;
+		}
+
+		var stale = stepQuestions.querySelector( '#dak-sf-q-error' );
+
+		if ( stale ) {
+			stale.hidden = true;
+			stale.textContent = '';
+		}
+
+		renderSteps();
+
+		if ( renderAlerts( true ) ) {
+			// A stopping safety rule just appeared: don't ask anything else.
+			flow.editing = false;
+			renderQuestions( false );
+		}
+	}
+
+	function renderQuestions( focus ) {
+		var box = stepQuestions;
+		var items = visible();
+		var stop = stopRule();
+
+		box.textContent = '';
+
+		if ( stop && ! flow.editing ) {
+			renderStopped( box, stop, items, focus );
+			return;
+		}
+
+		if ( ! items.length ) {
+			goTo( 'results', focus );
+			return;
+		}
+
+		if ( flow.reviewing || flow.index >= items.length ) {
+			flow.reviewing = true;
+			renderReview( box, items, focus );
+			return;
+		}
+
+		flow.index = Math.max( 0, Math.min( flow.index, items.length - 1 ) );
+
+		var item = items[ flow.index ];
+		var q = item.question;
+		var key = item.key;
+		var answer = flow.answers[ key ];
+		var errId = 'dak-sf-q-error';
+		var hintId = q.explanation ? 'dak-sf-q-hint' : null;
+
+		box.appendChild( h( 'div', { class: 'dak-sf-q-progress' }, [
+			h( 'p', { class: 'dak-sf-q-count', text: 'Question ' + ( flow.index + 1 ) + ' of ' + items.length } ),
+			h( 'div', { class: 'dak-sf-bar', 'aria-hidden': 'true' }, [
+				h( 'span', { style: 'width:' + Math.round( ( flow.index + 1 ) / items.length * 100 ) + '%' } ),
+			] ),
+		] ) );
+
+		var fieldset = h( 'fieldset', { class: 'dak-sf-fieldset', 'aria-describedby': [ hintId, errId ].filter( Boolean ).join( ' ' ) } );
+		fieldset.appendChild( h( 'legend', { class: 'dak-sf-legend' }, [
+			h( 'span', { class: 'dak-sf-q-about', text: 'About your ' + item.symptomName.toLowerCase() } ),
+			h( 'span', { id: 'dak-sf-q-title', class: 'dak-sf-q-text', tabindex: '-1', text: q.text } ),
+			q.required ? null : h( 'span', { class: 'dak-sf-q-optional', text: ' (optional)' } ),
+		] ) );
+
+		if ( q.explanation ) {
+			fieldset.appendChild( h( 'p', { class: 'dak-sf-hint', id: hintId }, paragraphs( q.explanation ).map( function ( p ) {
+				return p.textContent + ' ';
+			} ) ) );
+		}
+
+		if ( 'number' === q.type ) {
+			var numId = 'dak-sf-num';
+			var num = h( 'input', {
+				type: 'number',
+				id: numId,
+				class: 'dak-sf-input dak-sf-number',
+				inputmode: 'decimal',
+				min: q.number && 'number' === typeof q.number.min ? String( q.number.min ) : null,
+				max: q.number && 'number' === typeof q.number.max ? String( q.number.max ) : null,
+				step: 'any',
+				value: 'number' === typeof answer ? String( answer ) : '',
+			} );
+
+			num.addEventListener( 'change', function () {
+				var v = '' === num.value.trim() ? '' : Number( num.value );
+				setAnswer( key, '' === v || isNaN( v ) ? '' : v );
+			} );
+
+			fieldset.appendChild( h( 'div', { class: 'dak-sf-num-wrap' }, [
+				h( 'label', { class: 'dak-visually-hidden', for: numId, text: q.text } ),
+				num,
+				q.number && q.number.unit ? h( 'span', { class: 'dak-sf-unit', text: q.number.unit } ) : null,
+			] ) );
+			fieldset.appendChild( h( 'p', { class: 'dak-sf-hint', text: numberRange( q ) } ) );
+		} else {
+			var multi = 'multi' === q.type;
+			var grid = h( 'div', { class: 'dak-sf-answers' + ( 'yesno' === q.type ? ' is-yesno' : '' ) } );
+
+			if ( multi ) {
+				fieldset.appendChild( h( 'p', { class: 'dak-sf-hint', text: 'Choose all that apply.' } ) );
+			}
+
+			( q.options || [] ).forEach( function ( o, oi ) {
+				var id = 'dak-sf-ans-' + oi;
+				var on = multi ? Array.isArray( answer ) && answer.indexOf( o.id ) !== -1 : answer === o.id;
+				var control = h( 'input', { type: multi ? 'checkbox' : 'radio', id: id, name: 'dak-sf-answer', value: o.id, checked: on } );
+
+				control.addEventListener( 'change', function () {
+					if ( multi ) {
+						var picked = Array.prototype.filter.call( grid.querySelectorAll( 'input' ), function ( c ) {
+							return c.checked;
+						} ).map( function ( c ) {
+							return c.value;
+						} );
+						setAnswer( key, picked );
+					} else {
+						setAnswer( key, o.id );
+					}
+
+					Array.prototype.forEach.call( grid.querySelectorAll( 'label' ), function ( l ) {
+						l.classList.toggle( 'is-checked', l.querySelector( 'input' ).checked );
+					} );
+				} );
+
+				grid.appendChild( h( 'label', { class: 'dak-sf-answer' + ( on ? ' is-checked' : '' ), for: id }, [
+					control,
+					h( 'span', { class: 'dak-sf-answer-mark', 'aria-hidden': 'true' } ),
+					h( 'span', { class: 'dak-sf-answer-label', text: o.label } ),
+				] ) );
+			} );
+
+			fieldset.appendChild( grid );
+		}
+
+		fieldset.appendChild( h( 'p', { class: 'dak-sf-error', id: errId, role: 'alert', hidden: true } ) );
+		box.appendChild( fieldset );
+
+		var last = flow.index === items.length - 1;
+
+		box.appendChild( h( 'div', { class: 'dak-sf-nav' }, [
+			h( 'button', { type: 'button', class: 'dak-button dak-button-secondary dak-sf-btn', text: 'Back', onclick: function () {
+				if ( flow.index > 0 ) {
+					flow.index -= 1;
+					renderQuestions( true );
+				} else {
+					goTo( 'symptoms', true );
+				}
+			} } ),
+			h( 'button', { type: 'button', class: 'dak-button dak-button-primary dak-sf-btn', text: last ? 'Check your answers' : 'Next', onclick: function () {
+				var a = flow.answers[ key ];
+				var err = box.querySelector( '#' + errId );
+
+				if ( 'number' === q.type && undefined !== a && ! Match.isAnswered( q, a ) ) {
+					err.textContent = numberRange( q );
+					err.hidden = false;
+					focusEl( box.querySelector( 'input' ) );
+					return;
+				}
+
+				if ( q.required && ! Match.isAnswered( q, a ) ) {
+					err.textContent = 'number' === q.type ? numberRange( q ) : 'Please choose an answer.';
+					err.hidden = false;
+					focusEl( box.querySelector( 'input' ) );
+					return;
+				}
+
+				flow.index += 1;
+				renderQuestions( true );
+			} } ),
+		] ) );
+
+		if ( focus ) {
+			focusEl( document.getElementById( 'dak-sf-q-title' ) );
+		}
+	}
+
+	function renderReview( box, items, focus ) {
+		box.appendChild( h( 'h2', { id: 'dak-sf-q-title', tabindex: '-1', text: 'Check your answers' } ) );
+		box.appendChild( h( 'p', { class: 'dak-sf-hint', text: 'You can change any answer before we show doctors.' } ) );
+
+		var dl = h( 'dl', { class: 'dak-sf-review' } );
+
+		items.forEach( function ( item, i ) {
+			dl.appendChild( h( 'div', { class: 'dak-sf-review-row' }, [
+				h( 'dt', {}, [ h( 'span', { class: 'dak-sf-q-about', text: item.symptomName } ), item.question.text ] ),
+				h( 'dd', {}, [
+					h( 'span', { text: answerText( item.question, flow.answers[ item.key ] ) } ),
+					h( 'button', { type: 'button', class: 'dak-sf-link', text: 'Change', 'aria-label': 'Change answer: ' + item.question.text, onclick: function () {
+						flow.reviewing = false;
+						flow.index = i;
+						renderQuestions( true );
+					} } ),
+				] ),
+			] ) );
+		} );
+
+		box.appendChild( dl );
+		box.appendChild( h( 'div', { class: 'dak-sf-nav' }, [
+			h( 'button', { type: 'button', class: 'dak-button dak-button-secondary dak-sf-btn', text: 'Back', onclick: function () {
+				flow.reviewing = false;
+				flow.index = items.length - 1;
+				renderQuestions( true );
+			} } ),
+			h( 'button', { type: 'button', class: 'dak-button dak-button-primary dak-sf-btn', text: 'Show doctors', onclick: function () {
+				goTo( 'results', true );
+			} } ),
+		] ) );
+
+		if ( focus ) {
+			focusEl( document.getElementById( 'dak-sf-q-title' ) );
+		}
+	}
+
+	/** The questions stop when an emergency / interrupting rule applies. */
+	function renderStopped( box, rule, items, focus ) {
+		box.appendChild( h( 'h2', { id: 'dak-sf-q-title', tabindex: '-1', text: 'We’ve stopped the questions' } ) );
+		box.appendChild( h( 'p', { text: 'Because of what you’ve told us, please follow the instructions above first: “' + rule.title + '”.' } ) );
+		box.appendChild( h( 'p', { class: 'dak-sf-hint', text: 'If you chose something by mistake, you can change your answers. You can still see doctors, but don’t let booking an appointment delay getting help.' } ) );
+
+		var answered = items.filter( function ( item ) {
+			return undefined !== flow.answers[ item.key ];
+		} );
+
+		box.appendChild( h( 'div', { class: 'dak-sf-nav' }, [
+			answered.length ? h( 'button', { type: 'button', class: 'dak-button dak-button-secondary dak-sf-btn', text: 'Change my answers', onclick: function () {
+				flow.reviewing = true;
+				flow.editing = true;
+				renderQuestions( true );
+			} } ) : h( 'button', { type: 'button', class: 'dak-button dak-button-secondary dak-sf-btn', text: 'Change my symptoms', onclick: function () {
+				goTo( 'symptoms', true );
+			} } ),
+			h( 'button', { type: 'button', class: 'dak-button dak-button-secondary dak-sf-btn', text: 'Show doctors anyway', onclick: function () {
+				goTo( 'results', true );
+			} } ),
+		] ) );
+
+		if ( focus ) {
+			focusEl( document.getElementById( 'dak-sf-alert-' + rule.id ) || document.getElementById( 'dak-sf-q-title' ) );
+		}
+	}
+
 	/* ------------------------------------------------------------------
 	 * Location
 	 * ---------------------------------------------------------------- */
@@ -366,7 +919,7 @@
 		);
 	}
 
-	/** Asks once, after "Find doctors"; never re-asks after a refusal. */
+	/** Asks once, on the results step; never re-asks after a refusal. */
 	function startLocation() {
 		if ( 'idle' !== loc.status ) {
 			return;
@@ -409,12 +962,6 @@
 	/* ------------------------------------------------------------------
 	 * Results
 	 * ---------------------------------------------------------------- */
-
-	function refreshIfSearched() {
-		if ( searched ) {
-			renderResults();
-		}
-	}
 
 	function formatKm( km ) {
 		return km < 1 ? 'Less than 1 km away' : 'About ' + ( km < 10 ? km.toFixed( 1 ) : Math.round( km ) ) + ' km away';
@@ -507,8 +1054,7 @@
 				var first = listEl.children[ before ] && listEl.children[ before ].querySelector( 'h3' );
 
 				if ( first ) {
-					first.setAttribute( 'tabindex', '-1' );
-					first.focus();
+					focusEl( first );
 				}
 
 				if ( shown >= entries.length ) {
@@ -608,7 +1154,7 @@
 			} ) ) );
 			var areaSel = h( 'select', { id: 'dak-sf-area', class: 'dak-sf-input' } );
 
-			function fillAreas() {
+			var fillAreas = function () {
 				var city = cityOf( citySel.value );
 				areaSel.textContent = '';
 				areaSel.appendChild( h( 'option', { value: '', text: city ? 'Any area' : 'Choose a city first' } ) );
@@ -616,7 +1162,7 @@
 					areaSel.appendChild( h( 'option', { value: a.slug, text: a.label, selected: a.slug === loc.area } ) );
 				} );
 				areaSel.disabled = ! city || ! city.areas.length;
-			}
+			};
 
 			citySel.addEventListener( 'change', fillAreas );
 			fillAreas();
@@ -648,13 +1194,52 @@
 		return panel;
 	}
 
+	/** "You told us" summary with ways back to change things. */
+	function summary() {
+		var answered = visible().filter( function ( item ) {
+			return Match.isAnswered( item.question, flow.answers[ item.key ] );
+		} );
+		var box = h( 'div', { class: 'dak-sf-summary' } );
+
+		box.appendChild( h( 'p', {}, [
+			h( 'strong', { text: 'Your symptoms: ' } ),
+			selected.length ? selected.map( nameOf ).join( ', ' ) : 'none matched',
+			unmatched.length ? h( 'span', { class: 'dak-sf-hint', text: ' (not matched: ' + unmatched.join( ', ' ) + ')' } ) : null,
+		] ) );
+
+		if ( answered.length ) {
+			var details = h( 'details', { class: 'dak-sf-more' }, [ h( 'summary', { text: 'Your answers (' + answered.length + ')' } ) ] );
+			var dl = h( 'dl', { class: 'dak-sf-review is-compact' } );
+
+			answered.forEach( function ( item ) {
+				dl.appendChild( h( 'div', { class: 'dak-sf-review-row' }, [ h( 'dt', { text: item.question.text } ), h( 'dd', { text: answerText( item.question, flow.answers[ item.key ] ) } ) ] ) );
+			} );
+
+			details.appendChild( dl );
+			box.appendChild( details );
+		}
+
+		box.appendChild( h( 'div', { class: 'dak-sf-summary-actions' }, [
+			h( 'button', { type: 'button', class: 'dak-sf-link', text: 'Change symptoms', onclick: function () {
+				goTo( 'symptoms', true );
+			} } ),
+			m.questionsFor( selected ).length ? h( 'button', { type: 'button', class: 'dak-sf-link', text: 'Change answers', onclick: function () {
+				flow.reviewing = true;
+				flow.editing = true;
+				goTo( 'questions', true );
+			} } ) : null,
+		] ) );
+
+		return box;
+	}
+
 	/**
 	 * @param {string}  message   Announced to screen readers.
 	 * @param {boolean} moveFocus The visitor just acted here — focus the heading
 	 *                            (never for the location arriving on its own).
 	 */
 	function renderResults( message, moveFocus ) {
-		if ( ! searched ) {
+		if ( 'results' !== flow.step ) {
 			return;
 		}
 
@@ -665,8 +1250,9 @@
 		results.hidden = false;
 
 		results.appendChild( h( 'h2', { id: 'dak-sf-results-title', tabindex: '-1', text: 'Doctors for your symptoms' } ) );
+		results.appendChild( summary() );
 
-		var specs = m.specialtiesFor( selected );
+		var specs = m.specialtiesFor( selected, flow.answers );
 
 		if ( ! specs.length ) {
 			results.appendChild( h( 'div', { class: 'dak-sf-empty' }, [
@@ -678,10 +1264,18 @@
 			return;
 		}
 
-		results.appendChild( h( 'p', { class: 'dak-sf-explain', text: 'Doctors in specialties associated with the symptoms you selected. This is not a diagnosis, and it doesn’t mean a particular doctor is right for you — the doctor will advise you at your appointment.' } ) );
+		results.appendChild( h( 'p', { class: 'dak-sf-explain', text: 'Doctors in specialties linked to what you told us. This is not a diagnosis, and it doesn’t mean a particular doctor is right for you — the doctor will advise you at your appointment.' } ) );
 
 		results.appendChild( h( 'ul', { class: 'dak-sf-specs', 'aria-label': 'Related specialties' }, specs.map( function ( s ) {
-			return h( 'li', {}, [ h( 'strong', { text: specialtyLabel( s.slug ) } ), h( 'span', { text: 'linked to ' + s.symptoms.join( ', ' ) } ) ] );
+			var why = s.symptoms.slice();
+
+			if ( s.answers.length ) {
+				why = why.concat( s.answers.map( function ( a ) {
+					return 'your answer “' + a + '”';
+				} ) );
+			}
+
+			return h( 'li', {}, [ h( 'strong', { text: specialtyLabel( s.slug ) } ), h( 'span', { text: 'linked to ' + why.join( ', ' ) } ) ] );
 		} ) ) );
 
 		results.appendChild( locationBar() );
@@ -734,13 +1328,6 @@
 			results.appendChild( group( 'Online video consultations', 'Talk to a doctor by video. They will tell you if you need to be seen in person.', ranked.online, true ) );
 		}
 
-		results.appendChild( h( 'p', { class: 'dak-sf-hint' }, [
-			h( 'button', { type: 'button', class: 'dak-sf-link', text: 'Change symptoms', onclick: function () {
-				input.focus();
-				input.scrollIntoView( { block: 'center' } );
-			} } ),
-		] ) );
-
 		afterRender( message, focusTitle );
 	}
 
@@ -750,41 +1337,18 @@
 		}
 
 		if ( focusTitle ) {
-			var title = document.getElementById( 'dak-sf-results-title' );
-
-			if ( title ) {
-				title.focus();
-			}
+			// A safety message, if any, is read first.
+			var alertTitle = alerts.hidden ? null : alerts.querySelector( '.dak-sf-alert-title' );
+			focusEl( alertTitle || document.getElementById( 'dak-sf-results-title' ) );
 		}
 	}
 
-	root.querySelector( '[data-sf-find]' ).addEventListener( 'click', function () {
-		// Anything still in the box counts too.
-		if ( input.value.trim() ) {
-			readText( input.value );
-		}
+	/* ------------------------------------------------------------------ */
 
-		if ( ! selected.length && ( questions.length ) ) {
-			showError( 'Please answer “did you mean” above, or choose “None of these”.' );
-			clarify.querySelector( 'button' ).focus();
-			return;
-		}
+	// Staff preview opened from one symptom's "Preview" button.
+	if ( data.preview && data.previewSymptom && m.byId[ data.previewSymptom ] ) {
+		addSymptom( data.previewSymptom );
+	}
 
-		if ( ! selected.length && ! unmatched.length ) {
-			showError( 'Add at least one symptom first.' );
-			input.focus();
-			return;
-		}
-
-		showError( '' );
-		searched = true;
-
-		// Only worth asking when there are doctors to sort.
-		if ( m.specialtiesFor( selected ).length ) {
-			startLocation();
-		}
-
-		renderResults( 'Results updated.', true );
-		results.scrollIntoView( { block: 'start' } );
-	} );
+	renderSteps();
 }() );

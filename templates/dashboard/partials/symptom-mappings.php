@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<div class="dak-page-head">
 		<div>
 			<h1><?php esc_html_e( 'Symptom mappings', 'doctor-ak-portal' ); ?></h1>
-			<p><?php esc_html_e( 'Link symptoms, and the words patients use for them, to the specialties that see them. Patients use these on “Find a doctor by symptoms” to discover doctors — nothing here diagnoses or assesses urgency.', 'doctor-ak-portal' ); ?></p>
+			<p><?php esc_html_e( 'Link symptoms, and the words patients use for them, to the specialties that see them, with optional follow-up questions and safety messages written by clinicians. Patients use these on “Find a doctor by symptoms” to find doctors — nothing here diagnoses or scores risk.', 'doctor-ak-portal' ); ?></p>
 		</div>
 		<?php if ( '' !== $page_url ) : ?>
 			<a class="dak-button dak-button-secondary" href="<?php echo esc_url( add_query_arg( 'sc_preview', '1', $page_url ) ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Preview page', 'doctor-ak-portal' ); ?></a>
@@ -39,7 +39,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 	<section class="dak-dashboard-card dak-sm-card" aria-labelledby="dak-sm-notice-title">
 		<h2 id="dak-sm-notice-title"><?php esc_html_e( 'Emergency notice', 'doctor-ak-portal' ); ?></h2>
-		<p class="dak-sm-help"><?php esc_html_e( 'A general notice shown at the top of the page whatever the patient enters. It must be approved by a clinical reviewer. Keep it general — the page does not detect emergencies.', 'doctor-ak-portal' ); ?></p>
+		<p class="dak-sm-help"><?php esc_html_e( 'A general notice shown at the top of the page whatever the patient enters. It must be approved by a clinical reviewer. After an edit, patients keep seeing the approved wording until the new text is approved.', 'doctor-ak-portal' ); ?></p>
 		<div data-sm-notice></div>
 	</section>
 
@@ -48,8 +48,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<h2 id="dak-sm-list-title"><?php esc_html_e( 'Symptoms', 'doctor-ak-portal' ); ?></h2>
 			<div class="dak-sm-toolbar" data-sm-toolbar></div>
 		</div>
-		<p class="dak-sm-help"><?php esc_html_e( 'Draft → Reviewed → Active. Only active mappings are used on the page. Any edit returns a mapping to Draft, and the person who made the latest edit can’t review it.', 'doctor-ak-portal' ); ?></p>
+		<p class="dak-sm-help"><?php esc_html_e( 'Draft → Pending review → Reviewed → Active. Only the approved version of an active symptom is used on the page. Editing a live symptom creates a revision: patients keep seeing the approved version until the revision is approved and activated. Only clinical reviewers can approve and activate.', 'doctor-ak-portal' ); ?></p>
 		<div data-sm-list></div>
+	</section>
+
+	<section class="dak-dashboard-card dak-sm-card" aria-labelledby="dak-sm-rules-title">
+		<h2 id="dak-sm-rules-title"><?php esc_html_e( 'Safety rules', 'doctor-ak-portal' ); ?></h2>
+		<p class="dak-sm-help"><?php esc_html_e( 'Clinician-written instructions shown immediately, above any doctor suggestions, when a patient chooses a symptom or gives a particular answer. Same review workflow as symptoms. A rule can only be activated once the symptoms and questions it uses are live. Rules never score or rule anything out.', 'doctor-ak-portal' ); ?></p>
+		<div data-sm-rules></div>
 	</section>
 
 	<section class="dak-dashboard-card dak-sm-card" aria-labelledby="dak-sm-preview-title">
@@ -61,7 +67,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<?php if ( $is_admin ) : ?>
 		<section class="dak-dashboard-card dak-sm-card" aria-labelledby="dak-sm-reviewers-title">
 			<h2 id="dak-sm-reviewers-title"><?php esc_html_e( 'Clinical reviewers', 'doctor-ak-portal' ); ?></h2>
-			<p class="dak-sm-help"><?php esc_html_e( 'Reviewers can review and activate mappings and approve the emergency notice. They don’t need administrator access — doctors you add here get a “Symptom mappings” tab on their dashboard. Choose only people qualified to review clinical content.', 'doctor-ak-portal' ); ?></p>
+			<p class="dak-sm-help"><?php esc_html_e( 'Reviewers approve, return and activate symptoms, questions and safety rules, and approve the emergency notice. They don’t need administrator access — doctors you add here get a “Symptom mappings” tab on their dashboard. Choose only people qualified to review clinical content.', 'doctor-ak-portal' ); ?></p>
 			<div data-sm-reviewers></div>
 		</section>
 	<?php endif; ?>

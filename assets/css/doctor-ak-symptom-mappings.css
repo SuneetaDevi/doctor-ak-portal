@@ -524,3 +524,353 @@ body.dak-app-page .dak-portal .dak-sm-legacy p {
 		min-height: 44px !important;
 	}
 }
+
+/* ==========================================================================
+   Review workflow, follow-up questions, safety rules, history.
+   ========================================================================== */
+
+body.dak-app-page .dak-portal .dak-sm-alert.is-info {
+	background: var( --dak-tint-info ) !important;
+	color: var( --dak-tint-info-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-slug {
+	display: block !important;
+	margin: 2px 0 0 !important;
+	color: var( --dak-muted ) !important;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-qcard-title .dak-sm-slug {
+	display: inline !important;
+	margin: 0 0 0 8px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-live {
+	display: inline-block !important;
+	margin: 6px 0 0 !important;
+	padding: 2px 8px !important;
+	border-radius: 999px !important;
+	background: var( --dak-tint-success ) !important;
+	color: var( --dak-tint-success-text ) !important;
+	font-size: 12px !important;
+	font-weight: 700 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-live.has-revision {
+	background: var( --dak-tint-amber ) !important;
+	color: var( --dak-tint-amber-text ) !important;
+}
+
+body.dak-app-page .dak-portal td .dak-sm-live,
+body.dak-app-page .dak-portal td .dak-sm-warn {
+	display: block !important;
+	width: fit-content !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-note {
+	margin: 6px 0 0 !important;
+	padding: 8px 12px !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-tint-info ) !important;
+	color: var( --dak-tint-info-text ) !important;
+	font-size: 13px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-live-copy {
+	margin: 8px 0 0 !important;
+	padding: 10px 12px !important;
+	border-left: 3px solid var( --dak-tint-success-text ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+	font-size: 13px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-help-box {
+	margin: 0 0 12px !important;
+	padding: 12px 14px !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+	font-size: 13px !important;
+	line-height: 1.5 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-help-box p {
+	margin: 0 0 8px !important;
+}
+
+/* Safety rules list. */
+body.dak-app-page .dak-portal .dak-sm-rules {
+	display: grid !important;
+	gap: 12px !important;
+	margin: 12px 0 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-rule {
+	padding: 14px 16px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-left: 4px solid var( --dak-tint-danger-text ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-rule.is-urgent {
+	border-left-color: var( --dak-tint-amber-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-rule-head {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 8px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-rule-head h3 {
+	margin: 0 !important;
+	font-size: 15px !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-rule-head .dak-sm-live {
+	margin: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-level {
+	padding: 2px 8px !important;
+	border-radius: 999px !important;
+	background: var( --dak-tint-danger ) !important;
+	color: var( --dak-tint-danger-text ) !important;
+	font-size: 11px !important;
+	font-weight: 800 !important;
+	letter-spacing: 0.04em !important;
+	text-transform: uppercase !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-level.is-urgent {
+	background: var( --dak-tint-amber ) !important;
+	color: var( --dak-tint-amber-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-rule-msg {
+	margin: 8px 0 4px !important;
+	white-space: pre-line !important;
+	color: var( --dak-text ) !important;
+	font-size: 14px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-triggers {
+	margin: 4px 0 8px !important;
+	padding-left: 20px !important;
+	font-size: 13px !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-rule .dak-sm-row-actions {
+	margin-top: 10px !important;
+}
+
+/* Question builder. */
+body.dak-app-page .dak-portal .dak-sm-questions {
+	display: grid !important;
+	gap: 12px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-qcard {
+	min-width: 0 !important;
+	margin: 0 !important;
+	padding: 14px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-qcard-title {
+	padding: 0 6px !important;
+	font-size: 14px !important;
+	font-weight: 800 !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-qcard-tools {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	justify-content: flex-end !important;
+	gap: 6px !important;
+	margin: 0 0 6px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-grid2,
+body.dak-app-page .dak-portal .dak-sm-grid3 {
+	display: grid !important;
+	grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+	gap: 0 12px !important;
+	align-items: end !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-grid3 {
+	grid-template-columns: repeat( 3, minmax( 0, 1fr ) ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-affects {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0 18px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-affects .dak-sm-check {
+	padding-top: 6px !important;
+	min-height: 36px !important;
+	font-weight: 500 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-option {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: flex-start !important;
+	gap: 8px !important;
+	margin: 6px 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-option > .dak-sm-input {
+	flex: 1 1 220px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-option-specs {
+	flex: 1 1 100% !important;
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 8px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-option-specs .dak-sm-help {
+	margin: 8px 0 0 !important;
+	white-space: nowrap !important;
+}
+
+body.dak-app-page .dak-portal select.dak-sm-multi {
+	min-height: 76px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-cond {
+	margin-top: 8px !important;
+}
+
+/* Safety rule conditions. */
+body.dak-app-page .dak-portal .dak-sm-triggers-edit {
+	display: grid !important;
+	gap: 10px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-trigger {
+	display: grid !important;
+	gap: 8px !important;
+	padding: 12px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-trigger > .dak-button {
+	justify-self: start !important;
+}
+
+/* History. */
+body.dak-app-page .dak-portal .dak-sm-history {
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-history li {
+	margin: 0 !important;
+	padding: 10px 0 !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	font-size: 14px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-history p {
+	margin: 0 0 4px !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-history-detail {
+	margin: 8px 0 0 !important;
+	padding: 10px 12px !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+@media ( max-width: 600px ) {
+	body.dak-app-page .dak-portal .dak-sm-grid2,
+	body.dak-app-page .dak-portal .dak-sm-grid3 {
+		grid-template-columns: 1fr !important;
+	}
+}
+
+body.dak-app-page .dak-portal .dak-sm-table td .dak-sm-help {
+	display: block !important;
+	margin: 2px 0 0 !important;
+}
+
+/* Action outcome: a toast at the bottom of the window, seen wherever the button was. */
+body.dak-app-page .dak-portal .dak-sm-flash {
+	position: fixed !important;
+	right: 20px !important;
+	bottom: 20px !important;
+	z-index: 100000 !important;
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 10px !important;
+	max-width: min( 520px, calc( 100vw - 40px ) ) !important;
+	margin: 0 !important;
+	padding: 12px 8px 12px 16px !important;
+	box-shadow: 0 12px 32px rgba( 16, 24, 40, 0.18 ) !important;
+	line-height: 1.45 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-flash[hidden] {
+	display: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-flash-close {
+	flex: 0 0 auto !important;
+	width: 32px !important;
+	height: 32px !important;
+	margin: -4px 0 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 6px !important;
+	background: transparent !important;
+	color: inherit !important;
+	font-size: 20px !important;
+	line-height: 1 !important;
+	cursor: pointer !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-flash-close:hover,
+body.dak-app-page .dak-portal .dak-sm-flash-close:focus-visible {
+	background: rgba( 0, 0, 0, 0.08 ) !important;
+}
+
+/* Why a workflow button can't be used right now. */
+body.dak-app-page .dak-portal .dak-sm-row-actions:has( .dak-sm-blocked ) {
+	flex-wrap: wrap !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm-blocked {
+	order: 99 !important;
+	flex: 1 1 100% !important;
+	text-align: right !important;
+	margin: 2px 0 0 !important;
+	color: var( --dak-tint-amber-text ) !important;
+	font-size: 12px !important;
+	font-weight: 600 !important;
+	line-height: 1.4 !important;
+}
+
+body.dak-app-page .dak-portal .dak-sm .dak-button[disabled] {
+	opacity: 0.5 !important;
+	cursor: not-allowed !important;
+}

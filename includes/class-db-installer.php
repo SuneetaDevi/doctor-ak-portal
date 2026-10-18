@@ -240,6 +240,22 @@ class Db_Installer {
 	const APPOINTMENT_REPORTS_DB_VERSION = '1.0.0';
 
 	/**
+	 * Option storing the installed symptom-audit table schema version.
+	 *
+	 * @var string
+	 */
+	const SYMPTOM_AUDIT_DB_VERSION_OPTION = 'dak_symptom_audit_db_version';
+
+	/**
+	 * Current symptom-audit table schema version. 1.0.0 also upgrades the
+	 * stored symptom mappings to their current format (see
+	 * Symptom_Mappings::migrate()).
+	 *
+	 * @var string
+	 */
+	const SYMPTOM_AUDIT_DB_VERSION = '1.0.0';
+
+	/**
 	 * Option name guarding the one-time legacy-data migration so it never
 	 * runs more than once.
 	 *
@@ -321,6 +337,10 @@ class Db_Installer {
 		self::create_appointment_reports_table();
 		update_option( self::APPOINTMENT_REPORTS_DB_VERSION_OPTION, self::APPOINTMENT_REPORTS_DB_VERSION );
 
+		self::create_symptom_audit_table();
+		Symptom_Mappings::migrate();
+		update_option( self::SYMPTOM_AUDIT_DB_VERSION_OPTION, self::SYMPTOM_AUDIT_DB_VERSION );
+
 		if ( ! get_option( self::MIGRATION_OPTION ) ) {
 			self::migrate_legacy_data();
 			update_option( self::MIGRATION_OPTION, 'yes' );
@@ -364,6 +384,7 @@ class Db_Installer {
 			&& self::REVIEWS_DB_VERSION === get_option( self::REVIEWS_DB_VERSION_OPTION )
 			&& self::SERVICE_REQUESTS_DB_VERSION === get_option( self::SERVICE_REQUESTS_DB_VERSION_OPTION )
 			&& self::APPOINTMENT_REPORTS_DB_VERSION === get_option( self::APPOINTMENT_REPORTS_DB_VERSION_OPTION )
+			&& self::SYMPTOM_AUDIT_DB_VERSION === get_option( self::SYMPTOM_AUDIT_DB_VERSION_OPTION )
 		) {
 			return;
 		}
@@ -540,6 +561,37 @@ class Db_Installer {
 			PRIMARY KEY  (id),
 			KEY author_id (author_id),
 			KEY status (status)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Runs dbDelta() against the symptom-audit table schema — who changed
+	 * which symptom, safety rule or notice, and when (see Symptom_Audit).
+	 * Staff content only; nothing patients enter is stored.
+	 *
+	 * @return void
+	 */
+	private static function create_symptom_audit_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$table_name      = Symptom_Audit::table_name();
+		$charset_collate = $wpdb->get_charset_collate();
+
+		$sql = "CREATE TABLE {$table_name} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			object_type VARCHAR(20) NOT NULL,
+			object_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			action VARCHAR(30) NOT NULL,
+			user_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			summary TEXT NULL,
+			snapshot LONGTEXT NULL,
+			created_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY object (object_type, object_id)
 		) {$charset_collate};";
 
 		dbDelta( $sql );

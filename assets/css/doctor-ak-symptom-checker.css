@@ -569,6 +569,449 @@
 	margin: 14px 0 0 !important;
 }
 
+/* ==========================================================================
+   Steps, safety messages, follow-up questions, summary, limitations.
+   ========================================================================== */
+
+.dak-sf-label-lg {
+	font-size: 1.1rem !important;
+}
+
+/* Progress through the three steps. */
+.dak-sf-steps {
+	margin: 0 0 16px !important;
+}
+
+.dak-sf-steps ol {
+	display: flex !important;
+	gap: 8px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+.dak-sf-steps li {
+	display: flex !important;
+	flex: 1 1 0 !important;
+	align-items: center !important;
+	gap: 8px !important;
+	min-width: 0 !important;
+	margin: 0 !important;
+	padding: 10px 12px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 12px !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.9rem !important;
+	font-weight: 600 !important;
+}
+
+.dak-sf-step-n {
+	display: inline-flex !important;
+	flex: 0 0 26px !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 26px !important;
+	height: 26px !important;
+	border-radius: 50% !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.82rem !important;
+	font-weight: 800 !important;
+}
+
+.dak-sf-steps li.is-current {
+	border-color: var( --dak-primary ) !important;
+	color: var( --dak-text ) !important;
+	box-shadow: 0 0 0 1px var( --dak-primary ) inset !important;
+}
+
+.dak-sf-steps li.is-current .dak-sf-step-n,
+.dak-sf-steps li.is-done .dak-sf-step-n {
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+}
+
+.dak-sf-steps li.is-done {
+	color: var( --dak-text ) !important;
+}
+
+.dak-sf-steps li.is-skipped {
+	border-style: dashed !important;
+	opacity: 0.75 !important;
+}
+
+/* Safety messages: above everything, never styled as reassurance. */
+.dak-sf-alerts {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 12px !important;
+	margin: 0 0 18px !important;
+}
+
+.dak-sf-alert {
+	padding: 18px 20px !important;
+	border: 2px solid var( --dak-tint-danger-text ) !important;
+	border-left-width: 8px !important;
+	border-radius: 14px !important;
+	background: var( --dak-tint-danger ) !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-sf-alert.is-urgent {
+	border-color: var( --dak-tint-amber-text ) !important;
+	background: var( --dak-tint-amber ) !important;
+}
+
+.dak-sf-alert-tag {
+	display: inline-block !important;
+	margin: 0 0 6px !important;
+	padding: 2px 10px !important;
+	border-radius: 999px !important;
+	background: var( --dak-tint-danger-text ) !important;
+	color: #fff !important;
+	font-size: 0.78rem !important;
+	font-weight: 800 !important;
+	letter-spacing: 0.04em !important;
+	text-transform: uppercase !important;
+}
+
+.dak-sf-alert.is-urgent .dak-sf-alert-tag {
+	background: var( --dak-tint-amber-text ) !important;
+}
+
+.dak-sf .dak-sf-alert-title {
+	margin: 0 0 8px !important;
+	font-size: 1.25rem !important;
+	font-weight: 800 !important;
+}
+
+.dak-sf-alert p {
+	font-weight: 600 !important;
+}
+
+.dak-sf-alert p:last-child {
+	margin-bottom: 0 !important;
+}
+
+.dak-sf-alert .dak-sf-alert-meta {
+	font-size: 0.82rem !important;
+	font-weight: 500 !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-sf .dak-sf-alert-title:focus-visible {
+	outline: 2px solid var( --dak-tint-danger-text ) !important;
+	outline-offset: 3px !important;
+}
+
+/* Bottom bar while a safety message applies. */
+.dak-sf-dock {
+	position: fixed !important;
+	right: 12px !important;
+	bottom: 12px !important;
+	left: 12px !important;
+	z-index: 9990 !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 10px !important;
+	max-width: 760px !important;
+	margin: 0 auto !important;
+	padding: 8px 8px 8px 16px !important;
+	border-radius: 12px !important;
+	background: var( --dak-tint-danger-text ) !important;
+	color: #fff !important;
+	box-shadow: 0 10px 30px rgba( 16, 24, 40, 0.25 ) !important;
+}
+
+.dak-sf-dock.is-urgent {
+	background: var( --dak-tint-amber-text ) !important;
+}
+
+.dak-sf-dock[hidden] {
+	display: none !important;
+}
+
+.dak-sf .dak-sf-dock p {
+	margin: 0 !important;
+	overflow: hidden !important;
+	color: #fff !important;
+	font-size: 0.92rem !important;
+	text-overflow: ellipsis !important;
+	white-space: nowrap !important;
+}
+
+.dak-sf-dock-btn {
+	flex: 0 0 auto !important;
+	min-height: 44px !important;
+	padding: 8px 14px !important;
+	border: 0 !important;
+	border-radius: 8px !important;
+	background: #fff !important;
+	color: #1f2937 !important;
+	font: inherit !important;
+	font-weight: 700 !important;
+	cursor: pointer !important;
+}
+
+.dak-sf.has-dock {
+	padding-bottom: 120px !important;
+}
+
+/* Symptom guidance under the chips. */
+.dak-sf-guidance {
+	margin: 12px 0 0 !important;
+	padding: 10px 14px !important;
+	border-radius: 10px !important;
+	background: var( --dak-bg-subtle ) !important;
+	font-size: 0.92rem !important;
+}
+
+.dak-sf-guidance p:last-child {
+	margin-bottom: 0 !important;
+}
+
+/* Follow-up questions. */
+.dak-sf-q-progress {
+	margin: 0 0 16px !important;
+}
+
+.dak-sf .dak-sf-q-count {
+	margin: 0 0 6px !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.88rem !important;
+	font-weight: 700 !important;
+}
+
+.dak-sf-bar {
+	height: 6px !important;
+	overflow: hidden !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-sf-bar span {
+	display: block !important;
+	height: 100% !important;
+	border-radius: inherit !important;
+	background: var( --dak-primary ) !important;
+}
+
+.dak-sf-fieldset {
+	min-width: 0 !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+}
+
+.dak-sf-legend {
+	display: block !important;
+	width: 100% !important;
+	margin: 0 0 10px !important;
+	padding: 0 !important;
+}
+
+.dak-sf-q-about {
+	display: block !important;
+	margin: 0 0 4px !important;
+	color: var( --dak-primary ) !important;
+	font-size: 0.8rem !important;
+	font-weight: 700 !important;
+	letter-spacing: 0.03em !important;
+	text-transform: uppercase !important;
+}
+
+.dak-sf-q-text {
+	font-size: 1.3rem !important;
+	font-weight: 800 !important;
+	line-height: 1.3 !important;
+}
+
+.dak-sf-q-optional {
+	color: var( --dak-muted ) !important;
+	font-size: 0.95rem !important;
+	font-weight: 600 !important;
+}
+
+.dak-sf-answers {
+	display: grid !important;
+	grid-template-columns: repeat( auto-fill, minmax( 220px, 1fr ) ) !important;
+	gap: 10px !important;
+	margin: 14px 0 0 !important;
+}
+
+.dak-sf-answers.is-yesno {
+	grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+}
+
+.dak-sf-answer {
+	position: relative !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: 12px !important;
+	min-height: 56px !important;
+	margin: 0 !important;
+	padding: 12px 16px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 12px !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+}
+
+.dak-sf-answer:hover {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-sf-answer input {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	margin: 0 !important;
+	opacity: 0 !important;
+}
+
+.dak-sf-answer-mark {
+	flex: 0 0 22px !important;
+	width: 22px !important;
+	height: 22px !important;
+	border: 2px solid var( --dak-border ) !important;
+	border-radius: 50% !important;
+	background: var( --dak-bg-card ) !important;
+}
+
+.dak-sf-answer input[type='checkbox'] + .dak-sf-answer-mark {
+	border-radius: 6px !important;
+}
+
+.dak-sf-answer.is-checked {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary-tint ) !important;
+	box-shadow: 0 0 0 1px var( --dak-primary ) inset !important;
+}
+
+.dak-sf-answer.is-checked .dak-sf-answer-mark {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary ) !important;
+	box-shadow: inset 0 0 0 4px var( --dak-bg-card ) !important;
+}
+
+.dak-sf-answer input[type='checkbox']:checked + .dak-sf-answer-mark {
+	box-shadow: none !important;
+	background: var( --dak-primary ) url( "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 10.5l3.5 3.5 7.5-8'/%3E%3C/svg%3E" ) center / 14px no-repeat !important;
+}
+
+.dak-sf-answer:has( input:focus-visible ) {
+	outline: 2px solid var( --dak-primary ) !important;
+	outline-offset: 2px !important;
+}
+
+.dak-sf-num-wrap {
+	display: flex !important;
+	align-items: center !important;
+	gap: 10px !important;
+	max-width: 280px !important;
+	margin: 14px 0 6px !important;
+}
+
+.dak-sf-unit {
+	color: var( --dak-muted ) !important;
+	font-weight: 700 !important;
+}
+
+.dak-sf-nav {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	justify-content: space-between !important;
+	gap: 10px !important;
+	margin: 22px 0 0 !important;
+	padding: 16px 0 0 !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+.dak-sf-nav .dak-button {
+	min-width: 140px !important;
+}
+
+/* Check your answers. */
+.dak-sf-review {
+	margin: 12px 0 0 !important;
+	padding: 0 !important;
+}
+
+.dak-sf-review-row {
+	display: grid !important;
+	grid-template-columns: minmax( 0, 3fr ) minmax( 0, 2fr ) !important;
+	gap: 6px 16px !important;
+	margin: 0 !important;
+	padding: 12px 0 !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+.dak-sf-review dt {
+	margin: 0 !important;
+	font-weight: 600 !important;
+}
+
+.dak-sf-review dd {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 4px 10px !important;
+	margin: 0 !important;
+	font-weight: 700 !important;
+}
+
+.dak-sf-review.is-compact .dak-sf-review-row {
+	padding: 6px 0 !important;
+	font-size: 0.92rem !important;
+}
+
+/* Results summary. */
+.dak-sf-summary {
+	margin: 4px 0 16px !important;
+	padding: 12px 16px !important;
+	border-radius: 12px !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-sf .dak-sf-summary p {
+	margin: 0 0 4px !important;
+}
+
+.dak-sf-summary-actions {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 0 16px !important;
+}
+
+/* Limitations, always shown. */
+.dak-sf-limits {
+	margin: 20px 0 0 !important;
+	padding: 18px 22px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 14px !important;
+	background: var( --dak-bg-subtle ) !important;
+	font-size: 0.92rem !important;
+}
+
+.dak-sf .dak-sf-limits h2 {
+	font-size: 1rem !important;
+}
+
+.dak-sf-limits ul {
+	margin: 0 !important;
+	padding: 0 0 0 20px !important;
+}
+
+.dak-sf-limits li {
+	margin: 0 0 6px !important;
+	color: var( --dak-muted ) !important;
+}
+
 /* Floating chat buttons never sit over the form on phones. */
 @media ( max-width: 782px ) {
 	body:has( .dak-sf ) .joinchat,
@@ -612,5 +1055,39 @@
 	.dak-sf-fallback .dak-button {
 		flex: 1 1 100% !important;
 		width: 100% !important;
+	}
+
+
+	.dak-sf-steps li {
+		flex-direction: column !important;
+		gap: 4px !important;
+		padding: 8px 6px !important;
+		font-size: 0.78rem !important;
+		text-align: center !important;
+	}
+
+	.dak-sf-alert {
+		padding: 14px 16px !important;
+	}
+
+	.dak-sf-q-text {
+		font-size: 1.15rem !important;
+	}
+
+	.dak-sf-answers {
+		grid-template-columns: 1fr !important;
+	}
+
+	.dak-sf-nav .dak-button {
+		flex: 1 1 0 !important;
+		min-width: 0 !important;
+	}
+
+	.dak-sf-review-row {
+		grid-template-columns: 1fr !important;
+	}
+
+	.dak-sf-limits {
+		padding: 14px 16px !important;
 	}
 }

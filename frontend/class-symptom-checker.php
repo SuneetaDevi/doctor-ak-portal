@@ -12,6 +12,7 @@ use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Specializations;
 use DoctorAKPortal\Includes\Symptom_Mappings;
+use DoctorAKPortal\Includes\Symptom_Safety_Rules;
 use DoctorAKPortal\Includes\Template_Loader;
 
 // Prevent direct file access.
@@ -22,16 +23,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class Symptom_Checker
  *
- * Patients enter symptoms, confirm what was recognised, and see doctors in
- * the specialties those symptoms are mapped to (Symptom_Mappings), nearest
- * first. It helps people find a doctor — it gives no diagnosis, urgency
- * assessment or treatment advice.
+ * Patients enter symptoms, confirm what was recognised, answer any
+ * clinician-approved follow-up questions, and see doctors in the
+ * specialties those symptoms (and answers) are mapped to, nearest first.
+ * Approved safety rules show their instructions as soon as a matching
+ * answer is given. It helps people find a doctor — it gives no diagnosis,
+ * risk score or treatment advice.
  *
- * Everything the visitor types, and their location, stays in their browser
- * (doctor-ak-symptom-match.js / doctor-ak-symptom-finder.js): no AJAX, no
- * URL parameters, no storage. The page only receives Active mappings, the
+ * Everything the visitor types or answers, and their location, stays in
+ * their browser (doctor-ak-symptom-match.js / doctor-ak-symptom-finder.js):
+ * no AJAX, no URL parameters, no storage. The page only receives the
+ * published (approved) versions of live symptoms and safety rules, the
  * approved emergency notice and the same public doctor/clinic details the
- * Find a Doctor page shows.
+ * Find a Doctor page shows — never drafts, notes or reviewer details.
  *
  * Patients see it only when Symptom_Mappings::is_public(); until then,
  * administrators and clinical reviewers get a labelled preview and everyone
@@ -154,16 +158,39 @@ class Symptom_Checker {
 	 * @return array
 	 */
 	private function script_data() {
-		$live        = 'live' === $this->state();
+		$preview     = 'live' !== $this->state();
 		$specialties = Specializations::get_all();
+		$known       = array_keys( $specialties );
 		$mappings    = array();
 
-		foreach ( $live ? Symptom_Mappings::active() : Symptom_Mappings::all() as $row ) {
-			$mappings[] = array(
-				'id'          => (int) $row['id'],
-				'name'        => $row['name'],
-				'synonyms'    => $row['synonyms'],
-				'specialties' => array_values( array_intersect( $row['specialties'], array_keys( $specialties ) ) ),
+		foreach ( Symptom_Mappings::public_items( $preview ) as $item ) {
+			$item['specialties'] = array_values( array_intersect( $item['specialties'], $known ) );
+
+			foreach ( $item['questions'] as &$question ) {
+				foreach ( $question['options'] as &$option ) {
+					$option['specialties'] = array_values( array_intersect( (array) $option['specialties'], $known ) );
+				}
+				unset( $option );
+			}
+			unset( $question );
+
+			if ( ! $preview ) {
+				unset( $item['status'] );
+			}
+
+			$mappings[] = $item;
+		}
+
+		$rules = array();
+
+		foreach ( Symptom_Safety_Rules::public_items( $preview ) as $rule ) {
+			$rules[] = array(
+				'id'        => (int) $rule['id'],
+				'title'     => $rule['title'],
+				'level'     => $rule['level'],
+				'message'   => $rule['message'],
+				'interrupt' => (bool) $rule['interrupt'],
+				'triggers'  => $rule['triggers'],
 			);
 		}
 
@@ -265,8 +292,19 @@ class Symptom_Checker {
 
 		$directory_url = Page_Finder::url_for_shortcode( 'doctors_directory' );
 
+		// A staff preview can open with one symptom already chosen (from
+		// the admin screen's "Preview" button). Never used for patients.
+		$preview_symptom = 0;
+
+		if ( $preview && isset( $_GET['sc_symptom'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only, staff-only preview.
+			$preview_symptom = absint( wp_unslash( $_GET['sc_symptom'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		}
+
 		return array(
+			'preview'         => $preview,
+			'previewSymptom'  => $preview_symptom,
 			'mappings'        => $mappings,
+			'rules'           => $rules,
 			'specialtyLabels' => $specialties,
 			'doctors'         => $doctors,
 			'locations'       => $locations,
@@ -289,8 +327,10 @@ class Symptom_Checker {
 			'directory/symptom-checker.php',
 			array(
 				'state'          => $state,
-				'notice_text'    => 'approved' === $notice['status'] || 'preview' === $state ? $notice['text'] : '',
-				'notice_pending' => 'approved' !== $notice['status'],
+				// Patients see the approved wording; a staff preview shows the
+				// working copy (labelled while it awaits approval).
+				'notice_text'    => 'preview' === $state ? $notice['text'] : $notice['approved_text'],
+				'notice_pending' => 'preview' === $state && 'approved' !== $notice['status'],
 				'missing'        => Symptom_Mappings::missing_requirements(),
 				'directory_url'  => Page_Finder::url_for_shortcode( 'doctors_directory' ),
 				'manage_url'     => self::is_staff() ? self::manage_url() : '',

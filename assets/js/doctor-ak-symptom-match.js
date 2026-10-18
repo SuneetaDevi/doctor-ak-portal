@@ -11,10 +11,19 @@
  * - Anything less certain — part of a phrase, a typo, extra words — is
  *   never accepted silently: it comes back as "ambiguous" with candidates
  *   for the patient to confirm, or as "unknown".
- * - Specialties come only from the symptoms the patient confirmed.
+ * - Specialties come only from the symptoms the patient confirmed, plus any
+ *   specialties a clinician linked to an answer they gave.
+ *
+ * Follow-up questions and safety rules (also clinician-approved data):
+ * - questionsFor() / visibleQuestions() decide what to ask; a question with
+ *   show_if appears only while its earlier question has one of the listed
+ *   answers.
+ * - triggeredRules() returns the approved safety messages whose conditions
+ *   are met by the answers so far, emergency first. There is no scoring:
+ *   a rule either applies or it doesn't, exactly as the clinician wrote it.
  *
  * It suggests which kinds of doctor see a symptom; it does not diagnose,
- * assess urgency or advise treatment.
+ * score risk or advise treatment.
  */
 ( function ( root, factory ) {
 	if ( 'object' === typeof module && module.exports ) {
@@ -282,32 +291,164 @@
 		}
 
 		/**
-		 * Specialties linked to the confirmed symptoms, most-linked first.
+		 * Every follow-up question of the chosen symptoms, in order.
 		 *
-		 * @return {Array} [{ slug, count, symptoms: [names] }]
+		 * @return {Array} [{ key, symptomId, symptomName, question }]
 		 */
-		function specialtiesFor( ids ) {
+		function questionsFor( ids ) {
+			var out = [];
+
+			( ids || [] ).forEach( function ( id ) {
+				var m = byId[ id ];
+
+				( m && m.questions || [] ).forEach( function ( q ) {
+					out.push( { key: id + ':' + q.id, symptomId: id, symptomName: m.name, question: q } );
+				} );
+			} );
+
+			return out;
+		}
+
+		/**
+		 * The questions to ask given the answers so far: a show_if question
+		 * only while its (visible) parent has one of the listed answers.
+		 *
+		 * @param {Array}  ids     Chosen symptom ids.
+		 * @param {Object} answers key -> answer.
+		 * @return {Array} Same shape as questionsFor().
+		 */
+		function visibleQuestions( ids, answers ) {
+			var shown = {};
+
+			return questionsFor( ids ).filter( function ( item ) {
+				var cond = item.question.show_if;
+				var ok = true;
+
+				if ( cond && cond.question ) {
+					var parentKey = item.symptomId + ':' + cond.question;
+					ok = !! shown[ parentKey ] && chose( ( answers || {} )[ parentKey ], cond.answers || [] );
+				}
+
+				if ( ok ) {
+					shown[ item.key ] = true;
+				}
+
+				return ok;
+			} );
+		}
+
+		/**
+		 * Specialties linked to the confirmed symptoms (and to answers a
+		 * clinician linked to specialties), most-linked first.
+		 *
+		 * @param {Array}  ids     Chosen symptom ids.
+		 * @param {Object} answers key -> answer (optional).
+		 * @return {Array} [{ slug, count, symptoms: [names], answers: ['Symptom: answer'] }]
+		 */
+		function specialtiesFor( ids, answers ) {
 			var map = {};
 			var order = [];
+
+			function add( slug, symptom, via ) {
+				if ( ! map[ slug ] ) {
+					map[ slug ] = { slug: slug, count: 0, symptoms: [], answers: [] };
+					order.push( slug );
+				}
+
+				map[ slug ].count += 1;
+
+				if ( via ) {
+					map[ slug ].answers.push( via );
+				} else if ( map[ slug ].symptoms.indexOf( symptom ) === -1 ) {
+					map[ slug ].symptoms.push( symptom );
+				}
+			}
 
 			( ids || [] ).forEach( function ( id ) {
 				var m = byId[ id ];
 
 				( m && m.specialties || [] ).forEach( function ( slug ) {
-					if ( ! map[ slug ] ) {
-						map[ slug ] = { slug: slug, count: 0, symptoms: [] };
-						order.push( slug );
-					}
-
-					map[ slug ].count += 1;
-					map[ slug ].symptoms.push( m.name );
+					add( slug, m.name );
 				} );
 			} );
+
+			if ( answers ) {
+				visibleQuestions( ids, answers ).forEach( function ( item ) {
+					var q = item.question;
+
+					if ( ! q.affects || ! q.affects.matching ) {
+						return;
+					}
+
+					( q.options || [] ).forEach( function ( o ) {
+						if ( chose( answers[ item.key ], [ o.id ] ) ) {
+							( o.specialties || [] ).forEach( function ( slug ) {
+								add( slug, item.symptomName, item.symptomName + ': ' + o.label );
+							} );
+						}
+					} );
+				} );
+			}
 
 			return order.map( function ( slug ) {
 				return map[ slug ];
 			} ).sort( function ( a, b ) {
 				return b.count - a.count || order.indexOf( a.slug ) - order.indexOf( b.slug );
+			} );
+		}
+
+		/**
+		 * Approved safety rules whose conditions the current selection and
+		 * answers meet - emergency before urgent, then in configured order.
+		 * Only answers to questions still being asked count.
+		 *
+		 * @param {Array}  rules   [{ id, level, triggers: [{ symptom, question, answers, min, max }] }]
+		 * @param {Array}  ids     Chosen symptom ids.
+		 * @param {Object} answers key -> answer.
+		 * @return {Array} Matching rules.
+		 */
+		function triggeredRules( rules, ids, answers ) {
+			var chosen = {};
+			var visible = {};
+
+			( ids || [] ).forEach( function ( id ) {
+				chosen[ id ] = true;
+			} );
+
+			visibleQuestions( ids, answers ).forEach( function ( item ) {
+				visible[ item.key ] = item.question;
+			} );
+
+			return ( rules || [] ).filter( function ( rule ) {
+				return ( rule.triggers || [] ).some( function ( t ) {
+					if ( ! chosen[ t.symptom ] ) {
+						return false;
+					}
+
+					if ( ! t.question ) {
+						return true;
+					}
+
+					var k = t.symptom + ':' + t.question;
+					var q = visible[ k ];
+					var a = ( answers || {} )[ k ];
+
+					if ( ! q || ! isAnswered( q, a ) ) {
+						return false;
+					}
+
+					if ( 'number' === q.type ) {
+						return ( ! isNum( t.min ) || a >= t.min ) && ( ! isNum( t.max ) || a <= t.max );
+					}
+
+					return chose( a, t.answers || [] );
+				} );
+			} ).map( function ( rule, i ) {
+				return { rule: rule, i: i };
+			} ).sort( function ( a, b ) {
+				return ( 'emergency' === b.rule.level ? 1 : 0 ) - ( 'emergency' === a.rule.level ? 1 : 0 ) || a.i - b.i;
+			} ).map( function ( x ) {
+				return x.rule;
 			} );
 		}
 
@@ -317,7 +458,47 @@
 			analyse: analyse,
 			split: split,
 			specialtiesFor: specialtiesFor,
+			questionsFor: questionsFor,
+			visibleQuestions: visibleQuestions,
+			triggeredRules: triggeredRules,
 		};
+	}
+
+	/** Whether an answer (one id, or a list of ids) includes any of `ids`. */
+	function chose( answer, ids ) {
+		var given = Array.isArray( answer ) ? answer : ( undefined === answer || null === answer || '' === answer ? [] : [ answer ] );
+
+		return given.some( function ( a ) {
+			return ids.indexOf( String( a ) ) !== -1;
+		} );
+	}
+
+	/**
+	 * Whether a question has a usable answer: a known option, at least one
+	 * known option (multi), or a number within the allowed range.
+	 */
+	function isAnswered( q, answer ) {
+		if ( ! q ) {
+			return false;
+		}
+
+		if ( 'number' === q.type ) {
+			var n = q.number || {};
+
+			return isNum( answer ) && ( ! isNum( n.min ) || answer >= n.min ) && ( ! isNum( n.max ) || answer <= n.max );
+		}
+
+		var ids = ( q.options || [] ).map( function ( o ) {
+			return o.id;
+		} );
+
+		if ( 'multi' === q.type ) {
+			return Array.isArray( answer ) && answer.length > 0 && answer.every( function ( a ) {
+				return ids.indexOf( a ) !== -1;
+			} );
+		}
+
+		return 'string' === typeof answer && ids.indexOf( answer ) !== -1;
 	}
 
 	/**
@@ -451,6 +632,7 @@
 
 	return {
 		create: create,
+		isAnswered: isAnswered,
 		rankDoctors: rankDoctors,
 		nearbyPlace: nearbyPlace,
 		haversineKm: haversineKm,
