@@ -31,7 +31,7 @@
 	var STATUS = {
 		draft: { label: 'Draft', cls: 'dak-status-pill-is-neutral' },
 		pending: { label: 'Pending review', cls: 'dak-status-pill-is-pending' },
-		reviewed: { label: 'Reviewed', cls: 'dak-status-pill-is-checked-in' },
+		reviewed: { label: 'Approved — not live', cls: 'dak-status-pill-is-checked-in' },
 		active: { label: 'Active', cls: 'dak-status-pill-is-active' },
 		inactive: { label: 'Inactive', cls: 'dak-status-pill-is-disabled' },
 	};
@@ -223,6 +223,39 @@
 		}
 
 		return h( 'span', { class: 'dak-sm-live' + ( item.pending_changes ? ' has-revision' : '' ), text: item.pending_changes ? 'Live v' + item.published_version + ' · revision not live yet' : 'Live v' + item.published_version } );
+	}
+
+	/**
+	 * The status cell: which version patients see, and where the working
+	 * revision is in review — spelled out so a draft is never mistaken for
+	 * what's live.
+	 */
+	function versionCell( item ) {
+		if ( ! item.is_live ) {
+			return [ pill( item.status ), h( 'span', { class: 'dak-sm-help', text: 'Not on the page.' } ) ];
+		}
+
+		if ( ! item.pending_changes ) {
+			return [ liveBadge( item ), h( 'span', { class: 'dak-sm-help', text: 'Patients see this.' } ) ];
+		}
+
+		return [
+			liveBadge( item ),
+			h( 'span', { class: 'dak-sm-version-line' }, [ 'Revision: ', pill( item.status ) ] ),
+			h( 'span', { class: 'dak-sm-help', text: 'Patients see v' + item.published_version + ' until this goes live.' } ),
+		];
+	}
+
+	/** "4 in revision · 1 live" when the working and live versions differ. */
+	function questionCount( item ) {
+		var working = ( item.questions || [] ).length;
+		var live = item.is_live && item.published ? ( item.published.questions || [] ).length : null;
+
+		if ( null === live || live === working ) {
+			return working ? String( working ) : '—';
+		}
+
+		return working + ' in revision · ' + live + ' live';
 	}
 
 	/* ------------------------------------------------------------------
@@ -693,16 +726,14 @@
 					other ? h( 'span', { class: 'dak-sm-help', text: other } ) : null,
 				] ),
 				h( 'td', { 'data-label': 'Specialties' }, [
-					m.specialty_labels.join( ', ' ),
+					m.specialty_labels.length ? m.specialty_labels.join( ', ' ) : h( 'span', { class: 'dak-sm-help', text: 'None approved — patients see “no reviewed guidance yet”' } ),
 					m.invalid_specialties.length ? h( 'span', { class: 'dak-sm-warn', text: 'Unknown specialty: ' + m.invalid_specialties.join( ', ' ) } ) : null,
 				] ),
-				h( 'td', { 'data-label': 'Questions', text: m.questions.length ? String( m.questions.length ) : '—' } ),
-				h( 'td', { 'data-label': 'Status' }, [
-					pill( m.status ),
-					liveBadge( m ),
+				h( 'td', { 'data-label': 'Questions', text: questionCount( m ) } ),
+				h( 'td', { 'data-label': 'Status' }, versionCell( m ).concat( [
 					m.return_reason ? h( 'span', { class: 'dak-sm-warn', text: 'Returned: ' + m.return_reason } ) : null,
 					m.problems.length ? h( 'span', { class: 'dak-sm-warn', text: m.problems.join( ' ' ) } ) : null,
-				] ),
+				] ) ),
 				h( 'td', { class: 'dak-sm-when', 'data-label': 'Updated / reviewed' }, [
 					h( 'span', { text: date( m.updated_at ) + ( m.updated_by_name ? ' · ' + m.updated_by_name : '' ) } ),
 					m.reviewed_by_name ? h( 'span', { text: 'Reviewed ' + date( m.reviewed_at ) + ' · ' + m.reviewed_by_name } ) : null,
@@ -1031,7 +1062,7 @@
 
 		form.appendChild( h( 'div', { class: 'dak-sm-field' }, [
 			h( 'label', { class: 'dak-sm-label', for: 'dak-sm-spec-filter', text: 'Related specialties' } ),
-			h( 'p', { class: 'dak-sm-help', text: 'Which kinds of doctor patients with this symptom are shown. Choose at least one.' } ),
+			h( 'p', { class: 'dak-sm-help', text: 'Which kinds of doctor patients with this symptom are shown, as approved by a clinician. Leave empty if none is approved yet: patients are then told there’s no reviewed guidance for this symptom, and no doctors are suggested for it. Nothing is substituted.' } ),
 			specs,
 			h( 'p', { class: 'dak-sm-error', 'data-error': 'specialties', hidden: true } ),
 		] ) );
@@ -1830,6 +1861,12 @@
 				h( 'dt', { text: 'Would ask “did you mean”' } ), h( 'dd', { text: r.ambiguous.map( function ( a ) {
 					return '“' + a.phrase + '” → ' + a.candidates.map( tag ).join( ' / ' );
 				} ).join( '; ' ) || '—' } ),
+				h( 'dt', { text: 'Would ask “do you have this now?”' } ), h( 'dd', { text: r.confirm.map( function ( a ) {
+					return '“' + a.phrase + '” → ' + a.candidates.map( tag ).join( ' / ' );
+				} ).join( '; ' ) || '—' } ),
+				h( 'dt', { text: 'Not added (denied or gone)' } ), h( 'dd', { text: r.negated.concat( r.resolved ).map( function ( a ) {
+					return '“' + a.phrase + '”';
+				} ).join( ', ' ) || '—' } ),
 				h( 'dt', { text: 'Not matched' } ), h( 'dd', { text: r.unknown.map( function ( p ) {
 					return '“' + p + '”';
 				} ).join( ', ' ) || '—' } ),
@@ -1920,11 +1957,150 @@
 		}
 	}
 
+	/* ------------------------------------------------------------------
+	 * Coverage: questions and emergency entries (read-only)
+	 * ---------------------------------------------------------------- */
+
+	var NOT_SURE = /not\s*sure|don.?t\s*know|unsure|pata\s*nahi|maloom\s*nahi|maalum\s*nahi/i;
+
+	/** Emergency rules shown as soon as this symptom is chosen: { working, live }. */
+	function emergencyEntry( id ) {
+		var hits = function ( content ) {
+			return !! content && 'emergency' === content.level && ( content.triggers || [] ).some( function ( t ) {
+				return Number( t.symptom ) === id && ! t.question;
+			} );
+		};
+		var out = { working: false, live: false };
+
+		( state.rules || [] ).forEach( function ( r ) {
+			out.working = out.working || hits( r );
+			out.live = out.live || ( r.is_live && hits( r.published ) );
+		} );
+
+		return out;
+	}
+
+	/** Optional questions that only describe (no safety, no matching) and lack a "Not sure" answer. */
+	function missingNotSure( questions ) {
+		return ( questions || [] ).filter( function ( q ) {
+			var affects = q.affects || {};
+
+			return ! q.required && ! affects.safety && ! affects.matching && ( 'single' === q.type || 'multi' === q.type ) && ! ( q.options || [] ).some( function ( o ) {
+				return NOT_SURE.test( o.label || '' );
+			} );
+		} ).length;
+	}
+
+	function renderCoverage() {
+		var box = root.querySelector( '[data-sm-coverage]' );
+
+		if ( ! box ) {
+			return;
+		}
+
+		box.textContent = '';
+
+		var items = state.mappings.filter( function ( m ) {
+			return m.is_live || 'inactive' !== m.status;
+		} );
+
+		if ( ! items.length ) {
+			box.appendChild( h( 'p', { class: 'dak-sm-help', text: 'No symptoms yet.' } ) );
+			return;
+		}
+
+		var rows = items.map( function ( m ) {
+			var entry = emergencyEntry( m.id );
+			var live = m.is_live && m.published ? ( m.published.questions || [] ).length : 0;
+
+			return {
+				m: m,
+				emergency: entry.working || entry.live,
+				entry: entry,
+				working: ( m.questions || [] ).length,
+				live: live,
+				notSure: missingNotSure( m.questions ),
+			};
+		} );
+		var routine = rows.filter( function ( r ) {
+			return ! r.emergency;
+		} );
+		var emergency = rows.filter( function ( r ) {
+			return r.emergency;
+		} );
+		var routineNoQuestions = routine.filter( function ( r ) {
+			return ! r.working;
+		} );
+		var unpublished = rows.filter( function ( r ) {
+			return r.working !== r.live || ( r.m.is_live && r.m.pending_changes );
+		} );
+
+		box.appendChild( h( 'p', {}, [
+			h( 'strong', { text: routine.length + ' routine symptom' + ( 1 === routine.length ? '' : 's' ) + ': ' } ),
+			( routine.length - routineNoQuestions.length ) + ' with follow-up questions in their working version, ' + routine.filter( function ( r ) {
+				return r.live;
+			} ).length + ' with questions patients see now.',
+		] ) );
+		box.appendChild( h( 'p', {}, [
+			h( 'strong', { text: emergency.length + ' emergency-entry symptom' + ( 1 === emergency.length ? '' : 's' ) + ': ' } ),
+			emergency.filter( function ( r ) {
+				return r.entry.live;
+			} ).length + ' with a live emergency rule that shows as soon as the symptom is chosen.',
+		] ) );
+
+		if ( routineNoQuestions.length ) {
+			box.appendChild( h( 'p', { class: 'dak-sm-alert', text: 'Routine symptoms with no follow-up questions in their working version: ' + routineNoQuestions.map( function ( r ) {
+				return r.m.name;
+			} ).join( ', ' ) + '.' } ) );
+		}
+
+		if ( unpublished.length ) {
+			box.appendChild( h( 'p', { class: 'dak-sm-help', text: unpublished.length + ' symptom(s) have question changes that patients don’t see yet. They go live only after review and activation.' } ) );
+		}
+
+		var table = h( 'table', { class: 'dak-sm-table' }, [ h( 'thead', {}, [ h( 'tr', {}, [
+			h( 'th', { scope: 'col', text: 'Symptom' } ),
+			h( 'th', { scope: 'col', text: 'Type' } ),
+			h( 'th', { scope: 'col', text: 'Questions: working / live' } ),
+			h( 'th', { scope: 'col', text: 'Version' } ),
+			h( 'th', { scope: 'col', text: 'Check' } ),
+		] ) ] ) ] );
+		var body = h( 'tbody' );
+
+		rows.forEach( function ( r ) {
+			var notes = [];
+
+			if ( r.emergency && ! r.entry.live ) {
+				notes.push( 'Emergency rule not live yet.' );
+			}
+
+			if ( ! r.emergency && ! r.working ) {
+				notes.push( 'No follow-up questions.' );
+			}
+
+			if ( r.notSure ) {
+				notes.push( r.notSure + ' optional descriptive question(s) without a “Not sure” answer.' );
+			}
+
+			body.appendChild( h( 'tr', {}, [
+				h( 'td', { 'data-label': 'Symptom', text: r.m.name } ),
+				h( 'td', { 'data-label': 'Type', text: r.emergency ? 'Emergency entry' : 'Routine' } ),
+				h( 'td', { 'data-label': 'Questions: working / live', text: r.working + ' / ' + ( r.m.is_live ? r.live : 'not live' ) } ),
+				h( 'td', { 'data-label': 'Version' }, versionCell( r.m ) ),
+				h( 'td', { 'data-label': 'Check', text: notes.join( ' ' ) || 'OK' } ),
+			] ) );
+		} );
+
+		table.appendChild( body );
+		box.appendChild( h( 'div', { class: 'dak-sm-table-wrap' }, [ table ] ) );
+	}
+
 	function render() {
 		renderStatus();
 		renderNotice();
 		renderToolbar();
 		renderList();
+		renderCoverage();
 		renderRules();
 		renderPreview();
 		renderReviewers();

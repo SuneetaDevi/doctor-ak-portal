@@ -10,9 +10,16 @@
  *
  * Safety: approved safety rules are checked after every change. A matching
  * rule's instructions appear at once, above everything else, and can't be
- * dismissed while it applies. Emergency rules (and urgent rules set to
- * interrupt) stop the remaining questions. Nothing here scores, diagnoses
- * or says that anything has been ruled out.
+ * dismissed while it applies.
+ * - Emergency rules stop everything: no further questions, doctors or
+ *   booking links while they apply — there is no way past them except
+ *   correcting the symptoms or answers, after which every rule is checked
+ *   again.
+ * - Urgent rules set to interrupt stop the questions; the patient can then
+ *   continue to doctors.
+ * Nothing here scores, diagnoses or says that anything has been ruled out.
+ * Symptoms the patient says they don't have are never added, and are
+ * never taken as a sign that anything is fine.
  *
  * Privacy: everything stays in this page's memory — nothing is sent to the
  * site, written to the URL, cookies or storage, or logged. The location is
@@ -51,8 +58,9 @@
 	root.appendChild( dock );
 
 	var selected = [];      // mapping ids, in the order added
-	var questions = [];     // { phrase, candidates } awaiting a choice
+	var questions = [];     // { phrase, candidates, kind: 'which'|'current', reason } awaiting a choice
 	var unmatched = [];     // phrases with no reliable match
+	var denied = [];        // { phrase, ids, gone } — said they don't have it (never added)
 	var suggestions = [];
 	var active = -1;
 
@@ -63,6 +71,8 @@
 		reviewing: false,   // showing the "check your answers" list
 		shownRules: {},     // rule ids already on screen
 		editing: false,     // the patient chose to change answers after a stop
+		urgentSeen: false,  // the patient read an interrupting urgent message and chose to continue
+		skipped: {},        // question keys the patient chose to skip
 	};
 
 	var loc = { status: 'idle', origin: null, place: '', mode: 'auto', city: '', area: '', panel: false };
@@ -152,18 +162,38 @@
 	 * Steps
 	 * ---------------------------------------------------------------- */
 
-	function visible() {
-		return m.visibleQuestions( selected, flow.answers );
+	/** The questions to ask now — identical questions from several symptoms once. */
+	function asked() {
+		return m.askList( selected, flow.answers );
 	}
 
 	function triggered() {
 		return m.triggeredRules( rules, selected, flow.answers );
 	}
 
-	function stopRule() {
+	/**
+	 * An emergency rule that applies now. While one does, the page shows no
+	 * further questions, doctors or booking links — only the instructions
+	 * and ways to correct what was entered.
+	 */
+	function emergencyNow() {
+		return Match.emergencyRule( triggered() );
+	}
+
+	/** An urgent rule set to interrupt the questions (not an emergency). */
+	function urgentStop() {
 		return triggered().filter( function ( r ) {
-			return r.interrupt || 'emergency' === r.level;
+			return 'emergency' !== r.level && r.interrupt;
 		} )[ 0 ] || null;
+	}
+
+	function stopRule() {
+		return emergencyNow() || urgentStop();
+	}
+
+	/** Drops answers that no longer apply, after any change. */
+	function prune() {
+		flow.answers = m.pruneAnswers( selected, flow.answers );
 	}
 
 	function renderSteps() {
@@ -191,10 +221,22 @@
 	 * @param {boolean} focus Move focus to the step's heading.
 	 */
 	function goTo( step, focus ) {
+		// Doctors and booking links are never shown while an emergency rule
+		// applies — whatever led here (a button, Back, a restored page).
+		if ( 'results' === step && emergencyNow() ) {
+			flow.editing = false;
+			step = 'questions';
+		}
+
 		flow.step = step;
 		stepSymptoms.hidden = 'symptoms' !== step;
 		stepQuestions.hidden = 'questions' !== step;
 		results.hidden = 'results' !== step;
+
+		if ( 'results' !== step ) {
+			// Nothing stale left behind to reappear later.
+			results.textContent = '';
+		}
 
 		renderSteps();
 		renderAlerts( false );
@@ -383,6 +425,7 @@
 		}
 
 		showError( '' );
+		prune();
 		renderChips();
 		renderSteps();
 		renderAlerts( false );
@@ -393,6 +436,7 @@
 			return x !== id;
 		} );
 		announce( nameOf( id ) + ' removed' );
+		prune();
 		renderChips();
 		renderSteps();
 		renderAlerts( false );
@@ -456,16 +500,38 @@
 		}
 
 		var r = m.analyse( text );
+		var notSelected = function ( id ) {
+			return selected.indexOf( id ) === -1;
+		};
 
 		r.recognized.forEach( addSymptom );
 
 		r.ambiguous.forEach( function ( q ) {
-			var left = q.candidates.filter( function ( id ) {
-				return selected.indexOf( id ) === -1;
-			} );
+			var left = q.candidates.filter( notSelected );
 
 			if ( left.length ) {
-				questions.push( { phrase: q.phrase, candidates: left } );
+				questions.push( { phrase: q.phrase, candidates: left, kind: 'which' } );
+			}
+		} );
+
+		// Past or unclear wording ("had a fever last week", "no fever and
+		// cough"): ask before adding anything.
+		r.confirm.forEach( function ( q ) {
+			var left = q.candidates.filter( notSelected );
+
+			if ( left.length ) {
+				questions.push( { phrase: q.phrase, candidates: left, kind: 'current', reason: q.reason } );
+			}
+		} );
+
+		r.negated.concat( r.resolved ).forEach( function ( item ) {
+			var gone = r.resolved.indexOf( item ) !== -1;
+			var known = denied.some( function ( d ) {
+				return d.phrase === item.phrase;
+			} );
+
+			if ( ! known ) {
+				denied.push( { phrase: item.phrase, ids: item.ids, gone: gone } );
 			}
 		} );
 
@@ -479,16 +545,36 @@
 		closeList();
 		renderClarify();
 
-		if ( questions.length || unmatched.length ) {
+		if ( questions.length || unmatched.length || r.negated.length || r.resolved.length ) {
 			announce( 'Some of what you typed needs checking. See below the box.' );
 		}
 	}
 
+	/** Ids the patient said they don't have, that are still in their list. */
+	function deniedButSelected() {
+		var out = [];
+
+		denied.forEach( function ( d ) {
+			d.ids.forEach( function ( id ) {
+				if ( selected.indexOf( id ) !== -1 && out.indexOf( id ) === -1 && 1 === d.ids.length ) {
+					out.push( id );
+				}
+			} );
+		} );
+
+		return out;
+	}
+
 	function renderClarify() {
 		clarify.textContent = '';
-		clarify.hidden = ! questions.length && ! unmatched.length;
+		clarify.hidden = ! questions.length && ! unmatched.length && ! denied.length;
 
 		questions.forEach( function ( q, qi ) {
+			if ( 'current' === q.kind ) {
+				clarify.appendChild( currentBox( q, qi ) );
+				return;
+			}
+
 			var box = h( 'div', { class: 'dak-sf-q', role: 'group', 'aria-label': 'Did you mean, for ' + q.phrase } );
 
 			box.appendChild( h( 'p', {}, [ h( 'strong', { text: '“' + q.phrase + '”' } ), ' — did you mean:' ] ) );
@@ -525,6 +611,10 @@
 			clarify.appendChild( box );
 		} );
 
+		if ( denied.length ) {
+			clarify.appendChild( deniedBox() );
+		}
+
 		if ( unmatched.length ) {
 			var note = h( 'div', { class: 'dak-sf-q is-unknown' } );
 
@@ -543,6 +633,100 @@
 			} ) );
 			clarify.appendChild( note );
 		}
+	}
+
+	/**
+	 * "Do you have this now?" — for past ("had a fever last week") or
+	 * unclear ("no fever and cough") wording. Nothing is added until the
+	 * patient says yes.
+	 */
+	function currentBox( q, qi ) {
+		var one = 1 === q.candidates.length;
+		var prompt = 'past' === q.reason ? ' — do you have this now?' : ' — do you have this?';
+		var box = h( 'div', { class: 'dak-sf-q', role: 'group', 'aria-label': 'Do you have this now, for ' + q.phrase } );
+		var choices = h( 'div', { class: 'dak-sf-q-choices' } );
+
+		box.appendChild( h( 'p', {}, [ h( 'strong', { text: '“' + q.phrase + '”' } ), prompt ] ) );
+
+		q.candidates.forEach( function ( id ) {
+			choices.appendChild( h( 'button', {
+				type: 'button',
+				class: 'dak-sf-choice',
+				text: one ? 'Yes, I have ' + nameOf( id ).toLowerCase() + ' now' : 'Yes: ' + nameOf( id ),
+				onclick: function () {
+					questions.splice( qi, 1 );
+					addSymptom( id );
+					renderClarify();
+					input.focus();
+				},
+			} ) );
+		} );
+
+		choices.appendChild( h( 'button', {
+			type: 'button',
+			class: 'dak-sf-choice is-none',
+			text: one ? 'No, not now' : 'None of these now',
+			onclick: function () {
+				questions.splice( qi, 1 );
+				renderClarify();
+				input.focus();
+			},
+		} ) );
+
+		box.appendChild( choices );
+
+		return box;
+	}
+
+	/**
+	 * What wasn't added because the patient said they don't have it (or it
+	 * has gone). Neutral: it never suggests that anything is fine.
+	 */
+	function deniedBox() {
+		var box = h( 'div', { class: 'dak-sf-q is-unknown' } );
+		var not = denied.filter( function ( d ) {
+			return ! d.gone;
+		} );
+		var gone = denied.filter( function ( d ) {
+			return d.gone;
+		} );
+		var quote = function ( list ) {
+			return list.map( function ( d ) {
+				return '“' + d.phrase + '”';
+			} ).join( ', ' );
+		};
+
+		if ( not.length ) {
+			box.appendChild( h( 'p', { text: 'Not added, because you said you don’t have them: ' + quote( not ) + '.' } ) );
+		}
+
+		if ( gone.length ) {
+			box.appendChild( h( 'p', { text: 'Not added, because you said they have gone: ' + quote( gone ) + '.' } ) );
+		}
+
+		deniedButSelected().forEach( function ( id ) {
+			box.appendChild( h( 'p', {}, [
+				nameOf( id ) + ' is still in your list. ',
+				h( 'button', { type: 'button', class: 'dak-sf-link', text: 'Remove ' + nameOf( id ), onclick: function () {
+					removeSymptom( id );
+					renderClarify();
+					input.focus();
+				} } ),
+			] ) );
+		} );
+
+		box.appendChild( h( 'button', {
+			type: 'button',
+			class: 'dak-sf-link',
+			text: 'Dismiss',
+			onclick: function () {
+				denied = [];
+				renderClarify();
+				input.focus();
+			},
+		} ) );
+
+		return box;
 	}
 
 	input.addEventListener( 'input', renderSuggestions );
@@ -586,13 +770,13 @@
 		}
 
 		if ( ! selected.length && questions.length ) {
-			showError( 'Please answer “did you mean” above, or choose “None of these”.' );
+			showError( 'Please answer the question above first.' );
 			clarify.querySelector( 'button' ).focus();
 			return;
 		}
 
 		if ( ! selected.length && ! unmatched.length ) {
-			showError( 'Add at least one symptom first.' );
+			showError( denied.length ? 'You’ve told us which symptoms you don’t have. Add at least one symptom you have now to find doctors.' : 'Add at least one symptom first.' );
 			input.focus();
 			return;
 		}
@@ -601,8 +785,11 @@
 		flow.index = 0;
 		flow.reviewing = false;
 		flow.editing = false;
+		flow.urgentSeen = false;
+		flow.skipped = {};
+		flow.answers = m.pruneAnswers( selected, flow.answers );
 
-		goTo( stopRule() || visible().length ? 'questions' : 'results', true );
+		goTo( stopRule() || asked().length ? 'questions' : 'results', true );
 	} );
 
 	/* ------------------------------------------------------------------
@@ -642,12 +829,29 @@
 		return 'Enter a number.';
 	}
 
-	/** Records an answer, then re-checks safety rules straight away. */
-	function setAnswer( key, value ) {
-		if ( undefined === value || null === value || '' === value || ( Array.isArray( value ) && ! value.length ) ) {
-			delete flow.answers[ key ];
-		} else {
-			flow.answers[ key ] = value;
+	/**
+	 * Records an answer — for every chosen symptom that asked the same
+	 * question — drops answers that no longer apply, then re-checks the
+	 * safety rules straight away.
+	 *
+	 * @param {Object} item  An asked() entry.
+	 * @param {*}      value The answer, or '' to clear it.
+	 */
+	function setAnswer( item, value ) {
+		var empty = undefined === value || null === value || '' === value || ( Array.isArray( value ) && ! value.length );
+
+		item.members.forEach( function ( member ) {
+			if ( empty ) {
+				delete flow.answers[ member.key ];
+			} else {
+				flow.answers[ member.key ] = Match.mapAnswer( item.question, member.question, value );
+			}
+		} );
+
+		prune();
+
+		if ( ! empty ) {
+			delete flow.skipped[ item.key ];
 		}
 
 		var stale = stepQuestions.querySelector( '#dak-sf-q-error' );
@@ -658,24 +862,80 @@
 		}
 
 		renderSteps();
+		refreshProgress();
 
 		if ( renderAlerts( true ) ) {
 			// A stopping safety rule just appeared: don't ask anything else.
 			flow.editing = false;
+			flow.urgentSeen = false;
 			renderQuestions( false );
 		}
 	}
 
+	function isDone( item ) {
+		return Match.isAnswered( item.question, flow.answers[ item.key ] );
+	}
+
+	/** Position of the first question neither answered nor skipped (or the count). */
+	function firstUnanswered( items ) {
+		for ( var i = 0; i < items.length; i++ ) {
+			if ( undefined === flow.answers[ items[ i ].key ] && ! flow.skipped[ items[ i ].key ] ) {
+				return i;
+			}
+		}
+
+		return items.length;
+	}
+
+	/**
+	 * An answer can show or hide later questions: keep "Question 2 of 4"
+	 * and the Next / Check your answers label true without redrawing (and
+	 * so without moving focus away from the answer just chosen).
+	 */
+	function refreshProgress() {
+		var count = stepQuestions.querySelector( '.dak-sf-q-count' );
+		var next = stepQuestions.querySelector( '[data-sf-next]' );
+
+		if ( ! count || ! next ) {
+			return;
+		}
+
+		var total = asked().length;
+		var n = Math.min( flow.index + 1, total );
+
+		count.textContent = 'Question ' + n + ' of ' + total;
+		stepQuestions.querySelector( '.dak-sf-bar span' ).style.width = Math.round( n / Math.max( total, 1 ) * 100 ) + '%';
+		next.textContent = flow.index >= total - 1 ? 'Check your answers' : 'Next';
+	}
+
 	function renderQuestions( focus ) {
 		var box = stepQuestions;
-		var items = visible();
-		var stop = stopRule();
+		var items = asked();
+		var emergency = emergencyNow();
+		var urgent = emergency ? null : urgentStop();
 
 		box.textContent = '';
 
-		if ( stop && ! flow.editing ) {
-			renderStopped( box, stop, items, focus );
+		if ( emergency && ! flow.editing ) {
+			renderStopped( box, emergency, items, focus );
 			return;
+		}
+
+		if ( urgent && ! flow.editing && ! flow.urgentSeen ) {
+			renderStopped( box, urgent, items, focus );
+			return;
+		}
+
+		// Correcting answers while an emergency applies: only answers already
+		// given can be changed — nothing new is asked.
+		if ( emergency ) {
+			items = items.filter( isDone );
+
+			if ( ! items.length ) {
+				flow.editing = false;
+				renderStopped( box, emergency, items, focus );
+				return;
+			}
 		}
 
 		if ( ! items.length ) {
@@ -685,7 +945,7 @@
 
 		if ( flow.reviewing || flow.index >= items.length ) {
 			flow.reviewing = true;
-			renderReview( box, items, focus );
+			renderReview( box, items, focus, !! emergency );
 			return;
 		}
 
@@ -693,21 +953,22 @@
 
 		var item = items[ flow.index ];
 		var q = item.question;
-		var key = item.key;
-		var answer = flow.answers[ key ];
+		var answer = flow.answers[ item.key ];
 		var errId = 'dak-sf-q-error';
 		var hintId = q.explanation ? 'dak-sf-q-hint' : null;
 
-		box.appendChild( h( 'div', { class: 'dak-sf-q-progress' }, [
-			h( 'p', { class: 'dak-sf-q-count', text: 'Question ' + ( flow.index + 1 ) + ' of ' + items.length } ),
-			h( 'div', { class: 'dak-sf-bar', 'aria-hidden': 'true' }, [
-				h( 'span', { style: 'width:' + Math.round( ( flow.index + 1 ) / items.length * 100 ) + '%' } ),
-			] ),
-		] ) );
+		if ( ! emergency ) {
+			box.appendChild( h( 'div', { class: 'dak-sf-q-progress' }, [
+				h( 'p', { class: 'dak-sf-q-count', text: 'Question ' + ( flow.index + 1 ) + ' of ' + items.length } ),
+				h( 'div', { class: 'dak-sf-bar', 'aria-hidden': 'true' }, [
+					h( 'span', { style: 'width:' + Math.round( ( flow.index + 1 ) / items.length * 100 ) + '%' } ),
+				] ),
+			] ) );
+		}
 
 		var fieldset = h( 'fieldset', { class: 'dak-sf-fieldset', 'aria-describedby': [ hintId, errId ].filter( Boolean ).join( ' ' ) } );
 		fieldset.appendChild( h( 'legend', { class: 'dak-sf-legend' }, [
-			h( 'span', { class: 'dak-sf-q-about', text: 'About your ' + item.symptomName.toLowerCase() } ),
+			h( 'span', { class: 'dak-sf-q-about', text: 'About your ' + item.symptomNames.join( ' and ' ).toLowerCase() } ),
 			h( 'span', { id: 'dak-sf-q-title', class: 'dak-sf-q-text', tabindex: '-1', text: q.text } ),
 			q.required ? null : h( 'span', { class: 'dak-sf-q-optional', text: ' (optional)' } ),
 		] ) );
@@ -733,7 +994,7 @@
 
 			num.addEventListener( 'change', function () {
 				var v = '' === num.value.trim() ? '' : Number( num.value );
-				setAnswer( key, '' === v || isNaN( v ) ? '' : v );
+				setAnswer( item, '' === v || isNaN( v ) ? '' : v );
 			} );
 
 			fieldset.appendChild( h( 'div', { class: 'dak-sf-num-wrap' }, [
@@ -762,9 +1023,9 @@
 						} ).map( function ( c ) {
 							return c.value;
 						} );
-						setAnswer( key, picked );
+						setAnswer( item, picked );
 					} else {
-						setAnswer( key, o.id );
+						setAnswer( item, o.id );
 					}
 
 					Array.prototype.forEach.call( grid.querySelectorAll( 'label' ), function ( l ) {
@@ -785,19 +1046,59 @@
 		fieldset.appendChild( h( 'p', { class: 'dak-sf-error', id: errId, role: 'alert', hidden: true } ) );
 		box.appendChild( fieldset );
 
+		/** After Next or Skip: go on, or back to the list while correcting. */
+		function advance() {
+			if ( emergencyNow() ) {
+				// Still applies: only corrections, never the next question.
+				flow.reviewing = true;
+				renderQuestions( true );
+				return;
+			}
+
+			if ( emergency ) {
+				// This change means the emergency rule no longer applies —
+				// carry on from the question after the one just changed.
+				var all = asked();
+				var at = all.map( function ( x ) {
+					return x.key;
+				} ).indexOf( item.key );
+
+				flow.editing = false;
+				flow.reviewing = false;
+				flow.index = -1 === at ? firstUnanswered( all ) : at + 1;
+				renderQuestions( true );
+				return;
+			}
+
+			flow.index += 1;
+			renderQuestions( true );
+		}
+
 		var last = flow.index === items.length - 1;
 
 		box.appendChild( h( 'div', { class: 'dak-sf-nav' }, [
 			h( 'button', { type: 'button', class: 'dak-button dak-button-secondary dak-sf-btn', text: 'Back', onclick: function () {
-				if ( flow.index > 0 ) {
+				if ( emergency ) {
+					flow.reviewing = true;
+					renderQuestions( true );
+				} else if ( flow.index > 0 ) {
 					flow.index -= 1;
 					renderQuestions( true );
 				} else {
 					goTo( 'symptoms', true );
 				}
 			} } ),
-			h( 'button', { type: 'button', class: 'dak-button dak-button-primary dak-sf-btn', text: last ? 'Check your answers' : 'Next', onclick: function () {
-				var a = flow.answers[ key ];
+			q.required ? null : h( 'button', { type: 'button', class: 'dak-button dak-button-secondary dak-sf-btn', text: 'Skip', 'aria-label': 'Skip this question', onclick: function () {
+				setAnswer( item, '' );
+				flow.skipped[ item.key ] = true;
+
+				// Clearing an answer can itself change which rule applies.
+				if ( flow.step === 'questions' && ( ! emergencyNow() || emergency ) ) {
+					advance();
+				}
+			} } ),
+			h( 'button', { type: 'button', class: 'dak-button dak-button-primary dak-sf-btn', 'data-sf-next': emergency ? null : '', text: emergency ? 'Save answer' : ( last ? 'Check your answers' : 'Next' ), onclick: function () {
+				var a = flow.answers[ item.key ];
 				var err = box.querySelector( '#' + errId );
 
 				if ( 'number' === q.type && undefined !== a && ! Match.isAnswered( q, a ) ) {
@@ -814,8 +1115,7 @@
 					return;
 				}
 
-				flow.index += 1;
-				renderQuestions( true );
+				advance();
 			} } ),
 		] ) );
 
@@ -824,15 +1124,23 @@
 		}
 	}
 
-	function renderReview( box, items, focus ) {
-		box.appendChild( h( 'h2', { id: 'dak-sf-q-title', tabindex: '-1', text: 'Check your answers' } ) );
-		box.appendChild( h( 'p', { class: 'dak-sf-hint', text: 'You can change any answer before we show doctors.' } ) );
+	/**
+	 * The answers so far, each with "Change".
+	 *
+	 * @param {boolean} correcting An emergency rule applies: the patient is
+	 *                             only correcting answers, not continuing.
+	 */
+	function renderReview( box, items, focus, correcting ) {
+		box.appendChild( h( 'h2', { id: 'dak-sf-q-title', tabindex: '-1', text: correcting ? 'Change your answers' : 'Check your answers' } ) );
+		box.appendChild( h( 'p', { class: 'dak-sf-hint', text: correcting
+			? 'Change anything you chose by mistake. When you’ve finished, everything is checked again.'
+			: 'You can change any answer before we show doctors.' } ) );
 
 		var dl = h( 'dl', { class: 'dak-sf-review' } );
 
 		items.forEach( function ( item, i ) {
 			dl.appendChild( h( 'div', { class: 'dak-sf-review-row' }, [
-				h( 'dt', {}, [ h( 'span', { class: 'dak-sf-q-about', text: item.symptomName } ), item.question.text ] ),
+				h( 'dt', {}, [ h( 'span', { class: 'dak-sf-q-about', text: item.symptomNames.join( ', ' ) } ), item.question.text ] ),
 				h( 'dd', {}, [
 					h( 'span', { text: answerText( item.question, flow.answers[ item.key ] ) } ),
 					h( 'button', { type: 'button', class: 'dak-sf-link', text: 'Change', 'aria-label': 'Change answer: ' + item.question.text, onclick: function () {
@@ -845,44 +1153,75 @@
 		} );
 
 		box.appendChild( dl );
-		box.appendChild( h( 'div', { class: 'dak-sf-nav' }, [
-			h( 'button', { type: 'button', class: 'dak-button dak-button-secondary dak-sf-btn', text: 'Back', onclick: function () {
-				flow.reviewing = false;
-				flow.index = items.length - 1;
-				renderQuestions( true );
-			} } ),
-			h( 'button', { type: 'button', class: 'dak-button dak-button-primary dak-sf-btn', text: 'Show doctors', onclick: function () {
-				goTo( 'results', true );
-			} } ),
-		] ) );
+
+		if ( correcting ) {
+			box.appendChild( h( 'div', { class: 'dak-sf-nav' }, [
+				h( 'button', { type: 'button', class: 'dak-button dak-button-secondary dak-sf-btn', text: 'Change my symptoms', onclick: function () {
+					flow.editing = false;
+					goTo( 'symptoms', true );
+				} } ),
+				h( 'button', { type: 'button', class: 'dak-button dak-button-primary dak-sf-btn', text: 'Done', onclick: function () {
+					flow.editing = false;
+					flow.reviewing = false;
+					flow.index = firstUnanswered( asked() );
+					renderQuestions( true );
+				} } ),
+			] ) );
+		} else {
+			box.appendChild( h( 'div', { class: 'dak-sf-nav' }, [
+				h( 'button', { type: 'button', class: 'dak-button dak-button-secondary dak-sf-btn', text: 'Back', onclick: function () {
+					flow.reviewing = false;
+					flow.index = items.length - 1;
+					renderQuestions( true );
+				} } ),
+				h( 'button', { type: 'button', class: 'dak-button dak-button-primary dak-sf-btn', text: 'Show doctors', onclick: function () {
+					goTo( 'results', true );
+				} } ),
+			] ) );
+		}
 
 		if ( focus ) {
 			focusEl( document.getElementById( 'dak-sf-q-title' ) );
 		}
 	}
 
-	/** The questions stop when an emergency / interrupting rule applies. */
+	/**
+	 * Where the questions stop.
+	 *
+	 * - Emergency: no further questions, doctors or booking — only the
+	 *   instructions (above) and ways to correct what was entered.
+	 * - Urgent (set to interrupt): the questions stop; the patient can read
+	 *   the message and then continue to doctors.
+	 */
 	function renderStopped( box, rule, items, focus ) {
-		box.appendChild( h( 'h2', { id: 'dak-sf-q-title', tabindex: '-1', text: 'We’ve stopped the questions' } ) );
-		box.appendChild( h( 'p', { text: 'Because of what you’ve told us, please follow the instructions above first: “' + rule.title + '”.' } ) );
-		box.appendChild( h( 'p', { class: 'dak-sf-hint', text: 'If you chose something by mistake, you can change your answers. You can still see doctors, but don’t let booking an appointment delay getting help.' } ) );
+		var emergency = 'emergency' === rule.level;
+		var answered = items.filter( isDone );
+		var changeAnswers = answered.length ? h( 'button', { type: 'button', class: 'dak-button dak-button-secondary dak-sf-btn', text: 'Change my answers', onclick: function () {
+			flow.editing = true;
+			flow.reviewing = true;
+			renderQuestions( true );
+		} } ) : null;
+		var changeSymptoms = h( 'button', { type: 'button', class: 'dak-button dak-button-secondary dak-sf-btn', text: 'Change my symptoms', onclick: function () {
+			goTo( 'symptoms', true );
+		} } );
 
-		var answered = items.filter( function ( item ) {
-			return undefined !== flow.answers[ item.key ];
-		} );
-
-		box.appendChild( h( 'div', { class: 'dak-sf-nav' }, [
-			answered.length ? h( 'button', { type: 'button', class: 'dak-button dak-button-secondary dak-sf-btn', text: 'Change my answers', onclick: function () {
-				flow.reviewing = true;
-				flow.editing = true;
-				renderQuestions( true );
-			} } ) : h( 'button', { type: 'button', class: 'dak-button dak-button-secondary dak-sf-btn', text: 'Change my symptoms', onclick: function () {
-				goTo( 'symptoms', true );
-			} } ),
-			h( 'button', { type: 'button', class: 'dak-button dak-button-secondary dak-sf-btn', text: 'Show doctors anyway', onclick: function () {
-				goTo( 'results', true );
-			} } ),
-		] ) );
+		if ( emergency ) {
+			box.appendChild( h( 'h2', { id: 'dak-sf-q-title', tabindex: '-1', text: 'We’ve stopped here' } ) );
+			box.appendChild( h( 'p', { text: 'Please follow the emergency instructions above now: “' + rule.title + '”.' } ) );
+			box.appendChild( h( 'p', { class: 'dak-sf-hint', text: 'While this applies, we don’t show doctors or appointments, so that booking doesn’t delay getting help. If you chose a symptom or answer by mistake, change it and everything is checked again.' } ) );
+			box.appendChild( h( 'div', { class: 'dak-sf-nav' }, [ changeAnswers, changeSymptoms ] ) );
+		} else {
+			box.appendChild( h( 'h2', { id: 'dak-sf-q-title', tabindex: '-1', text: 'Please read this first' } ) );
+			box.appendChild( h( 'p', { text: 'Because of what you’ve told us, please follow the instructions above: “' + rule.title + '”.' } ) );
+			box.appendChild( h( 'p', { class: 'dak-sf-hint', text: 'You can change your answers if something was chosen by mistake, or continue to see doctors.' } ) );
+			box.appendChild( h( 'div', { class: 'dak-sf-nav' }, [
+				changeAnswers || changeSymptoms,
+				h( 'button', { type: 'button', class: 'dak-button dak-button-primary dak-sf-btn', text: 'Continue to doctors', onclick: function () {
+					flow.urgentSeen = true;
+					goTo( 'results', true );
+				} } ),
+			] ) );
+		}
 
 		if ( focus ) {
 			focusEl( document.getElementById( 'dak-sf-alert-' + rule.id ) || document.getElementById( 'dak-sf-q-title' ) );
@@ -1067,12 +1406,12 @@
 		return wrap;
 	}
 
+	/**
+	 * Only the neutral directory — never a substitute specialty the
+	 * clinician didn't choose.
+	 */
 	function fallbackLinks() {
 		var p = h( 'p', { class: 'dak-sf-fallback' } );
-
-		if ( safeUrl( data.gpUrl ) ) {
-			p.appendChild( h( 'a', { class: 'dak-button dak-button-secondary dak-sf-btn', href: data.gpUrl, text: 'Browse general physicians' } ) );
-		}
 
 		if ( safeUrl( data.directoryUrl ) ) {
 			p.appendChild( h( 'a', { class: 'dak-button dak-button-secondary dak-sf-btn', href: data.directoryUrl, text: 'Search all doctors' } ) );
@@ -1196,9 +1535,7 @@
 
 	/** "You told us" summary with ways back to change things. */
 	function summary() {
-		var answered = visible().filter( function ( item ) {
-			return Match.isAnswered( item.question, flow.answers[ item.key ] );
-		} );
+		var answered = asked().filter( isDone );
 		var box = h( 'div', { class: 'dak-sf-summary' } );
 
 		box.appendChild( h( 'p', {}, [
@@ -1243,6 +1580,13 @@
 			return;
 		}
 
+		// Never draw doctors while an emergency rule applies (e.g. location
+		// arriving late, or a restored page).
+		if ( emergencyNow() ) {
+			goTo( 'questions', !! moveFocus );
+			return;
+		}
+
 		// Redrawing removes whatever had focus inside the results; put it
 		// back on the heading rather than losing it to the page.
 		var focusTitle = !! moveFocus || ( document.activeElement !== document.body && results.contains( document.activeElement ) );
@@ -1254,14 +1598,37 @@
 
 		var specs = m.specialtiesFor( selected, flow.answers );
 
+		// Symptoms with no clinician-approved specialty: say so plainly
+		// rather than guessing one.
+		var linked = {};
+
+		specs.forEach( function ( s ) {
+			s.symptoms.forEach( function ( name ) {
+				linked[ name ] = true;
+			} );
+			s.answers.forEach( function ( via ) {
+				linked[ via.split( ': ' )[ 0 ] ] = true;
+			} );
+		} );
+
+		var unmapped = selected.map( nameOf ).filter( function ( name ) {
+			return ! linked[ name ];
+		} );
+
 		if ( ! specs.length ) {
-			results.appendChild( h( 'div', { class: 'dak-sf-empty' }, [
-				h( 'p', { text: selected.length ? 'The symptoms you chose aren’t linked to a specialty yet.' : 'We couldn’t reliably match what you entered to symptoms in our list, so we can’t suggest a specialty.' } ),
-				h( 'p', { text: 'A general physician can see most symptoms and refer you to a specialist if needed. You can also search all doctors yourself.' } ),
+			results.appendChild( h( 'div', { class: 'dak-sf-empty', 'data-sf-no-guidance': '' }, [
+				h( 'p', { text: selected.length
+					? 'We don’t have reviewed guidance yet on which kind of doctor to see for: ' + unmapped.join( ', ' ) + '.'
+					: 'We couldn’t reliably match what you entered to symptoms in our list, so we can’t suggest a kind of doctor.' } ),
+				h( 'p', { text: 'You can search all doctors yourself. This page can’t tell whether symptoms are serious — if you’re worried, follow the advice at the top of this page.' } ),
 				fallbackLinks(),
 			] ) );
 			afterRender( message, focusTitle );
 			return;
+		}
+
+		if ( unmapped.length ) {
+			results.appendChild( h( 'p', { class: 'dak-sf-hint dak-sf-unmapped', text: 'We don’t have reviewed guidance yet on which kind of doctor to see for: ' + unmapped.join( ', ' ) + '. The doctors below are for your other symptoms only.' } ) );
 		}
 
 		results.appendChild( h( 'p', { class: 'dak-sf-explain', text: 'Doctors in specialties linked to what you told us. This is not a diagnosis, and it doesn’t mean a particular doctor is right for you — the doctor will advise you at your appointment.' } ) );
@@ -1344,6 +1711,15 @@
 	}
 
 	/* ------------------------------------------------------------------ */
+
+	// A page restored from the browser's back/forward cache keeps its
+	// in-memory state: re-check the rules so an emergency still applying
+	// can't leave doctors on screen.
+	window.addEventListener( 'pageshow', function ( event ) {
+		if ( event.persisted ) {
+			goTo( flow.step, false );
+		}
+	} );
 
 	// Staff preview opened from one symptom's "Preview" button.
 	if ( data.preview && data.previewSymptom && m.byId[ data.previewSymptom ] ) {

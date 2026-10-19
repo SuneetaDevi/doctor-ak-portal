@@ -310,7 +310,6 @@ class Symptom_Checker {
 			'locations'       => $locations,
 			'places'          => $places,
 			'directoryUrl'    => $directory_url,
-			'gpUrl'           => $directory_url && isset( $specialties['general-physician'] ) ? add_query_arg( 'specialization', 'general-physician', $directory_url ) : '',
 		);
 	}
 

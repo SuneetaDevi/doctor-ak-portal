@@ -11,6 +11,11 @@
  * - Anything less certain — part of a phrase, a typo, extra words — is
  *   never accepted silently: it comes back as "ambiguous" with candidates
  *   for the patient to confirm, or as "unknown".
+ * - Each phrase is read for what the patient says about it: denied ("no
+ *   fever", "bukhar nahi hai"), gone ("went away"), past or unclear ("had
+ *   a fever last week", "no fever and cough"). Denied and gone symptoms are
+ *   never added; past or unclear ones are asked about. A denial is never
+ *   treated as evidence that anything is fine.
  * - Specialties come only from the symptoms the patient confirmed, plus any
  *   specialties a clinician linked to an answer they gave.
  *
@@ -44,6 +49,148 @@
 	].join( ' ' ).split( ' ' ).forEach( function ( w ) {
 		FILLERS[ w ] = true;
 	} );
+
+	/*
+	 * What the patient says about each phrase — reported, denied, gone, or
+	 * unclear. Cues are looked for in the patient's own words (before filler
+	 * words are dropped) and only ever apply to the phrase they're in, never
+	 * to the whole message. A denied symptom is simply not added; it is never
+	 * taken as a sign that anything is fine.
+	 */
+	function cueSet( list ) {
+		var set = {};
+		list.split( ' ' ).forEach( function ( w ) {
+			set[ w ] = true;
+		} );
+		return set;
+	}
+
+	// Negation that comes before the symptom ("no fever", "I don't have cough").
+	var NEG_BEFORE = cueSet( 'no not without never none neither nor dont doesnt didnt havent hasnt denies deny' );
+	// Roman Urdu negation that follows it ("bukhar nahi hai").
+	var NEG_AFTER = cueSet( 'nahi nahin nai nhi nahee nahein' );
+	// Words that may follow NEG_AFTER and still belong to that phrase.
+	var NEG_TAIL = cueSet( 'hai hain he tha thi thay ho hota hoti raha rahi rahe hua hui' );
+	// Gone / resolved.
+	var RESOLVED = cueSet( 'longer anymore resolved recovered cured gone theek thik khatam' );
+	var RESOLVED_PAIRS = { 'went away': true, 'any more': true, 'better now': true, 'ab nahi': true, 'ab nahin': true };
+	// Past tense without saying it has stopped — needs asking.
+	var PAST = cueSet( 'had used was were previously earlier ago tha thi thay pehle pichle pichhle' );
+	// Says it is happening now.
+	var PRESENT = cueSet( 'have has having got getting feel feeling still currently now abhi bhi hai hain ho raha rahi rahe hota hoti' );
+	// Roman Urdu copulas end a phrase ("khansi hai, bukhar nahi").
+	var URDU_END = cueSet( 'hai hain tha thi thay' );
+	// Not symptom words, so a cue on its own never becomes a "symptom".
+	var NEUTRAL = cueSet( 'do does did any koi but went away better ab it this that yes' );
+
+	function rawWords( text ) {
+		return String( text || '' )
+			.toLowerCase()
+			.replace( /['’]/g, '' )
+			.replace( /[^\p{L}\p{N}]+/gu, ' ' )
+			.trim()
+			.split( ' ' )
+			.filter( Boolean );
+	}
+
+	function isCue( w ) {
+		return NEG_BEFORE[ w ] || NEG_AFTER[ w ] || RESOLVED[ w ] || PAST[ w ] || PRESENT[ w ] || NEUTRAL[ w ];
+	}
+
+	/**
+	 * Splits one clause into phrases at negation boundaries ("cough no
+	 * fever" → "cough" + "no fever"; "bukhar nahi hai khansi hai" →
+	 * "bukhar nahi hai" + "khansi hai") and labels each.
+	 *
+	 * @return {Array} [{ words: [], polarity: 'present'|'absent'|'resolved'|'past'|'neutral', explicit: bool }]
+	 */
+	function segments( words ) {
+		var out = [];
+		var cur = { words: [], neg: false };
+
+		function content( seg ) {
+			return seg.words.some( function ( w ) {
+				return ! isCue( w ) && ! FILLERS[ w ] && ! /^\d+$/.test( w );
+			} );
+		}
+
+		function close() {
+			if ( cur.words.length ) {
+				out.push( cur );
+			}
+			cur = { words: [], neg: false };
+		}
+
+		for ( var i = 0; i < words.length; i++ ) {
+			var w = words[ i ];
+
+			if ( NEG_BEFORE[ w ] ) {
+				if ( content( cur ) && ! cur.neg ) {
+					close();
+				}
+
+				cur.neg = true;
+				cur.words.push( w );
+			} else if ( NEG_AFTER[ w ] ) {
+				cur.neg = true;
+				cur.words.push( w );
+
+				while ( i + 1 < words.length && NEG_TAIL[ words[ i + 1 ] ] ) {
+					cur.words.push( words[ ++i ] );
+				}
+
+				close();
+			} else if ( URDU_END[ w ] && content( cur ) ) {
+				cur.words.push( w );
+				close();
+			} else {
+				cur.words.push( w );
+			}
+		}
+
+		close();
+
+		var labelled = out.map( function ( seg ) {
+			var ws = seg.words;
+			var joined = ' ' + ws.join( ' ' ) + ' ';
+			var resolved = ws.some( function ( w ) {
+				return RESOLVED[ w ];
+			} ) || Object.keys( RESOLVED_PAIRS ).some( function ( p ) {
+				return joined.indexOf( ' ' + p + ' ' ) !== -1;
+			} );
+			var present = ws.some( function ( w ) {
+				return PRESENT[ w ];
+			} );
+			var past = ws.some( function ( w ) {
+				return PAST[ w ];
+			} );
+			var polarity;
+
+			if ( resolved ) {
+				polarity = 'resolved';
+			} else if ( seg.neg ) {
+				polarity = 'absent';
+			} else if ( past && ! ws.some( function ( w ) {
+				return 'still' === w || 'now' === w || 'currently' === w || 'abhi' === w;
+			} ) ) {
+				polarity = 'past';
+			} else {
+				polarity = present ? 'present' : 'neutral';
+			}
+
+			return { words: ws, polarity: polarity, content: content( seg ) };
+		} );
+
+		// "bukhar tha, ab nahi" — a bare "not now" after a past phrase means
+		// it has gone.
+		labelled.forEach( function ( seg, i ) {
+			if ( i > 0 && ! seg.content && ( 'absent' === seg.polarity || 'resolved' === seg.polarity ) && 'past' === labelled[ i - 1 ].polarity ) {
+				labelled[ i - 1 ].polarity = 'resolved';
+			}
+		} );
+
+		return labelled;
+	}
 
 	function stem( word ) {
 		return word.length > 3 && /s$/.test( word ) && ! /ss$/.test( word ) ? word.slice( 0, -1 ) : word;
@@ -215,80 +362,210 @@
 			} ).slice( 0, limit || 8 );
 		}
 
+		/**
+		 * Splits free text into clauses, remembering what joined each one to
+		 * the one before: 'list' (comma, semicolon, slash, new line), 'and',
+		 * 'or', 'but', or 'stop' (full stop / start).
+		 *
+		 * @return {Array} [{ text, connector }]
+		 */
+		function clauses( text ) {
+			var out = [];
+			var re = /([.]+|[,;\n/]+)|\s+(and|&|plus|with|aur|or|ya|nor|but|though|although|however|except|lekin|magar|laikin|lekn)\s+/gi;
+			var str = String( text || '' );
+			var last = 0;
+			var connector = 'stop';
+			var match;
+
+			function push( part, next ) {
+				part = part.trim();
+
+				if ( part ) {
+					out.push( { text: part, connector: connector } );
+				}
+
+				connector = next;
+			}
+
+			while ( null !== ( match = re.exec( str ) ) ) {
+				var kind;
+
+				if ( match[ 1 ] ) {
+					kind = /\./.test( match[ 1 ] ) ? 'stop' : 'list';
+				} else {
+					var w = match[ 2 ].toLowerCase();
+					kind = /^(or|ya|nor)$/.test( w ) ? 'or' : ( /^(and|&|plus|with|aur)$/.test( w ) ? 'and' : 'but' );
+				}
+
+				push( str.slice( last, match.index ), kind );
+				last = re.lastIndex;
+			}
+
+			push( str.slice( last ), 'stop' );
+
+			return out;
+		}
+
 		/** Splits free text into phrases ("pain in stomach and fever, cough"). */
 		function split( text ) {
-			return String( text || '' )
-				.split( /[,;.\n/]+|\s+(?:and|&|plus|with|aur)\s+/i )
-				.map( function ( s ) {
-					return s.trim();
-				} )
-				.filter( Boolean );
+			return clauses( text ).map( function ( c ) {
+				return c.text;
+			} );
 		}
 
 		/**
-		 * Reads free text.
+		 * Symptoms a phrase could mean.
 		 *
-		 * @return {Object} {
-		 *   recognized: [ids]                      — exact matches only,
-		 *   ambiguous:  [{ phrase, candidates: [ids] }] — needs the patient to choose,
-		 *   unknown:    [phrase]                   — no reliable match
-		 * }
+		 * @param {Array} t tokens().
+		 * @return {Object} { exact: id|null, candidates: [ids] }
 		 */
-		function analyse( text ) {
-			var result = { recognized: [], ambiguous: [], unknown: [] };
+		function lookup( t ) {
+			var hit = exact[ t.join( ' ' ) ];
 
-			split( text ).forEach( function ( phrase ) {
-				var t = tokens( phrase );
+			if ( hit && 1 === hit.length ) {
+				return { exact: hit[ 0 ], candidates: [ hit[ 0 ] ] };
+			}
 
-				if ( ! t.length ) {
-					return;
+			var scores = {};
+
+			phrases.forEach( function ( p ) {
+				var score = null;
+
+				if ( hit && hit.indexOf( p.id ) !== -1 ) {
+					score = 0;
+				} else if ( covers( t, p.tokens ) ) {
+					// Everything in the phrase is in what they wrote (plus extra words or a typo).
+					score = 1 + ( t.length - p.tokens.length ) * 0.1;
+				} else if ( covers( p.tokens, t ) ) {
+					// What they wrote is part of a longer phrase ("stomach" → "stomach pain").
+					score = 2 + ( p.tokens.length - t.length ) * 0.1;
 				}
 
-				var hit = exact[ t.join( ' ' ) ];
-
-				if ( hit && 1 === hit.length ) {
-					if ( result.recognized.indexOf( hit[ 0 ] ) === -1 ) {
-						result.recognized.push( hit[ 0 ] );
-					}
-
-					return;
+				if ( null !== score && ( undefined === scores[ p.id ] || score < scores[ p.id ] ) ) {
+					scores[ p.id ] = score;
 				}
+			} );
 
-				var scores = {};
-
-				phrases.forEach( function ( p ) {
-					var score = null;
-
-					if ( hit && hit.indexOf( p.id ) !== -1 ) {
-						score = 0;
-					} else if ( covers( t, p.tokens ) ) {
-						// Everything in the phrase is in what they wrote (plus extra words or a typo).
-						score = 1 + ( t.length - p.tokens.length ) * 0.1;
-					} else if ( covers( p.tokens, t ) ) {
-						// What they wrote is part of a longer phrase ("stomach" → "stomach pain").
-						score = 2 + ( p.tokens.length - t.length ) * 0.1;
-					}
-
-					if ( null !== score && ( undefined === scores[ p.id ] || score < scores[ p.id ] ) ) {
-						scores[ p.id ] = score;
-					}
-				} );
-
-				var candidates = Object.keys( scores ).sort( function ( a, b ) {
+			return {
+				exact: null,
+				candidates: Object.keys( scores ).sort( function ( a, b ) {
 					return scores[ a ] - scores[ b ] || byId[ a ].name.localeCompare( byId[ b ].name );
 				} ).slice( 0, 5 ).map( function ( id ) {
 					return byId[ id ].id;
-				} );
+				} ),
+			};
+		}
 
-				if ( candidates.length ) {
-					result.ambiguous.push( { phrase: phrase, candidates: candidates } );
-				} else {
-					result.unknown.push( phrase );
+		/**
+		 * Reads free text, keeping what the patient reports apart from what
+		 * they deny or say has gone. Only reported, exact matches are added
+		 * without asking.
+		 *
+		 * @return {Object} {
+		 *   recognized: [ids]                                — reported, exact matches,
+		 *   ambiguous:  [{ phrase, candidates: [ids] }]      — reported, needs "did you mean",
+		 *   unknown:    [phrase]                             — no reliable match,
+		 *   negated:    [{ phrase, ids: [ids] }]             — the patient says they don't have it,
+		 *   resolved:   [{ phrase, ids: [ids] }]             — the patient says it has gone,
+		 *   confirm:    [{ phrase, candidates: [ids], reason: 'past'|'unclear' }] — ask whether they have it now
+		 * }
+		 */
+		function analyse( text ) {
+			var result = { recognized: [], ambiguous: [], unknown: [], negated: [], resolved: [], confirm: [] };
+			var prev = null;
+
+			clauses( text ).forEach( function ( clause ) {
+				var words = rawWords( clause.text );
+
+				if ( ! words.length ) {
+					return;
 				}
+
+				if ( 'stop' === clause.connector || 'but' === clause.connector ) {
+					prev = null;
+				}
+
+				// A symptom phrase that itself contains a cue word ("not able
+				// to sleep", "neend nahi aati") is taken exactly as written.
+				var cueKey = words.filter( function ( w ) {
+					return ( ! FILLERS[ w ] || isCue( w ) ) && ! /^\d+$/.test( w );
+				} ).map( stem );
+				var whole = cueKey.some( isCue ) ? exact[ cueKey.join( ' ' ) ] : null;
+				var segs = whole && 1 === whole.length
+					? [ { words: words, polarity: 'present', explicit: true, id: whole[ 0 ] } ]
+					: segments( words );
+
+				segs.forEach( function ( seg, si ) {
+					var polarity = seg.polarity;
+
+					if ( 'neutral' === polarity ) {
+						if ( 0 === si && 'absent' === prev ) {
+							// "no fever or cough" denies both; "no fever and cough" /
+							// "no fever, cough" could mean either — ask.
+							polarity = 'or' === clause.connector ? 'absent' : 'unclear';
+						} else {
+							polarity = 'present';
+						}
+					}
+
+					prev = 'unclear' === polarity ? 'absent' : polarity;
+
+					var contentWords = seg.words.filter( function ( w ) {
+						return ! isCue( w );
+					} );
+					var phrase = seg.words.join( ' ' );
+					var found;
+
+					if ( seg.id ) {
+						found = { exact: seg.id, candidates: [ seg.id ] };
+					} else {
+						var t = tokens( contentWords.join( ' ' ) );
+
+						if ( ! t.length ) {
+							return;
+						}
+
+						found = lookup( t );
+					}
+
+					if ( 'present' === polarity ) {
+						if ( null !== found.exact ) {
+							if ( result.recognized.indexOf( found.exact ) === -1 ) {
+								result.recognized.push( found.exact );
+							}
+						} else if ( found.candidates.length ) {
+							result.ambiguous.push( { phrase: phrase, candidates: found.candidates } );
+						} else {
+							result.unknown.push( phrase );
+						}
+					} else if ( 'absent' === polarity || 'resolved' === polarity ) {
+						result[ 'absent' === polarity ? 'negated' : 'resolved' ].push( {
+							phrase: phrase,
+							ids: null !== found.exact ? [ found.exact ] : found.candidates,
+						} );
+					} else if ( found.candidates.length ) {
+						result.confirm.push( { phrase: phrase, candidates: found.candidates, reason: polarity } );
+					} else {
+						result.unknown.push( phrase );
+					}
+				} );
+			} );
+
+			// Reported and denied in the same message ("fever, no fever"): ask.
+			result.negated.concat( result.resolved ).forEach( function ( item ) {
+				item.ids.forEach( function ( id ) {
+					var at = result.recognized.indexOf( id );
+
+					if ( at !== -1 ) {
+						result.recognized.splice( at, 1 );
+						result.confirm.push( { phrase: byId[ id ].name, candidates: [ id ], reason: 'unclear' } );
+					}
+				} );
 			} );
 
 			return result;
 		}
+
 
 		/**
 		 * Every follow-up question of the chosen symptoms, in order.
@@ -452,16 +729,150 @@
 			} );
 		}
 
+		/**
+		 * The answers still relevant: drops answers to questions of symptoms
+		 * no longer chosen, and to questions hidden by a changed earlier
+		 * answer (repeated, since hiding one can hide another).
+		 *
+		 * @param {Array}  ids     Chosen symptom ids.
+		 * @param {Object} answers key -> answer.
+		 * @return {Object} A new answers object.
+		 */
+		function pruneAnswers( ids, answers ) {
+			var out = {};
+
+			Object.keys( answers || {} ).forEach( function ( k ) {
+				out[ k ] = answers[ k ];
+			} );
+
+			for ( var changed = true; changed; ) {
+				var keep = {};
+				changed = false;
+
+				visibleQuestions( ids, out ).forEach( function ( item ) {
+					keep[ item.key ] = true;
+				} );
+
+				Object.keys( out ).forEach( function ( k ) {
+					if ( ! keep[ k ] ) {
+						delete out[ k ];
+						changed = true;
+					}
+				} );
+			}
+
+			return out;
+		}
+
+		/**
+		 * The questions to ask, with identical questions from several chosen
+		 * symptoms asked once. Questions count as identical when their type,
+		 * wording and answers (or number range) are the same.
+		 *
+		 * @return {Array} [{ key, question, symptomId, symptomName, symptomNames: [], members: [visibleQuestions() items] }]
+		 */
+		function askList( ids, answers ) {
+			var groups = [];
+			var bySig = {};
+
+			visibleQuestions( ids, answers ).forEach( function ( item ) {
+				var sig = signature( item.question );
+				var g = bySig[ sig ];
+
+				if ( g ) {
+					g.members.push( item );
+
+					if ( g.symptomNames.indexOf( item.symptomName ) === -1 ) {
+						g.symptomNames.push( item.symptomName );
+					}
+
+					return;
+				}
+
+				g = {
+					key: item.key,
+					question: item.question,
+					symptomId: item.symptomId,
+					symptomName: item.symptomName,
+					symptomNames: [ item.symptomName ],
+					members: [ item ],
+				};
+				bySig[ sig ] = g;
+				groups.push( g );
+			} );
+
+			return groups;
+		}
+
 		return {
 			byId: byId,
 			suggest: suggest,
 			analyse: analyse,
 			split: split,
+			clauses: clauses,
 			specialtiesFor: specialtiesFor,
 			questionsFor: questionsFor,
 			visibleQuestions: visibleQuestions,
+			pruneAnswers: pruneAnswers,
+			askList: askList,
 			triggeredRules: triggeredRules,
 		};
+	}
+
+	function plain( text ) {
+		return String( text || '' ).toLowerCase().replace( /[^\p{L}\p{N}]+/gu, ' ' ).trim();
+	}
+
+	/** What makes two questions "the same question" for asking once. */
+	function signature( q ) {
+		var parts = [ q.type, plain( q.text ) ];
+
+		if ( 'number' === q.type ) {
+			var n = q.number || {};
+			parts.push( String( n.min ), String( n.max ), plain( n.unit ) );
+		} else {
+			parts.push( ( q.options || [] ).map( function ( o ) {
+				return plain( o.label );
+			} ).join( '|' ) );
+		}
+
+		return parts.join( '#' );
+	}
+
+	/**
+	 * Carries an answer from one question to an identical one (same
+	 * signature) whose answer ids may differ: matched by position.
+	 */
+	function mapAnswer( from, to, answer ) {
+		if ( 'number' === from.type || from === to ) {
+			return answer;
+		}
+
+		var fromIds = ( from.options || [] ).map( function ( o ) {
+			return o.id;
+		} );
+		var toIds = ( to.options || [] ).map( function ( o ) {
+			return o.id;
+		} );
+		var one = function ( id ) {
+			var at = fromIds.indexOf( id );
+			return at === -1 ? undefined : toIds[ at ];
+		};
+
+		if ( Array.isArray( answer ) ) {
+			return answer.map( one ).filter( function ( id ) {
+				return undefined !== id;
+			} );
+		}
+
+		return one( answer );
+	}
+
+	/** The first emergency rule among triggered rules, or null. */
+	function emergencyRule( triggered ) {
+		return ( triggered || [] ).filter( function ( r ) {
+			return 'emergency' === r.level;
+		} )[ 0 ] || null;
 	}
 
 	/** Whether an answer (one id, or a list of ids) includes any of `ids`. */
@@ -632,6 +1043,9 @@
 
 	return {
 		create: create,
+		signature: signature,
+		mapAnswer: mapAnswer,
+		emergencyRule: emergencyRule,
 		isAnswered: isAnswered,
 		rankDoctors: rankDoctors,
 		nearbyPlace: nearbyPlace,

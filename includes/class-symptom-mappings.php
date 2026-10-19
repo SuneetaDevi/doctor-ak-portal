@@ -823,11 +823,12 @@ class Symptom_Mappings {
 		$invalid     = array();
 		$specialties = self::clean_specialties( isset( $input['specialties'] ) ? $input['specialties'] : array(), $invalid );
 
+		// No specialty is allowed on purpose: a clinician may not have approved
+		// one (or may be removing a wrong one). Patients then see that there's
+		// no reviewed guidance yet for that symptom — nothing is substituted.
 		if ( ! empty( $invalid ) ) {
 			/* translators: %s: specialty names. */
 			$errors['specialties'] = sprintf( __( 'Not a specialty on this site: %s.', 'doctor-ak-portal' ), implode( ', ', $invalid ) );
-		} elseif ( empty( $specialties ) ) {
-			$errors['specialties'] = __( 'Choose at least one related specialty.', 'doctor-ak-portal' );
 		}
 
 		$checked = self::validate_questions( isset( $input['questions'] ) ? $input['questions'] : array() );

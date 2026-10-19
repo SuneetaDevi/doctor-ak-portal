@@ -570,6 +570,22 @@ body.dak-app-page .dak-portal td .dak-sm-warn {
 	width: fit-content !important;
 }
 
+/* "Revision: [Draft]" under the live badge. */
+body.dak-app-page .dak-portal .dak-sm-version-line {
+	display: flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	margin: 6px 0 0 !important;
+	font-size: 12px !important;
+	font-weight: 600 !important;
+	color: var( --dak-muted ) !important;
+}
+
+body.dak-app-page .dak-portal td .dak-sm-help {
+	display: block !important;
+	margin: 4px 0 0 !important;
+}
+
 body.dak-app-page .dak-portal .dak-sm-note {
 	margin: 6px 0 0 !important;
 	padding: 8px 12px !important;

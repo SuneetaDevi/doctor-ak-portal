@@ -83,13 +83,17 @@ Archive (any non-live item) ─────────────────�
 | Patient guidance | Optional. One clinician-approved line shown when the symptom is chosen. Max 500 characters. |
 | English alternative phrases | One per line, max 40, including common misspellings. |
 | Roman Urdu phrases | One per line, max 40. Other languages can be added with the `doctor_ak_symptom_languages` filter (`code => label`). Each gets its own field and CSV column. |
-| Related specialties | At least one, from the site's list. |
+| Related specialties | From the site's list, as approved by a clinician. **May be left empty** when none is approved (or to remove a wrong one): patients are then told there's no reviewed guidance yet for that symptom, and no doctors are suggested for it. Nothing is substituted. |
 | Follow-up questions | Optional. Up to 10. See below. |
 | Internal notes | Reviewers only. Never sent to the patient page. |
 
 ### Follow-up questions
 
-Questions are asked one at a time, in list order, after the patient picks the symptom. The patient sees a progress line ("Question 2 of 3") and can go back. Before seeing doctors they can review and change every answer.
+Questions are asked one at a time, in list order, after the patient picks the symptom. The patient sees a progress line ("Question 2 of 3"), can go back, and can **Skip** any optional question. Before seeing doctors they can review and change every answer.
+
+- When several chosen symptoms have the **same question** (same type, wording and answers), it is asked once and the answer applies to each.
+- When an answer or the symptom list changes, answers to questions that no longer apply are **cleared**, and every rule is checked again.
+- Descriptive questions should be optional and include a **"Not sure"** answer. They change nothing (no urgency, specialty or diagnosis) unless a reviewed safety rule or a ticked "Specialty matching" says so.
 
 | Setting | Notes |
 | --- | --- |
@@ -119,7 +123,8 @@ On the patient page:
 - A triggered rule appears **at once**, above the questions and the doctor results. It is announced to screen readers and, when it stops the questions, takes focus.
 - It stays on screen while it applies and can't be dismissed. Changing the answer that caused it removes it.
 - While it applies, a fixed bar at the bottom of the screen ("Emergency: … · See instructions") keeps it one tap away on phones.
-- When the questions stop, the patient sees "We've stopped the questions", with **Change my answers** and **Show doctors anyway**. Results still show, with the rule pinned above them.
+- **Emergency** rules are a hard stop. The patient sees "We've stopped here" with **Change my answers** and **Change my symptoms** only. No further questions, doctors or booking links are shown while the rule applies, whatever the route (buttons, Back, or a page restored from the browser cache). After a correction every rule is checked again; if none applies, the questions continue.
+- **Urgent** rules set to interrupt stop the questions with "Please read this first", **Change my answers** and **Continue to doctors**. Results then show, with the rule pinned above them.
 - Answers to questions that are no longer being asked (because an earlier answer changed) never trigger rules or add specialties.
 
 ## CSV format
@@ -144,9 +149,16 @@ Back pain,back-pain,"Pain anywhere in the back",backache | sore back,kamar dard,
 
 - **Recognised:** text is split on commas, semicolons, full stops, new lines and "and" / "&" / "aur". A part is recognised only when, after ignoring filler words, it **exactly** matches a symptom's name or one of its English or Roman Urdu phrases. Filler words cover "I have", "severe", "since 2 days", "3 din se", "ho raha hai" and similar. Case, punctuation and simple plurals are ignored.
 - **"Did you mean":** partial matches and close typos are never silently accepted, e.g. "stomach", "stomache pain", "pain". The patient chooses, or picks "None of these".
-- **No match:** unmatched text is shown back with a message. If nothing matched, results suggest browsing general physicians or searching all doctors.
+- **Denied, gone, past:** each phrase is read on its own. "No fever, no cough", "I don't have fever or cough" and "bukhar nahi hai" add nothing; "cough but no fever" and "khansi hai, bukhar nahi" add Cough only. "My fever went away" and "bukhar tha, ab nahi" add nothing. "I had a fever last week" and ambiguous wording such as "no fever and cough" are asked about ("do you have this now?") and added only on Yes. The page lists what wasn't added, in neutral words. A denied symptom is never taken as a sign that anything is fine.
+- **No match:** unmatched text is shown back with a message. If nothing matched, results say so and offer a search of all doctors. No specialty is suggested in its place.
 - Text-match closeness is used only for suggestion order. It never decides a specialty or a safety message.
-- The **Try matching** box on the admin screen uses the same code, against either working copies or only what patients see now.
+- The **Try matching** box on the admin screen uses the same code, against either working copies or only what patients see now. It also shows what would be asked about or not added.
+
+## Symptom coverage (admin)
+
+The **Questions and emergency entries** section lists every symptom as **Routine** or **Emergency entry** (a symptom with an emergency rule shown as soon as it's chosen), with its question count in the working and live versions and its version status. It flags routine symptoms with no questions, emergency rules not live yet, and optional descriptive questions without a "Not sure" answer. It only reads; it never submits, approves or publishes anything.
+
+The status column spells out the version: **Draft**, **Pending review**, **Approved — not live**, or **Live vN**, with "Revision: …" when a live symptom has unpublished changes. Patients only ever receive live versions.
 
 ## Results and location
 
@@ -198,7 +210,7 @@ The previous Symptom Checker's options (`doctor_ak_symptom_rules_*`, `doctor_ak_
 
 ## Tests
 
-- **Automated:** `node --test "tests/js/*.test.js"` (no dependencies). It covers matching (Roman Urdu, filler words, no silent fuzzy matches, unmatched text), question order and conditional display, answer validation, rule triggering (choice, multi, number range, symptom-only, hidden answers ignored, emergency first, nothing without rules), answer-linked specialties, and ranking with and without location.
+- **Automated:** `node --test "tests/js/*.test.js"` (no dependencies). `symptom-negation-flow.test.js` covers negated, mixed, past, ambiguous and Roman Urdu input, answer clearing, shared-question de-duplication, emergency precedence, symptoms without an approved specialty, and distance sorting with fixed test coordinates. `symptom-match.test.js` covers matching (Roman Urdu, filler words, no silent fuzzy matches, unmatched text), question order and conditional display, answer validation, rule triggering (choice, multi, number range, symptom-only, hidden answers ignored, emergency first, nothing without rules), answer-linked specialties, and ranking with and without location.
 - **Verified during development** with WordPress stubs and synthetic data (not shipped):
   - migration of existing records;
   - every server-side permission (patients, receptionists, non-reviewer doctors, admins without the reviewer capability, bad nonce);

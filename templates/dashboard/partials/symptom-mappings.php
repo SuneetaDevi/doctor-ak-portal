@@ -52,6 +52,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div data-sm-list></div>
 	</section>
 
+	<section class="dak-dashboard-card dak-sm-card" aria-labelledby="dak-sm-coverage-title">
+		<h2 id="dak-sm-coverage-title"><?php esc_html_e( 'Questions and emergency entries', 'doctor-ak-portal' ); ?></h2>
+		<p class="dak-sm-help"><?php esc_html_e( 'A check of what each symptom has in its working version and in its live version. It changes nothing: drafts stay drafts until they’re submitted, approved and activated.', 'doctor-ak-portal' ); ?></p>
+		<div data-sm-coverage></div>
+	</section>
+
 	<section class="dak-dashboard-card dak-sm-card" aria-labelledby="dak-sm-rules-title">
 		<h2 id="dak-sm-rules-title"><?php esc_html_e( 'Safety rules', 'doctor-ak-portal' ); ?></h2>
 		<p class="dak-sm-help"><?php esc_html_e( 'Clinician-written instructions shown immediately, above any doctor suggestions, when a patient chooses a symptom or gives a particular answer. Same review workflow as symptoms. A rule can only be activated once the symptoms and questions it uses are live. Rules never score or rule anything out.', 'doctor-ak-portal' ); ?></p>
