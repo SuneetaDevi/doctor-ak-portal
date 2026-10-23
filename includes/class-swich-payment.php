@@ -38,6 +38,7 @@ class Swich_Payment {
 
 	const META_TRANSACTION_ID = 'doctor_ak_appointment_swich_transaction_id';
 	const META_ORDER_ID       = 'doctor_ak_appointment_swich_order_id';
+	const META_BILL_REFERENCE = 'doctor_ak_appointment_swich_bill_reference';
 
 	const TOKEN_TRANSIENT = 'doctor_ak_swich_bearer_token_';
 
@@ -110,6 +111,12 @@ class Swich_Payment {
 
 		update_post_meta( $appointment_id, self::META_TRANSACTION_ID, $customer_transaction_id );
 
+		// Swich needs a bill reference when the patient pays by bank transfer
+		// on its page (and accepts it for every method), so one is always
+		// sent. It is not part of the checksum.
+		$bill_reference = self::new_bill_reference( $appointment_id );
+		update_post_meta( $appointment_id, self::META_BILL_REFERENCE, $bill_reference );
+
 		$item     = '' !== $appointment['service_name'] ? $appointment['service_name'] : 'VideoConsultation';
 		$amount   = number_format( (float) $appointment['charge'], 2, '.', '' );
 		$checksum = hash_hmac( 'sha256', 'Swich:' . $customer_transaction_id . ':' . $item . ':' . $amount, $config['pwa_secret_key'] );
@@ -126,10 +133,25 @@ class Swich_Payment {
 			'MSISDN'                => $payer_phone,
 			'currency'              => 'PKR',
 			'checksum'              => $checksum,
+			'billReferenceNo'       => $bill_reference,
 			'successRedirectUrl'    => self::return_url( $appointment_id, $customer_transaction_id ),
 		);
 
 		return self::pwa_landing_url() . '?' . http_build_query( $params, '', '&', PHP_QUERY_RFC3986 );
+	}
+
+	/**
+	 * A new bill reference in Swich's example format: "PK", the date and
+	 * time (YmdHis, site time zone), then 4 digits — here the last 4 of the
+	 * appointment number, so two payments started in the same second never
+	 * share one and staff can trace it back. E.g. PK202610191214450500.
+	 * One per payment attempt, like the customer transaction id.
+	 *
+	 * @param int $appointment_id Appointment post ID.
+	 * @return string
+	 */
+	public static function new_bill_reference( $appointment_id ) {
+		return 'PK' . wp_date( 'YmdHis' ) . str_pad( (string) ( absint( $appointment_id ) % 10000 ), 4, '0', STR_PAD_LEFT );
 	}
 
 	/**

@@ -213,7 +213,13 @@ class Notifications {
 	public function notify_new_service( $service_id, $doctor_id, array $fields ) {
 		$doctor_name = self::user_display_name( $doctor_id );
 		$charge      = isset( $fields['charge'] ) ? (float) $fields['charge'] : 0.0;
-		$services    = self::admin_url_for( 'services' );
+
+		// The button opens the service's own public page — no sign-in needed.
+		// An inactive service isn't shown there, so that one links to the
+		// dashboard's services list instead.
+		$detail_page = Page_Finder::url_for_shortcode( 'service_profile_view' );
+		$is_public   = ! empty( $fields['active'] ) && '' !== $detail_page;
+		$button_url  = $is_public ? add_query_arg( 'service_id', (int) $service_id, $detail_page ) : self::admin_url_for( 'services' );
 
 		foreach ( self::admin_emails() as $admin_email ) {
 			self::deliver(
@@ -223,13 +229,13 @@ class Notifications {
 					'preheader'   => sprintf( /* translators: %s: service name. */ __( '%s was added to the services list.', 'doctor-ak-portal' ), $fields['name'] ),
 					'eyebrow'     => __( 'Services', 'doctor-ak-portal' ),
 					'heading'     => __( 'New service added', 'doctor-ak-portal' ),
-					'paragraphs'  => array( __( 'A new service has been added and is now listed on the website.', 'doctor-ak-portal' ) ),
+					'paragraphs'  => array( ! empty( $fields['active'] ) ? __( 'A new service has been added and is now listed on the website.', 'doctor-ak-portal' ) : __( 'A new service has been added. It is inactive, so it isn’t shown on the website yet.', 'doctor-ak-portal' ) ),
 					'details'     => array(
 						array( __( 'Service', 'doctor-ak-portal' ), $fields['name'] ),
 						array( __( 'Doctor', 'doctor-ak-portal' ), '' !== $doctor_name ? sprintf( 'Dr. %s', $doctor_name ) : '' ),
 						array( __( 'Price', 'doctor-ak-portal' ), self::money( $charge ) ),
 					),
-					'button'      => $services ? array( 'label' => __( 'View services', 'doctor-ak-portal' ), 'url' => $services ) : array(),
+					'button'      => $button_url ? array( 'label' => $is_public ? __( 'View service', 'doctor-ak-portal' ) : __( 'View services', 'doctor-ak-portal' ), 'url' => $button_url ) : array(),
 					'footer_note' => self::footer_note( 'admin' ),
 				)
 			);
