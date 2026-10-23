@@ -21,6 +21,8 @@
  * @var string   $appointments_url      Same-page URL for the Appointments tab.
  * @var string   $patients_tab_html     Pre-rendered doctor-patients-tab.php output when $active_tab is 'patients'.
  * @var string   $patients_url          Same-page URL for the Patients tab.
+ * @var string   $crm_url               Same-page URL for the CRM tab, or '' when switched off.
+ * @var string   $crm_tab_html          Pre-rendered crm.php output when $active_tab is 'crm'.
  * @var string   $earnings_tab_html     Pre-rendered doctor-earnings-tab.php output when $active_tab is 'earnings'.
  * @var string   $earnings_url          Same-page URL for the Earnings tab.
  * @var string   $encounters_tab_html   Pre-rendered doctor-encounters-tab.php output when $active_tab is 'encounters' — this doctor's own encounters only.
@@ -136,6 +138,9 @@ $dak_dash_icons = array(
 				<?php if ( $patients_url ) : ?>
 					<li class="<?php echo 'patients' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $patients_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['users']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Patients', 'doctor-ak-portal' ); ?></a></li>
 				<?php endif; ?>
+				<?php if ( ! empty( $crm_url ) ) : ?>
+					<li class="<?php echo 'crm' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $crm_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['clipboard']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'CRM', 'doctor-ak-portal' ); ?></a></li>
+				<?php endif; ?>
 				<?php if ( $earnings_url ) : ?>
 					<li class="<?php echo 'earnings' === $active_tab ? 'is-active' : ''; ?>"><a href="<?php echo esc_url( $earnings_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_dash_icons['money']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Earnings', 'doctor-ak-portal' ); ?></a></li>
 				<?php endif; ?>
@@ -213,6 +218,10 @@ $dak_dash_icons = array(
 		<?php elseif ( 'patients' === $active_tab ) : ?>
 
 			<?php echo $patients_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own doctor-patients-tab.php template, which escapes its own output (including its own page header). ?>
+
+		<?php elseif ( 'crm' === $active_tab ) : ?>
+
+			<?php echo $crm_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own crm.php template, which escapes its own output (including its own page header). ?>
 
 		<?php elseif ( 'earnings' === $active_tab ) : ?>
 

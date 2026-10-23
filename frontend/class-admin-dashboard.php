@@ -89,6 +89,7 @@ class Admin_Dashboard {
 			'all-users'   => 'All Users',
 			'doctor-requests' => 'Doctor Requests',
 			'patients'    => 'Patients',
+			'crm'         => 'CRM',
 			'doctors'     => 'Doctors',
 			'receptionist' => 'Receptionist',
 		),
@@ -126,7 +127,7 @@ class Admin_Dashboard {
 	 *
 	 * @var array
 	 */
-	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'patients', 'doctors', 'clinic', 'services', 'service-requests', 'doctor-sessions', 'settings', 'encounter', 'encounters', 'notifications', 'videos' );
+	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'patients', 'crm', 'doctors', 'clinic', 'services', 'service-requests', 'doctor-sessions', 'settings', 'encounter', 'encounters', 'notifications', 'videos' );
 
 	/**
 	 * Section slugs that exist and are reachable, but deliberately have no
@@ -810,6 +811,11 @@ class Admin_Dashboard {
 		// only — not in RECEPTIONIST_ALLOWED_SECTIONS).
 		if ( 'symptom-checker' === self::requested_section() && current_user_can( 'manage_options' ) ) {
 			Symptom_Mappings_Handler::enqueue_screen_assets();
+		}
+
+		// CRM (administrators and receptionists; access re-checked by Crm_Handler).
+		if ( 'crm' === self::requested_section() ) {
+			Crm_Handler::enqueue_screen_assets();
 		}
 
 		if ( 'blogs' === self::requested_section() ) {
@@ -2648,6 +2654,10 @@ class Admin_Dashboard {
 
 		if ( 'symptom-checker' === $section && current_user_can( 'manage_options' ) ) {
 			return $this->symptom_checker_section_html();
+		}
+
+		if ( 'crm' === $section ) {
+			return Crm_Handler::screen_html( $this->template_loader );
 		}
 
 		if ( 'video-consultation' === $section ) {

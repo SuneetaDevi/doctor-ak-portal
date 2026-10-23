@@ -145,7 +145,20 @@ class Service_Requests {
 			array( '%d', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
 		);
 
-		return $inserted ? (int) $wpdb->insert_id : false;
+		if ( ! $inserted ) {
+			return false;
+		}
+
+		$id = (int) $wpdb->insert_id;
+
+		/**
+		 * Fires after a service request is saved (the CRM turns it into a lead).
+		 *
+		 * @param int $id Request ID.
+		 */
+		do_action( 'doctor_ak_service_request_created', $id );
+
+		return $id;
 	}
 
 	/**

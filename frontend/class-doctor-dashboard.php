@@ -345,6 +345,11 @@ class Doctor_Dashboard {
 		if ( 'symptom-review' === self::requested_tab() ) {
 			Symptom_Mappings_Handler::enqueue_screen_assets();
 		}
+
+		// CRM — this doctor's own patients only (scoped in Crm_Handler).
+		if ( 'crm' === self::requested_tab() ) {
+			Crm_Handler::enqueue_screen_assets();
+		}
 	}
 
 	/**
@@ -366,7 +371,7 @@ class Doctor_Dashboard {
 			return Symptom_Mappings::can_review() ? $tab : 'dashboard';
 		}
 
-		if ( ! in_array( $tab, array( 'profile', 'clinics', 'services', 'video-consultation', 'appointments', 'patients', 'earnings', 'encounters', 'encounter', 'notifications', 'settings' ), true ) ) {
+		if ( ! in_array( $tab, array( 'profile', 'clinics', 'services', 'video-consultation', 'appointments', 'patients', 'crm', 'earnings', 'encounters', 'encounter', 'notifications', 'settings' ), true ) ) {
 			return 'dashboard';
 		}
 
@@ -1044,6 +1049,7 @@ class Doctor_Dashboard {
 			'video_consultation_tab_html' => 'video-consultation' === $active_tab ? $this->render_video_consultation_tab( $user ) : '',
 			'appointments_tab_html' => 'appointments' === $active_tab ? $this->render_appointments_tab( $user ) : '',
 			'patients_tab_html'     => 'patients' === $active_tab ? $this->render_patients_tab( $user ) : '',
+			'crm_tab_html'          => 'crm' === $active_tab ? Crm_Handler::screen_html( $this->template_loader ) : '',
 			'earnings_tab_html'     => 'earnings' === $active_tab ? $this->render_earnings_tab( $user ) : '',
 			'encounters_tab_html'   => 'encounters' === $active_tab ? $this->render_encounters_tab( $user ) : '',
 			'encounter_tab_html'    => 'encounter' === $active_tab ? $this->render_encounter_tab( $user ) : '',
@@ -1059,6 +1065,7 @@ class Doctor_Dashboard {
 			'video_consultation_url' => self::tab_url( $dashboard_url, 'video-consultation' ),
 			'appointments_url'      => self::tab_url( $dashboard_url, 'appointments' ),
 			'patients_url'          => self::tab_url( $dashboard_url, 'patients' ),
+			'crm_url'               => self::tab_url( $dashboard_url, 'crm' ),
 			'earnings_url'          => self::tab_url( $dashboard_url, 'earnings' ),
 			'encounters_url'        => self::tab_url( $dashboard_url, 'encounters' ),
 			'notifications_url'     => self::tab_url( $dashboard_url, 'notifications' ),

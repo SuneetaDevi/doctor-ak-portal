@@ -76,21 +76,24 @@ class Email_Template {
 
 	/**
 	 * Sends one email in the shared layout, with a plain-text alternative.
-	 * Invalid or empty addresses are skipped silently, as before.
+	 * Invalid or empty addresses are skipped silently, as before. Fires
+	 * 'doctor_ak_email_sent' afterwards so the CRM can show the email in
+	 * the recipient's history (see Crm_Email::on_email_sent()).
 	 *
-	 * @param string   $to          Recipient address.
-	 * @param string   $subject     Subject line (plain text).
-	 * @param array    $email       Email description, see the class docblock.
-	 * @param string[] $attachments File paths to attach.
+	 * @param string   $to            Recipient address.
+	 * @param string   $subject       Subject line (plain text).
+	 * @param array    $email         Email description, see the class docblock.
+	 * @param string[] $attachments   File paths to attach.
+	 * @param string[] $extra_headers Extra headers, e.g. List-Unsubscribe.
 	 * @return bool Whether wp_mail() accepted the message.
 	 */
-	public static function send( $to, $subject, array $email, array $attachments = array() ) {
+	public static function send( $to, $subject, array $email, array $attachments = array(), array $extra_headers = array() ) {
 		if ( '' === (string) $to || ! is_email( $to ) ) {
 			return false;
 		}
 
 		$rendered = self::render( $subject, $email );
-		$headers  = array_merge( array( 'Content-Type: text/html; charset=UTF-8' ), self::from_headers() );
+		$headers  = array_merge( array( 'Content-Type: text/html; charset=UTF-8' ), self::from_headers(), $extra_headers );
 
 		self::$pending_text = $rendered['text'];
 		add_action( 'phpmailer_init', array( __CLASS__, 'attach_text_body' ) );
@@ -99,6 +102,8 @@ class Email_Template {
 
 		remove_action( 'phpmailer_init', array( __CLASS__, 'attach_text_body' ) );
 		self::$pending_text = null;
+
+		do_action( 'doctor_ak_email_sent', $to, $subject, (bool) $sent );
 
 		return (bool) $sent;
 	}

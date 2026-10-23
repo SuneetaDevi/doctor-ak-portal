@@ -65,6 +65,7 @@ $dak_admin_section_icons = array(
 	'notifications'   => 'bell',
 	'doctor-requests' => 'person-plus',
 	'patients'        => 'users',
+	'crm'             => 'users',
 	'doctors'         => 'person',
 	'receptionist'    => 'headset',
 	'clinic'          => 'pin',

@@ -32,6 +32,9 @@ class Deactivator {
 		// Pending review requests keep their due time on the appointment, so
 		// the hourly sweep picks them up again after reactivation.
 		wp_unschedule_hook( Review_Requests::CRON_HOOK );
+		// Queued CRM emails stay queued; the CRM screen or the next
+		// scheduled run sends them after reactivation.
+		wp_unschedule_hook( Crm_Email::QUEUE_HOOK );
 		flush_rewrite_rules();
 	}
 }

@@ -60,6 +60,7 @@ class Role_Permissions {
 			'video-consultation' => __( 'Video Consultation', 'doctor-ak-portal' ),
 			'appointments'       => __( 'Appointments', 'doctor-ak-portal' ),
 			'patients'           => __( 'Patients', 'doctor-ak-portal' ),
+			'crm'                => __( 'CRM', 'doctor-ak-portal' ),
 			'earnings'           => __( 'Earnings', 'doctor-ak-portal' ),
 			'encounters'         => __( 'Encounters', 'doctor-ak-portal' ),
 			'notifications'      => __( 'Notifications', 'doctor-ak-portal' ),
@@ -99,6 +100,7 @@ class Role_Permissions {
 		return array(
 			'appointments'    => __( 'Appointments', 'doctor-ak-portal' ),
 			'patients'        => __( 'Patients', 'doctor-ak-portal' ),
+			'crm'             => __( 'CRM', 'doctor-ak-portal' ),
 			'doctors'         => __( 'Doctors', 'doctor-ak-portal' ),
 			'clinic'          => __( 'Clinic', 'doctor-ak-portal' ),
 			'services'        => __( 'Services', 'doctor-ak-portal' ),
@@ -128,6 +130,7 @@ class Role_Permissions {
 			'all-users'          => __( 'All Users', 'doctor-ak-portal' ),
 			'doctor-requests'    => __( 'Doctor Requests', 'doctor-ak-portal' ),
 			'patients'           => __( 'Patients', 'doctor-ak-portal' ),
+			'crm'                => __( 'CRM', 'doctor-ak-portal' ),
 			'doctors'            => __( 'Doctors', 'doctor-ak-portal' ),
 			'receptionist'       => __( 'Receptionist', 'doctor-ak-portal' ),
 			'clinic'             => __( 'Clinic', 'doctor-ak-portal' ),

@@ -256,6 +256,22 @@ class Db_Installer {
 	const SYMPTOM_AUDIT_DB_VERSION = '1.0.0';
 
 	/**
+	 * Option storing the installed CRM tables' schema version.
+	 *
+	 * @var string
+	 */
+	const CRM_DB_VERSION_OPTION = 'dak_crm_db_version';
+
+	/**
+	 * Current CRM tables' schema version (see Crm). 1.1.0 adds the email
+	 * tables (templates, campaigns, messages) and the contacts' marketing
+	 * opt-out (see Crm_Email).
+	 *
+	 * @var string
+	 */
+	const CRM_DB_VERSION = '1.1.0';
+
+	/**
 	 * Option name guarding the one-time legacy-data migration so it never
 	 * runs more than once.
 	 *
@@ -341,6 +357,9 @@ class Db_Installer {
 		Symptom_Mappings::migrate();
 		update_option( self::SYMPTOM_AUDIT_DB_VERSION_OPTION, self::SYMPTOM_AUDIT_DB_VERSION );
 
+		self::create_crm_tables();
+		update_option( self::CRM_DB_VERSION_OPTION, self::CRM_DB_VERSION );
+
 		if ( ! get_option( self::MIGRATION_OPTION ) ) {
 			self::migrate_legacy_data();
 			update_option( self::MIGRATION_OPTION, 'yes' );
@@ -385,6 +404,7 @@ class Db_Installer {
 			&& self::SERVICE_REQUESTS_DB_VERSION === get_option( self::SERVICE_REQUESTS_DB_VERSION_OPTION )
 			&& self::APPOINTMENT_REPORTS_DB_VERSION === get_option( self::APPOINTMENT_REPORTS_DB_VERSION_OPTION )
 			&& self::SYMPTOM_AUDIT_DB_VERSION === get_option( self::SYMPTOM_AUDIT_DB_VERSION_OPTION )
+			&& self::CRM_DB_VERSION === get_option( self::CRM_DB_VERSION_OPTION )
 		) {
 			return;
 		}
@@ -564,6 +584,194 @@ class Db_Installer {
 		) {$charset_collate};";
 
 		dbDelta( $sql );
+	}
+
+	/**
+	 * Runs dbDelta() against the CRM tables (see Crm): contacts, their links
+	 * to appointments and service requests, notes, tasks and the activity
+	 * log, plus the email templates, campaigns and every email sent to a
+	 * contact (see Crm_Email). CRM data only — appointments, visits and
+	 * payments stay in their own tables.
+	 *
+	 * @return void
+	 */
+	private static function create_crm_tables() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$charset_collate = $wpdb->get_charset_collate();
+		$contacts        = Crm::table( Crm::T_CONTACTS );
+		$links           = Crm::table( Crm::T_LINKS );
+		$notes           = Crm::table( Crm::T_NOTES );
+		$tasks           = Crm::table( Crm::T_TASKS );
+		$activity        = Crm::table( Crm::T_ACTIVITY );
+		$templates       = Crm::table( Crm_Email::T_TEMPLATES );
+		$campaigns       = Crm::table( Crm_Email::T_CAMPAIGNS );
+		$messages        = Crm::table( Crm_Email::T_MESSAGES );
+
+		dbDelta(
+			"CREATE TABLE {$contacts} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			user_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			name VARCHAR(191) NOT NULL DEFAULT '',
+			name_norm VARCHAR(191) NOT NULL DEFAULT '',
+			phone VARCHAR(40) NOT NULL DEFAULT '',
+			phone_norm VARCHAR(20) NOT NULL DEFAULT '',
+			email VARCHAR(191) NOT NULL DEFAULT '',
+			email_norm VARCHAR(191) NOT NULL DEFAULT '',
+			source VARCHAR(30) NOT NULL DEFAULT 'other',
+			stage VARCHAR(20) NOT NULL DEFAULT 'new',
+			stage_changed_at DATETIME NOT NULL,
+			lost_reason VARCHAR(191) NOT NULL DEFAULT '',
+			owner_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			tags VARCHAR(500) NOT NULL DEFAULT '',
+			follow_up_date DATE NULL,
+			doctor_ids VARCHAR(500) NOT NULL DEFAULT '',
+			flags VARCHAR(191) NOT NULL DEFAULT '',
+			last_visit DATE NULL,
+			next_appointment DATETIME NULL,
+			summary TEXT NULL,
+			last_activity_at DATETIME NOT NULL,
+			last_activity_label VARCHAR(191) NOT NULL DEFAULT '',
+			marketing_opt_out DATETIME NULL,
+			opt_out_via VARCHAR(20) NOT NULL DEFAULT '',
+			created_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			created_at DATETIME NOT NULL,
+			updated_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY user_id (user_id),
+			KEY phone_norm (phone_norm),
+			KEY email_norm (email_norm),
+			KEY stage (stage),
+			KEY owner_id (owner_id),
+			KEY follow_up_date (follow_up_date),
+			KEY last_activity_at (last_activity_at)
+		) {$charset_collate};"
+		);
+
+		dbDelta(
+			"CREATE TABLE {$links} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			contact_id BIGINT UNSIGNED NOT NULL,
+			object_type VARCHAR(20) NOT NULL,
+			object_id BIGINT UNSIGNED NOT NULL,
+			created_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			UNIQUE KEY object (object_type, object_id),
+			KEY contact_id (contact_id)
+		) {$charset_collate};"
+		);
+
+		dbDelta(
+			"CREATE TABLE {$notes} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			contact_id BIGINT UNSIGNED NOT NULL,
+			author_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			body TEXT NOT NULL,
+			created_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY contact_id (contact_id)
+		) {$charset_collate};"
+		);
+
+		dbDelta(
+			"CREATE TABLE {$tasks} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			contact_id BIGINT UNSIGNED NOT NULL,
+			title VARCHAR(191) NOT NULL,
+			due_date DATE NOT NULL,
+			assignee_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			status VARCHAR(20) NOT NULL DEFAULT 'open',
+			outcome TEXT NULL,
+			created_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			created_at DATETIME NOT NULL,
+			completed_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			completed_at DATETIME NULL,
+			PRIMARY KEY  (id),
+			KEY contact_id (contact_id),
+			KEY due (status, due_date),
+			KEY assignee_id (assignee_id)
+		) {$charset_collate};"
+		);
+
+		dbDelta(
+			"CREATE TABLE {$activity} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			contact_id BIGINT UNSIGNED NOT NULL,
+			user_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			action VARCHAR(30) NOT NULL,
+			summary TEXT NULL,
+			created_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY contact_id (contact_id)
+		) {$charset_collate};"
+		);
+
+		dbDelta(
+			"CREATE TABLE {$templates} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			name VARCHAR(191) NOT NULL,
+			purpose VARCHAR(20) NOT NULL DEFAULT 'care',
+			subject VARCHAR(191) NOT NULL DEFAULT '',
+			heading VARCHAR(191) NOT NULL DEFAULT '',
+			body TEXT NOT NULL,
+			button_label VARCHAR(60) NOT NULL DEFAULT '',
+			button_url VARCHAR(500) NOT NULL DEFAULT '',
+			status VARCHAR(20) NOT NULL DEFAULT 'active',
+			created_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			updated_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			created_at DATETIME NOT NULL,
+			updated_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY status (status)
+		) {$charset_collate};"
+		);
+
+		dbDelta(
+			"CREATE TABLE {$campaigns} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			name VARCHAR(191) NOT NULL,
+			purpose VARCHAR(20) NOT NULL DEFAULT 'care',
+			template_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			subject VARCHAR(191) NOT NULL DEFAULT '',
+			heading VARCHAR(191) NOT NULL DEFAULT '',
+			body TEXT NOT NULL,
+			button_label VARCHAR(60) NOT NULL DEFAULT '',
+			button_url VARCHAR(500) NOT NULL DEFAULT '',
+			audience_label VARCHAR(500) NOT NULL DEFAULT '',
+			status VARCHAR(20) NOT NULL DEFAULT 'sending',
+			total INT UNSIGNED NOT NULL DEFAULT 0,
+			skipped INT UNSIGNED NOT NULL DEFAULT 0,
+			created_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			created_at DATETIME NOT NULL,
+			finished_at DATETIME NULL,
+			PRIMARY KEY  (id),
+			KEY status (status)
+		) {$charset_collate};"
+		);
+
+		dbDelta(
+			"CREATE TABLE {$messages} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			contact_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			campaign_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			kind VARCHAR(20) NOT NULL DEFAULT 'single',
+			purpose VARCHAR(20) NOT NULL DEFAULT 'care',
+			to_email VARCHAR(191) NOT NULL DEFAULT '',
+			subject VARCHAR(191) NOT NULL DEFAULT '',
+			body TEXT NULL,
+			status VARCHAR(20) NOT NULL DEFAULT 'queued',
+			error VARCHAR(191) NOT NULL DEFAULT '',
+			sent_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			created_at DATETIME NOT NULL,
+			sent_at DATETIME NULL,
+			PRIMARY KEY  (id),
+			KEY contact_id (contact_id),
+			KEY campaign_status (campaign_id, status),
+			KEY status (status)
+		) {$charset_collate};"
+		);
 	}
 
 	/**

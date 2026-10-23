@@ -48,6 +48,7 @@ use DoctorAKPortal\Frontend\Home_Videos_Handler;
 use DoctorAKPortal\Frontend\Videos_Gallery;
 use DoctorAKPortal\Frontend\Symptom_Checker;
 use DoctorAKPortal\Frontend\Symptom_Mappings_Handler;
+use DoctorAKPortal\Frontend\Crm_Handler;
 use DoctorAKPortal\Frontend\Login_Handler;
 use DoctorAKPortal\Frontend\Notification_Handler;
 use DoctorAKPortal\Frontend\Patient_Appointment_Handler;
@@ -513,6 +514,28 @@ class Plugin {
 
 		$symptom_mappings_handler = new Symptom_Mappings_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_symptom_mappings', $symptom_mappings_handler, 'handle' );
+
+		// CRM: one endpoint (logged-in staff and doctors only; no nopriv),
+		// and people kept in step with bookings, visits, accounts and
+		// service requests as they happen. Runs after the email/ledger
+		// hooks so nothing it does can hold those up.
+		$crm_handler = new Crm_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_crm', $crm_handler, 'handle' );
+
+		foreach ( array( 'created', 'paid', 'completed', 'cancelled', 'rescheduled', 'checked_in', 'refund_requested', 'refund_processed' ) as $crm_event ) {
+			$this->loader->add_action( 'doctor_ak_appointment_' . $crm_event, 'DoctorAKPortal\Includes\Crm', 'on_appointment', 50 );
+		}
+
+		$this->loader->add_action( 'doctor_ak_patient_added', 'DoctorAKPortal\Includes\Crm', 'on_patient_added', 50 );
+		$this->loader->add_action( 'doctor_ak_service_request_created', 'DoctorAKPortal\Includes\Crm', 'on_service_request', 50 );
+		$this->loader->add_action( 'doctor_ak_encounter_checked_in', 'DoctorAKPortal\Includes\Crm', 'on_encounter', 50 );
+
+		// CRM email: group emails are sent in the background by a WP-Cron
+		// event, every email the plugin sends shows in the recipient's CRM
+		// history, and the public unsubscribe link (no login needed).
+		$this->loader->add_action( Crm_Email::QUEUE_HOOK, 'DoctorAKPortal\Includes\Crm_Email', 'run_queue' );
+		$this->loader->add_action( 'doctor_ak_email_sent', 'DoctorAKPortal\Includes\Crm_Email', 'on_email_sent', 10, 3 );
+		$this->loader->add_action( 'init', 'DoctorAKPortal\Includes\Crm_Email', 'handle_unsubscribe', 20 );
 
 		$home_testimonials_handler = new Home_Testimonials_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_home_testimonials_save', $home_testimonials_handler, 'handle_save' );
