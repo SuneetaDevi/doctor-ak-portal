@@ -537,6 +537,9 @@ class Plugin {
 		$this->loader->add_action( 'doctor_ak_email_sent', 'DoctorAKPortal\Includes\Crm_Email', 'on_email_sent', 10, 3 );
 		$this->loader->add_action( 'init', 'DoctorAKPortal\Includes\Crm_Email', 'handle_unsubscribe', 20 );
 
+		// Reviews show in the patient's CRM history; a low one gets a call-back task.
+		$this->loader->add_action( 'doctor_ak_review_saved', 'DoctorAKPortal\Includes\Crm', 'on_review_saved', 50, 5 );
+
 		$home_testimonials_handler = new Home_Testimonials_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_home_testimonials_save', $home_testimonials_handler, 'handle_save' );
 

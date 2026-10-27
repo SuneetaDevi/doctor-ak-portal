@@ -24,11 +24,17 @@
  *     @type bool     $video_consultation    Whether video consultations are offered.
  *     @type string   $phone                 First clinic with a phone number on file, or ''.
  * }
+ * @var array  $reviews               Newest reviews, see Doctor_Reviews::get_for_doctor() — { id, rating, comment, name, date }.
+ * @var array  $review_summary        Doctor_Reviews::summary() — { average, count, stars }.
+ * @var bool   $can_review            Whether the logged-in patient can review this doctor.
+ * @var array|null $my_review         Their existing review, or null.
  * @var string $directory_url         "All Doctors" breadcrumb link.
  * @var array  $starting_fee_summary  Doctor_Profile_View::starting_fee_summary() — { state: 'none'|'unset'|'paid'|'range', label }, for the sidebar's pre-selection teaser.
  * @var string $cancellation_note     Doctor's real cancellation policy text.
  * @var string $review_request_html   Pre-rendered review-request-panel.php (a review link from an email was opened), or ''.
  * @var bool   $review_request_active Whether that panel holds a review form (the usual form is then hidden).
+ * @var string $review_viewer         'guest', 'patient' or 'other' (staff/doctor — no review button).
+ * @var string $review_login_url      Login page that returns to this profile's reviews, or ''.
  */
 
 // Prevent direct file access.
@@ -38,6 +44,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $dak_profile_view_icons = array(
 	'pin'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 18s6-5.2 6-9.8A6 6 0 0 0 4 8.2C4 12.8 10 18 10 18z"/><circle cx="10" cy="8" r="2"/></svg>',
+	'star'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M10 2.6l2.2 4.6 5 .6-3.7 3.5.9 5-4.4-2.5-4.4 2.5.9-5-3.7-3.5 5-.6z"/></svg>',
 	'person'  => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="7" r="3.2"/><path d="M4 17c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/></svg>',
 	'clock'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.2"/><path d="M10 6.2V10l2.8 1.8"/></svg>',
 	'badge'   => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5l1.7 1.9 2.5-.4.4 2.5 1.9 1.7-1.9 1.7-.4 2.5-2.5-.4L10 13.9l-1.7-1.9-2.5.4-.4-2.5-1.9-1.7 1.9-1.7.4-2.5 2.5.4z"/><path d="M8 10l1.4 1.4L12.5 8"/></svg>',
@@ -151,6 +158,14 @@ if ( ! function_exists( 'dak_profile_view_truncate' ) ) {
 						</a>
 					<?php endif; ?>
 
+					<?php if ( $review_summary['count'] > 0 ) : ?>
+						<a class="dak-profile-stat dak-profile-stat-link" href="#dak-profile-reviews">
+							<span class="dak-profile-stat-icon" aria-hidden="true"><?php echo $dak_profile_view_icons['star']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+							<strong><?php echo esc_html( number_format_i18n( $review_summary['average'], 1 ) ); ?></strong>
+							<span><?php echo esc_html( sprintf( /* translators: %d: number of reviews. */ _n( '%d review', '%d reviews', $review_summary['count'], 'doctor-ak-portal' ), $review_summary['count'] ) ); ?></span>
+						</a>
+					<?php endif; ?>
+
 					<?php if ( $doctor['video_consultation'] ) : ?>
 						<a class="dak-profile-stat dak-profile-stat-link" href="#dak-profile-clinics-fees">
 							<span class="dak-profile-stat-icon" aria-hidden="true"><?php echo $dak_profile_view_icons['video']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
@@ -180,6 +195,31 @@ if ( ! function_exists( 'dak_profile_view_truncate' ) ) {
 						<a class="dak-button dak-button-secondary" href="tel:<?php echo esc_attr( preg_replace( '/[^0-9+]/', '', $doctor['phone'] ) ); ?>">
 							<?php echo $dak_profile_view_icons['phone']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							<?php esc_html_e( 'Call Clinic', 'doctor-ak-portal' ); ?>
+						</a>
+					<?php endif; ?>
+
+					<?php
+					// "Write a review": straight to the form for a patient who can
+					// review, to login (and back) for a visitor, and to the
+					// explanation for a patient who hasn't had a visit yet.
+					$dak_review_href = '';
+
+					if ( 'guest' === $review_viewer && '' !== $review_login_url ) {
+						$dak_review_href = $review_login_url;
+					} elseif ( 'patient' === $review_viewer ) {
+						if ( ! empty( $review_request_active ) ) {
+							$dak_review_href = '#' . \DoctorAKPortal\Includes\Review_Requests::PANEL_ANCHOR;
+						} elseif ( $can_review ) {
+							$dak_review_href = '#dak-review-form';
+						} else {
+							$dak_review_href = '#dak-review-note';
+						}
+					}
+					?>
+					<?php if ( '' !== $dak_review_href ) : ?>
+						<a class="dak-button dak-button-secondary dak-profile-review-cta" href="<?php echo esc_url( $dak_review_href ); ?>"<?php echo 'guest' === $review_viewer ? '' : ' data-review-jump'; ?>>
+							<?php echo $dak_profile_view_icons['star']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+							<?php echo esc_html( 'patient' === $review_viewer && $can_review && $my_review && empty( $review_request_active ) ? __( 'Edit your review', 'doctor-ak-portal' ) : __( 'Write a review', 'doctor-ak-portal' ) ); ?>
 						</a>
 					<?php endif; ?>
 				</div>
@@ -540,14 +580,24 @@ if ( ! function_exists( 'dak_profile_view_truncate' ) ) {
 							<button type="submit" class="dak-button dak-button-primary"><?php esc_html_e( 'Submit review', 'doctor-ak-portal' ); ?></button>
 						</form>
 					<?php elseif ( ! $is_logged_in ) : ?>
-						<p class="dak-reviews-note"><?php esc_html_e( 'Log in as a patient to review this doctor after your appointment.', 'doctor-ak-portal' ); ?></p>
-					<?php else : ?>
-						<p class="dak-reviews-note"><?php esc_html_e( 'You can leave a review after a completed appointment with this doctor.', 'doctor-ak-portal' ); ?></p>
+						<p class="dak-reviews-note" id="dak-review-note" tabindex="-1">
+							<?php esc_html_e( 'Had an appointment with this doctor? Log in to your patient account to write a review.', 'doctor-ak-portal' ); ?>
+							<?php if ( '' !== $review_login_url ) : ?>
+								<a href="<?php echo esc_url( $review_login_url ); ?>"><?php esc_html_e( 'Log in to review', 'doctor-ak-portal' ); ?></a>
+							<?php endif; ?>
+						</p>
+					<?php elseif ( 'patient' === $review_viewer && empty( $review_request_active ) ) : ?>
+						<p class="dak-reviews-note" id="dak-review-note" tabindex="-1">
+							<?php
+							/* translators: %s: doctor name. */
+							echo esc_html( sprintf( __( 'You can review Dr. %s once you’ve had a completed appointment with them. Your review then appears here for other patients.', 'doctor-ak-portal' ), $doctor['name'] ) );
+							?>
+						</p>
 					<?php endif; ?>
 
-					<?php if ( ! empty( $doctor['reviews'] ) ) : ?>
+					<?php if ( ! empty( $reviews ) ) : ?>
 						<ul class="dak-reviews-list">
-							<?php foreach ( $doctor['reviews'] as $dak_review ) : ?>
+							<?php foreach ( $reviews as $dak_review ) : ?>
 								<li>
 									<div class="dak-reviews-head">
 										<strong><?php echo esc_html( $dak_review['name'] ); ?></strong>

@@ -136,6 +136,22 @@ class Doctor_Reviews {
 			);
 		}
 
+		if ( false !== $result ) {
+			$review_id = $exists ? (int) $exists['id'] : (int) $wpdb->insert_id;
+
+			/**
+			 * A review was saved (new or changed) — the CRM shows it in the
+			 * patient's history and follows up a low rating (Crm::on_review_saved()).
+			 *
+			 * @param int    $review_id  Review row ID.
+			 * @param int    $patient_id Patient user ID.
+			 * @param int    $doctor_id  Doctor user ID.
+			 * @param int    $rating     1-5.
+			 * @param string $comment    Comment.
+			 */
+			do_action( 'doctor_ak_review_saved', $review_id, (int) $patient_id, (int) $doctor_id, $rating, $comment );
+		}
+
 		return false !== $result;
 	}
 

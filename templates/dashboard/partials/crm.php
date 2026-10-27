@@ -6,7 +6,7 @@
  *
  * The table, filters, side panel and dialogs are drawn by
  * assets/js/doctor-ak-crm.js. The Emails tab (group emails and templates)
- * is for clinic staff only.
+ * and the Reports tab are for clinic staff only.
  *
  * @package DoctorAKPortal\Templates
  *
@@ -41,6 +41,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<button type="button" role="tab" id="dak-crm-tab-tasks" aria-controls="dak-crm-tasks" aria-selected="false" tabindex="-1" data-crm-switch="tasks"><?php esc_html_e( 'Tasks', 'doctor-ak-portal' ); ?> <span class="dak-crm-count" data-crm-task-count hidden></span></button>
 		<?php if ( $is_staff ) : ?>
 			<button type="button" role="tab" id="dak-crm-tab-emails" aria-controls="dak-crm-emails" aria-selected="false" tabindex="-1" data-crm-switch="emails"><?php esc_html_e( 'Emails', 'doctor-ak-portal' ); ?></button>
+			<button type="button" role="tab" id="dak-crm-tab-reports" aria-controls="dak-crm-reports" aria-selected="false" tabindex="-1" data-crm-switch="reports"><?php esc_html_e( 'Reports', 'doctor-ak-portal' ); ?></button>
 		<?php endif; ?>
 	</div>
 
@@ -60,6 +61,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 	<?php if ( $is_staff ) : ?>
 		<section class="dak-dashboard-card dak-crm-card" id="dak-crm-emails" role="tabpanel" aria-labelledby="dak-crm-tab-emails" data-crm-emails hidden></section>
+		<section class="dak-crm-reports" id="dak-crm-reports" role="tabpanel" aria-labelledby="dak-crm-tab-reports" data-crm-reports hidden></section>
 	<?php endif; ?>
 </div>
 

@@ -1,6 +1,6 @@
 # CRM
 
-One table for everyone the clinic deals with, from first enquiry to regular patient. Each row is a **contact**: a lead who hasn't booked yet, or a patient. Staff work the table with saved views, filters, saved segments and bulk actions. A side panel shows each contact's history, notes, tasks and emails. Staff can email one person or a whole filtered group, using reusable templates.
+One table for everyone the clinic deals with, from first enquiry to regular patient. Each row is a **contact**: a lead who hasn't booked yet, or a patient. Staff work the table with saved views, filters, saved segments and bulk actions. A side panel shows each contact's history, notes, tasks, emails and reviews. Staff can email one person or a whole filtered group, using reusable templates. Low patient ratings turn into call-back tasks, and a Reports tab shows how the clinic is doing.
 
 Email is the only message channel. Phone numbers are there for staff to call.
 
@@ -8,9 +8,9 @@ Email is the only message channel. Phone numbers are there for staff to call.
 
 | What | Where |
 | --- | --- |
-| Administrators and receptionists | Admin dashboard → Users → **CRM** (tabs: People, Tasks, Emails) |
+| Administrators and receptionists | Admin dashboard → Users → **CRM** (tabs: People, Tasks, Emails, Reports) |
 | Doctors | Doctor dashboard → **CRM** (People and Tasks; their own patients only) |
-| Code | `includes/class-crm.php` (contacts and rules), `includes/class-crm-email.php` (templates, group emails, unsubscribing, segments), `frontend/class-crm-handler.php` (AJAX `doctor_ak_crm`), `templates/dashboard/partials/crm.php`, `assets/js/doctor-ak-crm.js`, `assets/css/doctor-ak-crm.css` |
+| Code | `includes/class-crm.php` (contacts and rules), `includes/class-crm-email.php` (templates, group emails, unsubscribing, segments), `includes/class-crm-reports.php` (Reports), `frontend/class-crm-handler.php` (AJAX `doctor_ak_crm`), `templates/dashboard/partials/crm.php`, `assets/js/doctor-ak-crm.js`, `assets/css/doctor-ak-crm.css` |
 | Tables | `dak_crm_contacts`, `dak_crm_links`, `dak_crm_notes`, `dak_crm_tasks`, `dak_crm_activity`, `dak_crm_templates`, `dak_crm_campaigns`, `dak_crm_messages` (version option `dak_crm_db_version`) |
 | Background sending | WP-Cron event `doctor_ak_crm_email_queue` |
 
@@ -27,6 +27,8 @@ Every check runs on the server in `Crm_Handler`. Hidden buttons are a convenienc
 | Add a contact, bulk actions, merge, CSV export | ✓ | – |
 | Email people, manage templates, saved segments | ✓ | – |
 | See emails in a contact's history | ✓ | – |
+| See reviews in a contact's history | All | Only reviews of themselves |
+| Reports | ✓ | – |
 
 Receptionists need `crm` in their allowed sections, and the CRM tab can be switched off per role under role permissions. A doctor's history hides other doctors' bookings and visits and shows a one-line "hidden" note in their place.
 
@@ -147,6 +149,43 @@ Doctors don't see emails.
 
 Deliverability depends on the site's mail setup (Settings → Email Notifications sets the From name and address). Sending to large groups through a shared host's mail function can be throttled or land in spam, so a proper SMTP or transactional mail service is recommended before using group emails at scale.
 
+## Patient feedback
+
+Patients rate their doctor (1–5 stars, with an optional comment) on the doctor's profile page, or from the "How was your appointment?" email sent after a completed visit. Those are the same public reviews the site already had; the CRM now uses them too:
+
+- Every review appears in the patient's **history**, marked "Review". A changed review shows its latest rating.
+- A rating of **2 stars or fewer** creates a task, "Call back: rated Dr. … 2 of 5". It is due the same day and assigned to the contact's owner, or left unassigned if they have none. It appears in **Tasks** and in the reports.
+- While that call-back task is open, changing the review doesn't create another one. After the task is closed, a new low rating creates a new task.
+- Doctors see reviews of themselves in their patients' histories, but not reviews of other doctors.
+
+Only patients with an account can leave reviews; that's how the review system already worked.
+
+## Reports
+
+**CRM → Reports** (staff only). Choose a period: last 7, 30 or 90 days, this month, last month, this year, or your own dates (up to two years). Every number is worked out on the spot from existing records; nothing extra is stored.
+
+| Section | What it shows |
+| --- | --- |
+| Headline numbers | New patients, returning patients, leads that booked, possible no-show rate, revenue per patient, average rating |
+| Patients who visited | New vs returning patients per week (per month for periods over about 3 months), as a chart and a table |
+| Leads and conversion | People first seen in the period: how many were contacted, booked and visited, by source, plus the most common reasons leads were lost |
+| By doctor | Appointments dated in the period: visited, possible no-shows, no-show rate, cancelled, still to come, and average rating |
+| Revenue | Money collected in the period, per paying patient, and how much came from new patients |
+| Follow-up tasks | Tasks due in the period: done on time, done late, couldn't reach, cancelled, overdue, by person |
+| Emails | Group emails, emails sent, failed and skipped, and unsubscribes |
+| Patient feedback | Number of reviews, average, star breakdown, how many review emails were answered, and every low rating with the state of its call-back |
+
+How the numbers are counted:
+
+- **New patient**: their first-ever visit was in the period. **Returning**: they visited in the period and had visited before it.
+- A **visit** is a check-in, or an appointment marked Checked in or Completed by the doctor. Appointments the system auto-completes don't count, because they may be no-shows.
+- **Possible no-show**: more than 3 hours past the start, not cancelled, no visit. The rate is no-shows ÷ (visits + no-shows). Appointments still to come are left out.
+- **Leads** are people the clinic first heard of in the period, whether by booking, request, registration or being added by hand. "Booked" means they have a booking at any time since. The funnel describes these people as they are today.
+- **Revenue** comes from the same ledger as Earnings and Billing, for the same dates, with refunds already taken off. It includes bills raised during visits, including walk-ins. Money that can't be matched to a CRM contact is counted in the total but not in "per patient", and the report says how much.
+- **Review emails answered**: review-request emails sent in the period whose link was used to leave a review.
+
+The first time the CRM is opened after this update, it re-checks every contact once to fill in their first visit and the date the clinic first heard from them. The import had given older records the import date. A progress line shows while this runs; until it finishes, the report says some numbers may be low.
+
 ## Notes on the numbers
 
 - **Visits** counts check-ins and completed appointments.
@@ -156,5 +195,6 @@ Deliverability depends on the site's mail setup (Settings → Email Notification
 ## Not built yet
 
 - WhatsApp or SMS.
-- Feedback surveys after visits, and the reports dashboard (Phase 3).
-- Filtering by city or age (contacts don't store these yet).
+- Feedback from guests without an account (the review system needs an account).
+- Filtering or reporting by city or age (contacts don't store these yet).
+- Downloading reports as a file.

@@ -12,6 +12,7 @@ use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Crm;
 use DoctorAKPortal\Includes\Crm_Email;
+use DoctorAKPortal\Includes\Crm_Reports;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Phone;
 use DoctorAKPortal\Includes\Role_Permissions;
@@ -31,8 +32,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * - Administrators and receptionists ("staff"): everything.
  * - Doctors: only contacts who booked or visited them; they can view, add
  *   notes and tasks, and set a follow-up date — not change stage, owner,
- *   tags or contact details, merge, bulk-edit, export or email. Their
- *   timeline shows only their own bookings and visits, and no emails.
+ *   tags or contact details, merge, bulk-edit, export, email or see
+ *   reports. Their timeline shows only their own bookings, visits and
+ *   reviews, and no emails.
  * Each role can be switched off under Roles & Permissions ("CRM").
  */
 class Crm_Handler {
@@ -103,6 +105,7 @@ class Crm_Handler {
 				'doctors'    => $staff ? self::options( Appointments::doctor_options() ) : array(),
 				'tags'       => Crm::all_tags(),
 				'imported'   => Crm::backfill_done(),
+				'refreshed'  => Crm::refresh_done(),
 				'urls'       => self::urls( $viewer ),
 				'email'      => $staff ? array(
 					'purposes'    => Crm_Email::purposes(),
@@ -184,7 +187,7 @@ class Crm_Handler {
 		$op      = sanitize_key( $this->text( 'op' ) );
 		$staff   = 'doctor' !== $viewer['role'];
 		$user_id = get_current_user_id();
-		$staff_ops = array( 'create', 'bulk', 'merge', 'export', 'templates', 'template_save', 'template_status', 'email_check', 'email_preview', 'email_test', 'email_send', 'campaign_create', 'campaign_process', 'campaigns', 'campaign', 'campaign_cancel', 'campaign_retry', 'opt_out', 'segment_save', 'segment_delete' );
+		$staff_ops = array( 'create', 'bulk', 'merge', 'export', 'templates', 'template_save', 'template_status', 'email_check', 'email_preview', 'email_test', 'email_send', 'campaign_create', 'campaign_process', 'campaigns', 'campaign', 'campaign_cancel', 'campaign_retry', 'opt_out', 'segment_save', 'segment_delete', 'report' );
 
 		if ( ! $staff && in_array( $op, $staff_ops, true ) ) {
 			wp_send_json_error( array( 'message' => __( 'Only clinic staff can do that.', 'doctor-ak-portal' ) ), 403 );
@@ -193,6 +196,16 @@ class Crm_Handler {
 		switch ( $op ) {
 			case 'sync':
 				wp_send_json_success( Crm::backfill_batch( 150 ) );
+				break;
+
+			case 'refresh':
+				wp_send_json_success( Crm::refresh_batch( 100 ) );
+				break;
+
+			case 'report':
+				$report = Crm_Reports::build( $this->text( 'from' ), $this->text( 'to' ) );
+				$this->fail_if_error( $report );
+				wp_send_json_success( $report );
 				break;
 
 			case 'list':

@@ -34,7 +34,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Stages move forward on their own (a booking → Booked, a visit →
  * Patient); staff can also set them by hand. Symptom-checker input is never
  * stored anywhere, so it never reaches the CRM. Emails to contacts
- * (templates, group emails, unsubscribing) live in Crm_Email.
+ * (templates, group emails, unsubscribing) live in Crm_Email, and the
+ * Reports tab's numbers in Crm_Reports.
+ *
+ * Reviews patients leave (Doctor_Reviews) appear in their history, and a
+ * low rating creates a call-back task for the clinic (on_review_saved()).
  */
 class Crm {
 
@@ -60,6 +64,17 @@ class Crm {
 
 	/** Option holding the one-time import of existing records' progress. */
 	const BACKFILL_OPTION = 'dak_crm_backfill';
+
+	/**
+	 * Option holding the one-time re-summary of every contact for Reports
+	 * (first visit, first-seen date) on sites imported before they existed.
+	 */
+	const REFRESH_OPTION = 'dak_crm_refresh_1_2';
+
+	/** Reviews at or below this many stars get a call-back task. */
+	const LOW_RATING = 2;
+
+	const TASK_ORIGIN_REVIEW = 'review';
 
 	/** "Inactive" view: patients whose last visit is older than this. */
 	const INACTIVE_MONTHS = 6;
@@ -586,6 +601,63 @@ class Crm {
 	}
 
 	/**
+	 * 'doctor_ak_review_saved': a patient rated a doctor. The review shows in
+	 * their history (read from Doctor_Reviews by timeline()); a rating of
+	 * LOW_RATING or less also gets a call-back task, unless one for this
+	 * review is still open.
+	 *
+	 * @param int    $review_id  Review ID.
+	 * @param int    $patient_id Patient user ID.
+	 * @param int    $doctor_id  Doctor user ID.
+	 * @param int    $rating     1-5.
+	 * @param string $comment    Comment.
+	 * @return int Task ID created, or 0.
+	 */
+	public static function on_review_saved( $review_id, $patient_id, $doctor_id, $rating, $comment = '' ) {
+		global $wpdb;
+
+		if ( ! self::tables_ready() ) {
+			return 0;
+		}
+
+		$contact_id = self::ensure_for_user( (int) $patient_id, 'account' );
+
+		if ( ! $contact_id ) {
+			return 0;
+		}
+
+		self::touch( $contact_id, __( 'Left a review', 'doctor-ak-portal' ) );
+
+		if ( (int) $rating > self::LOW_RATING ) {
+			return 0;
+		}
+
+		$open = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM ' . self::table( self::T_TASKS ) . " WHERE origin = %s AND origin_id = %d AND status = 'open'", self::TASK_ORIGIN_REVIEW, (int) $review_id ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name.
+
+		if ( $open ) {
+			return 0;
+		}
+
+		$contact = self::find( $contact_id );
+		$doctor  = get_userdata( (int) $doctor_id );
+		$owner   = $contact && array_key_exists( $contact['owner_id'], self::staff() ) ? $contact['owner_id'] : 0;
+		$task    = self::add_task(
+			$contact_id,
+			array(
+				/* translators: 1: doctor name, 2: stars. */
+				'title'       => sprintf( __( 'Call back: rated %1$s %2$d of 5', 'doctor-ak-portal' ), $doctor ? 'Dr. ' . trim( $doctor->first_name . ' ' . $doctor->last_name ) : __( 'their doctor', 'doctor-ak-portal' ), (int) $rating ),
+				'due_date'    => current_time( 'Y-m-d' ),
+				'assignee_id' => $owner,
+				'origin'      => self::TASK_ORIGIN_REVIEW,
+				'origin_id'   => (int) $review_id,
+			),
+			0
+		);
+
+		return is_wp_error( $task ) ? 0 : (int) $task;
+	}
+
+	/**
 	 * Whether the CRM tables exist yet (hooks can fire before the first
 	 * upgrade on a site that just received the files).
 	 */
@@ -659,6 +731,7 @@ class Crm {
 		$doctors     = array();
 		$services    = array();
 		$visits      = 0;
+		$first_visit = '';
 		$last_visit  = '';
 		$next        = '';
 		$paid        = 0.0;
@@ -669,8 +742,21 @@ class Crm {
 		$last_booked = '';
 		$events      = array( array( $contact['created_at'], __( 'Added', 'doctor-ak-portal' ) ) );
 
+		// When the clinic first heard of them: the import gives old records
+		// today's date, so the earliest booking/request/registration wins.
+		$first_seen = $contact['created_at'];
+		$seen       = function ( $when ) use ( &$first_seen ) {
+			if ( '' !== (string) $when && (string) $when < $first_seen ) {
+				$first_seen = (string) $when;
+			}
+		};
+
 		if ( $contact['user_id'] > 0 ) {
 			$user = get_userdata( $contact['user_id'] );
+
+			if ( $user && ! empty( $user->user_registered ) ) {
+				$seen( function_exists( 'get_date_from_gmt' ) ? get_date_from_gmt( $user->user_registered ) : $user->user_registered );
+			}
 
 			if ( $user ) {
 				$identity = self::user_identity( $user );
@@ -709,6 +795,7 @@ class Crm {
 			}
 
 			if ( '' !== $created ) {
+				$seen( $created );
 				$events[] = array( $created, $cancelled ? __( 'Booking cancelled', 'doctor-ak-portal' ) : __( 'Booked', 'doctor-ak-portal' ) );
 
 				if ( ! $cancelled ) {
@@ -719,7 +806,8 @@ class Crm {
 
 			if ( $attended ) {
 				++$visits;
-				$last_visit = max( $last_visit, (string) $a['date'] );
+				$last_visit  = max( $last_visit, (string) $a['date'] );
+				$first_visit = '' === $first_visit ? (string) $a['date'] : min( $first_visit, (string) $a['date'] );
 				$events[]   = array( $a['date'] . ' ' . $a['time'], __( 'Visited', 'doctor-ak-portal' ) );
 			} elseif ( ! $cancelled && false !== $start && $now > $start + Appointments::AUTO_COMPLETE_HOURS_AFTER * HOUR_IN_SECONDS ) {
 				// Past, not cancelled, no check-in or doctor completion: possibly
@@ -744,8 +832,10 @@ class Crm {
 
 		foreach ( self::walk_in_encounters( $contact ) as $e ) {
 			++$visits;
-			$day        = substr( (string) $e['checked_in_at'], 0, 10 );
-			$last_visit = max( $last_visit, $day );
+			$day         = substr( (string) $e['checked_in_at'], 0, 10 );
+			$last_visit  = max( $last_visit, $day );
+			$first_visit = '' === $first_visit ? $day : min( $first_visit, $day );
+			$seen( (string) $e['checked_in_at'] );
 			$doctors[]  = (int) $e['doctor_id'];
 			$events[]   = array( $e['checked_in_at'], __( 'Visited (walk-in)', 'doctor-ak-portal' ) );
 		}
@@ -759,6 +849,7 @@ class Crm {
 				}
 
 				$services[ (string) $r['service_name'] ] = (string) $r['created_at'];
+				$seen( (string) $r['created_at'] );
 				$events[]                                 = array( (string) $r['created_at'], __( 'Requested a service', 'doctor-ak-portal' ) );
 			}
 		}
@@ -808,6 +899,7 @@ class Crm {
 			array(
 				'doctor_ids'          => self::pipe( array_values( array_unique( array_filter( $doctors ) ) ) ),
 				'flags'               => self::pipe( $flags ),
+				'first_visit'         => '' !== $first_visit ? $first_visit : null,
 				'last_visit'          => '' !== $last_visit ? $last_visit : null,
 				'next_appointment'    => '' !== $next ? $next : null,
 				'summary'             => wp_json_encode(
@@ -826,6 +918,10 @@ class Crm {
 				'last_activity_label' => $events[0][1],
 			)
 		);
+
+		if ( $first_seen < $contact['created_at'] ) {
+			$update['created_at'] = $first_seen;
+		}
 
 		if ( $stage !== $contact['stage'] ) {
 			$update['stage']            = $stage;
@@ -1281,7 +1377,8 @@ class Crm {
 	}
 
 	/**
-	 * @param array $input title, due_date, assignee_id.
+	 * @param array $input title, due_date, assignee_id (and, for tasks the
+	 *                     system creates, origin + origin_id).
 	 * @return int|\WP_Error Task ID.
 	 */
 	public static function add_task( $contact_id, array $input, $user_id ) {
@@ -1316,6 +1413,8 @@ class Crm {
 				'created_at'   => current_time( 'mysql' ),
 				'completed_by' => 0,
 				'completed_at' => null,
+				'origin'       => isset( $input['origin'] ) ? substr( sanitize_key( $input['origin'] ), 0, 20 ) : '',
+				'origin_id'    => isset( $input['origin_id'] ) ? (int) $input['origin_id'] : 0,
 			)
 		);
 
@@ -1687,6 +1786,27 @@ class Crm {
 			);
 		}
 
+		if ( $contact['user_id'] > 0 ) {
+			$reviews = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . Doctor_Reviews::table_name() . ' WHERE patient_id = %d', $contact['user_id'] ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name.
+
+			foreach ( $reviews ? $reviews : array() as $rv ) {
+				if ( $scope_doctor && (int) $rv['doctor_id'] !== $scope_doctor ) {
+					++$hidden;
+					continue;
+				}
+
+				$stars   = (int) $rv['rating'];
+				$items[] = array(
+					'at'     => $rv['updated_at'],
+					'type'   => 'review',
+					/* translators: 1: doctor name, 2: stars. */
+					'title'  => sprintf( __( 'Rated %1$s %2$d of 5', 'doctor-ak-portal' ), $name( (int) $rv['doctor_id'] ), $stars ),
+					'detail' => trim( (string) $rv['comment'] ),
+					'meta'   => array( 'rating' => $stars ),
+				);
+			}
+		}
+
 		$notes = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . self::table( self::T_NOTES ) . ' WHERE contact_id = %d', $contact['id'] ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name.
 
 		foreach ( $notes ? $notes : array() as $n ) {
@@ -1862,6 +1982,11 @@ class Crm {
 			$state['phase'] = $next[ $state['phase'] ];
 			$state['after'] = 0;
 			$state['done']  = '' === $state['phase'];
+
+			// Everything was just summarised with today's rules.
+			if ( $state['done'] ) {
+				update_option( self::REFRESH_OPTION, array( 'after' => 0, 'done' => true ), false );
+			}
 		} else {
 			$state['after'] = max( $ids );
 		}
@@ -1873,6 +1998,43 @@ class Crm {
 
 	public static function backfill_done() {
 		$state = get_option( self::BACKFILL_OPTION, array() );
+
+		return ! empty( $state['done'] );
+	}
+
+	/**
+	 * Re-summarises existing contacts in batches (first visit, first-seen
+	 * date) — once, on sites imported before Reports existed.
+	 *
+	 * @param int $limit Contacts per call.
+	 * @return array { done: bool, after: int, total: int }
+	 */
+	public static function refresh_batch( $limit = 100 ) {
+		global $wpdb;
+
+		$state = wp_parse_args( (array) get_option( self::REFRESH_OPTION, array() ), array( 'after' => 0, 'done' => false ) );
+
+		if ( $state['done'] ) {
+			return $state;
+		}
+
+		$ids = array_map( 'intval', $wpdb->get_col( $wpdb->prepare( 'SELECT id FROM ' . self::table( self::T_CONTACTS ) . ' WHERE id > %d ORDER BY id ASC LIMIT %d', (int) $state['after'], (int) $limit ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name.
+
+		foreach ( $ids as $id ) {
+			self::refresh( $id );
+		}
+
+		$state['after'] = $ids ? max( $ids ) : $state['after'];
+		$state['done']  = count( $ids ) < $limit;
+		$state['total'] = (int) $wpdb->get_var( 'SELECT COUNT(*) FROM ' . self::table( self::T_CONTACTS ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name.
+
+		update_option( self::REFRESH_OPTION, $state, false );
+
+		return $state;
+	}
+
+	public static function refresh_done() {
+		$state = get_option( self::REFRESH_OPTION, array() );
 
 		return ! empty( $state['done'] );
 	}

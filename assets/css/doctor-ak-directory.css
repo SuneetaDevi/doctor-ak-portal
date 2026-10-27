@@ -3454,6 +3454,21 @@
 .dak-review-request .dak-button { justify-self: start; }
 .dak-review-request .dak-visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect( 0, 0, 0, 0 ); white-space: nowrap; border: 0; }
 .dak-reviews-note { margin: 0 0 1rem; color: var( --dak-muted ); font-size: 0.9rem; }
+.dak-reviews-note a { color: var( --dak-primary ); font-weight: 600; }
+/* "Write a review" lands here: a brief ring so the eye finds the form. */
+.dak-review-form.dak-review-highlight,
+.dak-reviews-note.dak-review-highlight,
+.dak-review-request.dak-review-highlight { animation: dak-review-flash 1.6s ease-out 1; border-radius: 12px; }
+.dak-reviews-note:focus { outline: none; }
+@keyframes dak-review-flash {
+	0%, 40% { box-shadow: 0 0 0 3px var( --dak-primary ); }
+	100% { box-shadow: 0 0 0 3px transparent; }
+}
+@media ( prefers-reduced-motion: reduce ) {
+	.dak-review-form.dak-review-highlight,
+	.dak-reviews-note.dak-review-highlight,
+	.dak-review-request.dak-review-highlight { animation: none; box-shadow: 0 0 0 3px var( --dak-primary ); }
+}
 .dak-reviews-list { list-style: none; margin: 0; padding: 0; display: grid; }
 .dak-reviews-list li { padding: 0.9rem 0; border-top: 1px solid var( --dak-border ); }
 .dak-reviews-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }

@@ -204,6 +204,18 @@ class Doctor_Profile_View {
 			)
 			: '';
 
+		// Who is looking decides what "Write a review" does: patients go to
+		// the form (or are told why they can't review yet), visitors log in
+		// first and come back here, and staff/doctors don't get the button.
+		$viewer = 'guest';
+
+		if ( is_user_logged_in() ) {
+			$viewer = in_array( Roles::PATIENT_ROLE, (array) wp_get_current_user()->roles, true ) ? 'patient' : 'other';
+		}
+
+		$login_url        = Page_Finder::url_for_shortcode( 'doctor_login' );
+		$review_login_url = $login_url ? add_query_arg( 'redirect_to', rawurlencode( esc_url_raw( home_url( add_query_arg( null, null ) ) ) . '#dak-profile-reviews' ), $login_url ) : '';
+
 		return $this->template_loader->get_template(
 			'directory/doctor-profile-view.php',
 			array(
@@ -230,6 +242,8 @@ class Doctor_Profile_View {
 				'can_review'             => is_user_logged_in() && Doctor_Reviews::can_review( get_current_user_id(), $doctor->ID ),
 				'my_review'              => is_user_logged_in() ? Doctor_Reviews::find_for_patient( get_current_user_id(), $doctor->ID ) : null,
 				'is_logged_in'           => is_user_logged_in(),
+				'review_viewer'          => $viewer,
+				'review_login_url'       => $review_login_url,
 				'review_request_html'    => $review_request_html,
 				// One review form per page: the emailed link's form replaces the usual one.
 				'review_request_active'  => null !== $review_request && 'valid' === $review_request['status'],

@@ -1277,7 +1277,7 @@
 	}
 
 	function timelineSection( c ) {
-		var icons = { appointment: 'Booking', visit: 'Visit', request: 'Request', note: 'Note', activity: 'Update', email: 'Email', hidden: '' };
+		var icons = { appointment: 'Booking', visit: 'Visit', request: 'Request', note: 'Note', activity: 'Update', email: 'Email', review: 'Review', hidden: '' };
 		var list = h( 'ol', { class: 'dak-crm-timeline' } );
 
 		c.timeline.forEach( function ( item ) {
@@ -1298,7 +1298,7 @@
 				h( 'div', { class: 'dak-crm-prewrap', text: item.meta.body } ),
 			] ) : null;
 
-			list.appendChild( h( 'li', { class: 'is-' + item.type }, [
+			list.appendChild( h( 'li', { class: 'is-' + item.type + ( item.meta && item.meta.rating && item.meta.rating <= 2 ? ' is-low' : '' ) }, [
 				icons[ item.type ] ? h( 'span', { class: 'dak-crm-tl-type', text: icons[ item.type ] } ) : null,
 				h( 'span', { class: 'dak-crm-tl-body' }, [
 					h( 'strong', { text: item.title } ),
@@ -1435,6 +1435,16 @@
 			loadTasks();
 		} else if ( 'emails' === name ) {
 			loadEmails();
+		}
+
+		var reports = root.querySelector( '[data-crm-reports]' );
+
+		if ( reports ) {
+			reports.hidden = 'reports' !== name;
+
+			if ( 'reports' === name ) {
+				loadReports();
+			}
 		}
 	}
 
@@ -2334,6 +2344,347 @@
 		] ) );
 	}
 
+	/* ------------------------------------------------------------------
+	 * Reports (staff)
+	 * ---------------------------------------------------------------- */
+
+	var reportState = { preset: '30', from: '', to: '' };
+
+	function ymd( d ) {
+		return d.getFullYear() + '-' + ( '0' + ( d.getMonth() + 1 ) ).slice( -2 ) + '-' + ( '0' + d.getDate() ).slice( -2 );
+	}
+
+	/** [from, to] for a preset, from the clinic's today. */
+	function presetRange( preset ) {
+		var today = parse( config.today );
+		var y = today.getFullYear();
+		var m = today.getMonth();
+
+		switch ( preset ) {
+			case '7':
+			case '30':
+			case '90':
+				return [ addDays( config.today, 1 - Number( preset ) ), config.today ];
+			case 'month':
+				return [ ymd( new Date( y, m, 1 ) ), config.today ];
+			case 'last_month':
+				return [ ymd( new Date( y, m - 1, 1 ) ), ymd( new Date( y, m, 0 ) ) ];
+			case 'year':
+				return [ ymd( new Date( y, 0, 1 ) ), config.today ];
+		}
+
+		return [ reportState.from || addDays( config.today, -29 ), reportState.to || config.today ];
+	}
+
+	function pct( n ) {
+		return null === n || undefined === n ? '—' : ( Math.round( n * 10 ) / 10 ) + '%';
+	}
+
+	function num( n ) {
+		return Number( n || 0 ).toLocaleString( 'en-PK' );
+	}
+
+	/** Shared tooltip for chart marks (hover and keyboard focus). */
+	var tipEl = null;
+
+	function withTip( el, text ) {
+		el.setAttribute( 'tabindex', '0' );
+		el.setAttribute( 'aria-label', text );
+
+		function show() {
+			if ( ! tipEl ) {
+				tipEl = h( 'div', { class: 'dak-crm-tip', role: 'presentation' } );
+				document.body.appendChild( tipEl );
+			}
+
+			var r = el.getBoundingClientRect();
+			tipEl.textContent = text;
+			tipEl.hidden = false;
+			tipEl.style.left = Math.max( 8, Math.min( window.innerWidth - tipEl.offsetWidth - 8, r.left + r.width / 2 - tipEl.offsetWidth / 2 ) ) + 'px';
+			tipEl.style.top = Math.max( 8, r.top - tipEl.offsetHeight - 8 ) + 'px';
+		}
+
+		function hide() {
+			if ( tipEl ) {
+				tipEl.hidden = true;
+			}
+		}
+
+		el.addEventListener( 'mouseenter', show );
+		el.addEventListener( 'focus', show );
+		el.addEventListener( 'mouseleave', hide );
+		el.addEventListener( 'blur', hide );
+
+		return el;
+	}
+
+	function tile( label, value, sub ) {
+		return h( 'div', { class: 'dak-crm-tile' }, [
+			h( 'span', { class: 'dak-crm-tile-label', text: label } ),
+			h( 'strong', { class: 'dak-crm-tile-value', text: value } ),
+			sub ? h( 'span', { class: 'dak-crm-tile-sub', text: sub } ) : null,
+		] );
+	}
+
+	function card( title, help, kids ) {
+		return h( 'section', { class: 'dak-dashboard-card dak-crm-card dak-crm-report-card' }, [
+			h( 'h2', { class: 'dak-crm-report-title', text: title } ),
+			help ? h( 'p', { class: 'dak-crm-report-help', text: help } ) : null,
+		].concat( kids ) );
+	}
+
+	function dataTable( headings, rows ) {
+		return h( 'div', { class: 'dak-crm-table-wrap' }, [ h( 'table', { class: 'dak-data-table dak-crm-table dak-crm-report-table' }, [
+			h( 'thead', {}, [ h( 'tr', {}, headings.map( function ( t, i ) {
+				return h( 'th', { scope: 'col', class: i ? 'is-num' : '', text: t } );
+			} ) ) ] ),
+			h( 'tbody', {}, rows.map( function ( cells ) {
+				return h( 'tr', {}, cells.map( function ( c, i ) {
+					return h( 'td', { 'data-label': headings[ i ], class: i ? 'is-num' : 'dak-col-primary' }, [ 'object' === typeof c && c ? c : String( null === c || undefined === c ? '—' : c ) ] );
+				} ) );
+			} ) ),
+		] ) ] );
+	}
+
+	/** Horizontal bars, one series (one hue), each labelled with its value. */
+	function barList( items, total ) {
+		var max = Math.max.apply( null, items.map( function ( i ) {
+			return i.value;
+		} ).concat( [ 1 ] ) );
+
+		return h( 'ul', { class: 'dak-crm-bars' }, items.map( function ( i ) {
+			var share = total ? ' (' + pct( 100 * i.value / total ) + ')' : '';
+			var bar = withTip( h( 'span', { class: 'dak-crm-bar-fill', style: 'width:' + ( i.value ? Math.max( 1, 100 * i.value / max ) : 0 ) + '%' } ), i.label + ': ' + num( i.value ) + share );
+
+			return h( 'li', {}, [
+				h( 'span', { class: 'dak-crm-bar-label', text: i.label } ),
+				h( 'span', { class: 'dak-crm-bar-track' }, [ bar ] ),
+				h( 'span', { class: 'dak-crm-bar-value', text: num( i.value ) + share } ),
+			] );
+		} ) );
+	}
+
+	/** Stacked columns: new (series 1) + returning (series 2) per bucket. */
+	function patientsChart( series ) {
+		var max = Math.max.apply( null, series.map( function ( s ) {
+			return s.new + s.returning;
+		} ).concat( [ 1 ] ) );
+		var top = Math.max( 2, Math.ceil( max / 2 ) * 2 );
+		var cols = h( 'div', { class: 'dak-crm-cols', role: 'img', 'aria-label': 'Patients who visited, new and returning, per period. The same numbers are in the table below.' } );
+
+		series.forEach( function ( s ) {
+			var stack = h( 'div', { class: 'dak-crm-col-stack' } );
+
+			if ( s.returning ) {
+				stack.appendChild( withTip( h( 'span', { class: 'dak-crm-seg is-returning', style: 'height:' + ( 100 * s.returning / top ) + '%' } ), s.label + ': ' + s.returning + ' returning' ) );
+			}
+
+			if ( s.new ) {
+				stack.appendChild( withTip( h( 'span', { class: 'dak-crm-seg is-new', style: 'height:' + ( 100 * s.new / top ) + '%' } ), s.label + ': ' + s.new + ' new' ) );
+			}
+
+			cols.appendChild( h( 'div', { class: 'dak-crm-col' }, [ stack, h( 'span', { class: 'dak-crm-col-label', text: s.label.replace( 'Week of ', '' ) } ) ] ) );
+		} );
+
+		return h( 'div', { class: 'dak-crm-chart' }, [
+			h( 'div', { class: 'dak-crm-legend' }, [
+				h( 'span', {}, [ h( 'i', { class: 'dak-crm-key is-new' } ), 'New patients' ] ),
+				h( 'span', {}, [ h( 'i', { class: 'dak-crm-key is-returning' } ), 'Returning patients' ] ),
+			] ),
+			h( 'div', { class: 'dak-crm-plot' }, [
+				h( 'div', { class: 'dak-crm-axis', 'aria-hidden': 'true' }, [ h( 'span', { text: String( top ) } ), h( 'span', { text: String( top / 2 ) } ), h( 'span', { text: '0' } ) ] ),
+				cols,
+			] ),
+		] );
+	}
+
+	function loadReports() {
+		var box = root.querySelector( '[data-crm-reports]' );
+		var range = presetRange( reportState.preset );
+
+		reportState.from = range[ 0 ];
+		reportState.to = range[ 1 ];
+		box.textContent = '';
+
+		// Controls.
+		var preset = select( [
+			{ id: '7', label: 'Last 7 days' },
+			{ id: '30', label: 'Last 30 days' },
+			{ id: '90', label: 'Last 90 days' },
+			{ id: 'month', label: 'This month' },
+			{ id: 'last_month', label: 'Last month' },
+			{ id: 'year', label: 'This year' },
+			{ id: 'custom', label: 'Custom dates' },
+		], reportState.preset, { class: 'dak-crm-input', id: 'dak-crm-r-preset' } );
+		var from = h( 'input', { type: 'date', class: 'dak-crm-input', id: 'dak-crm-r-from', value: reportState.from, max: config.today } );
+		var to = h( 'input', { type: 'date', class: 'dak-crm-input', id: 'dak-crm-r-to', value: reportState.to, max: config.today } );
+		var custom = 'custom' === reportState.preset;
+
+		preset.addEventListener( 'change', function () {
+			reportState.preset = preset.value;
+			loadReports();
+		} );
+		[ from, to ].forEach( function ( input ) {
+			input.disabled = ! custom;
+			input.addEventListener( 'change', function () {
+				if ( from.value && to.value ) {
+					reportState.from = from.value;
+					reportState.to = to.value;
+					loadReports();
+				}
+			} );
+		} );
+
+		box.appendChild( h( 'div', { class: 'dak-dashboard-card dak-crm-card dak-crm-report-controls' }, [
+			h( 'label', { class: 'dak-crm-filter', for: 'dak-crm-r-preset' }, [ h( 'span', { text: 'Period' } ), preset ] ),
+			h( 'label', { class: 'dak-crm-filter', for: 'dak-crm-r-from' }, [ h( 'span', { text: 'From' } ), from ] ),
+			h( 'label', { class: 'dak-crm-filter', for: 'dak-crm-r-to' }, [ h( 'span', { text: 'To' } ), to ] ),
+			h( 'p', { class: 'dak-crm-report-range', text: fmtDate( reportState.from ) + ' – ' + fmtDate( reportState.to ) } ),
+		] ) );
+
+		var body = h( 'div', { class: 'dak-crm-report-body', 'aria-live': 'polite', 'aria-busy': 'true' }, [ h( 'p', { class: 'dak-crm-loading', role: 'status', text: 'Working out the numbers…' } ) ] );
+		box.appendChild( body );
+
+		post( 'report', { from: reportState.from, to: reportState.to } ).then( function ( res ) {
+			body.removeAttribute( 'aria-busy' );
+			body.textContent = '';
+
+			if ( res.success ) {
+				renderReport( body, res.data );
+			} else {
+				body.appendChild( h( 'p', { class: 'dak-crm-empty', text: res.data.message } ) );
+			}
+		} );
+	}
+
+	function renderReport( body, r ) {
+		var p = r.patients;
+		var l = r.leads;
+		var a = r.appointments;
+		var rev = r.revenue;
+		var f = r.followups;
+		var e = r.emails;
+		var fb = r.feedback;
+
+		if ( ! r.complete ) {
+			body.appendChild( h( 'p', { class: 'dak-crm-import', text: 'Older records are still being brought into the CRM, so some numbers may be low until that finishes.' } ) );
+		}
+
+		// Headline numbers.
+		body.appendChild( h( 'div', { class: 'dak-crm-tiles' }, [
+			tile( 'New patients', num( p.new ), 'first visit in this period' ),
+			tile( 'Returning patients', num( p.returning ), 'visited before, came back' ),
+			tile( 'Leads → booking', pct( l.booking_rate ), num( l.booked ) + ' of ' + num( l.added ) + ' new people booked' ),
+			tile( 'Possible no-shows', pct( a.no_show_rate ), num( a.no_show ) + ' of ' + num( a.attended + a.no_show ) + ' past appointments' ),
+			tile( 'Revenue per patient', null === rev.per_patient ? '—' : money( rev.per_patient ), money( rev.collected ) + ' collected' ),
+			tile( 'Average rating', null === fb.average ? '—' : fb.average + ' / 5', num( fb.count ) + ( 1 === fb.count ? ' review' : ' reviews' ) ),
+		] ) );
+
+		// Patients over time.
+		var hasVisits = p.series.some( function ( s ) {
+			return s.new || s.returning;
+		} );
+		body.appendChild( card( 'Patients who visited', 'Each person is counted once per ' + ( /^Week/.test( ( p.series[ 0 ] || {} ).label || '' ) ? 'week' : 'month' ) + '. New = their first-ever visit; returning = they had visited before.', [
+			hasVisits ? patientsChart( p.series ) : h( 'p', { class: 'dak-crm-empty', text: 'No visits in this period.' } ),
+			hasVisits ? h( 'details', { class: 'dak-crm-details' }, [
+				h( 'summary', { text: 'Show as a table' } ),
+				dataTable( [ 'Period', 'New', 'Returning' ], p.series.map( function ( s ) {
+					return [ s.label, s.new, s.returning ];
+				} ) ),
+			] ) : null,
+		] ) );
+
+		// Leads.
+		body.appendChild( card( 'Leads and conversion', 'People the clinic first heard from in this period — by booking, request, registration or added by hand — and how far they have got so far.', [
+			l.added ? barList( [
+				{ label: 'New people', value: l.added },
+				{ label: 'Contacted or further', value: l.contacted },
+				{ label: 'Booked', value: l.booked },
+				{ label: 'Visited', value: l.visited },
+			], l.added ) : h( 'p', { class: 'dak-crm-empty', text: 'No new people in this period.' } ),
+			l.added ? h( 'h3', { class: 'dak-crm-report-sub', text: 'By source' } ) : null,
+			l.added ? dataTable( [ 'Source', 'New people', 'Booked', 'Visited', 'Lost', 'Booking rate' ], l.by_source.map( function ( s ) {
+				return [ s.label, num( s.added ), num( s.booked ), num( s.visited ), num( s.lost ), pct( s.booking_rate ) ];
+			} ) ) : null,
+			l.lost ? h( 'h3', { class: 'dak-crm-report-sub', text: 'Why leads were lost (' + l.lost + ')' } ) : null,
+			l.lost ? h( 'ul', { class: 'dak-crm-reasons' }, l.lost_reasons.map( function ( x ) {
+				return h( 'li', {}, [ h( 'span', { text: x.reason } ), h( 'strong', { text: num( x.count ) } ) ] );
+			} ) ) : null,
+		] ) );
+
+		// Doctors.
+		body.appendChild( card( 'Appointments, no-shows and ratings by doctor', 'Appointments dated in this period. A possible no-show is ' + 'an appointment more than 3 hours past its start with no check-in, no completion by the doctor and no cancellation — a reason to call, not a confirmed missed visit.', [
+			a.by_doctor.length ? dataTable( [ 'Doctor', 'Appointments', 'Visited', 'Possible no-shows', 'No-show rate', 'Cancelled', 'Still to come', 'Rating' ], a.by_doctor.map( function ( d ) {
+				return [ d.label, num( d.total ), num( d.attended ), num( d.no_show ), pct( d.no_show_rate ), num( d.cancelled ), num( d.upcoming ), d.rating ? d.rating.average + ' (' + d.rating.count + ')' : '—' ];
+			} ) ) : h( 'p', { class: 'dak-crm-empty', text: 'No appointments in this period.' } ),
+		] ) );
+
+		// Revenue.
+		body.appendChild( card( 'Revenue', 'Money collected in this period, from the same records as Earnings and Billing (refunds already taken off). Includes bills raised during visits.', [
+			h( 'div', { class: 'dak-crm-tiles is-compact' }, [
+				tile( 'Collected', money( rev.collected ) ),
+				tile( 'Paying patients', num( rev.patients ) ),
+				tile( 'Per patient', null === rev.per_patient ? '—' : money( rev.per_patient ) ),
+				tile( 'From new patients', money( rev.from_new ) ),
+			] ),
+			rev.unlinked ? h( 'p', { class: 'dak-crm-report-help', text: money( rev.unlinked ) + ' couldn’t be matched to a person in the CRM (for example a booking that hasn’t synced yet), so it’s in “Collected” but not in “Per patient”.' } ) : null,
+		] ) );
+
+		// Follow-ups.
+		body.appendChild( card( 'Follow-up tasks', 'Tasks that were due in this period and what happened to them.', [
+			f.due ? barList( [
+				{ label: 'Done on time', value: f.on_time },
+				{ label: 'Done late', value: f.late },
+				{ label: 'Couldn’t reach', value: f.not_reached },
+				{ label: 'Cancelled', value: f.cancelled },
+				{ label: 'Overdue, still open', value: f.overdue },
+				{ label: 'Open, not yet due', value: f.open },
+			], f.due ) : h( 'p', { class: 'dak-crm-empty', text: 'No tasks were due in this period.' } ),
+			f.due ? dataTable( [ 'Person', 'Due', 'Done on time', 'Done late', 'Couldn’t reach', 'Overdue' ], f.by_person.map( function ( x ) {
+				return [ x.label, num( x.due ), num( x.on_time ), num( x.late ), num( x.not_reached ), num( x.overdue ) ];
+			} ) ) : null,
+		] ) );
+
+		// Emails.
+		body.appendChild( card( 'Emails', 'Emails sent from the CRM in this period (automatic booking emails aren’t counted here).', [
+			h( 'div', { class: 'dak-crm-tiles is-compact' }, [
+				tile( 'Group emails', num( e.group_emails ) ),
+				tile( 'Emails sent', num( e.sent ) ),
+				tile( 'Failed', num( e.failed ) ),
+				tile( 'Skipped', num( e.skipped ), 'no address or unsubscribed' ),
+				tile( 'Unsubscribed', num( e.unsubscribed ), 'from offers & news' ),
+			] ),
+		] ) );
+
+		// Feedback.
+		var starRows = [ 5, 4, 3, 2, 1 ].map( function ( s ) {
+			return { label: s + ( 1 === s ? ' star' : ' stars' ), value: fb.stars[ s ] || 0 };
+		} );
+		var taskLabel = { open: 'Call-back open', done: 'Called back', not_reached: 'Couldn’t reach', cancelled: 'Task cancelled', '': 'No task' };
+
+		body.appendChild( card( 'Patient feedback', 'Reviews patients left (or changed) in this period, from their profile page or the “How was your appointment?” email. Ratings of ' + fb.low_threshold + ' stars or fewer get a call-back task for reception.', [
+			h( 'div', { class: 'dak-crm-tiles is-compact' }, [
+				tile( 'Reviews', num( fb.count ) ),
+				tile( 'Average', null === fb.average ? '—' : fb.average + ' / 5' ),
+				tile( 'Review emails answered', pct( fb.response_rate ), num( fb.requests_used ) + ' of ' + num( fb.requests_sent ) + ' sent in this period' ),
+			] ),
+			fb.count ? barList( starRows, fb.count ) : null,
+			fb.low.length ? h( 'h3', { class: 'dak-crm-report-sub', text: 'Low ratings' } ) : null,
+			fb.low.length ? h( 'ul', { class: 'dak-crm-list dak-crm-low' }, fb.low.map( function ( x ) {
+				return h( 'li', {}, [
+					h( 'span', {}, [
+						x.contactId ? h( 'button', { type: 'button', class: 'dak-crm-name', text: x.name, onclick: function ( ev ) {
+							openPanel( x.contactId, ev.currentTarget );
+						} } ) : h( 'strong', { text: x.name } ),
+						h( 'span', { class: 'dak-cell-sub', text: x.rating + ' of 5 for ' + x.doctor + ' · ' + fmtDate( x.at ) } ),
+						x.comment ? h( 'span', { class: 'dak-crm-quote', text: '“' + x.comment + '”' } ) : null,
+					] ),
+					h( 'span', { class: 'dak-crm-flag' + ( 'open' === x.task ? ' is-amber' : '' ), text: taskLabel[ x.task ] || x.task } ),
+				] );
+			} ) ) : null,
+		] ) );
+	}
+
 	/* ------------------------------------------------------------------ */
 
 	function start() {
@@ -2347,9 +2698,42 @@
 		} );
 	}
 
-	if ( config.imported ) {
-		start();
+	/** Once, on sites set up before Reports: re-summarise every contact. */
+	function refreshExisting( done ) {
+		var box = root.querySelector( '[data-crm-import]' );
+
+		box.hidden = false;
+		box.textContent = 'Updating CRM records for the new reports…';
+
+		( function step() {
+			post( 'refresh', {} ).then( function ( res ) {
+				if ( ! res.success ) {
+					box.textContent = 'Couldn’t finish updating records. Reload the page to continue where it stopped.';
+					done();
+					return;
+				}
+
+				if ( res.data.done ) {
+					box.hidden = true;
+					config.refreshed = true;
+					done();
+				} else {
+					box.textContent = 'Updating CRM records for the new reports: ' + Math.min( res.data.after, res.data.total ) + ' checked so far…';
+					step();
+				}
+			} );
+		}() );
+	}
+
+	if ( ! config.imported ) {
+		// A fresh import also fills in everything Reports needs.
+		importExisting( function () {
+			config.refreshed = true;
+			start();
+		} );
+	} else if ( ! config.refreshed ) {
+		refreshExisting( start );
 	} else {
-		importExisting( start );
+		start();
 	}
 }() );

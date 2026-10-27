@@ -265,11 +265,13 @@ class Db_Installer {
 	/**
 	 * Current CRM tables' schema version (see Crm). 1.1.0 adds the email
 	 * tables (templates, campaigns, messages) and the contacts' marketing
-	 * opt-out (see Crm_Email).
+	 * opt-out (see Crm_Email); 1.2.0 the contacts' first visit date and the
+	 * tasks' origin (a call-back task created by a low review), used by
+	 * Crm_Reports.
 	 *
 	 * @var string
 	 */
-	const CRM_DB_VERSION = '1.1.0';
+	const CRM_DB_VERSION = '1.2.0';
 
 	/**
 	 * Option name guarding the one-time legacy-data migration so it never
@@ -629,6 +631,7 @@ class Db_Installer {
 			follow_up_date DATE NULL,
 			doctor_ids VARCHAR(500) NOT NULL DEFAULT '',
 			flags VARCHAR(191) NOT NULL DEFAULT '',
+			first_visit DATE NULL,
 			last_visit DATE NULL,
 			next_appointment DATETIME NULL,
 			summary TEXT NULL,
@@ -646,6 +649,8 @@ class Db_Installer {
 			KEY stage (stage),
 			KEY owner_id (owner_id),
 			KEY follow_up_date (follow_up_date),
+			KEY first_visit (first_visit),
+			KEY created_at (created_at),
 			KEY last_activity_at (last_activity_at)
 		) {$charset_collate};"
 		);
@@ -688,10 +693,13 @@ class Db_Installer {
 			created_at DATETIME NOT NULL,
 			completed_by BIGINT UNSIGNED NOT NULL DEFAULT 0,
 			completed_at DATETIME NULL,
+			origin VARCHAR(20) NOT NULL DEFAULT '',
+			origin_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
 			PRIMARY KEY  (id),
 			KEY contact_id (contact_id),
 			KEY due (status, due_date),
-			KEY assignee_id (assignee_id)
+			KEY assignee_id (assignee_id),
+			KEY origin (origin, origin_id)
 		) {$charset_collate};"
 		);
 

@@ -932,8 +932,387 @@ body.dak-app-page .dak-portal .dak-crm-table tr.is-archived td {
 	opacity: 0.7 !important;
 }
 
+/* Reports --------------------------------------------------------------------- */
+/*
+ * Chart colours: two categorical slots (validated for colour-blind
+ * separation and 3:1 contrast on the card surface, light and dark). Text
+ * never takes a series colour.
+ */
+body.dak-app-page .dak-portal,
+body.dak-app-page .dak-crm-tip {
+	--dak-viz-1: #2a78d6;
+	--dak-viz-2: #eb6834;
+	--dak-viz-track: #eef1f4;
+}
+
+html[data-theme='dark'] body.dak-app-page .dak-portal,
+html[data-theme='dark'] body.dak-app-page .dak-crm-tip {
+	--dak-viz-1: #3987e5;
+	--dak-viz-2: #d95926;
+	--dak-viz-track: #1f252c;
+}
+
+body.dak-app-page .dak-portal .dak-crm-reports {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-reports[hidden][hidden] {
+	display: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-report-body {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 16px !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-report-controls {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: flex-end !important;
+	gap: 10px 14px !important;
+	margin: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-report-controls .dak-crm-filter {
+	flex: 0 1 190px !important;
+	grid-column: auto !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-report-range {
+	margin: 0 0 8px !important;
+	color: var( --dak-muted ) !important;
+	font-size: 14px !important;
+	font-weight: 600 !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-report-card {
+	margin: 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-report-title {
+	margin: 0 0 4px !important;
+	font-size: 17px !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-report-help {
+	max-width: 760px !important;
+	margin: 0 0 14px !important;
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+	line-height: 1.5 !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-report-sub {
+	margin: 18px 0 8px !important;
+	font-size: 14px !important;
+	font-weight: 700 !important;
+	color: var( --dak-text ) !important;
+}
+
+/* Stat tiles */
+body.dak-app-page .dak-portal .dak-crm-tiles {
+	display: grid !important;
+	grid-template-columns: repeat( auto-fill, minmax( 170px, 1fr ) ) !important;
+	gap: 12px !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-tile {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 2px !important;
+	min-width: 0 !important;
+	padding: 14px 16px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-tiles.is-compact .dak-crm-tile {
+	padding: 10px 12px !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-tile-label {
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-tile-value {
+	color: var( --dak-text ) !important;
+	font-size: 26px !important;
+	font-weight: 700 !important;
+	line-height: 1.2 !important;
+	font-variant-numeric: tabular-nums !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-tiles.is-compact .dak-crm-tile-value {
+	font-size: 20px !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-tile-sub {
+	color: var( --dak-muted ) !important;
+	font-size: 12.5px !important;
+	line-height: 1.4 !important;
+}
+
+/* Stacked column chart (new / returning) */
+body.dak-app-page .dak-portal .dak-crm-legend {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 6px 18px !important;
+	margin: 0 0 10px !important;
+	color: var( --dak-text ) !important;
+	font-size: 13px !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-legend span {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-key {
+	display: inline-block !important;
+	width: 12px !important;
+	height: 12px !important;
+	border-radius: 3px !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-key.is-new,
+body.dak-app-page .dak-portal .dak-crm-seg.is-new {
+	background: var( --dak-viz-1 ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-key.is-returning,
+body.dak-app-page .dak-portal .dak-crm-seg.is-returning {
+	background: var( --dak-viz-2 ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-plot {
+	display: grid !important;
+	grid-template-columns: auto minmax( 0, 1fr ) !important;
+	gap: 8px !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-axis {
+	display: flex !important;
+	flex-direction: column !important;
+	justify-content: space-between !important;
+	height: 180px !important;
+	color: var( --dak-muted ) !important;
+	font-size: 11px !important;
+	text-align: right !important;
+	font-variant-numeric: tabular-nums !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-axis span {
+	line-height: 1 !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-cols {
+	display: flex !important;
+	align-items: stretch !important;
+	gap: 6px !important;
+	min-width: 0 !important;
+	overflow-x: auto !important;
+	border-top: 1px dashed var( --dak-border ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-col {
+	display: flex !important;
+	flex: 1 1 0 !important;
+	flex-direction: column !important;
+	min-width: 26px !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-col-stack {
+	display: flex !important;
+	flex-direction: column-reverse !important;
+	justify-content: flex-start !important;
+	gap: 2px !important;
+	height: 180px !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+	background: linear-gradient( var( --dak-border ), var( --dak-border ) ) 0 50% / 100% 1px no-repeat !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-seg {
+	display: block !important;
+	width: 100% !important;
+	max-width: 44px !important;
+	margin: 0 auto !important;
+	min-height: 2px !important;
+	cursor: default !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-col-stack .dak-crm-seg:last-child {
+	border-radius: 4px 4px 0 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-seg:focus-visible,
+body.dak-app-page .dak-portal .dak-crm-bar-fill:focus-visible {
+	outline: 2px solid var( --dak-text ) !important;
+	outline-offset: 2px !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-col-label {
+	margin: 6px 0 0 !important;
+	color: var( --dak-muted ) !important;
+	font-size: 11px !important;
+	line-height: 1.2 !important;
+	text-align: center !important;
+	overflow-wrap: anywhere !important;
+}
+
+/* Bars (one series) */
+body.dak-app-page .dak-portal .dak-crm-bars {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 8px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-bars li {
+	display: grid !important;
+	grid-template-columns: minmax( 120px, 190px ) minmax( 0, 1fr ) minmax( 90px, auto ) !important;
+	align-items: center !important;
+	gap: 12px !important;
+	margin: 0 !important;
+	font-size: 14px !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-bar-label {
+	color: var( --dak-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-bar-track {
+	display: block !important;
+	height: 14px !important;
+	border-radius: 0 4px 4px 0 !important;
+	background: var( --dak-viz-track ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-bar-fill {
+	display: block !important;
+	height: 100% !important;
+	border-radius: 0 4px 4px 0 !important;
+	background: var( --dak-viz-1 ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-bar-value {
+	color: var( --dak-text ) !important;
+	font-weight: 600 !important;
+	font-variant-numeric: tabular-nums !important;
+	white-space: nowrap !important;
+}
+
+body.dak-app-page .dak-crm-tip {
+	position: fixed !important;
+	z-index: 100001 !important;
+	max-width: 260px !important;
+	padding: 6px 10px !important;
+	border-radius: 6px !important;
+	background: #1f2933 !important;
+	color: #fff !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+	pointer-events: none !important;
+	box-shadow: 0 4px 14px rgba( 0, 0, 0, 0.2 ) !important;
+}
+
+body.dak-app-page .dak-crm-tip[hidden] {
+	display: none !important;
+}
+
+/* Tables, lists */
+body.dak-app-page .dak-portal .dak-crm-bars + .dak-crm-table-wrap,
+body.dak-app-page .dak-portal .dak-crm-tiles + .dak-crm-bars {
+	margin-top: 18px !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-report-table th.is-num,
+body.dak-app-page .dak-portal .dak-crm-report-table td.is-num {
+	text-align: right !important;
+	font-variant-numeric: tabular-nums !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-details {
+	margin: 14px 0 0 !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-details summary {
+	color: var( --dak-primary ) !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-reasons {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 4px !important;
+	max-width: 480px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+	font-size: 14px !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-reasons li {
+	display: flex !important;
+	justify-content: space-between !important;
+	gap: 12px !important;
+	padding: 4px 0 !important;
+	border-bottom: 1px solid var( --dak-border ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-quote {
+	color: var( --dak-text ) !important;
+	font-size: 14px !important;
+	font-style: italic !important;
+	overflow-wrap: anywhere !important;
+}
+
+body.dak-app-page .dak-crm-timeline li.is-review .dak-crm-tl-type {
+	background: var( --dak-tint-success ) !important;
+	color: var( --dak-tint-success-text ) !important;
+}
+
+body.dak-app-page .dak-crm-timeline li.is-review.is-low .dak-crm-tl-type {
+	background: var( --dak-tint-amber ) !important;
+	color: var( --dak-tint-amber-text ) !important;
+}
+
 /* Phones -------------------------------------------------------------------- */
 @media ( max-width: 782px ) {
+	body.dak-app-page .dak-portal .dak-crm-bars li {
+		grid-template-columns: minmax( 0, 1fr ) auto !important;
+		gap: 4px 10px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-crm-bar-track {
+		grid-column: 1 / -1 !important;
+		grid-row: 2 !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-crm-tiles {
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-crm-tile-value {
+		font-size: 21px !important;
+	}
+
+	body.dak-app-page .dak-portal .dak-crm-report-controls .dak-crm-filter {
+		flex: 1 1 140px !important;
+	}
+
 	body.dak-app-page .dak-crm-drawer .dak-crm-purposes {
 		grid-template-columns: minmax( 0, 1fr ) !important;
 	}

@@ -1,10 +1,42 @@
 /**
- * Doctor profile: star picker + review submission.
+ * Doctor profile: star picker + review submission, and the header's
+ * "Write a review" button (scrolls to the form and puts focus on the
+ * stars, or to the note explaining why the patient can't review yet).
  */
 ( function () {
 	'use strict';
 
 	var form = document.getElementById( 'dak-review-form' );
+
+	document.addEventListener( 'click', function ( event ) {
+		var link = event.target.closest( '[data-review-jump]' );
+		var target = link ? document.getElementById( link.getAttribute( 'href' ).replace( '#', '' ) ) : null;
+
+		if ( ! target ) {
+			return;
+		}
+
+		event.preventDefault();
+
+		var reduce = window.matchMedia && window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
+		target.scrollIntoView( { behavior: reduce ? 'auto' : 'smooth', block: 'center' } );
+
+		// Focus the rating (the chosen one on the email panel, else the first star), or the note itself.
+		var focusEl = target.querySelector( 'input[name="rating"]:checked, .dak-review-star, input[name="rating"]' ) || target;
+
+		if ( focusEl === target && ! target.hasAttribute( 'tabindex' ) ) {
+			target.setAttribute( 'tabindex', '-1' );
+		}
+
+		focusEl.focus( { preventScroll: true } );
+		target.classList.remove( 'dak-review-highlight' );
+		void target.offsetWidth; // Restart the highlight animation.
+		target.classList.add( 'dak-review-highlight' );
+
+		if ( history.replaceState ) {
+			history.replaceState( null, '', '#dak-profile-reviews' );
+		}
+	} );
 
 	if ( ! form || ! window.dakDoctorReviews ) {
 		return;
