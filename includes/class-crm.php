@@ -259,7 +259,7 @@ class Crm {
 	 * @param array $fields name, phone, email, user_id, source, stage, owner_id, created_by.
 	 * @return int Contact ID (0 on failure).
 	 */
-	private static function insert( array $fields ) {
+	public static function insert( array $fields ) {
 		global $wpdb;
 
 		$now  = current_time( 'mysql' );
@@ -406,6 +406,35 @@ class Crm {
 	}
 
 	/**
+	 * An existing contact (with or without an account) that is clearly
+	 * this person: same name AND same phone or email.
+	 *
+	 * @return int Contact ID or 0.
+	 */
+	public static function find_match( $name, $phone, $email ) {
+		global $wpdb;
+
+		$name_norm  = self::norm_name( $name );
+		$phone_norm = self::norm_phone( $phone );
+		$email_norm = self::norm_email( $email );
+
+		if ( '' === $name_norm || ( '' === $phone_norm && '' === $email_norm ) ) {
+			return 0;
+		}
+
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT id FROM ' . self::table( self::T_CONTACTS ) . ' WHERE name_norm = %s AND ( ( phone_norm <> %s AND phone_norm = %s ) OR ( email_norm <> %s AND email_norm = %s ) ) ORDER BY user_id DESC, id ASC LIMIT 1', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name.
+				$name_norm,
+				'',
+				$phone_norm,
+				'',
+				$email_norm
+			)
+		);
+	}
+
+	/**
 	 * The contact for a person without an account (guest booking, service
 	 * request): an existing contact when name and phone/email match —
 	 * including a patient account's contact — otherwise a new one.
@@ -413,27 +442,10 @@ class Crm {
 	 * @return int Contact ID.
 	 */
 	public static function ensure_for_guest( $name, $phone, $email, $source ) {
-		global $wpdb;
+		$id = self::find_match( $name, $phone, $email );
 
-		$name_norm  = self::norm_name( $name );
-		$phone_norm = self::norm_phone( $phone );
-		$email_norm = self::norm_email( $email );
-
-		if ( '' !== $name_norm && ( '' !== $phone_norm || '' !== $email_norm ) ) {
-			$id = (int) $wpdb->get_var(
-				$wpdb->prepare(
-					'SELECT id FROM ' . self::table( self::T_CONTACTS ) . ' WHERE name_norm = %s AND ( ( phone_norm <> %s AND phone_norm = %s ) OR ( email_norm <> %s AND email_norm = %s ) ) ORDER BY user_id DESC, id ASC LIMIT 1', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name.
-					$name_norm,
-					'',
-					$phone_norm,
-					'',
-					$email_norm
-				)
-			);
-
-			if ( $id ) {
-				return $id;
-			}
+		if ( $id ) {
+			return $id;
 		}
 
 		return self::insert(
@@ -1160,7 +1172,7 @@ class Crm {
 	 *
 	 * @return array|\WP_Error { name, phone, email }
 	 */
-	private static function clean_identity( array $input ) {
+	public static function clean_identity( array $input ) {
 		$name  = sanitize_text_field( isset( $input['name'] ) ? (string) $input['name'] : '' );
 		$phone = sanitize_text_field( isset( $input['phone'] ) ? (string) $input['phone'] : '' );
 		$email = sanitize_email( isset( $input['email'] ) ? (string) $input['email'] : '' );

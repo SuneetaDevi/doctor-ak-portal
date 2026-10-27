@@ -999,6 +999,40 @@ body.dak-app-page .dak-portal .dak-crm-table tr.is-archived td {
 	opacity: 0.7 !important;
 }
 
+/* CSV import ------------------------------------------------------------------ */
+body.dak-app-page .dak-crm-drawer .dak-crm-file {
+	padding: 6px !important;
+	cursor: pointer !important;
+}
+
+body.dak-app-page .dak-crm-drawer .dak-crm-map .dak-crm-input {
+	min-width: 160px !important;
+}
+
+body.dak-app-page .dak-crm-drawer .dak-crm-map td {
+	vertical-align: middle !important;
+}
+
+body.dak-app-page .dak-crm-drawer .dak-crm-tiles {
+	grid-template-columns: repeat( auto-fill, minmax( 145px, 1fr ) ) !important;
+	margin: 0 0 12px !important;
+}
+
+body.dak-app-page .dak-crm-drawer .dak-crm-problems {
+	max-height: 320px !important;
+	margin: 0 0 12px !important;
+	overflow-y: auto !important;
+}
+
+body.dak-app-page .dak-crm-drawer .dak-crm-problems li {
+	padding: 8px 10px !important;
+	border-left: 3px solid var( --dak-tint-amber-text ) !important;
+}
+
+body.dak-app-page .dak-crm-drawer .dak-crm-problems li.is-error {
+	border-left-color: var( --dak-tint-danger-text ) !important;
+}
+
 /* Reports --------------------------------------------------------------------- */
 /*
  * Chart colours: two categorical slots (validated for colour-blind

@@ -12,6 +12,7 @@ use DoctorAKPortal\Includes\Appointments;
 use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Crm;
 use DoctorAKPortal\Includes\Crm_Email;
+use DoctorAKPortal\Includes\Crm_Import;
 use DoctorAKPortal\Includes\Crm_Reports;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Phone;
@@ -106,6 +107,11 @@ class Crm_Handler {
 				'tags'       => Crm::all_tags(),
 				'imported'   => Crm::backfill_done(),
 				'refreshed'  => Crm::refresh_done(),
+				'import'     => $staff ? array(
+					'fields'  => Crm_Import::fields(),
+					'maxRows' => Crm_Import::MAX_ROWS,
+					'batch'   => Crm_Import::BATCH,
+				) : null,
 				'urls'       => self::urls( $viewer ),
 				'email'      => $staff ? array(
 					'purposes'    => Crm_Email::purposes(),
@@ -187,7 +193,7 @@ class Crm_Handler {
 		$op      = sanitize_key( $this->text( 'op' ) );
 		$staff   = 'doctor' !== $viewer['role'];
 		$user_id = get_current_user_id();
-		$staff_ops = array( 'create', 'bulk', 'merge', 'export', 'delete', 'templates', 'template_save', 'template_status', 'email_check', 'email_preview', 'email_test', 'email_send', 'campaign_create', 'campaign_process', 'campaigns', 'campaign', 'campaign_cancel', 'campaign_retry', 'opt_out', 'segment_save', 'segment_delete', 'report' );
+		$staff_ops = array( 'create', 'bulk', 'merge', 'export', 'delete', 'import', 'templates', 'template_save', 'template_status', 'email_check', 'email_preview', 'email_test', 'email_send', 'campaign_create', 'campaign_process', 'campaigns', 'campaign', 'campaign_cancel', 'campaign_retry', 'opt_out', 'segment_save', 'segment_delete', 'report' );
 
 		if ( ! $staff && in_array( $op, $staff_ops, true ) ) {
 			wp_send_json_error( array( 'message' => __( 'Only clinic staff can do that.', 'doctor-ak-portal' ) ), 403 );
@@ -327,6 +333,36 @@ class Crm_Handler {
 				wp_send_json_success(
 					array(
 						'tasks' => Crm::open_tasks( $mine && $staff ? $user_id : 0, $viewer['scope'], '1' === $this->text( 'upcoming' ) ),
+					)
+				);
+				break;
+
+			case 'import':
+				$rows = json_decode( $this->raw( 'rows' ), true );
+				$dry  = 'check' === $this->text( 'mode' );
+
+				if ( ! is_array( $rows ) || ! $rows ) {
+					wp_send_json_error( array( 'message' => __( 'No rows to import.', 'doctor-ak-portal' ) ) );
+				}
+
+				if ( count( $rows ) > ( $dry ? Crm_Import::MAX_ROWS : Crm_Import::BATCH ) ) {
+					/* translators: %s: number of rows. */
+					wp_send_json_error( array( 'message' => sprintf( __( 'A file can have at most %s rows. Split it into smaller files.', 'doctor-ak-portal' ), number_format_i18n( Crm_Import::MAX_ROWS ) ) ) );
+				}
+
+				$tag = Crm::clean_tags( array( $this->text( 'tag' ) ) );
+
+				wp_send_json_success(
+					Crm_Import::run(
+						$rows,
+						array(
+							'existing'       => 'update' === $this->text( 'existing' ) ? 'update' : 'skip',
+							'default_source' => sanitize_key( $this->text( 'default_source' ) ),
+							'tag'            => $tag ? $tag[0] : '',
+							'file'           => $this->text( 'file' ),
+						),
+						$user_id,
+						$dry
 					)
 				);
 				break;

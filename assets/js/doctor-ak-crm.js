@@ -326,6 +326,9 @@
 			return;
 		}
 
+		box.appendChild( btn( 'Import CSV', 'dak-button-secondary', function ( e ) {
+			openImport( e.currentTarget );
+		} ) );
 		box.appendChild( btn( 'Export CSV', 'dak-button-secondary', exportCsv ) );
 		box.appendChild( btn( '+ Add contact', 'dak-button-primary', openAddDialog ) );
 	}
@@ -1684,6 +1687,408 @@
 			}, 1000 );
 			flash( res.data.count + ' contacts exported.' );
 		} );
+	}
+
+	/* ------------------------------------------------------------------
+	 * Import from CSV (staff)
+	 * ---------------------------------------------------------------- */
+
+	/**
+	 * Rows of a CSV file (quoted fields, "" escapes, line breaks inside
+	 * quotes). The delimiter is whichever of , ; or tab the header uses most.
+	 */
+	function parseCsv( text ) {
+		text = text.replace( /^﻿/, '' );
+
+		var first = text.split( /\r?\n/ )[ 0 ] || '';
+		var delim = [ ',', ';', '\t' ].map( function ( d ) {
+			return [ d, first.split( d ).length ];
+		} ).sort( function ( a, b ) {
+			return b[ 1 ] - a[ 1 ];
+		} )[ 0 ][ 0 ];
+		var rows = [];
+		var row = [];
+		var field = '';
+		var quoted = false;
+
+		for ( var i = 0; i < text.length; i++ ) {
+			var c = text[ i ];
+
+			if ( quoted ) {
+				if ( '"' === c && '"' === text[ i + 1 ] ) {
+					field += '"';
+					i++;
+				} else if ( '"' === c ) {
+					quoted = false;
+				} else {
+					field += c;
+				}
+			} else if ( '"' === c ) {
+				quoted = true;
+			} else if ( c === delim ) {
+				row.push( field );
+				field = '';
+			} else if ( '\n' === c ) {
+				row.push( field );
+				rows.push( row );
+				row = [];
+				field = '';
+			} else if ( '\r' !== c ) {
+				field += c;
+			}
+		}
+
+		if ( '' !== field || row.length ) {
+			row.push( field );
+			rows.push( row );
+		}
+
+		return rows.filter( function ( r ) {
+			return r.some( function ( v ) {
+				return '' !== v.trim();
+			} );
+		} );
+	}
+
+	/** Best guess of the field a column header means. */
+	function guessField( header ) {
+		var hd = String( header ).toLowerCase().replace( /[^a-z0-9]+/g, ' ' ).trim();
+		var guesses = {
+			name: [ 'name', 'full name', 'patient', 'patient name', 'contact', 'contact name' ],
+			phone: [ 'phone', 'mobile', 'cell', 'phone number', 'mobile number', 'contact number', 'whatsapp', 'tel', 'telephone' ],
+			email: [ 'email', 'e mail', 'email address' ],
+			source: [ 'source', 'lead source', 'channel' ],
+			stage: [ 'stage', 'status' ],
+			owner: [ 'owner', 'assigned to', 'staff' ],
+			tags: [ 'tags', 'tag', 'labels' ],
+			follow_up: [ 'next follow up', 'follow up', 'follow up date', 'followup' ],
+			note: [ 'note', 'notes', 'comment', 'comments', 'remarks' ],
+		};
+
+		return Object.keys( guesses ).filter( function ( f ) {
+			return guesses[ f ].indexOf( hd ) !== -1;
+		} )[ 0 ] || '';
+	}
+
+	function downloadSample() {
+		var csv = 'Name,Phone,Email,Source,Stage,Owner,Tags,Next follow-up,Note\r\n'
+			+ 'Ayesha Khan,0300 1234567,ayesha@example.com,Phone call,New lead,,VIP,' + addDays( config.today, 7 ) + ',Asked about a skin consultation\r\n'
+			+ 'Bilal Ahmed,0321 7654321,,Walk-in,Contacted,,"Diabetes, Follow-up",,\r\n';
+		var a = h( 'a', { href: URL.createObjectURL( new Blob( [ '﻿' + csv ], { type: 'text/csv;charset=utf-8' } ) ), download: 'crm-import-sample.csv' } );
+
+		document.body.appendChild( a );
+		a.click();
+		setTimeout( function () {
+			URL.revokeObjectURL( a.href );
+			a.remove();
+		}, 1000 );
+	}
+
+	function openImport( trigger ) {
+		var cfg = config.import;
+		var file = null;
+		var header = [];
+		var data = [];
+		var mapping = [];
+
+		showDrawer( trigger );
+		drawer.querySelector( '.dak-crm-panel' ).classList.add( 'is-wide' );
+
+		panelBody.appendChild( h( 'header', { class: 'dak-crm-panel-head' }, [
+			h( 'h2', { id: 'dak-crm-panel-title', text: 'Import people from a CSV file' } ),
+			h( 'p', { class: 'dak-crm-help', text: 'Each row becomes one person. A name and a phone number or email are needed; everything else is optional. Save spreadsheets as “CSV UTF-8”. Nothing is saved until you press Import.' } ),
+		] ) );
+
+		var status = h( 'p', { class: 'dak-crm-panel-status', role: 'status', 'aria-live': 'polite', hidden: true } );
+		var error = h( 'p', { class: 'dak-crm-error', role: 'alert', hidden: true } );
+		var input = h( 'input', { type: 'file', accept: '.csv,text/csv', class: 'dak-crm-input dak-crm-file' } );
+		var step2 = h( 'div', { class: 'dak-crm-import-step' } );
+		var results = h( 'div', { class: 'dak-crm-import-step', 'aria-live': 'polite' } );
+
+		function fail( text ) {
+			error.textContent = text;
+			error.hidden = ! text;
+		}
+
+		panelBody.appendChild( section( '1. Choose the file', [
+			labelled( 'dak-crm-i-file', 'CSV file', input, 'Up to ' + num( cfg.maxRows ) + ' rows. The CRM’s own “Export CSV” file can be imported too.' ),
+			h( 'div', { class: 'dak-crm-actions' }, [ btn( 'Download a sample CSV', 'dak-button-secondary', downloadSample ) ] ),
+			error,
+		] ) );
+		panelBody.appendChild( step2 );
+		panelBody.appendChild( results );
+
+		input.addEventListener( 'change', function () {
+			fail( '' );
+			step2.textContent = '';
+			results.textContent = '';
+			file = input.files && input.files[ 0 ];
+
+			if ( ! file ) {
+				return;
+			}
+
+			if ( file.size > 5 * 1024 * 1024 ) {
+				fail( 'That file is larger than 5 MB. Split it into smaller files.' );
+				return;
+			}
+
+			read( 'utf-8' );
+		} );
+
+		function read( encoding ) {
+			var reader = new FileReader();
+
+			reader.onload = function () {
+				var text = String( reader.result || '' );
+
+				// Not UTF-8 (older Excel “CSV”)? Try the Windows encoding instead.
+				if ( 'utf-8' === encoding && -1 !== text.indexOf( '�' ) ) {
+					read( 'windows-1252' );
+					return;
+				}
+
+				var rows = parseCsv( text );
+
+				if ( rows.length < 2 ) {
+					fail( 'This file has no rows under the header. The first row should be the column names, e.g. Name, Phone, Email.' );
+					return;
+				}
+
+				header = rows[ 0 ];
+				data = rows.slice( 1 );
+
+				if ( data.length > cfg.maxRows ) {
+					fail( 'This file has ' + num( data.length ) + ' rows; at most ' + num( cfg.maxRows ) + ' can be imported at once. Split it into smaller files.' );
+					return;
+				}
+
+				mapping = header.map( guessField );
+				renderMapping();
+			};
+			reader.onerror = function () {
+				fail( 'The file couldn’t be read. Try saving it again as CSV.' );
+			};
+			reader.readAsText( file, encoding );
+		}
+
+		var opts = {};
+
+		function renderMapping() {
+			step2.textContent = '';
+			results.textContent = '';
+
+			var fieldOptions = [ { id: '', label: 'Don’t import' } ].concat( mapToOptions( cfg.fields ) );
+			var tbody = h( 'tbody' );
+
+			header.forEach( function ( col, i ) {
+				var example = data.filter( function ( r ) {
+					return r[ i ] && r[ i ].trim();
+				} )[ 0 ];
+				var s = select( fieldOptions, mapping[ i ], { class: 'dak-crm-input', 'aria-label': 'Import column “' + col + '” as' } );
+
+				s.addEventListener( 'change', function () {
+					mapping[ i ] = s.value;
+					results.textContent = '';
+				} );
+				tbody.appendChild( h( 'tr', {}, [
+					h( 'td', { 'data-label': 'Column in your file', class: 'dak-col-primary' }, [ h( 'strong', { text: col || '(no name)' } ) ] ),
+					h( 'td', { 'data-label': 'Example' }, [ h( 'span', { class: 'dak-cell-sub', text: example ? example[ i ] : '—' } ) ] ),
+					h( 'td', { 'data-label': 'Import as' }, [ s ] ),
+				] ) );
+			} );
+
+			opts.source = select( mapToOptions( config.sources ), 'other', { class: 'dak-crm-input' } );
+			opts.tag = h( 'input', { type: 'text', class: 'dak-crm-input', maxlength: '30', value: 'Imported ' + fmtDate( config.today ) } );
+			opts.skip = h( 'input', { type: 'radio', name: 'dak-crm-i-existing', id: 'dak-crm-i-skip', value: 'skip', checked: true } );
+			opts.update = h( 'input', { type: 'radio', name: 'dak-crm-i-existing', id: 'dak-crm-i-update', value: 'update' } );
+			[ opts.source, opts.tag, opts.skip, opts.update ].forEach( function ( el ) {
+				el.addEventListener( 'change', function () {
+					results.textContent = '';
+				} );
+			} );
+
+			var check = h( 'button', { type: 'button', class: 'dak-button dak-button-primary dak-button-sm', text: 'Check the file' } );
+			check.addEventListener( 'click', function () {
+				runCheck( check );
+			} );
+
+			step2.appendChild( section( '2. Match the columns', [
+				h( 'p', { class: 'dak-crm-help', text: num( data.length ) + ( 1 === data.length ? ' row' : ' rows' ) + ' found in ' + file.name + '. Columns with a recognised name are matched already — check them, and choose “Don’t import” for anything you don’t need.' } ),
+				h( 'div', { class: 'dak-crm-table-wrap' }, [ h( 'table', { class: 'dak-data-table dak-crm-table dak-crm-map' }, [
+					h( 'thead', {}, [ h( 'tr', {}, [ 'Column in your file', 'Example', 'Import as' ].map( function ( t ) {
+						return h( 'th', { scope: 'col', text: t } );
+					} ) ) ] ),
+					tbody,
+				] ) ] ),
+			] ) );
+			step2.appendChild( section( '3. Options', [
+				h( 'div', { class: 'dak-crm-form-grid' }, [
+					labelled( 'dak-crm-i-source', 'Source for rows without one', opts.source ),
+					labelled( 'dak-crm-i-tag', 'Tag everyone imported (optional)', opts.tag, 'Makes it easy to find this import later.' ),
+				] ),
+				h( 'fieldset', { class: 'dak-crm-purposes' }, [
+					h( 'legend', { text: 'People already in the CRM (same name and phone or email)' } ),
+					h( 'label', { class: 'dak-crm-purpose-option', for: 'dak-crm-i-skip' }, [ opts.skip, h( 'span', {}, [ h( 'strong', { text: 'Skip them' } ), h( 'span', { class: 'dak-crm-help', text: 'Leave their CRM record exactly as it is.' } ) ] ) ] ),
+					h( 'label', { class: 'dak-crm-purpose-option', for: 'dak-crm-i-update' }, [ opts.update, h( 'span', {}, [ h( 'strong', { text: 'Update them' } ), h( 'span', { class: 'dak-crm-help', text: 'Use the file’s source, stage, owner and follow-up; add its tags and note. Name, phone and email aren’t changed.' } ) ] ) ] ),
+				] ),
+				h( 'div', { class: 'dak-crm-actions' }, [ check ] ),
+			] ) );
+		}
+
+		/** The mapped rows, as { field: value, _row: line number }. */
+		function mappedRows() {
+			return data.map( function ( r, n ) {
+				var out = { _row: n + 2 };
+
+				mapping.forEach( function ( f, i ) {
+					if ( f && undefined !== r[ i ] ) {
+						// Undo the export's protection against spreadsheet formulas.
+						var v = r[ i ].replace( /^'(?=[=+\-@])/, '' );
+						out[ f ] = out[ f ] ? out[ f ] + ', ' + v : v;
+					}
+				} );
+
+				return out;
+			} );
+		}
+
+		function request( mode, rows ) {
+			return post( 'import', {
+				mode: mode,
+				rows: JSON.stringify( rows ),
+				existing: opts.update.checked ? 'update' : 'skip',
+				default_source: opts.source.value,
+				tag: opts.tag.value.trim(),
+				file: file.name,
+			} );
+		}
+
+		function runCheck( button ) {
+			results.textContent = '';
+
+			if ( mapping.indexOf( 'name' ) === -1 || ( mapping.indexOf( 'phone' ) === -1 && mapping.indexOf( 'email' ) === -1 ) ) {
+				results.appendChild( h( 'p', { class: 'dak-crm-error', role: 'alert', text: 'Match a column to Name, and at least one to Phone or Email.' } ) );
+				return;
+			}
+
+			button.disabled = true;
+			button.textContent = 'Checking…';
+
+			request( 'check', mappedRows() ).then( function ( res ) {
+				button.disabled = false;
+				button.textContent = 'Check the file';
+
+				if ( ! res.success ) {
+					results.appendChild( h( 'p', { class: 'dak-crm-error', role: 'alert', text: res.data.message } ) );
+					return;
+				}
+
+				var d = res.data;
+				var update = opts.update.checked;
+				var go = d.added + ( update ? d.updated : 0 );
+				var importBtn = h( 'button', { type: 'button', class: 'dak-button dak-button-primary dak-button-sm', text: go ? 'Import ' + num( go ) + ( 1 === go ? ' person' : ' people' ) : 'Nothing to import', disabled: ! go } );
+
+				importBtn.addEventListener( 'click', function () {
+					runImport();
+				} );
+
+				results.appendChild( section( '4. Check and import', [
+					h( 'div', { class: 'dak-crm-tiles is-compact' }, [
+						tile( 'New people', num( d.added ), 'will be added' ),
+						tile( 'Already in the CRM', num( d.updated + d.skipped ), update ? 'will be updated' : 'will be skipped' ),
+						tile( 'Can’t be imported', num( d.failed ), d.failed ? 'see the list below' : '' ),
+						tile( 'Imported with a note', num( d.warnings ), d.warnings ? 'see the list below' : '' ),
+					] ),
+					problemList( d ),
+					h( 'div', { class: 'dak-crm-actions' }, [ importBtn ] ),
+				] ) );
+				importBtn.focus();
+			} );
+		}
+
+		function problemList( d ) {
+			if ( ! d.problems.length ) {
+				return h( 'p', { class: 'dak-crm-help', text: 'No problems found.' } );
+			}
+
+			return h( 'div', {}, [
+				h( 'ul', { class: 'dak-crm-list dak-crm-problems' }, d.problems.map( function ( p ) {
+					return h( 'li', { class: 'is-' + p.level }, [ h( 'span', {}, [
+						h( 'strong', { text: 'Row ' + p.row + ( p.name ? ' · ' + p.name : '' ) } ),
+						h( 'span', { class: 'dak-cell-sub', text: ( 'error' === p.level ? 'Not imported: ' : 'Imported, but: ' ) + p.message } ),
+					] ) ] );
+				} ) ),
+				d.more ? h( 'p', { class: 'dak-crm-help', text: '…and ' + num( d.more ) + ' more.' } ) : null,
+			] );
+		}
+
+		function runImport() {
+			var rows = mappedRows();
+			var total = { added: 0, updated: 0, skipped: 0, failed: 0, warnings: 0, problems: [], more: 0 };
+			var bar = h( 'progress', { class: 'dak-crm-progress', max: String( rows.length ), value: '0', 'aria-label': 'Import progress' } );
+			var text = h( 'p', { class: 'dak-crm-panel-status', role: 'status', 'aria-live': 'polite', text: 'Importing…' } );
+			var done = 0;
+
+			step2.textContent = '';
+			results.textContent = '';
+			input.disabled = true;
+			results.appendChild( section( 'Importing', [ bar, text ] ) );
+
+			( function next() {
+				var chunk = rows.slice( done, done + cfg.batch );
+
+				if ( ! chunk.length ) {
+					finish();
+					return;
+				}
+
+				request( 'run', chunk ).then( function ( res ) {
+					if ( ! res.success ) {
+						text.textContent = 'Stopped after ' + num( done ) + ' rows: ' + res.data.message + ' Rows already imported are saved; importing the same file again skips them.';
+						load();
+						return;
+					}
+
+					[ 'added', 'updated', 'skipped', 'failed', 'warnings', 'more' ].forEach( function ( k ) {
+						total[ k ] += res.data[ k ];
+					} );
+					total.problems = total.problems.concat( res.data.problems ).slice( 0, 200 );
+					done += chunk.length;
+					bar.value = String( done );
+					text.textContent = 'Importing… ' + num( done ) + ' of ' + num( rows.length ) + ' rows.';
+					next();
+				} );
+			}() );
+
+			function finish() {
+				var tag = opts.tag.value.trim();
+				var summary = num( total.added ) + ' added' + ( total.updated ? ', ' + num( total.updated ) + ' updated' : '' ) + ( total.skipped ? ', ' + num( total.skipped ) + ' already in the CRM (skipped)' : '' ) + ( total.failed ? ', ' + num( total.failed ) + ' couldn’t be imported' : '' ) + '.';
+
+				text.textContent = 'Done: ' + summary;
+				flash( 'Import finished: ' + summary );
+				config.tags = tag && config.tags.indexOf( tag ) === -1 ? config.tags.concat( [ tag ] ) : config.tags;
+				results.appendChild( problemList( total ) );
+				results.appendChild( h( 'div', { class: 'dak-crm-actions' }, [
+					tag && ( total.added || total.updated ) ? btn( 'Show the imported people', 'dak-button-primary', function () {
+						Object.keys( state.filters ).forEach( function ( k ) {
+							state.filters[ k ] = '';
+						} );
+						state.filters.tag = tag;
+						state.view = 'all';
+						state.segment = '';
+						state.page = 1;
+						closePanel();
+						renderFilters();
+						load();
+					} ) : null,
+					btn( 'Close', 'dak-button-secondary', closePanel ),
+				] ) );
+				load();
+			}
+		}
+
+		input.focus();
 	}
 
 	/* ------------------------------------------------------------------

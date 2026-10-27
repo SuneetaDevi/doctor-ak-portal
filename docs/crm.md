@@ -24,7 +24,7 @@ Every check runs on the server in `Crm_Handler`. Hidden buttons are a convenienc
 | Payment totals, unpaid and no-show flags | ✓ | – |
 | Change stage, owner, tags, details | ✓ | – |
 | Set the next follow-up date, add notes and tasks | ✓ | ✓ |
-| Add a contact, bulk actions, merge, delete, CSV export | ✓ | – |
+| Add a contact, bulk actions, merge, delete, CSV import and export | ✓ | – |
 | Email people, manage templates, saved segments | ✓ | – |
 | See emails in a contact's history | ✓ | – |
 | See reviews in a contact's history | All | Only reviews of themselves |
@@ -49,6 +49,33 @@ The first time someone opens the CRM, existing patients, appointments and servic
 - A guest booking joins an existing contact only when the **name matches and** the phone or email matches. Family members who share one phone number therefore stay separate.
 - Phone numbers are compared without the country code or leading zero (`0300…`, `+92300…` and `0092300…` are the same).
 - Likely duplicates appear in the side panel under **Possible duplicates**, where staff can merge them. Two patient accounts can't be merged. A merge keeps all emails, and if either record had unsubscribed, the merged one stays unsubscribed.
+
+### Importing from a CSV file
+
+**Import CSV** (next to Export CSV, staff only) adds people from a spreadsheet, for example a list of walk-in enquiries or contacts from another system. Code: `includes/class-crm-import.php`.
+
+1. **Choose the file.** Save the spreadsheet as "CSV UTF-8". Up to 5,000 rows and 5 MB. Commas, semicolons and tabs all work as separators, and older Excel CSV files (not UTF-8) are read correctly too. **Download a sample CSV** shows the layout. The CRM's own **Export CSV** file can be imported back.
+2. **Match the columns.** Columns are matched by their names, e.g. "Mobile" → Phone, "Notes" → Note. Change any match, or choose "Don't import". Name, and Phone or Email, are needed.
+3. **Options.**
+   - The source to use for rows that don't have one.
+   - A tag for everyone imported, e.g. "Imported 27 Oct 2026", so the import can be found later.
+   - What to do with people already in the CRM:
+     - **Skip them** (the default).
+     - **Update them**: use the file's source, stage, owner and follow-up, and add its tags and note. Name, phone and email are never changed by an import.
+4. **Check the file.** Nothing is saved yet. The check shows how many people will be added, how many are already in the CRM, how many rows can't be imported, and the row number and reason for every problem.
+5. **Import.** Rows are saved in batches of 100 with a progress bar. **Show the imported people** filters the list by the import's tag.
+
+| Column | Accepted values |
+| --- | --- |
+| Name | Required |
+| Phone, Email | At least one. Phone numbers in any format (`0300…`, `+92 300…`). An invalid email stops that row. |
+| Source, Stage | The CRM's names ("Phone call", "New lead") or their short codes (`phone`, `new`), in any case. Anything else gets the default source / New lead, with a note. |
+| Owner | A staff member's name or email. Anyone else is left unassigned, with a note. |
+| Tags | Separated by commas or semicolons |
+| Next follow-up | `2026-11-05`, `05/11/2026` (day first), `5-11-2026` or `5 Nov 2026` |
+| Note | Added as a note on the person |
+
+"Already in the CRM" uses the same rule as everywhere else: same name **and** same phone or email, so family members sharing a phone stay separate. A person listed twice in the file is added once. Importing the same file again adds nobody. Each imported person's history says which file they came from.
 
 ### Editing and deleting from the list
 
