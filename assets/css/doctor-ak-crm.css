@@ -228,6 +228,73 @@ body.dak-app-page .dak-portal .dak-crm-name {
 	cursor: pointer !important;
 }
 
+body.dak-app-page .dak-portal .dak-crm-table .dak-crm-col-actions {
+	width: 1% !important;
+	white-space: nowrap !important;
+}
+
+/* The table can be wider than the screen; keep Edit/Delete in reach. */
+@media ( min-width: 783px ) {
+	body.dak-app-page .dak-portal .dak-crm-table th.dak-crm-col-actions,
+	body.dak-app-page .dak-portal .dak-crm-table td.dak-crm-col-actions {
+		position: sticky !important;
+		right: 0 !important;
+		z-index: 1 !important;
+		background: var( --dak-bg-card ) !important;
+		box-shadow: -10px 0 10px -10px rgba( 16, 24, 32, 0.35 ) !important;
+	}
+}
+
+body.dak-app-page .dak-portal .dak-crm-table .dak-crm-row-actions {
+	flex-wrap: nowrap !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-icon-btn {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 34px !important;
+	height: 34px !important;
+	padding: 0 !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	cursor: pointer !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-icon-btn svg {
+	width: 17px !important;
+	height: 17px !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-icon-btn:hover {
+	border-color: var( --dak-primary ) !important;
+	color: var( --dak-primary ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-icon-btn.is-delete {
+	color: var( --dak-tint-danger-text ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-icon-btn.is-delete:hover {
+	border-color: var( --dak-tint-danger-text ) !important;
+	background: var( --dak-tint-danger ) !important;
+}
+
+body.dak-app-page .dak-portal .dak-crm-icon-btn:focus-visible {
+	outline: 2px solid var( --dak-primary ) !important;
+	outline-offset: 2px !important;
+}
+
+/* Can't be deleted (account/bookings): still clickable — it explains why. */
+body.dak-app-page .dak-portal .dak-crm-icon-btn.is-delete[aria-disabled='true'] {
+	opacity: 0.45 !important;
+	color: var( --dak-muted ) !important;
+	background: var( --dak-bg-card ) !important;
+	border-color: var( --dak-border ) !important;
+}
+
 body.dak-app-page .dak-portal .dak-crm-name:hover {
 	color: var( --dak-primary ) !important;
 	text-decoration: underline !important;

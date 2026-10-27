@@ -97,6 +97,30 @@
 		return h( 'button', attrs );
 	}
 
+	var ICONS = {
+		edit: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12.5 3.5l4 4L7 17H3v-4z"/><path d="M11 5l4 4"/></svg>',
+		delete: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3.5 5.5h13"/><path d="M8 5.5V3.5h4v2"/><path d="M5 5.5l.8 11h8.4l.8-11"/><path d="M8.5 9v5M11.5 9v5"/></svg>',
+	};
+
+	/**
+	 * A small icon-only button (row actions). The label is for screen
+	 * readers; the tooltip says the same (or why it's unavailable).
+	 */
+	function iconBtn( icon, label, tip, onclick, unavailable ) {
+		var b = h( 'button', {
+			type: 'button',
+			class: 'dak-crm-icon-btn is-' + icon,
+			'aria-label': label,
+			'aria-disabled': unavailable ? 'true' : null,
+			title: tip,
+			onclick: onclick,
+		} );
+
+		b.innerHTML = ICONS[ icon ];
+
+		return b;
+	}
+
 	function select( options, value, attrs ) {
 		var el = h( 'select', attrs || {} );
 
@@ -657,8 +681,8 @@
 			head.push( h( 'th', { scope: 'col', class: 'dak-crm-col-check' }, [ all ] ) );
 		}
 
-		[ 'Name', 'Source', 'Stage', 'Doctor / service', 'Last activity', 'Next follow-up', 'Owner', 'Tags' ].forEach( function ( t ) {
-			head.push( h( 'th', { scope: 'col', text: t } ) );
+		[ 'Name', 'Source', 'Stage', 'Doctor / service', 'Last activity', 'Next follow-up', 'Owner', 'Tags' ].concat( staff ? [ 'Actions' ] : [] ).forEach( function ( t ) {
+			head.push( h( 'th', { scope: 'col', class: 'Actions' === t ? 'dak-crm-col-actions' : null, text: t } ) );
 		} );
 
 		var tbody = h( 'tbody' );
@@ -727,6 +751,17 @@
 			}
 
 			cells.push( h( 'td', { 'data-label': 'Tags' }, [ r.tags.length ? tagChips( r.tags ) : h( 'span', { class: 'dak-cell-sub', text: '—' } ) ] ) );
+
+			if ( staff ) {
+				cells.push( h( 'td', { 'data-label': 'Actions', class: 'dak-crm-col-actions' }, [ h( 'span', { class: 'dak-crm-row-actions' }, [
+					iconBtn( 'edit', 'Edit ' + r.name, 'Edit', function () {
+						openEditDialog( r );
+					} ),
+					iconBtn( 'delete', 'Delete ' + r.name, r.deleteBlock ? 'Can’t delete: ' + r.deleteBlock : 'Delete', function ( e ) {
+						deleteContact( r, e.currentTarget );
+					}, r.deleteBlock ),
+				] ) ] ) );
+			}
 
 			tbody.appendChild( h( 'tr', { 'data-row': '', id: 'dak-crm-row-' + r.id }, cells ) );
 		} );
@@ -1104,8 +1139,15 @@
 		] );
 	}
 
-	function detailsForm( c ) {
-		var form = h( 'form', { class: 'dak-crm-form', novalidate: true } );
+	/**
+	 * A contact's editable fields (shared by the side panel's Details and
+	 * the table's Edit dialog).
+	 *
+	 * @param {Object} c      Contact (as in the list or panel).
+	 * @param {string} prefix ID prefix, unique per place it's shown.
+	 * @return {Object} { grid, fields, data() } — data() gives the 'update' request fields.
+	 */
+	function contactFields( c, prefix ) {
 		var fields = {};
 
 		if ( staff ) {
@@ -1126,24 +1168,56 @@
 		var grid = h( 'div', { class: 'dak-crm-form-grid' } );
 
 		if ( staff ) {
-			grid.appendChild( labelled( 'dak-crm-f-name', 'Name', fields.name ) );
-			grid.appendChild( labelled( 'dak-crm-f-phone', 'Phone', fields.phone ) );
-			grid.appendChild( labelled( 'dak-crm-f-email', 'Email', fields.email, c.hasAccount ? 'From their patient account — change it there.' : '' ) );
-			grid.appendChild( labelled( 'dak-crm-f-stage', 'Stage', fields.stage ) );
+			grid.appendChild( labelled( prefix + 'name', 'Name', fields.name ) );
+			grid.appendChild( labelled( prefix + 'phone', 'Phone', fields.phone ) );
+			grid.appendChild( labelled( prefix + 'email', 'Email', fields.email, c.hasAccount ? 'From their patient account — change it there.' : '' ) );
+			grid.appendChild( labelled( prefix + 'stage', 'Stage', fields.stage ) );
 
-			var lost = labelled( 'dak-crm-f-lost', 'Why lost (optional)', fields.lost_reason );
+			var lost = labelled( prefix + 'lost', 'Why lost (optional)', fields.lost_reason );
 			lost.hidden = 'lost' !== c.stage;
 			fields.stage.addEventListener( 'change', function () {
 				lost.hidden = 'lost' !== fields.stage.value;
 			} );
 			grid.appendChild( lost );
-			grid.appendChild( labelled( 'dak-crm-f-owner', 'Owner', fields.owner_id ) );
-			grid.appendChild( labelled( 'dak-crm-f-source', 'Source', fields.source ) );
-			grid.appendChild( labelled( 'dak-crm-f-tags', 'Tags', fields.tags, 'Separate with commas.' ) );
+			grid.appendChild( labelled( prefix + 'owner', 'Owner', fields.owner_id ) );
+			grid.appendChild( labelled( prefix + 'source', 'Source', fields.source ) );
+			grid.appendChild( labelled( prefix + 'tags', 'Tags', fields.tags, 'Separate with commas.' ) );
 		}
 
-		grid.appendChild( labelled( 'dak-crm-f-follow', 'Next follow-up', fields.follow_up_date, staff ? '' : 'Reception sees this in “Follow-ups due”.' ) );
-		form.appendChild( grid );
+		grid.appendChild( labelled( prefix + 'follow', 'Next follow-up', fields.follow_up_date, staff ? '' : 'Reception sees this in “Follow-ups due”.' ) );
+
+		return {
+			grid: grid,
+			fields: fields,
+			data: function () {
+				var data = { id: c.id, follow_up_date: fields.follow_up_date.value };
+
+				if ( staff ) {
+					data.stage = fields.stage.value;
+					data.lost_reason = fields.lost_reason.value;
+					data.owner_id = fields.owner_id.value;
+					data.source = fields.source.value;
+					data.tags = fields.tags.value.split( ',' ).map( function ( t ) {
+						return t.trim();
+					} ).filter( Boolean );
+
+					if ( ! c.hasAccount ) {
+						data.name = fields.name.value;
+						data.phone = fields.phone.value;
+						data.email = fields.email.value;
+					}
+				}
+
+				return data;
+			},
+		};
+	}
+
+	function detailsForm( c ) {
+		var form = h( 'form', { class: 'dak-crm-form', novalidate: true } );
+		var cf = contactFields( c, 'dak-crm-f-' );
+
+		form.appendChild( cf.grid );
 		form.appendChild( tagDatalist() );
 
 		var save = h( 'button', { type: 'submit', class: 'dak-button dak-button-primary dak-button-sm', text: 'Save details' } );
@@ -1151,29 +1225,73 @@
 
 		form.addEventListener( 'submit', function ( e ) {
 			e.preventDefault();
-
-			var data = { id: c.id, follow_up_date: fields.follow_up_date.value };
-
-			if ( staff ) {
-				data.stage = fields.stage.value;
-				data.lost_reason = fields.lost_reason.value;
-				data.owner_id = fields.owner_id.value;
-				data.source = fields.source.value;
-				data.tags = fields.tags.value.split( ',' ).map( function ( t ) {
-					return t.trim();
-				} ).filter( Boolean );
-
-				if ( ! c.hasAccount ) {
-					data.name = fields.name.value;
-					data.phone = fields.phone.value;
-					data.email = fields.email.value;
-				}
-			}
-
-			post( 'update', data, save ).then( updated );
+			post( 'update', cf.data(), save ).then( updated );
 		} );
 
 		return section( 'Details', [ form ] );
+	}
+
+	/** The table's Edit button: the same fields in a dialog. */
+	function openEditDialog( c ) {
+		var cf = contactFields( c, 'dak-crm-x-' );
+		var error = h( 'p', { class: 'dak-crm-error', role: 'alert', hidden: true } );
+		var save = h( 'button', { type: 'submit', class: 'dak-button dak-button-primary', text: 'Save changes' } );
+		var form = h( 'form', { class: 'dak-crm-form', novalidate: true }, [
+			c.hasAccount ? h( 'p', { class: 'dak-crm-help', text: 'Has a patient account (' + c.patientNumber + '): name, phone and email come from the account.' } ) : null,
+			cf.grid,
+			error,
+			h( 'div', { class: 'dak-crm-actions' }, [ save, btn( 'Cancel', 'dak-button-secondary', closeDialog ) ] ),
+		] );
+
+		form.addEventListener( 'submit', function ( e ) {
+			e.preventDefault();
+			error.hidden = true;
+
+			post( 'update', cf.data(), save ).then( function ( res ) {
+				if ( ! res.success ) {
+					flash( '' );
+					error.textContent = res.data.message;
+					error.hidden = false;
+
+					var field = { name: cf.fields.name, phone: cf.fields.phone, email: cf.fields.email }[ res.data.field ];
+
+					if ( field ) {
+						field.focus();
+					}
+
+					return;
+				}
+
+				closeDialog();
+				flash( c.name + ' updated.' );
+				load();
+			} );
+		} );
+
+		openDialog( 'Edit ' + c.name, form );
+
+		// Start where most edits happen for account holders.
+		( c.hasAccount ? cf.fields.stage : cf.fields.name ).focus();
+	}
+
+	/** The table's Delete button. */
+	function deleteContact( c, button ) {
+		if ( c.deleteBlock ) {
+			window.alert( c.name + ' can’t be deleted.\n\n' + c.deleteBlock ); // eslint-disable-line no-alert
+			return;
+		}
+
+		if ( ! window.confirm( 'Delete ' + c.name + ' from the CRM?\n\nTheir notes, tasks and CRM history are removed too. This can’t be undone.' ) ) { // eslint-disable-line no-alert
+			return;
+		}
+
+		post( 'delete', { id: c.id }, button ).then( function ( res ) {
+			if ( res.success ) {
+				delete state.selected[ c.id ];
+				flash( res.data.message );
+				load();
+			}
+		} );
 	}
 
 	function tasksSection( c ) {

@@ -32,8 +32,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * - Administrators and receptionists ("staff"): everything.
  * - Doctors: only contacts who booked or visited them; they can view, add
  *   notes and tasks, and set a follow-up date — not change stage, owner,
- *   tags or contact details, merge, bulk-edit, export, email or see
- *   reports. Their timeline shows only their own bookings, visits and
+ *   tags or contact details, merge, delete, bulk-edit, export, email or
+ *   see reports. Their timeline shows only their own bookings, visits and
  *   reviews, and no emails.
  * Each role can be switched off under Roles & Permissions ("CRM").
  */
@@ -187,7 +187,7 @@ class Crm_Handler {
 		$op      = sanitize_key( $this->text( 'op' ) );
 		$staff   = 'doctor' !== $viewer['role'];
 		$user_id = get_current_user_id();
-		$staff_ops = array( 'create', 'bulk', 'merge', 'export', 'templates', 'template_save', 'template_status', 'email_check', 'email_preview', 'email_test', 'email_send', 'campaign_create', 'campaign_process', 'campaigns', 'campaign', 'campaign_cancel', 'campaign_retry', 'opt_out', 'segment_save', 'segment_delete', 'report' );
+		$staff_ops = array( 'create', 'bulk', 'merge', 'export', 'delete', 'templates', 'template_save', 'template_status', 'email_check', 'email_preview', 'email_test', 'email_send', 'campaign_create', 'campaign_process', 'campaigns', 'campaign', 'campaign_cancel', 'campaign_retry', 'opt_out', 'segment_save', 'segment_delete', 'report' );
 
 		if ( ! $staff && in_array( $op, $staff_ops, true ) ) {
 			wp_send_json_error( array( 'message' => __( 'Only clinic staff can do that.', 'doctor-ak-portal' ) ), 403 );
@@ -327,6 +327,17 @@ class Crm_Handler {
 				wp_send_json_success(
 					array(
 						'tasks' => Crm::open_tasks( $mine && $staff ? $user_id : 0, $viewer['scope'], '1' === $this->text( 'upcoming' ) ),
+					)
+				);
+				break;
+
+			case 'delete':
+				$contact = $this->contact_or_fail( $viewer );
+				$this->fail_if_error( Crm::delete_contact( $contact['id'], $user_id ) );
+				wp_send_json_success(
+					array(
+						/* translators: %s: name. */
+						'message' => sprintf( __( '%s was deleted from the CRM.', 'doctor-ak-portal' ), $contact['name'] ),
 					)
 				);
 				break;
@@ -759,6 +770,8 @@ class Crm_Handler {
 			'createdAt'        => $c['created_at'],
 			'hasEmail'         => '' !== $c['email_norm'],
 			'marketing'        => $doctor ? null : Crm_Email::marketing_status( $c ),
+			// Why Delete isn't possible ('' = it is), for staff.
+			'deleteBlock'      => $doctor ? null : Crm::delete_block( $c ),
 		);
 	}
 

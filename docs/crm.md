@@ -24,7 +24,7 @@ Every check runs on the server in `Crm_Handler`. Hidden buttons are a convenienc
 | Payment totals, unpaid and no-show flags | ✓ | – |
 | Change stage, owner, tags, details | ✓ | – |
 | Set the next follow-up date, add notes and tasks | ✓ | ✓ |
-| Add a contact, bulk actions, merge, CSV export | ✓ | – |
+| Add a contact, bulk actions, merge, delete, CSV export | ✓ | – |
 | Email people, manage templates, saved segments | ✓ | – |
 | See emails in a contact's history | ✓ | – |
 | See reviews in a contact's history | All | Only reviews of themselves |
@@ -49,6 +49,13 @@ The first time someone opens the CRM, existing patients, appointments and servic
 - A guest booking joins an existing contact only when the **name matches and** the phone or email matches. Family members who share one phone number therefore stay separate.
 - Phone numbers are compared without the country code or leading zero (`0300…`, `+92300…` and `0092300…` are the same).
 - Likely duplicates appear in the side panel under **Possible duplicates**, where staff can merge them. Two patient accounts can't be merged. A merge keeps all emails, and if either record had unsubscribed, the merged one stays unsubscribed.
+
+### Editing and deleting from the list
+
+The **Actions** column (staff only) has two buttons on every row. It stays pinned to the right when the table is wider than the screen.
+
+- **Edit** (pencil) opens a dialog with the same fields as the side panel's Details: name, phone, email, source, stage (with the reason when Lost), owner, tags and next follow-up. For someone with a patient account, name, phone and email come from the account and can't be changed here.
+- **Delete** (bin) removes a contact together with their CRM notes, tasks and history, after a confirmation. It works only for people with **no patient account and no bookings**, for example a lead added by hand, an enquiry that went nowhere or a test entry. Anyone with an account or a booking would be recreated the next time their booking changes, so for them the button is faded and explains why when clicked: mark them **Lost** instead, or merge duplicates. Service requests a deleted lead made stay in Service Requests, and emails already sent stay in their group email's results.
 
 ## Stages
 

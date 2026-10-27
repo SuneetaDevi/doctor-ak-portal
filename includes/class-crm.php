@@ -1674,6 +1674,73 @@ class Crm {
 	}
 
 	/* ---------------------------------------------------------------------
+	 * Deleting
+	 * ------------------------------------------------------------------- */
+
+	/**
+	 * Why a contact can't be deleted, or '' if it can. Someone with a
+	 * patient account or a booking would only come back on the next sync
+	 * (and their bookings and visits stay where they are anyway), so only
+	 * leads without either — added by hand, an enquiry, a test entry — can
+	 * be removed. The others can be marked Lost or merged instead.
+	 *
+	 * @param array $contact Contact.
+	 * @return string
+	 */
+	public static function delete_block( array $contact ) {
+		if ( $contact['user_id'] > 0 ) {
+			return __( 'This person has a patient account, so they stay in the CRM. Mark them as Lost if you no longer want to follow them up.', 'doctor-ak-portal' );
+		}
+
+		if ( self::linked_ids( $contact['id'], self::LINK_APPOINTMENT ) ) {
+			return __( 'This person has bookings, so they stay in the CRM. Mark them as Lost, or merge them if they’re a duplicate.', 'doctor-ak-portal' );
+		}
+
+		return '';
+	}
+
+	/**
+	 * Removes a contact and their CRM notes, tasks and history. Service
+	 * requests they made stay in Service Requests; emails already sent stay
+	 * in their group email's results.
+	 *
+	 * @param int $id      Contact ID.
+	 * @param int $user_id Acting user.
+	 * @return true|\WP_Error
+	 */
+	public static function delete_contact( $id, $user_id ) {
+		global $wpdb;
+
+		$contact = self::find( $id );
+
+		if ( ! $contact ) {
+			return new \WP_Error( 'doctor_ak_crm_missing', __( 'That contact no longer exists.', 'doctor-ak-portal' ) );
+		}
+
+		$block = self::delete_block( $contact );
+
+		if ( '' !== $block ) {
+			return new \WP_Error( 'doctor_ak_crm_delete_blocked', $block );
+		}
+
+		foreach ( array( self::T_LINKS, self::T_NOTES, self::T_TASKS, self::T_ACTIVITY ) as $t ) {
+			$wpdb->delete( self::table( $t ), array( 'contact_id' => $contact['id'] ) );
+		}
+
+		$wpdb->delete( self::table( self::T_CONTACTS ), array( 'id' => $contact['id'] ) );
+
+		/**
+		 * A contact was deleted from the CRM.
+		 *
+		 * @param array $contact The deleted contact.
+		 * @param int   $user_id Who deleted it.
+		 */
+		do_action( 'doctor_ak_crm_contact_deleted', $contact, (int) $user_id );
+
+		return true;
+	}
+
+	/* ---------------------------------------------------------------------
 	 * Timeline
 	 * ------------------------------------------------------------------- */
 
