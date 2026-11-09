@@ -379,6 +379,9 @@ if ( ! function_exists( 'dak_profile_view_truncate' ) ) {
 														<span class="dak-profile-clinic-radio" aria-hidden="true"></span>
 														<span class="dak-profile-clinic-info">
 															<strong><?php echo esc_html( $dak_service['name'] ); ?></strong>
+															<?php if ( ! empty( $dak_service['discount_percent'] ) ) : ?>
+																<span class="dak-service-offer-discount"><?php echo esc_html( sprintf( /* translators: %d: discount percentage. */ __( '%d%% OFF', 'doctor-ak-portal' ), $dak_service['discount_percent'] ) ); ?></span>
+															<?php endif; ?>
 														</span>
 													</span>
 													<span class="dak-profile-clinic-fee">

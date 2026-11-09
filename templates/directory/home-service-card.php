@@ -16,6 +16,7 @@
  * @var string $profile_url  URL of this service's [service_profile_view] page.
  * @var string $category       Service category slug, or '' if uncategorized. Only present when rendered by Services_Directory (the home page's own services section doesn't pass it).
  * @var string $category_label Service category display label, or ''. Same availability note as $category.
+ * @var int    $discount_percent Largest discount currently active across its doctors (0 = none).
  */
 
 // Not every caller of this shared card partial passes category data (the
@@ -23,6 +24,8 @@
 // plain listing there instead of a notice.
 $category       = isset( $category ) ? $category : '';
 $category_label = isset( $category_label ) ? $category_label : '';
+$dak_discount   = isset( $discount_percent ) ? (int) $discount_percent : 0;
+$dak_providers  = isset( $doctor_count ) ? (int) $doctor_count : 1;
 
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -88,6 +91,10 @@ $dak_home_service_excerpt = wp_trim_words( wp_strip_all_tags( str_replace( '<', 
 			<img src="<?php echo esc_url( $image_url ); ?>" alt="">
 		<?php else : ?>
 			<span class="dak-home-service-row-placeholder" aria-hidden="true"><?php echo $dak_home_service_icons['image']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+		<?php endif; ?>
+
+		<?php if ( $dak_discount > 0 ) : ?>
+			<?php require __DIR__ . '/service-discount-tag.php'; ?>
 		<?php endif; ?>
 	</div>
 </article>

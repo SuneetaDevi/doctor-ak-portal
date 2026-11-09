@@ -363,6 +363,8 @@ class Doctor_Profile_View {
 					'name'        => $service['name'],
 					'charge'      => $charge,
 					'price_label' => Services::single_price_label( $charge ),
+					// $charge already has an active discount applied.
+					'discount_percent' => $service['discount_active'] && $charge > 0 ? $service['discount_percent'] : 0,
 				);
 			}
 

@@ -28,6 +28,8 @@
 		document.getElementById( 'dak-service-category' ).value = '';
 		document.getElementById( 'dak-service-charge' ).value = '0';
 		document.getElementById( 'dak-service-duration' ).value = '0';
+		document.getElementById( 'dak-service-discount' ).value = '0';
+		document.getElementById( 'dak-service-discount-ends' ).value = '';
 		document.getElementById( 'dak-service-active' ).checked = true;
 		document.getElementById( 'dak-service-requires-doctor' ).checked = true;
 	}
@@ -97,6 +99,8 @@
 			document.getElementById( 'dak-service-category' ).value = trigger.getAttribute( 'data-category' ) || '';
 			document.getElementById( 'dak-service-charge' ).value = trigger.getAttribute( 'data-charge' ) || '0';
 			document.getElementById( 'dak-service-duration' ).value = trigger.getAttribute( 'data-duration-minutes' ) || '0';
+			document.getElementById( 'dak-service-discount' ).value = trigger.getAttribute( 'data-discount-percent' ) || '0';
+			document.getElementById( 'dak-service-discount-ends' ).value = trigger.getAttribute( 'data-discount-ends-at' ) || '';
 			document.getElementById( 'dak-service-active' ).checked = '1' === trigger.getAttribute( 'data-active' );
 			document.getElementById( 'dak-service-requires-doctor' ).checked = '1' === trigger.getAttribute( 'data-requires-doctor' );
 
@@ -123,6 +127,9 @@
 			formData.append( 'category', document.getElementById( 'dak-service-category' ).value );
 			formData.append( 'charge', document.getElementById( 'dak-service-charge' ).value );
 			formData.append( 'duration_minutes', document.getElementById( 'dak-service-duration' ).value );
+			formData.append( 'has_discount_fields', '1' );
+			formData.append( 'discount_percent', document.getElementById( 'dak-service-discount' ).value );
+			formData.append( 'discount_ends_at', document.getElementById( 'dak-service-discount-ends' ).value );
 			formData.append( 'active', document.getElementById( 'dak-service-active' ).checked ? '1' : '' );
 			formData.append( 'requires_doctor', document.getElementById( 'dak-service-requires-doctor' ).checked ? '1' : '' );
 

@@ -326,7 +326,8 @@
 			var price = servicePrice( service );
 			known = known && price.known;
 			total += price.amount;
-			lines.push( { label: service.name, amount: price.amount, known: price.known } );
+			var off = parseInt( service.discount_percent, 10 ) || 0;
+			lines.push( { label: service.name + ( off > 0 ? ' (' + off + '% off)' : '' ), amount: price.amount, known: price.known } );
 		} );
 
 		return { lines: lines, total: total, known: known, ready: true };
@@ -1105,6 +1106,14 @@
 		var priceEl = document.createElement( 'span' );
 		priceEl.className = 'dak-bk-option-price' + ( price.known && 0 === price.amount ? ' is-free' : '' );
 		priceEl.textContent = priceLabel( price );
+
+		// The price above already has any active discount applied.
+		if ( parseInt( service.discount_percent, 10 ) > 0 ) {
+			var off = document.createElement( 'span' );
+			off.className = 'dak-bk-option-discount';
+			off.textContent = parseInt( service.discount_percent, 10 ) + '% OFF';
+			priceEl.insertBefore( off, priceEl.firstChild );
+		}
 
 		label.appendChild( input );
 		label.appendChild( text );

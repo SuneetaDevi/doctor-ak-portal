@@ -163,6 +163,7 @@ class Services_Directory {
 			'requires_doctor' => ! empty( $group['requires_doctor'] ),
 			'provider_count'  => (int) $group['provider_count'],
 			'price'           => $group['public_price'],
+			'discount_percent' => (int) $group['discount_percent'],
 			'profile_url'     => $profile_url ? add_query_arg( 'service_id', $group['id'], $profile_url ) : '',
 		);
 	}

@@ -604,6 +604,9 @@ class Booking_Page {
 							// selection changes, instead of always the flat
 							// charge above.
 							'clinic_charges'   => $service['clinic_charges'],
+							// Prices above already have it applied (see
+							// Services::decode_row()); this is just the label.
+							'discount_percent' => $service['discount_active'] ? $service['discount_percent'] : 0,
 						);
 					},
 					$services

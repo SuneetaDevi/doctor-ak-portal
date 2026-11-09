@@ -35,6 +35,24 @@ class Services {
 	const TYPE_VIDEO  = 'video';
 
 	/**
+	 * The service every doctor gets by default (admin Add/Edit Doctor form,
+	 * see Admin_User_Handler). Matched case-insensitively.
+	 *
+	 * @var string
+	 */
+	const DEFAULT_OPD_NAME = 'OPD Consultation';
+
+	/**
+	 * Whether a service name is the default OPD consultation.
+	 *
+	 * @param string $name Service name.
+	 * @return bool
+	 */
+	public static function is_default_opd( $name ) {
+		return 0 === strcasecmp( trim( (string) $name ), self::DEFAULT_OPD_NAME );
+	}
+
+	/**
 	 * Returns the fully prefixed table name.
 	 *
 	 * @return string
@@ -136,7 +154,86 @@ class Services {
 			$fields['keywords'] = self::sanitize_keywords( isset( $posted['keywords'] ) ? wp_unslash( $posted['keywords'] ) : '' );
 		}
 
+		// Same "only forms that show it may change it" gate as above: the
+		// admin service form and the doctor's own Services form post a
+		// 'has_discount_fields' marker; the admin user form's quick service
+		// rows don't, so saving those leaves an existing discount alone.
+		if ( ! empty( $posted['has_discount_fields'] ) ) {
+			$discount = self::sanitize_discount_from_request( $posted );
+
+			if ( is_wp_error( $discount ) ) {
+				return $discount;
+			}
+
+			$fields = array_merge( $fields, $discount );
+		}
+
 		return $fields;
+	}
+
+	/**
+	 * Validates a service's discount fields — the same shape as a doctor's
+	 * video-consultation discount (Video_Pricing): a whole percentage, and
+	 * an optional end date/time after which full prices apply again.
+	 *
+	 * @param array $posted Raw request array.
+	 * @return array|\WP_Error { discount_percent: int, discount_ends_at: string 'Y-m-d H:i:s' or '' }.
+	 */
+	public static function sanitize_discount_from_request( array $posted ) {
+		$percent = isset( $posted['discount_percent'] ) && '' !== trim( (string) $posted['discount_percent'] ) ? wp_unslash( $posted['discount_percent'] ) : 0;
+
+		if ( ! is_numeric( $percent ) || (float) $percent < 0 || (float) $percent > 100 || (float) $percent !== (float) (int) $percent ) {
+			return new \WP_Error( 'doctor_ak_service_discount_invalid', __( 'Discount must be a whole number between 0 and 100%.', 'doctor-ak-portal' ), array( 'field' => 'discount_percent' ) );
+		}
+
+		$percent = (int) $percent;
+		$ends_at = isset( $posted['discount_ends_at'] ) ? sanitize_text_field( wp_unslash( $posted['discount_ends_at'] ) ) : '';
+
+		if ( '' !== $ends_at ) {
+			$timestamp = strtotime( str_replace( 'T', ' ', $ends_at ) );
+
+			if ( false === $timestamp ) {
+				return new \WP_Error( 'doctor_ak_service_discount_ends_invalid', __( 'Please provide a valid discount end date/time.', 'doctor-ak-portal' ), array( 'field' => 'discount_ends_at' ) );
+			}
+
+			$ends_at = date( 'Y-m-d H:i:s', $timestamp ); // phpcs:ignore WordPress.DateTime.RestrictedFunctions.date_date -- storing the entered local time as-is, like Video_Pricing.
+		}
+
+		return array(
+			'discount_percent' => $percent,
+			// An end date only means something alongside a discount.
+			'discount_ends_at' => $percent > 0 ? $ends_at : '',
+		);
+	}
+
+	/**
+	 * A price after a percentage discount (0 stays 0 — an unpriced service).
+	 *
+	 * @param float $amount  Full price.
+	 * @param int   $percent Discount, 0–100.
+	 * @return float
+	 */
+	public static function discounted( $amount, $percent ) {
+		$amount = (float) $amount;
+
+		return $percent > 0 && $amount > 0 ? round( $amount * ( 100 - (int) $percent ) / 100, 2 ) : $amount;
+	}
+
+	/**
+	 * Whether a service's stored discount applies right now: a percentage
+	 * set, and no end date or one still in the future (site local time,
+	 * same comparison Video_Pricing::effective_price_for_doctor() uses).
+	 *
+	 * @param int    $percent Discount percent.
+	 * @param string $ends_at 'Y-m-d H:i:s', or '' / null for no end date.
+	 * @return bool
+	 */
+	public static function is_discount_active( $percent, $ends_at ) {
+		if ( (int) $percent <= 0 ) {
+			return false;
+		}
+
+		return empty( $ends_at ) || '0000-00-00 00:00:00' === $ends_at || strtotime( $ends_at ) > current_time( 'timestamp' ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- compared against a stored local-time string.
 	}
 
 	/**
@@ -180,10 +277,12 @@ class Services {
 				'description'      => isset( $fields['description'] ) ? $fields['description'] : '',
 				'image_id'         => (int) $image_id,
 				'clinic_charges'   => wp_json_encode( isset( $fields['clinic_charges'] ) ? $fields['clinic_charges'] : array() ),
+				'discount_percent' => isset( $fields['discount_percent'] ) ? (int) $fields['discount_percent'] : 0,
+				'discount_ends_at' => ! empty( $fields['discount_ends_at'] ) ? $fields['discount_ends_at'] : null,
 				'created_at'       => $now,
 				'updated_at'       => $now,
 			),
-			array( '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%d', '%s', '%s', '%s' )
+			array( '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%d', '%s', '%d', '%s', '%s', '%s' )
 		);
 
 		if ( ! $inserted ) {
@@ -256,6 +355,13 @@ class Services {
 		if ( null !== $image_id ) {
 			$data['image_id'] = (int) $image_id;
 			$types[]           = '%d';
+		}
+
+		if ( array_key_exists( 'discount_percent', $fields ) ) {
+			$data['discount_percent'] = (int) $fields['discount_percent'];
+			$types[]                   = '%d';
+			$data['discount_ends_at'] = ! empty( $fields['discount_ends_at'] ) ? $fields['discount_ends_at'] : null;
+			$types[]                   = '%s';
 		}
 
 		$updated = $wpdb->update( self::table_name(), $data, $where, $types, $where_types );
@@ -529,7 +635,14 @@ class Services {
 					// casing was seen first.
 					'keywords_set'   => array(),
 					'prices'         => array(),
+					// Largest discount currently active on any doctor's row
+					// of this service, for the "% OFF" tag (0 = none).
+					'discount_percent' => 0,
 				);
+			}
+
+			if ( $row['discount_active'] ) {
+				$groups[ $key ]['discount_percent'] = max( $groups[ $key ]['discount_percent'], $row['discount_percent'] );
 			}
 
 			if ( '' === $groups[ $key ]['description'] && '' !== $row['description'] ) {
@@ -952,7 +1065,20 @@ class Services {
 	private static function decode_row( array $row ) {
 		$categories = Service_Categories::get_all();
 		$category   = (string) $row['category'];
-		$charge     = (float) $row['charge'];
+
+		// Discount: while active, 'charge' / 'clinic_charges' (and everything
+		// derived from them below) are what patients actually pay now — so
+		// booking totals (Appointments::create()), the booking page, profiles
+		// and directories all apply it without each re-implementing it. The
+		// stored, undiscounted prices stay available as 'base_charge' /
+		// 'base_clinic_charges' — edit forms must use those, never 'charge',
+		// or saving would bake the discount into the price.
+		$discount_percent = isset( $row['discount_percent'] ) ? max( 0, min( 100, (int) $row['discount_percent'] ) ) : 0;
+		$discount_ends_at = isset( $row['discount_ends_at'] ) && '0000-00-00 00:00:00' !== $row['discount_ends_at'] ? (string) $row['discount_ends_at'] : '';
+		$discount_active  = self::is_discount_active( $discount_percent, $discount_ends_at );
+		$applied_percent  = $discount_active ? $discount_percent : 0;
+		$base_charge      = (float) $row['charge'];
+		$charge           = self::discounted( $base_charge, $applied_percent );
 
 		$image_id  = isset( $row['image_id'] ) ? (int) $row['image_id'] : 0;
 		$image_url = '';
@@ -967,11 +1093,13 @@ class Services {
 		// public portfolio pages show that instead of the flat $charge
 		// whenever it's set, since the same service can cost differently
 		// at different clinics for this doctor.
-		$clinic_charges_raw = json_decode( isset( $row['clinic_charges'] ) ? (string) $row['clinic_charges'] : '', true );
-		$clinic_charges     = array();
+		$clinic_charges_raw  = json_decode( isset( $row['clinic_charges'] ) ? (string) $row['clinic_charges'] : '', true );
+		$clinic_charges      = array();
+		$base_clinic_charges = array();
 
 		foreach ( (array) $clinic_charges_raw as $clinic_location_id => $price ) {
-			$clinic_charges[ (int) $clinic_location_id ] = (float) $price;
+			$base_clinic_charges[ (int) $clinic_location_id ] = (float) $price;
+			$clinic_charges[ (int) $clinic_location_id ]      = self::discounted( $price, $applied_percent );
 		}
 
 		$clinic_locations = array();
@@ -984,6 +1112,7 @@ class Services {
 			}
 
 			$clinic_location['price']       = $price;
+			$clinic_location['base_price']  = $base_clinic_charges[ $clinic_location_id ];
 			$clinic_location['price_label'] = $price > 0 ? 'PKR ' . number_format_i18n( $price ) : __( 'Free', 'doctor-ak-portal' );
 			$clinic_locations[]             = $clinic_location;
 		}
@@ -1018,6 +1147,12 @@ class Services {
 			'category'         => $category,
 			'category_label'   => isset( $categories[ $category ] ) ? $categories[ $category ] : '',
 			'charge'           => $charge,
+			'base_charge'      => $base_charge,
+			// The headline price before discount (same min-of-clinics rule).
+			'base_effective_price' => ! empty( $base_clinic_charges ) ? min( $base_clinic_charges ) : $base_charge,
+			'discount_percent' => $discount_percent,
+			'discount_ends_at' => $discount_ends_at,
+			'discount_active'  => $discount_active && ( $base_charge > 0 || max( array_merge( array( 0 ), $base_clinic_charges ) ) > 0 ),
 			'effective_price'  => $effective_price,
 			'price_label'      => $price_label,
 			'duration_minutes' => (int) $row['duration_minutes'],
@@ -1028,6 +1163,7 @@ class Services {
 			'image_id'         => $image_id,
 			'image_url'        => $image_url,
 			'clinic_charges'   => $clinic_charges,
+			'base_clinic_charges' => $base_clinic_charges,
 			'clinic_locations' => $clinic_locations,
 		);
 	}

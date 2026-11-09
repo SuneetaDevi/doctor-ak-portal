@@ -22,6 +22,7 @@ use DoctorAKPortal\Includes\Revenue_Split;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Specializations;
+use DoctorAKPortal\Includes\Video_Pricing;
 
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -506,6 +507,56 @@ class Admin_User_Handler {
 					'fields' => $service_fields,
 				);
 			}
+
+			// Every doctor has an "OPD Consultation" service. The form always
+			// posts it as a fixed first row; this covers anything else (an
+			// old cached form, a hand-crafted request) — added unpriced, with
+			// an existing doctor's own OPD row counting too.
+			$has_opd = false;
+
+			foreach ( $services_to_create as $dak_entry ) {
+				$has_opd = $has_opd || Services::is_default_opd( $dak_entry['fields']['name'] );
+			}
+
+			if ( ! $has_opd && $existing_user ) {
+				foreach ( Services::get_for_doctor( $existing_user->ID ) as $dak_existing ) {
+					$has_opd = $has_opd || Services::is_default_opd( $dak_existing['name'] );
+				}
+			}
+
+			if ( ! $has_opd ) {
+				$opd_fields = Services::sanitize_fields_from_request(
+					array(
+						'name'             => Services::DEFAULT_OPD_NAME,
+						'charge'           => 0,
+						'duration_minutes' => 0,
+						'active'           => true,
+						'requires_doctor'  => true,
+					)
+				);
+
+				$opd_fields['clinic_charges'] = array();
+				$services_to_create[]         = array(
+					'id'     => 0,
+					'fields' => $opd_fields,
+				);
+			}
+		}
+
+		// The Services step's default "Video Consultation" row sets the
+		// doctor's video fee (Video_Pricing). Only while video consultations
+		// are allowed — the row (and its field) is disabled otherwise — and a
+		// blank field leaves the current fee unchanged.
+		$video_price = null;
+
+		if ( $is_for_doctor && $video_consultation_allowed && isset( $_POST['video_price'] ) && '' !== trim( (string) wp_unslash( $_POST['video_price'] ) ) ) {
+			$posted_video_price = wp_unslash( $_POST['video_price'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- validated as a number just below.
+
+			if ( ! is_numeric( $posted_video_price ) || (float) $posted_video_price < 0 ) {
+				$errors['video_price'] = __( 'Please enter a valid video consultation fee.', 'doctor-ak-portal' );
+			} else {
+				$video_price = number_format( (float) $posted_video_price, 2, '.', '' );
+			}
 		}
 
 		// A patient is registered under exactly one clinic from the master
@@ -668,6 +719,14 @@ class Admin_User_Handler {
 				} else {
 					Services::create( $saved_user_id, $service_entry['fields'] );
 				}
+			}
+
+			// Only the fee changes; discount and booking rules stay as set
+			// in the Video Consultation section.
+			if ( null !== $video_price ) {
+				$video_settings          = Video_Pricing::get_for_doctor( $saved_user_id );
+				$video_settings['price'] = $video_price;
+				Video_Pricing::save_for_doctor( $saved_user_id, $video_settings );
 			}
 		} else {
 			update_user_meta( $saved_user_id, 'doctor_ak_phone_number', $phone_number );

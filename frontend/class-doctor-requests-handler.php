@@ -7,6 +7,7 @@
 
 namespace DoctorAKPortal\Frontend;
 
+use DoctorAKPortal\Includes\Pmdc;
 use DoctorAKPortal\Includes\Roles;
 
 // Prevent direct file access.
@@ -33,6 +34,14 @@ class Doctor_Requests_Handler {
 	 */
 	public function handle_approve() {
 		$doctor = $this->authorized_pending_doctor();
+		$pmdc   = Pmdc::for_doctor( $doctor->ID );
+
+		// A doctor only gets in once their PMDC number is verified. Doctors
+		// who registered before the number was collected have none on file —
+		// an administrator can still approve those, as before.
+		if ( '' !== $pmdc['number'] && ! $pmdc['verified'] ) {
+			wp_send_json_error( array( 'message' => __( 'Verify this doctor’s PMDC registration number first (check it on pmdc.pk, then “Mark PMDC verified”).', 'doctor-ak-portal' ) ) );
+		}
 
 		update_user_meta( $doctor->ID, 'doctor_ak_registration_status', 'approved' );
 
@@ -45,6 +54,28 @@ class Doctor_Requests_Handler {
 		do_action( 'doctor_ak_doctor_approved', $doctor->ID );
 
 		wp_send_json_success( array( 'message' => __( 'Doctor approved.', 'doctor-ak-portal' ) ) );
+	}
+
+	/**
+	 * AJAX handler: an administrator confirms they've checked a pending
+	 * doctor's PMDC number on the PMDC register (name, status and licence
+	 * validity). Records who and when.
+	 *
+	 * @return void
+	 */
+	public function handle_verify_pmdc() {
+		$doctor = $this->authorized_pending_doctor();
+		$pmdc   = Pmdc::for_doctor( $doctor->ID );
+
+		if ( '' === $pmdc['number'] ) {
+			wp_send_json_error( array( 'message' => __( 'This doctor has no PMDC number on file.', 'doctor-ak-portal' ) ) );
+		}
+
+		if ( ! $pmdc['verified'] ) {
+			Pmdc::record_verified( $doctor->ID, get_current_user_id(), 'manual' );
+		}
+
+		wp_send_json_success( array( 'message' => __( 'PMDC number marked as verified. You can now approve this doctor.', 'doctor-ak-portal' ) ) );
 	}
 
 	/**

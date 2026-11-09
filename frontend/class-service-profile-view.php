@@ -323,6 +323,7 @@ class Service_Profile_View {
 						'clinic_location_id' => (int) $dak_clinic_location['id'],
 						'price'              => $dak_clinic_location['price'],
 						'price_label'        => Services::single_price_label( $dak_clinic_location['price'] ),
+						'base_price'         => $dak_clinic_location['base_price'],
 					);
 				}
 			} else {
@@ -340,6 +341,7 @@ class Service_Profile_View {
 						'clinic_location_id' => $dak_clinic_location_id,
 						'price'              => $row['effective_price'],
 						'price_label'        => Services::single_price_label( $row['effective_price'] ),
+						'base_price'         => $row['base_effective_price'],
 					);
 				}
 			}
@@ -352,6 +354,7 @@ class Service_Profile_View {
 					'clinic_location_id' => 0,
 					'price'              => $row['effective_price'],
 					'price_label'        => Services::single_price_label( $row['effective_price'] ),
+					'base_price'         => $row['base_effective_price'],
 				);
 			}
 
@@ -406,6 +409,9 @@ class Service_Profile_View {
 					'doctor_profile_url' => $doctor_profile_url ? add_query_arg( 'doctor_id', $doctor->ID, $doctor_profile_url ) : '',
 					'price'              => $dak_entry['price'],
 					'price_label'        => $dak_entry['price_label'],
+					// Active discount: the full price it's reduced from, shown struck through.
+					'discount_percent'   => $row['discount_active'] && $dak_entry['base_price'] > $dak_entry['price'] ? $row['discount_percent'] : 0,
+					'was_price_label'    => $row['discount_active'] && $dak_entry['base_price'] > $dak_entry['price'] ? Services::single_price_label( $dak_entry['base_price'] ) : '',
 					'category'           => $row['category'],
 					'category_label'     => $row['category_label'],
 					'booking_url'        => $base_booking_url ? add_query_arg( $dak_booking_query_args, $base_booking_url ) : '',

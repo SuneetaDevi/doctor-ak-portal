@@ -18,6 +18,7 @@
  * @var bool     $is_available          Whether the doctor has any clinic with an enabled session day.
  * @var bool     $video_consultation    Whether the doctor offers online video consultations — also read by the home page's "Video Consultation" filter (see doctor-ak-featured-doctors.js), via the data-search-video attribute.
  * @var string   $profile_url           URL of this doctor's [doctor_profile_view] page.
+ * @var int      $video_discount_percent Active video-consultation discount (0 = none), see Home_Page::active_video_discount().
  */
 
 // Prevent direct file access.
@@ -28,6 +29,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 $dak_home_doctor_specialty = ! empty( $specialization_labels )
 	? $specialization_labels[0]
 	: __( 'General Physician', 'doctor-ak-portal' );
+
+$dak_home_doctor_discount = isset( $video_discount_percent ) ? (int) $video_discount_percent : 0;
 ?>
 <div class="dak-home-doctor-card" data-search-video="<?php echo esc_attr( $video_consultation ? '1' : '0' ); ?>">
 	<a class="dak-home-doctor-card-photo" href="<?php echo esc_url( $profile_url ); ?>" tabindex="-1" aria-hidden="true">
@@ -44,10 +47,30 @@ $dak_home_doctor_specialty = ! empty( $specialization_labels )
 		<?php elseif ( $video_consultation ) : ?>
 			<span class="dak-home-doctor-card-badge dak-home-doctor-card-badge-consult"><?php esc_html_e( 'Consultation', 'doctor-ak-portal' ); ?></span>
 		<?php endif; ?>
+
+		<?php if ( $dak_home_doctor_discount > 0 ) : ?>
+			<span class="dak-home-doctor-card-discount">
+				<?php
+				/* translators: %d: discount percentage. */
+				echo esc_html( sprintf( __( '%d%% OFF', 'doctor-ak-portal' ), $dak_home_doctor_discount ) );
+				?>
+				<small><?php esc_html_e( 'Video consult', 'doctor-ak-portal' ); ?></small>
+			</span>
+		<?php endif; ?>
 	</a>
 
 	<a class="dak-home-doctor-card-info" href="<?php echo esc_url( $profile_url ); ?>">
 		<h3><?php echo esc_html( sprintf( 'Dr. %s', $name ) ); ?></h3>
+
+		<?php if ( $dak_home_doctor_discount > 0 ) : ?>
+			<?php // The photo (and its tag) is hidden from screen readers; say it here too. ?>
+			<span class="dak-visually-hidden">
+				<?php
+				/* translators: %d: discount percentage. */
+				echo esc_html( sprintf( __( '%d%% off video consultations.', 'doctor-ak-portal' ), $dak_home_doctor_discount ) );
+				?>
+			</span>
+		<?php endif; ?>
 
 		<span class="dak-home-doctor-card-line">
 			<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.6 3.4v3.9a3 3 0 0 0 6 0V3.4"/><path d="M4.2 3.4h2.6M10.4 3.4H13"/><path d="M8.6 10.3v1.9a3.6 3.6 0 0 0 7.2 0v-1.4"/><circle cx="15.8" cy="9" r="1.6"/></svg>

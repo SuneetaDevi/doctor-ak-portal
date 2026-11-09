@@ -42,7 +42,7 @@ endif;
 <div class="dak-page-head">
 	<div>
 		<h1><?php esc_html_e( 'Doctor Requests', 'doctor-ak-portal' ); ?></h1>
-		<p><?php esc_html_e( 'New doctor registrations wait here until you approve them — they cannot log in until then.', 'doctor-ak-portal' ); ?></p>
+		<p><?php esc_html_e( 'New doctor registrations wait here until you approve them — they cannot log in until then. Check each PMDC number on pmdc.pk (name, status and licence validity) and mark it verified before approving.', 'doctor-ak-portal' ); ?></p>
 	</div>
 </div>
 
@@ -65,6 +65,7 @@ endif;
 					<tr>
 						<th scope="col"><?php esc_html_e( 'Applicant', 'doctor-ak-portal' ); ?></th>
 						<th scope="col"><?php esc_html_e( 'Qualification', 'doctor-ak-portal' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'PMDC', 'doctor-ak-portal' ); ?></th>
 						<th scope="col"><?php esc_html_e( 'Specialization', 'doctor-ak-portal' ); ?></th>
 						<th scope="col"><?php esc_html_e( 'Registered', 'doctor-ak-portal' ); ?></th>
 						<th scope="col" class="dak-col-actions"><?php esc_html_e( 'Actions', 'doctor-ak-portal' ); ?></th>
@@ -72,7 +73,13 @@ endif;
 				</thead>
 				<tbody>
 					<?php foreach ( $pending_doctors as $row ) : ?>
-						<?php $dak_req_specs = array_values( array_filter( (array) $row['specialization_labels'] ) ); ?>
+						<?php
+						$dak_req_specs = array_values( array_filter( (array) $row['specialization_labels'] ) );
+						$dak_pmdc      = $row['pmdc'];
+						// Approval waits for a verified number; doctors who
+						// registered before it was collected have none.
+						$dak_needs_pmdc = '' !== $dak_pmdc['number'] && ! $dak_pmdc['verified'];
+						?>
 						<tr id="dak-doctor-request-<?php echo esc_attr( $row['id'] ); ?>" data-row data-doctor-request-row="<?php echo esc_attr( $row['id'] ); ?>" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $row['name'] . ' ' . $row['email'] ) ); ?>">
 							<td class="dak-col-primary" data-label="<?php esc_attr_e( 'Applicant', 'doctor-ak-portal' ); ?>">
 								<span class="dak-cell-stack">
@@ -87,6 +94,24 @@ endif;
 										<span class="dak-cell-sub"><?php echo esc_html( sprintf( /* translators: %s: years of experience. */ _n( '%s year experience', '%s years experience', (int) $row['years_experience'], 'doctor-ak-portal' ), $row['years_experience'] ) ); ?></span>
 									<?php endif; ?>
 								</span>
+							</td>
+							<td data-label="<?php esc_attr_e( 'PMDC', 'doctor-ak-portal' ); ?>">
+								<?php if ( '' === $dak_pmdc['number'] ) : ?>
+									<span class="dak-cell-sub"><?php esc_html_e( 'Not provided', 'doctor-ak-portal' ); ?></span>
+								<?php else : ?>
+									<span class="dak-cell-stack">
+										<span class="dak-cell-strong is-tabular"><?php echo esc_html( $dak_pmdc['number'] ); ?></span>
+										<?php if ( $dak_pmdc['verified'] ) : ?>
+											<span class="dak-status-pill dak-status-pill-is-active"><?php echo esc_html( 'automatic' === $dak_pmdc['method'] ? __( 'Verified automatically', 'doctor-ak-portal' ) : __( 'Verified', 'doctor-ak-portal' ) ); ?></span>
+											<?php if ( '' !== $dak_pmdc['verified_by_name'] ) : ?>
+												<span class="dak-cell-sub"><?php echo esc_html( sprintf( /* translators: 1: admin name, 2: date. */ __( 'by %1$s, %2$s', 'doctor-ak-portal' ), $dak_pmdc['verified_by_name'], \DoctorAKPortal\Includes\Dashboard_Format::date( $dak_pmdc['verified_at'], $dak_pmdc['verified_at'] ) ) ); ?></span>
+											<?php endif; ?>
+										<?php else : ?>
+											<span class="dak-status-pill dak-status-pill-is-pending"><?php esc_html_e( 'Not verified yet', 'doctor-ak-portal' ); ?></span>
+											<a class="dak-text-action" href="<?php echo esc_url( \DoctorAKPortal\Includes\Pmdc::LOOKUP_URL ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Check on PMDC', 'doctor-ak-portal' ); ?><span class="dak-visually-hidden"> <?php esc_html_e( '(opens pmdc.pk in a new tab)', 'doctor-ak-portal' ); ?></span></a>
+										<?php endif; ?>
+									</span>
+								<?php endif; ?>
 							</td>
 							<td data-label="<?php esc_attr_e( 'Specialization', 'doctor-ak-portal' ); ?>">
 								<?php if ( empty( $dak_req_specs ) ) : ?>
@@ -104,7 +129,24 @@ endif;
 							<td class="dak-col-actions" data-label="<?php esc_attr_e( 'Actions', 'doctor-ak-portal' ); ?>">
 								<div class="dak-row-actions">
 									<button type="button" class="dak-text-action" data-doctor-view-open data-user-id="<?php echo esc_attr( $row['id'] ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: doctor name. */ __( 'View profile of Dr. %s', 'doctor-ak-portal' ), $row['name'] ) ); ?>"><?php esc_html_e( 'View profile', 'doctor-ak-portal' ); ?></button>
-									<button type="button" class="dak-button dak-button-primary dak-button-sm" data-doctor-request-approve data-user-id="<?php echo esc_attr( $row['id'] ); ?>"><?php esc_html_e( 'Approve', 'doctor-ak-portal' ); ?></button>
+									<?php if ( $dak_needs_pmdc ) : ?>
+										<button
+											type="button"
+											class="dak-button dak-button-secondary dak-button-sm"
+											data-doctor-request-verify-pmdc
+											data-user-id="<?php echo esc_attr( $row['id'] ); ?>"
+											data-pmdc-number="<?php echo esc_attr( $dak_pmdc['number'] ); ?>"
+											data-doctor-name="<?php echo esc_attr( $row['name'] ); ?>"
+										><?php esc_html_e( 'Mark PMDC verified', 'doctor-ak-portal' ); ?></button>
+									<?php endif; ?>
+									<button
+										type="button"
+										class="dak-button dak-button-primary dak-button-sm"
+										data-doctor-request-approve
+										data-user-id="<?php echo esc_attr( $row['id'] ); ?>"
+										<?php disabled( $dak_needs_pmdc ); ?>
+										<?php if ( $dak_needs_pmdc ) : ?>title="<?php esc_attr_e( 'Verify the PMDC number first', 'doctor-ak-portal' ); ?>"<?php endif; ?>
+									><?php esc_html_e( 'Approve', 'doctor-ak-portal' ); ?></button>
 									<details class="dak-row-menu">
 										<summary class="dak-row-menu-toggle" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: doctor name. */ __( 'More actions for Dr. %s', 'doctor-ak-portal' ), $row['name'] ) ); ?>"><?php esc_html_e( 'More', 'doctor-ak-portal' ); ?></summary>
 										<div class="dak-row-menu-panel" role="menu">
@@ -152,6 +194,18 @@ endif;
 			<?php endif; ?>
 
 			<div class="dak-doctor-profile-grid">
+				<div class="dak-doctor-profile-section">
+					<span class="dak-doctor-profile-label"><?php esc_html_e( 'PMDC registration number', 'doctor-ak-portal' ); ?></span>
+					<p>
+						<?php
+						echo esc_html(
+							'' === $row['pmdc']['number']
+								? __( 'Not provided', 'doctor-ak-portal' )
+								: $row['pmdc']['number'] . ' · ' . ( $row['pmdc']['verified'] ? __( 'Verified', 'doctor-ak-portal' ) : __( 'Not verified yet', 'doctor-ak-portal' ) )
+						);
+						?>
+					</p>
+				</div>
 				<div class="dak-doctor-profile-section">
 					<span class="dak-doctor-profile-label"><?php esc_html_e( 'Experience', 'doctor-ak-portal' ); ?></span>
 					<p>

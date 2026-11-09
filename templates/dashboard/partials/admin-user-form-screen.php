@@ -21,6 +21,7 @@
  * @var array      $editing_clinics  Doctor's own physical Clinics rows already aligned to a Clinic_Locations record (see Clinics::get_for_doctor()) — empty outside doctor-editing.
  * @var array|null $editing_video_clinic Doctor's own video-consultation Clinics row (see Clinics::get_for_doctor()), or null if they don't have one yet / outside doctor-editing.
  * @var array      $editing_services Doctor's own existing Services rows (see Services::get_for_doctor()) — empty outside doctor-editing.
+ * @var float|string $editing_video_price Doctor's video consultation fee (Video_Pricing), or '' when adding.
  */
 
 // Prevent direct file access.
@@ -58,6 +59,8 @@ foreach ( $editing_clinics as $dak_editing_clinic ) {
 }
 
 $dak_editing_clinic_location_ids = wp_list_pluck( $editing_clinics, 'clinic_location_id' );
+
+$editing_video_price = isset( $editing_video_price ) ? $editing_video_price : '';
 
 // For the Weekly Hours step's video sessions card (see
 // doctor-ak-onboarding-sessions.js) — this doctor's single existing video
@@ -345,9 +348,27 @@ $dak_editing_video_clinic_for_js = $editing_video_clinic ? array(
 					</div>
 				</div>
 
+			<?php
+			// Every doctor has an "OPD Consultation" service by default: the
+			// doctor's existing one when editing (matched by name), otherwise a
+			// new row. It's always listed first, can't be renamed or removed
+			// here, and Admin_User_Handler adds it if it's ever missing.
+			$dak_opd_service    = null;
+			$dak_other_services = array();
+
+			foreach ( $editing_services as $dak_candidate_service ) {
+				if ( null === $dak_opd_service && \DoctorAKPortal\Includes\Services::is_default_opd( $dak_candidate_service['name'] ) ) {
+					$dak_opd_service = $dak_candidate_service;
+				} else {
+					$dak_other_services[] = $dak_candidate_service;
+				}
+			}
+
+			$dak_opd_key = $dak_opd_service ? $dak_opd_service['id'] : 'opd';
+			?>
 			<div class="dak-field">
 				<div class="dak-services-editor" data-services-editor data-categories="<?php echo esc_attr( wp_json_encode( $service_categories ) ); ?>" data-clinic-select-id="dak-admin-user-clinic-locations">
-					<div class="dak-services-row-header<?php echo empty( $editing_services ) ? ' dak-hidden' : ''; ?>" data-services-row-header>
+					<div class="dak-services-row-header" data-services-row-header>
 						<span><?php esc_html_e( 'Service Name', 'doctor-ak-portal' ); ?></span>
 						<span><?php esc_html_e( 'Category', 'doctor-ak-portal' ); ?></span>
 						<span><?php esc_html_e( 'Charge (PKR)', 'doctor-ak-portal' ); ?></span>
@@ -355,7 +376,38 @@ $dak_editing_video_clinic_for_js = $editing_video_clinic ? array(
 						<span></span>
 					</div>
 					<div class="dak-services-rows" data-services-rows>
-						<?php foreach ( $editing_services as $dak_editing_service ) : ?>
+						<div class="dak-services-row is-default" data-services-row data-services-default="opd" data-row-key="<?php echo esc_attr( $dak_opd_key ); ?>" data-checked-clinic-ids="<?php echo esc_attr( $dak_opd_service ? implode( ',', array_keys( $dak_opd_service['clinic_charges'] ) ) : '' ); ?>">
+							<div class="dak-services-row-fields">
+								<input type="hidden" name="service_id[]" value="<?php echo esc_attr( $dak_opd_service ? $dak_opd_service['id'] : 0 ); ?>">
+								<input type="hidden" name="service_row_key[]" value="<?php echo esc_attr( $dak_opd_key ); ?>">
+								<input type="text" name="service_name[]" value="<?php echo esc_attr( $dak_opd_service ? $dak_opd_service['name'] : \DoctorAKPortal\Includes\Services::DEFAULT_OPD_NAME ); ?>" readonly aria-label="<?php esc_attr_e( 'Service name (default)', 'doctor-ak-portal' ); ?>">
+								<select name="service_category[]" aria-label="<?php esc_attr_e( 'OPD Consultation category', 'doctor-ak-portal' ); ?>">
+									<option value=""><?php esc_html_e( 'No category', 'doctor-ak-portal' ); ?></option>
+									<?php foreach ( $service_categories as $dak_service_cat_slug => $dak_service_cat_label ) : ?>
+										<option value="<?php echo esc_attr( $dak_service_cat_slug ); ?>" <?php selected( $dak_opd_service ? $dak_opd_service['category'] : '', $dak_service_cat_slug ); ?>><?php echo esc_html( $dak_service_cat_label ); ?></option>
+									<?php endforeach; ?>
+								</select>
+								<input type="number" name="service_charge[]" value="<?php echo esc_attr( $dak_opd_service ? $dak_opd_service['base_charge'] : '' ); ?>" min="0" step="0.01" placeholder="0" aria-label="<?php esc_attr_e( 'OPD Consultation charge (PKR)', 'doctor-ak-portal' ); ?>">
+								<input type="number" name="service_duration_minutes[]" value="<?php echo esc_attr( $dak_opd_service ? $dak_opd_service['duration_minutes'] : '' ); ?>" min="0" max="480" placeholder="0" aria-label="<?php esc_attr_e( 'OPD Consultation duration (minutes)', 'doctor-ak-portal' ); ?>">
+								<span class="dak-services-default-badge"><?php esc_html_e( 'Default', 'doctor-ak-portal' ); ?></span>
+							</div>
+							<div class="dak-services-row-clinics dak-hidden" data-services-row-clinics></div>
+						</div>
+
+						<?php // Video isn't a Services row — this edits the doctor's video fee (Video_Pricing); shown only while video consultations are allowed. ?>
+						<div class="dak-services-video-row" data-services-video-row data-toggle-checkbox="dak-admin-user-video-consultation-allowed">
+							<div class="dak-services-row-fields">
+								<input type="text" value="<?php esc_attr_e( 'Video Consultation', 'doctor-ak-portal' ); ?>" readonly tabindex="-1" aria-hidden="true">
+								<span class="dak-services-video-note"><?php esc_html_e( 'Online', 'doctor-ak-portal' ); ?></span>
+								<input type="number" name="video_price" value="<?php echo esc_attr( '' !== $editing_video_price && (float) $editing_video_price > 0 ? $editing_video_price : '' ); ?>" min="0" step="0.01" placeholder="0" aria-label="<?php esc_attr_e( 'Video consultation fee (PKR)', 'doctor-ak-portal' ); ?>">
+								<span class="dak-services-video-note"><?php esc_html_e( 'Hours: see Step 2', 'doctor-ak-portal' ); ?></span>
+								<span class="dak-services-default-badge"><?php esc_html_e( 'Default', 'doctor-ak-portal' ); ?></span>
+							</div>
+							<p class="dak-field-hint"><?php esc_html_e( 'Video consultation fee. Discounts and booking rules are set in the Video Consultation section.', 'doctor-ak-portal' ); ?></p>
+							<span class="dak-field-error" data-field="video_price"></span>
+						</div>
+
+						<?php foreach ( $dak_other_services as $dak_editing_service ) : ?>
 							<div class="dak-services-row" data-services-row data-row-key="<?php echo esc_attr( $dak_editing_service['id'] ); ?>" data-checked-clinic-ids="<?php echo esc_attr( implode( ',', array_keys( $dak_editing_service['clinic_charges'] ) ) ); ?>">
 								<div class="dak-services-row-fields">
 									<input type="hidden" name="service_id[]" value="<?php echo esc_attr( $dak_editing_service['id'] ); ?>">
@@ -367,7 +419,7 @@ $dak_editing_video_clinic_for_js = $editing_video_clinic ? array(
 											<option value="<?php echo esc_attr( $dak_service_cat_slug ); ?>" <?php selected( $dak_editing_service['category'], $dak_service_cat_slug ); ?>><?php echo esc_html( $dak_service_cat_label ); ?></option>
 										<?php endforeach; ?>
 									</select>
-									<input type="number" name="service_charge[]" value="<?php echo esc_attr( $dak_editing_service['charge'] ); ?>" min="0" step="0.01">
+									<input type="number" name="service_charge[]" value="<?php echo esc_attr( $dak_editing_service['base_charge'] ); ?>" min="0" step="0.01">
 									<input type="number" name="service_duration_minutes[]" value="<?php echo esc_attr( $dak_editing_service['duration_minutes'] ); ?>" min="0" max="480">
 									<button type="button" class="dak-services-remove" data-services-remove-row aria-label="<?php esc_attr_e( 'Remove service', 'doctor-ak-portal' ); ?>" title="<?php esc_attr_e( 'Removes it from this form only — this existing service stays as-is unless you delete it from the Services section.', 'doctor-ak-portal' ); ?>">&times;</button>
 								</div>
@@ -379,7 +431,8 @@ $dak_editing_video_clinic_for_js = $editing_video_clinic ? array(
 						<?php esc_html_e( '+ Add Service', 'doctor-ak-portal' ); ?>
 					</button>
 				</div>
-				<p class="dak-field-hint"><?php esc_html_e( 'Optional — more services can always be added later from the admin "Services" section. Removing a row here only skips it on Save; delete a service permanently from the Services section. Pick clinics per service below to offer it only at specific clinics — leave all unchecked to offer it at every clinic this doctor practices at.', 'doctor-ak-portal' ); ?></p>
+				<p class="dak-field-hint"><?php esc_html_e( 'OPD Consultation is added for every doctor, and Video Consultation too when video consultations are allowed. Add any other services with “+ Add Service” — more can also be added later from the admin "Services" section.', 'doctor-ak-portal' ); ?></p>
+			<p class="dak-field-hint"><?php esc_html_e( 'Removing a row here only skips it on Save; delete a service permanently from the Services section. Pick clinics per service below to offer it only at specific clinics — leave all unchecked to offer it at every clinic this doctor practices at.', 'doctor-ak-portal' ); ?></p>
 				<span class="dak-field-error" data-field="services"></span>
 			</div>
 

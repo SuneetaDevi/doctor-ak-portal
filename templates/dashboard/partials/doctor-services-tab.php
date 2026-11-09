@@ -73,6 +73,7 @@ $dak_service_icons = array(
 							<td class="dak-col-num" data-label="<?php esc_attr_e( 'Price', 'doctor-ak-portal' ); ?>">
 								<span class="dak-cell-stack">
 									<span class="dak-cell-strong"><?php echo esc_html( \DoctorAKPortal\Includes\Dashboard_Format::money( $service['charge'], __( 'Free', 'doctor-ak-portal' ) ) ); ?></span>
+									<?php require __DIR__ . '/service-discount-note.php'; ?>
 									<details class="dak-cell-details">
 										<summary><?php esc_html_e( 'Pricing details', 'doctor-ak-portal' ); ?></summary>
 										<dl class="dak-detail-list dak-detail-list-compact">
@@ -101,7 +102,9 @@ $dak_service_icons = array(
 										data-service-id="<?php echo esc_attr( $service['id'] ); ?>"
 										data-name="<?php echo esc_attr( $service['name'] ); ?>"
 										data-category="<?php echo esc_attr( $service['category'] ); ?>"
-										data-charge="<?php echo esc_attr( $service['charge'] ); ?>"
+										data-charge="<?php echo esc_attr( $service['base_charge'] ); ?>"
+										data-discount-percent="<?php echo esc_attr( $service['discount_percent'] ); ?>"
+										data-discount-ends-at="<?php echo esc_attr( '' !== $service['discount_ends_at'] ? gmdate( 'Y-m-d\TH:i', strtotime( $service['discount_ends_at'] ) ) : '' ); ?>"
 										data-duration-minutes="<?php echo esc_attr( $service['duration_minutes'] ); ?>"
 										data-active="<?php echo $service['active'] ? '1' : '0'; ?>"
 										data-requires-doctor="<?php echo $service['requires_doctor'] ? '1' : '0'; ?>"
@@ -168,6 +171,20 @@ $dak_service_icons = array(
 				<span class="dak-field-error" data-field="duration_minutes"></span>
 			</div>
 		</div>
+
+		<div class="dak-field-row">
+			<div class="dak-field">
+				<label for="dak-service-discount"><?php esc_html_e( 'Discount (%)', 'doctor-ak-portal' ); ?></label>
+				<input type="number" min="0" max="100" step="1" id="dak-service-discount" value="0">
+				<span class="dak-field-error" data-field="discount_percent"></span>
+			</div>
+			<div class="dak-field">
+				<label for="dak-service-discount-ends"><?php esc_html_e( 'Discount ends (optional)', 'doctor-ak-portal' ); ?></label>
+				<input type="datetime-local" id="dak-service-discount-ends">
+				<span class="dak-field-error" data-field="discount_ends_at"></span>
+			</div>
+		</div>
+		<p class="dak-field-hint"><?php esc_html_e( 'Patients see the discounted price and a “% OFF” tag. Leave the end date empty to keep the discount until you set it back to 0.', 'doctor-ak-portal' ); ?></p>
 
 		<div class="dak-field">
 			<label class="dak-checkbox">

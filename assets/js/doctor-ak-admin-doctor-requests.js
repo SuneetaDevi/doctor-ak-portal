@@ -21,6 +21,12 @@
 			return window.dakAdminDoctorRequests.confirmReject;
 		} );
 
+		wireAction( '[data-doctor-request-verify-pmdc]', 'doctor_ak_admin_verify_pmdc', function ( trigger ) {
+			return String( window.dakAdminDoctorRequests.confirmPmdc || '' )
+				.replace( '%1$s', trigger.getAttribute( 'data-pmdc-number' ) || '' )
+				.replace( '%2$s', trigger.getAttribute( 'data-doctor-name' ) || '' );
+		} );
+
 		wireViewProfile();
 	} );
 
@@ -78,7 +84,7 @@
 				return;
 			}
 
-			if ( ! window.confirm( confirmMessage() ) ) {
+			if ( trigger.disabled || ! window.confirm( confirmMessage( trigger ) ) ) {
 				return;
 			}
 

@@ -17,6 +17,7 @@ use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Specializations;
 use DoctorAKPortal\Includes\Template_Loader;
+use DoctorAKPortal\Includes\Video_Pricing;
 
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -193,6 +194,8 @@ class Home_Page {
 
 		$doctors_html = array_map(
 			function ( $card ) {
+				$card['video_discount_percent'] = self::active_video_discount( $card );
+
 				return $this->template_loader->get_template( 'directory/home-doctor-card.php', $card );
 			},
 			$doctor_cards
@@ -413,6 +416,26 @@ class Home_Page {
 		}
 
 		return $specialties;
+	}
+
+	/**
+	 * A doctor's video-consultation discount for the slider's "% OFF" tag —
+	 * only while it's actually being charged: the doctor offers video, has a
+	 * price set, and the discount hasn't expired (the same
+	 * Video_Pricing::effective_price_for_doctor() check bookings use, so the
+	 * tag never promises a price the booking page won't give).
+	 *
+	 * @param array $card Doctors_Directory::doctor_cards_data() row.
+	 * @return int Discount percent, or 0 for no tag.
+	 */
+	private static function active_video_discount( array $card ) {
+		if ( empty( $card['video_consultation'] ) ) {
+			return 0;
+		}
+
+		$pricing = Video_Pricing::effective_price_for_doctor( (int) $card['id'] );
+
+		return $pricing['discount_active'] && (float) $pricing['base_price'] > 0 ? (int) $pricing['discount_percent'] : 0;
 	}
 
 	/**

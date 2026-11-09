@@ -48,11 +48,12 @@ class Db_Installer {
 	const SERVICES_DB_VERSION_OPTION = 'dak_services_db_version';
 
 	/**
-	 * Current services table schema version.
+	 * Current services table schema version. 1.5.0 adds discount_percent /
+	 * discount_ends_at (existing services get 0 = no discount).
 	 *
 	 * @var string
 	 */
-	const SERVICES_DB_VERSION = '1.4.0';
+	const SERVICES_DB_VERSION = '1.5.0';
 
 	/**
 	 * Option name tracking the installed notifications-table schema version.
@@ -518,6 +519,8 @@ class Db_Installer {
 			image_id BIGINT UNSIGNED NULL DEFAULT NULL,
 			clinic_location_ids TEXT NULL,
 			clinic_charges TEXT NULL,
+			discount_percent TINYINT UNSIGNED NOT NULL DEFAULT 0,
+			discount_ends_at DATETIME NULL DEFAULT NULL,
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),

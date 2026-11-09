@@ -95,6 +95,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<td class="dak-col-num" data-label="<?php esc_attr_e( 'Price', 'doctor-ak-portal' ); ?>">
 								<span class="dak-cell-stack">
 									<span class="dak-cell-strong"><?php echo esc_html( \DoctorAKPortal\Includes\Dashboard_Format::money( $service['charge'], __( 'Free', 'doctor-ak-portal' ) ) ); ?></span>
+									<?php require __DIR__ . '/service-discount-note.php'; ?>
 									<?php // Revenue split and per-clinic prices: labelled, expandable, unchanged values. ?>
 									<details class="dak-cell-details">
 										<summary><?php esc_html_e( 'Pricing details', 'doctor-ak-portal' ); ?></summary>

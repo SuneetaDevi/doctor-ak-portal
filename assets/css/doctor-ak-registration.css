@@ -842,6 +842,67 @@
 	border-color: var( --dak-danger ) !important;
 }
 
+/* Default rows: OPD Consultation (always) and Video Consultation (while
+   video consultations are allowed) — fixed names, no remove button. */
+.dak-services-row.is-default,
+.dak-services-video-row {
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-services-video-row {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.35rem !important;
+	padding: 0.6rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+}
+
+.dak-services-video-row.dak-hidden {
+	display: none !important;
+}
+
+.dak-services-video-row input {
+	width: 100% !important;
+	box-sizing: border-box !important;
+	padding: 0.5rem 0.6rem !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: var( --dak-radius-sm ) !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 0.88rem !important;
+}
+
+.dak-services-row.is-default input[readonly],
+.dak-services-video-row input[readonly] {
+	background: transparent !important;
+	border-color: transparent !important;
+	padding-left: 0 !important;
+	font-weight: 700 !important;
+}
+
+.dak-services-video-note {
+	color: var( --dak-muted ) !important;
+	font-size: 0.82rem !important;
+}
+
+.dak-services-video-row .dak-field-hint {
+	margin: 0 !important;
+}
+
+.dak-services-default-badge {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	min-width: 2.25rem !important;
+	padding: 0.2rem 0.5rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary-dark ) !important;
+	font-size: 0.72rem !important;
+	font-weight: 700 !important;
+}
+
 @media ( max-width: 720px ) {
 	.dak-services-row-header {
 		display: none !important;

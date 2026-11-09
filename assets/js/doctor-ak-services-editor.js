@@ -105,6 +105,23 @@
 			}
 		} );
 
+		// The default "Video Consultation" row only applies while the
+		// doctor is allowed to offer video consultations.
+		var videoRow = editor.querySelector( '[data-services-video-row]' );
+		var videoToggle = videoRow ? document.getElementById( videoRow.getAttribute( 'data-toggle-checkbox' ) || '' ) : null;
+
+		if ( videoRow && videoToggle ) {
+			var syncVideoRow = function () {
+				videoRow.classList.toggle( 'dak-hidden', ! videoToggle.checked );
+				videoRow.querySelectorAll( 'input[name]' ).forEach( function ( input ) {
+					input.disabled = ! videoToggle.checked;
+				} );
+			};
+
+			videoToggle.addEventListener( 'change', syncVideoRow );
+			syncVideoRow();
+		}
+
 		// Initial paint: PHP already rendered each existing row's own
 		// checked clinics (data-checked-clinic-ids on the row), but the
 		// clinic list itself — labels, and any clinic added/removed since

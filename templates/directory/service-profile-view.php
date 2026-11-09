@@ -205,7 +205,13 @@ $dak_service_view_icons = array(
 														<?php endif; ?>
 													</div>
 
-													<span class="dak-service-doctor-offer-price"><?php echo esc_html( $dak_offer['price_label'] ); ?></span>
+													<span class="dak-service-doctor-offer-price">
+														<?php if ( ! empty( $dak_offer['discount_percent'] ) ) : ?>
+															<span class="dak-service-offer-discount"><?php echo esc_html( sprintf( /* translators: %d: discount percentage. */ __( '%d%% OFF', 'doctor-ak-portal' ), $dak_offer['discount_percent'] ) ); ?></span>
+															<s class="dak-service-offer-was"><span class="dak-visually-hidden"><?php esc_html_e( 'Was', 'doctor-ak-portal' ); ?> </span><?php echo esc_html( $dak_offer['was_price_label'] ); ?></s>
+														<?php endif; ?>
+														<?php echo esc_html( $dak_offer['price_label'] ); ?>
+													</span>
 												</div>
 											</div>
 										<?php endforeach; ?>

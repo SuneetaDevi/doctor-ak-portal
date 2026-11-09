@@ -898,6 +898,8 @@ class Admin_Dashboard {
 					'nonce'          => wp_create_nonce( self::NONCE_ACTION ),
 					'confirmApprove' => __( 'Approve this doctor? They will be able to log in immediately.', 'doctor-ak-portal' ),
 					'confirmReject'  => __( 'Reject this registration? They will not be able to log in.', 'doctor-ak-portal' ),
+					/* translators: 1: PMDC number, 2: doctor's name. */
+					'confirmPmdc'    => __( 'Confirm you have checked PMDC number %1$s on pmdc.pk, and that it belongs to Dr. %2$s with a valid licence.', 'doctor-ak-portal' ),
 					'genericError'   => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
 				)
 			);
@@ -3588,6 +3590,9 @@ class Admin_Dashboard {
 				'editing_clinics'  => $editing_clinics,
 				'editing_video_clinic' => $editing_video_clinic,
 				'editing_services' => $editing_services,
+				// The Services step's default "Video Consultation" row edits
+				// the doctor's video fee (Video_Pricing, not a Services row).
+				'editing_video_price' => $editing && Roles::DOCTOR_ROLE === $role ? \DoctorAKPortal\Includes\Video_Pricing::get_for_doctor( $user->ID )['price'] : '',
 			)
 		);
 	}
@@ -3709,6 +3714,7 @@ class Admin_Dashboard {
 			'years_experience'            => get_user_meta( $user->ID, 'doctor_ak_years_experience', true ),
 			'gender'                      => get_user_meta( $user->ID, 'doctor_ak_gender', true ),
 			'qualification'               => get_user_meta( $user->ID, 'doctor_ak_qualification', true ),
+			'pmdc'                        => \DoctorAKPortal\Includes\Pmdc::for_doctor( $user->ID ),
 			'country'                     => get_user_meta( $user->ID, 'doctor_ak_country', true ),
 			'city'                        => get_user_meta( $user->ID, 'doctor_ak_city', true ),
 			'area'                        => get_user_meta( $user->ID, 'doctor_ak_area', true ),

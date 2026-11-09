@@ -268,6 +268,16 @@
 					errors.qualification = 'Enter your qualifications, e.g. MBBS, FCPS.';
 				}
 
+				// Same plausibility rule as Pmdc::validate() (the server also
+				// checks it isn't already registered, then it's verified).
+				var pmdc = fieldValue( 'pmdc_number' ).replace( /\s+/g, '' ).toUpperCase();
+
+				if ( ! pmdc ) {
+					errors.pmdc_number = 'Enter your PMDC registration number.';
+				} else if ( ! /^[A-Z0-9][A-Z0-9\-\/]{2,19}$/.test( pmdc ) || ! /\d/.test( pmdc ) ) {
+					errors.pmdc_number = 'Enter your PMDC number exactly as it appears on your certificate, e.g. 12345-P.';
+				}
+
 				var years = fieldValue( 'years_experience' );
 
 				if ( '' === years ) {
@@ -652,6 +662,7 @@
 					title: 'Professional profile',
 					rows: [
 						[ 'Qualifications', fieldValue( 'qualification' ) ],
+						[ 'PMDC number', fieldValue( 'pmdc_number' ).replace( /\s+/g, '' ).toUpperCase() ],
 						[ 'Experience', fieldValue( 'years_experience' ) ? fieldValue( 'years_experience' ) + ' years' : '' ],
 						[ 'Specializations', selectedLabels( 'specializations' ).join( ', ' ) ],
 						[ 'Short description', fieldValue( 'short_description' ) ],

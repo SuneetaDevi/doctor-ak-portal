@@ -3572,3 +3572,54 @@
 		gap: 20px !important;
 	}
 }
+
+/* Active service discount, top-right of the service image (see templates/directory/service-discount-tag.php). */
+.dak-service-discount-tag {
+	position: absolute !important;
+	z-index: 1 !important;
+	top: 10px !important;
+	right: 10px !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	padding: 0.3rem 0.7rem !important;
+	border-radius: 999px !important;
+	background: #c2410c !important;
+	color: #fff !important;
+	font-size: 0.8rem !important;
+	font-weight: 800 !important;
+	line-height: 1.2 !important;
+	letter-spacing: 0.02em !important;
+	box-shadow: 0 6px 16px rgba( 194, 65, 12, 0.3 ) !important;
+}
+
+/* Service detail page: a doctor's discounted price, with the full price struck through. */
+.dak-service-doctor-offer-price {
+	display: inline-flex !important;
+	flex-wrap: wrap !important;
+	align-items: baseline !important;
+	justify-content: flex-end !important;
+	gap: 4px 8px !important;
+	text-align: right !important;
+}
+
+.dak-service-offer-discount {
+	padding: 1px 7px !important;
+	border-radius: 999px !important;
+	background: #c2410c !important;
+	color: #fff !important;
+	font-size: 0.72rem !important;
+	font-weight: 800 !important;
+	letter-spacing: 0.02em !important;
+}
+
+.dak-service-offer-was {
+	color: var( --dak-muted ) !important;
+	font-size: 0.85rem !important;
+	font-weight: 500 !important;
+}
+
+.dak-profile-clinic-info .dak-service-offer-discount {
+	display: inline-block !important;
+	width: fit-content !important;
+	margin-top: 4px !important;
+}

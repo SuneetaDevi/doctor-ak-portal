@@ -261,6 +261,13 @@ for ( $dak_m = 1; $dak_m <= 12; $dak_m++ ) {
 						</div>
 
 						<div class="dak-field">
+							<label for="dak-pmdc-number"><?php esc_html_e( 'PMDC registration number', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
+							<input type="text" id="dak-pmdc-number" name="pmdc_number" required aria-required="true" maxlength="20" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="<?php esc_attr_e( 'e.g. 12345-P', 'doctor-ak-portal' ); ?>" aria-describedby="dak-pmdc-number-hint dak-pmdc-number-error">
+							<p class="dak-field-hint" id="dak-pmdc-number-hint"><?php esc_html_e( 'Exactly as on your PMDC certificate. We verify it with the PMDC register before your account is approved — you can log in once it has been verified.', 'doctor-ak-portal' ); ?></p>
+							<?php $dak_error( 'pmdc_number', 'dak-pmdc-number-error' ); ?>
+						</div>
+
+						<div class="dak-field">
 							<label for="dak-specializations" id="dak-specializations-label"><?php esc_html_e( 'Specializations', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
 							<select id="dak-specializations" name="specializations[]" multiple aria-describedby="dak-specializations-hint dak-specializations-error">
 								<?php foreach ( $specializations as $slug => $label ) : ?>

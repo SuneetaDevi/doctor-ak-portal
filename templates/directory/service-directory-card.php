@@ -16,6 +16,7 @@
  * @var int    $provider_count  Distinct doctors offering it.
  * @var array  $price           Services::public_price(): { state, label, amount }.
  * @var string $profile_url     The service's detail page.
+ * @var int    $discount_percent Largest discount currently active across its doctors (0 = none).
  */
 
 // Prevent direct file access.
@@ -25,6 +26,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $dak_title_id = 'dak-svc-' . (int) $id;
 $dak_action   = $requires_doctor && $provider_count > 0 ? __( 'View providers', 'doctor-ak-portal' ) : __( 'View service', 'doctor-ak-portal' );
+$dak_discount = isset( $discount_percent ) ? (int) $discount_percent : 0;
 ?>
 <li
 	class="dak-dir-service"
@@ -38,6 +40,10 @@ $dak_action   = $requires_doctor && $provider_count > 0 ? __( 'View providers', 
 				<img src="<?php echo esc_url( $image_url ); ?>" alt="" loading="lazy">
 			<?php else : ?>
 				<svg viewBox="0 0 20 20" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 16.2S3.8 12.4 3.8 8.1A3.1 3.1 0 0 1 10 6.3a3.1 3.1 0 0 1 6.2 1.8c0 4.3-6.2 8.1-6.2 8.1z"/><path d="M6.5 10h2l1-2 1.5 4 1-2h1.5"/></svg>
+			<?php endif; ?>
+
+			<?php if ( $dak_discount > 0 ) : ?>
+				<?php require __DIR__ . '/service-discount-tag.php'; ?>
 			<?php endif; ?>
 		</div>
 

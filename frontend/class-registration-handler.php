@@ -14,6 +14,7 @@ use DoctorAKPortal\Includes\Doctor_Keywords;
 use DoctorAKPortal\Includes\Locations;
 use DoctorAKPortal\Includes\Patient_Age;
 use DoctorAKPortal\Includes\Phone;
+use DoctorAKPortal\Includes\Pmdc;
 use DoctorAKPortal\Includes\Profile_Picture_Uploader;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Specializations;
@@ -269,6 +270,27 @@ class Registration_Handler {
 			wp_send_json_error( array( 'errors' => $errors ) );
 		}
 
+		// PMDC: with an automatic verifier configured (see Pmdc), a number
+		// it rejects stops the registration here; without one (the default —
+		// PMDC has no public API) an administrator verifies it before
+		// approving the account.
+		$pmdc_verified = null;
+
+		if ( Roles::DOCTOR_ROLE === $register_as ) {
+			$pmdc_verified = Pmdc::verify_automatically(
+				$meta[ Pmdc::META_NUMBER ],
+				array(
+					'first_name' => $first_name,
+					'last_name'  => $last_name,
+					'email'      => $email,
+				)
+			);
+
+			if ( is_wp_error( $pmdc_verified ) ) {
+				wp_send_json_error( array( 'errors' => array( 'pmdc_number' => $pmdc_verified->get_error_message() ) ) );
+			}
+		}
+
 		$username = $this->generate_unique_username( $first_name, $last_name, $email );
 
 		$userdata = array(
@@ -303,6 +325,7 @@ class Registration_Handler {
 			// them until an admin approves the request (see the "Doctor
 			// Requests" tab on the admin dashboard).
 			update_user_meta( $user_id, 'doctor_ak_registration_status', 'pending' );
+			Pmdc::save_for_new_doctor( $user_id, $meta[ Pmdc::META_NUMBER ], $pmdc_verified );
 
 			/**
 			 * Fires once a new doctor account is created, still pending admin
@@ -373,6 +396,15 @@ class Registration_Handler {
 			$errors['qualification'] = __( 'Please provide your qualification(s), e.g. MBBS, FCPS.', 'doctor-ak-portal' );
 		} else {
 			$meta['doctor_ak_qualification'] = $qualification;
+		}
+
+		// Required: verified before the account can be approved (see Pmdc).
+		$pmdc_number = Pmdc::validate( isset( $_POST['pmdc_number'] ) ? wp_unslash( $_POST['pmdc_number'] ) : '' );
+
+		if ( is_wp_error( $pmdc_number ) ) {
+			$errors['pmdc_number'] = $pmdc_number->get_error_message();
+		} else {
+			$meta[ Pmdc::META_NUMBER ] = $pmdc_number;
 		}
 
 		$country = isset( $_POST['country'] ) ? sanitize_text_field( wp_unslash( $_POST['country'] ) ) : '';

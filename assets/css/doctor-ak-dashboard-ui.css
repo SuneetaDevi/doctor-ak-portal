@@ -6336,3 +6336,9 @@ body.dak-app-page .dak-portal .dak-admin-videos .dak-home-video-title-label inpu
 	outline: 2px solid var( --dak-primary-tint ) !important;
 	outline-offset: 0 !important;
 }
+
+/* Service discount under the price in the services tables. */
+body.dak-app-page .dak-portal .dak-data-table .dak-cell-note.dak-service-discount-note {
+	color: #c2410c !important;
+	font-weight: 600 !important;
+}

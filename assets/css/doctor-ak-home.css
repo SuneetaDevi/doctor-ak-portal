@@ -2068,6 +2068,34 @@ html.dak-hsm-locked body {
 	color: #4450c9 !important;
 }
 
+/* Active video-consultation discount, top-right of the photo. */
+.dak-home-doctor-card-discount {
+	position: absolute !important;
+	z-index: 1 !important;
+	top: var( --dak-space-3 ) !important;
+	right: var( --dak-space-3 ) !important;
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: center !important;
+	padding: 0.35rem 0.7rem 0.4rem !important;
+	border-radius: 12px !important;
+	background: #c2410c !important;
+	color: #fff !important;
+	font-size: var( --dak-text-sm ) !important;
+	font-weight: 800 !important;
+	line-height: 1.1 !important;
+	letter-spacing: 0.02em !important;
+	box-shadow: 0 6px 16px rgba( 194, 65, 12, 0.35 ) !important;
+}
+
+.dak-home-doctor-card-discount small {
+	margin-top: 2px !important;
+	font-size: 0.65rem !important;
+	font-weight: 600 !important;
+	letter-spacing: 0 !important;
+	opacity: 0.95 !important;
+}
+
 /* The white panel that overlaps the photo's bottom edge. */
 .dak-home-doctor-card-info {
 	position: relative !important;

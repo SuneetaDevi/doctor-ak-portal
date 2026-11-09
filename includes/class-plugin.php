@@ -411,6 +411,7 @@ class Plugin {
 		$doctor_requests_handler = new Doctor_Requests_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_approve_doctor', $doctor_requests_handler, 'handle_approve' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_reject_doctor', $doctor_requests_handler, 'handle_reject' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_verify_pmdc', $doctor_requests_handler, 'handle_verify_pmdc' );
 
 		$service_handler = new Service_Handler( new Profile_Picture_Uploader() );
 		$this->loader->add_action( 'wp_enqueue_scripts', $service_handler, 'enqueue_assets' );

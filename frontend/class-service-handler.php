@@ -145,7 +145,7 @@ class Service_Handler {
 		$fields = Services::sanitize_fields_from_request( $_POST ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Services::sanitize_fields_from_request() unslashes/sanitizes each field itself.
 
 		if ( is_wp_error( $fields ) ) {
-			wp_send_json_error( array( 'errors' => array( 'name' => $fields->get_error_message() ) ) );
+			wp_send_json_error( array( 'errors' => array( self::error_field( $fields ) => $fields->get_error_message() ) ) );
 		}
 
 		$image_id = $this->resolve_image_id();
@@ -234,7 +234,7 @@ class Service_Handler {
 		$fields = Services::sanitize_fields_from_request( $_POST ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Services::sanitize_fields_from_request() unslashes/sanitizes each field itself.
 
 		if ( is_wp_error( $fields ) ) {
-			wp_send_json_error( array( 'errors' => array( 'name' => $fields->get_error_message() ) ) );
+			wp_send_json_error( array( 'errors' => array( self::error_field( $fields ) => $fields->get_error_message() ) ) );
 		}
 
 		// Resolved once, even when this creates several rows below, so a
@@ -306,6 +306,19 @@ class Service_Handler {
 		}
 
 		$this->process_delete( null );
+	}
+
+	/**
+	 * Which form field a validation error belongs to (the discount fields
+	 * say so in the error data; everything else was always shown at Name).
+	 *
+	 * @param \WP_Error $error Validation error.
+	 * @return string
+	 */
+	private static function error_field( \WP_Error $error ) {
+		$data = $error->get_error_data();
+
+		return is_array( $data ) && ! empty( $data['field'] ) ? (string) $data['field'] : 'name';
 	}
 
 	/**

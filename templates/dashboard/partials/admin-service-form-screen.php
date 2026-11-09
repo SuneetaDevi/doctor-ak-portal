@@ -80,7 +80,8 @@ $dak_is_editing = null !== $editing_service;
 		<div class="dak-field-row">
 			<div class="dak-field">
 				<label for="dak-admin-service-charge"><?php esc_html_e( 'Base Charge (PKR)', 'doctor-ak-portal' ); ?></label>
-				<input type="number" min="0" step="0.01" id="dak-admin-service-charge" name="charge" value="<?php echo esc_attr( $dak_is_editing ? $editing_service['charge'] : 0 ); ?>">
+				<?php // base_charge, never charge: charge already has any active discount applied. ?>
+				<input type="number" min="0" step="0.01" id="dak-admin-service-charge" name="charge" value="<?php echo esc_attr( $dak_is_editing ? $editing_service['base_charge'] : 0 ); ?>">
 				<span class="dak-field-error" data-field="charge"></span>
 			</div>
 			<div class="dak-field">
@@ -89,6 +90,25 @@ $dak_is_editing = null !== $editing_service;
 				<span class="dak-field-error" data-field="duration_minutes"></span>
 			</div>
 		</div>
+
+		<input type="hidden" name="has_discount_fields" value="1">
+		<div class="dak-field-row">
+			<div class="dak-field">
+				<label for="dak-admin-service-discount"><?php esc_html_e( 'Discount (%)', 'doctor-ak-portal' ); ?></label>
+				<input type="number" min="0" max="100" step="1" id="dak-admin-service-discount" name="discount_percent" value="<?php echo esc_attr( $dak_is_editing ? $editing_service['discount_percent'] : 0 ); ?>">
+				<p class="dak-field-hint"><?php esc_html_e( 'Applies to the Base Charge and every clinic price. 0 = no discount.', 'doctor-ak-portal' ); ?></p>
+				<span class="dak-field-error" data-field="discount_percent"></span>
+			</div>
+			<div class="dak-field">
+				<label for="dak-admin-service-discount-ends"><?php esc_html_e( 'Discount ends (optional)', 'doctor-ak-portal' ); ?></label>
+				<input type="datetime-local" id="dak-admin-service-discount-ends" name="discount_ends_at" value="<?php echo esc_attr( $dak_is_editing && '' !== $editing_service['discount_ends_at'] ? gmdate( 'Y-m-d\TH:i', strtotime( $editing_service['discount_ends_at'] ) ) : '' ); ?>">
+				<p class="dak-field-hint"><?php esc_html_e( 'Leave empty to keep the discount until you remove it.', 'doctor-ak-portal' ); ?></p>
+				<span class="dak-field-error" data-field="discount_ends_at"></span>
+			</div>
+		</div>
+		<?php if ( $dak_is_editing && $editing_service['discount_percent'] > 0 && ! $editing_service['discount_active'] ) : ?>
+			<p class="dak-field-hint dak-discount-expired"><?php esc_html_e( 'This discount has ended, so patients are paying the full price. Change the end date or set the discount to 0.', 'doctor-ak-portal' ); ?></p>
+		<?php endif; ?>
 
 		<div class="dak-field">
 			<label class="dak-checkbox">
@@ -140,7 +160,7 @@ $dak_is_editing = null !== $editing_service;
 			<span class="dak-field-error" data-field="image"></span>
 		</div>
 
-		<?php $dak_clinic_charges = $dak_is_editing ? $editing_service['clinic_charges'] : array(); ?>
+		<?php $dak_clinic_charges = $dak_is_editing ? $editing_service['base_clinic_charges'] : array(); ?>
 
 		<div class="dak-field">
 			<label for="dak-admin-service-clinics"><?php esc_html_e( 'Clinics', 'doctor-ak-portal' ); ?></label>
