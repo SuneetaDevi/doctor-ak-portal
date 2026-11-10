@@ -489,6 +489,12 @@ class Plugin {
 
 		$locations_handler = new Locations_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_locations_save', $locations_handler, 'handle_save' );
+		// Country → City dropdowns: every country, each one's cities on demand.
+		$this->loader->add_action( 'wp_ajax_doctor_ak_location_cities', $locations_handler, 'handle_cities' );
+		$this->loader->add_action( 'wp_ajax_nopriv_doctor_ak_location_cities', $locations_handler, 'handle_cities' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $locations_handler, 'localize_dropdown_script', 999 );
+		$this->loader->add_action( 'admin_enqueue_scripts', $locations_handler, 'localize_dropdown_script', 999 );
+		$this->loader->add_action( 'wp_print_footer_scripts', $locations_handler, 'localize_dropdown_script', 1 );
 
 		$clinic_branding_handler = new Clinic_Branding_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_clinic_branding_save', $clinic_branding_handler, 'handle_save' );

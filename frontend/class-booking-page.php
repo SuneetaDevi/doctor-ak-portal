@@ -264,7 +264,7 @@ class Booking_Page {
 		$requested_doctor_id = isset( $_GET['doctor_id'] ) ? absint( $_GET['doctor_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 		$doctor               = $requested_doctor_id > 0 ? get_userdata( $requested_doctor_id ) : false;
 		$doctor               = ( $doctor && in_array( Roles::DOCTOR_ROLE, (array) $doctor->roles, true ) ) ? $doctor : false;
-		$doctor               = ( $doctor && 'yes' !== get_user_meta( $doctor->ID, 'doctor_ak_account_disabled', true ) ) ? $doctor : false;
+		$doctor               = ( $doctor && \DoctorAKPortal\Includes\Appointments::is_public_doctor( $doctor->ID ) ) ? $doctor : false;
 
 		$type           = ( isset( $_GET['type'] ) && 'video' === $_GET['type'] ) ? 'video' : 'clinic'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 		$video_disabled = false;
@@ -485,18 +485,7 @@ class Booking_Page {
 			array(
 				'role'       => Roles::DOCTOR_ROLE,
 				'orderby'    => 'display_name',
-				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- no better lookup available; excludes deactivated doctors from the booking wizard's doctor picker.
-					'relation' => 'OR',
-					array(
-						'key'     => 'doctor_ak_account_disabled',
-						'compare' => 'NOT EXISTS',
-					),
-					array(
-						'key'     => 'doctor_ak_account_disabled',
-						'value'   => 'yes',
-						'compare' => '!=',
-					),
-				),
+				'meta_query' => \DoctorAKPortal\Includes\Appointments::public_doctor_meta_query(), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- no better lookup available; only approved, active doctors are public.
 			)
 		);
 

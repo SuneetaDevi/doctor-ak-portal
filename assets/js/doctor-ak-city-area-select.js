@@ -2,25 +2,30 @@
  * Doctor AK Portal — Shared Country -> City -> Area cascading <select> helper.
  *
  * Used everywhere a doctor's location is picked: self-registration, profile
- * edit, admin add/edit doctor, the doctor's own Clinics tab, and the admin
- * "Doctor Sessions" modal. Each of those localizes the same admin-managed
- * location list (see Locations::get_all()) under a `locations` key on its
- * own localized object (dakRegistration.locations, dakClinics.locations,
- * etc.) and calls window.dakCityArea.wire() once per Country/City/Area
- * select trio.
+ * edit, admin add/edit doctor, the doctor's own Clinics tab, the admin
+ * clinic-location modal and the "Doctor Sessions" modal. Each calls
+ * window.dakCityArea.wire() once per Country/City/Area select trio.
+ *
+ * Countries and cities come from Locations::script_data()
+ * (window.dakLocationsApi): every country in the world, with each country's
+ * cities fetched when it's chosen (doctor_ak_location_cities) — never the
+ * whole world list at once. Areas exist only for cities an administrator
+ * added under Settings → Locations, so the Area select is only enabled for
+ * those (it's optional elsewhere). Without dakLocationsApi it falls back to
+ * the `locations` list the caller passes (the admin list only).
+ *
+ * After every redraw it fires a `dak-locations-updated` event on the City
+ * select, so pages can refresh hints that depend on what's available.
  */
 ( function () {
 	'use strict';
 
+	var api = window.dakLocationsApi || null;
+	var cityCache = {};    // country slug → Promise of [{ slug, name, areas }]
+
 	/**
-	 * Fills a <select> from a slug=>name-shaped list of `{ slug, name }`
-	 * entries, selecting `selectedSlug` if given.
-	 *
-	 * @param {HTMLSelectElement} select       The <select> to fill.
-	 * @param {Array}             entries      List of `{ slug, name }`.
-	 * @param {string}            placeholder  First, empty-value option's label.
-	 * @param {string}            selectedSlug Slug to pre-select, if any.
-	 * @return {void}
+	 * Fills a <select> from `{ slug, name }` entries, selecting
+	 * `selectedSlug` if given.
 	 */
 	function fillSelect( select, entries, placeholder, selectedSlug ) {
 		select.innerHTML = '';
@@ -29,6 +34,8 @@
 		placeholderOption.value = '';
 		placeholderOption.textContent = placeholder;
 		select.appendChild( placeholderOption );
+
+		var fragment = document.createDocumentFragment();
 
 		entries.forEach( function ( entry ) {
 			var option = document.createElement( 'option' );
@@ -39,8 +46,10 @@
 				option.selected = true;
 			}
 
-			select.appendChild( option );
+			fragment.appendChild( option );
 		} );
+
+		select.appendChild( fragment );
 	}
 
 	function findBySlug( list, slug ) {
@@ -49,15 +58,55 @@
 		} )[ 0 ];
 	}
 
+	/** A country's cities, from the server (cached per country). */
+	function loadCities( countrySlug ) {
+		if ( ! countrySlug ) {
+			return Promise.resolve( [] );
+		}
+
+		if ( ! cityCache[ countrySlug ] ) {
+			var body = new FormData();
+			body.append( 'action', api.action );
+			body.append( 'country', countrySlug );
+
+			cityCache[ countrySlug ] = fetch( api.ajaxUrl, { method: 'POST', body: body, credentials: 'same-origin' } )
+				.then( function ( response ) {
+					return response.json();
+				} )
+				.then( function ( result ) {
+					return result && result.success && result.data && Array.isArray( result.data.cities ) ? result.data.cities : [];
+				} )
+				.catch( function () {
+					delete cityCache[ countrySlug ];
+					return [];
+				} );
+		}
+
+		return cityCache[ countrySlug ];
+	}
+
+	function notify( citySelect ) {
+		var event;
+
+		try {
+			event = new CustomEvent( 'dak-locations-updated', { bubbles: true } );
+		} catch ( e ) {
+			event = document.createEvent( 'CustomEvent' );
+			event.initCustomEvent( 'dak-locations-updated', true, false, null );
+		}
+
+		citySelect.dispatchEvent( event );
+	}
+
 	/**
 	 * Populates a Country/City/Area select trio and wires their change
 	 * events so picking a Country repopulates City (and clears Area), and
 	 * picking a City repopulates Area.
 	 *
-	 * @param {HTMLSelectElement} countrySelect   The Country <select>.
-	 * @param {HTMLSelectElement} citySelect      The City <select>.
-	 * @param {HTMLSelectElement} areaSelect      The Area <select>.
-	 * @param {Array}             locations       Locations::get_all() shape (countries).
+	 * @param {HTMLSelectElement} countrySelect     The Country <select>.
+	 * @param {HTMLSelectElement} citySelect        The City <select>.
+	 * @param {HTMLSelectElement} areaSelect        The Area <select>.
+	 * @param {Array}             locations         Admin list (Locations::get_all() shape) — used only without dakLocationsApi.
 	 * @param {string}            [selectedCountry] Country slug to pre-select.
 	 * @param {string}            [selectedCity]    City slug to pre-select.
 	 * @param {string}            [selectedArea]    Area slug to pre-select.
@@ -70,32 +119,69 @@
 
 		locations = locations || [];
 
-		function renderCities( countrySlug, preselectCity ) {
-			var country = findBySlug( locations, countrySlug );
+		var countries = api ? api.countries : locations;
+		var currentCities = [];
+		var request = 0;
 
-			fillSelect( citySelect, country ? country.cities : [], 'Select a city…', preselectCity || '' );
-			citySelect.disabled = ! country || 0 === country.cities.length;
+		function renderAreas( citySlug, preselectArea ) {
+			var city = findBySlug( currentCities, citySlug );
+			var areas = city && city.areas ? city.areas : [];
+
+			fillSelect( areaSelect, areas, ! citySlug ? 'Select a city first' : ( areas.length ? 'Select an area…' : 'No areas listed (optional)' ), preselectArea || '' );
+			areaSelect.disabled = 0 === areas.length;
 		}
 
-		function renderAreas( countrySlug, citySlug, preselectArea ) {
-			var country = findBySlug( locations, countrySlug );
-			var city = country ? findBySlug( country.cities, citySlug ) : null;
+		function renderCities( countrySlug, preselectCity, preselectArea ) {
+			var mine = ++request;
 
-			fillSelect( areaSelect, city ? city.areas : [], citySlug ? 'Select an area…' : 'Select a city first', preselectArea || '' );
-			areaSelect.disabled = ! city || 0 === city.areas.length;
+			if ( ! api ) {
+				var country = findBySlug( locations, countrySlug );
+				currentCities = country ? country.cities : [];
+				fillSelect( citySelect, currentCities, 'Select a city…', preselectCity || '' );
+				citySelect.disabled = 0 === currentCities.length;
+				renderAreas( preselectCity || '', preselectArea );
+				notify( citySelect );
+				return;
+			}
+
+			currentCities = [];
+
+			if ( ! countrySlug ) {
+				fillSelect( citySelect, [], 'Select a country first', '' );
+				citySelect.disabled = true;
+				renderAreas( '', '' );
+				notify( citySelect );
+				return;
+			}
+
+			fillSelect( citySelect, [], 'Loading cities…', '' );
+			citySelect.disabled = true;
+			renderAreas( '', '' );
+
+			loadCities( countrySlug ).then( function ( cities ) {
+				// A newer country choice has started loading since.
+				if ( mine !== request ) {
+					return;
+				}
+
+				currentCities = cities;
+				fillSelect( citySelect, cities, cities.length ? 'Select a city…' : 'No cities listed', preselectCity || '' );
+				citySelect.disabled = 0 === cities.length;
+				renderAreas( citySelect.value, preselectArea );
+				notify( citySelect );
+			} );
 		}
 
-		fillSelect( countrySelect, locations, 'Select a country…', selectedCountry || '' );
-		renderCities( selectedCountry || '', selectedCity || '' );
-		renderAreas( selectedCountry || '', selectedCity || '', selectedArea || '' );
+		fillSelect( countrySelect, countries, 'Select a country…', selectedCountry || '' );
+		renderCities( countrySelect.value, selectedCity || '', selectedArea || '' );
 
 		countrySelect.addEventListener( 'change', function () {
-			renderCities( countrySelect.value, '' );
-			renderAreas( countrySelect.value, '', '' );
+			renderCities( countrySelect.value, '', '' );
 		} );
 
 		citySelect.addEventListener( 'change', function () {
-			renderAreas( countrySelect.value, citySelect.value, '' );
+			renderAreas( citySelect.value, '' );
+			notify( citySelect );
 		} );
 	}
 

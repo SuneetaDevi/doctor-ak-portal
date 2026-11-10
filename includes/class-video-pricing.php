@@ -208,6 +208,21 @@ class Video_Pricing {
 	}
 
 	/**
+	 * The video discount to advertise on doctor cards ("20% OFF"): only
+	 * while it's actually being charged — a price is set and the discount
+	 * hasn't expired (same check bookings use), so a tag never promises a
+	 * price the booking page won't give.
+	 *
+	 * @param int $doctor_id Doctor's user ID.
+	 * @return int Discount percent, or 0 for none.
+	 */
+	public static function active_discount_percent( $doctor_id ) {
+		$pricing = self::effective_price_for_doctor( $doctor_id );
+
+		return $pricing['discount_active'] && (float) $pricing['base_price'] > 0 ? (int) $pricing['discount_percent'] : 0;
+	}
+
+	/**
 	 * Computes a doctor's current effective video-consultation price,
 	 * applying the discount only while it's still within its time window —
 	 * or always, for a discount with no end date set at all (an

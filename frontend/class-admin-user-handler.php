@@ -219,7 +219,7 @@ class Admin_User_Handler {
 				$errors['country'] = __( "Please select the doctor's country.", 'doctor-ak-portal' );
 			} elseif ( '' === $city || ! Locations::is_valid_city( $country, $city ) ) {
 				$errors['city'] = __( "Please select the doctor's city.", 'doctor-ak-portal' );
-			} elseif ( '' === $area || ! Locations::is_valid_area( $country, $city, $area ) ) {
+			} elseif ( ! Locations::is_valid_area_choice( $country, $city, $area ) ) {
 				$errors['area'] = __( "Please select the doctor's area.", 'doctor-ak-portal' );
 			}
 

@@ -46,4 +46,41 @@ class Locations_Handler {
 
 		wp_send_json_success( array( 'message' => __( 'Locations saved.', 'doctor-ak-portal' ) ) );
 	}
+
+	/**
+	 * AJAX handler (logged in or not — guests use it while registering):
+	 * one country's cities for the Country/City/Area dropdowns (see
+	 * doctor-ak-city-area-select.js). Public place names only, so no nonce;
+	 * cacheable by the browser.
+	 *
+	 * @return void
+	 */
+	public function handle_cities() {
+		$country = isset( $_POST['country'] ) ? sanitize_title( wp_unslash( $_POST['country'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- public, read-only data.
+
+		if ( '' === $country || ! Locations::is_valid_country( $country ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unknown country.', 'doctor-ak-portal' ) ), 404 );
+		}
+
+		wp_send_json_success( array( 'cities' => Locations::cities_for_country( $country ) ) );
+	}
+
+	/**
+	 * Gives the shared Country/City/Area dropdown script its country list
+	 * and endpoint (window.dakLocationsApi), on whatever page enqueued it.
+	 * Runs late on both enqueue hooks and just before footer scripts print,
+	 * since some pages enqueue it while rendering a shortcode.
+	 *
+	 * @return void
+	 */
+	public function localize_dropdown_script() {
+		static $done = false;
+
+		if ( $done || ! wp_script_is( 'doctor-ak-portal-city-area-select', 'enqueued' ) || wp_script_is( 'doctor-ak-portal-city-area-select', 'done' ) ) {
+			return;
+		}
+
+		wp_localize_script( 'doctor-ak-portal-city-area-select', 'dakLocationsApi', Locations::script_data() );
+		$done = true;
+	}
 }

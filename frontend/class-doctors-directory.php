@@ -345,6 +345,8 @@ class Doctors_Directory {
 			$card['offers_clinic']      = $offers_clinic;
 			$card['clinic_fee']         = $offers_clinic ? self::clinic_fee( $services, $physical ) : null;
 			$card['video_fee']          = $video_pricing ? Services::public_price( array( (float) $video_pricing['final_price'] ), __( 'View fees', 'doctor-ak-portal' ) ) : null;
+			// Same "% OFF · Video consult" chip as the home page's doctor cards.
+			$card['video_discount_percent'] = $video_pricing && $video_pricing['discount_active'] && (float) $video_pricing['base_price'] > 0 ? (int) $video_pricing['discount_percent'] : 0;
 			$card['next_available']     = $next ? self::slot_label( $next, $today ) : '';
 			$card['availability']       = $next ? ( $today === $next['date'] ? 'today' : 'week' ) : '';
 			$card['next_at']            = $next ? $next['date'] . ' ' . $next['time'] : '';
@@ -509,18 +511,7 @@ class Doctors_Directory {
 				'role'       => Roles::DOCTOR_ROLE,
 				'orderby'    => 'display_name',
 				'number'     => $limit > 0 ? $limit : 0,
-				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- no better lookup available; excludes deactivated doctors from every public listing.
-					'relation' => 'OR',
-					array(
-						'key'     => 'doctor_ak_account_disabled',
-						'compare' => 'NOT EXISTS',
-					),
-					array(
-						'key'     => 'doctor_ak_account_disabled',
-						'value'   => 'yes',
-						'compare' => '!=',
-					),
-				),
+				'meta_query' => \DoctorAKPortal\Includes\Appointments::public_doctor_meta_query(), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- no better lookup available; only approved, active doctors are public.
 			)
 		);
 
@@ -550,18 +541,7 @@ class Doctors_Directory {
 				'include'    => $doctor_ids,
 				'role'       => Roles::DOCTOR_ROLE,
 				'orderby'    => 'display_name',
-				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- no better lookup available; excludes deactivated doctors from every public listing.
-					'relation' => 'OR',
-					array(
-						'key'     => 'doctor_ak_account_disabled',
-						'compare' => 'NOT EXISTS',
-					),
-					array(
-						'key'     => 'doctor_ak_account_disabled',
-						'value'   => 'yes',
-						'compare' => '!=',
-					),
-				),
+				'meta_query' => \DoctorAKPortal\Includes\Appointments::public_doctor_meta_query(), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- no better lookup available; only approved, active doctors are public.
 			)
 		);
 

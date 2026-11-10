@@ -552,7 +552,8 @@ class Services {
 				"SELECT s.* FROM " . self::table_name() . " s
 				INNER JOIN {$wpdb->users} u ON u.ID = s.doctor_id
 				LEFT JOIN {$wpdb->usermeta} m ON m.user_id = u.ID AND m.meta_key = 'doctor_ak_account_disabled'
-				WHERE s.type = %s AND s.active = 1 AND ( m.meta_value IS NULL OR m.meta_value != 'yes' )
+				LEFT JOIN {$wpdb->usermeta} rs ON rs.user_id = u.ID AND rs.meta_key = 'doctor_ak_registration_status'
+				WHERE s.type = %s AND s.active = 1 AND ( m.meta_value IS NULL OR m.meta_value != 'yes' ) AND ( rs.meta_value IS NULL OR rs.meta_value IN ( '', 'approved' ) )
 				ORDER BY s.name ASC",
 				self::TYPE_CLINIC
 			), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table/column names, not user input; the one variable (TYPE_CLINIC) is bound via %s.
@@ -582,7 +583,8 @@ class Services {
 				"SELECT s.* FROM " . self::table_name() . " s
 				INNER JOIN {$wpdb->users} u ON u.ID = s.doctor_id
 				LEFT JOIN {$wpdb->usermeta} m ON m.user_id = u.ID AND m.meta_key = 'doctor_ak_account_disabled'
-				WHERE s.type = %s AND s.active = 1 AND LOWER(TRIM(s.name)) = LOWER(TRIM(%s)) AND ( m.meta_value IS NULL OR m.meta_value != 'yes' )
+				LEFT JOIN {$wpdb->usermeta} rs ON rs.user_id = u.ID AND rs.meta_key = 'doctor_ak_registration_status'
+				WHERE s.type = %s AND s.active = 1 AND LOWER(TRIM(s.name)) = LOWER(TRIM(%s)) AND ( m.meta_value IS NULL OR m.meta_value != 'yes' ) AND ( rs.meta_value IS NULL OR rs.meta_value IN ( '', 'approved' ) )
 				ORDER BY s.charge ASC",
 				self::TYPE_CLINIC,
 				$name
@@ -1045,7 +1047,7 @@ class Services {
 
 		$doctor = get_userdata( $service['doctor_id'] );
 
-		if ( ! $doctor || 'yes' === get_user_meta( $doctor->ID, 'doctor_ak_account_disabled', true ) ) {
+		if ( ! $doctor || ! Appointments::is_public_doctor( $doctor->ID ) ) {
 			return null;
 		}
 

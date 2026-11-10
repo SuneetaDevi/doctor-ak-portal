@@ -25,6 +25,8 @@
  * @var string     $clinic_booking_url    Booking page for a clinic visit with this doctor, or ''.
  * @var string     $video_booking_url     Booking page for a video consultation with this doctor, or ''.
  * @var string     $profile_url           This doctor's profile page.
+ * @var bool       $is_available          Has a clinic with an enabled session day (the home card's "Available" chip).
+ * @var int        $video_discount_percent Active video-consultation discount (0 = none).
  */
 
 // Prevent direct file access.
@@ -87,6 +89,32 @@ $dak_visit_types   = implode( ',', array_filter( array( $offers_clinic ? 'clinic
 		</a>
 
 		<div class="dak-dir-doctor-main">
+			<?php
+			// The same chips as the home page's doctor cards
+			// (directory/home-doctor-card.php): status, and an active
+			// video-consultation discount.
+			$dak_chip_discount = isset( $video_discount_percent ) ? (int) $video_discount_percent : 0;
+			$dak_chip_status   = ! empty( $is_available ) ? 'available' : ( $video_consultation ? 'consult' : '' );
+			?>
+			<?php if ( '' !== $dak_chip_status || $dak_chip_discount > 0 ) : ?>
+				<div class="dak-dir-card-chips">
+					<?php if ( 'available' === $dak_chip_status ) : ?>
+						<span class="dak-dir-card-chip is-available"><?php esc_html_e( 'Available', 'doctor-ak-portal' ); ?></span>
+					<?php elseif ( 'consult' === $dak_chip_status ) : ?>
+						<span class="dak-dir-card-chip is-consult"><?php esc_html_e( 'Consultation', 'doctor-ak-portal' ); ?></span>
+					<?php endif; ?>
+					<?php if ( $dak_chip_discount > 0 ) : ?>
+						<span class="dak-dir-card-chip is-discount">
+							<?php
+							/* translators: %d: discount percentage. */
+							echo esc_html( sprintf( __( '%d%% OFF', 'doctor-ak-portal' ), $dak_chip_discount ) );
+							?>
+							<small><?php esc_html_e( 'Video consult', 'doctor-ak-portal' ); ?></small>
+						</span>
+					<?php endif; ?>
+				</div>
+			<?php endif; ?>
+
 			<h3 class="dak-dir-doctor-name" id="dak-dir-doctor-<?php echo esc_attr( $id ); ?>">
 				<a href="<?php echo esc_url( $profile_url ); ?>"><?php echo esc_html( $display_name ); ?></a>
 			</h3>

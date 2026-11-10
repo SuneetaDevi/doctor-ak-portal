@@ -30,7 +30,7 @@ $area_names    = isset( $area_names ) ? $area_names : array();
 <div class="dak-page-head">
 	<div>
 		<h1><?php esc_html_e( 'Locations', 'doctor-ak-portal' ); ?></h1>
-		<p><?php esc_html_e( 'Countries, cities and areas doctors pick from for their location, and patients filter the doctors directory by.', 'doctor-ak-portal' ); ?></p>
+		<p><?php esc_html_e( 'Every country and city in the world is already available in the location dropdowns (city list: GeoNames, CC BY 4.0). Add countries and cities here only to give them areas, change how a name is spelled, or add a place the world list doesn’t have. Areas are optional for cities without any listed here.', 'doctor-ak-portal' ); ?></p>
 	</div>
 </div>
 

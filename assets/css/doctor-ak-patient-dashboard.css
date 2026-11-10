@@ -989,3 +989,160 @@
 /* Appointments/Notifications filter bar moved to the shared
    doctor-ak-dashboard.css — see that file — since the admin dashboard
    (which doesn't load this stylesheet) now uses it too. */
+
+/* ==========================================================================
+   Floating "Join call" card — every patient portal tab, while a video
+   consultation's join window is open (templates/dashboard/partials/
+   patient-call-dock.php, assets/js/doctor-ak-call-dock.js).
+   ========================================================================== */
+.dak-call-dock {
+	position: fixed !important;
+	right: 24px !important;
+	bottom: 24px !important;
+	z-index: 950 !important;
+	max-width: calc( 100vw - 32px ) !important;
+}
+
+.dak-call-dock[hidden],
+.dak-call-dock [hidden] {
+	display: none !important;
+}
+
+.dak-call-dock-card {
+	display: flex !important;
+	align-items: center !important;
+	gap: 12px !important;
+	width: 420px !important;
+	max-width: 100% !important;
+	box-sizing: border-box !important;
+	padding: 12px 10px 12px 14px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-left: 4px solid var( --dak-primary ) !important;
+	border-radius: 14px !important;
+	background: var( --dak-bg-card ) !important;
+	box-shadow: 0 16px 40px rgba( 16, 24, 40, 0.18 ) !important;
+}
+
+.dak-call-dock-icon {
+	flex: 0 0 40px !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 40px !important;
+	height: 40px !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary ) !important;
+}
+
+.dak-call-dock-text {
+	display: flex !important;
+	flex: 1 1 auto !important;
+	flex-direction: column !important;
+	min-width: 0 !important;
+	line-height: 1.35 !important;
+}
+
+.dak-call-dock-text strong {
+	color: var( --dak-text ) !important;
+	font-size: 0.92rem !important;
+}
+
+.dak-call-dock-text span {
+	overflow: hidden !important;
+	color: var( --dak-muted ) !important;
+	font-size: 0.82rem !important;
+	text-overflow: ellipsis !important;
+	white-space: nowrap !important;
+}
+
+.dak-call-dock-join {
+	flex: 0 0 auto !important;
+	white-space: nowrap !important;
+}
+
+.dak-call-dock-min {
+	flex: 0 0 auto !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 32px !important;
+	height: 32px !important;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 8px !important;
+	background: transparent !important;
+	color: var( --dak-muted ) !important;
+	cursor: pointer !important;
+}
+
+.dak-call-dock-min:hover,
+.dak-call-dock-min:focus-visible {
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-text ) !important;
+}
+
+/* Shrunk: a small green "Join call" button that keeps a gentle pulse. */
+.dak-call-dock-pill {
+	position: relative !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	min-height: 48px !important;
+	padding: 10px 18px !important;
+	border: 0 !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+	font: inherit !important;
+	font-weight: 700 !important;
+	box-shadow: 0 12px 30px rgba( 16, 24, 40, 0.22 ) !important;
+	cursor: pointer !important;
+}
+
+.dak-call-dock-pulse {
+	position: absolute !important;
+	inset: 0 !important;
+	border-radius: inherit !important;
+	box-shadow: 0 0 0 0 var( --dak-primary ) !important;
+	animation: dak-call-dock-pulse 2s ease-out infinite !important;
+}
+
+@keyframes dak-call-dock-pulse {
+	0% { box-shadow: 0 0 0 0 rgba( 22, 99, 75, 0.45 ); }
+	100% { box-shadow: 0 0 0 14px rgba( 22, 99, 75, 0 ); }
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.dak-call-dock-pulse {
+		animation: none !important;
+	}
+}
+
+@media ( max-width: 720px ) {
+	.dak-call-dock {
+		right: 12px !important;
+		bottom: 12px !important;
+		left: 12px !important;
+		display: flex !important;
+		justify-content: flex-end !important;
+	}
+
+	.dak-call-dock[hidden] {
+		display: none !important;
+	}
+
+	/* Clear the Dashboard tab's mobile bottom navigation. */
+	.dak-call-dock.has-bottom-nav {
+		bottom: 76px !important;
+	}
+
+	.dak-call-dock-card {
+		width: 100% !important;
+	}
+
+	/* Room to scroll past the card at the end of a page. */
+	body.dak-has-call-dock .dak-patient-dashboard .dak-dashboard-main {
+		padding-bottom: 110px !important;
+	}
+}

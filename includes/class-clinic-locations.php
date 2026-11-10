@@ -100,7 +100,7 @@ class Clinic_Locations {
 			return new \WP_Error( 'doctor_ak_clinic_location_city_required', __( 'Please select this clinic\'s city.', 'doctor-ak-portal' ) );
 		}
 
-		if ( '' === $area || ! Locations::is_valid_area( $country, $city, $area ) ) {
+		if ( ! Locations::is_valid_area_choice( $country, $city, $area ) ) {
 			return new \WP_Error( 'doctor_ak_clinic_location_area_required', __( 'Please select this clinic\'s area.', 'doctor-ak-portal' ) );
 		}
 

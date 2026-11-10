@@ -1290,3 +1290,59 @@ html[data-theme='dark'] .dak-dir .dak-dir-btn-primary:hover {
 	letter-spacing: 0.02em !important;
 	box-shadow: 0 6px 16px rgba( 194, 65, 12, 0.3 ) !important;
 }
+
+/* Doctor card chips — same as the home page's doctor cards
+   (templates/directory/home-doctor-card.php): status, and an active
+   video-consultation discount. */
+.dak-dir-card-chips {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 6px !important;
+	margin: 0 0 6px !important;
+}
+
+.dak-dir-card-chip {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.4rem !important;
+	padding: 0.25rem 0.7rem !important;
+	border-radius: 999px !important;
+	font-size: 0.78rem !important;
+	font-weight: 700 !important;
+	line-height: 1.2 !important;
+}
+
+.dak-dir-card-chip.is-available,
+.dak-dir-card-chip.is-consult {
+	background: #eaf4ef !important;
+	color: #16634b !important;
+}
+
+.dak-dir-card-chip.is-consult {
+	background: #e3e6ff !important;
+	color: #4450c9 !important;
+}
+
+.dak-dir-card-chip.is-available::before,
+.dak-dir-card-chip.is-consult::before {
+	content: '' !important;
+	width: 7px !important;
+	height: 7px !important;
+	border-radius: 50% !important;
+	background: currentColor !important;
+}
+
+.dak-dir-card-chip.is-discount {
+	background: #c2410c !important;
+	color: #fff !important;
+	font-weight: 800 !important;
+	letter-spacing: 0.02em !important;
+}
+
+.dak-dir-card-chip.is-discount small {
+	font-size: 0.7rem !important;
+	font-weight: 600 !important;
+	letter-spacing: 0 !important;
+	opacity: 0.95 !important;
+}

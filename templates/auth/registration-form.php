@@ -353,8 +353,9 @@ for ( $dak_m = 1; $dak_m <= 12; $dak_m++ ) {
 									<?php $dak_error( 'city', 'dak-city-error' ); ?>
 								</div>
 								<div class="dak-field">
-									<label for="dak-area"><?php esc_html_e( 'Area', 'doctor-ak-portal' ); ?> <?php echo $dak_req; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static. ?></label>
-									<select id="dak-area" name="area" required aria-required="true" aria-describedby="dak-area-hint dak-area-error"></select>
+									<?php // Required only for cities set up with areas (Settings → Locations); optional elsewhere. ?>
+									<label for="dak-area"><?php esc_html_e( 'Area', 'doctor-ak-portal' ); ?></label>
+									<select id="dak-area" name="area" aria-describedby="dak-area-hint dak-area-error"></select>
 									<p class="dak-acct-hint" id="dak-area-hint" data-location-hint="area"><?php esc_html_e( 'Choose a city first.', 'doctor-ak-portal' ); ?></p>
 									<?php $dak_error( 'area', 'dak-area-error' ); ?>
 								</div>

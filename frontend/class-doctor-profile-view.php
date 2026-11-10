@@ -132,7 +132,7 @@ class Doctor_Profile_View {
 		$doctor_id = isset( $_GET['doctor_id'] ) ? absint( $_GET['doctor_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only public profile lookup.
 		$doctor    = $doctor_id > 0 ? get_userdata( $doctor_id ) : false;
 
-		if ( ! $doctor || ! in_array( Roles::DOCTOR_ROLE, (array) $doctor->roles, true ) || 'yes' === get_user_meta( $doctor->ID, 'doctor_ak_account_disabled', true ) ) {
+		if ( ! $doctor || ! in_array( Roles::DOCTOR_ROLE, (array) $doctor->roles, true ) || ! \DoctorAKPortal\Includes\Appointments::is_public_doctor( $doctor->ID ) ) {
 			return $this->template_loader->get_template( 'directory/doctor-profile-view.php', array( 'doctor' => null ) );
 		}
 
@@ -266,7 +266,7 @@ class Doctor_Profile_View {
 	public static function page_title_for_doctor( $doctor_id ) {
 		$doctor = $doctor_id > 0 ? get_userdata( $doctor_id ) : false;
 
-		if ( ! $doctor || ! in_array( Roles::DOCTOR_ROLE, (array) $doctor->roles, true ) || 'yes' === get_user_meta( $doctor->ID, 'doctor_ak_account_disabled', true ) ) {
+		if ( ! $doctor || ! in_array( Roles::DOCTOR_ROLE, (array) $doctor->roles, true ) || ! \DoctorAKPortal\Includes\Appointments::is_public_doctor( $doctor->ID ) ) {
 			return '';
 		}
 

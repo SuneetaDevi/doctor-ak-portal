@@ -544,4 +544,12 @@ $appointment_group_labels = array(
 			<?php echo $dak_patient_icons['plus']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		</button>
 	<?php endif; ?>
+
+	<?php
+	// Floating "Join call" card — on every tab while a video consultation's
+	// join window is open (see the partial).
+	$video_calls    = isset( $video_calls ) ? $video_calls : array();
+	$has_bottom_nav = 'dashboard' === $active_tab;
+	require __DIR__ . '/partials/patient-call-dock.php';
+	?>
 </div>

@@ -387,7 +387,8 @@ class Home_Page {
 		$counts = array();
 		$all    = Specializations::get_all();
 
-		foreach ( get_users( array( 'role' => Roles::DOCTOR_ROLE, 'fields' => 'ID' ) ) as $doctor_id ) {
+		// Only doctors patients can see (approved, not deactivated).
+		foreach ( Appointments::active_doctor_ids() as $doctor_id ) {
 			foreach ( (array) get_user_meta( $doctor_id, 'doctor_ak_specializations', true ) as $slug ) {
 				// Only real specializations — a stray free-typed value in a
 				// doctor's meta (e.g. a procedure/condition) isn't one, and
@@ -419,23 +420,15 @@ class Home_Page {
 	}
 
 	/**
-	 * A doctor's video-consultation discount for the slider's "% OFF" tag —
-	 * only while it's actually being charged: the doctor offers video, has a
-	 * price set, and the discount hasn't expired (the same
-	 * Video_Pricing::effective_price_for_doctor() check bookings use, so the
-	 * tag never promises a price the booking page won't give).
+	 * A doctor's video-consultation discount for the slider's "% OFF" tag
+	 * (see Video_Pricing::active_discount_percent()), only for doctors who
+	 * offer video.
 	 *
 	 * @param array $card Doctors_Directory::doctor_cards_data() row.
 	 * @return int Discount percent, or 0 for no tag.
 	 */
 	private static function active_video_discount( array $card ) {
-		if ( empty( $card['video_consultation'] ) ) {
-			return 0;
-		}
-
-		$pricing = Video_Pricing::effective_price_for_doctor( (int) $card['id'] );
-
-		return $pricing['discount_active'] && (float) $pricing['base_price'] > 0 ? (int) $pricing['discount_percent'] : 0;
+		return empty( $card['video_consultation'] ) ? 0 : Video_Pricing::active_discount_percent( (int) $card['id'] );
 	}
 
 	/**
@@ -574,7 +567,7 @@ class Home_Page {
 		);
 
 		return array(
-			'doctors_count'        => count( get_users( array( 'role' => Roles::DOCTOR_ROLE, 'fields' => 'ID' ) ) ),
+			'doctors_count'        => count( Appointments::active_doctor_ids() ),
 			'patients_count'       => count( get_users( array( 'role' => Roles::PATIENT_ROLE, 'fields' => 'ID' ) ) ),
 			'appointments_count'   => Appointments::total_count(),
 			'max_years_experience' => ! empty( $years ) ? max( $years ) : 0,

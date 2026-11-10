@@ -73,6 +73,12 @@
 						renderClinicLocationOptions( clinicLocationSelect, countrySelect, citySelect, areaSelect, '' );
 					} );
 				} );
+
+				// Cities load per country after wire(): narrow the list once
+				// they're in, keeping whatever clinic is already chosen.
+				citySelect.addEventListener( 'dak-locations-updated', function () {
+					renderClinicLocationOptions( clinicLocationSelect, countrySelect, citySelect, areaSelect, clinicLocationSelect.value || preselectClinicLocationId );
+				} );
 			}
 		} );
 	}

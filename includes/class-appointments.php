@@ -1155,6 +1155,72 @@ class Appointments {
 	}
 
 	/**
+	 * A patient's paid video consultations whose call window is open now
+	 * or opens within the next $hours — for the patient portal's floating
+	 * "Join call" card (see templates/dashboard/partials/patient-call-dock.php),
+	 * which shows itself on every tab while a window is open. Times are
+	 * given as seconds from now so the browser never has to reconcile
+	 * time zones.
+	 *
+	 * @param int $patient_id Patient's user ID.
+	 * @param int $hours      How far ahead to look.
+	 * @return array[] Each { id, doctor_name, time_label, room_url, opens_in, closes_in, starts_in }, soonest first.
+	 */
+	public static function upcoming_video_calls_for_patient( $patient_id, $hours = 24 ) {
+		$now   = current_time( 'timestamp' ); // phpcs:ignore WordPress.DateTime.CurrentTimeTimestamp.Requested -- compared with strtotime() of stored local date/time strings, like video_call_info().
+		$calls = array();
+
+		foreach ( self::for_patient( $patient_id ) as $appointment ) {
+			if ( self::TYPE_VIDEO !== $appointment['type']
+				|| in_array( $appointment['status'], array( self::STATUS_CANCELLED, self::STATUS_COMPLETED ), true )
+				|| self::PAYMENT_STATUS_PAID !== $appointment['payment_status'] ) {
+				continue;
+			}
+
+			$start = strtotime( $appointment['date'] . ' ' . $appointment['time'] );
+
+			if ( false === $start ) {
+				continue;
+			}
+
+			$opens_at  = $start - self::VIDEO_JOIN_WINDOW_BEFORE_MINUTES * MINUTE_IN_SECONDS;
+			$closes_at = $start + self::VIDEO_JOIN_WINDOW_AFTER_MINUTES * MINUTE_IN_SECONDS;
+
+			if ( $closes_at <= $now || $opens_at > $now + $hours * HOUR_IN_SECONDS ) {
+				continue;
+			}
+
+			$info = self::video_call_info( $appointment );
+
+			if ( '' === $info['room_url'] ) {
+				continue;
+			}
+
+			$doctor = get_userdata( (int) $appointment['doctor_id'] );
+			$name   = $doctor ? trim( $doctor->first_name . ' ' . $doctor->last_name ) : '';
+
+			$calls[] = array(
+				'id'          => (int) $appointment['id'],
+				'doctor_name' => '' !== $name ? $name : ( $doctor ? $doctor->display_name : '' ),
+				'time_label'  => date_i18n( get_option( 'time_format', 'g:i a' ), $start ),
+				'room_url'    => $info['room_url'],
+				'opens_in'    => $opens_at - $now,
+				'closes_in'   => $closes_at - $now,
+				'starts_in'   => $start - $now,
+			);
+		}
+
+		usort(
+			$calls,
+			function ( $a, $b ) {
+				return $a['starts_in'] - $b['starts_in'];
+			}
+		);
+
+		return $calls;
+	}
+
+	/**
 	 * Whether a video appointment's "Join Call" link is usable right now,
 	 * and the Jitsi Meet room URL to use — the room is only ever generated
 	 * for video appointments (see create()), and joining requires the
@@ -2404,22 +2470,73 @@ class Appointments {
 			array(
 				'role'       => Roles::DOCTOR_ROLE,
 				'fields'     => 'ID',
-				'meta_query' => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- no better lookup available; excludes deactivated doctors, same pattern as Booking_Page::doctor_cards_data().
-					'relation' => 'OR',
-					array(
-						'key'     => 'doctor_ak_account_disabled',
-						'compare' => 'NOT EXISTS',
-					),
-					array(
-						'key'     => 'doctor_ak_account_disabled',
-						'value'   => 'yes',
-						'compare' => '!=',
-					),
-				),
+				'meta_query' => self::public_doctor_meta_query(), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- no better lookup available.
 			)
 		);
 
 		return array_map( 'intval', $query->get_results() );
+	}
+
+	/**
+	 * Registration statuses whose doctors patients may see and book:
+	 * approved, or none at all (accounts from before registrations needed
+	 * approval, and doctors an administrator created directly). Pending
+	 * and rejected registrations never appear publicly.
+	 *
+	 * @param string $status 'doctor_ak_registration_status' value.
+	 * @return bool
+	 */
+	public static function is_public_registration_status( $status ) {
+		return '' === (string) $status || 'approved' === $status;
+	}
+
+	/**
+	 * WP_User_Query meta_query for doctors patients may see: not
+	 * deactivated, and approved (see is_public_registration_status()).
+	 * Shared by every public doctor listing so they can't drift apart.
+	 *
+	 * @return array
+	 */
+	public static function public_doctor_meta_query() {
+		return array(
+			'relation' => 'AND',
+			array(
+				'relation' => 'OR',
+				array(
+					'key'     => 'doctor_ak_account_disabled',
+					'compare' => 'NOT EXISTS',
+				),
+				array(
+					'key'     => 'doctor_ak_account_disabled',
+					'value'   => 'yes',
+					'compare' => '!=',
+				),
+			),
+			array(
+				'relation' => 'OR',
+				array(
+					'key'     => 'doctor_ak_registration_status',
+					'compare' => 'NOT EXISTS',
+				),
+				array(
+					'key'     => 'doctor_ak_registration_status',
+					'value'   => array( '', 'approved' ),
+					'compare' => 'IN',
+				),
+			),
+		);
+	}
+
+	/**
+	 * Whether a doctor may be shown to patients (profile pages, service
+	 * pages): not deactivated, and approved.
+	 *
+	 * @param int $doctor_id Doctor's user ID.
+	 * @return bool
+	 */
+	public static function is_public_doctor( $doctor_id ) {
+		return 'yes' !== get_user_meta( $doctor_id, 'doctor_ak_account_disabled', true )
+			&& self::is_public_registration_status( get_user_meta( $doctor_id, 'doctor_ak_registration_status', true ) );
 	}
 
 	/**
@@ -2440,9 +2557,11 @@ class Appointments {
 
 		$doctor = get_userdata( $doctor_id );
 
+		// Also refuses pending/rejected registrations: they can't log in,
+		// so they mustn't be bookable through a direct request either.
 		return $doctor
 			&& in_array( Roles::DOCTOR_ROLE, (array) $doctor->roles, true )
-			&& 'yes' !== get_user_meta( $doctor_id, 'doctor_ak_account_disabled', true );
+			&& self::is_public_doctor( $doctor_id );
 	}
 
 	/**

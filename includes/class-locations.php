@@ -26,6 +26,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  * their own country (so e.g. two different countries could each have a
  * "springfield"), which is why every city/area lookup here always takes the
  * country (and, for areas, the city) as part of the key.
+ *
+ * Dropdowns and validation use that list merged with a bundled world list
+ * (includes/data/world/: every country, and every town of 1,000+ people,
+ * from GeoNames — https://www.geonames.org/, CC BY 4.0) — see
+ * all_countries() / cities_for_country(). The admin list still decides
+ * spelling and is the only source of areas; for a city with no areas the
+ * Area field is optional (is_valid_area_choice()). Cities are sent to the
+ * browser one country at a time (Locations_Handler::handle_cities()).
  */
 class Locations {
 
@@ -58,6 +66,173 @@ class Locations {
 	}
 
 	/**
+	 * Merged countries for this request (see all_countries()).
+	 *
+	 * @var array|null
+	 */
+	private static $countries_cache = null;
+
+	/**
+	 * Merged cities per country slug for this request (see cities_for_country()).
+	 *
+	 * @var array
+	 */
+	private static $cities_cache = array();
+
+	/**
+	 * Every country in the world (GeoNames, bundled under
+	 * includes/data/world/), ISO code => name.
+	 *
+	 * @return array
+	 */
+	public static function world_countries() {
+		static $countries = null;
+
+		if ( null === $countries ) {
+			$countries = array();
+			$path      = DOCTOR_AK_PORTAL_PATH . 'includes/data/world/countries.json';
+			$rows      = is_readable( $path ) ? json_decode( (string) file_get_contents( $path ), true ) : array(); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local bundled file.
+
+			foreach ( (array) $rows as $row ) {
+				if ( isset( $row['code'], $row['name'] ) ) {
+					$countries[ $row['code'] ] = $row['name'];
+				}
+			}
+		}
+
+		return $countries;
+	}
+
+	/**
+	 * A country's cities from the bundled world list (towns of 1,000+
+	 * people, GeoNames), as display names.
+	 *
+	 * @param string $code ISO country code, e.g. 'PK'.
+	 * @return string[]
+	 */
+	private static function world_city_names( $code ) {
+		$code = strtoupper( preg_replace( '/[^A-Za-z]/', '', (string) $code ) );
+		$path = DOCTOR_AK_PORTAL_PATH . 'includes/data/world/cities/' . $code . '.json';
+
+		if ( 2 !== strlen( $code ) || ! is_readable( $path ) ) {
+			return array();
+		}
+
+		$names = json_decode( (string) file_get_contents( $path ), true ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local bundled file.
+
+		return is_array( $names ) ? $names : array();
+	}
+
+	/**
+	 * Every country available in location dropdowns: the whole world list,
+	 * plus anything an administrator added under Settings → Locations (which
+	 * also keeps its own spelling and its cities' areas). Matched by slug,
+	 * so existing saved locations keep working.
+	 *
+	 * @return array List of { slug, name, code } sorted by name ('' code for admin-only countries).
+	 */
+	public static function all_countries() {
+		if ( null !== self::$countries_cache ) {
+			return self::$countries_cache;
+		}
+
+		$merged = array();
+
+		foreach ( self::world_countries() as $code => $name ) {
+			$slug            = self::slugify( $name );
+			$merged[ $slug ] = array(
+				'slug' => $slug,
+				'name' => $name,
+				'code' => $code,
+			);
+		}
+
+		foreach ( self::get_all() as $country ) {
+			$merged[ $country['slug'] ] = array(
+				'slug' => $country['slug'],
+				'name' => $country['name'],
+				'code' => isset( $merged[ $country['slug'] ] ) ? $merged[ $country['slug'] ]['code'] : '',
+			);
+		}
+
+		uasort(
+			$merged,
+			function ( $a, $b ) {
+				return strcasecmp( remove_accents( $a['name'] ), remove_accents( $b['name'] ) );
+			}
+		);
+
+		self::$countries_cache = array_values( $merged );
+
+		return self::$countries_cache;
+	}
+
+	/**
+	 * Every city of a country: the world list plus the administrator's own
+	 * cities from Settings → Locations (which bring their areas). Matched by
+	 * slug, so an admin city with the same name as a world one replaces it
+	 * rather than appearing twice.
+	 *
+	 * @param string $country_slug Country slug.
+	 * @return array List of { slug, name, areas: [ { slug, name } ] } sorted by name.
+	 */
+	public static function cities_for_country( $country_slug ) {
+		$country_slug = (string) $country_slug;
+
+		if ( isset( self::$cities_cache[ $country_slug ] ) ) {
+			return self::$cities_cache[ $country_slug ];
+		}
+
+		$code = '';
+
+		foreach ( self::all_countries() as $country ) {
+			if ( $country['slug'] === $country_slug ) {
+				$code = $country['code'];
+				break;
+			}
+		}
+
+		$merged = array();
+
+		foreach ( self::world_city_names( $code ) as $name ) {
+			$slug = self::slugify( $name );
+
+			if ( ! isset( $merged[ $slug ] ) ) {
+				$merged[ $slug ] = array(
+					'slug'  => $slug,
+					'name'  => $name,
+					'areas' => array(),
+				);
+			}
+		}
+
+		foreach ( self::get_all() as $country ) {
+			if ( $country['slug'] !== $country_slug ) {
+				continue;
+			}
+
+			foreach ( $country['cities'] as $city ) {
+				$merged[ $city['slug'] ] = array(
+					'slug'  => $city['slug'],
+					'name'  => $city['name'],
+					'areas' => isset( $city['areas'] ) ? array_values( (array) $city['areas'] ) : array(),
+				);
+			}
+		}
+
+		uasort(
+			$merged,
+			function ( $a, $b ) {
+				return strcasecmp( remove_accents( $a['name'] ), remove_accents( $b['name'] ) );
+			}
+		);
+
+		self::$cities_cache[ $country_slug ] = array_values( $merged );
+
+		return self::$cities_cache[ $country_slug ];
+	}
+
+	/**
 	 * Country slug => name, for building a Country <select>.
 	 *
 	 * @return array
@@ -65,11 +240,66 @@ class Locations {
 	public static function country_options() {
 		$options = array();
 
-		foreach ( self::get_all() as $country ) {
+		foreach ( self::all_countries() as $country ) {
 			$options[ $country['slug'] ] = $country['name'];
 		}
 
 		return $options;
+	}
+
+	/**
+	 * Whether a city needs an area chosen: only cities an administrator
+	 * gave areas to (Settings → Locations). Cities from the world list have
+	 * no areas, so the Area field is optional there.
+	 *
+	 * @param string $country_slug Country slug.
+	 * @param string $city_slug    City slug.
+	 * @return bool
+	 */
+	public static function area_required( $country_slug, $city_slug ) {
+		$city = self::find_city( $country_slug, $city_slug );
+
+		return $city && ! empty( $city['areas'] );
+	}
+
+	/**
+	 * Whether an Area value is acceptable for a city: one of its areas, or
+	 * empty when the city has none.
+	 *
+	 * @param string $country_slug Country slug.
+	 * @param string $city_slug    City slug.
+	 * @param string $area_slug    Area slug ('' = none chosen).
+	 * @return bool
+	 */
+	public static function is_valid_area_choice( $country_slug, $city_slug, $area_slug ) {
+		if ( '' === (string) $area_slug ) {
+			return ! self::area_required( $country_slug, $city_slug );
+		}
+
+		return self::is_valid_area( $country_slug, $city_slug, $area_slug );
+	}
+
+	/**
+	 * What the shared Country/City/Area dropdown script needs (see
+	 * doctor-ak-city-area-select.js): every country, and where to fetch a
+	 * country's cities from (they're loaded per country, not all at once).
+	 *
+	 * @return array
+	 */
+	public static function script_data() {
+		return array(
+			'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
+			'action'    => 'doctor_ak_location_cities',
+			'countries' => array_map(
+				function ( $country ) {
+					return array(
+						'slug' => $country['slug'],
+						'name' => $country['name'],
+					);
+				},
+				self::all_countries()
+			),
+		);
 	}
 
 	/**
@@ -79,15 +309,9 @@ class Locations {
 	 * @return array
 	 */
 	public static function city_options( $country_slug ) {
-		$country = self::find_country( $country_slug );
-
-		if ( ! $country ) {
-			return array();
-		}
-
 		$options = array();
 
-		foreach ( $country['cities'] as $city ) {
+		foreach ( self::cities_for_country( $country_slug ) as $city ) {
 			$options[ $city['slug'] ] = $city['name'];
 		}
 
@@ -222,7 +446,7 @@ class Locations {
 			return false;
 		}
 
-		foreach ( self::get_all() as $country ) {
+		foreach ( self::all_countries() as $country ) {
 			if ( $country['slug'] === $country_slug ) {
 				return $country;
 			}
@@ -243,13 +467,7 @@ class Locations {
 			return false;
 		}
 
-		$country = self::find_country( $country_slug );
-
-		if ( ! $country ) {
-			return false;
-		}
-
-		foreach ( $country['cities'] as $city ) {
+		foreach ( self::cities_for_country( $country_slug ) as $city ) {
 			if ( $city['slug'] === $city_slug ) {
 				return $city;
 			}

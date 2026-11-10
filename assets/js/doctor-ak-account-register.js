@@ -256,7 +256,8 @@
 					errors.country = 'Select your country.';
 				} else if ( ! fieldValue( 'city' ) ) {
 					errors.city = 'Select your city.';
-				} else if ( ! fieldValue( 'area' ) ) {
+				} else if ( ! fieldValue( 'area' ) && qs( '[name="area"]' ) && ! qs( '[name="area"]' ).disabled ) {
+					// Only cities set up with areas offer (and need) one.
 					errors.area = 'Select your area.';
 				}
 
@@ -829,23 +830,28 @@
 			var cityHint = root.querySelector( '[data-location-hint="city"]' );
 			var areaHint = root.querySelector( '[data-location-hint="area"]' );
 			var noCountries = country.options.length <= 1;
+			var loading = ! noCountries && country.value && city.disabled && city.options.length <= 1 && /Loading/.test( city.options[ 0 ] ? city.options[ 0 ].textContent : '' );
 
 			if ( noCountries ) {
 				cityHint.textContent = 'Locations aren’t available right now. Please try again later.';
 			} else if ( ! country.value ) {
 				cityHint.textContent = 'Choose a country first.';
+			} else if ( loading ) {
+				cityHint.textContent = 'Loading cities…';
 			} else {
 				cityHint.textContent = 'No cities are listed for this country yet.';
 			}
 
 			cityHint.hidden = ! city.disabled;
 
-			areaHint.textContent = ! city.value ? 'Choose a city first.' : 'No areas are listed for this city yet.';
+			// Areas exist only for cities set up with them; elsewhere it's optional.
+			areaHint.textContent = ! city.value ? 'Choose a city first.' : 'No areas listed for this city — you can leave this empty.';
 			areaHint.hidden = ! area.disabled;
 		}
 
 		country.addEventListener( 'change', locationHints );
 		city.addEventListener( 'change', locationHints );
+		city.addEventListener( 'dak-locations-updated', locationHints );
 		locationHints();
 
 		/* ------------------------------------------------------------------

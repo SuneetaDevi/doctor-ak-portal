@@ -415,7 +415,7 @@ class Registration_Handler {
 			$errors['country'] = __( 'Please select your country.', 'doctor-ak-portal' );
 		} elseif ( '' === $city || ! Locations::is_valid_city( $country, $city ) ) {
 			$errors['city'] = __( 'Please select your city.', 'doctor-ak-portal' );
-		} elseif ( '' === $area || ! Locations::is_valid_area( $country, $city, $area ) ) {
+		} elseif ( ! Locations::is_valid_area_choice( $country, $city, $area ) ) {
 			$errors['area'] = __( 'Please select your area.', 'doctor-ak-portal' );
 		} else {
 			$meta['doctor_ak_country'] = $country;

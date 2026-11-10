@@ -131,6 +131,16 @@ class Patient_Dashboard {
 			true
 		);
 
+		// Floating "Join call" card shown on every tab while a video
+		// consultation's join window is open (patient-call-dock.php).
+		wp_enqueue_script(
+			'doctor-ak-portal-call-dock',
+			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-call-dock.js',
+			array( 'doctor-ak-portal-video-call' ),
+			Assets::version( 'assets/js/doctor-ak-call-dock.js' ),
+			true
+		);
+
 		wp_enqueue_script(
 			'doctor-ak-portal-live-filters',
 			DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-live-filters.js',
@@ -722,6 +732,8 @@ class Patient_Dashboard {
 			'required_profile_items' => $required_profile_items,
 			'phone_number'          => $phone_number,
 			'next_appointment'      => $dashboard_data['next_appointment'],
+			// Floating "Join call" card, on every tab (patient-call-dock.php).
+			'video_calls'           => Appointments::upcoming_video_calls_for_patient( $user->ID ),
 			'unpaid_count'          => $dashboard_data['unpaid_count'],
 			'unpaid_total'          => $dashboard_data['unpaid_total'],
 			'appointment_groups'    => $appointment_groups_html,
