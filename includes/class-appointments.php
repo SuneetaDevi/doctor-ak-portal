@@ -2796,7 +2796,7 @@ class Appointments {
 		$doctor_share_total = 0.0;
 
 		foreach ( $all_paid as $row ) {
-			$split           = Revenue_Split::split( $row['doctor_id'], $row['charge'] );
+			$split           = Revenue_Split::split_for_appointment( $row );
 			$hospital_share  = $split['hospital_share'];
 			$gross_total    += (float) $row['charge'];
 			$doctor_share_total += $split['doctor_share'];
@@ -2851,7 +2851,7 @@ class Appointments {
 
 		foreach ( $paid as $row ) {
 			if ( isset( $totals[ $row['date'] ] ) ) {
-				$totals[ $row['date'] ] += Revenue_Split::split( $row['doctor_id'], $row['charge'] )['hospital_share'];
+				$totals[ $row['date'] ] += Revenue_Split::split_for_appointment( $row )['hospital_share'];
 			}
 		}
 
@@ -2893,7 +2893,7 @@ class Appointments {
 		$today_total = 0.0;
 
 		foreach ( $all_paid as $row ) {
-			$doctor_share = Revenue_Split::split( $doctor_id, $row['charge'] )['doctor_share'];
+			$doctor_share = Revenue_Split::split_for_appointment( $row )['doctor_share'];
 			$total       += $doctor_share;
 
 			if ( 0 === strpos( $row['date'], $month ) ) {
@@ -2943,7 +2943,7 @@ class Appointments {
 		$owed_to_doctor = 0.0;
 
 		foreach ( $paid as $row ) {
-			$split = Revenue_Split::split( $doctor_id, $row['charge'] );
+			$split = Revenue_Split::split_for_appointment( $row );
 
 			if ( self::PAYMENT_MODE_ONLINE === $row['payment_mode'] ) {
 				$owed_to_doctor += $split['doctor_share'];

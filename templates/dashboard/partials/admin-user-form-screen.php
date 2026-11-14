@@ -46,15 +46,14 @@ $dak_list_noun       = isset( $dak_list_nouns[ $section ] ) ? $dak_list_nouns[ $
 
 // For the Weekly Hours step's pre-fill (see doctor-ak-onboarding-sessions.js)
 // — one entry per already-aligned clinic, keyed by clinic_location_id so
-// JS can look a clinic's existing row id/sessions/share-override up the
-// moment its chip renders.
+// JS can look a clinic's existing row id/sessions up the moment its chip
+// renders.
 $dak_editing_clinics_by_location_id = array();
 
 foreach ( $editing_clinics as $dak_editing_clinic ) {
 	$dak_editing_clinics_by_location_id[ $dak_editing_clinic['clinic_location_id'] ] = array(
-		'id'                   => $dak_editing_clinic['id'],
-		'doctor_share_percent' => $dak_editing_clinic['doctor_share_percent'],
-		'sessions'             => $dak_editing_clinic['sessions'],
+		'id'       => $dak_editing_clinic['id'],
+		'sessions' => $dak_editing_clinic['sessions'],
 	);
 }
 
@@ -365,18 +364,31 @@ $dak_editing_video_clinic_for_js = $editing_video_clinic ? array(
 			}
 
 			$dak_opd_key = $dak_opd_service ? $dak_opd_service['id'] : 'opd';
+
+			// Doctor's share (%) per service — a service with no share of its
+			// own yet shows the doctor's current default (see
+			// Revenue_Split::service_share_percent()), so every row shows the
+			// percentage actually in effect.
+			$dak_default_share = $dak_is_editing ? (float) $editing_user['doctor_share_percent'] : \DoctorAKPortal\Includes\Revenue_Split::DEFAULT_DOCTOR_SHARE_PERCENT;
+			$dak_share_value   = function ( $service ) use ( $dak_default_share ) {
+				$percent = $service && null !== $service['doctor_share_percent'] ? $service['doctor_share_percent'] : $dak_default_share;
+
+				return rtrim( rtrim( number_format( (float) $percent, 2, '.', '' ), '0' ), '.' );
+			};
+			$dak_video_share   = rtrim( rtrim( number_format( $dak_is_editing ? (float) $editing_user['video_share_percent'] : $dak_default_share, 2, '.', '' ), '0' ), '.' );
 			?>
 			<div class="dak-field">
-				<div class="dak-services-editor" data-services-editor data-categories="<?php echo esc_attr( wp_json_encode( $service_categories ) ); ?>" data-clinic-select-id="dak-admin-user-clinic-locations">
+				<div class="dak-services-editor" data-services-editor data-categories="<?php echo esc_attr( wp_json_encode( $service_categories ) ); ?>" data-clinic-select-id="dak-admin-user-clinic-locations" data-default-share="<?php echo esc_attr( $dak_share_value( null ) ); ?>">
 					<div class="dak-services-row-header" data-services-row-header>
 						<span><?php esc_html_e( 'Service Name', 'doctor-ak-portal' ); ?></span>
 						<span><?php esc_html_e( 'Category', 'doctor-ak-portal' ); ?></span>
 						<span><?php esc_html_e( 'Charge (PKR)', 'doctor-ak-portal' ); ?></span>
 						<span><?php esc_html_e( 'Duration (min)', 'doctor-ak-portal' ); ?></span>
+						<span><?php esc_html_e( 'Doctor Share (%)', 'doctor-ak-portal' ); ?></span>
 						<span></span>
 					</div>
 					<div class="dak-services-rows" data-services-rows>
-						<div class="dak-services-row is-default" data-services-row data-services-default="opd" data-row-key="<?php echo esc_attr( $dak_opd_key ); ?>" data-checked-clinic-ids="<?php echo esc_attr( $dak_opd_service ? implode( ',', array_keys( $dak_opd_service['clinic_charges'] ) ) : '' ); ?>">
+						<div class="dak-services-row is-default" data-services-row data-services-default="opd" data-row-key="<?php echo esc_attr( $dak_opd_key ); ?>" data-checked-clinic-ids="<?php echo esc_attr( $dak_opd_service ? implode( ',', array_keys( $dak_opd_service['clinic_charges'] ) ) : '' ); ?>" data-clinic-shares="<?php echo esc_attr( wp_json_encode( (object) ( $dak_opd_service ? $dak_opd_service['clinic_shares'] : array() ) ) ); ?>">
 							<div class="dak-services-row-fields">
 								<input type="hidden" name="service_id[]" value="<?php echo esc_attr( $dak_opd_service ? $dak_opd_service['id'] : 0 ); ?>">
 								<input type="hidden" name="service_row_key[]" value="<?php echo esc_attr( $dak_opd_key ); ?>">
@@ -389,6 +401,7 @@ $dak_editing_video_clinic_for_js = $editing_video_clinic ? array(
 								</select>
 								<input type="number" name="service_charge[]" value="<?php echo esc_attr( $dak_opd_service ? $dak_opd_service['base_charge'] : '' ); ?>" min="0" step="0.01" placeholder="0" aria-label="<?php esc_attr_e( 'OPD Consultation charge (PKR)', 'doctor-ak-portal' ); ?>">
 								<input type="number" name="service_duration_minutes[]" value="<?php echo esc_attr( $dak_opd_service ? $dak_opd_service['duration_minutes'] : '' ); ?>" min="0" max="480" placeholder="0" aria-label="<?php esc_attr_e( 'OPD Consultation duration (minutes)', 'doctor-ak-portal' ); ?>">
+								<input type="number" name="service_share_percent[]" value="<?php echo esc_attr( $dak_share_value( $dak_opd_service ) ); ?>" min="0" max="100" step="0.01" placeholder="%" aria-label="<?php esc_attr_e( "OPD Consultation doctor's share (%)", 'doctor-ak-portal' ); ?>">
 								<span class="dak-services-default-badge"><?php esc_html_e( 'Default', 'doctor-ak-portal' ); ?></span>
 							</div>
 							<div class="dak-services-row-clinics dak-hidden" data-services-row-clinics></div>
@@ -401,14 +414,15 @@ $dak_editing_video_clinic_for_js = $editing_video_clinic ? array(
 								<span class="dak-services-video-note"><?php esc_html_e( 'Online', 'doctor-ak-portal' ); ?></span>
 								<input type="number" name="video_price" value="<?php echo esc_attr( '' !== $editing_video_price && (float) $editing_video_price > 0 ? $editing_video_price : '' ); ?>" min="0" step="0.01" placeholder="0" aria-label="<?php esc_attr_e( 'Video consultation fee (PKR)', 'doctor-ak-portal' ); ?>">
 								<span class="dak-services-video-note"><?php esc_html_e( 'Hours: see Step 2', 'doctor-ak-portal' ); ?></span>
+								<input type="number" name="video_share_percent" value="<?php echo esc_attr( $dak_video_share ); ?>" min="0" max="100" step="0.01" placeholder="%" aria-label="<?php esc_attr_e( "Video consultation doctor's share (%)", 'doctor-ak-portal' ); ?>">
 								<span class="dak-services-default-badge"><?php esc_html_e( 'Default', 'doctor-ak-portal' ); ?></span>
 							</div>
-							<p class="dak-field-hint"><?php esc_html_e( 'Video consultation fee. Discounts and booking rules are set in the Video Consultation section.', 'doctor-ak-portal' ); ?></p>
+							<p class="dak-field-hint"><?php esc_html_e( "Video consultation fee and the doctor's share of it. Discounts and booking rules are set in the Video Consultation section.", 'doctor-ak-portal' ); ?></p>
 							<span class="dak-field-error" data-field="video_price"></span>
 						</div>
 
 						<?php foreach ( $dak_other_services as $dak_editing_service ) : ?>
-							<div class="dak-services-row" data-services-row data-row-key="<?php echo esc_attr( $dak_editing_service['id'] ); ?>" data-checked-clinic-ids="<?php echo esc_attr( implode( ',', array_keys( $dak_editing_service['clinic_charges'] ) ) ); ?>">
+							<div class="dak-services-row" data-services-row data-row-key="<?php echo esc_attr( $dak_editing_service['id'] ); ?>" data-checked-clinic-ids="<?php echo esc_attr( implode( ',', array_keys( $dak_editing_service['clinic_charges'] ) ) ); ?>" data-clinic-shares="<?php echo esc_attr( wp_json_encode( (object) $dak_editing_service['clinic_shares'] ) ); ?>">
 								<div class="dak-services-row-fields">
 									<input type="hidden" name="service_id[]" value="<?php echo esc_attr( $dak_editing_service['id'] ); ?>">
 									<input type="hidden" name="service_row_key[]" value="<?php echo esc_attr( $dak_editing_service['id'] ); ?>">
@@ -421,6 +435,7 @@ $dak_editing_video_clinic_for_js = $editing_video_clinic ? array(
 									</select>
 									<input type="number" name="service_charge[]" value="<?php echo esc_attr( $dak_editing_service['base_charge'] ); ?>" min="0" step="0.01">
 									<input type="number" name="service_duration_minutes[]" value="<?php echo esc_attr( $dak_editing_service['duration_minutes'] ); ?>" min="0" max="480">
+									<input type="number" name="service_share_percent[]" value="<?php echo esc_attr( $dak_share_value( $dak_editing_service ) ); ?>" min="0" max="100" step="0.01" placeholder="%" aria-label="<?php esc_attr_e( "Doctor's share (%)", 'doctor-ak-portal' ); ?>">
 									<button type="button" class="dak-services-remove" data-services-remove-row aria-label="<?php esc_attr_e( 'Remove service', 'doctor-ak-portal' ); ?>" title="<?php esc_attr_e( 'Removes it from this form only — this existing service stays as-is unless you delete it from the Services section.', 'doctor-ak-portal' ); ?>">&times;</button>
 								</div>
 								<div class="dak-services-row-clinics dak-hidden" data-services-row-clinics></div>
@@ -433,40 +448,8 @@ $dak_editing_video_clinic_for_js = $editing_video_clinic ? array(
 				</div>
 				<p class="dak-field-hint"><?php esc_html_e( 'OPD Consultation is added for every doctor, and Video Consultation too when video consultations are allowed. Add any other services with “+ Add Service” — more can also be added later from the admin "Services" section.', 'doctor-ak-portal' ); ?></p>
 			<p class="dak-field-hint"><?php esc_html_e( 'Removing a row here only skips it on Save; delete a service permanently from the Services section. Pick clinics per service below to offer it only at specific clinics — leave all unchecked to offer it at every clinic this doctor practices at.', 'doctor-ak-portal' ); ?></p>
+			<p class="dak-field-hint"><?php esc_html_e( "Doctor Share (%) is the percentage of each payment for that service the doctor keeps; the clinic keeps the rest. To use a different share at a specific clinic (e.g. OPD 60% at one clinic, 50% at another), fill in that clinic's \"Share %\" under the service — leave it blank to use the service's Doctor Share.", 'doctor-ak-portal' ); ?></p>
 				<span class="dak-field-error" data-field="services"></span>
-			</div>
-
-			</div>
-
-			<?php
-			$dak_payment_model        = $dak_is_editing ? $editing_user['payment_model'] : \DoctorAKPortal\Includes\Revenue_Split::MODEL_COMMISSION;
-			$dak_doctor_share_percent = $dak_is_editing ? $editing_user['doctor_share_percent'] : \DoctorAKPortal\Includes\Revenue_Split::DEFAULT_DOCTOR_SHARE_PERCENT;
-			$dak_is_salary_model      = \DoctorAKPortal\Includes\Revenue_Split::MODEL_SALARY === $dak_payment_model;
-			?>
-			<div class="dak-onboarding-step">
-				<div class="dak-onboarding-step-header">
-					<span class="dak-onboarding-step-badge">4</span>
-					<div>
-						<h2 class="dak-onboarding-step-title"><?php esc_html_e( 'Payment & Revenue Split', 'doctor-ak-portal' ); ?></h2>
-						<p class="dak-onboarding-step-desc"><?php esc_html_e( "This doctor's default commission — each clinic above can override it individually via its own \"Doctor's share override\" field in step 2.", 'doctor-ak-portal' ); ?></p>
-					</div>
-				</div>
-
-			<div class="dak-field-row" id="dak-admin-user-revenue-split">
-				<div class="dak-field">
-					<label for="dak-admin-user-payment-model"><?php esc_html_e( 'Payment Model', 'doctor-ak-portal' ); ?></label>
-					<select id="dak-admin-user-payment-model" name="payment_model">
-						<option value="<?php echo esc_attr( \DoctorAKPortal\Includes\Revenue_Split::MODEL_COMMISSION ); ?>" <?php selected( ! $dak_is_salary_model ); ?>><?php esc_html_e( 'Commission (share of each payment)', 'doctor-ak-portal' ); ?></option>
-						<option value="<?php echo esc_attr( \DoctorAKPortal\Includes\Revenue_Split::MODEL_SALARY ); ?>" <?php selected( $dak_is_salary_model ); ?>><?php esc_html_e( 'Salary (paid outside the platform)', 'doctor-ak-portal' ); ?></option>
-					</select>
-					<p class="dak-field-hint"><?php esc_html_e( 'Salary-based doctors keep no share here — every payment counts fully as clinic revenue.', 'doctor-ak-portal' ); ?></p>
-				</div>
-				<div class="dak-field" id="dak-admin-user-doctor-share-field">
-					<label for="dak-admin-user-doctor-share-percent"><?php esc_html_e( "Doctor's Share (%)", 'doctor-ak-portal' ); ?></label>
-					<input type="number" min="0" max="100" step="0.5" id="dak-admin-user-doctor-share-percent" name="doctor_share_percent" value="<?php echo esc_attr( $dak_doctor_share_percent ); ?>" <?php disabled( $dak_is_salary_model ); ?>>
-					<p class="dak-field-hint" id="dak-admin-user-hospital-share-hint"></p>
-					<span class="dak-field-error" data-field="doctor_share_percent"></span>
-				</div>
 			</div>
 
 			</div>

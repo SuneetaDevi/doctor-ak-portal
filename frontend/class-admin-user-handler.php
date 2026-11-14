@@ -282,13 +282,6 @@ class Admin_User_Handler {
 				$keywords = array_values( array_unique( $keywords ) );
 			}
 
-			$revenue_split_fields = Revenue_Split::sanitize_fields_from_request( $_POST ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Revenue_Split::sanitize_fields_from_request() unslashes/sanitizes each field itself.
-
-			if ( is_wp_error( $revenue_split_fields ) ) {
-				$errors['doctor_share_percent'] = $revenue_split_fields->get_error_message();
-				$revenue_split_fields           = array();
-			}
-
 			// Optional "align to clinics" — only attempted for whichever
 			// clinics were actually picked from the master Clinic_Locations
 			// list, so leaving it unset (the common case when the doctor
@@ -307,14 +300,6 @@ class Admin_User_Handler {
 			// blocking the whole save, since hours can always be set later
 			// from the Doctor Sessions tab.
 			$posted_clinic_sessions = isset( $_POST['clinic_sessions'] ) && is_array( $_POST['clinic_sessions'] ) ? $_POST['clinic_sessions'] : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Clinics::sanitize_sessions_from_request() unslashes/sanitizes each field itself.
-
-			// Per-clinic doctor-share override — same field the standalone
-			// Doctor Sessions form has, just keyed by clinic_location_id
-			// here since several clinics can be onboarded at once (see
-			// Clinics::sanitize_share_override_from_request(), which expects
-			// a single 'doctor_share_percent' value, hence the per-clinic
-			// re-wrap below).
-			$posted_clinic_share_percents = isset( $_POST['clinic_share_percent'] ) && is_array( $_POST['clinic_share_percent'] ) ? $_POST['clinic_share_percent'] : array();
 
 			// Which existing Clinics row (if any) each clinic_location_id's
 			// card corresponds to — '0' for a clinic being aligned for the
@@ -352,19 +337,6 @@ class Admin_User_Handler {
 					$errors['clinic_location_ids'] = $clinic_fields->get_error_message();
 					continue;
 				}
-
-				$share_override = Clinics::sanitize_share_override_from_request(
-					array(
-						'doctor_share_percent' => isset( $posted_clinic_share_percents[ $posted_clinic_location_id ] ) ? $posted_clinic_share_percents[ $posted_clinic_location_id ] : '',
-					)
-				);
-
-				if ( is_wp_error( $share_override ) ) {
-					$errors['clinic_location_ids'] = $share_override->get_error_message();
-					continue;
-				}
-
-				$clinic_fields['doctor_share_percent'] = $share_override;
 
 				$posted_sessions_for_clinic = isset( $posted_clinic_sessions[ $posted_clinic_location_id ] ) && is_array( $posted_clinic_sessions[ $posted_clinic_location_id ] )
 					? $posted_clinic_sessions[ $posted_clinic_location_id ]
@@ -444,6 +416,11 @@ class Admin_User_Handler {
 			$posted_service_categories  = isset( $_POST['service_category'] ) && is_array( $_POST['service_category'] ) ? $_POST['service_category'] : array();
 			$posted_service_charges     = isset( $_POST['service_charge'] ) && is_array( $_POST['service_charge'] ) ? $_POST['service_charge'] : array();
 			$posted_service_durations   = isset( $_POST['service_duration_minutes'] ) && is_array( $_POST['service_duration_minutes'] ) ? $_POST['service_duration_minutes'] : array();
+			// The doctor's share (%) of each service — see Revenue_Split::service_share_percent().
+			$posted_service_shares      = isset( $_POST['service_share_percent'] ) && is_array( $_POST['service_share_percent'] ) ? $_POST['service_share_percent'] : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Revenue_Split::sanitize_share_percent() unslashes/validates each value.
+			// { row_key => { clinic_location_id => percent } } — a service's
+			// own share at specific clinics; blank = use the row's share.
+			$posted_service_clinic_shares = isset( $_POST['service_clinic_shares'] ) && is_array( $_POST['service_clinic_shares'] ) ? $_POST['service_clinic_shares'] : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- IDs absint()'d/re-validated and values run through Revenue_Split::sanitize_share_percent() below.
 			// { row_key => [clinic_location_id, ...] } — which clinics each
 			// row's "Available at" checkboxes had checked (see
 			// doctor-ak-services-editor.js); a row with none checked means
@@ -502,6 +479,41 @@ class Admin_User_Handler {
 
 				$service_fields['clinic_charges'] = $dak_row_clinic_charges;
 
+				$dak_share = Revenue_Split::sanitize_share_percent( isset( $posted_service_shares[ $dak_service_row_index ] ) ? $posted_service_shares[ $dak_service_row_index ] : '' );
+
+				if ( is_wp_error( $dak_share ) ) {
+					$errors['services'] = sprintf( /* translators: 1: service name, 2: error message. */ __( '%1$s: %2$s', 'doctor-ak-portal' ), $service_fields['name'], $dak_share->get_error_message() );
+					continue;
+				}
+
+				$service_fields['doctor_share_percent'] = $dak_share;
+
+				$dak_clinic_shares = array();
+				$dak_share_error   = null;
+
+				if ( isset( $posted_service_clinic_shares[ $dak_row_key ] ) && is_array( $posted_service_clinic_shares[ $dak_row_key ] ) ) {
+					foreach ( $posted_service_clinic_shares[ $dak_row_key ] as $dak_clinic_location_id => $dak_raw_clinic_share ) {
+						$dak_clinic_location_id = absint( $dak_clinic_location_id );
+						$dak_clinic_share       = Revenue_Split::sanitize_share_percent( $dak_raw_clinic_share );
+
+						if ( is_wp_error( $dak_clinic_share ) ) {
+							$dak_share_error = $dak_clinic_share;
+							break;
+						}
+
+						if ( null !== $dak_clinic_share && $dak_clinic_location_id > 0 && in_array( $dak_clinic_location_id, $posted_clinic_location_ids, true ) ) {
+							$dak_clinic_shares[ $dak_clinic_location_id ] = $dak_clinic_share;
+						}
+					}
+				}
+
+				if ( $dak_share_error ) {
+					$errors['services'] = sprintf( /* translators: 1: service name, 2: error message. */ __( '%1$s: %2$s', 'doctor-ak-portal' ), $service_fields['name'], $dak_share_error->get_error_message() );
+					continue;
+				}
+
+				$service_fields['clinic_shares'] = $dak_clinic_shares;
+
 				$services_to_create[] = array(
 					'id'     => $posted_service_id,
 					'fields' => $service_fields,
@@ -556,6 +568,18 @@ class Admin_User_Handler {
 				$errors['video_price'] = __( 'Please enter a valid video consultation fee.', 'doctor-ak-portal' );
 			} else {
 				$video_price = number_format( (float) $posted_video_price, 2, '.', '' );
+			}
+		}
+
+		// The Video Consultation row's doctor share (%); blank leaves it as is.
+		$video_share_percent = null;
+
+		if ( $is_for_doctor && $video_consultation_allowed && isset( $_POST['video_share_percent'] ) ) {
+			$video_share_percent = Revenue_Split::sanitize_share_percent( $_POST['video_share_percent'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- unslashed and validated as a 0-100 number there.
+
+			if ( is_wp_error( $video_share_percent ) ) {
+				$errors['video_price'] = $video_share_percent->get_error_message();
+				$video_share_percent   = null;
 			}
 		}
 
@@ -690,7 +714,6 @@ class Admin_User_Handler {
 			update_user_meta( $saved_user_id, 'doctor_ak_expertise', $expertise );
 			update_user_meta( $saved_user_id, Clinics::VIDEO_CONSULTATION_ALLOWED_META_KEY, $video_consultation_allowed ? '1' : '0' );
 			update_user_meta( $saved_user_id, Doctor_Awards::META_KEY, Doctor_Awards::encode( $awards ) );
-			Revenue_Split::save_for_doctor( $saved_user_id, $revenue_split_fields );
 
 			foreach ( $clinic_fields_list as $clinic_entry ) {
 				if ( $clinic_entry['row_id'] > 0 ) {
@@ -727,6 +750,10 @@ class Admin_User_Handler {
 				$video_settings          = Video_Pricing::get_for_doctor( $saved_user_id );
 				$video_settings['price'] = $video_price;
 				Video_Pricing::save_for_doctor( $saved_user_id, $video_settings );
+			}
+
+			if ( null !== $video_share_percent ) {
+				Revenue_Split::save_video_share_percent( $saved_user_id, $video_share_percent );
 			}
 		} else {
 			update_user_meta( $saved_user_id, 'doctor_ak_phone_number', $phone_number );

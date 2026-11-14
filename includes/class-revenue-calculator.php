@@ -125,7 +125,7 @@ class Revenue_Calculator {
 		}
 
 		$net_after_fee = round( $gross - $platform_fee, 2 );
-		$share_percent = Revenue_Split::effective_doctor_share_percent( $doctor_id, $clinic_id );
+		$share_percent = Revenue_Split::share_percent_for_appointment( $appointment );
 		$doctor_amount = round( $net_after_fee * $share_percent / 100, 2 );
 		$clinic_amount = round( $net_after_fee - $doctor_amount, 2 );
 

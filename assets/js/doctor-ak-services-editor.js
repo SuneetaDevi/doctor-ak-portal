@@ -84,10 +84,28 @@
 			}
 		}
 
+		var defaultShare = editor.getAttribute( 'data-default-share' ) || '';
+
 		addButton.addEventListener( 'click', function () {
-			var row = addRow( rows, categories );
+			var row = addRow( rows, categories, { sharePercent: defaultShare } );
 			renderRowClinics( row, currentClinics() );
 			refreshHeader();
+		} );
+
+		// Keep each clinic's "Share %" placeholder showing the service's
+		// own Doctor Share — what applies while the clinic's is blank.
+		rows.addEventListener( 'input', function ( event ) {
+			if ( 'service_share_percent[]' !== event.target.name ) {
+				return;
+			}
+
+			var row = event.target.closest( '[data-services-row]' );
+
+			if ( row ) {
+				row.querySelectorAll( '[data-clinic-share]' ).forEach( function ( input ) {
+					input.placeholder = event.target.value;
+				} );
+			}
 		} );
 
 		rows.addEventListener( 'click', function ( event ) {
@@ -147,12 +165,32 @@
 
 		var rowKey = row.getAttribute( 'data-row-key' ) || '';
 		var previouslyChecked = {};
+		var previousShares = {};
 
 		wrap.querySelectorAll( 'input[type="checkbox"]' ).forEach( function ( box ) {
 			if ( box.checked ) {
 				previouslyChecked[ box.value ] = true;
 			}
 		} );
+
+		// Per-clinic share (%) values: whatever's typed now, or — on the
+		// first paint of a PHP-rendered row — the server-supplied ones.
+		if ( row.hasAttribute( 'data-clinic-shares-painted' ) ) {
+			wrap.querySelectorAll( '[data-clinic-share]' ).forEach( function ( input ) {
+				previousShares[ input.getAttribute( 'data-clinic-share' ) ] = input.value;
+			} );
+		} else {
+			try {
+				previousShares = JSON.parse( row.getAttribute( 'data-clinic-shares' ) || '{}' ) || {};
+			} catch ( e ) {
+				previousShares = {};
+			}
+
+			row.setAttribute( 'data-clinic-shares-painted', '' );
+		}
+
+		var rowShareInput = row.querySelector( 'input[name="service_share_percent[]"]' );
+		var rowShare = rowShareInput ? rowShareInput.value : '';
 
 		// First paint of a PHP-rendered existing row: nothing's checked yet
 		// in the (still-empty) DOM, so fall back to the server-supplied set.
@@ -175,13 +213,16 @@
 
 		var caption = document.createElement( 'span' );
 		caption.className = 'dak-services-row-clinics-label';
-		caption.textContent = 'Available at (leave all unchecked for every clinic):';
+		caption.textContent = 'Available at (leave all unchecked for every clinic) — and the doctor\'s share at each clinic (blank = the service\'s Doctor Share):';
 		wrap.appendChild( caption );
 
 		var list = document.createElement( 'div' );
 		list.className = 'dak-services-row-clinics-list';
 
 		clinics.forEach( function ( clinic ) {
+			var item = document.createElement( 'div' );
+			item.className = 'dak-services-clinic-item';
+
 			var label = document.createElement( 'label' );
 			label.className = 'dak-services-clinic-chip';
 
@@ -193,7 +234,30 @@
 
 			label.appendChild( box );
 			label.appendChild( document.createTextNode( clinic.label ) );
-			list.appendChild( label );
+
+			var share = document.createElement( 'label' );
+			share.className = 'dak-services-clinic-share';
+
+			var shareInput = document.createElement( 'input' );
+			shareInput.type = 'number';
+			shareInput.name = 'service_clinic_shares[' + rowKey + '][' + clinic.id + ']';
+			shareInput.min = '0';
+			shareInput.max = '100';
+			shareInput.step = '0.01';
+			shareInput.placeholder = rowShare;
+			shareInput.setAttribute( 'data-clinic-share', clinic.id );
+			shareInput.setAttribute( 'aria-label', "Doctor's share (%) at " + clinic.label );
+
+			if ( undefined !== previousShares[ clinic.id ] && null !== previousShares[ clinic.id ] ) {
+				shareInput.value = previousShares[ clinic.id ];
+			}
+
+			share.appendChild( document.createTextNode( 'Share %' ) );
+			share.appendChild( shareInput );
+
+			item.appendChild( label );
+			item.appendChild( share );
+			list.appendChild( item );
 		} );
 
 		wrap.appendChild( list );
@@ -204,7 +268,7 @@
 	 *
 	 * @param {HTMLElement} rows       The `[data-services-rows]` container.
 	 * @param {Object}      categories Category slug => label.
-	 * @param {Object}      [values]   Optional pre-filled { name, category, charge, durationMinutes }.
+	 * @param {Object}      [values]   Optional pre-filled { name, category, charge, durationMinutes, sharePercent }.
 	 * @return {HTMLElement} The row just added.
 	 */
 	function addRow( rows, categories, values ) {
@@ -283,6 +347,17 @@
 		durationInput.placeholder = '0';
 		durationInput.value = values.durationMinutes || '';
 
+		// The doctor's share (%) of this service's payments.
+		var shareInput = document.createElement( 'input' );
+		shareInput.type = 'number';
+		shareInput.name = 'service_share_percent[]';
+		shareInput.min = '0';
+		shareInput.max = '100';
+		shareInput.step = '0.01';
+		shareInput.placeholder = '%';
+		shareInput.setAttribute( 'aria-label', "Doctor's share (%)" );
+		shareInput.value = undefined !== values.sharePercent ? values.sharePercent : '';
+
 		var removeButton = document.createElement( 'button' );
 		removeButton.type = 'button';
 		removeButton.className = 'dak-services-remove';
@@ -294,6 +369,7 @@
 		fields.appendChild( categorySelect );
 		fields.appendChild( chargeInput );
 		fields.appendChild( durationInput );
+		fields.appendChild( shareInput );
 		fields.appendChild( removeButton );
 
 		var clinicsWrap = document.createElement( 'div' );

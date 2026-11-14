@@ -49,11 +49,14 @@ class Db_Installer {
 
 	/**
 	 * Current services table schema version. 1.5.0 adds discount_percent /
-	 * discount_ends_at (existing services get 0 = no discount).
+	 * discount_ends_at (existing services get 0 = no discount); 1.6.0 adds
+	 * doctor_share_percent (NULL = use the doctor's default share); 1.7.0
+	 * adds clinic_shares (JSON clinic_location_id => percent, per-clinic
+	 * overrides of doctor_share_percent).
 	 *
 	 * @var string
 	 */
-	const SERVICES_DB_VERSION = '1.5.0';
+	const SERVICES_DB_VERSION = '1.7.0';
 
 	/**
 	 * Option name tracking the installed notifications-table schema version.
@@ -521,6 +524,8 @@ class Db_Installer {
 			clinic_charges TEXT NULL,
 			discount_percent TINYINT UNSIGNED NOT NULL DEFAULT 0,
 			discount_ends_at DATETIME NULL DEFAULT NULL,
+			doctor_share_percent DECIMAL(5,2) NULL DEFAULT NULL,
+			clinic_shares TEXT NULL,
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),

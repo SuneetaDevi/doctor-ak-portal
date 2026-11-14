@@ -285,6 +285,17 @@ class Services {
 			array( '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%s', '%s', '%d', '%s', '%d', '%s', '%s', '%s' )
 		);
 
+		if ( $inserted && isset( $fields['doctor_share_percent'] ) ) {
+			// Set separately: $wpdb->insert() can't write a NULL through a
+			// format string, and NULL (the column default) means "use the
+			// doctor's default share".
+			$wpdb->update( self::table_name(), array( 'doctor_share_percent' => $fields['doctor_share_percent'] ), array( 'id' => (int) $wpdb->insert_id ), array( '%s' ), array( '%d' ) );
+		}
+
+		if ( $inserted && ! empty( $fields['clinic_shares'] ) ) {
+			$wpdb->update( self::table_name(), array( 'clinic_shares' => wp_json_encode( $fields['clinic_shares'] ) ), array( 'id' => (int) $wpdb->insert_id ), array( '%s' ), array( '%d' ) );
+		}
+
 		if ( ! $inserted ) {
 			return false;
 		}
@@ -357,6 +368,12 @@ class Services {
 			$types[]           = '%d';
 		}
 
+		// Only the Add/Edit Doctor form's Services step sets this.
+		if ( array_key_exists( 'clinic_shares', $fields ) ) {
+			$data['clinic_shares'] = wp_json_encode( (array) $fields['clinic_shares'] );
+			$types[]               = '%s';
+		}
+
 		if ( array_key_exists( 'discount_percent', $fields ) ) {
 			$data['discount_percent'] = (int) $fields['discount_percent'];
 			$types[]                   = '%d';
@@ -365,6 +382,18 @@ class Services {
 		}
 
 		$updated = $wpdb->update( self::table_name(), $data, $where, $types, $where_types );
+
+		// Only the Add/Edit Doctor form's Services step sets this; a null
+		// value clears it back to "use the doctor's default share".
+		if ( false !== $updated && array_key_exists( 'doctor_share_percent', $fields ) ) {
+			if ( null === $fields['doctor_share_percent'] ) {
+				$updated = null !== $doctor_id
+					? $wpdb->query( $wpdb->prepare( 'UPDATE ' . self::table_name() . ' SET doctor_share_percent = NULL WHERE id = %d AND doctor_id = %d', (int) $service_id, (int) $doctor_id ) ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
+					: $wpdb->query( $wpdb->prepare( 'UPDATE ' . self::table_name() . ' SET doctor_share_percent = NULL WHERE id = %d', (int) $service_id ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
+			} else {
+				$updated = $wpdb->update( self::table_name(), array( 'doctor_share_percent' => $fields['doctor_share_percent'] ), $where, array( '%s' ), $where_types );
+			}
+		}
 
 		return false !== $updated;
 	}
@@ -1055,6 +1084,25 @@ class Services {
 	}
 
 	/**
+	 * Decodes the stored clinic_shares JSON.
+	 *
+	 * @param string|null $raw Stored JSON.
+	 * @return array clinic_location_id (int) => percent (float, 0-100).
+	 */
+	private static function decode_clinic_shares( $raw ) {
+		$decoded = json_decode( (string) $raw, true );
+		$shares  = array();
+
+		foreach ( (array) $decoded as $clinic_location_id => $percent ) {
+			if ( (int) $clinic_location_id > 0 && is_numeric( $percent ) ) {
+				$shares[ (int) $clinic_location_id ] = max( 0.0, min( 100.0, (float) $percent ) );
+			}
+		}
+
+		return $shares;
+	}
+
+	/**
 	 * Decodes a raw DB row into the shape the rest of the codebase works
 	 * with: casts IDs/numbers, adds a human-readable category label, and
 	 * (for the public service portfolio — see active_for_public_directory())
@@ -1155,6 +1203,11 @@ class Services {
 			'discount_percent' => $discount_percent,
 			'discount_ends_at' => $discount_ends_at,
 			'discount_active'  => $discount_active && ( $base_charge > 0 || max( array_merge( array( 0 ), $base_clinic_charges ) ) > 0 ),
+			// The doctor's share of this service (0-100), or null to use the
+			// doctor's default — see Revenue_Split::service_share_percent().
+			'doctor_share_percent' => isset( $row['doctor_share_percent'] ) && null !== $row['doctor_share_percent'] ? (float) $row['doctor_share_percent'] : null,
+			// Per-clinic overrides of doctor_share_percent: clinic_location_id => percent.
+			'clinic_shares'    => self::decode_clinic_shares( isset( $row['clinic_shares'] ) ? $row['clinic_shares'] : '' ),
 			'effective_price'  => $effective_price,
 			'price_label'      => $price_label,
 			'duration_minutes' => (int) $row['duration_minutes'],

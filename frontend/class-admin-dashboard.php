@@ -430,8 +430,6 @@ class Admin_Dashboard {
 				'sessionDays'    => Clinics::session_days(),
 				'sessionPeriods' => Clinics::session_periods(),
 				'serviceCategories' => Service_Categories::get_all(),
-				'shareOverrideLabel' => __( "Doctor's share override at this clinic (%, optional)", 'doctor-ak-portal' ),
-				'shareOverrideHint'  => __( "Leave blank to use this doctor's default commission below. Only applies to appointments booked at this specific clinic.", 'doctor-ak-portal' ),
 			)
 		);
 
@@ -3726,6 +3724,7 @@ class Admin_Dashboard {
 			'registered_date'             => mysql2date( get_option( 'date_format' ), $user->user_registered ),
 			'payment_model'               => Revenue_Split::get_for_doctor( $user->ID )['payment_model'],
 			'doctor_share_percent'        => Revenue_Split::get_for_doctor( $user->ID )['doctor_share_percent'],
+			'video_share_percent'         => Revenue_Split::video_share_percent( $user->ID ),
 		);
 	}
 

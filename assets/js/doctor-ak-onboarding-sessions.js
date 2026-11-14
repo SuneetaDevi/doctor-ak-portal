@@ -18,7 +18,7 @@
  * When editing an existing doctor, their already-aligned clinics come
  * pre-selected in that <select> (see admin-user-form-screen.php), and each
  * group is pre-filled from #dak-admin-user-sessions-groups's `data-existing`
- * JSON (clinic_location_id => { id, doctor_share_percent, sessions }) the
+ * JSON (clinic_location_id => { id, sessions }) the
  * moment it's first built, so editing shows what's already set instead of a
  * blank grid. Each group also carries a hidden clinic_row_id[...] field
  * ('0' for a not-yet-created clinic) so the save handler knows whether to
@@ -52,7 +52,7 @@
 		}
 
 		// Editing an existing doctor: clinic_location_id => { id,
-		// doctor_share_percent, sessions } for their already-aligned
+		// sessions } for their already-aligned
 		// clinics (see admin-user-form-screen.php) — used to pre-fill each
 		// group the moment it's first built, so editing shows what's
 		// already set instead of a blank grid.
@@ -115,7 +115,6 @@
 
 			group.appendChild( title );
 			group.appendChild( rowIdInput );
-			group.appendChild( buildShareOverride( clinicLocationId, existing ) );
 			group.appendChild( buildQuickFill( group ) );
 			group.appendChild( buildGrid( 'clinic_sessions[' + clinicLocationId + ']', existing ? existing.sessions : null ) );
 
@@ -141,44 +140,6 @@
 			group.appendChild( buildGrid( 'video_sessions', existingVideoClinic ? existingVideoClinic.sessions : null ) );
 
 			return group;
-		}
-
-		/**
-		 * Per-clinic doctor-share override — mirrors the standalone Doctor
-		 * Sessions form's own "Doctor's share override at this clinic"
-		 * field (see admin-session-form-screen.php), just keyed by clinic
-		 * here since several clinics can be on this page at once.
-		 */
-		function buildShareOverride( clinicLocationId, existing ) {
-			var wrap = document.createElement( 'div' );
-			wrap.className = 'dak-field dak-onboarding-share-override';
-
-			var label = document.createElement( 'label' );
-			var inputId = 'dak-admin-user-clinic-share-' + clinicLocationId;
-			label.setAttribute( 'for', inputId );
-			label.textContent = window.dakAdminUsers.shareOverrideLabel || "Doctor's share override at this clinic (%, optional)";
-
-			var input = document.createElement( 'input' );
-			input.type = 'number';
-			input.id = inputId;
-			input.name = 'clinic_share_percent[' + clinicLocationId + ']';
-			input.min = '0';
-			input.max = '100';
-			input.step = '0.01';
-
-			if ( existing && null !== existing.doctor_share_percent && undefined !== existing.doctor_share_percent ) {
-				input.value = existing.doctor_share_percent;
-			}
-
-			var hint = document.createElement( 'p' );
-			hint.className = 'dak-field-hint';
-			hint.textContent = window.dakAdminUsers.shareOverrideHint || "Leave blank to use this doctor's default commission below. Only applies to appointments booked at this specific clinic.";
-
-			wrap.appendChild( label );
-			wrap.appendChild( input );
-			wrap.appendChild( hint );
-
-			return wrap;
 		}
 
 		/**

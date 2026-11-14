@@ -68,16 +68,7 @@ foreach ( $ledger as $dak_row ) {
 	<?php if ( $dak_is_salary ) : ?>
 		<?php esc_html_e( "You're on a salary — every payment you collect counts fully as clinic revenue rather than being split with you. Contact the clinic administrator if you believe this should be different.", 'doctor-ak-portal' ); ?>
 	<?php else : ?>
-		<?php
-		echo esc_html(
-			sprintf(
-				/* translators: 1: doctor's share percent, 2: hospital's share percent. */
-				__( "You keep %1\$s%% of every payment by default; the clinic keeps the remaining %2\$s%%. Some clinics may have their own agreed override. Contact the clinic administrator to change this.", 'doctor-ak-portal' ),
-				number_format( (float) $earnings['current_split']['doctor_share_percent'], 1 ),
-				number_format( (float) $earnings['current_split']['hospital_share_percent'], 1 )
-			)
-		);
-		?>
+		<?php esc_html_e( "Your share is set per service — see each service's pricing details in your Services tab. The clinic keeps the rest. Contact the clinic administrator to change this.", 'doctor-ak-portal' ); ?>
 	<?php endif; ?>
 </div>
 

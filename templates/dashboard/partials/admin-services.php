@@ -74,7 +74,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 				</thead>
 				<tbody>
 					<?php foreach ( $services as $service ) : ?>
-						<?php $dak_service_split = \DoctorAKPortal\Includes\Revenue_Split::split( $service['doctor_id'], $service['charge'] ); ?>
+						<?php
+						$dak_service_share = \DoctorAKPortal\Includes\Revenue_Split::service_share_percent( $service['doctor_id'], $service['id'] );
+						$dak_service_split = \DoctorAKPortal\Includes\Revenue_Split::split( $service['doctor_id'], $service['charge'], $dak_service_share );
+						?>
 						<tr id="dak-service-<?php echo esc_attr( $service['id'] ); ?>" data-row data-service-row="<?php echo esc_attr( $service['id'] ); ?>" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $service['name'] . ' ' . $service['category_label'] . ' ' . $service['doctor']['name'] ) ); ?>">
 							<td class="dak-col-primary" data-label="<?php esc_attr_e( 'Service', 'doctor-ak-portal' ); ?>">
 								<span class="dak-cell-stack">
@@ -100,8 +103,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 									<details class="dak-cell-details">
 										<summary><?php esc_html_e( 'Pricing details', 'doctor-ak-portal' ); ?></summary>
 										<dl class="dak-detail-list dak-detail-list-compact">
-											<div><dt><?php esc_html_e( "Doctor's share", 'doctor-ak-portal' ); ?></dt><dd class="is-tabular"><?php echo esc_html( \DoctorAKPortal\Includes\Dashboard_Format::money( $dak_service_split['doctor_share'] ) ); ?></dd></div>
-											<div><dt><?php esc_html_e( "Hospital's share", 'doctor-ak-portal' ); ?></dt><dd class="is-tabular"><?php echo esc_html( \DoctorAKPortal\Includes\Dashboard_Format::money( $dak_service_split['hospital_share'] ) ); ?></dd></div>
+											<div><dt><?php echo esc_html( sprintf( /* translators: %s: percentage. */ __( "Doctor's share (%s%%)", 'doctor-ak-portal' ), number_format_i18n( $dak_service_share, 2 ) ) ); ?></dt><dd class="is-tabular"><?php echo esc_html( \DoctorAKPortal\Includes\Dashboard_Format::money( $dak_service_split['doctor_share'] ) ); ?></dd></div>
+											<div><dt><?php echo esc_html( sprintf( /* translators: %s: percentage. */ __( "Hospital's share (%s%%)", 'doctor-ak-portal' ), number_format_i18n( 100 - $dak_service_share, 2 ) ) ); ?></dt><dd class="is-tabular"><?php echo esc_html( \DoctorAKPortal\Includes\Dashboard_Format::money( $dak_service_split['hospital_share'] ) ); ?></dd></div>
+											<?php foreach ( $service['clinic_shares'] as $dak_share_location_id => $dak_clinic_share ) : ?>
+												<?php $dak_share_location = \DoctorAKPortal\Includes\Clinic_Locations::find( $dak_share_location_id ); ?>
+												<?php if ( $dak_share_location ) : ?>
+													<div><dt><?php echo esc_html( sprintf( /* translators: %s: clinic name. */ __( "Doctor's share at %s", 'doctor-ak-portal' ), $dak_share_location['name'] ) ); ?></dt><dd class="is-tabular"><?php echo esc_html( number_format_i18n( $dak_clinic_share, 2 ) . '%' ); ?></dd></div>
+												<?php endif; ?>
+											<?php endforeach; ?>
 											<?php foreach ( $service['clinic_locations'] as $dak_clinic_price ) : ?>
 												<div><dt><?php echo esc_html( $dak_clinic_price['name'] ); ?></dt><dd class="is-tabular"><?php echo esc_html( $dak_clinic_price['price_label'] ); ?></dd></div>
 											<?php endforeach; ?>
