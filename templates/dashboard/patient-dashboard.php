@@ -288,6 +288,9 @@ $appointment_group_labels = array(
 				</div>
 				<div class="dak-next-appointment-who">
 					<strong><?php echo esc_html( sprintf( 'Dr. %s', $next_appointment['doctor_name'] ) ); ?></strong>
+					<?php if ( ! empty( $next_appointment['doctor_pmdc'] ) ) : ?>
+						<span class="dak-pmdc"><?php echo esc_html( $next_appointment['doctor_pmdc'] ); ?></span>
+					<?php endif; ?>
 					<?php if ( '' !== $next_appointment['doctor_specialization'] ) : ?>
 						<span><?php echo esc_html( $next_appointment['doctor_specialization'] ); ?></span>
 					<?php endif; ?>

@@ -130,7 +130,8 @@ class Prescription_Pdf extends Pdf_Document {
 		}
 
 		$qualification = isset( $doctor_lines[1] ) && 'body' === $doctor_lines[1]['style'] ? $doctor_lines[1]['text'] : '';
-		$pdf->signature( $doctor_lines[0]['text'], $qualification );
+		$pmdc          = Pmdc::label( $doctor_id );
+		$pdf->signature( $doctor_lines[0]['text'], implode( ' · ', array_filter( array( $qualification, $pmdc ) ) ) );
 
 		return $pdf->render();
 	}

@@ -1202,6 +1202,7 @@ class Appointments {
 			$calls[] = array(
 				'id'          => (int) $appointment['id'],
 				'doctor_name' => '' !== $name ? $name : ( $doctor ? $doctor->display_name : '' ),
+				'doctor_pmdc' => Pmdc::label( (int) $appointment['doctor_id'] ),
 				'time_label'  => date_i18n( get_option( 'time_format', 'g:i a' ), $start ),
 				'room_url'    => $info['room_url'],
 				'opens_in'    => $opens_at - $now,
@@ -1389,6 +1390,7 @@ class Appointments {
 		return array(
 			'id'                    => $appointment['id'],
 			'doctor_name'           => '' !== $doctor_name ? $doctor_name : __( 'Unknown Doctor', 'doctor-ak-portal' ),
+			'doctor_pmdc'           => $doctor ? Pmdc::label( $doctor->ID ) : '',
 			'doctor_avatar_url'     => $avatar_url,
 			'doctor_specialization' => $specialization_label,
 			'clinic_name'           => ( $appointment['clinic_id'] > 0 && ( $dak_row_clinic = Clinics::find( $appointment['clinic_id'] ) ) ) ? $dak_row_clinic['name'] : '',
@@ -2978,6 +2980,7 @@ class Appointments {
 				array(
 					'doctor_id'   => $doctor_id,
 					'doctor_name' => $name,
+					'doctor_pmdc' => Pmdc::label( $doctor_id ),
 				),
 				self::net_dues_for_doctor( $doctor_id )
 			);
@@ -3172,6 +3175,8 @@ class Appointments {
 			'guest_phone'       => $appointment['guest_phone'],
 			'doctor_id'         => $appointment['doctor_id'],
 			'doctor_name'       => '' !== $doctor_name ? $doctor_name : __( 'Unknown Doctor', 'doctor-ak-portal' ),
+			// "PMDC No. …" (or ''), shown next to the doctor's name everywhere.
+			'doctor_pmdc'       => Pmdc::label( $appointment['doctor_id'] ),
 			'doctor_email'      => $doctor ? $doctor->user_email : '',
 			'doctor_avatar_url' => $doctor ? self::avatar_url_for_user( $doctor->ID ) : '',
 			'type'              => $appointment['type'],

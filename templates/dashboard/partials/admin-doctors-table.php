@@ -172,6 +172,9 @@ $dak_live_attrs  = ' data-live-filter="doctor_ak_admin_users_filter" data-live-f
 									</span>
 									<span class="dak-cell-stack">
 										<span class="dak-cell-primary"><?php echo esc_html( $dak_doctor_name ); ?></span>
+										<?php if ( '' !== $row['pmdc']['number'] ) : ?>
+											<span class="dak-cell-sub is-tabular"><?php echo esc_html( \DoctorAKPortal\Includes\Pmdc::label( $row['id'] ) ); ?></span>
+										<?php endif; ?>
 										<span class="dak-cell-sub dak-cell-email"><?php echo \DoctorAKPortal\Includes\Dashboard_Format::email_html( $row['email'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside email_html(). ?></span>
 									</span>
 								</div>
@@ -292,6 +295,8 @@ $dak_live_attrs  = ' data-live-filter="doctor_ak_admin_users_filter" data-live-f
 											</span>
 										</div>
 										<dl class="dak-detail-list">
+											<dt><?php esc_html_e( 'PMDC No.', 'doctor-ak-portal' ); ?></dt>
+											<dd class="is-tabular"><?php echo esc_html( '' !== $row['pmdc']['number'] ? $row['pmdc']['number'] : __( 'Not provided', 'doctor-ak-portal' ) ); ?></dd>
 											<dt><?php esc_html_e( 'Account status', 'doctor-ak-portal' ); ?></dt>
 											<dd><?php echo $row['is_disabled'] ? esc_html__( 'Deactivated', 'doctor-ak-portal' ) : esc_html__( 'Active', 'doctor-ak-portal' ); ?></dd>
 											<dt><?php esc_html_e( 'Qualification', 'doctor-ak-portal' ); ?></dt>

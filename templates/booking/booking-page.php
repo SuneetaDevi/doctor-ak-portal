@@ -142,6 +142,7 @@ $dak_bk_icon_check = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"
 										data-doctor-card
 										data-doctor-id="<?php echo esc_attr( $card['id'] ); ?>"
 										data-doctor-name="<?php echo esc_attr( $card['name'] ); ?>"
+										data-doctor-pmdc="<?php echo esc_attr( \DoctorAKPortal\Includes\Pmdc::label( $card['id'] ) ); ?>"
 										data-doctor-initials="<?php echo esc_attr( $card['initials'] ); ?>"
 										data-doctor-avatar="<?php echo esc_url( $card['avatar_url'] ); ?>"
 										data-doctor-spec="<?php echo esc_attr( '' !== $card['specialization'] ? $card['specialization'] : __( 'General Physician', 'doctor-ak-portal' ) ); ?>"
@@ -159,6 +160,7 @@ $dak_bk_icon_check = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"
 										<span class="dak-bk-doctor-text">
 											<strong><?php echo esc_html( sprintf( 'Dr. %s', $card['name'] ) ); ?></strong>
 											<span><?php echo esc_html( '' !== $card['specialization'] ? $card['specialization'] : __( 'General Physician', 'doctor-ak-portal' ) ); ?></span>
+											<?php echo \DoctorAKPortal\Includes\Pmdc::html( $card['id'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside Pmdc::html(). ?>
 										</span>
 										<span class="dak-bk-doctor-tags">
 											<span class="dak-bk-tag"><?php esc_html_e( 'Clinic', 'doctor-ak-portal' ); ?></span>

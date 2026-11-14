@@ -186,6 +186,14 @@
 		return id ? document.querySelector( '[data-doctor-card][data-doctor-id="' + id + '"]' ) : null;
 	}
 
+	// "Dr. Name (PMDC No. 12345-P)" — the PMDC number is shown wherever the
+	// doctor's name is (see Pmdc::with_name()).
+	function doctorLabel( card ) {
+		var pmdc = card.getAttribute( 'data-doctor-pmdc' ) || '';
+
+		return 'Dr. ' + card.getAttribute( 'data-doctor-name' ) + ( pmdc ? ' (' + pmdc + ')' : '' );
+	}
+
 	function clinicsFor( doctorId ) {
 		return ( cfg.clinics && cfg.clinics[ doctorId ] ) || [];
 	}
@@ -772,7 +780,7 @@
 
 		wrap.classList.toggle( 'dak-hidden', !! pickerOpen && ! picker.classList.contains( 'is-changing' ) );
 		document.getElementById( 'dak-bk-selected-doctor-name' ).textContent = 'Dr. ' + card.getAttribute( 'data-doctor-name' );
-		document.getElementById( 'dak-bk-selected-doctor-spec' ).textContent = card.getAttribute( 'data-doctor-spec' ) || '';
+		document.getElementById( 'dak-bk-selected-doctor-spec' ).textContent = [ card.getAttribute( 'data-doctor-spec' ) || '', card.getAttribute( 'data-doctor-pmdc' ) || '' ].filter( Boolean ).join( ' · ' );
 
 		var avatar = document.getElementById( 'dak-bk-selected-doctor-avatar' );
 		var avatarUrl = card.getAttribute( 'data-doctor-avatar' );
@@ -2069,7 +2077,7 @@
 		var appointment = [];
 
 		if ( card ) {
-			appointment.push( [ 'Doctor', 'Dr. ' + card.getAttribute( 'data-doctor-name' ) ] );
+			appointment.push( [ 'Doctor', doctorLabel( card ) ] );
 		}
 
 		appointment.push( [ 'Visit', 'video' === state.type ? 'Online video consultation' : 'Clinic visit' ] );
@@ -2240,7 +2248,7 @@
 		var clinic = selectedClinic();
 		var c = charges();
 		var rows = {
-			doctor: card ? 'Dr. ' + card.getAttribute( 'data-doctor-name' ) : '',
+			doctor: card ? doctorLabel( card ) : '',
 			type: card ? ( 'video' === state.type ? 'Online video' : 'Clinic visit' ) : '',
 			clinic: card && 'clinic' === state.type && clinic ? clinic.name : '',
 			service: card && 'clinic' === state.type ? serviceNames().join( ', ' ) : '',
@@ -2762,7 +2770,7 @@
 		}
 
 		var snapshot = {
-			doctor: doctorCard( state.doctorId ) ? 'Dr. ' + doctorCard( state.doctorId ).getAttribute( 'data-doctor-name' ) : '',
+			doctor: doctorCard( state.doctorId ) ? doctorLabel( doctorCard( state.doctorId ) ) : '',
 			type: state.type,
 			clinic: selectedClinic(),
 			services: serviceNames(),

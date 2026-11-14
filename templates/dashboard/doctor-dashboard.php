@@ -114,7 +114,7 @@ $dak_dash_icons = array(
 			'dashboard/partials/sidebar-identity.php',
 			array(
 				'name'       => sprintf( 'Dr. %s', $display_name ),
-				'role_label' => __( 'Doctor', 'doctor-ak-portal' ),
+				'role_label' => implode( ' · ', array_filter( array( __( 'Doctor', 'doctor-ak-portal' ), \DoctorAKPortal\Includes\Pmdc::label( $user->ID ) ) ) ),
 				'avatar_url' => $avatar_url,
 			)
 		);

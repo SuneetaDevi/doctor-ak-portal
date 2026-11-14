@@ -102,7 +102,12 @@ $dak_session_period_labels = \DoctorAKPortal\Includes\Clinics::session_periods()
 						?>
 						<tr id="dak-clinic-<?php echo esc_attr( $clinic['id'] ); ?>" data-row data-clinic-row="<?php echo esc_attr( $clinic['id'] ); ?>" data-list-search-row data-list-search-text="<?php echo esc_attr( strtolower( $clinic['name'] . ' ' . $clinic['city_label'] . ' ' . $clinic['doctor']['name'] ) ); ?>">
 							<td class="dak-col-primary" data-label="<?php esc_attr_e( 'Doctor', 'doctor-ak-portal' ); ?>">
-								<span class="dak-cell-primary"><?php echo esc_html( sprintf( 'Dr. %s', $clinic['doctor']['name'] ) ); ?></span>
+								<span class="dak-cell-stack">
+									<span class="dak-cell-primary"><?php echo esc_html( sprintf( 'Dr. %s', $clinic['doctor']['name'] ) ); ?></span>
+									<?php if ( '' !== \DoctorAKPortal\Includes\Pmdc::label( $clinic['doctor']['id'] ) ) : ?>
+										<span class="dak-cell-sub is-tabular"><?php echo esc_html( \DoctorAKPortal\Includes\Pmdc::label( $clinic['doctor']['id'] ) ); ?></span>
+									<?php endif; ?>
+								</span>
 							</td>
 							<td data-label="<?php esc_attr_e( 'Clinic / visit mode', 'doctor-ak-portal' ); ?>">
 								<span class="dak-cell-stack">

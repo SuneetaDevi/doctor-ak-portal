@@ -166,6 +166,76 @@ class Pmdc {
 	}
 
 	/**
+	 * A doctor's PMDC registration number (cached per request), or ''.
+	 *
+	 * @param int $user_id Doctor's user ID.
+	 * @return string
+	 */
+	public static function number( $user_id ) {
+		static $cache = array();
+
+		$user_id = (int) $user_id;
+
+		if ( $user_id <= 0 ) {
+			return '';
+		}
+
+		if ( ! isset( $cache[ $user_id ] ) ) {
+			$cache[ $user_id ] = trim( (string) get_user_meta( $user_id, self::META_NUMBER, true ) );
+		}
+
+		return $cache[ $user_id ];
+	}
+
+	/**
+	 * "PMDC No. 12345-P" for a doctor, or '' when they have no number on file
+	 * — shown wherever a doctor's name appears (profiles, slips, bills,
+	 * emails, dashboards).
+	 *
+	 * @param int $user_id Doctor's user ID.
+	 * @return string Plain text (escape on output).
+	 */
+	public static function label( $user_id ) {
+		$number = self::number( $user_id );
+
+		/* translators: %s: PMDC registration number. */
+		return '' !== $number ? sprintf( __( 'PMDC No. %s', 'doctor-ak-portal' ), $number ) : '';
+	}
+
+	/**
+	 * A doctor's name followed by their PMDC number — "Dr. Ali (PMDC No.
+	 * 12345-P)" — for single-line plain-text places (emails, PDFs, lists).
+	 * Returns the name unchanged when there's no number on file.
+	 *
+	 * @param string $name    Name as it should appear (with or without "Dr.").
+	 * @param int    $user_id Doctor's user ID.
+	 * @return string Plain text (escape on output).
+	 */
+	public static function with_name( $name, $user_id ) {
+		$label = self::label( $user_id );
+
+		return '' !== $label && '' !== trim( (string) $name ) ? sprintf( '%1$s (%2$s)', $name, $label ) : (string) $name;
+	}
+
+	/**
+	 * The PMDC label as a small inline element to place next to a doctor's
+	 * name on a page, or '' when there's no number on file.
+	 *
+	 * @param int    $user_id Doctor's user ID.
+	 * @param string $class   Extra CSS class(es).
+	 * @return string Escaped HTML.
+	 */
+	public static function html( $user_id, $class = '' ) {
+		$label = self::label( $user_id );
+
+		if ( '' === $label ) {
+			return '';
+		}
+
+		return '<span class="' . esc_attr( trim( 'dak-pmdc ' . $class ) ) . '">' . esc_html( $label ) . '</span>';
+	}
+
+	/**
 	 * A doctor's PMDC details for display.
 	 *
 	 * @param int $user_id Doctor's user ID.

@@ -69,6 +69,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<td class="dak-col-primary" data-label="<?php esc_attr_e( 'Doctor & service', 'doctor-ak-portal' ); ?>">
 								<span class="dak-cell-stack">
 									<span class="dak-cell-strong"><?php echo esc_html( sprintf( 'Dr. %s', $row['doctor_name'] ) ); ?></span>
+									<?php if ( ! empty( $row['doctor_pmdc'] ) ) : ?>
+										<span class="dak-cell-sub is-tabular"><?php echo esc_html( $row['doctor_pmdc'] ); ?></span>
+									<?php endif; ?>
 									<span class="dak-cell-sub"><?php echo esc_html( '' !== $row['service_name'] ? $row['service_name'] : $row['type_label'] ); ?></span>
 								</span>
 							</td>

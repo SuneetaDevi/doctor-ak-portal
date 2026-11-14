@@ -379,6 +379,9 @@ $dak_more_label = $dak_more_active > 0 ? sprintf( __( 'More filters (%d)', 'doct
 							<td data-label="<?php esc_attr_e( 'Doctor / clinic', 'doctor-ak-portal' ); ?>">
 								<span class="dak-cell-stack">
 									<span class="dak-cell-strong"><?php echo esc_html( '' !== $dak_encounter_doctor_name ? sprintf( 'Dr. %s', $dak_encounter_doctor_name ) : __( 'Unknown doctor', 'doctor-ak-portal' ) ); ?></span>
+									<?php if ( '' !== \DoctorAKPortal\Includes\Pmdc::label( $row['doctor_id'] ) ) : ?>
+										<span class="dak-cell-sub is-tabular"><?php echo esc_html( \DoctorAKPortal\Includes\Pmdc::label( $row['doctor_id'] ) ); ?></span>
+									<?php endif; ?>
 									<span class="dak-cell-sub"><?php echo esc_html( '' !== $dak_encounter_place ? $dak_encounter_place : __( 'No clinic', 'doctor-ak-portal' ) ); ?></span>
 								</span>
 							</td>

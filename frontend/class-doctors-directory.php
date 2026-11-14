@@ -116,6 +116,29 @@ class Doctors_Directory {
 			'female' => 0,
 		);
 
+		// Quick-filter chips (discount / fee) and the Experience filter —
+		// the thresholds the template offers, each with how many doctors
+		// it would show.
+		$discount_slabs   = array( 'any' => 0, '30' => 0, '50' => 0 );
+		$fee_slabs        = array( '500' => 0, '1000' => 0, '1500' => 0 );
+		$experience_slabs = array( '5' => 0, '10' => 0, '15' => 0, '20' => 0 );
+
+		foreach ( $cards as $card ) {
+			$discount = isset( $card['best_discount_percent'] ) ? (int) $card['best_discount_percent'] : 0;
+
+			foreach ( $discount_slabs as $slab => $count ) {
+				$discount_slabs[ $slab ] += ( 'any' === $slab ? $discount > 0 : $discount >= (int) $slab ) ? 1 : 0;
+			}
+
+			foreach ( $fee_slabs as $slab => $count ) {
+				$fee_slabs[ $slab ] += ( null !== $card['lowest_fee'] && $card['lowest_fee'] <= (int) $slab ) ? 1 : 0;
+			}
+
+			foreach ( $experience_slabs as $slab => $count ) {
+				$experience_slabs[ $slab ] += ( null !== $card['experience_years'] && $card['experience_years'] >= (int) $slab ) ? 1 : 0;
+			}
+		}
+
 		foreach ( $cards as $card ) {
 			// A doctor with several specialities counts once under each —
 			// the filter shows every doctor who has the chosen one.
@@ -181,6 +204,9 @@ class Doctors_Directory {
 				'specialities'  => array_values( $specialities ),
 				'cities'        => array_values( $cities ),
 				'facets'        => $facets,
+				'discount_slabs'   => $discount_slabs,
+				'fee_slabs'        => $fee_slabs,
+				'experience_slabs' => $experience_slabs,
 				'doctors_count' => count( $cards ),
 			)
 		);
@@ -347,6 +373,36 @@ class Doctors_Directory {
 			$card['video_fee']          = $video_pricing ? Services::public_price( array( (float) $video_pricing['final_price'] ), __( 'View fees', 'doctor-ak-portal' ) ) : null;
 			// Same "% OFF · Video consult" chip as the home page's doctor cards.
 			$card['video_discount_percent'] = $video_pricing && $video_pricing['discount_active'] && (float) $video_pricing['base_price'] > 0 ? (int) $video_pricing['discount_percent'] : 0;
+
+			// Largest discount currently running on any of this doctor's
+			// clinic services — for the directory's discount chips and the
+			// card's "% OFF · Services" tag.
+			$service_discount = 0;
+
+			if ( $offers_clinic ) {
+				foreach ( $services as $service ) {
+					if ( ! empty( $service['discount_active'] ) ) {
+						$service_discount = max( $service_discount, (int) $service['discount_percent'] );
+					}
+				}
+			}
+
+			$card['service_discount_percent'] = $service_discount;
+			$card['best_discount_percent']    = max( $service_discount, $card['video_discount_percent'] );
+
+			// The lowest fee a patient can actually book with this doctor
+			// (clinic or video, discounts applied) — for the fee chips. null
+			// when no fee is configured, so such a doctor never matches a
+			// "Up to PKR …" filter by accident.
+			$fee_amounts = array();
+
+			foreach ( array( $card['clinic_fee'], $card['video_fee'] ) as $fee ) {
+				if ( $fee && 'unset' !== $fee['state'] && (float) $fee['amount'] > 0 ) {
+					$fee_amounts[] = (float) $fee['amount'];
+				}
+			}
+
+			$card['lowest_fee'] = ! empty( $fee_amounts ) ? min( $fee_amounts ) : null;
 			$card['next_available']     = $next ? self::slot_label( $next, $today ) : '';
 			$card['availability']       = $next ? ( $today === $next['date'] ? 'today' : 'week' ) : '';
 			$card['next_at']            = $next ? $next['date'] . ' ' . $next['time'] : '';

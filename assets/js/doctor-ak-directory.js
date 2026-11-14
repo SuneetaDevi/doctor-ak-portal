@@ -2,19 +2,23 @@
  * Doctor AK Portal — Doctors directory (templates/directory/doctors-directory.php).
  *
  * Every doctor is already in the page. On each change this filters the
- * full set (search, specialty, visit type, availability, gender, city),
+ * full set (search, specialty, visit type, availability, experience,
+ * gender, city, and the quick discount / fee chips),
  * sorts the matches, and only then slices out the current page — so the
  * count ("Showing 1–12 of 53 doctors"), the order and the pages always
  * describe the same list. The initial render runs through the same path,
  * so "Most experienced" is applied from the first paint.
  *
  * The state lives in the URL (history.replaceState: q, specialization,
- * visit, availability, gender, city, sort, page), so Back from a doctor's
+ * visit, availability, experience, gender, city, discount, fee, sort,
+ * page), so Back from a doctor's
  * profile returns to the same filtered page. `?q=` (or the older `?s=`),
  * `?specialization=` and `?city=` links from the header, footer and home
  * page land pre-filtered.
  *
- * Below 1024px the filters are a modal drawer (focus moved in and kept
+ * From 1024px up the filters are a bar of buttons above the results, each
+ * opening a small panel (click outside / Escape / Done closes it).
+ * Below 1024px the same filters are a modal drawer (focus moved in and kept
  * there, Escape / backdrop / close button return focus to "Filters").
  * "Near me" asks for the location only after it is clicked, and a refusal
  * just leaves the ordinary filters working.
@@ -150,14 +154,31 @@
 			return String( value ).replace( /["\\]/g, '\\$&' );
 		}
 
+		// Quick-filter chips are checkboxes that hold one choice at a time
+		// (picking another replaces it; picking the same one turns it off).
+		function pillValue( name ) {
+			var checked = root.querySelector( 'input[name="' + name + '"][data-exclusive]:checked' );
+
+			return checked ? checked.value : '';
+		}
+
+		function setPill( name, value ) {
+			$$( 'input[name="' + name + '"][data-exclusive]' ).forEach( function ( input ) {
+				input.checked = '' !== value && input.value === value && ! input.disabled;
+			} );
+		}
+
 		function state() {
 			return {
 				q: search ? search.value.trim() : '',
 				specialty: radioValue( 'specialty' ),
 				visit: checkedValues( 'visit' ),
 				availability: radioValue( 'availability' ),
+				experience: radioValue( 'experience' ),
 				gender: checkedValues( 'gender' ),
 				city: citySelect ? citySelect.value : '',
+				discount: pillValue( 'discount' ),
+				fee: pillValue( 'fee' ),
 				sort: sortSelect ? sortSelect.value : 'experience'
 			};
 		}
@@ -191,7 +212,10 @@
 
 			setChecks( 'visit', ( params.get( 'visit' ) || '' ).split( ',' ) );
 			setRadio( 'availability', params.get( 'availability' ) || '' );
+			setRadio( 'experience', params.get( 'experience' ) || '' );
 			setChecks( 'gender', ( params.get( 'gender' ) || '' ).split( ',' ) );
+			setPill( 'discount', params.get( 'discount' ) || '' );
+			setPill( 'fee', params.get( 'fee' ) || '' );
 
 			if ( citySelect && params.get( 'city' ) ) {
 				var city = params.get( 'city' ).toLowerCase();
@@ -215,8 +239,14 @@
 
 			var params = new URLSearchParams( window.location.search );
 
-			[ 'q', 's', 'specialization', 'visit', 'availability', 'gender', 'city', 'sort', 'page' ].forEach( function ( key ) {
+			[ 'q', 's', 'specialization', 'visit', 'availability', 'experience', 'gender', 'city', 'discount', 'fee', 'sort', 'page' ].forEach( function ( key ) {
 				params.delete( key );
+			} );
+
+			[ 'experience', 'discount', 'fee' ].forEach( function ( key ) {
+				if ( s[ key ] ) {
+					params.set( key, s[ key ] );
+				}
 			} );
 
 			if ( s.q ) {
@@ -290,7 +320,42 @@
 				return false;
 			}
 
+			if ( s.experience ) {
+				var years = experience( item );
+
+				if ( null === years || years < parseInt( s.experience, 10 ) ) {
+					return false;
+				}
+			}
+
+			if ( s.discount ) {
+				var off = discount( item );
+
+				if ( 'any' === s.discount ? off <= 0 : off < parseInt( s.discount, 10 ) ) {
+					return false;
+				}
+			}
+
+			if ( s.fee ) {
+				var amount = fee( item );
+
+				// A doctor with no fee on file never matches a fee cap.
+				if ( null === amount || amount > parseFloat( s.fee ) ) {
+					return false;
+				}
+			}
+
 			return true;
+		}
+
+		function fee( item ) {
+			var raw = item.getAttribute( 'data-fee' );
+
+			return '' === raw || null === raw ? null : parseFloat( raw );
+		}
+
+		function discount( item ) {
+			return parseInt( item.getAttribute( 'data-discount' ), 10 ) || 0;
 		}
 
 		function experience( item ) {
@@ -329,6 +394,31 @@
 			if ( 'name-desc' === mode ) {
 				return function ( a, b ) {
 					return byName( b, a );
+				};
+			}
+
+			if ( 'fee-asc' === mode ) {
+				return function ( a, b ) {
+					var fa = fee( a );
+					var fb = fee( b );
+
+					if ( fa !== fb ) {
+						if ( null === fa ) {
+							return 1;
+						}
+						if ( null === fb ) {
+							return -1;
+						}
+						return fa - fb;
+					}
+
+					return byExperience( a, b );
+				};
+			}
+
+			if ( 'discount' === mode ) {
+				return function ( a, b ) {
+					return ( discount( b ) - discount( a ) ) || byExperience( a, b );
 				};
 			}
 
@@ -388,6 +478,7 @@
 			updateCount( matching.length, start, shown.length );
 			renderPager( pages );
 			renderChips( s );
+			renderGroupSummaries();
 
 			if ( empty ) {
 				empty.hidden = matching.length > 0;
@@ -524,13 +615,25 @@
 				} );
 			} );
 
-			var avail = root.querySelector( 'input[name="availability"]:checked' );
+			[ 'availability', 'experience' ].forEach( function ( name ) {
+				var picked = root.querySelector( 'input[name="' + name + '"]:checked' );
 
-			if ( avail && avail.value ) {
-				chips.push( { label: labelFor( avail ), clear: function () {
-					setRadio( 'availability', '' );
-				} } );
-			}
+				if ( picked && picked.value ) {
+					chips.push( { label: labelFor( picked ), clear: function () {
+						setRadio( name, '' );
+					} } );
+				}
+			} );
+
+			[ 'discount', 'fee' ].forEach( function ( name ) {
+				var pill = root.querySelector( 'input[name="' + name + '"][data-exclusive]:checked' );
+
+				if ( pill ) {
+					chips.push( { label: labelFor( pill ), clear: function () {
+						setPill( name, '' );
+					} } );
+				}
+			} );
 
 			if ( citySelect && citySelect.value ) {
 				var option = citySelect.options[ citySelect.selectedIndex ];
@@ -574,8 +677,9 @@
 				activeWrap.hidden = 0 === chips.length;
 			}
 
-			// The "Filters" button's badge counts filters, not the search.
-			var filters = chips.length - ( s.q ? 1 : 0 );
+			// The "Filters" button's badge counts what's inside the drawer —
+			// not the search, nor the quick chips that are always on screen.
+			var filters = chips.length - ( s.q ? 1 : 0 ) - ( s.discount ? 1 : 0 ) - ( s.fee ? 1 : 0 );
 
 			if ( filterCount ) {
 				filterCount.hidden = 0 === filters;
@@ -589,6 +693,153 @@
 			} );
 		}
 
+		/* -------------------------------------------------------- Filter bar */
+
+		var groups = $$( '[data-dak-dir-fgroup]' );
+
+		// What each filter button says next to its name: the picked option
+		// ("Cardiology", "10+ years", "Karachi"), or "2 selected".
+		function groupPicks( group ) {
+			var picks = Array.prototype.filter.call( group.querySelectorAll( 'input[type="radio"]:checked, input[type="checkbox"]:checked' ), function ( input ) {
+				return '' !== input.value;
+			} ).map( function ( input ) {
+				return input.getAttribute( 'data-short' ) || labelFor( input );
+			} );
+
+			var select = group.querySelector( 'select' );
+
+			if ( select && select.value ) {
+				var option = select.options[ select.selectedIndex ];
+
+				picks.push( option.getAttribute( 'data-label' ) || option.textContent.trim() );
+			}
+
+			return picks;
+		}
+
+		function renderGroupSummaries() {
+			groups.forEach( function ( group ) {
+				var picks = groupPicks( group );
+				var value = group.querySelector( '[data-dak-dir-fgroup-value]' );
+				var text = 1 === picks.length ? picks[ 0 ] : ( picks.length > 1 ? fmt( 'selected', picks.length ) : '' );
+
+				group.classList.toggle( 'is-active', picks.length > 0 );
+
+				if ( value && value.textContent !== text ) {
+					value.textContent = text;
+				}
+			} );
+		}
+
+		function setGroupOpen( group, open ) {
+			var toggle = group.querySelector( '[data-dak-dir-fgroup-toggle]' );
+
+			group.classList.toggle( 'is-open', open );
+
+			if ( toggle ) {
+				toggle.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
+			}
+		}
+
+		function closeGroups( except ) {
+			groups.forEach( function ( group ) {
+				if ( group !== except && group.classList.contains( 'is-open' ) ) {
+					setGroupOpen( group, false );
+				}
+			} );
+		}
+
+		function clearGroup( group ) {
+			Array.prototype.forEach.call( group.querySelectorAll( 'input[type="checkbox"]' ), function ( input ) {
+				input.checked = false;
+			} );
+			Array.prototype.forEach.call( group.querySelectorAll( 'input[type="radio"]' ), function ( input ) {
+				input.checked = '' === input.value;
+			} );
+
+			if ( group.querySelector( 'select' ) ) {
+				group.querySelector( 'select' ).value = '';
+				setNearMe( false );
+			}
+		}
+
+		groups.forEach( function ( group ) {
+			var toggle = group.querySelector( '[data-dak-dir-fgroup-toggle]' );
+
+			if ( toggle ) {
+				toggle.addEventListener( 'click', function () {
+					var open = ! group.classList.contains( 'is-open' );
+
+					closeGroups( group );
+					group.classList.remove( 'is-right' );
+					setGroupOpen( group, open );
+
+					if ( open ) {
+						// Keep the panel on screen when the button is near the right edge.
+						var panel = group.querySelector( '[data-dak-dir-fgroup-panel]' );
+
+						if ( panel && panel.getBoundingClientRect().right > ( document.documentElement.clientWidth || window.innerWidth ) - 8 ) {
+							group.classList.add( 'is-right' );
+						}
+
+						var first = group.querySelector( '[data-dak-dir-fgroup-panel] input:checked:not([value=""]), [data-dak-dir-fgroup-panel] input:not([disabled]), [data-dak-dir-fgroup-panel] select' );
+
+						if ( first ) {
+							first.focus( { preventScroll: true } );
+						}
+					}
+				} );
+			}
+
+			var done = group.querySelector( '[data-dak-dir-fgroup-done]' );
+
+			if ( done ) {
+				done.addEventListener( 'click', function () {
+					setGroupOpen( group, false );
+
+					if ( toggle ) {
+						toggle.focus();
+					}
+				} );
+			}
+
+			var clear = group.querySelector( '[data-dak-dir-fgroup-clear]' );
+
+			if ( clear ) {
+				clear.addEventListener( 'click', function () {
+					clearGroup( group );
+					apply( { resetPage: true } );
+				} );
+			}
+		} );
+
+		// Click outside a panel, or Escape, closes it (the drawer has its own handling).
+		document.addEventListener( 'click', function ( event ) {
+			if ( ! event.target.closest || ! event.target.closest( '[data-dak-dir-fgroup]' ) ) {
+				closeGroups( null );
+			}
+		} );
+
+		document.addEventListener( 'keydown', function ( event ) {
+			if ( 'Escape' !== event.key ) {
+				return;
+			}
+
+			var open = groups.filter( function ( group ) {
+				return group.classList.contains( 'is-open' );
+			} )[ 0 ];
+
+			if ( open ) {
+				setGroupOpen( open, false );
+
+				var toggle = open.querySelector( '[data-dak-dir-fgroup-toggle]' );
+
+				if ( toggle ) {
+					toggle.focus();
+				}
+			}
+		} );
+
 		function clearAll() {
 			if ( search ) {
 				search.value = '';
@@ -597,7 +848,10 @@
 			setRadio( 'specialty', '' );
 			setChecks( 'visit', [] );
 			setRadio( 'availability', '' );
+			setRadio( 'experience', '' );
 			setChecks( 'gender', [] );
+			setPill( 'discount', '' );
+			setPill( 'fee', '' );
 
 			if ( citySelect ) {
 				citySelect.value = '';
@@ -769,6 +1023,7 @@
 				return;
 			}
 
+			closeGroups( null );
 			drawerOpen = true;
 			drawer.classList.add( 'is-open' );
 			drawer.setAttribute( 'role', 'dialog' );
@@ -821,6 +1076,8 @@
 		} );
 
 		var onBreakpoint = function () {
+			closeGroups( null );
+
 			if ( ! drawerQuery.matches ) {
 				closeDrawer( false );
 			}
@@ -887,7 +1144,16 @@
 				setNearMe( false );
 			}
 
-			if ( target.name && [ 'specialty', 'visit', 'availability', 'gender', 'city' ].indexOf( target.name ) !== -1 ) {
+			// One choice per quick-filter row: checking a chip unchecks the others.
+			if ( target.hasAttribute && target.hasAttribute( 'data-exclusive' ) && target.checked ) {
+				$$( 'input[name="' + target.name + '"][data-exclusive]' ).forEach( function ( input ) {
+					if ( input !== target ) {
+						input.checked = false;
+					}
+				} );
+			}
+
+			if ( target.name && [ 'specialty', 'visit', 'availability', 'experience', 'gender', 'city', 'discount', 'fee' ].indexOf( target.name ) !== -1 ) {
 				apply( { resetPage: true } );
 			}
 		} );

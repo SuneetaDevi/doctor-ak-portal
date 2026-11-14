@@ -200,6 +200,7 @@ $dak_service_view_icons = array(
 														<?php else : ?>
 															<strong><?php echo esc_html( sprintf( 'Dr. %s', $dak_offer['doctor_name'] ) ); ?></strong>
 														<?php endif; ?>
+														<?php echo \DoctorAKPortal\Includes\Pmdc::html( $dak_offer['doctor_id'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside Pmdc::html(). ?>
 														<?php if ( '' !== $dak_offer['category_label'] ) : ?>
 															<span class="dak-service-doctor-offer-specialty"><?php echo esc_html( $dak_offer['category_label'] ); ?></span>
 														<?php endif; ?>

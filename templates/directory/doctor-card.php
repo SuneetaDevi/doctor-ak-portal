@@ -80,6 +80,8 @@ $dak_card_display_name      = sprintf( 'Dr. %s', $name );
 			<?php endif; ?>
 		</div>
 
+		<?php echo \DoctorAKPortal\Includes\Pmdc::html( $id, 'dak-pmdc-block dak-doctor-card-pmdc' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside Pmdc::html(). ?>
+
 		<?php if ( '' !== $dak_card_primary_specialty ) : ?>
 			<div class="dak-specialty-tags dak-doctor-card-specialties">
 				<span class="dak-specialty-tag"><?php echo esc_html( $dak_card_primary_specialty ); ?></span>

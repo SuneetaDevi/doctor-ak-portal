@@ -61,6 +61,7 @@ $dak_home_doctor_discount = isset( $video_discount_percent ) ? (int) $video_disc
 
 	<a class="dak-home-doctor-card-info" href="<?php echo esc_url( $profile_url ); ?>">
 		<h3><?php echo esc_html( sprintf( 'Dr. %s', $name ) ); ?></h3>
+		<?php echo \DoctorAKPortal\Includes\Pmdc::html( $id, 'dak-pmdc-block dak-home-doctor-card-pmdc' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside Pmdc::html(). ?>
 
 		<?php if ( $dak_home_doctor_discount > 0 ) : ?>
 			<?php // The photo (and its tag) is hidden from screen readers; say it here too. ?>

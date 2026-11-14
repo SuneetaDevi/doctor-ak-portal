@@ -52,6 +52,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<div>
 							<h3 class="dak-visit-record-title" id="dak-visit-<?php echo esc_attr( $encounter['id'] ); ?>-title">
 								<?php echo esc_html( sprintf( /* translators: %s: doctor name. */ __( 'Dr. %s', 'doctor-ak-portal' ), '' !== $dak_history_doctor_name ? $dak_history_doctor_name : '—' ) ); ?>
+								<?php echo \DoctorAKPortal\Includes\Pmdc::html( ! empty( $dak_appt['doctor_id'] ) ? (int) $dak_appt['doctor_id'] : ( isset( $encounter['doctor_id'] ) ? (int) $encounter['doctor_id'] : 0 ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside Pmdc::html(). ?>
 								<?php if ( \DoctorAKPortal\Includes\Encounters::STATUS_OPEN === $encounter['status'] ) : ?>
 									<span class="dak-status-pill dak-status-pill-is-pending" title="<?php esc_attr_e( 'Your doctor may still update the notes for this visit.', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'In progress', 'doctor-ak-portal' ); ?></span>
 								<?php endif; ?>

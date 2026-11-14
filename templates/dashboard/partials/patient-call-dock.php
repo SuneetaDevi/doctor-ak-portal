@@ -29,7 +29,7 @@ $dak_dock_calls = array_map(
 		return array(
 			'id'        => (int) $call['id'],
 			/* translators: %s: doctor's name. */
-			'doctor'    => sprintf( __( 'Dr. %s', 'doctor-ak-portal' ), $call['doctor_name'] ),
+			'doctor'    => sprintf( __( 'Dr. %s', 'doctor-ak-portal' ), $call['doctor_name'] ) . ( ! empty( $call['doctor_pmdc'] ) ? ' (' . $call['doctor_pmdc'] . ')' : '' ),
 			'time'      => $call['time_label'],
 			'roomUrl'   => $call['room_url'],
 			'opensIn'   => (int) $call['opens_in'],

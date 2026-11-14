@@ -232,7 +232,7 @@ class Notifications {
 					'paragraphs'  => array( ! empty( $fields['active'] ) ? __( 'A new service has been added and is now listed on the website.', 'doctor-ak-portal' ) : __( 'A new service has been added. It is inactive, so it isn’t shown on the website yet.', 'doctor-ak-portal' ) ),
 					'details'     => array(
 						array( __( 'Service', 'doctor-ak-portal' ), $fields['name'] ),
-						array( __( 'Doctor', 'doctor-ak-portal' ), '' !== $doctor_name ? sprintf( 'Dr. %s', $doctor_name ) : '' ),
+						array( __( 'Doctor', 'doctor-ak-portal' ), '' !== $doctor_name ? Pmdc::with_name( sprintf( 'Dr. %s', $doctor_name ), $doctor_id ) : '' ),
 						array( __( 'Price', 'doctor-ak-portal' ), self::money( $charge ) ),
 					),
 					'button'      => $button_url ? array( 'label' => $is_public ? __( 'View service', 'doctor-ak-portal' ) : __( 'View services', 'doctor-ak-portal' ), 'url' => $button_url ) : array(),
@@ -805,6 +805,7 @@ class Notifications {
 					'paragraphs'  => array( __( 'A doctor has registered and is awaiting your review.', 'doctor-ak-portal' ) ),
 					'details'     => array(
 						array( __( 'Name', 'doctor-ak-portal' ), sprintf( 'Dr. %s', $name ) ),
+						array( __( 'PMDC No.', 'doctor-ak-portal' ), Pmdc::number( $doctor_id ) ),
 						array( __( 'Email', 'doctor-ak-portal' ), $doctor->user_email ),
 						array( __( 'Phone', 'doctor-ak-portal' ), (string) get_user_meta( $doctor_id, 'doctor_ak_phone_number', true ) ),
 						array( __( 'Specialities', 'doctor-ak-portal' ), implode( ', ', $specialties ) ),
@@ -978,7 +979,7 @@ class Notifications {
 					'details'     => array(
 						array( __( 'Reference', 'doctor-ak-portal' ), self::reference( $appt['id'] ) ),
 						array( __( 'Patient', 'doctor-ak-portal' ), $appt['patient_name'] ),
-						array( __( 'Doctor', 'doctor-ak-portal' ), sprintf( 'Dr. %s', $appt['doctor_name'] ) ),
+						array( __( 'Doctor', 'doctor-ak-portal' ), Pmdc::with_name( sprintf( 'Dr. %s', $appt['doctor_name'] ), $appt['doctor_id'] ) ),
 						array( __( 'Amount', 'doctor-ak-portal' ), self::money( $appt['refund_amount'] ) ),
 						array( __( 'Reason', 'doctor-ak-portal' ), (string) $appt['refund_reason'] ),
 					),
@@ -1025,7 +1026,7 @@ class Notifications {
 				),
 				'details'     => array(
 					array( __( 'Reference', 'doctor-ak-portal' ), self::reference( $appt['id'] ) ),
-					array( __( 'Doctor', 'doctor-ak-portal' ), sprintf( 'Dr. %s', $appt['doctor_name'] ) ),
+					array( __( 'Doctor', 'doctor-ak-portal' ), Pmdc::with_name( sprintf( 'Dr. %s', $appt['doctor_name'] ), $appt['doctor_id'] ) ),
 					array( __( 'Appointment', 'doctor-ak-portal' ), self::date_label( $appt ) ),
 					array( __( 'Amount refunded', 'doctor-ak-portal' ), self::money( $appt['refund_amount'] ), true ),
 				),
@@ -1100,7 +1101,7 @@ class Notifications {
 					),
 				),
 				'details'     => array(
-					array( __( 'Doctor', 'doctor-ak-portal' ), sprintf( 'Dr. %s', $appt['doctor_name'] ) ),
+					array( __( 'Doctor', 'doctor-ak-portal' ), Pmdc::with_name( sprintf( 'Dr. %s', $appt['doctor_name'] ), $appt['doctor_id'] ) ),
 					array( __( 'Date', 'doctor-ak-portal' ), self::date_label( $appt, false ) ),
 					array( __( 'Visit', 'doctor-ak-portal' ), self::visit_label( $appt, false ) ),
 				),
@@ -1192,7 +1193,7 @@ class Notifications {
 			array( __( 'Payment date', 'doctor-ak-portal' ), date_i18n( get_option( 'date_format' ) ) ),
 			array( __( 'Billed to', 'doctor-ak-portal' ), $appointment['patient_name'] ),
 			array( __( 'Service', 'doctor-ak-portal' ), $service_label ),
-			array( __( 'Doctor', 'doctor-ak-portal' ), sprintf( 'Dr. %s', $appointment['doctor_name'] ) ),
+			array( __( 'Doctor', 'doctor-ak-portal' ), Pmdc::with_name( sprintf( 'Dr. %s', $appointment['doctor_name'] ), $appointment['doctor_id'] ) ),
 			array( __( 'Appointment', 'doctor-ak-portal' ), self::date_label( $appointment ) ),
 		);
 
@@ -1388,7 +1389,7 @@ class Notifications {
 		);
 
 		if ( 'doctor' !== $audience ) {
-			$rows[] = array( __( 'Doctor', 'doctor-ak-portal' ), sprintf( 'Dr. %s', $appt['doctor_name'] ) );
+			$rows[] = array( __( 'Doctor', 'doctor-ak-portal' ), Pmdc::with_name( sprintf( 'Dr. %s', $appt['doctor_name'] ), $appt['doctor_id'] ) );
 		}
 
 		if ( 'patient' !== $audience ) {

@@ -50,6 +50,9 @@ $dak_has_more       = ( $dak_can_join && $can_pay_now ) || $can_request_refund |
 	<td class="dak-col-primary" data-label="<?php esc_attr_e( 'Doctor', 'doctor-ak-portal' ); ?>">
 		<span class="dak-cell-stack">
 			<span class="dak-cell-primary"><?php echo esc_html( sprintf( 'Dr. %s', $appointment['doctor_name'] ) ); ?></span>
+			<?php if ( ! empty( $appointment['doctor_pmdc'] ) ) : ?>
+				<span class="dak-cell-sub is-tabular"><?php echo esc_html( $appointment['doctor_pmdc'] ); ?></span>
+			<?php endif; ?>
 			<span class="dak-cell-sub"><?php echo esc_html( '' !== $appointment['doctor_specialization'] ? $appointment['doctor_specialization'] : $appointment['type_label'] ); ?></span>
 		</span>
 	</td>

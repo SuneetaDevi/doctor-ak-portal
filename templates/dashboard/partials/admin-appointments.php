@@ -513,7 +513,7 @@ $dak_more_label = $dak_more_active > 0 ? sprintf( __( 'More filters (%d)', 'doct
 				'data-date-label'        => $date_label,
 				'data-time-label'        => $time_label,
 				'data-patient-name'      => $row['patient_name'],
-				'data-doctor-name'       => $row['doctor_name'],
+				'data-doctor-name'       => \DoctorAKPortal\Includes\Pmdc::with_name( $row['doctor_name'], $row['doctor_id'] ),
 				'data-service-name'      => $row['service_name'],
 				'data-type-label'        => $row['type_label'],
 				'data-clinic-name'       => $row['clinic_name'],
@@ -678,6 +678,7 @@ $dak_more_label = $dak_more_active > 0 ? sprintf( __( 'More filters (%d)', 'doct
 								<td class="dak-appts-cell-doctor" data-label="<?php esc_attr_e( 'Doctor & visit', 'doctor-ak-portal' ); ?>">
 									<span class="dak-cell-stack">
 										<span><?php echo esc_html( sprintf( /* translators: %s: doctor name. */ __( 'Dr. %s', 'doctor-ak-portal' ), $row['doctor_name'] ) ); ?></span>
+										<?php if ( ! empty( $row['doctor_pmdc'] ) ) : ?><span class="dak-cell-sub"><?php echo esc_html( $row['doctor_pmdc'] ); ?></span><?php endif; ?>
 										<?php if ( $dak_show_service ) : ?>
 											<span class="dak-cell-sub"><?php echo esc_html( $row['service_name'] ); ?></span>
 										<?php endif; ?>
@@ -730,7 +731,7 @@ $dak_more_label = $dak_more_active > 0 ? sprintf( __( 'More filters (%d)', 'doct
 											data-patient-name="<?php echo esc_attr( $row['patient_name'] ); ?>"
 											data-patient-phone="<?php echo esc_attr( $row['patient_phone'] ); ?>"
 											data-patient-age="<?php echo esc_attr( '' !== $row['patient_age'] ? sprintf( /* translators: %d: patient's age in years. */ __( '%d yrs', 'doctor-ak-portal' ), $row['patient_age'] ) : '' ); ?>"
-											data-doctor-name="<?php echo esc_attr( $row['doctor_name'] ); ?>"
+											data-doctor-name="<?php echo esc_attr( \DoctorAKPortal\Includes\Pmdc::with_name( $row['doctor_name'], $row['doctor_id'] ) ); ?>"
 											data-type-label="<?php echo esc_attr( $row['type_label'] ); ?>"
 											data-service-name="<?php echo esc_attr( $row['service_name'] ); ?>"
 											data-date-label="<?php echo esc_attr( $dak_date_label ); ?>"

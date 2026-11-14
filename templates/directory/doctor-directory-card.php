@@ -78,6 +78,8 @@ $dak_visit_types   = implode( ',', array_filter( array( $offers_clinic ? 'clinic
 	data-experience="<?php echo esc_attr( null === $experience_years ? '' : $experience_years ); ?>"
 	data-availability="<?php echo esc_attr( $availability ); ?>"
 	data-next-at="<?php echo esc_attr( $next_at ); ?>"
+	data-fee="<?php echo esc_attr( isset( $lowest_fee ) && null !== $lowest_fee ? $lowest_fee : '' ); ?>"
+	data-discount="<?php echo esc_attr( isset( $best_discount_percent ) ? (int) $best_discount_percent : 0 ); ?>"
 >
 	<article class="dak-dir-doctor-card" aria-labelledby="dak-dir-doctor-<?php echo esc_attr( $id ); ?>">
 		<a class="dak-dir-avatar" href="<?php echo esc_url( $profile_url ); ?>" tabindex="-1" aria-hidden="true">
@@ -93,10 +95,11 @@ $dak_visit_types   = implode( ',', array_filter( array( $offers_clinic ? 'clinic
 			// The same chips as the home page's doctor cards
 			// (directory/home-doctor-card.php): status, and an active
 			// video-consultation discount.
-			$dak_chip_discount = isset( $video_discount_percent ) ? (int) $video_discount_percent : 0;
-			$dak_chip_status   = ! empty( $is_available ) ? 'available' : ( $video_consultation ? 'consult' : '' );
+			$dak_chip_discount         = isset( $video_discount_percent ) ? (int) $video_discount_percent : 0;
+			$dak_chip_service_discount = isset( $service_discount_percent ) ? (int) $service_discount_percent : 0;
+			$dak_chip_status           = ! empty( $is_available ) ? 'available' : ( $video_consultation ? 'consult' : '' );
 			?>
-			<?php if ( '' !== $dak_chip_status || $dak_chip_discount > 0 ) : ?>
+			<?php if ( '' !== $dak_chip_status || $dak_chip_discount > 0 || $dak_chip_service_discount > 0 ) : ?>
 				<div class="dak-dir-card-chips">
 					<?php if ( 'available' === $dak_chip_status ) : ?>
 						<span class="dak-dir-card-chip is-available"><?php esc_html_e( 'Available', 'doctor-ak-portal' ); ?></span>
@@ -112,12 +115,22 @@ $dak_visit_types   = implode( ',', array_filter( array( $offers_clinic ? 'clinic
 							<small><?php esc_html_e( 'Video consult', 'doctor-ak-portal' ); ?></small>
 						</span>
 					<?php endif; ?>
+					<?php if ( $dak_chip_service_discount > 0 ) : ?>
+						<span class="dak-dir-card-chip is-discount">
+							<?php
+							/* translators: %d: discount percentage. */
+							echo esc_html( sprintf( __( 'Up to %d%% OFF', 'doctor-ak-portal' ), $dak_chip_service_discount ) );
+							?>
+							<small><?php esc_html_e( 'Services', 'doctor-ak-portal' ); ?></small>
+						</span>
+					<?php endif; ?>
 				</div>
 			<?php endif; ?>
 
 			<h3 class="dak-dir-doctor-name" id="dak-dir-doctor-<?php echo esc_attr( $id ); ?>">
 				<a href="<?php echo esc_url( $profile_url ); ?>"><?php echo esc_html( $display_name ); ?></a>
 			</h3>
+			<?php echo \DoctorAKPortal\Includes\Pmdc::html( $id, 'dak-pmdc-block dak-dir-doctor-pmdc' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside Pmdc::html(). ?>
 
 			<?php if ( ! empty( $dak_specialties ) ) : ?>
 				<p class="dak-dir-doctor-specialty">

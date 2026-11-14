@@ -91,6 +91,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<td data-label="<?php esc_attr_e( 'Doctor', 'doctor-ak-portal' ); ?>">
 								<span class="dak-cell-stack">
 									<span class="dak-cell-strong"><?php echo esc_html( sprintf( 'Dr. %s', $service['doctor']['name'] ) ); ?></span>
+									<?php if ( '' !== \DoctorAKPortal\Includes\Pmdc::label( $service['doctor_id'] ) ) : ?>
+										<span class="dak-cell-sub is-tabular"><?php echo esc_html( \DoctorAKPortal\Includes\Pmdc::label( $service['doctor_id'] ) ); ?></span>
+									<?php endif; ?>
 									<span class="dak-cell-sub dak-cell-email"><?php echo \DoctorAKPortal\Includes\Dashboard_Format::email_html( $service['doctor']['email'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside email_html(). ?></span>
 								</span>
 							</td>

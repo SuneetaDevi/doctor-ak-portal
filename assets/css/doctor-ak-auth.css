@@ -634,3 +634,29 @@ button.dak-link-button {
 		border-radius: var( --dak-radius-md ) !important;
 	}
 }
+
+/*
+ * PMDC registration number shown next to a doctor's name everywhere
+ * (profiles, cards, dashboards, tables) — see Pmdc::html(). Lives here
+ * because this stylesheet loads on every front-end page.
+ */
+.dak-pmdc {
+	display: inline-block !important;
+	font-size: 0.78em !important;
+	font-weight: 600 !important;
+	line-height: 1.35 !important;
+	color: var( --dak-muted, #6b7280 ) !important;
+	white-space: nowrap !important;
+}
+
+.dak-pmdc-block {
+	display: block !important;
+	margin-top: 0.15rem !important;
+}
+
+.dak-pmdc-pill {
+	padding: 0.15rem 0.55rem !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary-tint, #eaf4ef ) !important;
+	color: var( --dak-primary-dark, #104d3a ) !important;
+}

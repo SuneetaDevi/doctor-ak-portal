@@ -174,7 +174,7 @@ $dak_money = array( '\DoctorAKPortal\Includes\Dashboard_Format', 'money' );
 									<span class="dak-cell-sub is-tabular"><?php echo esc_html( false !== $dak_ts ? date_i18n( 'h:i A', $dak_ts ) : $dak_row['time'] ); ?></span>
 								</span>
 							</td>
-							<td data-label="<?php esc_attr_e( 'Doctor', 'doctor-ak-portal' ); ?>"><?php echo esc_html( sprintf( 'Dr. %s', $dak_row['doctor_name'] ) ); ?></td>
+							<td data-label="<?php esc_attr_e( 'Doctor', 'doctor-ak-portal' ); ?>"><?php echo esc_html( sprintf( 'Dr. %s', $dak_row['doctor_name'] ) ); ?><?php if ( ! empty( $dak_row['doctor_pmdc'] ) ) : ?><span class="dak-pmdc dak-pmdc-block"><?php echo esc_html( $dak_row['doctor_pmdc'] ); ?></span><?php endif; ?></td>
 							<td class="dak-col-status" data-label="<?php esc_attr_e( 'Status', 'doctor-ak-portal' ); ?>">
 								<span class="dak-cell-stack">
 									<span class="dak-status-pill <?php echo esc_attr( isset( $dak_status_classes[ $dak_row['status'] ] ) ? $dak_status_classes[ $dak_row['status'] ] : 'dak-status-pill-is-neutral' ); ?>"><?php echo esc_html( $dak_row['status_label'] ); ?></span>

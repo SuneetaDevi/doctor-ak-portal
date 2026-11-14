@@ -235,6 +235,12 @@ class Pdf_Builder extends Pdf_Document {
 				$lines[] = array( 'text' => $qualification, 'style' => 'body' );
 			}
 
+			$pmdc = Pmdc::label( $doctor_id );
+
+			if ( '' !== $pmdc ) {
+				$lines[] = array( 'text' => $pmdc, 'style' => 'pmdc' );
+			}
+
 			$labels = array();
 			$all    = Specializations::get_all();
 

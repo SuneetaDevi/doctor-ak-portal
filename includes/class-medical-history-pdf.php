@@ -89,7 +89,7 @@ class Medical_History_Pdf extends Pdf_Document {
 			$pdf->details(
 				array(
 					/* translators: %s: doctor's name. */
-					array( __( 'Doctor', 'doctor-ak-portal' ), '' !== $doctor ? sprintf( __( 'Dr. %s', 'doctor-ak-portal' ), $doctor ) : '' ),
+					array( __( 'Doctor', 'doctor-ak-portal' ), '' !== $doctor ? Pmdc::with_name( sprintf( __( 'Dr. %s', 'doctor-ak-portal' ), $doctor ), ! empty( $appointment['doctor_id'] ) ? (int) $appointment['doctor_id'] : ( ! empty( $encounter['doctor_id'] ) ? (int) $encounter['doctor_id'] : 0 ) ) : '' ),
 					array( $is_video ? __( 'Location', 'doctor-ak-portal' ) : __( 'Clinic', 'doctor-ak-portal' ), $place ),
 					array( __( 'Time', 'doctor-ak-portal' ), false !== $visit_ts ? date_i18n( 'h:i A', $visit_ts ) : '' ),
 					array( __( 'Status', 'doctor-ak-portal' ), Encounters::STATUS_OPEN === $encounter['status'] ? __( 'In progress — notes may still be updated', 'doctor-ak-portal' ) : __( 'Completed', 'doctor-ak-portal' ) ),

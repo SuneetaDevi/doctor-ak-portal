@@ -323,7 +323,7 @@ class Swich_Payment {
 					<tr><td style="padding:6px 0;color:#666;">%7$s</td><td style="padding:6px 0;font-weight:600;text-align:right;">%8$s</td></tr>
 				</table>',
 				esc_html__( 'Doctor', 'doctor-ak-portal' ),
-				esc_html( sprintf( 'Dr. %s', $doctor_name ) ),
+				esc_html( Pmdc::with_name( sprintf( 'Dr. %s', $doctor_name ), (int) $appointment['doctor_id'] ) ),
 				esc_html__( 'Date', 'doctor-ak-portal' ),
 				esc_html( $appointment['date'] ),
 				esc_html__( 'Time', 'doctor-ak-portal' ),

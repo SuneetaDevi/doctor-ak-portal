@@ -178,7 +178,7 @@ foreach ( $balances as $dak_balance_row ) {
 						<tr class="dak-data-table-group">
 							<th scope="colgroup" colspan="5">
 								<span class="dak-group-head">
-									<span><?php echo esc_html( $dak_is_clinic_view ? $dak_group_rows[0]['clinic_name'] : $dak_group_rows[0]['doctor_name'] ); ?></span>
+									<span><?php echo esc_html( $dak_is_clinic_view ? $dak_group_rows[0]['clinic_name'] : \DoctorAKPortal\Includes\Pmdc::with_name( $dak_group_rows[0]['doctor_name'], $dak_group_rows[0]['doctor_id'] ) ); ?></span>
 									<?php if ( ! $dak_is_clinic_view ) : ?>
 										<a class="dak-text-action" href="<?php echo esc_url( \DoctorAKPortal\Frontend\Settlement_Handler::statement_download_url( $dak_group_id, $filters['date_from'], $filters['date_to'] ) ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Download statement', 'doctor-ak-portal' ); ?></a>
 									<?php endif; ?>
@@ -189,7 +189,7 @@ foreach ( $balances as $dak_balance_row ) {
 							<?php list( $dak_dir_label, $dak_dir_class ) = $dak_direction( $dak_row['balance'], __( 'Payable to doctor', 'doctor-ak-portal' ), __( 'Receivable from doctor', 'doctor-ak-portal' ) ); ?>
 							<tr data-row>
 								<td class="dak-col-primary" data-label="<?php echo $dak_is_clinic_view ? esc_attr__( 'Doctor', 'doctor-ak-portal' ) : esc_attr__( 'Clinic / visit type', 'doctor-ak-portal' ); ?>">
-									<span class="dak-cell-strong"><?php echo esc_html( $dak_is_clinic_view ? $dak_row['doctor_name'] : $dak_row['clinic_name'] ); ?></span>
+									<span class="dak-cell-strong"><?php echo esc_html( $dak_is_clinic_view ? \DoctorAKPortal\Includes\Pmdc::with_name( $dak_row['doctor_name'], $dak_row['doctor_id'] ) : $dak_row['clinic_name'] ); ?></span>
 								</td>
 								<td class="is-tabular" data-label="<?php esc_attr_e( 'Paid visits', 'doctor-ak-portal' ); ?>"><?php echo esc_html( number_format_i18n( $dak_row['appointment_count'] ) ); ?></td>
 								<td data-label="<?php esc_attr_e( 'Direction', 'doctor-ak-portal' ); ?>"><span class="dak-status-pill <?php echo esc_attr( $dak_dir_class ); ?>"><?php echo esc_html( $dak_dir_label ); ?></span></td>
@@ -201,7 +201,7 @@ foreach ( $balances as $dak_balance_row ) {
 											class="dak-text-action dak-billing-view-details"
 											data-doctor-id="<?php echo esc_attr( $dak_row['doctor_id'] ); ?>"
 											data-clinic-id="<?php echo esc_attr( $dak_row['clinic_id'] ); ?>"
-											data-doctor-name="<?php echo esc_attr( $dak_row['doctor_name'] ); ?>"
+											data-doctor-name="<?php echo esc_attr( \DoctorAKPortal\Includes\Pmdc::with_name( $dak_row['doctor_name'], $dak_row['doctor_id'] ) ); ?>"
 											data-clinic-name="<?php echo esc_attr( $dak_row['clinic_name'] ); ?>"
 										><?php esc_html_e( 'View details', 'doctor-ak-portal' ); ?></button>
 										<?php if ( $dak_is_clinic_view ) : ?>

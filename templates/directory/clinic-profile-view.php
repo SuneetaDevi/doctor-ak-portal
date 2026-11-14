@@ -189,6 +189,7 @@ $dak_cp_count = count( $doctors );
 								<div class="pub-doctor-main">
 									<div class="pub-doctor-name">
 										<h3 id="<?php echo esc_attr( $dak_cp_title_id ); ?>"><a href="<?php echo esc_url( $dak_cp_doctor['profile_url'] ); ?>"><?php echo esc_html( $dak_cp_doctor['name'] ); ?></a></h3>
+										<?php echo \DoctorAKPortal\Includes\Pmdc::html( $dak_cp_doctor['id'], 'dak-pmdc-block' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside Pmdc::html(). ?>
 										<?php if ( ! empty( $dak_cp_doctor['specialties'] ) || $dak_cp_doctor['years'] > 0 ) : ?>
 											<div class="pub-doctor-tags">
 												<?php foreach ( $dak_cp_doctor['specialties'] as $dak_cp_specialty ) : ?>
