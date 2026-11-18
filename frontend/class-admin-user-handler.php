@@ -330,7 +330,8 @@ class Admin_User_Handler {
 						'phone'              => $clinic_location['phone'],
 						'clinic_location_id' => $posted_clinic_location_id,
 					),
-					Clinics::TYPE_PHYSICAL
+					Clinics::TYPE_PHYSICAL,
+					true // Location comes from the master clinic, not this form.
 				);
 
 				if ( is_wp_error( $clinic_fields ) ) {

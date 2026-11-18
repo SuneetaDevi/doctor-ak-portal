@@ -218,6 +218,10 @@ class Clinic_Handler {
 		// below.
 		$clinic_location_id = isset( $_POST['clinic_location_id'] ) ? absint( wp_unslash( $_POST['clinic_location_id'] ) ) : 0;
 
+		// True when address/location below are copied from a stored record
+		// rather than typed in — see Clinics::sanitize_clinic_fields_from_request().
+		$trusted_location = false;
+
 		if ( Clinics::TYPE_PHYSICAL === $type && $clinic_location_id > 0 ) {
 			$clinic_location = Clinic_Locations::find( $clinic_location_id );
 
@@ -229,6 +233,7 @@ class Clinic_Handler {
 			$_POST['country'] = $clinic_location['country'];
 			$_POST['city']    = $clinic_location['city'];
 			$_POST['area']    = $clinic_location['area'];
+			$trusted_location = true;
 		} elseif ( Clinics::TYPE_PHYSICAL === $type && $requires_clinic_location ) {
 			if ( $clinic_id > 0 && isset( $existing ) && $existing ) {
 				// Editing a clinic that predates this feature (never aligned
@@ -239,12 +244,13 @@ class Clinic_Handler {
 				$_POST['country'] = $existing['country'];
 				$_POST['city']    = $existing['city'];
 				$_POST['area']    = $existing['area'];
+				$trusted_location = true;
 			} else {
 				wp_send_json_error( array( 'errors' => array( 'clinic_location_id' => __( 'Please choose a clinic.', 'doctor-ak-portal' ) ) ) );
 			}
 		}
 
-		$fields = Clinics::sanitize_clinic_fields_from_request( $_POST, $type ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Clinics::sanitize_clinic_fields_from_request() unslashes/sanitizes each field itself.
+		$fields = Clinics::sanitize_clinic_fields_from_request( $_POST, $type, $trusted_location ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Clinics::sanitize_clinic_fields_from_request() unslashes/sanitizes each field itself.
 
 		if ( is_wp_error( $fields ) ) {
 			$field_by_error_code = array(

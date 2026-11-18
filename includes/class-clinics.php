@@ -192,11 +192,23 @@ class Clinics {
 	/**
 	 * Validates and sanitizes a clinic's own fields (not its sessions).
 	 *
-	 * @param array  $posted Raw request array (e.g. $_POST, already a plain array).
-	 * @param string $type   'physical' or 'video'.
+	 * @param array  $posted          Raw request array (e.g. $_POST, already a plain array).
+	 * @param string $type            'physical' or 'video'.
+	 * @param bool   $trusted_location True when address/country/city/area were
+	 *                                 copied server-side from a stored record
+	 *                                 (a Clinic_Locations master clinic, or this
+	 *                                 clinic's own saved row) rather than typed
+	 *                                 into this form. Those values are kept as
+	 *                                 they are instead of re-validated: the
+	 *                                 person saving a doctor has no field to fix
+	 *                                 them with, and a master clinic saved before
+	 *                                 its city was given areas (Settings →
+	 *                                 Locations) would otherwise block every
+	 *                                 doctor linked to it. The master clinic's own
+	 *                                 edit form still requires a valid area.
 	 * @return array|\WP_Error Sanitized fields, or WP_Error on invalid input.
 	 */
-	public static function sanitize_clinic_fields_from_request( array $posted, $type ) {
+	public static function sanitize_clinic_fields_from_request( array $posted, $type, $trusted_location = false ) {
 		$type = self::TYPE_VIDEO === $type ? self::TYPE_VIDEO : self::TYPE_PHYSICAL;
 
 		$name = isset( $posted['name'] ) ? sanitize_text_field( wp_unslash( $posted['name'] ) ) : '';
@@ -207,7 +219,7 @@ class Clinics {
 
 		$address = isset( $posted['address'] ) ? sanitize_text_field( wp_unslash( $posted['address'] ) ) : '';
 
-		if ( self::TYPE_PHYSICAL === $type && '' === $address ) {
+		if ( self::TYPE_PHYSICAL === $type && '' === $address && ! $trusted_location ) {
 			return new \WP_Error( 'doctor_ak_clinic_address_required', __( 'Please provide this clinic\'s address.', 'doctor-ak-portal' ) );
 		}
 
@@ -215,7 +227,7 @@ class Clinics {
 		$city    = isset( $posted['city'] ) ? sanitize_text_field( wp_unslash( $posted['city'] ) ) : '';
 		$area    = isset( $posted['area'] ) ? sanitize_text_field( wp_unslash( $posted['area'] ) ) : '';
 
-		if ( self::TYPE_PHYSICAL === $type ) {
+		if ( self::TYPE_PHYSICAL === $type && ! $trusted_location ) {
 			if ( '' === $country || ! Locations::is_valid_country( $country ) ) {
 				return new \WP_Error( 'doctor_ak_clinic_country_required', __( 'Please select this clinic\'s country.', 'doctor-ak-portal' ) );
 			}

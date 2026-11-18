@@ -136,6 +136,12 @@
 	display: flex !important;
 	align-items: center !important;
 	width: 100vw !important;
+	/* The side padding below must sit INSIDE that 100vw. Without this, a
+	   theme that doesn't set border-box globally (WordPress block themes
+	   such as Twenty Twenty-Five don't) makes the banner 100vw + 2 gutters
+	   wide, so its right half — and the stats panel pinned to its right
+	   edge — runs off the screen. */
+	box-sizing: border-box !important;
 	min-height: 580px !important;
 	/* True viewport-edge full bleed, not just "cancel this page's own
 	   gutter" — a WordPress theme's page template commonly wraps shortcode
