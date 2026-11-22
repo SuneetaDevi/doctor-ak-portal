@@ -33,6 +33,48 @@
 	letter-spacing: normal !important;
 }
 
+/*
+ * Padding and borders sit INSIDE an element's width. The layouts here were
+ * built that way, but not every theme sets it globally — Twenty Twenty-Three
+ * and other block themes don't — and without it every full-width button,
+ * input or card with side padding pokes out past its container (e.g. the
+ * "Get Started" / "Choose a Doctor" buttons running over their card's edge).
+ * Not !important, so a component that genuinely needs content-box can still
+ * opt out with a more specific rule.
+ */
+.dak-portal,
+.dak-portal *,
+.dak-portal *::before,
+.dak-portal *::after {
+	box-sizing: border-box;
+}
+
+/*
+ * Theme comment form (blog posts): match the site's buttons instead of the
+ * theme's own accent colour (Twenty Twenty-Three's is lime green). Outside
+ * .dak-portal, so the brand colours are written out rather than var()'d.
+ */
+.comment-form input[type="submit"],
+.wp-block-post-comments-form input[type="submit"] {
+	padding: 0.75rem 1.5rem !important;
+	border: 1px solid #16634b !important;
+	border-radius: 8px !important;
+	background: #16634b !important;
+	color: #ffffff !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+	transition: background-color 0.15s ease, border-color 0.15s ease !important;
+}
+
+.comment-form input[type="submit"]:hover,
+.comment-form input[type="submit"]:focus-visible,
+.wp-block-post-comments-form input[type="submit"]:hover,
+.wp-block-post-comments-form input[type="submit"]:focus-visible {
+	border-color: #104d3a !important;
+	background: #104d3a !important;
+	color: #ffffff !important;
+}
+
 .dak-portal {
 	--dak-primary: #16634b;
 	--dak-primary-dark: #104d3a;

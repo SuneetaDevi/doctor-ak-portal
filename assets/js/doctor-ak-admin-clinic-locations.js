@@ -24,6 +24,55 @@
 		wireEdit( modal );
 		wireSave( modal );
 		wireDelete();
+		wireMerge();
+
+		function wireMerge() {
+			document.addEventListener( 'click', function ( event ) {
+				var trigger = event.target.closest( '[data-admin-clinic-location-merge]' );
+
+				if ( ! trigger || trigger.disabled ) {
+					return;
+				}
+
+				var mergeIds = ( trigger.getAttribute( 'data-merge-ids' ) || '' ).split( ',' ).filter( Boolean );
+
+				if ( ! mergeIds.length ) {
+					return;
+				}
+
+				var message = 'Keep "' + ( trigger.getAttribute( 'data-name' ) || 'this clinic' ) + '" and merge the other ' +
+					mergeIds.length + ' cop' + ( 1 === mergeIds.length ? 'y' : 'ies' ) + ' into it?\n\n' +
+					'Doctors, prices, patients and receptionists linked to the other copies will be moved to this one, ' +
+					'and the other copies will be deleted. This cannot be undone.';
+
+				if ( ! window.confirm( message ) ) {
+					return;
+				}
+
+				document.querySelectorAll( '[data-admin-clinic-location-merge]' ).forEach( function ( button ) {
+					button.disabled = true;
+				} );
+
+				var formData = new FormData();
+				formData.append( 'action', 'doctor_ak_admin_clinic_location_merge' );
+				formData.append( 'nonce', window.dakAdminClinicLocations.nonce );
+				formData.append( 'keep_id', trigger.getAttribute( 'data-keep-id' ) );
+				mergeIds.forEach( function ( id ) {
+					formData.append( 'merge_ids[]', id );
+				} );
+
+				fetch( window.dakAdminClinicLocations.ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' } )
+					.then( function ( response ) { return response.json(); } )
+					.then( function ( result ) {
+						window.alert( ( result.data && result.data.message ) || ( result.success ? 'Clinics merged.' : 'Something went wrong. Please try again.' ) );
+						window.location.reload();
+					} )
+					.catch( function () {
+						window.alert( 'Something went wrong. Please try again.' );
+						window.location.reload();
+					} );
+			} );
+		}
 
 		function wireLocationSelects( selectedCountry, selectedCity, selectedArea ) {
 			if ( ! window.dakCityArea || ! countrySelect || ! citySelect || ! areaSelect ) {

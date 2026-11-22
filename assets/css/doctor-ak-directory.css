@@ -2102,7 +2102,9 @@
 	display: grid !important;
 	grid-template-columns: minmax( 0, 340px ) minmax( 0, 1fr ) !important;
 	gap: 16px 32px !important;
-	align-items: end !important;
+	/* Top, not bottom: once the topic chips wrap to a second row, bottom
+	   alignment dropped the search box down and left an empty gap above it. */
+	align-items: start !important;
 	padding: 20px !important;
 	border: 1px solid var( --dak-border ) !important;
 	border-radius: 14px !important;

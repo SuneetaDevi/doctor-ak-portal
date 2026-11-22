@@ -2583,7 +2583,10 @@ class Admin_Dashboard {
 		if ( 'clinic' === $section ) {
 			return $this->template_loader->get_template(
 				'dashboard/partials/admin-clinic-locations.php',
-				array( 'clinic_locations' => Clinic_Locations::get_all() )
+				array(
+					'clinic_locations' => Clinic_Locations::get_all(),
+					'duplicate_groups' => Clinic_Locations::duplicate_groups(),
+				)
 			);
 		}
 

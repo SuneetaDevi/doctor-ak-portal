@@ -396,4 +396,298 @@ class Clinic_Locations {
 
 		return 'https://www.google.com/maps/search/?api=1&query=' . rawurlencode( $query );
 	}
+
+	/* ---------------------------------------------------------------------
+	 * Duplicates
+	 * ------------------------------------------------------------------- */
+
+	/**
+	 * A clinic name reduced to what identifies it: lowercase letters and
+	 * digits only, so "Darul Sehat Hospital", "Darul sehat  Hospital" and
+	 * "Darul-Sehat Hospital." all compare equal.
+	 *
+	 * @param string $name Clinic name.
+	 * @return string
+	 */
+	public static function normalize_name( $name ) {
+		return preg_replace( '/[^a-z0-9]+/', '', strtolower( remove_accents( (string) $name ) ) );
+	}
+
+	/**
+	 * An existing clinic that the given fields would duplicate — same
+	 * normalized name in the same country, city and area — or null. Used to
+	 * stop the same clinic being added (or edited into) a second time.
+	 *
+	 * @param array $fields     Sanitized fields (name, country, city, area).
+	 * @param int   $exclude_id The clinic being edited, so it doesn't match itself.
+	 * @return array|null Decoded row of the existing clinic.
+	 */
+	public static function find_duplicate( array $fields, $exclude_id = 0 ) {
+		$key = self::normalize_name( $fields['name'] );
+
+		if ( '' === $key ) {
+			return null;
+		}
+
+		foreach ( self::get_all() as $row ) {
+			if ( (int) $row['id'] === (int) $exclude_id ) {
+				continue;
+			}
+
+			if ( $key === self::normalize_name( $row['name'] )
+				&& (string) $row['country'] === (string) $fields['country']
+				&& (string) $row['city'] === (string) $fields['city']
+				&& (string) $row['area'] === (string) $fields['area']
+			) {
+				return $row;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Clinics that look like the same place entered more than once: same
+	 * normalized name in the same country and city (area is ignored here,
+	 * since a wrong area is a common way the same clinic got re-entered).
+	 * Each row gets a 'doctors_count' so the admin can see which copy is
+	 * actually in use before choosing the one to keep.
+	 *
+	 * @return array[] List of groups, each a list of decoded rows (2+), most-used first.
+	 */
+	public static function duplicate_groups() {
+		global $wpdb;
+
+		$groups = array();
+
+		foreach ( self::get_all() as $row ) {
+			$key = self::normalize_name( $row['name'] );
+
+			if ( '' === $key ) {
+				continue;
+			}
+
+			$groups[ $key . '|' . $row['country'] . '|' . $row['city'] ][] = $row;
+		}
+
+		$groups = array_values(
+			array_filter(
+				$groups,
+				function ( $rows ) {
+					return count( $rows ) > 1;
+				}
+			)
+		);
+
+		if ( empty( $groups ) ) {
+			return array();
+		}
+
+		$counts = array();
+		$rows   = $wpdb->get_results( 'SELECT clinic_location_id, COUNT(DISTINCT doctor_id) AS n FROM ' . Clinics::table_name() . ' WHERE clinic_location_id > 0 GROUP BY clinic_location_id', ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
+
+		foreach ( (array) $rows as $count_row ) {
+			$counts[ (int) $count_row['clinic_location_id'] ] = (int) $count_row['n'];
+		}
+
+		foreach ( $groups as &$group ) {
+			foreach ( $group as &$row ) {
+				$row['doctors_count'] = isset( $counts[ $row['id'] ] ) ? $counts[ $row['id'] ] : 0;
+			}
+			unset( $row );
+
+			usort(
+				$group,
+				function ( $a, $b ) {
+					return $b['doctors_count'] <=> $a['doctors_count'] ?: $a['id'] <=> $b['id'];
+				}
+			);
+		}
+		unset( $group );
+
+		return $groups;
+	}
+
+	/**
+	 * Merges duplicate clinics into one: everything that pointed at a
+	 * duplicate is moved to the kept clinic, then the duplicates are deleted.
+	 *
+	 * Moved: doctors' clinic schedules (Clinics rows — re-pointed and given
+	 * the kept clinic's name/address), per-clinic service prices and
+	 * doctor-share overrides (Services clinic_charges / clinic_shares, the
+	 * kept clinic's own value winning where both have one), patients'
+	 * assigned clinic and receptionists' assigned clinics (user meta).
+	 * Blank contact details / coordinates on the kept clinic are filled from
+	 * a duplicate, and the duplicates' spellings are added to its search
+	 * keywords so they still find it.
+	 *
+	 * @param int   $keep_id   Clinic to keep.
+	 * @param int[] $merge_ids Duplicates to fold into it.
+	 * @return array|\WP_Error Summary { doctor_schedules, services, patients, receptionists, merged }, or WP_Error.
+	 */
+	public static function merge( $keep_id, array $merge_ids ) {
+		global $wpdb;
+
+		$keep_id   = (int) $keep_id;
+		$merge_ids = array_values( array_diff( array_unique( array_filter( array_map( 'intval', $merge_ids ) ) ), array( $keep_id ) ) );
+		$keep      = self::find( $keep_id );
+
+		if ( ! $keep || empty( $merge_ids ) ) {
+			return new \WP_Error( 'doctor_ak_clinic_merge_invalid', __( 'Choose the clinic to keep and at least one duplicate.', 'doctor-ak-portal' ) );
+		}
+
+		$duplicates = array();
+
+		foreach ( $merge_ids as $merge_id ) {
+			$duplicate = self::find( $merge_id );
+
+			if ( ! $duplicate ) {
+				return new \WP_Error( 'doctor_ak_clinic_merge_missing', __( 'One of those clinics no longer exists. Please refresh the page.', 'doctor-ak-portal' ) );
+			}
+
+			$duplicates[ $merge_id ] = $duplicate;
+		}
+
+		$id_list = implode( ',', $merge_ids ); // All intval'd above.
+		$summary = array(
+			'doctor_schedules' => 0,
+			'services'         => 0,
+			'patients'         => 0,
+			'receptionists'    => 0,
+			'merged'           => count( $merge_ids ),
+		);
+
+		$wpdb->query( 'START TRANSACTION' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+		// 1. Doctors' schedules at the duplicates now belong to the kept clinic.
+		$moved = $wpdb->query(
+			$wpdb->prepare(
+				'UPDATE ' . Clinics::table_name() . " SET clinic_location_id = %d, name = %s, address = %s, country = %s, city = %s, area = %s, updated_at = %s WHERE clinic_location_id IN ({$id_list})", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name and integer list.
+				$keep_id,
+				$keep['name'],
+				$keep['address'],
+				$keep['country'],
+				$keep['city'],
+				$keep['area'],
+				current_time( 'mysql' )
+			)
+		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+		if ( false === $moved ) {
+			$wpdb->query( 'ROLLBACK' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			return new \WP_Error( 'doctor_ak_clinic_merge_failed', __( 'The clinics could not be merged. Nothing was changed.', 'doctor-ak-portal' ) );
+		}
+
+		$summary['doctor_schedules'] = (int) $moved;
+
+		// 2. Per-clinic prices and share overrides on services (JSON keyed by clinic ID).
+		$services = $wpdb->get_results( 'SELECT id, clinic_charges, clinic_shares FROM ' . Services::table_name() . " WHERE ( clinic_charges IS NOT NULL AND clinic_charges NOT IN ( '', '[]', '{}' ) ) OR ( clinic_shares IS NOT NULL AND clinic_shares NOT IN ( '', '[]', '{}' ) )", ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
+
+		foreach ( (array) $services as $service ) {
+			$data = array();
+
+			foreach ( array( 'clinic_charges', 'clinic_shares' ) as $column ) {
+				$map = json_decode( (string) $service[ $column ], true );
+
+				if ( ! is_array( $map ) ) {
+					continue;
+				}
+
+				$changed = false;
+
+				foreach ( $merge_ids as $merge_id ) {
+					if ( ! array_key_exists( $merge_id, $map ) && ! array_key_exists( (string) $merge_id, $map ) ) {
+						continue;
+					}
+
+					$value = $map[ $merge_id ];
+					unset( $map[ $merge_id ] );
+
+					if ( ! array_key_exists( $keep_id, $map ) ) {
+						$map[ $keep_id ] = $value;
+					}
+
+					$changed = true;
+				}
+
+				if ( $changed ) {
+					$data[ $column ] = wp_json_encode( $map );
+				}
+			}
+
+			if ( $data ) {
+				$wpdb->update( Services::table_name(), $data, array( 'id' => (int) $service['id'] ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				++$summary['services'];
+			}
+		}
+
+		// 3. Patients' assigned clinic (a single ID). update_user_meta() rather
+		// than one UPDATE, so a persistent object cache sees the change too.
+		$patient_ids = $wpdb->get_col( $wpdb->prepare( "SELECT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value IN ('" . implode( "','", $merge_ids ) . "')", self::PATIENT_META_KEY ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- integer list.
+
+		foreach ( (array) $patient_ids as $user_id ) {
+			update_user_meta( (int) $user_id, self::PATIENT_META_KEY, $keep_id );
+			++$summary['patients'];
+		}
+
+		// 4. Receptionists' assigned clinics (a list of IDs).
+		$receptionist_ids = $wpdb->get_col( $wpdb->prepare( "SELECT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s", self::RECEPTIONIST_META_KEY ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+		foreach ( (array) $receptionist_ids as $user_id ) {
+			$assigned = array_map( 'intval', (array) get_user_meta( (int) $user_id, self::RECEPTIONIST_META_KEY, true ) );
+
+			if ( ! array_intersect( $assigned, $merge_ids ) ) {
+				continue;
+			}
+
+			$updated = array();
+
+			foreach ( $assigned as $location_id ) {
+				$updated[] = in_array( $location_id, $merge_ids, true ) ? $keep_id : $location_id;
+			}
+
+			update_user_meta( (int) $user_id, self::RECEPTIONIST_META_KEY, array_values( array_unique( $updated ) ) );
+			++$summary['receptionists'];
+		}
+
+		// 5. Fill blanks on the kept clinic, keep the old spellings searchable.
+		$fill     = array();
+		$keywords = array_filter( array_map( 'trim', explode( ',', (string) $keep['keywords'] ) ) );
+
+		foreach ( $duplicates as $duplicate ) {
+			foreach ( array( 'address', 'phone', 'contact_email' ) as $field ) {
+				if ( '' === (string) $keep[ $field ] && ! isset( $fill[ $field ] ) && '' !== (string) $duplicate[ $field ] ) {
+					$fill[ $field ] = $duplicate[ $field ];
+				}
+			}
+
+			if ( null === $keep['latitude'] && ! isset( $fill['latitude'] ) && null !== $duplicate['latitude'] ) {
+				$fill['latitude']  = $duplicate['latitude'];
+				$fill['longitude'] = $duplicate['longitude'];
+			}
+
+			if ( $duplicate['name'] !== $keep['name'] ) {
+				$keywords[] = $duplicate['name'];
+			}
+
+			$keywords = array_merge( $keywords, array_filter( array_map( 'trim', explode( ',', (string) $duplicate['keywords'] ) ) ) );
+		}
+
+		$fill['keywords']   = implode( ', ', array_unique( $keywords ) );
+		$fill['updated_at'] = current_time( 'mysql' );
+
+		$wpdb->update( self::table_name(), $fill, array( 'id' => $keep_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+		// 6. The duplicates themselves.
+		$deleted = $wpdb->query( 'DELETE FROM ' . self::table_name() . " WHERE id IN ({$id_list})" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name and integer list.
+
+		if ( false === $deleted ) {
+			$wpdb->query( 'ROLLBACK' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			return new \WP_Error( 'doctor_ak_clinic_merge_failed', __( 'The clinics could not be merged. Nothing was changed.', 'doctor-ak-portal' ) );
+		}
+
+		$wpdb->query( 'COMMIT' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+		return $summary;
+	}
 }

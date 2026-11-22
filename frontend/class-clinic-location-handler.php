@@ -53,6 +53,22 @@ class Clinic_Location_Handler {
 			wp_send_json_error( array( 'errors' => array( $field => $fields->get_error_message() ) ) );
 		}
 
+		$existing = Clinic_Locations::find_duplicate( $fields, $id );
+
+		if ( $existing ) {
+			wp_send_json_error(
+				array(
+					'errors' => array(
+						'name' => sprintf(
+							/* translators: %s: name of the clinic that already exists. */
+							__( '"%s" already exists in this area. Edit that clinic instead of adding it again.', 'doctor-ak-portal' ),
+							$existing['name']
+						),
+					),
+				)
+			);
+		}
+
 		if ( $id > 0 ) {
 			$saved = Clinic_Locations::update( $id, $fields );
 		} else {
@@ -91,5 +107,45 @@ class Clinic_Location_Handler {
 		}
 
 		wp_send_json_success( array( 'message' => __( 'Clinic deleted.', 'doctor-ak-portal' ) ) );
+	}
+
+	/**
+	 * AJAX handler: merges duplicate clinic-locations into one, see
+	 * Clinic_Locations::merge().
+	 *
+	 * @return void
+	 */
+	public function handle_admin_merge() {
+		if ( ! check_ajax_referer( Admin_Dashboard::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) && ! current_user_can( 'doctor_ak_manage_clinics' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$keep_id   = isset( $_POST['keep_id'] ) ? absint( wp_unslash( $_POST['keep_id'] ) ) : 0;
+		$merge_ids = isset( $_POST['merge_ids'] ) && is_array( $_POST['merge_ids'] )
+			? array_map( 'absint', wp_unslash( $_POST['merge_ids'] ) ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- absint() applied to each.
+			: array();
+
+		$result = Clinic_Locations::merge( $keep_id, $merge_ids );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		wp_send_json_success(
+			array(
+				'message' => sprintf(
+					/* translators: 1: number of duplicates removed, 2: doctor schedules moved, 3: services updated, 4: patients moved. */
+					__( 'Merged %1$d duplicate(s). Moved %2$d doctor schedule(s), %3$d service price setting(s) and %4$d patient(s) to the kept clinic.', 'doctor-ak-portal' ),
+					$result['merged'],
+					$result['doctor_schedules'],
+					$result['services'],
+					$result['patients']
+				),
+			)
+		);
 	}
 }

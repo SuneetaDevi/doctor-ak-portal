@@ -2234,7 +2234,7 @@ html.dak-hsm-locked body {
 
 .dak-home-testimonial-band-quotes .dak-eyebrow {
 	background: rgba( 255, 255, 255, 0.1 ) !important;
-	color: var( --dak-primary ) !important;
+	color: #7fd3ab !important;
 }
 
 .dak-home-google-rating-badge {
@@ -2462,9 +2462,11 @@ html.dak-hsm-locked body {
 	align-items: center !important;
 }
 
+/* Light mint (the hero's accent colour), not --dak-primary: brand green on
+   this dark green band is barely visible. */
 .dak-home-join-doctors-copy .dak-eyebrow {
 	background: rgba( 255, 255, 255, 0.1 ) !important;
-	color: var( --dak-primary ) !important;
+	color: #7fd3ab !important;
 }
 
 .dak-home-join-doctors-copy h2 {
@@ -2602,6 +2604,10 @@ html.dak-hsm-locked body {
 .dak-home-videos {
 	position: relative !important;
 	width: 100vw !important;
+	/* Keep the side padding inside the 100vw (see .dak-home-hero-banner) —
+	   otherwise this section is 100vw + 2 gutters wide, which widens the
+	   whole page on phones and pushes every 100vw section off the right edge. */
+	box-sizing: border-box !important;
 	overflow: hidden !important;
 	margin-left: calc( 50% - 50vw ) !important;
 	margin-right: calc( 50% - 50vw ) !important;

@@ -6342,3 +6342,22 @@ body.dak-app-page .dak-portal .dak-data-table .dak-cell-note.dak-service-discoun
 	color: #c2410c !important;
 	font-weight: 600 !important;
 }
+
+/* Admin → Clinic: "appears more than once" merge panel above the list. */
+.dak-clinic-duplicates {
+	margin-bottom: 24px !important;
+}
+
+.dak-clinic-duplicates .dak-alert {
+	display: block !important;
+	line-height: 1.5 !important;
+}
+
+.dak-clinic-duplicates .dak-alert strong {
+	display: block !important;
+	margin-bottom: 4px !important;
+}
+
+.dak-clinic-duplicate-group {
+	margin-top: 12px !important;
+}

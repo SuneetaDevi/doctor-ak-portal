@@ -7,12 +7,15 @@
  * @package DoctorAKPortal\Templates
  *
  * @var array $clinic_locations Rows from Clinic_Locations::get_all().
+ * @var array $duplicate_groups Clinic_Locations::duplicate_groups() — same clinic entered more than once.
  */
 
 // Prevent direct file access.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+$duplicate_groups = isset( $duplicate_groups ) ? (array) $duplicate_groups : array();
 ?>
 <div class="dak-list-page">
 <div class="dak-page-head">
@@ -22,6 +25,70 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</div>
 	<button type="button" class="dak-button dak-button-primary" id="dak-admin-clinic-location-add"><?php esc_html_e( '+ Add Clinic', 'doctor-ak-portal' ); ?></button>
 </div>
+
+<?php if ( ! empty( $duplicate_groups ) ) : ?>
+	<section class="dak-results dak-clinic-duplicates" aria-labelledby="dak-clinic-duplicates-title">
+		<div class="dak-alert dak-alert-info">
+			<strong id="dak-clinic-duplicates-title">
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: %d: number of clinics that appear more than once. */
+						_n( '%d clinic appears more than once', '%d clinics appear more than once', count( $duplicate_groups ), 'doctor-ak-portal' ),
+						count( $duplicate_groups )
+					)
+				);
+				?>
+			</strong>
+			<?php esc_html_e( 'For each one, click "Keep this one" on the correct copy. Doctors, prices, patients and receptionists linked to the other copies are moved to it, then the other copies are deleted.', 'doctor-ak-portal' ); ?>
+		</div>
+
+		<?php foreach ( $duplicate_groups as $dak_group ) : ?>
+			<?php $dak_group_ids = wp_list_pluck( $dak_group, 'id' ); ?>
+			<div class="dak-data-table-wrap dak-clinic-duplicate-group">
+				<table class="dak-data-table dak-ui-table">
+					<thead>
+						<tr>
+							<th scope="col"><?php esc_html_e( 'Clinic', 'doctor-ak-portal' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Location', 'doctor-ak-portal' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Doctors linked', 'doctor-ak-portal' ); ?></th>
+							<th scope="col" class="dak-col-actions"><?php esc_html_e( 'Actions', 'doctor-ak-portal' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $dak_group as $dak_row ) : ?>
+							<?php $dak_others = array_values( array_diff( $dak_group_ids, array( $dak_row['id'] ) ) ); ?>
+							<tr>
+								<td class="dak-col-primary" data-label="<?php esc_attr_e( 'Clinic', 'doctor-ak-portal' ); ?>">
+									<span class="dak-cell-stack">
+										<span class="dak-cell-primary"><?php echo esc_html( $dak_row['name'] ); ?></span>
+										<span class="dak-cell-sub"><?php echo esc_html( '' !== $dak_row['address'] ? $dak_row['address'] : __( 'No street address', 'doctor-ak-portal' ) ); ?></span>
+									</span>
+								</td>
+								<td data-label="<?php esc_attr_e( 'Location', 'doctor-ak-portal' ); ?>">
+									<?php echo esc_html( implode( ', ', array_filter( array( $dak_row['area_label'], $dak_row['city_label'] ) ) ) ); ?>
+								</td>
+								<td data-label="<?php esc_attr_e( 'Doctors linked', 'doctor-ak-portal' ); ?>" class="is-tabular">
+									<?php echo esc_html( number_format_i18n( $dak_row['doctors_count'] ) ); ?>
+								</td>
+								<td class="dak-col-actions" data-label="<?php esc_attr_e( 'Actions', 'doctor-ak-portal' ); ?>">
+									<button
+										type="button"
+										class="dak-button dak-button-secondary dak-button-sm"
+										data-admin-clinic-location-merge
+										data-keep-id="<?php echo esc_attr( $dak_row['id'] ); ?>"
+										data-merge-ids="<?php echo esc_attr( implode( ',', $dak_others ) ); ?>"
+										data-name="<?php echo esc_attr( $dak_row['name'] ); ?>"
+									><?php esc_html_e( 'Keep this one', 'doctor-ak-portal' ); ?></button>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div>
+		<?php endforeach; ?>
+	</section>
+<?php endif; ?>
 
 <section class="dak-results" id="dak-clinic-locations-list" aria-labelledby="dak-clinic-locations-title">
 	<div class="dak-results-tools">

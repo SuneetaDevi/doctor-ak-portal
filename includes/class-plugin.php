@@ -427,6 +427,7 @@ class Plugin {
 		$clinic_location_handler = new Clinic_Location_Handler();
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_clinic_location_save', $clinic_location_handler, 'handle_admin_save' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_clinic_location_delete', $clinic_location_handler, 'handle_admin_delete' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_admin_clinic_location_merge', $clinic_location_handler, 'handle_admin_merge' );
 
 		$video_pricing_handler = new Video_Pricing_Handler();
 		$this->loader->add_action( 'wp_enqueue_scripts', $video_pricing_handler, 'enqueue_assets' );
