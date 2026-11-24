@@ -1169,112 +1169,6 @@ html.dak-hsm-locked body {
 	}
 }
 
-/* Quick access — a ruled centred heading over four bordered tiles: icon on
-   the left, title and description beside it, a small arrow underneath. */
-
-.dak-home-quick-links {
-	margin-top: var( --dak-space-7 ) !important;
-}
-
-.dak-home-quick-links-title {
-	display: flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	gap: var( --dak-space-4 ) !important;
-	margin: 0 0 var( --dak-space-5 ) !important;
-	font-family: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif ) !important;
-	font-size: var( --dak-text-2xl ) !important;
-	font-weight: 700 !important;
-	text-align: center !important;
-	color: var( --dak-text ) !important;
-}
-
-.dak-home-quick-links-title::before,
-.dak-home-quick-links-title::after {
-	content: '' !important;
-	flex: 0 0 3.5rem !important;
-	height: 2px !important;
-	background: var( --dak-primary ) !important;
-}
-
-.dak-home-quick-links-grid {
-	display: grid !important;
-	grid-template-columns: repeat( 4, minmax( 0, 1fr ) ) !important;
-	gap: var( --dak-space-3 ) !important;
-}
-
-.dak-home-quick-link-card {
-	display: grid !important;
-	grid-template-columns: auto minmax( 0, 1fr ) !important;
-	grid-template-areas:
-		'icon title'
-		'icon text'
-		'icon arrow' !important;
-	align-content: start !important;
-	column-gap: var( --dak-space-3 ) !important;
-	row-gap: 0.15rem !important;
-	background: var( --dak-bg-card ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-md ) !important;
-	padding: var( --dak-space-4 ) !important;
-	box-shadow: none !important;
-	color: inherit !important;
-	text-decoration: none !important;
-	text-align: left !important;
-	cursor: pointer !important;
-	font: inherit !important;
-	transition: transform 0.15s ease, box-shadow 0.15s ease !important;
-}
-
-.dak-home-quick-link-card:hover {
-	transform: translateY( -3px ) !important;
-	box-shadow: var( --dak-shadow ) !important;
-}
-
-.dak-home-quick-link-icon {
-	grid-area: icon !important;
-	display: inline-flex !important;
-	align-items: flex-start !important;
-	justify-content: center !important;
-	color: var( --dak-primary-dark ) !important;
-}
-
-.dak-home-quick-link-icon svg {
-	width: 40px !important;
-	height: 40px !important;
-}
-
-.dak-home-quick-link-title {
-	grid-area: title !important;
-	font-size: var( --dak-text-md ) !important;
-	font-weight: 700 !important;
-	color: var( --dak-text ) !important;
-}
-
-.dak-home-quick-link-text {
-	grid-area: text !important;
-	font-size: var( --dak-text-sm ) !important;
-	line-height: 1.4 !important;
-	color: var( --dak-muted ) !important;
-}
-
-.dak-home-quick-link-arrow {
-	grid-area: arrow !important;
-	margin-top: var( --dak-space-2 ) !important;
-	color: var( --dak-text ) !important;
-	transition: transform 0.15s ease !important;
-}
-
-.dak-home-quick-link-arrow svg {
-	width: 18px !important;
-	height: 18px !important;
-	stroke: currentColor !important;
-}
-
-.dak-home-quick-link-card:hover .dak-home-quick-link-arrow {
-	transform: translateX( 3px ) !important;
-}
-
 /* Video tour — the bundled hero clip, now its own section with a two-column
    heading (eyebrow + title on the left, a plain description on the right). */
 
@@ -3060,10 +2954,6 @@ html.dak-hsm-locked body {
 		padding-bottom: 0 !important;
 	}
 
-	.dak-home-quick-links-grid {
-		grid-template-columns: repeat( 2, 1fr ) !important;
-	}
-
 	.dak-home-video-tour-heading {
 		grid-template-columns: 1fr !important;
 	}
@@ -3144,10 +3034,6 @@ html.dak-hsm-locked body {
 }
 
 @media ( max-width: 560px ) {
-	.dak-home-quick-links-grid {
-		grid-template-columns: 1fr !important;
-	}
-
 	.dak-home-video-tour-features {
 		grid-template-columns: 1fr !important;
 	}
@@ -3254,67 +3140,688 @@ html.dak-hsm-locked body {
 	}
 }
 
-/* ---- "Find doctors by symptoms" band (only when that page is live) ---- */
-.dak-home-symptom-check {
+/* ---- "How can we help you today?" — right below the hero search ----------
+   A bento grid: the symptom card (or, while the symptom page isn't live, a
+   doctor search) fills the left half across two rows; Video consult sits
+   beside its top half and Services & fees / Clinics share the row below.
+   768–1100px: the big card on top, the others in a row under it. Under
+   768px: the big card, then the others as compact list rows.
+   Colours are local tokens built on the shared --dak-* ones, with dark-mode
+   values below, so the public light/dark toggle keeps working. */
+
+.dak-home-help {
+	--dak-help-ink: #16202a;
+	--dak-help-body: #4b5563;
+	--dak-help-border: #dce5e1;
+	--dak-help-mint: var( --dak-primary-tint );
+	--dak-help-mint-border: #d4e7dd;
+	--dak-help-green: var( --dak-primary );
+	--dak-help-btn: var( --dak-primary );
+	--dak-help-btn-hover: var( --dak-primary-dark );
+	--dak-help-amber-bg: #fdf1dc;
+	--dak-help-amber: #9a5b00;
+	--dak-help-blue-bg: #e4eefb;
+	--dak-help-blue: #1d4e89;
+	--dak-help-shadow: 0 10px 24px rgba( 16, 60, 46, 0.12 );
 	margin-top: var( --dak-space-7 ) !important;
 }
 
-.dak-home-symptom-check-card {
-	display: grid !important;
-	grid-template-columns: auto minmax( 0, 1fr ) auto !important;
-	align-items: center !important;
-	gap: 20px !important;
-	padding: 22px 26px !important;
-	background: var( --dak-primary-tint ) !important;
-	border: 1px solid var( --dak-border ) !important;
-	border-radius: var( --dak-radius-lg ) !important;
+html[data-theme='dark'] .dak-home-help {
+	--dak-help-ink: var( --dak-text );
+	--dak-help-body: #b9c0c9;
+	--dak-help-border: #262d2a;
+	--dak-help-mint: #0f1f18;
+	--dak-help-mint-border: #1f3a2d;
+	--dak-help-green: #7fd3ab;
+	/* White text on the dark theme's brighter green would fail contrast. */
+	--dak-help-btn: #1f7a55;
+	--dak-help-btn-hover: #23885f;
+	--dak-help-amber-bg: var( --dak-tint-amber );
+	--dak-help-amber: #f2b84b;
+	--dak-help-blue-bg: var( --dak-tint-info );
+	--dak-help-blue: #8cb8f0;
+	--dak-help-shadow: 0 10px 24px rgba( 0, 0, 0, 0.6 );
 }
 
-.dak-home-symptom-check-icon {
+/* Header row — left-aligned; the supporting line sits on the right,
+   level with the bottom of the heading. */
+.dak-home-help-head {
+	display: flex !important;
+	align-items: flex-end !important;
+	justify-content: space-between !important;
+	gap: var( --dak-space-4 ) var( --dak-space-6 ) !important;
+	margin: 0 0 var( --dak-space-5 ) !important;
+}
+
+.dak-home .dak-home-help-eyebrow {
+	margin: 0 0 6px !important;
+	font-size: 13px !important;
+	font-weight: 800 !important;
+	line-height: 1.2 !important;
+	letter-spacing: 0.1em !important;
+	text-transform: uppercase !important;
+	color: var( --dak-help-green ) !important;
+}
+
+.dak-home .dak-home-help-title {
+	margin: 0 !important;
+	font-family: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif ) !important;
+	font-size: 36px !important;
+	font-weight: 800 !important;
+	line-height: 1.15 !important;
+	letter-spacing: -0.01em !important;
+	text-transform: none !important;
+	color: var( --dak-help-ink ) !important;
+}
+
+.dak-home .dak-home-help-lead {
+	flex: 0 1 26rem !important;
+	margin: 0 !important;
+	padding-bottom: 4px !important;
+	font-size: 16px !important;
+	line-height: 1.5 !important;
+	text-align: right !important;
+	color: var( --dak-help-body ) !important;
+}
+
+/* Grid. */
+.dak-home-help-grid {
+	display: grid !important;
+	grid-template-columns: repeat( 4, minmax( 0, 1fr ) ) !important;
+	gap: 20px !important;
+}
+
+.dak-home-help-main {
+	grid-column: 1 / 3 !important;
+	grid-row: 1 / 3 !important;
+}
+
+.dak-home-help-grid--n1 .dak-home-help-main {
+	grid-row: auto !important;
+}
+
+.dak-home-help-grid--n0 .dak-home-help-main {
+	grid-column: 1 / -1 !important;
+	grid-row: auto !important;
+}
+
+.dak-home-help-card.is-wide {
+	grid-column: span 2 !important;
+}
+
+.dak-home-help-card.is-narrow {
+	grid-column: span 1 !important;
+}
+
+/* No big card (no doctors page at all): the small cards share the width. */
+.dak-home-help-grid.has-no-main .dak-home-help-card {
+	grid-column: auto !important;
+}
+
+.dak-home-help-grid.has-no-main {
+	grid-template-columns: repeat( auto-fit, minmax( 220px, 1fr ) ) !important;
+}
+
+/* The big card — light mint. */
+.dak-home-help-main {
+	display: flex !important;
+	flex-direction: column !important;
+	min-width: 0 !important;
+	padding: 32px !important;
+	background: var( --dak-help-mint ) !important;
+	border: 1px solid var( --dak-help-mint-border ) !important;
+	border-radius: 22px !important;
+}
+
+.dak-home-help-main-head {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: flex-start !important;
+	gap: 20px !important;
+}
+
+.dak-home-help-main-icon {
 	display: inline-flex !important;
 	align-items: center !important;
 	justify-content: center !important;
-	width: 52px !important;
-	height: 52px !important;
-	border-radius: 50% !important;
+	flex: 0 0 auto !important;
+	width: 56px !important;
+	height: 56px !important;
+	border-radius: 16px !important;
 	background: var( --dak-bg-card ) !important;
-	color: var( --dak-primary ) !important;
+	color: var( --dak-help-green ) !important;
 }
 
-.dak-home-symptom-check-icon svg {
-	width: 28px !important;
-	height: 28px !important;
+.dak-home-help-main-icon svg {
+	width: 30px !important;
+	height: 30px !important;
 }
 
-.dak-home-symptom-check-text h2 {
-	margin: 0 0 4px !important;
-	font-size: var( --dak-text-xl ) !important;
-	font-weight: 700 !important;
-	line-height: 1.3 !important;
-	color: var( --dak-text ) !important;
-}
-
-.dak-home-symptom-check-text p {
+.dak-home .dak-home-help-main-title {
 	margin: 0 !important;
-	color: var( --dak-muted ) !important;
-	line-height: 1.5 !important;
+	font-family: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif ) !important;
+	font-size: 28px !important;
+	font-weight: 800 !important;
+	line-height: 1.2 !important;
+	text-transform: none !important;
+	color: var( --dak-help-ink ) !important;
 }
 
-.dak-home-symptom-check-button {
-	min-height: 44px !important;
+.dak-home .dak-home-help-main-text {
+	margin: 10px 0 24px !important;
+	max-width: 34rem !important;
+	font-size: 16px !important;
+	line-height: 1.55 !important;
+	color: var( --dak-help-body ) !important;
+}
+
+/* Input bar with the button inside it. */
+.dak-home .dak-home-help-search {
+	display: flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	margin: 0 !important;
+	padding: 6px !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-help-mint-border ) !important;
+	border-radius: 14px !important;
+	box-shadow: 0 1px 2px rgba( 16, 60, 46, 0.06 ) !important;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.dak-home .dak-home-help-search:focus-within {
+	border-color: var( --dak-help-green ) !important;
+	box-shadow: 0 0 0 3px color-mix( in srgb, var( --dak-help-green ) 22%, transparent ) !important;
+}
+
+.dak-home .dak-home-help-input {
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+	height: 48px !important;
+	margin: 0 !important;
+	padding: 0 12px !important;
+	background: transparent !important;
+	border: 0 !important;
+	border-radius: 10px !important;
+	box-shadow: none !important;
+	outline: none !important;
+	font: inherit !important;
+	font-size: 16px !important; /* 16px stops iOS zooming in on focus. */
+	color: var( --dak-help-ink ) !important;
+}
+
+.dak-home .dak-home-help-input::placeholder {
+	color: #6b7280 !important;
+	opacity: 1 !important;
+}
+
+html[data-theme='dark'] .dak-home .dak-home-help-input::placeholder {
+	color: #9198a3 !important;
+}
+
+.dak-home .dak-home-help-submit {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	flex: 0 0 auto !important;
+	min-height: 48px !important;
+	margin: 0 !important;
+	padding: 0 22px !important;
+	background: var( --dak-help-btn ) !important;
+	border: 0 !important;
+	border-radius: 10px !important;
+	box-shadow: none !important;
+	font: inherit !important;
+	font-size: 15px !important;
+	font-weight: 700 !important;
+	line-height: 1.2 !important;
+	letter-spacing: normal !important;
+	text-transform: none !important;
 	white-space: nowrap !important;
+	color: #ffffff !important;
+	cursor: pointer !important;
+	transition: background-color 0.15s ease !important;
 }
 
-@media ( max-width: 640px ) {
-	.dak-home-symptom-check-card {
-		grid-template-columns: auto minmax( 0, 1fr ) !important;
-		padding: 18px 16px !important;
-		gap: 14px !important;
+.dak-home .dak-home-help-submit:hover {
+	background: var( --dak-help-btn-hover ) !important;
+	color: #ffffff !important;
+}
+
+.dak-home .dak-home-help-submit:focus-visible {
+	outline: 3px solid var( --dak-help-green ) !important;
+	outline-offset: 2px !important;
+}
+
+/* "Common:" symptom chips. */
+.dak-home-help-chips {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 10px !important;
+	margin-top: 20px !important;
+}
+
+.dak-home .dak-home-help-chips-label {
+	font-size: 14px !important;
+	font-weight: 600 !important;
+	color: var( --dak-help-body ) !important;
+}
+
+.dak-home .dak-home-help-chip-list {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 8px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+.dak-home .dak-home-help-chip-list li {
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+.dak-home .dak-home-help-chip-list li::before,
+.dak-home .dak-home-help-chip-list li::marker {
+	content: none !important;
+}
+
+.dak-home .dak-home-help-chip {
+	display: inline-flex !important;
+	align-items: center !important;
+	min-height: 40px !important;
+	padding: 0 16px !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-help-green ) !important;
+	border-radius: 999px !important;
+	font-size: 14px !important;
+	font-weight: 600 !important;
+	line-height: 1.2 !important;
+	text-decoration: none !important;
+	color: var( --dak-help-green ) !important;
+	transition: background-color 0.15s ease !important;
+}
+
+.dak-home .dak-home-help-chip:hover {
+	background: var( --dak-help-mint ) !important;
+	color: var( --dak-help-green ) !important;
+}
+
+.dak-home .dak-home-help-chip:focus-visible {
+	outline: 3px solid var( --dak-help-green ) !important;
+	outline-offset: 2px !important;
+}
+
+.dak-home .dak-home-help-note {
+	margin: auto 0 0 !important;
+	padding-top: 20px !important;
+	font-size: 13px !important;
+	line-height: 1.45 !important;
+	color: var( --dak-help-body ) !important;
+}
+
+/* The smaller cards — each one link. */
+.dak-home .dak-home-help-card {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: flex-start !important;
+	min-width: 0 !important;
+	padding: 24px !important;
+	background: var( --dak-bg-card ) !important;
+	border: 1px solid var( --dak-help-border ) !important;
+	border-radius: 22px !important;
+	box-shadow: none !important;
+	text-decoration: none !important;
+	color: var( --dak-help-ink ) !important;
+	transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease !important;
+}
+
+.dak-home .dak-home-help-card:hover {
+	transform: translateY( -3px ) !important;
+	box-shadow: var( --dak-help-shadow ) !important;
+	border-color: var( --dak-help-green ) !important;
+	color: var( --dak-help-ink ) !important;
+}
+
+.dak-home .dak-home-help-card:focus-visible {
+	outline: 3px solid var( --dak-help-green ) !important;
+	outline-offset: 3px !important;
+}
+
+.dak-home-help-icon {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	flex: 0 0 auto !important;
+	width: 48px !important;
+	height: 48px !important;
+	border-radius: 14px !important;
+	background: var( --dak-help-mint ) !important;
+	color: var( --dak-help-green ) !important;
+}
+
+.dak-home-help-icon svg {
+	width: 24px !important;
+	height: 24px !important;
+}
+
+.dak-home-help-icon--services {
+	background: var( --dak-help-amber-bg ) !important;
+	color: var( --dak-help-amber ) !important;
+}
+
+.dak-home-help-icon--clinics {
+	background: var( --dak-help-blue-bg ) !important;
+	color: var( --dak-help-blue ) !important;
+}
+
+.dak-home-help-body {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 6px !important;
+	min-width: 0 !important;
+	margin-top: 16px !important;
+}
+
+.dak-home .dak-home-help-card-title {
+	font-size: 18px !important;
+	font-weight: 800 !important;
+	line-height: 1.25 !important;
+	color: var( --dak-help-ink ) !important;
+}
+
+.dak-home .dak-home-help-count {
+	font-size: 34px !important;
+	font-weight: 800 !important;
+	line-height: 1 !important;
+	letter-spacing: -0.01em !important;
+	margin-right: 4px !important;
+	color: var( --dak-help-ink ) !important;
+}
+
+.dak-home .dak-home-help-card-text {
+	font-size: 15px !important;
+	line-height: 1.5 !important;
+	color: var( --dak-help-body ) !important;
+}
+
+/* Links pinned to the card bottoms so they line up across a row. */
+.dak-home .dak-home-help-link {
+	margin-top: auto !important;
+	padding-top: 16px !important;
+	font-size: 15px !important;
+	font-weight: 700 !important;
+	white-space: nowrap !important;
+	color: var( --dak-help-green ) !important;
+}
+
+.dak-home-help-link > span {
+	display: inline-block !important;
+	transition: transform 0.15s ease !important;
+}
+
+.dak-home-help-card:hover .dak-home-help-link > span {
+	transform: translateX( 3px ) !important;
+}
+
+.dak-home-help-row-only {
+	display: none !important;
+}
+
+/* Video consult on desktop: icon | title + text | link, in one row. */
+@media ( min-width: 1101px ) {
+	.dak-home .dak-home-help-card--video.is-wide {
+		flex-direction: row !important;
+		align-items: center !important;
+		gap: 20px !important;
+		padding: 28px !important;
 	}
 
-	.dak-home-symptom-check-button {
+	.dak-home-help-card--video.is-wide .dak-home-help-icon {
+		width: 64px !important;
+		height: 64px !important;
+		border-radius: 18px !important;
+	}
+
+	.dak-home-help-card--video.is-wide .dak-home-help-icon svg {
+		width: 30px !important;
+		height: 30px !important;
+	}
+
+	.dak-home-help-card--video.is-wide .dak-home-help-body {
+		flex: 1 1 auto !important;
+		margin-top: 0 !important;
+	}
+
+	.dak-home .dak-home-help-card--video.is-wide .dak-home-help-card-title {
+		font-size: 20px !important;
+	}
+
+	.dak-home .dak-home-help-card--video.is-wide .dak-home-help-link {
+		margin-top: 0 !important;
+		padding-top: 0 !important;
+	}
+}
+
+/* Tablet: the big card across the top, the rest in one row beneath it. */
+@media ( max-width: 1100px ) {
+	.dak-home-help-grid {
+		grid-template-columns: repeat( 6, minmax( 0, 1fr ) ) !important;
+	}
+
+	.dak-home-help-main,
+	.dak-home-help-grid--n1 .dak-home-help-main,
+	.dak-home-help-grid--n0 .dak-home-help-main {
 		grid-column: 1 / -1 !important;
-		justify-content: center !important;
+		grid-row: auto !important;
+	}
+
+	.dak-home-help-card.is-wide,
+	.dak-home-help-card.is-narrow {
+		grid-column: span 2 !important;
+	}
+
+	.dak-home-help-grid--n2 .dak-home-help-card.is-wide {
+		grid-column: span 3 !important;
+	}
+
+	.dak-home-help-grid--n1 .dak-home-help-card.is-wide {
+		grid-column: 1 / -1 !important;
+	}
+
+	.dak-home .dak-home-help-card {
+		padding: 22px !important;
+	}
+
+	.dak-home-help-main-head {
+		flex-direction: row !important;
+		align-items: center !important;
+		gap: 16px !important;
+	}
+
+	.dak-home .dak-home-help-main-text {
+		margin: 12px 0 20px !important;
+	}
+
+	.dak-home .dak-home-help-lead {
+		flex-basis: 20rem !important;
+	}
+}
+
+/* Phones: the big card, then the others as compact rows. */
+@media ( max-width: 767px ) {
+	.dak-home-help-head {
+		display: block !important;
+		margin-bottom: var( --dak-space-4 ) !important;
+	}
+
+	.dak-home .dak-home-help-title {
+		font-size: 24px !important;
+	}
+
+	.dak-home .dak-home-help-lead {
+		display: none !important;
+	}
+
+	.dak-home-help-grid,
+	.dak-home-help-grid.has-no-main {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+		gap: 10px !important;
+	}
+
+	.dak-home-help-main,
+	.dak-home-help-card.is-wide,
+	.dak-home-help-card.is-narrow,
+	.dak-home-help-grid--n2 .dak-home-help-card.is-wide,
+	.dak-home-help-grid--n1 .dak-home-help-card.is-wide {
+		grid-column: 1 / -1 !important;
+	}
+
+	.dak-home-help-main {
+		margin-bottom: 6px !important; /* 16px to the rows, 10px between them. */
+		padding: 20px !important;
+	}
+
+	.dak-home-help-main-icon {
+		width: 44px !important;
+		height: 44px !important;
+		border-radius: 12px !important;
+	}
+
+	.dak-home-help-main-icon svg {
+		width: 24px !important;
+		height: 24px !important;
+	}
+
+	.dak-home .dak-home-help-main-title {
+		font-size: 22px !important;
+	}
+
+	.dak-home .dak-home-help-main-text {
+		margin: 10px 0 16px !important;
+		font-size: 15px !important;
+	}
+
+	/* Full-width box, full-width button under it. */
+	.dak-home .dak-home-help-search {
+		flex-direction: column !important;
+		align-items: stretch !important;
+		gap: 10px !important;
+		padding: 0 !important;
+		background: transparent !important;
+		border: 0 !important;
+		box-shadow: none !important;
+	}
+
+	.dak-home .dak-home-help-search:focus-within {
+		box-shadow: none !important;
+	}
+
+	.dak-home .dak-home-help-input {
+		height: 52px !important;
+		padding: 0 14px !important;
+		background: var( --dak-bg-card ) !important;
+		border: 1px solid var( --dak-help-mint-border ) !important;
+		border-radius: 14px !important;
+	}
+
+	.dak-home .dak-home-help-input:focus {
+		border-color: var( --dak-help-green ) !important;
+		box-shadow: 0 0 0 3px color-mix( in srgb, var( --dak-help-green ) 22%, transparent ) !important;
+	}
+
+	.dak-home .dak-home-help-submit {
 		width: 100% !important;
+		min-height: 50px !important;
+		border-radius: 14px !important;
+		font-size: 16px !important;
+	}
+
+	.dak-home-help-chips {
+		margin-top: 16px !important;
+		gap: 8px !important;
+	}
+
+	.dak-home .dak-home-help-chip {
+		min-height: 44px !important;
+	}
+
+	/* Three chips on phones. */
+	.dak-home .dak-home-help-chip-list li:nth-child( n + 4 ) {
+		display: none !important;
+	}
+
+	.dak-home .dak-home-help-note {
+		padding-top: 14px !important;
+	}
+
+	/* Compact rows: icon | title + one line | chevron. */
+	.dak-home .dak-home-help-card {
+		flex-direction: row !important;
+		align-items: center !important;
+		gap: 14px !important;
+		min-height: 72px !important;
+		padding: 14px 14px 14px 16px !important;
+		border-radius: 16px !important;
+	}
+
+	.dak-home .dak-home-help-card:hover {
+		transform: none !important;
+	}
+
+	.dak-home-help-icon {
+		width: 44px !important;
+		height: 44px !important;
+		border-radius: 12px !important;
+	}
+
+	.dak-home-help-icon svg {
+		width: 22px !important;
+		height: 22px !important;
+	}
+
+	.dak-home-help-body {
+		flex: 1 1 auto !important;
+		gap: 2px !important;
+		margin-top: 0 !important;
+	}
+
+	.dak-home .dak-home-help-card-title {
+		font-size: 16px !important;
+		font-weight: 700 !important;
+	}
+
+	.dak-home .dak-home-help-card-text {
+		font-size: 14px !important;
+		line-height: 1.4 !important;
+	}
+
+	.dak-home-help-wide-only {
+		display: none !important;
+	}
+
+	.dak-home-help-row-only {
+		display: block !important;
+	}
+
+	.dak-home .dak-home-help-chevron {
+		display: inline-flex !important;
+		flex: 0 0 auto !important;
+		color: var( --dak-help-body ) !important;
+	}
+
+	.dak-home-help-chevron svg {
+		width: 20px !important;
+		height: 20px !important;
+	}
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.dak-home .dak-home-help-card,
+	.dak-home .dak-home-help-card:hover,
+	.dak-home-help-card:hover .dak-home-help-link > span {
+		transform: none !important;
+		transition: none !important;
 	}
 }

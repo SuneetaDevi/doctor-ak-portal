@@ -20,6 +20,8 @@
  * @var string   $videos_page_url  URL of the [videos_gallery] page, or ''.
  * @var string   $directory_url    URL of the [doctors_directory] page, or '' if not found.
  * @var string   $symptom_checker_url URL of the [symptom_checker] page when it's available to patients, else ''.
+ * @var string[] $symptom_chips    Live symptom names for the "How can we help" card's "Common:" chips (Home_Page::symptom_chips()), or empty.
+ * @var string   $video_booking_url The booking page with Video preselected (?type=video), or ''.
  * @var string   $doctor_register_url URL of the [doctor_register] page, or '' if not found — for the "Join as a Doctor" section.
  * @var string   $services_url     URL of the [services_directory] page, or '' if not found.
  * @var string   $clinics_url      URL of the [clinics_directory] page, or '' if not found.
@@ -114,56 +116,72 @@ $dak_home_specialty_icon = function ( $slug ) use ( $dak_home_specialty_icons ) 
 	return $dak_home_specialty_icons['stethoscope'];
 };
 
-// Homepage quick-access cards, right below the hero — each links straight to
-// an existing page/action rather than duplicating it, and only appears when
-// that destination actually exists.
-$dak_home_quick_links = array();
+// "How can we help you today?" — right below the hero search. The big card
+// is the symptom finder when that page is live for patients (typed text and
+// chips hand over to it; see initHomeHelp() in doctor-ak-home.js), otherwise
+// a plain doctor search. The three smaller cards each appear only when their
+// destination exists.
+$dak_help_symptom_mode = ! empty( $symptom_checker_url );
+$dak_help_main_url     = $dak_help_symptom_mode ? $symptom_checker_url : $directory_url;
+$dak_help_clinics_url  = $clinics_url ? $clinics_url : ( ! empty( $clinic_locations ) ? '#dak-home-clinics' : '' );
+$dak_help_options      = array();
 
-if ( $directory_url ) {
-	$dak_home_quick_links[] = array(
-		'icon'   => 'user',
-		'title'  => __( 'Find a Doctor', 'doctor-ak-portal' ),
-		'text'   => __( 'Browse specialists by condition', 'doctor-ak-portal' ),
-		'url'    => $directory_url,
-		'color'  => 'success',
-		'is_book' => false,
+if ( ! empty( $video_booking_url ) ) {
+	$dak_help_options[] = array(
+		'key'   => 'video',
+		'icon'  => 'video',
+		'url'   => $video_booking_url,
+		'title' => __( 'Video consult', 'doctor-ak-portal' ),
+		'text'  => __( 'See a doctor from home — no travel, no waiting room.', 'doctor-ak-portal' ),
+		'short' => __( 'See a doctor from home', 'doctor-ak-portal' ),
+		'link'  => __( 'Start a video call', 'doctor-ak-portal' ),
 	);
 }
-
-$dak_home_quick_links[] = array(
-	'icon'    => 'video',
-	'title'   => __( 'Video Consult', 'doctor-ak-portal' ),
-	'text'    => __( 'Talk to a doctor from anywhere', 'doctor-ak-portal' ),
-	'url'     => '',
-	'color'   => 'teal',
-	'is_book' => true,
-);
 
 if ( $services_url ) {
-	$dak_home_quick_links[] = array(
-		'icon'    => 'tag',
-		'title'   => __( 'Our Services', 'doctor-ak-portal' ),
-		'text'    => __( 'Fees & procedures, upfront', 'doctor-ak-portal' ),
-		'url'     => $services_url,
-		'color'   => 'amber',
-		'is_book' => false,
+	$dak_help_options[] = array(
+		'key'   => 'services',
+		'icon'  => 'tag',
+		'url'   => $services_url,
+		'title' => __( 'Services & fees', 'doctor-ak-portal' ),
+		'text'  => __( 'Endoscopy, antenatal check-ups, wound care and more — prices shown upfront.', 'doctor-ak-portal' ),
+		'short' => __( 'Prices shown upfront', 'doctor-ak-portal' ),
+		'link'  => __( 'See all services', 'doctor-ak-portal' ),
 	);
 }
 
-if ( ! empty( $clinic_locations ) ) {
-	$dak_home_quick_links[] = array(
-		'icon'    => 'pin',
-		'title'   => __( 'Visit a Clinic', 'doctor-ak-portal' ),
-		'text'    => sprintf(
-			/* translators: %d: number of clinics. */
-			_n( '%d location in Karachi', '%d locations in Karachi', $stats['clinics_count'], 'doctor-ak-portal' ),
-			$stats['clinics_count']
-		),
-		'url'     => '#dak-home-clinics',
-		'color'   => 'purple',
-		'is_book' => false,
+if ( $dak_help_clinics_url ) {
+	$dak_help_options[] = array(
+		'key'   => 'clinics',
+		'icon'  => 'pin',
+		'url'   => $dak_help_clinics_url,
+		'title' => __( 'Clinics', 'doctor-ak-portal' ),
+		'count' => (int) $stats['clinics_count'],
+		'text'  => __( 'Walk in or book a visit at a clinic near you in Karachi.', 'doctor-ak-portal' ),
+		'short' => $stats['clinics_count'] > 0
+			/* translators: %s: number of clinics. */
+			? sprintf( _n( '%s location in Karachi', '%s locations in Karachi', $stats['clinics_count'], 'doctor-ak-portal' ), number_format_i18n( $stats['clinics_count'] ) )
+			: __( 'Clinics near you in Karachi', 'doctor-ak-portal' ),
+		'link'  => __( 'Find nearest clinic', 'doctor-ak-portal' ),
 	);
 }
+
+// Desktop placement: the first small card is wide (beside the big card's
+// top half) and the rest share the row below — or, with only two, both wide.
+foreach ( $dak_help_options as $dak_i => &$dak_option ) {
+	$dak_option['wide'] = 0 === $dak_i || 2 === count( $dak_help_options );
+}
+unset( $dak_option );
+
+// A plain-permalink page id (?page_id=12) would be dropped by a GET form's
+// own query, so it's carried as hidden fields.
+$dak_help_form_action = $dak_help_main_url ? strtok( $dak_help_main_url, '?' ) : '';
+$dak_help_form_args   = array();
+
+if ( $dak_help_main_url && wp_parse_url( $dak_help_main_url, PHP_URL_QUERY ) ) {
+	parse_str( wp_parse_url( $dak_help_main_url, PHP_URL_QUERY ), $dak_help_form_args );
+}
+
 
 // 'title'/'text' feed the compact strip under the video.
 $dak_home_trust_points = array(
@@ -455,39 +473,95 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 		</div>
 	<?php endif; ?>
 
-	<?php if ( ! empty( $symptom_checker_url ) ) : ?>
-		<section class="dak-home-section dak-home-symptom-check" aria-labelledby="dak-home-symptom-check-title">
-			<div class="dak-home-symptom-check-card">
-				<span class="dak-home-symptom-check-icon" aria-hidden="true"><?php echo $dak_home_specialty_icons['stethoscope']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-				<div class="dak-home-symptom-check-text">
-					<h2 id="dak-home-symptom-check-title"><?php esc_html_e( 'Not sure which doctor you need?', 'doctor-ak-portal' ); ?></h2>
-					<p><?php esc_html_e( 'Find doctors based on your symptoms. Enter what you\'re experiencing to see doctors in related specialties — it helps you find a doctor, it isn\'t a diagnosis.', 'doctor-ak-portal' ); ?></p>
+	<?php if ( $dak_help_main_url || ! empty( $dak_help_options ) ) : ?>
+		<section class="dak-home-section dak-home-help" aria-labelledby="dak-home-help-title">
+			<div class="dak-home-help-head">
+				<div class="dak-home-help-head-text">
+					<p class="dak-home-help-eyebrow"><?php esc_html_e( 'Get started', 'doctor-ak-portal' ); ?></p>
+					<h2 class="dak-home-help-title" id="dak-home-help-title"><?php esc_html_e( 'How can we help you today?', 'doctor-ak-portal' ); ?></h2>
 				</div>
-				<a class="dak-button dak-button-primary dak-home-symptom-check-button" href="<?php echo esc_url( $symptom_checker_url ); ?>"><?php esc_html_e( 'Find doctors by symptoms', 'doctor-ak-portal' ); ?></a>
+				<p class="dak-home-help-lead"><?php esc_html_e( 'Pick what fits you best — at a clinic, online, or not sure yet.', 'doctor-ak-portal' ); ?></p>
 			</div>
-		</section>
-	<?php endif; ?>
 
-	<?php if ( ! empty( $dak_home_quick_links ) ) : ?>
-		<section class="dak-home-section dak-home-quick-links">
-			<h2 class="dak-home-quick-links-title"><?php esc_html_e( 'What Would You Like To Do?', 'doctor-ak-portal' ); ?></h2>
-			<div class="dak-home-quick-links-grid">
-				<?php foreach ( $dak_home_quick_links as $dak_link ) : ?>
-					<?php if ( $dak_link['is_book'] ) : ?>
-						<button type="button" class="dak-home-quick-link-card" data-dak-book-appointment data-booking-type="video">
-							<span class="dak-home-quick-link-icon dak-home-quick-link-icon-<?php echo esc_attr( $dak_link['color'] ); ?>" aria-hidden="true"><?php echo $dak_home_icons[ $dak_link['icon'] ]; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-							<span class="dak-home-quick-link-title"><?php echo esc_html( $dak_link['title'] ); ?></span>
-							<span class="dak-home-quick-link-text"><?php echo esc_html( $dak_link['text'] ); ?></span>
-							<span class="dak-home-quick-link-arrow" aria-hidden="true"><?php echo $dak_home_icons['arrow']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-						</button>
-					<?php else : ?>
-						<a class="dak-home-quick-link-card" href="<?php echo esc_url( $dak_link['url'] ); ?>">
-							<span class="dak-home-quick-link-icon dak-home-quick-link-icon-<?php echo esc_attr( $dak_link['color'] ); ?>" aria-hidden="true"><?php echo $dak_home_icons[ $dak_link['icon'] ]; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-							<span class="dak-home-quick-link-title"><?php echo esc_html( $dak_link['title'] ); ?></span>
-							<span class="dak-home-quick-link-text"><?php echo esc_html( $dak_link['text'] ); ?></span>
-							<span class="dak-home-quick-link-arrow" aria-hidden="true"><?php echo $dak_home_icons['arrow']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
-						</a>
-					<?php endif; ?>
+			<div class="dak-home-help-grid dak-home-help-grid--n<?php echo esc_attr( count( $dak_help_options ) ); ?><?php echo $dak_help_main_url ? '' : ' has-no-main'; ?>">
+				<?php if ( $dak_help_main_url ) : ?>
+					<div class="dak-home-help-main">
+						<div class="dak-home-help-main-head">
+							<span class="dak-home-help-main-icon" aria-hidden="true"><?php echo $dak_home_specialty_icons['stethoscope']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?></span>
+							<h3 class="dak-home-help-main-title">
+								<?php echo esc_html( $dak_help_symptom_mode ? __( 'Not sure who to see?', 'doctor-ak-portal' ) : __( 'Looking for a doctor?', 'doctor-ak-portal' ) ); ?>
+							</h3>
+						</div>
+						<p class="dak-home-help-main-text">
+							<?php echo esc_html( $dak_help_symptom_mode ? __( 'Tell us how you feel and we’ll point you to the right specialist.', 'doctor-ak-portal' ) : __( 'Search by name or specialty and book in a few clicks.', 'doctor-ak-portal' ) ); ?>
+						</p>
+
+						<?php
+						// Symptom mode: the typed text is handed to the symptom page in
+						// the URL fragment by doctor-ak-home.js (never in the query, so it
+						// isn't sent to the site) — hence no `name` on the input: without
+						// JavaScript the form just opens the symptom page.
+						?>
+						<form class="dak-home-help-search" method="get" action="<?php echo esc_url( $dak_help_form_action ); ?>" role="search"<?php echo $dak_help_symptom_mode ? ' data-dak-home-symptom-form data-symptom-url="' . esc_url( $symptom_checker_url ) . '"' : ''; ?>>
+							<?php foreach ( $dak_help_form_args as $dak_arg_name => $dak_arg_value ) : ?>
+								<?php if ( is_scalar( $dak_arg_value ) ) : ?>
+									<input type="hidden" name="<?php echo esc_attr( $dak_arg_name ); ?>" value="<?php echo esc_attr( $dak_arg_value ); ?>">
+								<?php endif; ?>
+							<?php endforeach; ?>
+							<label class="dak-visually-hidden" for="dak-home-help-input">
+								<?php echo esc_html( $dak_help_symptom_mode ? __( 'Describe your symptoms', 'doctor-ak-portal' ) : __( 'Search doctors by name or specialty', 'doctor-ak-portal' ) ); ?>
+							</label>
+							<input
+								type="text"
+								id="dak-home-help-input"
+								class="dak-home-help-input"
+								<?php echo $dak_help_symptom_mode ? '' : 'name="q"'; ?>
+								placeholder="<?php echo esc_attr( $dak_help_symptom_mode ? __( 'e.g. stomach pain, fever, back pain…', 'doctor-ak-portal' ) : __( 'e.g. cardiologist, gastroenterologist…', 'doctor-ak-portal' ) ); ?>"
+								autocomplete="off"
+								maxlength="200"
+								enterkeyhint="search"
+							>
+							<button type="submit" class="dak-home-help-submit">
+								<?php echo esc_html( $dak_help_symptom_mode ? __( 'Find specialist', 'doctor-ak-portal' ) : __( 'Find doctor', 'doctor-ak-portal' ) ); ?>
+							</button>
+						</form>
+
+						<?php if ( ! empty( $symptom_chips ) ) : ?>
+							<div class="dak-home-help-chips">
+								<span class="dak-home-help-chips-label" id="dak-home-help-chips-label"><?php esc_html_e( 'Common:', 'doctor-ak-portal' ); ?></span>
+								<ul class="dak-home-help-chip-list" aria-labelledby="dak-home-help-chips-label">
+									<?php foreach ( $symptom_chips as $dak_chip ) : ?>
+										<li><a class="dak-home-help-chip" href="<?php echo esc_url( $symptom_checker_url . '#symptoms=' . rawurlencode( $dak_chip ) ); ?>"><?php echo esc_html( $dak_chip ); ?></a></li>
+									<?php endforeach; ?>
+								</ul>
+							</div>
+						<?php endif; ?>
+
+						<?php if ( $dak_help_symptom_mode ) : ?>
+							<p class="dak-home-help-note"><?php esc_html_e( 'This helps you choose a doctor — it isn’t a diagnosis.', 'doctor-ak-portal' ); ?></p>
+						<?php endif; ?>
+					</div>
+				<?php endif; ?>
+
+				<?php foreach ( $dak_help_options as $dak_option ) : ?>
+					<a class="dak-home-help-card dak-home-help-card--<?php echo esc_attr( $dak_option['key'] ); ?> <?php echo $dak_option['wide'] ? 'is-wide' : 'is-narrow'; ?>" href="<?php echo esc_url( $dak_option['url'] ); ?>">
+						<span class="dak-home-help-icon dak-home-help-icon--<?php echo esc_attr( $dak_option['key'] ); ?>" aria-hidden="true"><?php echo $dak_home_icons[ $dak_option['icon'] ]; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?></span>
+						<span class="dak-home-help-body">
+							<?php if ( 'clinics' === $dak_option['key'] && $dak_option['count'] > 0 ) : ?>
+								<span class="dak-home-help-card-title dak-home-help-wide-only">
+									<span class="dak-home-help-count"><?php echo esc_html( number_format_i18n( $dak_option['count'] ) ); ?></span>
+									<?php echo esc_html( _n( 'clinic', 'clinics', $dak_option['count'], 'doctor-ak-portal' ) ); ?>
+								</span>
+								<span class="dak-home-help-card-title dak-home-help-row-only"><?php echo esc_html( $dak_option['title'] ); ?></span>
+							<?php else : ?>
+								<span class="dak-home-help-card-title"><?php echo esc_html( $dak_option['title'] ); ?></span>
+							<?php endif; ?>
+							<span class="dak-home-help-card-text dak-home-help-wide-only"><?php echo esc_html( $dak_option['text'] ); ?></span>
+							<span class="dak-home-help-card-text dak-home-help-row-only"><?php echo esc_html( $dak_option['short'] ); ?></span>
+						</span>
+						<span class="dak-home-help-link dak-home-help-wide-only"><?php echo esc_html( $dak_option['link'] ); ?> <span aria-hidden="true">→</span></span>
+						<span class="dak-home-help-chevron dak-home-help-row-only" aria-hidden="true"><?php echo $dak_home_icons['chevron']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?></span>
+					</a>
 				<?php endforeach; ?>
 			</div>
 		</section>

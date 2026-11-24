@@ -16,6 +16,7 @@ use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Specializations;
+use DoctorAKPortal\Includes\Symptom_Mappings;
 use DoctorAKPortal\Includes\Template_Loader;
 use DoctorAKPortal\Includes\Video_Pricing;
 
@@ -352,6 +353,10 @@ class Home_Page {
 				'directory_url'    => $directory_url,
 				// Only once clinically approved rules are published and switched on.
 				'symptom_checker_url' => Symptom_Checker::public_url(),
+				// "Common:" chips on the symptom card — live symptoms only.
+				'symptom_chips'    => '' !== Symptom_Checker::public_url() ? self::symptom_chips() : array(),
+				// "Video consult" card: the booking page with Video preselected.
+				'video_booking_url' => '' !== Page_Finder::url_for_shortcode( 'book_appointment' ) ? add_query_arg( 'type', 'video', Page_Finder::url_for_shortcode( 'book_appointment' ) ) : '',
 				// "Join as a Doctor" opens registration with Doctor preselected.
 				'doctor_register_url' => '' !== Page_Finder::url_for_shortcode( 'doctor_register' ) ? add_query_arg( 'role', 'doctor', Page_Finder::url_for_shortcode( 'doctor_register' ) ) : '',
 				'services_url'     => Page_Finder::url_for_shortcode( 'services_directory' ),
@@ -364,6 +369,41 @@ class Home_Page {
 				'clinic_locations' => array_slice( $all_clinic_locations, 0, self::FEATURED_CLINICS_LIMIT ),
 			)
 		);
+	}
+
+	/**
+	 * The symptom card's "Common:" chips: the wanted examples that are LIVE
+	 * symptoms (clinically reviewed and activated), matched against each
+	 * live symptom's name or any of its phrases. An example with no live
+	 * symptom behind it is left out, so no chip ever ends in "no match".
+	 * Each chip shows, and hands over, the live symptom's own name.
+	 *
+	 * @return string[] Symptom names, in the wanted order.
+	 */
+	private static function symptom_chips() {
+		/**
+		 * Filters which common symptoms the home page offers as chips.
+		 *
+		 * @param string[] $wanted Names or phrases, in display order.
+		 */
+		$wanted = (array) apply_filters( 'doctor_ak_home_symptom_chips', array( 'Fever', 'Stomach pain', 'Pregnancy', 'Skin problem' ) );
+		$live   = Symptom_Mappings::public_items();
+		$chips  = array();
+
+		foreach ( $wanted as $phrase ) {
+			$phrase = mb_strtolower( trim( (string) $phrase ) );
+
+			foreach ( $live as $item ) {
+				$names = array_map( 'mb_strtolower', array_map( 'trim', array_merge( array( $item['name'] ), (array) $item['synonyms'] ) ) );
+
+				if ( in_array( $phrase, $names, true ) && ! in_array( $item['name'], $chips, true ) ) {
+					$chips[] = $item['name'];
+					break;
+				}
+			}
+		}
+
+		return $chips;
 	}
 
 	/**

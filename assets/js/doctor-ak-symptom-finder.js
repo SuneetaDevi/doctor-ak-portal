@@ -22,7 +22,10 @@
  * never taken as a sign that anything is fine.
  *
  * Privacy: everything stays in this page's memory — nothing is sent to the
- * site, written to the URL, cookies or storage, or logged. The location is
+ * site, written to the URL, cookies or storage, or logged. The one thing
+ * read from the URL is text handed over from the home page in the fragment
+ * (#symptoms=…, never sent to the server), removed from the address bar as
+ * soon as it's read — see takeHandoff() at the end. The location is
  * only requested on the results step, only used to sort by straight-line
  * distance, and forgotten when the page is left. Booking links carry the
  * doctor and clinic only, never symptoms or answers.
@@ -1721,10 +1724,58 @@
 		}
 	} );
 
+	/**
+	 * Text handed over from the home page's "Not sure who to see?" box or
+	 * one of its chips, in the URL fragment (#symptoms=…) — which browsers
+	 * never send to the server. It's read once and removed from the address
+	 * bar at once (replaceState, so the history entry doesn't keep it
+	 * either), then treated exactly as if it had been typed here and added:
+	 * the same matching, "did you mean" and safety rules. Only when every
+	 * part was recognised outright does it go on to the next step, as
+	 * "Find doctors" would; anything unclear stays on this step to be
+	 * checked.
+	 *
+	 * @return {string}
+	 */
+	function takeHandoff() {
+		var found = /^#symptoms=([^#]*)$/.exec( window.location.hash || '' );
+		var text = '';
+
+		if ( ! found ) {
+			return '';
+		}
+
+		try {
+			text = decodeURIComponent( found[ 1 ].replace( /\+/g, ' ' ) );
+		} catch ( e ) {
+			text = '';
+		}
+
+		if ( window.history && window.history.replaceState ) {
+			window.history.replaceState( window.history.state, '', window.location.pathname + window.location.search );
+		} else {
+			window.location.hash = '';
+		}
+
+		return text.replace( /\s+/g, ' ' ).trim().slice( 0, 200 );
+	}
+
+	var handoff = takeHandoff();
+
 	// Staff preview opened from one symptom's "Preview" button.
 	if ( data.preview && data.previewSymptom && m.byId[ data.previewSymptom ] ) {
 		addSymptom( data.previewSymptom );
 	}
 
 	renderSteps();
+
+	if ( handoff ) {
+		readText( handoff );
+
+		if ( selected.length && ! questions.length && ! unmatched.length && ! denied.length ) {
+			root.querySelector( '[data-sf-find]' ).click();
+		} else {
+			input.focus();
+		}
+	}
 }() );

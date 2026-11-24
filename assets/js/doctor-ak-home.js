@@ -27,7 +27,44 @@
 		initVideoCarousel();
 		initVideoGallery();
 		initHeroSearch();
+		initHomeHelp();
 	} );
+
+	/**
+	 * "How can we help you today?" — the symptom card's box. The typed text
+	 * goes to the "Find a doctor by symptoms" page in the URL *fragment*
+	 * (#symptoms=…), which browsers never send to the server; that page reads
+	 * it once, removes it from the address bar straight away and runs it
+	 * through its own matching and safety checks (see doctor-ak-symptom-
+	 * finder.js). The chips are plain links carrying the same fragment.
+	 * The box is emptied when the page is shown again from the back/forward
+	 * cache, so a symptom isn't left sitting on the home page.
+	 */
+	function initHomeHelp() {
+		var form = document.querySelector( '[data-dak-home-symptom-form]' );
+
+		if ( ! form ) {
+			return;
+		}
+
+		var input = form.querySelector( '.dak-home-help-input' );
+		var base = ( form.getAttribute( 'data-symptom-url' ) || '' ).split( '#' )[ 0 ];
+
+		if ( ! input || ! base ) {
+			return;
+		}
+
+		form.addEventListener( 'submit', function ( event ) {
+			var text = input.value.replace( /\s+/g, ' ' ).trim().slice( 0, 200 );
+
+			event.preventDefault();
+			window.location.href = text ? base + '#symptoms=' + encodeURIComponent( text ) : base;
+		} );
+
+		window.addEventListener( 'pageshow', function () {
+			input.value = '';
+		} );
+	}
 
 	/**
 	 * The video reel's carousel controls — Prev/Next buttons and a dot pager

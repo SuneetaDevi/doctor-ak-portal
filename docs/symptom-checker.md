@@ -14,7 +14,7 @@ The page is **for navigation only**. It gives no diagnosis, possible conditions,
 | What | Where |
 | --- | --- |
 | Public page | Any page containing `[symptom_checker]`. One is created automatically. |
-| Entry points | A "Not sure which doctor you need?" card on the home page, a "Find by symptoms" header link, and a link in the header's Doctors menu. They appear **only** while the page is available to patients. Administrators and reviewers also see the header link earlier, for their preview. |
+| Entry points | The "Not sure who to see?" card in the home page's "How can we help you today?" section (a symptom box plus "Common:" chips, which show only symptoms that are live), a "Find by symptoms" header link, and a link in the header's Doctors menu. They appear **only** while the page is available to patients; until then the home card is a plain doctor search. Administrators and reviewers also see the header link earlier, for their preview. |
 | Administrators | Admin dashboard → Content → **Symptom mappings**. Receptionists never see it. |
 | Clinical reviewers | Doctor dashboard → **Symptom mappings**. The tab appears only for doctors an administrator has made reviewers. |
 | Clinic coordinates | Admin dashboard → Clinic → edit a clinic → **Map coordinates (optional)**. |
@@ -169,7 +169,8 @@ The status column spells out the version: **Draft**, **Pending review**, **Appro
 
 ## Privacy
 
-- Everything the patient types or answers, and their location, stays in the browser. None of it goes into the URL, cookies, local or session storage, or the console, and nothing is sent to the site or to analytics.
+- Everything the patient types or answers, and their location, stays in the browser. None of it goes into cookies, local or session storage, or the console, and nothing is sent to the site or to analytics.
+- **One exception, the home page hand-off.** The home page's "Not sure who to see?" box and its symptom chips open this page with the text in the URL *fragment* (`#symptoms=…`). Browsers never send the fragment to the server, so the site and its logs don't receive it. This page reads it once, removes it from the address bar straight away (the history entry is rewritten too), and then handles it exactly as if it had been typed here. The text is in the address bar only for that moment. No other symptom, answer or location ever goes into the URL.
 - Symptoms and answers are never stored, logged or attached to appointments. Booking links carry only the doctor and clinic.
 - The page receives only the **published copies** of live symptoms (name, identifier, guidance, phrases, specialties, questions) and live safety rules (heading, level, instructions, conditions), the approved notice, and the same public doctor and clinic details as the Find a Doctor page. Drafts, internal notes and reviewer details are never sent to patients. Approved rule conditions are public by design, because the page evaluates them in the browser.
 - The audit log records staff actions only.
