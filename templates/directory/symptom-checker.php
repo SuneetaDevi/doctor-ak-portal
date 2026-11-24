@@ -102,6 +102,18 @@ $dak_sf_alert_icon = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor"
 
 			<div class="dak-sf-clarify" data-sf-clarify hidden></div>
 
+			<?php // Every symptom as a tap-to-choose chip, for anyone who'd rather not type (filled in by the page script). ?>
+			<div class="dak-sf-all" data-sf-all hidden>
+				<p class="dak-sf-label" id="dak-sf-all-label"><?php esc_html_e( 'Or tap your symptoms', 'doctor-ak-portal' ); ?></p>
+				<p class="dak-sf-hint"><?php esc_html_e( 'Tap each one you have. Tap it again to remove it.', 'doctor-ak-portal' ); ?></p>
+				<div class="dak-sf-all-search">
+					<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg>
+					<input type="search" class="dak-sf-input dak-sf-all-q" autocomplete="off" autocapitalize="none" aria-label="<?php esc_attr_e( 'Search the symptom list', 'doctor-ak-portal' ); ?>" aria-controls="dak-sf-all-list" placeholder="<?php esc_attr_e( 'Search the list, e.g. fever or bukhar', 'doctor-ak-portal' ); ?>" data-sf-all-q data-count-label="<?php /* translators: %d: number of symptoms shown. Keep %d. */ esc_attr_e( '%d symptoms shown', 'doctor-ak-portal' ); ?>">
+				</div>
+				<ul class="dak-sf-all-list" id="dak-sf-all-list" aria-labelledby="dak-sf-all-label" data-sf-all-list></ul>
+				<p class="dak-sf-hint dak-sf-all-empty" data-sf-all-empty hidden><?php esc_html_e( 'No symptom in the list matches that. Try another word, or type it in the box above.', 'doctor-ak-portal' ); ?></p>
+			</div>
+
 			<div class="dak-sf-selected" data-sf-selected-wrap hidden>
 				<p class="dak-sf-label" id="dak-sf-selected-label"><?php esc_html_e( 'Your symptoms', 'doctor-ak-portal' ); ?></p>
 				<ul class="dak-sf-chips" aria-labelledby="dak-sf-selected-label" data-sf-chips></ul>

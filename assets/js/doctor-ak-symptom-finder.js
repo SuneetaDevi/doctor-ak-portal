@@ -48,6 +48,8 @@
 	var clarify = root.querySelector( '[data-sf-clarify]' );
 	var chipsWrap = root.querySelector( '[data-sf-selected-wrap]' );
 	var chips = root.querySelector( '[data-sf-chips]' );
+	var allWrap = root.querySelector( '[data-sf-all]' );
+	var allList = root.querySelector( '[data-sf-all-list]' );
 	var errorEl = root.querySelector( '[data-sf-error]' );
 	var results = root.querySelector( '[data-sf-results]' );
 	var live = root.querySelector( '[data-sf-live]' );
@@ -451,9 +453,177 @@
 		return nameOf( id ) + ( data.preview && row && row.status && 'active' !== row.status ? ' (' + row.status + ')' : '' );
 	}
 
+	/**
+	 * Every symptom as a toggle chip, A–Z, for people who'd rather tap than
+	 * type. Built once; syncAll() keeps the pressed state in step with the
+	 * selection, so a tapped chip keeps keyboard focus.
+	 */
+	function renderAll() {
+		if ( ! allWrap || ! allList ) {
+			return;
+		}
+
+		var rows = Object.keys( m.byId ).map( function ( key ) {
+			return m.byId[ key ];
+		} ).filter( function ( row ) {
+			return row && row.name;
+		} ).sort( function ( a, b ) {
+			return a.name.localeCompare( b.name );
+		} );
+
+		allList.textContent = '';
+		allWrap.hidden = ! rows.length;
+		allItems = [];
+
+		rows.forEach( function ( row ) {
+			var via = h( 'small', { class: 'dak-sf-pick-via', hidden: true } );
+			var button = h( 'button', {
+				type: 'button',
+				class: 'dak-sf-pick',
+				'aria-pressed': 'false',
+				'data-sf-pick': String( row.id ),
+				title: row.description || null,
+				onclick: function () {
+					if ( selected.indexOf( row.id ) === -1 ) {
+						addSymptom( row.id );
+					} else {
+						removeSymptom( row.id );
+					}
+				},
+			}, [ h( 'span', { text: chipLabel( row.id ) } ), via ] );
+			var li = h( 'li', {}, [ button ] );
+
+			allList.appendChild( li );
+			allItems.push( {
+				li: li,
+				via: via,
+				button: button,
+				name: row.name,
+				// Words to match: the name, then each synonym (English or Roman Urdu).
+				terms: [ row.name ].concat( row.synonyms || [] ).map( function ( t ) {
+					return { text: String( t ), words: words( t ) };
+				} ),
+			} );
+		} );
+
+		syncAll();
+		filterAll();
+	}
+
+	var allItems = [];
+	var allQuery = allWrap ? allWrap.querySelector( '[data-sf-all-q]' ) : null;
+	var allEmpty = allWrap ? allWrap.querySelector( '[data-sf-all-empty]' ) : null;
+	var allTimer = 0;
+
+	/** Lower-cased words of a text, letters and digits only. */
+	function words( text ) {
+		return String( text || '' ).toLowerCase().replace( /[^a-z0-9À-￿]+/g, ' ' ).trim().split( ' ' ).filter( Boolean );
+	}
+
+	/** Whether every typed word starts one of the term's words ("pet da" → "pet dard"). */
+	function termMatches( term, typed ) {
+		return typed.every( function ( w ) {
+			return term.words.some( function ( tw ) {
+				return 0 === tw.indexOf( w );
+			} );
+		} );
+	}
+
+	/**
+	 * Narrows the chip list to symptoms whose name or any synonym matches
+	 * what's typed in its search box. A synonym match shows that word under
+	 * the name ("Fever · bukhar"), so it's clear why it's listed.
+	 */
+	function filterAll() {
+		if ( ! allQuery ) {
+			return;
+		}
+
+		var typed = words( allQuery.value );
+		var shown = 0;
+
+		allItems.forEach( function ( item ) {
+			var hit = null;
+
+			if ( ! typed.length || termMatches( item.terms[ 0 ], typed ) ) {
+				hit = item.terms[ 0 ];
+			} else {
+				item.terms.slice( 1 ).some( function ( term ) {
+					if ( termMatches( term, typed ) ) {
+						hit = term;
+					}
+					return !! hit;
+				} );
+			}
+
+			item.li.hidden = ! hit;
+			item.via.hidden = ! hit || hit === item.terms[ 0 ];
+			item.via.textContent = hit && hit !== item.terms[ 0 ] ? hit.text : '';
+
+			if ( hit ) {
+				shown++;
+			}
+		} );
+
+		if ( allEmpty ) {
+			allEmpty.hidden = shown > 0;
+		}
+
+		return shown;
+	}
+
+	if ( allQuery ) {
+		allQuery.addEventListener( 'input', function () {
+			var shown = filterAll();
+
+			// Tell screen-reader users how many are left once typing pauses.
+			clearTimeout( allTimer );
+			allTimer = setTimeout( function () {
+				announce( ( allQuery.getAttribute( 'data-count-label' ) || '%d' ).replace( '%d', shown ) );
+			}, 700 );
+		} );
+
+		// Enter picks the symptom when only one is left.
+		allQuery.addEventListener( 'keydown', function ( event ) {
+			if ( 'Enter' !== event.key ) {
+				return;
+			}
+
+			event.preventDefault();
+
+			var left = allItems.filter( function ( item ) {
+				return ! item.li.hidden;
+			} );
+
+			if ( 1 === left.length && 'true' !== left[ 0 ].button.getAttribute( 'aria-pressed' ) ) {
+				left[ 0 ].button.click();
+				allQuery.value = '';
+				filterAll();
+			} else if ( left.length ) {
+				left[ 0 ].button.focus();
+			}
+		} );
+	}
+
+	function syncAll() {
+		if ( ! allList ) {
+			return;
+		}
+
+		Array.prototype.forEach.call( allList.querySelectorAll( '[data-sf-pick]' ), function ( button ) {
+			var on = selected.some( function ( id ) {
+				return String( id ) === button.getAttribute( 'data-sf-pick' );
+			} );
+
+			button.setAttribute( 'aria-pressed', on ? 'true' : 'false' );
+			button.classList.toggle( 'is-on', on );
+		} );
+	}
+
 	function renderChips() {
 		chips.textContent = '';
 		chipsWrap.hidden = ! selected.length;
+		syncAll();
 
 		selected.forEach( function ( id ) {
 			var row = m.byId[ id ];
@@ -1761,6 +1931,8 @@
 	}
 
 	var handoff = takeHandoff();
+
+	renderAll();
 
 	// Staff preview opened from one symptom's "Preview" button.
 	if ( data.preview && data.previewSymptom && m.byId[ data.previewSymptom ] ) {

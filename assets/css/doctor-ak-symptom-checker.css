@@ -1091,3 +1091,106 @@
 		padding: 14px 16px !important;
 	}
 }
+
+/* "Or tap your symptoms": every symptom as a toggle chip, with a search
+   box that narrows the list (doctor-ak-symptom-finder.js renderAll()). */
+.dak-sf-all {
+	margin: 20px 0 0 !important;
+	padding: 18px 0 0 !important;
+	border-top: 1px solid var( --dak-border ) !important;
+}
+
+.dak-sf-all-search {
+	position: relative !important;
+	max-width: 440px !important;
+	margin: 8px 0 14px !important;
+}
+
+.dak-sf-all-search svg {
+	position: absolute !important;
+	top: 50% !important;
+	left: 14px !important;
+	width: 18px !important;
+	height: 18px !important;
+	transform: translateY( -50% ) !important;
+	color: var( --dak-muted ) !important;
+	pointer-events: none !important;
+}
+
+.dak-sf .dak-sf-all-q {
+	min-height: 48px !important;
+	padding-left: 42px !important;
+}
+
+.dak-sf-all-list {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 8px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+.dak-sf-all-list li {
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+.dak-sf-pick {
+	display: inline-flex !important;
+	align-items: baseline !important;
+	gap: 6px !important;
+	min-height: 44px !important;
+	margin: 0 !important;
+	padding: 9px 16px !important;
+	border: 1px solid var( --dak-border ) !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-text ) !important;
+	font: inherit !important;
+	font-size: 0.95rem !important;
+	font-weight: 600 !important;
+	line-height: 1.3 !important;
+	text-align: left !important;
+	cursor: pointer !important;
+	transition: background-color 0.12s ease, border-color 0.12s ease !important;
+}
+
+.dak-sf-pick:hover {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary-tint ) !important;
+}
+
+.dak-sf-pick:focus-visible {
+	outline: 2px solid var( --dak-primary ) !important;
+	outline-offset: 2px !important;
+}
+
+.dak-sf-pick.is-on,
+.dak-sf-pick[aria-pressed='true'] {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary ) !important;
+	color: var( --dak-bg-card ) !important;
+}
+
+.dak-sf-pick.is-on::before,
+.dak-sf-pick[aria-pressed='true']::before {
+	content: '\2713' !important;
+	font-weight: 800 !important;
+}
+
+.dak-sf-pick-via {
+	font-size: 0.8rem !important;
+	font-weight: 500 !important;
+	opacity: 0.8 !important;
+}
+
+.dak-sf-all-empty {
+	margin: 4px 0 0 !important;
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.dak-sf-pick {
+		transition: none !important;
+	}
+}
