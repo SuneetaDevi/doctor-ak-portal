@@ -23,6 +23,7 @@
  * @var array    $fee_slabs        Doctors per fee chip (lowest fee up to): '500', '1000', '1500'.
  * @var array    $experience_slabs Doctors per experience option (at least N years): '5', '10', '15', '20'.
  * @var int      $doctors_count    Number of listed doctors.
+ * @var string   $specialties_url  The specialty picker (doctors-specialty-picker.php), or '' when there is none.
  */
 
 // Prevent direct file access.
@@ -186,6 +187,12 @@ $dak_quick_row = function ( $name, $title, $icon, array $choices, array $counts 
 <div class="dak-portal dak-dir dak-dir-doctors" data-dak-dir-doctors data-strings="<?php echo esc_attr( wp_json_encode( $dak_dir_strings ) ); ?>">
 	<header class="dak-dir-intro">
 		<div class="dak-dir-intro-text">
+			<?php if ( ! empty( $specialties_url ) ) : ?>
+				<a class="dak-dir-back" href="<?php echo esc_url( $specialties_url ); ?>">
+					<?php echo $dak_icons['arrow_l']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?>
+					<?php esc_html_e( 'All specialties', 'doctor-ak-portal' ); ?>
+				</a>
+			<?php endif; ?>
 			<h1 class="dak-dir-title"><?php esc_html_e( 'Find a doctor', 'doctor-ak-portal' ); ?></h1>
 			<p class="dak-dir-lead"><?php esc_html_e( 'Book a clinic visit or a video consultation with our doctors.', 'doctor-ak-portal' ); ?></p>
 		</div>

@@ -70,7 +70,7 @@ $dak_card_display_name      = sprintf( 'Dr. %s', $name );
 
 	<div class="dak-doctor-card-info">
 		<div class="dak-doctor-card-name-row">
-			<h3 class="dak-doctor-card-name"><?php echo esc_html( $dak_card_display_name ); ?></h3>
+			<h3 class="dak-doctor-card-name"><?php echo esc_html( $dak_card_display_name ); ?><?php echo \DoctorAKPortal\Includes\Pmdc::tick_html( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside Pmdc::tick_html(). ?></h3>
 
 			<?php if ( $is_available ) : ?>
 				<span class="dak-doctor-card-badge">

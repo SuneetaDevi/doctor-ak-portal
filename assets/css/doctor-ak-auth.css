@@ -702,3 +702,87 @@ button.dak-link-button {
 	background: var( --dak-primary-tint, #eaf4ef ) !important;
 	color: var( --dak-primary-dark, #104d3a ) !important;
 }
+
+/*
+ * Verified PMDC number: a green tick after the doctor's name (Pmdc::tick_html())
+ * and, on their profile, "✓ PMDC Verified · No. 12345-P" (Pmdc::html( …, true )).
+ * Fill/stroke are set on the shapes, with !important, so page resets such as
+ * "svg { fill: none; stroke: currentColor }" can't blank the icon.
+ */
+.dak-pmdc-tick {
+	display: inline-flex !important;
+	align-items: center !important;
+	margin-left: 0.3em !important;
+	vertical-align: -0.12em !important;
+	color: #1a9e5c !important;
+	line-height: 1 !important;
+	cursor: help !important;
+}
+
+.dak-pmdc-tick .dak-pmdc-tick-svg {
+	display: block !important;
+	width: 0.95em !important;
+	height: 0.95em !important;
+	min-width: 14px !important;
+	min-height: 14px !important;
+	max-width: 22px !important;
+	max-height: 22px !important;
+	flex: 0 0 auto !important;
+}
+
+.dak-pmdc-tick-svg circle {
+	fill: currentColor !important;
+	stroke: none !important;
+}
+
+.dak-pmdc-tick-svg path {
+	fill: none !important;
+	stroke: #ffffff !important;
+	stroke-width: 2.2 !important;
+	stroke-linecap: round !important;
+	stroke-linejoin: round !important;
+}
+
+.dak-pmdc.is-verified {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.35em !important;
+	color: #13764a !important;
+}
+
+.dak-pmdc.is-verified .dak-pmdc-tick-svg {
+	display: block !important;
+	width: 1.15em !important;
+	height: 1.15em !important;
+	color: #1a9e5c !important;
+	flex: 0 0 auto !important;
+}
+
+.dak-pmdc.is-verified strong {
+	font-weight: 700 !important;
+	color: inherit !important;
+}
+
+.dak-pmdc.is-verified .dak-pmdc-number {
+	font-weight: 600 !important;
+	color: var( --dak-muted, #526273 ) !important;
+}
+
+.dak-pmdc.is-verified .dak-pmdc-number::before {
+	content: '·' !important;
+	margin-right: 0.35em !important;
+	color: var( --dak-muted, #526273 ) !important;
+}
+
+html[data-theme='dark'] .dak-pmdc-tick,
+html[data-theme='dark'] .dak-pmdc.is-verified .dak-pmdc-tick-svg {
+	color: #3ccf86 !important;
+}
+
+html[data-theme='dark'] .dak-pmdc.is-verified {
+	color: #7fd3ab !important;
+}
+
+html[data-theme='dark'] .dak-pmdc-tick-svg path {
+	stroke: #06140e !important;
+}

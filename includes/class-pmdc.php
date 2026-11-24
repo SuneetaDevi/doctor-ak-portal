@@ -221,18 +221,81 @@ class Pmdc {
 	 * The PMDC label as a small inline element to place next to a doctor's
 	 * name on a page, or '' when there's no number on file.
 	 *
-	 * @param int    $user_id Doctor's user ID.
-	 * @param string $class   Extra CSS class(es).
+	 * @param int    $user_id     Doctor's user ID.
+	 * @param string $class       Extra CSS class(es).
+	 * @param bool   $with_status For a verified number, say "PMDC Verified" with a tick.
 	 * @return string Escaped HTML.
 	 */
-	public static function html( $user_id, $class = '' ) {
+	public static function html( $user_id, $class = '', $with_status = false ) {
 		$label = self::label( $user_id );
 
 		if ( '' === $label ) {
 			return '';
 		}
 
+		// The doctor's own profile says it in words: "✓ PMDC Verified · No. 12345-P".
+		if ( $with_status && self::is_verified( $user_id ) ) {
+			return '<span class="' . esc_attr( trim( 'dak-pmdc is-verified ' . $class ) ) . '">'
+				. self::tick_svg()
+				. '<strong>' . esc_html__( 'PMDC Verified', 'doctor-ak-portal' ) . '</strong>'
+				/* translators: %s: PMDC registration number. */
+				. '<span class="dak-pmdc-number">' . esc_html( sprintf( __( 'No. %s', 'doctor-ak-portal' ), self::number( $user_id ) ) ) . '</span>'
+				. '</span>';
+		}
+
 		return '<span class="' . esc_attr( trim( 'dak-pmdc ' . $class ) ) . '">' . esc_html( $label ) . '</span>';
+	}
+
+	/**
+	 * Whether a doctor has a PMDC number on file AND an administrator (or
+	 * the automatic verifier) has marked it verified. Cached per request.
+	 *
+	 * @param int $user_id Doctor's user ID.
+	 * @return bool
+	 */
+	public static function is_verified( $user_id ) {
+		static $cache = array();
+
+		$user_id = (int) $user_id;
+
+		if ( $user_id <= 0 ) {
+			return false;
+		}
+
+		if ( ! isset( $cache[ $user_id ] ) ) {
+			$cache[ $user_id ] = '' !== self::number( $user_id ) && self::STATUS_VERIFIED === get_user_meta( $user_id, self::META_STATUS, true );
+		}
+
+		return $cache[ $user_id ];
+	}
+
+	/**
+	 * The green tick placed right after a verified doctor's name on public
+	 * pages (cards, profile heading), or '' when the doctor isn't verified.
+	 * Screen readers hear "PMDC verified"; hovering shows the same.
+	 *
+	 * @param int $user_id Doctor's user ID.
+	 * @return string Escaped HTML.
+	 */
+	public static function tick_html( $user_id ) {
+		if ( ! self::is_verified( $user_id ) ) {
+			return '';
+		}
+
+		$text = __( 'PMDC verified', 'doctor-ak-portal' );
+
+		return '<span class="dak-pmdc-tick" role="img" aria-label="' . esc_attr( $text ) . '" title="' . esc_attr( $text ) . '">' . self::tick_svg() . '</span>';
+	}
+
+	/**
+	 * A filled circle with a check. Colours come from CSS (.dak-pmdc-tick /
+	 * .dak-pmdc.is-verified in doctor-ak-auth.css), set on the shapes so a
+	 * page's generic "svg { fill: none }" reset can't blank it.
+	 *
+	 * @return string Static SVG.
+	 */
+	private static function tick_svg() {
+		return '<svg class="dak-pmdc-tick-svg" viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false"><circle cx="10" cy="10" r="9"/><path d="M6 10.4l2.7 2.7L14.2 7.5"/></svg>';
 	}
 
 	/**

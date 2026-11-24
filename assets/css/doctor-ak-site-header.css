@@ -1019,6 +1019,50 @@ body.admin-bar .dak-site-header {
 	position: relative !important;
 }
 
+/* "Join as Doctor": the outlined partner of the solid Book Now — same
+   height and radius, so the pair reads as one group with Book Now as the
+   main action. On phones/tablets it moves into the drawer (see ≤1023px). */
+.dak-site-header .dak-site-header-join {
+	display: inline-flex !important;
+	align-items: center !important;
+	min-height: 44px !important;
+	padding: 0 16px !important;
+	border: 1.5px solid var( --hdr-primary ) !important;
+	border-radius: 10px !important;
+	background: transparent !important;
+	color: var( --hdr-primary ) !important;
+	font-size: 0.9375rem !important;
+	font-weight: 600 !important;
+	line-height: 1 !important;
+	white-space: nowrap !important;
+	text-decoration: none !important;
+	box-sizing: border-box !important;
+	transition: background-color 0.15s ease !important;
+}
+
+.dak-site-header .dak-site-header-join:hover,
+.dak-site-header .dak-site-header-join:focus-visible {
+	background: var( --hdr-tint ) !important;
+	color: var( --hdr-primary ) !important;
+}
+
+/* Drawer version: hidden on desktop along with the rest of the drawer foot. */
+.dak-site-header .dak-site-header-drawer-join {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	min-height: 48px !important;
+	border-radius: 10px !important;
+	background: var( --hdr-primary ) !important;
+	color: var( --hdr-on-primary ) !important;
+	font-weight: 600 !important;
+	text-decoration: none !important;
+}
+
+.dak-site-header .dak-site-header-drawer-join + .dak-site-header-drawer-call {
+	margin-top: 8px !important;
+}
+
 .dak-site-header .dak-site-header-cta {
 	display: inline-flex !important;
 	align-items: center !important;
@@ -1157,6 +1201,41 @@ html[data-theme='dark'] .dak-site-header .dak-site-header-cta[aria-expanded='tru
 
 	.dak-site-header .dak-nav-trigger.is-current::after {
 		right: 27px !important;
+	}
+
+	/* Join as Doctor + Book Now side by side: tighten both so the menu
+	   still fits on small laptops. */
+	.dak-site-header-actions {
+		gap: 6px !important;
+	}
+
+	.dak-site-header .dak-site-header-join {
+		padding: 0 10px !important;
+		font-size: 0.875rem !important;
+	}
+
+	.dak-site-header .dak-site-header-cta {
+		padding: 0 8px 0 12px !important;
+		font-size: 0.875rem !important;
+	}
+}
+
+/* Narrowest desktop widths, just above the drawer: a little less room per
+   menu link so the full menu and both buttons still fit on one row. */
+@media ( max-width: 1079px ) and ( min-width: 1024px ) {
+	.dak-nav-link,
+	.dak-site-header .dak-nav-trigger {
+		padding: 0 7px !important;
+	}
+
+	.dak-nav-link.is-current::after,
+	.dak-site-header .dak-nav-trigger.is-current::after {
+		left: 7px !important;
+		right: 7px !important;
+	}
+
+	.dak-site-header .dak-nav-trigger.is-current::after {
+		right: 25px !important;
 	}
 }
 
@@ -1454,6 +1533,11 @@ html[data-theme='dark'] .dak-site-header .dak-site-header-cta[aria-expanded='tru
 	   always fits on a phone. */
 	.dak-site-header .dak-site-header-cta {
 		padding: 0 10px 0 14px !important;
+	}
+
+	/* No room beside Book Now and the menu button: it's in the drawer foot. */
+	.dak-site-header .dak-site-header-join {
+		display: none !important;
 	}
 
 	.dak-site-header-book {

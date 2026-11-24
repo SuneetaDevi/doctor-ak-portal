@@ -201,6 +201,14 @@ class Site_Header {
 		$home_url      = Page_Finder::url_for_shortcode( 'dak_home' );
 		$home_url      = $home_url ? $home_url : home_url( '/' );
 
+		// "Join as Doctor": the registration page opened on its Doctor option
+		// (registration-form.php reads ?role=doctor), same link as the home
+		// page's "Join as a Doctor" section. Logged-out visitors only — a
+		// signed-in account can't register another one (Registration_Handler
+		// rejects it), so the button would lead nowhere for them.
+		$register_url    = Page_Finder::url_for_shortcode( 'doctor_register' );
+		$doctor_join_url = ( ! is_user_logged_in() && '' !== $register_url ) ? add_query_arg( 'role', 'doctor', $register_url ) : '';
+
 		return array(
 			'logo_url'           => self::bundled_logo_url(),
 			'phone'              => self::primary_phone(),
@@ -224,6 +232,7 @@ class Site_Header {
 			'service_categories' => self::service_categories_for_menu(),
 			'clinics'            => self::clinics_for_menu(),
 			'booking_url'        => Page_Finder::url_for_shortcode( 'book_appointment' ),
+			'doctor_join_url'    => $doctor_join_url,
 			'gallery_url'        => self::gallery_url(),
 			// Detail pages that belong under a nav item, for the active-page
 			// indicator (a doctor profile highlights "Doctors", etc.).

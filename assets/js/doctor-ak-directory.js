@@ -64,8 +64,156 @@
 
 	if ( 'loading' === document.readyState ) {
 		document.addEventListener( 'DOMContentLoaded', init );
+		document.addEventListener( 'DOMContentLoaded', initSpecialtyPicker );
 	} else {
 		init();
+		initSpecialtyPicker();
+	}
+
+	/**
+	 * The page's first step (templates/directory/doctors-specialty-picker.php):
+	 * typing narrows the specialty tiles — every word must start a word of
+	 * the specialty's name or its plain-English keywords ("heart", "skin"), so
+	 * "heart doctor" finds Cardiologist. Enter opens the only match, moves
+	 * to the first of several, and with none searches doctors by that text
+	 * (the form's normal ?q= submit to the doctor list).
+	 */
+	function initSpecialtyPicker() {
+		var root = document.querySelector( '[data-dak-spec-picker]' );
+		var input = root ? root.querySelector( '#dak-spec-q' ) : null;
+
+		if ( ! input ) {
+			return;
+		}
+
+		var strings = {};
+
+		try {
+			strings = JSON.parse( root.getAttribute( 'data-strings' ) || '{}' );
+		} catch ( e ) {
+			strings = {};
+		}
+
+		var form = root.querySelector( '[data-dak-spec-search]' );
+		var clear = root.querySelector( '[data-dak-spec-clear]' );
+		var count = root.querySelector( '[data-dak-spec-count]' );
+		var list = root.querySelector( '[data-dak-spec-list]' );
+		var empty = root.querySelector( '[data-dak-spec-empty]' );
+		var emptyTitle = root.querySelector( '[data-dak-spec-empty-title]' );
+		var searchLink = root.querySelector( '[data-dak-spec-search-link]' );
+		var items = Array.prototype.slice.call( root.querySelectorAll( '[data-dak-spec-item]' ) );
+		var filler = [ 'doctor', 'doctors', 'dr', 'dr.', 'specialist', 'specialists', 'for', 'a', 'an', 'the', 'my' ];
+		var visible = items.slice();
+
+		var fmt = function ( key, values ) {
+			var all = [].concat( values );
+			var next = 0;
+
+			return ( strings[ key ] || '' ).replace( /%(?:(\d)\$)?s/g, function ( match, position ) {
+				var value = position ? all[ position - 1 ] : all[ next++ ];
+
+				return undefined === value ? '' : String( value );
+			} );
+		};
+
+		var number = function ( n ) {
+			return Number( n ).toLocaleString();
+		};
+
+		function apply() {
+			var text = input.value.trim();
+			var words = text.toLowerCase().split( /\s+/ ).filter( function ( word ) {
+				return word && filler.indexOf( word ) === -1;
+			} );
+
+			// Each typed word must start a word of the name or keywords
+			// ("ear" finds ENT, not the "ear" inside "heart").
+			visible = items.filter( function ( item ) {
+				var haystack = ' ' + ( item.getAttribute( 'data-search' ) || '' ).replace( /[^a-z0-9À-￿]+/g, ' ' );
+				var show = words.every( function ( word ) {
+					return haystack.indexOf( ' ' + word ) !== -1;
+				} );
+
+				item.hidden = ! show;
+
+				return show;
+			} );
+
+			if ( clear ) {
+				clear.hidden = '' === text;
+			}
+
+			if ( list ) {
+				list.hidden = 0 === visible.length;
+			}
+
+			if ( empty ) {
+				empty.hidden = visible.length > 0;
+			}
+
+			if ( 0 === visible.length && emptyTitle ) {
+				emptyTitle.textContent = fmt( 'noMatch', text );
+			}
+
+			if ( 0 === visible.length && searchLink ) {
+				var base = searchLink.getAttribute( 'data-base-url' ) || window.location.pathname;
+				var url = new URL( base, window.location.href );
+
+				url.searchParams.set( 'q', text );
+				searchLink.href = url.toString();
+				searchLink.textContent = fmt( 'searchFor', text );
+			}
+
+			if ( count ) {
+				if ( '' === text || visible.length === items.length ) {
+					count.textContent = 1 === items.length ? strings.countOne : fmt( 'count', number( items.length ) );
+				} else {
+					count.textContent = fmt( 'matching', [ number( visible.length ), number( items.length ) ] );
+				}
+			}
+		}
+
+		input.addEventListener( 'input', apply );
+
+		if ( clear ) {
+			clear.addEventListener( 'click', function () {
+				input.value = '';
+				apply();
+				input.focus();
+			} );
+		}
+
+		if ( form ) {
+			form.addEventListener( 'submit', function ( event ) {
+				apply();
+
+				if ( '' === input.value.trim() ) {
+					event.preventDefault();
+					return;
+				}
+
+				if ( 1 === visible.length ) {
+					event.preventDefault();
+					window.location.href = visible[ 0 ].querySelector( 'a' ).href;
+				} else if ( visible.length > 1 ) {
+					event.preventDefault();
+					visible[ 0 ].querySelector( 'a' ).focus();
+				}
+				// No match: the form submits ?q= and the doctor list searches it.
+			} );
+		}
+
+		input.addEventListener( 'keydown', function ( event ) {
+			if ( 'Escape' === event.key && input.value ) {
+				input.value = '';
+				apply();
+			}
+		} );
+
+		// The browser may restore typed text on Back.
+		if ( input.value ) {
+			apply();
+		}
 	}
 
 	function init() {
@@ -239,7 +387,9 @@
 
 			var params = new URLSearchParams( window.location.search );
 
-			[ 'q', 's', 'specialization', 'visit', 'availability', 'experience', 'gender', 'city', 'discount', 'fee', 'sort', 'page' ].forEach( function ( key ) {
+			var listKeys = [ 'q', 's', 'specialization', 'visit', 'availability', 'experience', 'gender', 'city', 'discount', 'fee', 'sort', 'page' ];
+
+			listKeys.concat( 'view' ).forEach( function ( key ) {
 				params.delete( key );
 			} );
 
@@ -272,6 +422,15 @@
 			}
 			if ( page > 1 ) {
 				params.set( 'page', page );
+			}
+
+			// A bare page URL opens the specialty picker, so with no filter
+			// set keep ?view=all — a reload or Back from a profile then
+			// returns to this list, not the picker.
+			if ( ! listKeys.some( function ( key ) {
+				return params.has( key );
+			} ) ) {
+				params.set( 'view', 'all' );
 			}
 
 			var query = params.toString();

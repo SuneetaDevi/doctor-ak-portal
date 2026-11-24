@@ -1369,6 +1369,124 @@ html[data-theme='dark'] .dak-dir .dak-dir-pill:has( input[name='discount'] ) .da
 	margin-top: 24px !important;
 }
 
+/* ---------------------------------------------------------------- Specialty picker
+   (templates/directory/doctors-specialty-picker.php — the doctors page's
+   first step) and the list's "All specialties" link back to it. */
+
+.dak-spec-toolbar {
+	display: flex !important;
+	align-items: center !important;
+	flex-wrap: wrap !important;
+	gap: 12px !important;
+	margin-bottom: 16px !important;
+}
+
+.dak-dir .dak-spec-toolbar .dak-dir-count {
+	order: 0 !important;
+	flex: 1 1 auto !important;
+	color: var( --dir-muted ) !important;
+}
+
+.dak-dir .dak-spec-all svg {
+	color: var( --dir-primary ) !important;
+}
+
+.dak-spec-grid {
+	display: grid !important;
+	grid-template-columns: repeat( auto-fill, minmax( 240px, 1fr ) ) !important;
+	gap: 12px !important;
+	margin-bottom: 24px !important;
+}
+
+.dak-dir .dak-spec-tile {
+	display: flex !important;
+	align-items: center !important;
+	gap: 14px !important;
+	height: 100% !important;
+	min-height: 76px !important;
+	padding: 14px 14px 14px 16px !important;
+	background: var( --dir-surface ) !important;
+	border: 1px solid var( --dir-border ) !important;
+	border-radius: var( --dir-radius ) !important;
+	box-shadow: var( --dir-shadow ) !important;
+	color: var( --dir-text ) !important;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease !important;
+}
+
+.dak-dir .dak-spec-tile:hover {
+	border-color: var( --dir-primary ) !important;
+	box-shadow: var( --dir-shadow-hover ) !important;
+	transform: translateY( -1px ) !important;
+}
+
+.dak-spec-icon {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	flex: 0 0 44px !important;
+	width: 44px !important;
+	height: 44px !important;
+	border-radius: 50% !important;
+	background: var( --dir-tint ) !important;
+	color: var( --dir-primary ) !important;
+}
+
+.dak-dir .dak-spec-icon svg {
+	width: 24px !important;
+	height: 24px !important;
+}
+
+.dak-spec-text {
+	display: flex !important;
+	flex-direction: column !important;
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+}
+
+.dak-dir .dak-spec-name {
+	font-size: 15px !important;
+	font-weight: 600 !important;
+	line-height: 1.3 !important;
+	color: var( --dir-text ) !important;
+	overflow-wrap: anywhere !important;
+}
+
+.dak-dir .dak-spec-meta {
+	margin-top: 2px !important;
+	font-size: 13px !important;
+	color: var( --dir-muted ) !important;
+}
+
+.dak-spec-go {
+	flex: 0 0 auto !important;
+	color: var( --dir-muted ) !important;
+	transition: color 0.15s ease, transform 0.15s ease !important;
+}
+
+.dak-dir .dak-spec-tile:hover .dak-spec-go {
+	color: var( --dir-primary ) !important;
+	transform: translateX( 2px ) !important;
+}
+
+.dak-dir .dak-dir-back {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 4px !important;
+	margin-bottom: 8px !important;
+	font-size: 14px !important;
+	font-weight: 600 !important;
+	color: var( --dir-primary ) !important;
+}
+
+.dak-dir .dak-dir-back:hover {
+	text-decoration: underline !important;
+}
+
+.dak-dir .dak-dir-back svg {
+	width: 16px !important;
+	height: 16px !important;
+}
+
 /* ---------------------------------------------------------------- Responsive */
 
 @media ( max-width: 1180px ) {
@@ -1610,6 +1728,27 @@ html[data-theme='dark'] .dak-dir .dak-dir-pill:has( input[name='discount'] ) .da
 
 	.dak-dir .dak-dir-sort .dak-dir-select {
 		max-width: 180px !important;
+	}
+
+	/* Specialty picker: two tiles a row, stacked icon over name. */
+	.dak-spec-grid {
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+		gap: 10px !important;
+	}
+
+	.dak-dir .dak-spec-tile {
+		flex-direction: column !important;
+		align-items: flex-start !important;
+		gap: 10px !important;
+		padding: 14px !important;
+	}
+
+	.dak-spec-go {
+		display: none !important;
+	}
+
+	.dak-dir .dak-spec-all {
+		width: 100% !important;
 	}
 }
 

@@ -29,6 +29,7 @@
  * @var string   $clinics_url        [clinics_directory] page URL, or ''. Reads ?q= (name/address search) and ?city=.
  * @var string   $blogs_url          [blogs_directory] page URL, or ''.
  * @var string   $booking_url        [book_appointment] page URL, or ''.
+ * @var string   $doctor_join_url    [doctor_register] page URL opened on its Doctor option, for logged-out visitors only; '' otherwise (then "Join as Doctor" is left out).
  * @var string   $gallery_url        Published "gallery" page URL, or '' (then the item is left out).
  * @var array    $doctor_specialties Home_Page::specialties_in_use() — { slug, label, count, url }.
  * @var array    $doctor_index       Site_Header::doctors_for_menu() — { name, specialty, search, url }.
@@ -660,22 +661,31 @@ $dak_nav_strings = array(
 				</ul>
 			</nav>
 
-			<?php if ( $phone ) : ?>
+			<?php if ( $phone || $doctor_join_url ) : ?>
 				<div class="dak-site-header-drawer-foot">
-					<a class="dak-site-header-drawer-call" href="<?php echo esc_attr( $dak_phone_href ); ?>">
-						<?php echo $dak_header_icons['phone']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?>
-						<span>
-							<?php
-							/* translators: %s: phone number. */
-							echo esc_html( sprintf( __( 'Call %s', 'doctor-ak-portal' ), $phone ) );
-							?>
-						</span>
-					</a>
+					<?php if ( $doctor_join_url ) : ?>
+						<?php // On phones/tablets the bar only has room for Book Now, so "Join as Doctor" lives here. ?>
+						<a class="dak-site-header-drawer-join" href="<?php echo esc_url( $doctor_join_url ); ?>"><?php esc_html_e( 'Join as Doctor', 'doctor-ak-portal' ); ?></a>
+					<?php endif; ?>
+					<?php if ( $phone ) : ?>
+						<a class="dak-site-header-drawer-call" href="<?php echo esc_attr( $dak_phone_href ); ?>">
+							<?php echo $dak_header_icons['phone']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?>
+							<span>
+								<?php
+								/* translators: %s: phone number. */
+								echo esc_html( sprintf( __( 'Call %s', 'doctor-ak-portal' ), $phone ) );
+								?>
+							</span>
+						</a>
+					<?php endif; ?>
 				</div>
 			<?php endif; ?>
 		</div>
 
 		<div class="dak-site-header-actions">
+			<?php if ( $doctor_join_url ) : ?>
+				<a class="dak-site-header-join" href="<?php echo esc_url( $doctor_join_url ); ?>"><?php esc_html_e( 'Join as Doctor', 'doctor-ak-portal' ); ?></a>
+			<?php endif; ?>
 			<div class="dak-site-header-book" data-dak-nav-item="book">
 				<button type="button" class="dak-site-header-cta" id="dak-nav-trigger-book" aria-expanded="false" aria-controls="dak-nav-panel-book">
 					<span class="dak-site-header-cta-label"><?php esc_html_e( 'Book Now', 'doctor-ak-portal' ); ?></span>

@@ -196,9 +196,9 @@ $dak_service_view_icons = array(
 
 													<div class="dak-service-doctor-offer-info">
 														<?php if ( $dak_offer['doctor_profile_url'] ) : ?>
-															<a class="dak-profile-clinic-info-link" href="<?php echo esc_url( $dak_offer['doctor_profile_url'] ); ?>"><strong><?php echo esc_html( sprintf( 'Dr. %s', $dak_offer['doctor_name'] ) ); ?></strong></a>
+															<a class="dak-profile-clinic-info-link" href="<?php echo esc_url( $dak_offer['doctor_profile_url'] ); ?>"><strong><?php echo esc_html( sprintf( 'Dr. %s', $dak_offer['doctor_name'] ) ); ?><?php echo \DoctorAKPortal\Includes\Pmdc::tick_html( $dak_offer['doctor_id'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside Pmdc::tick_html(). ?></strong></a>
 														<?php else : ?>
-															<strong><?php echo esc_html( sprintf( 'Dr. %s', $dak_offer['doctor_name'] ) ); ?></strong>
+															<strong><?php echo esc_html( sprintf( 'Dr. %s', $dak_offer['doctor_name'] ) ); ?><?php echo \DoctorAKPortal\Includes\Pmdc::tick_html( $dak_offer['doctor_id'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside Pmdc::tick_html(). ?></strong>
 														<?php endif; ?>
 														<?php echo \DoctorAKPortal\Includes\Pmdc::html( $dak_offer['doctor_id'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside Pmdc::html(). ?>
 														<?php if ( '' !== $dak_offer['category_label'] ) : ?>

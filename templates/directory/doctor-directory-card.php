@@ -128,7 +128,7 @@ $dak_visit_types   = implode( ',', array_filter( array( $offers_clinic ? 'clinic
 			<?php endif; ?>
 
 			<h3 class="dak-dir-doctor-name" id="dak-dir-doctor-<?php echo esc_attr( $id ); ?>">
-				<a href="<?php echo esc_url( $profile_url ); ?>"><?php echo esc_html( $display_name ); ?></a>
+				<a href="<?php echo esc_url( $profile_url ); ?>"><?php echo esc_html( $display_name ); ?></a><?php echo \DoctorAKPortal\Includes\Pmdc::tick_html( $id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside Pmdc::tick_html(). ?>
 			</h3>
 			<?php echo \DoctorAKPortal\Includes\Pmdc::html( $id, 'dak-pmdc-block dak-dir-doctor-pmdc' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside Pmdc::html(). ?>
 

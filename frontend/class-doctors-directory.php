@@ -190,6 +190,33 @@ class Doctors_Directory {
 			}
 		);
 
+		// Step one of the page: a bare visit ("View all doctors" in the header,
+		// the home page, a profile's breadcrumb) opens the specialty picker;
+		// picking one opens the doctor list below already filtered to it.
+		// Any filter in the URL (a header search, ?specialization=, ?city=…)
+		// or ?view=all ("Show all doctors") goes straight to the list.
+		$page_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+		$page_url = '' !== $page_url ? $page_url : (string) get_permalink();
+
+		foreach ( $specialities as &$speciality ) {
+			$speciality['url']      = add_query_arg( 'specialization', rawurlencode( $speciality['slug'] ), $page_url );
+			$speciality['icon']     = self::specialty_icon( $speciality['slug'] );
+			$speciality['keywords'] = self::specialty_keywords( $speciality['slug'] );
+		}
+		unset( $speciality );
+
+		if ( ! empty( $specialities ) && ! self::has_list_request() ) {
+			return $this->template_loader->get_template(
+				'directory/doctors-specialty-picker.php',
+				array(
+					'specialities'    => array_values( $specialities ),
+					'doctors_count'   => count( $cards ),
+					'page_url'        => $page_url,
+					'all_doctors_url' => add_query_arg( 'view', 'all', $page_url ),
+				)
+			);
+		}
+
 		$doctors_html = array_map(
 			function ( $card ) {
 				return $this->template_loader->get_template( 'directory/doctor-directory-card.php', $card );
@@ -208,8 +235,128 @@ class Doctors_Directory {
 				'fee_slabs'        => $fee_slabs,
 				'experience_slabs' => $experience_slabs,
 				'doctors_count' => count( $cards ),
+				'specialties_url' => ! empty( $specialities ) ? $page_url : '',
 			)
 		);
+	}
+
+	/**
+	 * Whether the URL asks for the doctor list itself rather than the
+	 * specialty picker: ?view=all, or any filter doctor-ak-directory.js
+	 * reads (it keeps ?view=all in the URL whenever no filter is set, so
+	 * Back from a profile returns to the list, not the picker).
+	 *
+	 * @return bool
+	 */
+	private static function has_list_request() {
+		$keys = array( 'view', 'q', 's', 'specialization', 'visit', 'availability', 'experience', 'gender', 'city', 'discount', 'fee', 'sort', 'page' );
+
+		foreach ( $keys as $key ) {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display choice.
+			if ( isset( $_GET[ $key ] ) && '' !== trim( (string) wp_unslash( $_GET[ $key ] ) ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Plain-English words a patient might type for a specialty ("heart" for
+	 * Cardiologist), matched by the picker's search alongside the label.
+	 *
+	 * @param string $slug Lowercase specialty label.
+	 * @return string Space-separated keywords, or ''.
+	 */
+	private static function specialty_keywords( $slug ) {
+		$words = array(
+			'cardio'    => 'heart chest pain blood pressure',
+			'neuro'     => 'brain nerves headache migraine seizure stroke',
+			'psych'     => 'mind mental health anxiety depression stress sleep',
+			'gastro'    => 'stomach liver digestion acidity abdomen',
+			'\bdent'    => 'teeth tooth gums mouth',
+			'ophthal'   => 'eye eyes vision sight',
+			'orthop'    => 'bones joints back knee fracture',
+			'rheumat'   => 'joints arthritis',
+			'pulmon'    => 'lungs chest breathing asthma cough',
+			'pediatric' => 'child children baby kids',
+			'paediatric' => 'child children baby kids',
+			'gyneco'    => 'women pregnancy',
+			'obstetric' => 'women pregnancy',
+			'dermat'    => 'skin hair acne allergy',
+			'nephro'    => 'kidney kidneys',
+			'\burolog'  => 'kidney urine bladder',
+			'\bent\b'   => 'ear nose throat',
+			'otolaryng' => 'ear nose throat',
+			'endocrin'  => 'diabetes thyroid hormones',
+			'diabet'    => 'diabetes sugar',
+			'general p' => 'fever flu checkup family',
+			'family'    => 'fever flu checkup',
+		);
+		$found = array();
+
+		// Patterns, not plain substrings, so "ENT" matches the word and not
+		// the "ent" inside "dentist", and "urolog" isn't found in "neurologist".
+		foreach ( $words as $needle => $keywords ) {
+			if ( preg_match( '/' . $needle . '/u', $slug ) ) {
+				$found[] = $keywords;
+			}
+		}
+
+		return implode( ' ', $found );
+	}
+
+	/**
+	 * A body-part glyph for a specialty (same set and matching as the home
+	 * page's "Consult online" tiles), picked from the label so every
+	 * specialization — including custom ones — gets something sensible.
+	 *
+	 * @param string $slug Lowercase specialty label.
+	 * @return string Static SVG markup.
+	 */
+	private static function specialty_icon( $slug ) {
+		$open  = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">';
+		$icons = array(
+			'heart'       => '<path d="M10 16.2S3.8 12.4 3.8 8.1A3.1 3.1 0 0 1 10 6.3a3.1 3.1 0 0 1 6.2 1.8c0 4.3-6.2 8.1-6.2 8.1z"/>',
+			'brain'       => '<path d="M9.2 4.2a2 2 0 0 0-3.4 1.2 2 2 0 0 0-.9 3.3 2 2 0 0 0 1 3.2 2 2 0 0 0 3.3 1.4z"/><path d="M10.8 4.2a2 2 0 0 1 3.4 1.2 2 2 0 0 1 .9 3.3 2 2 0 0 1-1 3.2 2 2 0 0 1-3.3 1.4z"/><path d="M10 4.2v11.6"/>',
+			'stomach'     => '<path d="M7.5 3.8v3.9c0 2.3 1.5 3.3 3.2 3.6 1.9.3 2.9 1.2 2.9 2.6a2.6 2.6 0 0 1-5.2.2"/><path d="M5.6 3.8h3.8"/>',
+			'tooth'       => '<path d="M6.4 3.8c1.1 0 1.4.6 3.6.6s2.5-.6 3.6-.6c.9 0 1.4.9 1.4 2.3 0 1.8-.9 2.7-1.3 4.8-.3 1.7-.5 4.2-1.6 4.2-.9 0-.9-2.1-1.2-3.6-.2-.8-.5-1.2-.9-1.2s-.7.4-.9 1.2c-.3 1.5-.3 3.6-1.2 3.6-1.1 0-1.3-2.5-1.6-4.2C5.9 8.8 5 7.9 5 6.1c0-1.4.5-2.3 1.4-2.3z"/>',
+			'eye'         => '<path d="M2.5 10S5.6 5.5 10 5.5 17.5 10 17.5 10 14.4 14.5 10 14.5 2.5 10 2.5 10z"/><circle cx="10" cy="10" r="2.2"/>',
+			'bone'        => '<path d="M7 13l6-6"/><circle cx="5.6" cy="14.4" r="2.1"/><circle cx="14.4" cy="5.6" r="2.1"/>',
+			'lungs'       => '<path d="M10 3.5v6.2"/><path d="M10 9.7c0-1.2-.9-2-2-2-2 0-3.5 2.6-3.5 5.4 0 2 .6 3.4 1.8 3.4 1.4 0 3.7-1.3 3.7-3.2z"/><path d="M10 9.7c0-1.2.9-2 2-2 2 0 3.5 2.6 3.5 5.4 0 2-.6 3.4-1.8 3.4-1.4 0-3.7-1.3-3.7-3.2z"/>',
+			'baby'        => '<circle cx="10" cy="6.8" r="3.4"/><path d="M8.7 6.2h.01M11.3 6.2h.01"/><path d="M4.6 16.8c.8-2.7 2.9-4.3 5.4-4.3s4.6 1.6 5.4 4.3"/>',
+			'skin'        => '<path d="M10 3.4s4.4 4.6 4.4 7.3a4.4 4.4 0 0 1-8.8 0C5.6 8 10 3.4 10 3.4z"/><path d="M8.4 11.2h.01M10.6 12.8h.01"/>',
+			'kidney'      => '<path d="M8.2 4.2c2.2 0 3.8 2.2 3.8 5.6s-1.6 6-3.8 6-3.4-2-3.4-5.7 1.2-5.9 3.4-5.9z"/><path d="M12 9.8h3.6"/>',
+			'stethoscope' => '<path d="M5.6 3.4v3.9a3 3 0 0 0 6 0V3.4"/><path d="M4.2 3.4h2.6M10.4 3.4H13"/><path d="M8.6 10.3v1.9a3.6 3.6 0 0 0 7.2 0v-1.4"/><circle cx="15.8" cy="9" r="1.6"/>',
+		);
+		$matches = array(
+			'cardio'    => 'heart',
+			'neuro'     => 'brain',
+			'psych'     => 'brain',
+			'gastro'    => 'stomach',
+			'\bdent'    => 'tooth',
+			'ophthal'   => 'eye',
+			'orthop'    => 'bone',
+			'rheumat'   => 'bone',
+			'pulmon'    => 'lungs',
+			'pediatric' => 'baby',
+			'obstetric' => 'baby',
+			'gyneco'    => 'baby',
+			'dermat'    => 'skin',
+			'nephro'    => 'kidney',
+			'\burolog'  => 'kidney',
+		);
+		$icon    = 'stethoscope';
+
+		// Patterns for the same reason as specialty_keywords().
+		foreach ( $matches as $needle => $name ) {
+			if ( preg_match( '/' . $needle . '/u', $slug ) ) {
+				$icon = $name;
+				break;
+			}
+		}
+
+		return $open . $icons[ $icon ] . '</svg>';
 	}
 
 	/**

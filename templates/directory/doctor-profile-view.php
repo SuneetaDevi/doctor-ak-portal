@@ -127,8 +127,8 @@ if ( ! function_exists( 'dak_profile_view_truncate' ) ) {
 			</span>
 
 			<div class="dak-profile-header-main">
-				<h1><?php echo esc_html( sprintf( 'Dr. %s', $doctor['name'] ) ); ?></h1>
-				<?php echo \DoctorAKPortal\Includes\Pmdc::html( $doctor['id'], 'dak-pmdc-pill dak-profile-pmdc' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside Pmdc::html(). ?>
+				<h1><?php echo esc_html( sprintf( 'Dr. %s', $doctor['name'] ) ); ?><?php echo \DoctorAKPortal\Includes\Pmdc::tick_html( $doctor['id'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside Pmdc::tick_html(). ?></h1>
+				<?php echo \DoctorAKPortal\Includes\Pmdc::html( $doctor['id'], 'dak-pmdc-pill dak-profile-pmdc', true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside Pmdc::html(). ?>
 
 				<?php if ( '' !== $doctor['qualification'] ) : ?>
 					<p class="dak-profile-qualification"><?php echo esc_html( $doctor['qualification'] ); ?></p>
