@@ -17,11 +17,39 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * One review (1-5 stars + optional comment) per patient per doctor. Only a
  * patient with a completed appointment with that doctor may review.
+ *
+ * Reviews can also come from a doctor's shareable review link (see
+ * Review_Links): those have no patient account (patient_id NULL), carry
+ * the name the reviewer typed, and wait as 'pending' until an admin
+ * publishes them. Only 'published' reviews are shown on the profile or
+ * counted in its rating; an admin can hide any review (and show it again).
  */
 class Doctor_Reviews {
 
 	const TABLE       = 'dak_doctor_reviews';
 	const COMMENT_MAX = 1000;
+	const NAME_MAX    = 40;
+	const CONTACT_MAX = 100;
+
+	const STATUS_PUBLISHED = 'published';
+	const STATUS_PENDING   = 'pending';
+	const STATUS_HIDDEN    = 'hidden';
+
+	const SOURCE_PATIENT = 'patient';
+	const SOURCE_LINK    = 'link';
+
+	/**
+	 * Status slug => admin label.
+	 *
+	 * @return array
+	 */
+	public static function statuses() {
+		return array(
+			self::STATUS_PENDING   => __( 'Waiting for approval', 'doctor-ak-portal' ),
+			self::STATUS_PUBLISHED => __( 'Published', 'doctor-ak-portal' ),
+			self::STATUS_HIDDEN    => __( 'Hidden', 'doctor-ak-portal' ),
+		);
+	}
 
 	/**
 	 * Fully prefixed table name.
@@ -166,27 +194,202 @@ class Doctor_Reviews {
 		global $wpdb;
 
 		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare( 'SELECT * FROM ' . self::table_name() . ' WHERE doctor_id = %d ORDER BY created_at DESC, id DESC LIMIT %d', $doctor_id, $limit ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare( 'SELECT * FROM ' . self::table_name() . ' WHERE doctor_id = %d AND status = %s ORDER BY created_at DESC, id DESC LIMIT %d', $doctor_id, self::STATUS_PUBLISHED, $limit ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			ARRAY_A
 		);
 
 		$out = array();
 
 		foreach ( (array) $rows as $row ) {
-			$user  = get_userdata( (int) $row['patient_id'] );
-			$first = $user ? trim( $user->first_name ) : '';
-			$name  = '' !== $first ? $first : ( $user ? $user->display_name : __( 'Patient', 'doctor-ak-portal' ) );
-
 			$out[] = array(
-				'id'      => (int) $row['id'],
-				'rating'  => (int) $row['rating'],
-				'comment' => $row['comment'],
-				'name'    => $name,
-				'date'    => mysql2date( get_option( 'date_format' ), $row['created_at'] ),
+				'id'       => (int) $row['id'],
+				'rating'   => (int) $row['rating'],
+				'comment'  => $row['comment'],
+				'name'     => self::public_name( $row ),
+				'date'     => mysql2date( get_option( 'date_format' ), $row['created_at'] ),
+				// From a patient account with a completed visit (not a shared link).
+				'verified' => self::SOURCE_LINK !== $row['source'],
 			);
 		}
 
 		return $out;
+	}
+
+	/**
+	 * The name a review is shown under on the profile: the patient's first
+	 * name, or the name typed on a review-link form.
+	 *
+	 * @param array $row Table row.
+	 * @return string
+	 */
+	public static function public_name( array $row ) {
+		if ( self::SOURCE_LINK === $row['source'] ) {
+			$name = trim( (string) $row['reviewer_name'] );
+
+			return '' !== $name ? $name : __( 'Patient', 'doctor-ak-portal' );
+		}
+
+		$user  = get_userdata( (int) $row['patient_id'] );
+		$first = $user ? trim( $user->first_name ) : '';
+
+		return '' !== $first ? $first : ( $user ? $user->display_name : __( 'Patient', 'doctor-ak-portal' ) );
+	}
+
+	/**
+	 * Saves a review sent from a doctor's review link. It is held as
+	 * 'pending' until an admin publishes it.
+	 *
+	 * @param int    $doctor_id Doctor user ID.
+	 * @param string $name      Reviewer's name as typed.
+	 * @param string $contact   Optional phone/email, seen only by admins.
+	 * @param int    $rating    1-5.
+	 * @param string $comment   Optional text.
+	 * @return int New review ID, or 0.
+	 */
+	public static function add_from_link( $doctor_id, $name, $contact, $rating, $comment ) {
+		global $wpdb;
+
+		$now    = current_time( 'mysql' );
+		$result = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			self::table_name(),
+			array(
+				'doctor_id'        => (int) $doctor_id,
+				'rating'           => max( 1, min( 5, (int) $rating ) ),
+				'comment'          => mb_substr( trim( $comment ), 0, self::COMMENT_MAX ),
+				'status'           => self::STATUS_PENDING,
+				'source'           => self::SOURCE_LINK,
+				'reviewer_name'    => mb_substr( trim( $name ), 0, self::NAME_MAX ),
+				'reviewer_contact' => mb_substr( trim( $contact ), 0, self::CONTACT_MAX ),
+				'created_at'       => $now,
+				'updated_at'       => $now,
+			),
+			array( '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
+		);
+
+		return false === $result ? 0 : (int) $wpdb->insert_id;
+	}
+
+	/**
+	 * One review row by ID.
+	 *
+	 * @param int $review_id Review ID.
+	 * @return array|null
+	 */
+	public static function find( $review_id ) {
+		global $wpdb;
+
+		$row = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare( 'SELECT * FROM ' . self::table_name() . ' WHERE id = %d', $review_id ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			ARRAY_A
+		);
+
+		return $row ? $row : null;
+	}
+
+	/**
+	 * Publishes, hides or (re)shows a review. The text and rating are never
+	 * changed here.
+	 *
+	 * @param int    $review_id Review ID.
+	 * @param string $status    One of the STATUS_* constants.
+	 * @return bool
+	 */
+	public static function set_status( $review_id, $status ) {
+		global $wpdb;
+
+		if ( ! array_key_exists( $status, self::statuses() ) || ! self::find( $review_id ) ) {
+			return false;
+		}
+
+		return false !== $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			self::table_name(),
+			array( 'status' => $status ),
+			array( 'id' => (int) $review_id ),
+			array( '%s' ),
+			array( '%d' )
+		);
+	}
+
+	/**
+	 * How many reviews are in each status.
+	 *
+	 * @return array status => count (every status present).
+	 */
+	public static function status_counts() {
+		global $wpdb;
+
+		$counts = array_fill_keys( array_keys( self::statuses() ), 0 );
+		$rows   = $wpdb->get_results( 'SELECT status, COUNT(*) AS c FROM ' . self::table_name() . ' GROUP BY status', ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		foreach ( (array) $rows as $row ) {
+			if ( isset( $counts[ $row['status'] ] ) ) {
+				$counts[ $row['status'] ] = (int) $row['c'];
+			}
+		}
+
+		return $counts;
+	}
+
+	/**
+	 * Reviews for the admin list, newest first.
+	 *
+	 * @param array $args {
+	 *     @type int    $doctor_id 0 for all.
+	 *     @type int    $rating    1-5, or 0 for all.
+	 *     @type string $status    A STATUS_* constant, or '' for all.
+	 *     @type int    $page      1-based page.
+	 *     @type int    $per_page  Rows per page.
+	 * }
+	 * @return array { rows: array, total: int }
+	 */
+	public static function admin_query( array $args ) {
+		global $wpdb;
+
+		$args = wp_parse_args(
+			$args,
+			array(
+				'doctor_id' => 0,
+				'rating'    => 0,
+				'status'    => '',
+				'page'      => 1,
+				'per_page'  => 20,
+			)
+		);
+
+		$where  = array( '1=1' );
+		$params = array();
+
+		if ( (int) $args['doctor_id'] > 0 ) {
+			$where[]  = 'doctor_id = %d';
+			$params[] = (int) $args['doctor_id'];
+		}
+
+		if ( (int) $args['rating'] >= 1 && (int) $args['rating'] <= 5 ) {
+			$where[]  = 'rating = %d';
+			$params[] = (int) $args['rating'];
+		}
+
+		if ( array_key_exists( $args['status'], self::statuses() ) ) {
+			$where[]  = 'status = %s';
+			$params[] = $args['status'];
+		}
+
+		$where_sql = implode( ' AND ', $where );
+		$per_page  = max( 1, (int) $args['per_page'] );
+		$offset    = ( max( 1, (int) $args['page'] ) - 1 ) * $per_page;
+
+		$count_sql = 'SELECT COUNT(*) FROM ' . self::table_name() . ' WHERE ' . $where_sql;
+		$total     = (int) $wpdb->get_var( $params ? $wpdb->prepare( $count_sql, $params ) : $count_sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.NotPrepared -- built from placeholders above.
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare( 'SELECT * FROM ' . self::table_name() . ' WHERE ' . $where_sql . ' ORDER BY created_at DESC, id DESC LIMIT %d OFFSET %d', array_merge( $params, array( $per_page, $offset ) ) ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- built from placeholders above.
+			ARRAY_A
+		);
+
+		return array(
+			'rows'  => $rows ? $rows : array(),
+			'total' => $total,
+		);
 	}
 
 	/**
@@ -199,7 +402,7 @@ class Doctor_Reviews {
 		global $wpdb;
 
 		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare( 'SELECT rating, COUNT(*) AS c FROM ' . self::table_name() . ' WHERE doctor_id = %d GROUP BY rating', $doctor_id ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare( 'SELECT rating, COUNT(*) AS c FROM ' . self::table_name() . ' WHERE doctor_id = %d AND status = %s GROUP BY rating', $doctor_id, self::STATUS_PUBLISHED ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			ARRAY_A
 		);
 

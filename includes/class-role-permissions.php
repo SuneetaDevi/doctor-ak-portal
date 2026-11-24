@@ -132,6 +132,7 @@ class Role_Permissions {
 			'patients'           => __( 'Patients', 'doctor-ak-portal' ),
 			'crm'                => __( 'CRM', 'doctor-ak-portal' ),
 			'doctors'            => __( 'Doctors', 'doctor-ak-portal' ),
+			'reviews'            => __( 'Reviews', 'doctor-ak-portal' ),
 			'receptionist'       => __( 'Receptionist', 'doctor-ak-portal' ),
 			'clinic'             => __( 'Clinic', 'doctor-ak-portal' ),
 			'services'           => __( 'Services', 'doctor-ak-portal' ),

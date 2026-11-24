@@ -12,6 +12,7 @@ use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Doctor_Awards;
 use DoctorAKPortal\Includes\Doctor_Reviews;
 use DoctorAKPortal\Includes\Page_Finder;
+use DoctorAKPortal\Includes\Review_Links;
 use DoctorAKPortal\Includes\Review_Requests;
 use DoctorAKPortal\Includes\Roles;
 use DoctorAKPortal\Includes\Services;
@@ -204,6 +205,23 @@ class Doctor_Profile_View {
 			)
 			: '';
 
+		// Otherwise, a doctor's shareable review link (Dashboard → Reviews):
+		// anyone may review from it, held for an admin to publish.
+		$review_link = null === $review_request ? Review_Links::page_context( $doctor->ID ) : null;
+
+		if ( null !== $review_link ) {
+			$review_request_html = $this->template_loader->get_template(
+				'directory/review-link-panel.php',
+				array(
+					'review_link' => $review_link,
+					'doctor'      => array(
+						'id'   => $doctor->ID,
+						'name' => $display_name,
+					),
+				)
+			);
+		}
+
 		// Who is looking decides what "Write a review" does: patients go to
 		// the form (or are told why they can't review yet), visitors log in
 		// first and come back here, and staff/doctors don't get the button.
@@ -236,6 +254,8 @@ class Doctor_Profile_View {
 					'awards'                 => Doctor_Awards::get_for_doctor( $doctor->ID ),
 					'video_consultation'     => Clinics::doctor_has_active_video_clinic( $doctor->ID ),
 					'phone'                  => $phone,
+					// Same "next open slot" the Find a doctor list shows.
+					'next_available'         => Doctors_Directory::next_available_label( $doctor->ID ),
 				),
 				'reviews'                => Doctor_Reviews::get_for_doctor( $doctor->ID ),
 				'review_summary'         => Doctor_Reviews::summary( $doctor->ID ),
@@ -246,7 +266,7 @@ class Doctor_Profile_View {
 				'review_login_url'       => $review_login_url,
 				'review_request_html'    => $review_request_html,
 				// One review form per page: the emailed link's form replaces the usual one.
-				'review_request_active'  => null !== $review_request && 'valid' === $review_request['status'],
+				'review_request_active'  => ( null !== $review_request && 'valid' === $review_request['status'] ) || ( null !== $review_link && 'open' === $review_link['status'] ),
 				'directory_url'          => Page_Finder::url_for_shortcode( 'doctors_directory' ),
 				'starting_fee_summary'   => $this->starting_fee_summary( $doctor->ID ),
 				'cancellation_note'      => $this->cancellation_note( $doctor->ID ),

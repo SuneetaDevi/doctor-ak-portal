@@ -700,7 +700,9 @@ class Crm_Reports {
 	private static function feedback( $from, $to ) {
 		global $wpdb;
 
-		$rows  = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . Doctor_Reviews::table_name() . ' WHERE updated_at >= %s AND updated_at <= %s ORDER BY updated_at DESC', $from . ' 00:00:00', $to . ' 23:59:59' ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name.
+		// Patient-account reviews only: review-link ones have no contact to
+		// follow up and aren't tied to a visit.
+		$rows  = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . Doctor_Reviews::table_name() . ' WHERE source = %s AND updated_at >= %s AND updated_at <= %s ORDER BY updated_at DESC', Doctor_Reviews::SOURCE_PATIENT, $from . ' 00:00:00', $to . ' 23:59:59' ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name.
 		$rows  = $rows ? $rows : array();
 		$stars = array( 5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0 );
 		$sum   = 0;

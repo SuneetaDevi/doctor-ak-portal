@@ -14,6 +14,7 @@ use DoctorAKPortal\Includes\Clinic_Locations;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Doctor_Awards;
 use DoctorAKPortal\Includes\Doctor_Keywords;
+use DoctorAKPortal\Includes\Doctor_Reviews;
 use DoctorAKPortal\Includes\Encounter_Return;
 use DoctorAKPortal\Includes\Encounters;
 use DoctorAKPortal\Includes\Google_Reviews;
@@ -91,6 +92,7 @@ class Admin_Dashboard {
 			'patients'    => 'Patients',
 			'crm'         => 'CRM',
 			'doctors'     => 'Doctors',
+			'reviews'     => 'Reviews',
 			'receptionist' => 'Receptionist',
 		),
 		'Clinic'  => array(
@@ -809,6 +811,17 @@ class Admin_Dashboard {
 		// only — not in RECEPTIONIST_ALLOWED_SECTIONS).
 		if ( 'symptom-checker' === self::requested_section() && current_user_can( 'manage_options' ) ) {
 			Symptom_Mappings_Handler::enqueue_screen_assets();
+		}
+
+		// Reviews (administrators only): copy/share a doctor's review link.
+		if ( Admin_Reviews::SECTION === self::requested_section() && Admin_Reviews::can_manage() ) {
+			wp_enqueue_script(
+				'doctor-ak-portal-admin-reviews',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-admin-reviews.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-admin-reviews.js' ),
+				true
+			);
 		}
 
 		// CRM (administrators and receptionists; access re-checked by Crm_Handler).
@@ -1870,6 +1883,10 @@ class Admin_Dashboard {
 					$badge = $pending_doctors_count;
 				} elseif ( 'service-requests' === $slug ) {
 					$badge = Service_Requests::pending_count();
+				} elseif ( Admin_Reviews::SECTION === $slug ) {
+					// Reviews from a review link waiting for approval.
+					$counts = Doctor_Reviews::status_counts();
+					$badge  = $counts[ Doctor_Reviews::STATUS_PENDING ];
 				}
 
 				$group_items[] = array(
@@ -2657,6 +2674,10 @@ class Admin_Dashboard {
 
 		if ( 'symptom-checker' === $section && current_user_can( 'manage_options' ) ) {
 			return $this->symptom_checker_section_html();
+		}
+
+		if ( Admin_Reviews::SECTION === $section && Admin_Reviews::can_manage() ) {
+			return Admin_Reviews::section_html( $this->template_loader );
 		}
 
 		if ( 'crm' === $section ) {

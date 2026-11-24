@@ -77,7 +77,10 @@ $dak_admin_section_icons = array(
 	'settings'         => 'settings',
 	'videos'           => 'play',
 	'symptom-checker'  => 'stethoscope',
+	'reviews'          => 'star',
 );
+
+$dak_admin_icons['star'] = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 8.1l5-.7z"/></svg>';
 ?>
 <div class="dak-portal dak-dashboard dak-admin-dashboard" data-role="<?php echo esc_attr( $is_receptionist ? 'receptionist' : 'administrator' ); ?>">
 	<button type="button" class="dak-dashboard-sidebar-toggle" id="dak-sidebar-toggle" aria-label="<?php esc_attr_e( 'Toggle navigation', 'doctor-ak-portal' ); ?>" aria-expanded="false" aria-controls="dak-dashboard-sidebar">

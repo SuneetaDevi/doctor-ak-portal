@@ -910,3 +910,195 @@
 		flex-wrap: wrap !important;
 	}
 }
+
+/* ==========================================================================
+   Reviews section (admin-reviews.php): share-link card, status tabs,
+   review rows. Colours come from the shared tokens, so dark mode follows.
+   ========================================================================== */
+.dak-admin-dashboard .dak-admin-reviews .dak-review-share {
+	margin: 0 0 16px !important;
+}
+
+.dak-admin-dashboard .dak-review-share-intro {
+	max-width: 72ch !important;
+	margin: 0 0 14px !important;
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+	line-height: 1.55 !important;
+}
+
+.dak-admin-dashboard .dak-review-share-row {
+	display: grid !important;
+	grid-template-columns: minmax( 180px, 280px ) minmax( 0, 1fr ) !important;
+	gap: 12px !important;
+	align-items: end !important;
+}
+
+.dak-admin-dashboard .dak-review-share-row .dak-field {
+	min-width: 0 !important;
+	margin: 0 !important;
+}
+
+.dak-admin-dashboard .dak-review-share-row .dak-field > label {
+	margin: 0 0 4px !important;
+	color: var( --dak-muted ) !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+}
+
+.dak-admin-dashboard .dak-review-share-link input {
+	width: 100% !important;
+	box-sizing: border-box !important;
+	background: var( --dak-bg-subtle ) !important;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+	font-size: 12.5px !important;
+	text-overflow: ellipsis !important;
+}
+
+.dak-admin-dashboard .dak-review-share-note {
+	margin: 10px 0 0 !important;
+	color: var( --dak-tint-amber-text ) !important;
+	font-size: 13px !important;
+}
+
+.dak-admin-dashboard .dak-review-share-actions {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 8px !important;
+	margin: 14px 0 0 !important;
+}
+
+.dak-admin-dashboard .dak-review-share-reset {
+	display: inline-flex !important;
+	margin: 0 !important;
+}
+
+.dak-admin-dashboard .dak-review-share-status {
+	color: var( --dak-primary ) !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+}
+
+.dak-admin-dashboard .dak-review-share-actions a.dak-button {
+	text-decoration: none !important;
+}
+
+.dak-admin-dashboard .dak-review-share-actions a.dak-button.is-disabled {
+	opacity: 0.5 !important;
+	pointer-events: none !important;
+}
+
+.dak-admin-dashboard .dak-admin-reviews-tabs {
+	flex-wrap: wrap !important;
+	row-gap: 0.25rem !important;
+}
+
+.dak-admin-dashboard .dak-admin-reviews-tab-count {
+	display: inline-block !important;
+	min-width: 1.5em !important;
+	margin-left: 6px !important;
+	padding: 0 7px !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 12px !important;
+	font-weight: 600 !important;
+	line-height: 1.6 !important;
+	text-align: center !important;
+}
+
+.dak-admin-dashboard .dak-tab.has-pending .dak-admin-reviews-tab-count {
+	background: var( --dak-tint-amber ) !important;
+	color: var( --dak-tint-amber-text ) !important;
+}
+
+.dak-admin-dashboard .dak-admin-review-stars {
+	display: inline-flex !important;
+	gap: 1px !important;
+	line-height: 1 !important;
+}
+
+.dak-admin-dashboard .dak-admin-review-star {
+	color: var( --dak-border ) !important;
+	font-size: 15px !important;
+}
+
+.dak-admin-dashboard .dak-admin-review-star.is-on {
+	color: #e0a100 !important;
+}
+
+.dak-admin-dashboard .dak-admin-review-comment {
+	max-width: 52ch !important;
+	margin: 6px 0 0 !important;
+	color: var( --dak-text ) !important;
+	font-size: 14px !important;
+	line-height: 1.5 !important;
+	white-space: pre-line !important;
+	overflow-wrap: anywhere !important;
+}
+
+.dak-admin-dashboard .dak-admin-review-comment.is-empty {
+	color: var( --dak-muted ) !important;
+	font-style: italic !important;
+}
+
+.dak-admin-dashboard .dak-admin-review-row.is-hidden .dak-admin-review-main {
+	opacity: 0.6 !important;
+}
+
+.dak-admin-dashboard .dak-admin-review-source {
+	display: inline-block !important;
+	width: max-content !important;
+	margin-top: 4px !important;
+	padding: 1px 8px !important;
+	border-radius: 999px !important;
+	font-size: 11.5px !important;
+	font-weight: 600 !important;
+}
+
+.dak-admin-dashboard .dak-admin-review-source.is-link {
+	background: var( --dak-tint-amber ) !important;
+	color: var( --dak-tint-amber-text ) !important;
+}
+
+.dak-admin-dashboard .dak-admin-review-source.is-verified {
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary ) !important;
+}
+
+.dak-admin-dashboard .dak-admin-review-actions {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	justify-content: flex-end !important;
+	gap: 6px !important;
+}
+
+.dak-admin-dashboard .dak-admin-review-actions form {
+	margin: 0 !important;
+}
+
+.dak-admin-dashboard .dak-admin-reviews-pager {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 12px !important;
+	padding: 12px 16px !important;
+	border-top: 1px solid var( --dak-border ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+}
+
+.dak-admin-dashboard .dak-admin-reviews-pager a.dak-button {
+	text-decoration: none !important;
+}
+
+@media ( max-width: 700px ) {
+	.dak-admin-dashboard .dak-review-share-row {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+	}
+
+	.dak-admin-dashboard .dak-admin-review-actions {
+		justify-content: flex-start !important;
+	}
+}

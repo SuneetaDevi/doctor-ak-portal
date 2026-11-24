@@ -32,7 +32,74 @@
 		initServiceGroups();
 		initTagShowAll();
 		initPicker();
+		initSectionTabs();
 	} );
+
+	/**
+	 * The pinned section tabs under the profile header: marks the tab of the
+	 * section being read (aria-current="true" + .is-active) as the page
+	 * scrolls, and on phones keeps that tab scrolled into view in the row.
+	 */
+	function initSectionTabs() {
+		var nav = document.querySelector( '[data-dak-dp-tabs]' );
+
+		if ( ! nav ) {
+			return;
+		}
+
+		var links = Array.prototype.slice.call( nav.querySelectorAll( 'a[href^="#"]' ) );
+		var sections = links.map( function ( link ) {
+			return document.getElementById( link.getAttribute( 'href' ).slice( 1 ) );
+		} );
+		var ticking = false;
+
+		function update() {
+			ticking = false;
+
+			// The section whose top has passed just below the pinned tabs.
+			var line = nav.getBoundingClientRect().bottom + 24;
+			var current = -1;
+
+			sections.forEach( function ( section, index ) {
+				if ( section && section.getBoundingClientRect().top <= line ) {
+					current = index;
+				}
+			} );
+
+			// At the very bottom, the last section counts even if short.
+			if ( window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2 ) {
+				current = sections.length - 1;
+			}
+
+			links.forEach( function ( link, index ) {
+				var active = index === current;
+
+				link.classList.toggle( 'is-active', active );
+
+				if ( active ) {
+					link.setAttribute( 'aria-current', 'true' );
+
+					if ( nav.scrollWidth > nav.clientWidth ) {
+						var left = link.offsetLeft - ( nav.clientWidth - link.offsetWidth ) / 2;
+
+						nav.scrollLeft = Math.max( 0, left );
+					}
+				} else {
+					link.removeAttribute( 'aria-current' );
+				}
+			} );
+		}
+
+		window.addEventListener( 'scroll', function () {
+			if ( ! ticking ) {
+				ticking = true;
+				window.requestAnimationFrame( update );
+			}
+		}, { passive: true } );
+
+		window.addEventListener( 'resize', update );
+		update();
+	}
 
 	/**
 	 * CSS.escape() fallback for older browsers — only ever used to build an
@@ -321,8 +388,10 @@
 
 			var summaryText = state.resolved && state.feeLabel ? state.summary + ' — ' + state.feeLabel : state.summary;
 
+			// The booking card shows the fee in its own row just above, so
+			// its hint names the choice only; the mobile bar has no fee row.
 			if ( sidebarHint ) {
-				sidebarHint.textContent = summaryText;
+				sidebarHint.textContent = feeBox && state.resolved && state.feeLabel ? state.summary : summaryText;
 			}
 
 			if ( mobileSummary ) {

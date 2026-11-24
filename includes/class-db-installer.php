@@ -213,7 +213,7 @@ class Db_Installer {
 	const BLOGS_DB_VERSION = '1.1.0';
 
 	const REVIEWS_DB_VERSION_OPTION = 'dak_doctor_reviews_db_version';
-	const REVIEWS_DB_VERSION        = '1.0.0';
+	const REVIEWS_DB_VERSION        = '1.1.0'; // 1.1.0: status/source/reviewer columns, nullable patient_id (review links).
 
 	/**
 	 * Option name tracking the installed service-requests-table schema version.
@@ -548,20 +548,36 @@ class Db_Installer {
 		$table_name      = Doctor_Reviews::table_name();
 		$charset_collate = $wpdb->get_charset_collate();
 
+		// patient_id is NULL for a review sent from a doctor's review link
+		// (no account) — the UNIQUE key still allows one review per patient
+		// per doctor, while any number of NULL rows can coexist.
 		$sql = "CREATE TABLE {$table_name} (
 			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 			doctor_id BIGINT UNSIGNED NOT NULL,
-			patient_id BIGINT UNSIGNED NOT NULL,
+			patient_id BIGINT UNSIGNED NULL,
 			rating TINYINT UNSIGNED NOT NULL,
 			comment TEXT NULL,
+			status VARCHAR(20) NOT NULL DEFAULT 'published',
+			source VARCHAR(20) NOT NULL DEFAULT 'patient',
+			reviewer_name VARCHAR(100) NOT NULL DEFAULT '',
+			reviewer_contact VARCHAR(100) NOT NULL DEFAULT '',
 			created_at DATETIME NOT NULL,
 			updated_at DATETIME NOT NULL,
 			PRIMARY KEY  (id),
 			UNIQUE KEY doctor_patient (doctor_id,patient_id),
-			KEY doctor_id (doctor_id)
+			KEY doctor_id (doctor_id),
+			KEY status (status)
 		) {$charset_collate};";
 
 		dbDelta( $sql );
+
+		// dbDelta() doesn't change a column's NULL-ability, so a table made
+		// before 1.1.0 needs patient_id relaxed explicitly.
+		$column = $wpdb->get_row( $wpdb->prepare( "SHOW COLUMNS FROM {$table_name} LIKE %s", 'patient_id' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name.
+
+		if ( $column && 'NO' === strtoupper( (string) $column->Null ) ) { // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- MySQL column.
+			$wpdb->query( "ALTER TABLE {$table_name} MODIFY patient_id BIGINT UNSIGNED NULL" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.SchemaChange -- table name; one-off migration.
+		}
 	}
 
 	/**

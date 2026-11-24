@@ -25,6 +25,7 @@ use DoctorAKPortal\Frontend\Blog_Handler;
 use DoctorAKPortal\Frontend\Blog_Single;
 use DoctorAKPortal\Frontend\Blogs_Directory;
 use DoctorAKPortal\Frontend\Doctor_Review_Handler;
+use DoctorAKPortal\Frontend\Admin_Reviews;
 use DoctorAKPortal\Frontend\Clinic_Profile_View;
 use DoctorAKPortal\Frontend\Clinics_Directory;
 use DoctorAKPortal\Frontend\Clinic_Handler;
@@ -340,6 +341,13 @@ class Plugin {
 		$this->loader->add_action( 'template_redirect', 'DoctorAKPortal\Includes\Review_Requests', 'handle_landing', 1 );
 		$this->loader->add_action( 'admin_post_' . Review_Requests::SUBMIT_ACTION, 'DoctorAKPortal\Includes\Review_Requests', 'handle_submit' );
 		$this->loader->add_action( 'admin_post_nopriv_' . Review_Requests::SUBMIT_ACTION, 'DoctorAKPortal\Includes\Review_Requests', 'handle_submit' );
+
+		// A doctor's shareable review link (Dashboard → Reviews): anyone can
+		// send a review from it, saved as 'pending' until an admin publishes it.
+		$this->loader->add_action( 'admin_post_' . Review_Links::SUBMIT_ACTION, 'DoctorAKPortal\Includes\Review_Links', 'handle_submit' );
+		$this->loader->add_action( 'admin_post_nopriv_' . Review_Links::SUBMIT_ACTION, 'DoctorAKPortal\Includes\Review_Links', 'handle_submit' );
+		$this->loader->add_action( 'admin_post_' . Admin_Reviews::MODERATE_ACTION, 'DoctorAKPortal\Frontend\Admin_Reviews', 'handle_moderate' );
+		$this->loader->add_action( 'admin_post_' . Admin_Reviews::RESET_ACTION, 'DoctorAKPortal\Frontend\Admin_Reviews', 'handle_reset_link' );
 
 		// Self-healing: installs that were activated before this cron event
 		// existed only get it scheduled on Activator::activate(), which

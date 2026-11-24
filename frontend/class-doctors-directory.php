@@ -630,6 +630,49 @@ class Doctors_Directory {
 	}
 
 	/**
+	 * One doctor's next open slot in the coming 7 days — the same rule and
+	 * wording the Find a doctor list shows ("Today, 4:30 pm · Clinic"),
+	 * for the doctor's profile page. '' when nothing is open.
+	 *
+	 * @param int $doctor_id Doctor's user ID.
+	 * @return string
+	 */
+	public static function next_available_label( $doctor_id ) {
+		$doctor_id = (int) $doctor_id;
+		$clinics   = Clinics::get_for_doctor( $doctor_id );
+
+		if ( empty( $clinics ) ) {
+			return '';
+		}
+
+		$today  = current_time( 'Y-m-d' );
+		$booked = Appointments::occupied_slots( array( $doctor_id ), $today, gmdate( 'Y-m-d', strtotime( $today . ' +6 days' ) ) );
+		$booked = isset( $booked[ $doctor_id ] ) ? $booked[ $doctor_id ] : array();
+		$types  = array();
+		$next   = null;
+
+		foreach ( $clinics as $clinic ) {
+			if ( Clinics::TYPE_PHYSICAL === $clinic['type'] ) {
+				$types['clinic'] = true;
+			}
+		}
+
+		if ( Clinics::doctor_has_active_video_clinic( $doctor_id ) ) {
+			$types['video'] = true;
+		}
+
+		foreach ( array_keys( $types ) as $type ) {
+			$slot = self::next_open_slot( $clinics, $type, $booked, $today );
+
+			if ( $slot && ( null === $next || $slot['date'] . $slot['time'] < $next['date'] . $next['time'] ) ) {
+				$next = $slot;
+			}
+		}
+
+		return $next ? self::slot_label( $next, $today ) : '';
+	}
+
+	/**
 	 * Taken appointment times per doctor and date in a date range — the
 	 * same "one doctor, one appointment per slot" rule the booking page
 	 * applies (Appointments::occupied_slots()). One query for every doctor.
