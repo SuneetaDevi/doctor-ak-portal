@@ -326,7 +326,7 @@
    active photo drifts in slowly. initHeroSlider() in doctor-ak-home.js moves
    .is-active and sets aria-hidden/inert on the others. */
 .dak-home-hero-banner {
-	--dak-hero-interval: 7s;
+	--dak-hero-interval: 4s;
 	flex-direction: column !important;
 	align-items: flex-start !important;
 	justify-content: center !important;
@@ -396,50 +396,6 @@
 
 .dak-home-hero-slide--offers .dak-home-hero-accent {
 	color: #ffc46b !important;
-}
-
-/* Benefit chips — one short line each. */
-.dak-home-hero-benefits {
-	display: flex !important;
-	flex-wrap: wrap !important;
-	gap: var( --dak-space-2 ) !important;
-	margin: 0 0 var( --dak-space-5 ) !important;
-	padding: 0 !important;
-	list-style: none !important;
-}
-
-.dak-home-hero-benefits li {
-	display: inline-flex !important;
-	align-items: center !important;
-	gap: 0.5rem !important;
-	margin: 0 !important;
-	padding: 0.45rem 0.95rem 0.45rem 0.5rem !important;
-	border: 1px solid rgba( 255, 255, 255, 0.28 ) !important;
-	border-radius: 999px !important;
-	background: rgba( 255, 255, 255, 0.12 ) !important;
-	-webkit-backdrop-filter: blur( 8px ) !important;
-	backdrop-filter: blur( 8px ) !important;
-	color: #fff !important;
-	font-size: 0.9rem !important;
-	font-weight: 600 !important;
-	line-height: 1.3 !important;
-}
-
-.dak-home-hero-benefit-icon {
-	display: inline-flex !important;
-	align-items: center !important;
-	justify-content: center !important;
-	width: 22px !important;
-	height: 22px !important;
-	flex: 0 0 auto !important;
-	border-radius: 50% !important;
-	background: #7fd3ab !important;
-	color: #0b3d2e !important;
-}
-
-.dak-home-hero-benefit-icon svg {
-	width: 13px !important;
-	height: 13px !important;
 }
 
 /* Offer cards — white tickets with a bold "% OFF" badge. */
@@ -3217,10 +3173,6 @@ html.dak-hsm-locked body {
 		padding: 0 var( --dak-space-5 ) !important;
 	}
 
-	.dak-home-hero-benefits li {
-		font-size: 0.82rem !important;
-	}
-
 	/* Under the header there is nothing to clear here. The stats panel becomes
 	   a 2x2 block under the copy, and the search bar stacks its parts. */
 	.dak-home-hero-banner {
@@ -4215,5 +4167,318 @@ html[data-theme='dark'] .dak-home .dak-home-help-input::placeholder {
 @media ( prefers-reduced-motion: reduce ) {
 	.dak-home-hero-search-field--query {
 		transition: none !important;
+	}
+}
+
+/* ==========================================================================
+   Hero banner layout — kept last so it wins over the earlier hero rules.
+
+   Built for short laptop windows: under the WordPress admin bar, the top
+   bar and the header, a 1366 x 768 laptop (or a 1920 x 1080 one at 150%
+   scaling) leaves only ~400px of banner on screen. So:
+   - the banner's height follows the window (never above 560px);
+   - each slide is two columns — copy on the left, the slide's extra
+     content (the offer cards) on the right — instead of stacking;
+   - the headline scales with the window HEIGHT as well as its width;
+   - the stats live in their own strip under the search bar.
+   ========================================================================== */
+
+.dak-home-hero-banner {
+	--dak-hero-inline: max( var( --dak-home-gutter ), calc( ( 100vw - 1180px ) / 2 + 24px ) );
+	/* Room at the bottom for the search bar, which overlaps the banner by 3.75rem. */
+	--dak-hero-bottom: 5.5rem;
+	display: flex !important;
+	flex-direction: column !important;
+	justify-content: center !important;
+	min-height: clamp( 400px, calc( 100vh - 230px ), 560px ) !important;
+	padding: clamp( 1.5rem, 4vh, 2.75rem ) var( --dak-hero-inline ) var( --dak-hero-bottom ) !important;
+}
+
+/* Two columns per slide; the copy column is vertically centred. */
+.dak-home-hero-slide {
+	display: grid !important;
+	grid-template-columns: minmax( 0, 1.15fr ) minmax( 0, 0.85fr ) !important;
+	align-items: center !important;
+	column-gap: clamp( 1.5rem, 4vw, 4rem ) !important;
+}
+
+.dak-home-hero-banner-content {
+	max-width: 36rem !important;
+	padding: 0 !important;
+}
+
+.dak-home-hero-aside {
+	position: relative !important;
+	z-index: 1 !important;
+	justify-self: end !important;
+	width: 100% !important;
+	max-width: 22rem !important;
+}
+
+/* Darken only behind the copy, so the photo on the right stays bright. */
+.dak-home-hero-banner-overlay {
+	background: linear-gradient( 100deg, rgba( 7, 33, 26, 0.9 ) 0%, rgba( 9, 41, 32, 0.74 ) 36%, rgba( 13, 56, 43, 0.22 ) 62%, rgba( 13, 56, 43, 0 ) 82% ) !important;
+}
+
+/* --- Type: a light glass label, a headline sized by window width AND
+   height (so it shrinks on short laptop screens), one line under it. --- */
+.dak-home-hero-eyebrow {
+	padding: 0.4rem 0.9rem 0.4rem 0.7rem !important;
+	border: 1px solid rgba( 255, 255, 255, 0.3 ) !important;
+	background: rgba( 255, 255, 255, 0.12 ) !important;
+	-webkit-backdrop-filter: blur( 8px ) !important;
+	backdrop-filter: blur( 8px ) !important;
+	color: #d9f3e6 !important;
+	font-size: 0.72rem !important;
+	font-weight: 600 !important;
+	letter-spacing: 0.08em !important;
+}
+
+.dak-home-hero-eyebrow svg {
+	width: 15px !important;
+	height: 15px !important;
+	color: #7fd3ab !important;
+}
+
+.dak-home-hero-banner-content .dak-home-hero-title {
+	margin: clamp( 0.6rem, 1.8vh, 1.1rem ) 0 clamp( 0.5rem, 1.6vh, 0.9rem ) !important;
+	font-size: clamp( 2rem, min( 4.2vw, 7.5vh ), 3.75rem ) !important;
+	font-weight: 700 !important;
+	line-height: 1.05 !important;
+	letter-spacing: -0.02em !important;
+}
+
+.dak-home-hero-banner-content > p {
+	max-width: 30rem !important;
+	margin: 0 0 clamp( 1rem, 3vh, 1.6rem ) !important;
+	font-size: clamp( 1rem, 0.6rem + 0.6vw, 1.15rem ) !important;
+	line-height: 1.5 !important;
+	color: rgba( 255, 255, 255, 0.86 ) !important;
+}
+
+/* --- Offers: compact tickets stacked in the right column. --- */
+.dak-home-hero-offers {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.6rem !important;
+	max-width: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+.dak-home-hero-offer {
+	flex-direction: row !important;
+	align-items: center !important;
+	gap: 0.85rem !important;
+	padding: 0.7rem 0.9rem !important;
+	border-radius: 14px !important;
+}
+
+.dak-home-hero-offer-off {
+	align-self: center !important;
+	flex: 0 0 auto !important;
+	min-width: 4.6rem !important;
+	text-align: center !important;
+}
+
+.dak-home-hero-offer-text strong {
+	font-size: 0.95rem !important;
+}
+
+/* --- Slide controls: small, under the copy. --- */
+.dak-home-hero-controls {
+	margin-top: clamp( 0.75rem, 2.5vh, 1.5rem ) !important;
+	gap: 0.6rem !important;
+}
+
+.dak-home-hero-arrow {
+	width: 34px !important;
+	height: 34px !important;
+}
+
+.dak-home-hero-arrow svg {
+	width: 16px !important;
+	height: 16px !important;
+}
+
+/* --- Trust strip: the headline numbers, under the search bar. --- */
+.dak-home .dak-home-hero-stats {
+	position: static !important;
+	top: auto !important;
+	right: auto !important;
+	transform: none !important;
+	display: flex !important;
+	flex-wrap: wrap !important;
+	justify-content: center !important;
+	gap: 0 !important;
+	width: auto !important;
+	max-width: 1180px !important;
+	margin: 1.25rem auto 0 !important;
+	padding: 0 24px !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: none !important;
+	-webkit-backdrop-filter: none !important;
+	backdrop-filter: none !important;
+	box-shadow: none !important;
+}
+
+.dak-home .dak-home-hero-stat {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.65rem !important;
+	padding: 0.35rem 1.6rem !important;
+	border: 0 !important;
+	border-right: 1px solid var( --dak-border ) !important;
+}
+
+.dak-home .dak-home-hero-stat:last-child {
+	border-right: 0 !important;
+}
+
+.dak-home .dak-home-hero-stat-icon {
+	display: inline-flex !important;
+	width: 38px !important;
+	height: 38px !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary ) !important;
+}
+
+.dak-home .dak-home-hero-stat-icon svg {
+	width: 19px !important;
+	height: 19px !important;
+}
+
+.dak-home .dak-home-hero-stat-text strong {
+	font-size: 1.2rem !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-home .dak-home-hero-stat-text span {
+	font-size: 0.8rem !important;
+	white-space: nowrap !important;
+	color: var( --dak-muted ) !important;
+}
+
+/* Tablets and phones: one column. The offer cards go under the copy as a
+   swipeable row; the stats become an even 2 x 2 grid. */
+@media ( max-width: 1024px ) {
+	.dak-home-hero-banner {
+		display: flex !important;
+		min-height: 0 !important;
+		padding: var( --dak-space-6 ) var( --dak-space-5 ) var( --dak-hero-bottom ) !important;
+	}
+
+	.dak-home-hero-slide {
+		display: flex !important;
+		flex-direction: column !important;
+		align-items: stretch !important;
+		justify-content: center !important;
+	}
+
+	.dak-home-hero-banner-content {
+		max-width: 34rem !important;
+		padding: 0 !important;
+	}
+
+	.dak-home-hero-aside {
+		justify-self: auto !important;
+		max-width: none !important;
+		margin-top: var( --dak-space-4 ) !important;
+	}
+
+	.dak-home-hero-offers {
+		display: grid !important;
+		/* No fixed columns (an earlier rule sets some) — one swipeable row. */
+		grid-template-columns: none !important;
+		grid-auto-flow: column !important;
+		grid-auto-columns: minmax( 14rem, 1fr ) !important;
+		overflow-x: auto !important;
+		scroll-snap-type: x mandatory !important;
+		scrollbar-width: none !important;
+		padding-bottom: 0.25rem !important;
+	}
+
+	.dak-home-hero-offers::-webkit-scrollbar {
+		display: none !important;
+	}
+
+	.dak-home-hero-offers li {
+		scroll-snap-align: start !important;
+	}
+
+	.dak-home-hero-controls {
+		padding: 0 !important;
+	}
+
+	.dak-home .dak-home-hero-stats {
+		display: grid !important;
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+		row-gap: 0.75rem !important;
+		margin-top: 1rem !important;
+		padding: 0 var( --dak-space-4 ) !important;
+	}
+
+	.dak-home .dak-home-hero-stat {
+		padding: 0.25rem 0.75rem !important;
+		border-right: 0 !important;
+	}
+
+	.dak-home .dak-home-hero-stat-text span {
+		white-space: normal !important;
+	}
+}
+
+/* Phones. */
+@media ( max-width: 640px ) {
+	/* Copy runs the full width here, so darken evenly. */
+	.dak-home-hero-banner-overlay {
+		background: linear-gradient( 180deg, rgba( 7, 33, 26, 0.55 ) 0%, rgba( 7, 33, 26, 0.82 ) 55%, rgba( 7, 33, 26, 0.92 ) 100% ) !important;
+	}
+
+	.dak-home-hero-banner {
+		padding: var( --dak-space-5 ) var( --dak-space-4 ) var( --dak-hero-bottom ) !important;
+	}
+
+	.dak-home-hero-banner-content .dak-home-hero-title {
+		font-size: 2.1rem !important;
+	}
+
+	.dak-home-hero-eyebrow {
+		white-space: nowrap !important;
+	}
+
+	.dak-home-hero-offers {
+		grid-auto-columns: 78% !important;
+		margin: 0 calc( -1 * var( --dak-space-4 ) ) !important;
+		padding: 0 var( --dak-space-4 ) 0.25rem !important;
+		scroll-padding-left: var( --dak-space-4 ) !important;
+	}
+
+	.dak-home-hero-actions {
+		flex-wrap: nowrap !important;
+		gap: var( --dak-space-2 ) !important;
+	}
+
+	.dak-home-hero-actions .dak-button {
+		flex: 1 1 auto !important;
+		min-width: 0 !important;
+		padding: 0.8rem 1rem !important;
+		font-size: 0.92rem !important;
+		white-space: nowrap !important;
+	}
+
+	.dak-home .dak-home-hero-stat-icon {
+		width: 32px !important;
+		height: 32px !important;
+	}
+
+	.dak-home .dak-home-hero-stat-text strong {
+		font-size: 1.05rem !important;
+	}
+
+	.dak-home .dak-home-hero-stat-text span {
+		font-size: 0.72rem !important;
 	}
 }
