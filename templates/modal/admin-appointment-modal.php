@@ -10,7 +10,7 @@
  * @var array $doctor_options  Doctor user ID => display name.
  * @var array $patient_options Patient user ID => { name, number, phone, search }, see Appointments::patient_picker_options().
  * @var array $status_options  Status slug => label, see Appointments::status_options().
- * @var array $services        [doctor_id][type] => [{id, name, charge, clinic_charges}, ...], see Admin_Dashboard::services_by_doctor_and_type().
+ * @var array $services        [doctor_id][type] => [{id, name, category, charge, clinic_charges}, ...], see Admin_Dashboard::services_by_doctor_and_type().
  * @var array $clinics         [doctor_id] => [{id, name, place, location_id}, ...] — physical clinics, see Admin_Dashboard::physical_clinics_by_doctor().
  */
 

@@ -19,9 +19,9 @@
  * @var array  $doctors                 Doctor users { ID, display_name }, for the filter's Doctor select.
  * @var array  $payment_status_options  Payment status slug => label.
  * @var array  $range_options           Range slug => label ('', 'upcoming', 'past'), see Appointments::range_options().
- * @var array  $filters                 Active filter values: patient_id, date_from, date_to, doctor_id, payment_status, range, search, sort ('desc'|'asc'), clinic (Clinic_Locations ID), visit ('clinic'|'video'), service (procedure name).
+ * @var array  $filters                 Active filter values: patient_id, date_from, date_to, doctor_id, payment_status, range, search, sort ('desc'|'asc'), clinic (Clinic_Locations ID), visit ('clinic'|'video'), category (service category slug).
  * @var array  $clinic_options          Clinic_Locations ID => name, for the Clinic filter.
- * @var array  $service_options         Procedure (service) names, for the Procedure filter.
+ * @var array  $category_options        Service category slug => label (categories in use), for the Category filter.
  * @var string $patients_url            Patients section URL — a patient's name links to their row there.
  * @var bool   $is_receptionist         Whether the viewer is a Receptionist — full Add/Edit/Delete/Mark Paid access, but no Refund (Billing/Revenue stays administrator-only).
  */
@@ -131,7 +131,7 @@ $dak_current_query = array(
 	'patient_id'     => $filters['patient_id'] > 0 ? $filters['patient_id'] : '',
 	'clinic'         => $filters['clinic'] > 0 ? $filters['clinic'] : '',
 	'visit'          => $filters['visit'],
-	'service'        => $filters['service'],
+	'category'       => $filters['category'],
 );
 
 $dak_without = function ( $key, $replacement = null ) use ( $dak_current_query, $appointments_url ) {
@@ -217,9 +217,12 @@ if ( $filters['clinic'] > 0 ) {
 	);
 }
 
-if ( '' !== $filters['service'] ) {
-	/* translators: %s: procedure/service name. */
-	$dak_chips[] = array( sprintf( __( 'Procedure: %s', 'doctor-ak-portal' ), $filters['service'] ), $dak_without( 'service' ) );
+if ( '' !== $filters['category'] ) {
+	$dak_chips[] = array(
+		/* translators: %s: service category name. */
+		sprintf( __( 'Category: %s', 'doctor-ak-portal' ), isset( $category_options[ $filters['category'] ] ) ? $category_options[ $filters['category'] ] : $filters['category'] ),
+		$dak_without( 'category' ),
+	);
 }
 
 // "Clear all" returns to the default view (Upcoming, newest first), keeping
@@ -369,11 +372,11 @@ $dak_more_label = $dak_more_active > 0 ? sprintf( __( 'More filters (%d)', 'doct
 		</div>
 
 		<div class="dak-field dak-appts-filter-service">
-			<label for="dak-admin-appointments-filter-service"><?php esc_html_e( 'Procedure', 'doctor-ak-portal' ); ?></label>
-			<select id="dak-admin-appointments-filter-service" name="service" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search procedures…', 'doctor-ak-portal' ); ?>">
-				<option value=""><?php esc_html_e( 'All procedures', 'doctor-ak-portal' ); ?></option>
-				<?php foreach ( $service_options as $dak_service_name ) : ?>
-					<option value="<?php echo esc_attr( $dak_service_name ); ?>" <?php selected( mb_strtolower( $filters['service'] ), mb_strtolower( $dak_service_name ) ); ?>><?php echo esc_html( $dak_service_name ); ?></option>
+			<label for="dak-admin-appointments-filter-category"><?php esc_html_e( 'Category', 'doctor-ak-portal' ); ?></label>
+			<select id="dak-admin-appointments-filter-category" name="category" class="dak-select-searchable" data-placeholder="<?php esc_attr_e( 'Search categories…', 'doctor-ak-portal' ); ?>">
+				<option value=""><?php esc_html_e( 'All categories', 'doctor-ak-portal' ); ?></option>
+				<?php foreach ( $category_options as $dak_category_slug => $dak_category_label ) : ?>
+					<option value="<?php echo esc_attr( $dak_category_slug ); ?>" <?php selected( $filters['category'], $dak_category_slug ); ?>><?php echo esc_html( $dak_category_label ); ?></option>
 				<?php endforeach; ?>
 			</select>
 		</div>
@@ -481,6 +484,8 @@ $dak_more_label = $dak_more_active > 0 ? sprintf( __( 'More filters (%d)', 'doct
 				'data-guest-email'    => $row['guest_email'],
 				'data-guest-phone'    => $row['guest_phone'],
 				'data-type'           => $row['type'],
+				// The clinic it's booked at, so the dialog opens with it chosen.
+				'data-clinic-id'      => 'video' === $row['type'] ? 0 : (int) $row['clinic_id'],
 				'data-service-id'     => $row['service_id'],
 				'data-service-ids'    => wp_json_encode( ! empty( $row['service_ids'] ) ? array_values( $row['service_ids'] ) : array() ),
 				'data-date'           => $row['date'],

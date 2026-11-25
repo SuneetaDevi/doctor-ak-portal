@@ -1189,6 +1189,42 @@ class Admin_Dashboard {
 	}
 
 	/**
+	 * Every service category on an appointment (from all its services) —
+	 * for the Category filter. A service with no category, or one whose
+	 * category was since deleted, counts as the catch-all category, the same
+	 * way the public services directory groups it.
+	 *
+	 * @param array $row Row from Appointments::all_for_admin().
+	 * @return string[] Category slugs.
+	 */
+	private static function appointment_service_categories( array $row ) {
+		static $category_by_id = array();
+
+		$known = Service_Categories::get_all();
+		$ids   = array_filter( array_merge( (array) $row['service_ids'], array( (int) $row['service_id'] ) ) );
+		$slugs = array();
+
+		foreach ( array_unique( array_map( 'intval', $ids ) ) as $service_id ) {
+			if ( ! array_key_exists( $service_id, $category_by_id ) ) {
+				$service = Services::find( $service_id );
+
+				if ( ! $service ) {
+					$category_by_id[ $service_id ] = '';
+				} else {
+					$slug                          = (string) $service['category'];
+					$category_by_id[ $service_id ] = isset( $known[ $slug ] ) ? $slug : Service_Categories::fallback_slug();
+				}
+			}
+
+			if ( '' !== $category_by_id[ $service_id ] ) {
+				$slugs[] = $category_by_id[ $service_id ];
+			}
+		}
+
+		return array_values( array_unique( $slugs ) );
+	}
+
+	/**
 	 * Resolves an appointment's Clinic_Locations ID from its Clinics row ID
 	 * (0 for a video consultation, which has no physical location) — shared
 	 * by every place that scopes a receptionist's view down to their
@@ -1791,7 +1827,7 @@ class Admin_Dashboard {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		foreach ( array( 'patient_id', 'date_from', 'date_to', 'doctor_id', 'payment_status', 'range', 'search', 'sort', 'clinic', 'visit', 'service' ) as $key ) {
+		foreach ( array( 'patient_id', 'date_from', 'date_to', 'doctor_id', 'payment_status', 'range', 'search', 'sort', 'clinic', 'visit', 'category' ) as $key ) {
 			$_GET[ $key ] = isset( $_POST[ $key ] ) ? $_POST[ $key ] : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- nonce already verified above; section_content_html() sanitizes each value itself, same as it does for a real $_GET.
 		}
 
@@ -2154,11 +2190,11 @@ class Admin_Dashboard {
 			$search    = isset( $_GET['search'] ) ? sanitize_text_field( wp_unslash( $_GET['search'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			// Clinic (a shared Clinic_Locations entry, since each doctor has
 			// their own Clinics row for the same place), visit type, and
-			// procedure (service name, so it spans every doctor offering it).
-			$clinic_filter  = isset( $_GET['clinic'] ) ? absint( wp_unslash( $_GET['clinic'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
-			$visit_filter   = isset( $_GET['visit'] ) ? sanitize_key( wp_unslash( $_GET['visit'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
-			$visit_filter   = in_array( $visit_filter, array( 'clinic', 'video' ), true ) ? $visit_filter : '';
-			$service_filter = isset( $_GET['service'] ) ? sanitize_text_field( wp_unslash( $_GET['service'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			// service category (Dashboard → Services → Categories).
+			$clinic_filter   = isset( $_GET['clinic'] ) ? absint( wp_unslash( $_GET['clinic'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$visit_filter    = isset( $_GET['visit'] ) ? sanitize_key( wp_unslash( $_GET['visit'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
+			$visit_filter    = in_array( $visit_filter, array( 'clinic', 'video' ), true ) ? $visit_filter : '';
+			$category_filter = isset( $_GET['category'] ) ? sanitize_key( wp_unslash( $_GET['category'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 			// Defaults to 'upcoming' only on first load (no `range` in the
 			// request at all) — once a range is explicitly submitted
 			// (including '' for "All"), that choice sticks.
@@ -2252,23 +2288,25 @@ class Admin_Dashboard {
 
 			$clinic_filter = isset( $clinic_options[ $clinic_filter ] ) ? $clinic_filter : 0;
 
-			$service_options = array();
+			// Categories that at least one service uses, in the admin's own
+			// order. The catch-all is always offered, since services with no
+			// (or a deleted) category land there.
+			$categories_in_use = Services::count_by_category();
+			$category_options  = array();
 
-			foreach ( Services::all_flat_for_admin( array( 'number' => 2000 ) ) as $service_row ) {
-				$service_name = trim( (string) $service_row['name'] );
-
-				if ( '' !== $service_name ) {
-					$service_options[ mb_strtolower( $service_name ) ] = $service_name;
+			foreach ( Service_Categories::get_all() as $category_slug => $category_label ) {
+				if ( isset( $categories_in_use[ $category_slug ] ) || Service_Categories::fallback_slug() === $category_slug ) {
+					$category_options[ $category_slug ] = $category_label;
 				}
 			}
 
-			natcasesort( $service_options );
+			$category_filter = isset( $category_options[ $category_filter ] ) ? $category_filter : '';
 
-			if ( $clinic_filter > 0 || '' !== $visit_filter || '' !== $service_filter ) {
+			if ( $clinic_filter > 0 || '' !== $visit_filter || '' !== $category_filter ) {
 				$appointments = array_values(
 					array_filter(
 						$appointments,
-						function ( $row ) use ( $clinic_filter, $visit_filter, $service_filter ) {
+						function ( $row ) use ( $clinic_filter, $visit_filter, $category_filter ) {
 							if ( '' !== $visit_filter && ( 'video' === $visit_filter ) !== ( 'video' === $row['type'] ) ) {
 								return false;
 							}
@@ -2277,7 +2315,7 @@ class Admin_Dashboard {
 								return false;
 							}
 
-							return '' === $service_filter || in_array( mb_strtolower( $service_filter ), self::appointment_service_names( $row ), true );
+							return '' === $category_filter || in_array( $category_filter, self::appointment_service_categories( $row ), true );
 						}
 					)
 				);
@@ -2294,7 +2332,7 @@ class Admin_Dashboard {
 					'range_options'          => Appointments::range_options(),
 					'is_receptionist'        => self::is_receptionist(),
 					'clinic_options'         => $clinic_options,
-					'service_options'        => $service_options,
+					'category_options'       => $category_options,
 					// Patient names link to that patient's row in Patients.
 					'patients_url'           => $dashboard_url ? add_query_arg( 'section', 'patients', $dashboard_url ) : '',
 					'filters'           => array(
@@ -2308,7 +2346,7 @@ class Admin_Dashboard {
 						'sort'           => $sort,
 						'clinic'         => $clinic_filter,
 						'visit'          => $visit_filter,
-						'service'        => $service_filter,
+						'category'       => $category_filter,
 					),
 				)
 			);
@@ -3020,7 +3058,9 @@ class Admin_Dashboard {
 	 * @return array
 	 */
 	private function services_by_doctor_and_type() {
-		$map = array();
+		$map        = array();
+		$categories = Service_Categories::get_all();
+		$fallback   = isset( $categories[ Service_Categories::fallback_slug() ] ) ? $categories[ Service_Categories::fallback_slug() ] : '';
 
 		foreach ( array_keys( $this->doctor_options() ) as $doctor_id ) {
 			foreach ( array( 'clinic', 'video' ) as $type ) {
@@ -3035,10 +3075,14 @@ class Admin_Dashboard {
 				}
 
 				$map[ $doctor_id ][ $type ] = array_map(
-					function ( $service ) {
+					function ( $service ) use ( $categories, $fallback ) {
 						return array(
 							'id'             => $service['id'],
 							'name'           => $service['name'],
+							// Category name, shown beside the service. No (or a
+							// deleted) category reads as the catch-all, same as
+							// the Appointments Category filter.
+							'category'       => isset( $categories[ $service['category'] ] ) ? $categories[ $service['category'] ] : $fallback,
 							'charge'         => $service['charge'],
 							// Clinic_Locations id => price at that clinic; empty
 							// means offered at every clinic at the flat charge.

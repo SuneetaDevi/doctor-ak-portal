@@ -544,7 +544,9 @@
 				var charge = ( locationId && hasClinicPrices ) ? parseFloat( clinicCharges[ locationId ] ) || 0 : parseFloat( service.charge ) || 0;
 				var option = document.createElement( 'option' );
 				option.value = service.id;
-				option.textContent = service.name + ( charge > 0 ? ' (PKR ' + charge + ')' : '' );
+				// "Colonoscopy · Surgeries and Procedures (PKR 50000)" — the
+				// category is searchable too.
+				option.textContent = service.name + ( service.category ? ' · ' + service.category : '' ) + ( charge > 0 ? ' (PKR ' + charge + ')' : '' );
 				option.selected = -1 !== keepIds.indexOf( String( service.id ) );
 				option.setAttribute( 'data-charge', charge );
 				select.appendChild( option );
