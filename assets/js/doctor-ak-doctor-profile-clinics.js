@@ -447,10 +447,112 @@
 			nextFocusTarget.focus( { preventScroll: true } );
 		}
 
+		// A service chosen in the Services section that's offered at more
+		// than one clinic: picked as soon as the visitor chooses one of them.
+		var pendingServiceId = '';
+
+		function serviceInput( group, serviceId ) {
+			return group ? group.querySelector( 'input[type="radio"][value="' + cssEscape( serviceId ) + '"]' ) : null;
+		}
+
+		function checkInput( input ) {
+			if ( ! input ) {
+				return;
+			}
+
+			input.checked = true;
+
+			// A service past the first six in its clinic's list is collapsed.
+			var row = input.closest( '.dak-profile-radio-row' );
+
+			if ( row ) {
+				row.classList.remove( 'dak-hidden' );
+			}
+		}
+
+		function applyPendingService() {
+			if ( ! pendingServiceId ) {
+				return;
+			}
+
+			var clinicId = getSelectedClinicId();
+			var group = serviceGroups.filter( function ( g ) {
+				return g.getAttribute( 'data-clinic-id' ) === clinicId;
+			} )[ 0 ];
+			var input = serviceInput( group, pendingServiceId );
+
+			if ( input ) {
+				checkInput( input );
+				pendingServiceId = '';
+			}
+		}
+
+		/**
+		 * "Book" in the Services section: makes the same choice in the
+		 * Clinics & fees picker (Clinic Visit → clinic → service, or Online
+		 * Video), so booking always goes through one place. When the service
+		 * is at several clinics, the visitor is taken to the clinic choice
+		 * and the service is filled in once they pick one.
+		 */
+		function bookFromServices( serviceId, isVideo ) {
+			if ( ! picker ) {
+				return;
+			}
+
+			pendingServiceId = '';
+
+			var visitRadio = picker.querySelector( 'input[name="dak-visit-type"][value="' + ( isVideo ? 'video' : 'clinic' ) + '"]' );
+
+			checkInput( visitRadio );
+
+			if ( ! isVideo ) {
+				var offering = serviceGroups.filter( function ( group ) {
+					return !! serviceInput( group, serviceId );
+				} );
+				var current = getSelectedClinicId();
+				var here = offering.filter( function ( group ) {
+					return group.getAttribute( 'data-clinic-id' ) === current;
+				} )[ 0 ];
+
+				if ( ! here && 1 === offering.length ) {
+					here = offering[ 0 ];
+					checkInput( picker.querySelector( 'input[name="dak-clinic-choice"][value="' + cssEscape( here.getAttribute( 'data-clinic-id' ) ) + '"]' ) );
+				}
+
+				if ( here ) {
+					checkInput( serviceInput( here, serviceId ) );
+				} else {
+					pendingServiceId = String( serviceId );
+				}
+			}
+
+			hasInteracted = true;
+			render();
+			scrollToNextStep();
+		}
+
+		document.addEventListener( 'click', function ( event ) {
+			var button = event.target && event.target.closest ? event.target.closest( '[data-dp-book-service], [data-dp-book-video]' ) : null;
+
+			if ( ! button ) {
+				return;
+			}
+
+			event.preventDefault();
+			bookFromServices( button.getAttribute( 'data-dp-book-service' ) || '', button.hasAttribute( 'data-dp-book-video' ) );
+		} );
+
 		if ( picker ) {
 			picker.addEventListener( 'change', function ( event ) {
 				if ( event.target && 'radio' === event.target.type ) {
 					hasInteracted = true;
+
+					if ( 'dak-clinic-choice' === event.target.name ) {
+						applyPendingService();
+					} else if ( 'dak-visit-type' === event.target.name && 'video' === event.target.value ) {
+						pendingServiceId = '';
+					}
+
 					render();
 				}
 			} );

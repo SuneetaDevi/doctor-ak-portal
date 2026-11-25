@@ -15,6 +15,7 @@ use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Review_Links;
 use DoctorAKPortal\Includes\Review_Requests;
 use DoctorAKPortal\Includes\Roles;
+use DoctorAKPortal\Includes\Service_Categories;
 use DoctorAKPortal\Includes\Services;
 use DoctorAKPortal\Includes\Specializations;
 use DoctorAKPortal\Includes\Template_Loader;
@@ -246,6 +247,7 @@ class Doctor_Profile_View {
 					'clinics'                => $clinics,
 					'physical_clinic_count'  => $physical_clinic_count,
 					'clinics_with_services'  => $clinics_with_services,
+					'services_list'          => $this->services_list( $doctor->ID, $clinics_with_services ),
 					'video_fee_label'        => self::video_fee_label( $doctor->ID ),
 					'years_experience'       => get_user_meta( $doctor->ID, 'doctor_ak_years_experience', true ),
 					'qualification'          => get_user_meta( $doctor->ID, 'doctor_ak_qualification', true ),
@@ -327,6 +329,84 @@ class Doctor_Profile_View {
 		return $clinic;
 	}
 
+	/**
+	 * The doctor's clinic services for the profile's "Services" section —
+	 * one entry per service (not per clinic), with its price range across
+	 * the clinics offering it. Only services bookable at one of the
+	 * doctor's clinics are listed (same rule as the Clinics & fees picker).
+	 *
+	 * @param int   $doctor_id             Doctor user ID.
+	 * @param array $clinics_with_services See clinics_with_services().
+	 * @return array[] { id, name, category, duration, description, price_label, discount_percent, clinics[], url }
+	 */
+	private function services_list( $doctor_id, array $clinics_with_services ) {
+		$offered = array();
+
+		foreach ( $clinics_with_services as $clinic ) {
+			foreach ( $clinic['services'] as $row ) {
+				$id = (int) $row['id'];
+
+				if ( ! isset( $offered[ $id ] ) ) {
+					$offered[ $id ] = array(
+						'charges'  => array(),
+						'clinics'  => array(),
+						'discount' => 0,
+					);
+				}
+
+				$offered[ $id ]['charges'][]  = (float) $row['charge'];
+				$offered[ $id ]['clinics'][]  = $clinic['name'];
+				$offered[ $id ]['discount']   = max( $offered[ $id ]['discount'], (int) $row['discount_percent'] );
+			}
+		}
+
+		if ( empty( $offered ) ) {
+			return array();
+		}
+
+		$categories  = Service_Categories::get_all();
+		$profile_url = Page_Finder::url_for_shortcode( 'service_profile_view' );
+		$out         = array();
+
+		foreach ( Services::active_for_doctor( $doctor_id, 'clinic' ) as $service ) {
+			$id = (int) $service['id'];
+
+			if ( ! isset( $offered[ $id ] ) ) {
+				continue;
+			}
+
+			$priced = array_filter(
+				$offered[ $id ]['charges'],
+				function ( $charge ) {
+					return $charge > 0;
+				}
+			);
+			$min    = $priced ? min( $priced ) : 0;
+			$max    = $priced ? max( $priced ) : 0;
+
+			$description = trim( html_entity_decode( wp_strip_all_tags( (string) ( isset( $service['description'] ) ? $service['description'] : '' ) ), ENT_QUOTES, 'UTF-8' ) );
+			$description = preg_replace( '/\s+/', ' ', $description );
+
+			if ( mb_strlen( $description ) > 160 ) {
+				$description = rtrim( mb_substr( $description, 0, 157 ) ) . '…';
+			}
+
+			$out[] = array(
+				'id'               => $id,
+				'name'             => $service['name'],
+				'category'         => isset( $categories[ $service['category'] ] ) ? $categories[ $service['category'] ] : '',
+				'duration'         => (int) $service['duration_minutes'],
+				'description'      => $description,
+				/* translators: %s: lowest price, e.g. "PKR 1,500". */
+				'price_label'      => $min < $max ? sprintf( __( 'From %s', 'doctor-ak-portal' ), Services::single_price_label( $min ) ) : Services::single_price_label( $min ),
+				'discount_percent' => $offered[ $id ]['discount'],
+				'clinics'          => array_values( array_unique( $offered[ $id ]['clinics'] ) ),
+				'url'              => '' !== $profile_url ? add_query_arg( 'service_id', $id, $profile_url ) : '',
+			);
+		}
+
+		return $out;
+	}
 	/**
 	 * This doctor's physical clinics, each with the services actually
 	 * offered there and that clinic's own exact fee for each — "Clinics &

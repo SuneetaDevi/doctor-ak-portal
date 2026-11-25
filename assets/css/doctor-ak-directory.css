@@ -1111,6 +1111,7 @@
 #dak-profile-overview,
 #dak-profile-clinics-fees,
 #dak-profile-about,
+#dak-profile-services,
 #dak-profile-reviews {
 	/* Clears the sticky site header and the pinned section tabs. */
 	scroll-margin-top: calc( var( --dak-profile-offset, 96px ) + 76px ) !important;
@@ -4396,4 +4397,152 @@ html[data-theme='dark'] .dak-profile-view {
 
 .dak-profile-clinic-lock-note[hidden] {
 	display: none !important;
+}
+
+/* ---- Services section (#dak-profile-services) --------------------------
+   One card per service: name, category / duration / clinics, a short
+   description, price and Book (fills the Clinics & fees picker) + Details. */
+.dak-profile-view .dak-dp-services {
+	display: grid !important;
+	gap: 12px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+.dak-profile-view .dak-dp-service {
+	display: flex !important;
+	align-items: flex-start !important;
+	justify-content: space-between !important;
+	gap: 16px !important;
+	margin: 0 !important;
+	padding: 16px 18px !important;
+	border: 1px solid var( --dak-dp-line ) !important;
+	border-radius: 14px !important;
+	background: var( --dak-bg-card ) !important;
+}
+
+.dak-profile-view .dak-dp-service.dak-hidden {
+	display: none !important;
+}
+
+.dak-profile-view .dak-dp-service::before,
+.dak-profile-view .dak-dp-service::marker {
+	content: none !important;
+}
+
+.dak-profile-view .dak-dp-service-main {
+	min-width: 0 !important;
+	flex: 1 1 auto !important;
+}
+
+.dak-profile-view .dak-dp-service-name {
+	margin: 0 0 6px !important;
+	font-size: 16px !important;
+	font-weight: 700 !important;
+	line-height: 1.35 !important;
+	color: var( --dak-dp-ink ) !important;
+}
+
+.dak-profile-view .dak-dp-service-meta {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 6px 14px !important;
+	margin: 0 !important;
+	font-size: 13px !important;
+	color: var( --dak-dp-body ) !important;
+}
+
+.dak-profile-view .dak-dp-service-meta-item {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 5px !important;
+}
+
+.dak-profile-view .dak-dp-service-meta-icon {
+	display: inline-flex !important;
+	width: 15px !important;
+	height: 15px !important;
+	color: var( --dak-dp-green ) !important;
+}
+
+.dak-profile-view .dak-dp-service-meta-icon svg {
+	width: 15px !important;
+	height: 15px !important;
+}
+
+.dak-profile-view .dak-dp-service-category {
+	display: inline-block !important;
+	padding: 1px 9px !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-primary ) !important;
+	font-size: 12px !important;
+	font-weight: 600 !important;
+}
+
+.dak-profile-view .dak-dp-service-desc {
+	margin: 8px 0 0 !important;
+	font-size: 14px !important;
+	line-height: 1.55 !important;
+	color: var( --dak-dp-body ) !important;
+}
+
+.dak-profile-view .dak-dp-service-side {
+	display: flex !important;
+	flex: 0 0 auto !important;
+	flex-direction: column !important;
+	align-items: flex-end !important;
+	gap: 6px !important;
+	text-align: right !important;
+}
+
+.dak-profile-view .dak-dp-service-price {
+	font-size: 17px !important;
+	font-weight: 800 !important;
+	color: var( --dak-dp-ink ) !important;
+	white-space: nowrap !important;
+}
+
+.dak-profile-view .dak-dp-service-actions {
+	display: flex !important;
+	gap: 8px !important;
+	margin-top: 4px !important;
+}
+
+.dak-profile-view .dak-dp-service-actions .dak-button {
+	min-height: 38px !important;
+	padding: 0 16px !important;
+	text-decoration: none !important;
+	white-space: nowrap !important;
+}
+
+.dak-profile-view .dak-dp-services-more {
+	margin-top: 14px !important;
+}
+
+@media ( max-width: 600px ) {
+	.dak-profile-view .dak-dp-service {
+		flex-direction: column !important;
+		gap: 12px !important;
+		padding: 14px !important;
+	}
+
+	.dak-profile-view .dak-dp-service-side {
+		flex-direction: row !important;
+		flex-wrap: wrap !important;
+		align-items: center !important;
+		justify-content: space-between !important;
+		width: 100% !important;
+		text-align: left !important;
+	}
+
+	.dak-profile-view .dak-dp-service-actions {
+		margin: 0 !important;
+	}
+
+	.dak-profile-view .dak-dp-service-actions .dak-button {
+		min-height: 44px !important;
+	}
 }
