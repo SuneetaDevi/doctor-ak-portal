@@ -19,6 +19,7 @@
 	'use strict';
 
 	document.addEventListener( 'DOMContentLoaded', function () {
+		initHeroSlider();
 		initVideoModal();
 		// Builds the carousel's loop clones before the gallery's
 		// IntersectionObserver below queries every [data-gallery-video], so
@@ -29,6 +30,183 @@
 		initHeroSearch();
 		initHomeHelp();
 	} );
+
+	/**
+	 * Hero slides: one shown at a time, cross-fading. The active dot's fill
+	 * bar is a CSS animation lasting one slide's time on screen
+	 * (--dak-hero-interval); when it ends, the next slide shows — so pausing
+	 * the animation (hover, keyboard focus inside, a hidden tab, or the
+	 * pause button) pauses the rotation exactly where it was. With "reduce
+	 * motion" set there's no animation and so no auto-rotation, only the
+	 * arrows/dots. Swipe left/right on touch screens.
+	 */
+	function initHeroSlider() {
+		var banner = document.querySelector( '[data-dak-hero-slider]' );
+
+		if ( ! banner ) {
+			return;
+		}
+
+		var slides = Array.prototype.slice.call( banner.querySelectorAll( '.dak-home-hero-slide' ) );
+		var dots = Array.prototype.slice.call( banner.querySelectorAll( '[data-dak-hero-dot]' ) );
+		var pauseButton = banner.querySelector( '[data-dak-hero-pause]' );
+		var reduceMotion = window.matchMedia && window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
+		var current = 0;
+		var holds = {};
+
+		if ( slides.length < 2 ) {
+			return;
+		}
+
+		function show( index ) {
+			current = ( index + slides.length ) % slides.length;
+
+			slides.forEach( function ( slide, i ) {
+				var isCurrent = i === current;
+
+				slide.classList.toggle( 'is-active', isCurrent );
+
+				if ( isCurrent ) {
+					slide.removeAttribute( 'aria-hidden' );
+					slide.removeAttribute( 'inert' );
+				} else {
+					slide.setAttribute( 'aria-hidden', 'true' );
+					slide.setAttribute( 'inert', '' );
+				}
+			} );
+
+			dots.forEach( function ( dot, i ) {
+				dot.classList.toggle( 'is-active', i === current );
+				dot.setAttribute( 'aria-current', i === current ? 'true' : 'false' );
+			} );
+		}
+
+		function setPlaying( playing ) {
+			banner.classList.toggle( 'is-playing', playing );
+			banner.classList.toggle( 'is-paused', ! playing );
+
+			if ( pauseButton ) {
+				pauseButton.setAttribute( 'aria-pressed', playing ? 'false' : 'true' );
+				pauseButton.setAttribute( 'aria-label', pauseButton.getAttribute( playing ? 'data-label-pause' : 'data-label-play' ) || '' );
+			}
+		}
+
+		function hold( reason, on ) {
+			if ( on ) {
+				holds[ reason ] = true;
+			} else {
+				delete holds[ reason ];
+			}
+
+			banner.classList.toggle( 'is-held', Object.keys( holds ).length > 0 );
+		}
+
+		dots.forEach( function ( dot, i ) {
+			dot.addEventListener( 'click', function () {
+				show( i );
+			} );
+
+			// The fill bar finished: time for the next slide.
+			dot.addEventListener( 'animationend', function ( event ) {
+				if ( i === current && event.target.classList.contains( 'dak-home-hero-dot-fill' ) && banner.classList.contains( 'is-playing' ) ) {
+					show( current + 1 );
+				}
+			} );
+		} );
+
+		var prev = banner.querySelector( '[data-dak-hero-prev]' );
+		var next = banner.querySelector( '[data-dak-hero-next]' );
+
+		if ( prev ) {
+			prev.addEventListener( 'click', function () {
+				show( current - 1 );
+			} );
+		}
+
+		if ( next ) {
+			next.addEventListener( 'click', function () {
+				show( current + 1 );
+			} );
+		}
+
+		if ( pauseButton ) {
+			if ( reduceMotion ) {
+				pauseButton.parentNode.removeChild( pauseButton );
+				pauseButton = null;
+			} else {
+				pauseButton.addEventListener( 'click', function () {
+					setPlaying( ! banner.classList.contains( 'is-playing' ) );
+				} );
+			}
+		}
+
+		// Hold still while someone is reading or using it.
+		banner.addEventListener( 'pointerenter', function ( event ) {
+			if ( 'mouse' === event.pointerType ) {
+				hold( 'hover', true );
+			}
+		} );
+
+		banner.addEventListener( 'pointerleave', function () {
+			hold( 'hover', false );
+		} );
+
+		banner.addEventListener( 'focusin', function () {
+			hold( 'focus', true );
+		} );
+
+		banner.addEventListener( 'focusout', function ( event ) {
+			if ( ! event.relatedTarget || ! banner.contains( event.relatedTarget ) ) {
+				hold( 'focus', false );
+			}
+		} );
+
+		document.addEventListener( 'visibilitychange', function () {
+			hold( 'hidden', document.hidden );
+		} );
+
+		// Arrow keys while a dot or arrow has focus.
+		banner.addEventListener( 'keydown', function ( event ) {
+			if ( ! event.target.closest( '.dak-home-hero-controls' ) ) {
+				return;
+			}
+
+			if ( 'ArrowLeft' === event.key || 'ArrowRight' === event.key ) {
+				event.preventDefault();
+				show( current + ( 'ArrowRight' === event.key ? 1 : -1 ) );
+
+				if ( event.target.hasAttribute( 'data-dak-hero-dot' ) && dots[ current ] ) {
+					dots[ current ].focus();
+				}
+			}
+		} );
+
+		// Swipe on touch screens.
+		var touchX = null;
+		var touchY = null;
+
+		banner.addEventListener( 'touchstart', function ( event ) {
+			touchX = event.touches[0].clientX;
+			touchY = event.touches[0].clientY;
+		}, { passive: true } );
+
+		banner.addEventListener( 'touchend', function ( event ) {
+			if ( null === touchX ) {
+				return;
+			}
+
+			var dx = event.changedTouches[0].clientX - touchX;
+			var dy = event.changedTouches[0].clientY - touchY;
+
+			touchX = null;
+
+			if ( Math.abs( dx ) > 50 && Math.abs( dx ) > Math.abs( dy ) ) {
+				show( current + ( dx < 0 ? 1 : -1 ) );
+			}
+		}, { passive: true } );
+
+		setPlaying( ! reduceMotion );
+	}
 
 	/**
 	 * "How can we help you today?" — the symptom card's box. The typed text

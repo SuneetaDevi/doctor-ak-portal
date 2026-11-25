@@ -81,6 +81,25 @@ class Home_Page {
 	const HERO_BANNER_IMAGE_PATH = 'assets/images/doctor-banner.avif';
 
 	/**
+	 * Bundled photos for the hero's video-consult and clinics slides, keyed
+	 * by slide. (The offers slide uses a patterned brand background instead,
+	 * so its discount cards stand out.)
+	 *
+	 * @var string[]
+	 */
+	const HERO_SLIDE_IMAGE_PATHS = array(
+		'video'   => 'assets/images/our_doctors_banner.jpg',
+		'clinics' => 'assets/images/clinic-banner.avif',
+	);
+
+	/**
+	 * Most discounted services listed on the hero's "Offers" slide.
+	 *
+	 * @var int
+	 */
+	const HERO_OFFERS_LIMIT = 3;
+
+	/**
 	 * Bundled marketing reel shown in its own section, separate from the
 	 * admin-uploaded Home_Videos list.
 	 *
@@ -349,6 +368,9 @@ class Home_Page {
 				'videos_page_url'  => Page_Finder::url_for_shortcode( 'videos_gallery' ),
 				'hero_video_url'   => $this->bundled_asset_url( self::HERO_VIDEO_PATH ),
 				'hero_banner_url'  => $this->bundled_asset_url( self::HERO_BANNER_IMAGE_PATH ),
+				'hero_slide_images' => array_map( array( __CLASS__, 'bundled_asset_url' ), self::HERO_SLIDE_IMAGE_PATHS ),
+				// Real, currently-running discounts for the "Offers" slide.
+				'hero_offers'      => self::hero_offers( $all_service_groups, $all_doctor_cards, $service_profile_url ),
 				// The bundled clips are now part of the managed list (Home_Videos::maybe_seed()).
 				'marketing_videos' => array(),
 				'directory_url'    => $directory_url,
@@ -470,6 +492,60 @@ class Home_Page {
 	 */
 	private static function active_video_discount( array $card ) {
 		return empty( $card['video_consultation'] ) ? 0 : Video_Pricing::active_discount_percent( (int) $card['id'] );
+	}
+
+	/**
+	 * The hero's "Offers" slide: the services with the biggest discounts
+	 * running right now, plus the best video-consultation discount. Only
+	 * real, active discounts — when there are none the slide isn't shown.
+	 *
+	 * @param array  $service_groups      Services::grouped_active_for_public_directory() rows.
+	 * @param array  $doctor_cards        Full Doctors_Directory::doctor_cards_data() rows.
+	 * @param string $service_profile_url Base URL of the [service_profile_view] page, or ''.
+	 * @return array { services: [ { name, discount_percent, price_label, url } ] (at most HERO_OFFERS_LIMIT), video_percent, max_percent }.
+	 */
+	private static function hero_offers( array $service_groups, array $doctor_cards, $service_profile_url ) {
+		$services = array_values(
+			array_filter(
+				$service_groups,
+				function ( $group ) {
+					return (int) $group['discount_percent'] > 0;
+				}
+			)
+		);
+
+		usort(
+			$services,
+			function ( $a, $b ) {
+				return (int) $b['discount_percent'] - (int) $a['discount_percent'];
+			}
+		);
+
+		$services = array_map(
+			function ( $group ) use ( $service_profile_url ) {
+				$price = isset( $group['public_price'] ) ? $group['public_price'] : array( 'state' => 'unset' );
+
+				return array(
+					'name'             => $group['name'],
+					'discount_percent' => (int) $group['discount_percent'],
+					'price_label'      => 'unset' !== $price['state'] ? $price['label'] : '',
+					'url'              => $service_profile_url ? add_query_arg( 'service_id', $group['id'], $service_profile_url ) : '',
+				);
+			},
+			array_slice( $services, 0, self::HERO_OFFERS_LIMIT )
+		);
+
+		$video_percent = 0;
+
+		foreach ( $doctor_cards as $card ) {
+			$video_percent = max( $video_percent, self::active_video_discount( $card ) );
+		}
+
+		return array(
+			'services'      => $services,
+			'video_percent' => $video_percent,
+			'max_percent'   => max( array_merge( array( $video_percent ), array_column( $services, 'discount_percent' ) ) ),
+		);
 	}
 
 	/**

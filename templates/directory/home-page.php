@@ -14,7 +14,9 @@
  * @var array      $cities           Home_Page::cities_in_use() rows — { slug, label, count } — only cities a registered doctor actually practises in, for the hero search modal's city quick-picks.
  * @var array      $videos           Home_Videos::get_all() rows — { title, video_url, poster_url } — admin-uploaded videos.
  * @var string   $hero_video_url   Bundled hero tour video URL (assets/videos/thumbnail.mp4), or '' if missing.
- * @var string   $hero_banner_url  Bundled hero banner photo URL (assets/images/doctor-banner.avif), or '' if missing.
+ * @var string   $hero_banner_url  Bundled hero banner photo URL (assets/images/doctor-banner.avif), or '' if missing — the first slide's photo.
+ * @var string[] $hero_slide_images The video and clinics slides' bundled photos, keyed 'video' / 'clinics' ('' if missing).
+ * @var array    $hero_offers      Home_Page::hero_offers() — { services: [ { name, discount_percent, price_label, url } ], video_percent, max_percent } — discounts running now.
  * @var string[] $marketing_videos Unused now (always empty) — the bundled clips were moved into the managed Home_Videos list.
  * @var int      $videos_total     How many videos the Videos page has in all.
  * @var string   $videos_page_url  URL of the [videos_gallery] page, or ''.
@@ -245,43 +247,248 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 	}
 }
 
+// Hero slides — each one benefit in a few words, with its own photo and one
+// clear next step. A slide only appears when what it promotes exists: the
+// Offers slide needs a discount running right now, Video needs the video
+// booking page, Clinics needs at least one clinic. Rotated by
+// initHeroSlider() in doctor-ak-home.js.
+$hero_slide_images = isset( $hero_slide_images ) ? (array) $hero_slide_images : array();
+$hero_offers       = isset( $hero_offers ) ? (array) $hero_offers : array();
+$dak_slide_image   = function ( $key ) use ( $hero_slide_images, $hero_banner_url ) {
+	return ! empty( $hero_slide_images[ $key ] ) ? $hero_slide_images[ $key ] : (string) $hero_banner_url;
+};
+$dak_slide_defaults = array(
+	'benefits'        => array(),
+	'offers'          => array(),
+	'cta_label'       => '',
+	'cta_url'         => '',
+	'secondary_label' => '',
+	'secondary_url'   => '',
+);
+
+$dak_hero_slides = array(
+	array_merge(
+		$dak_slide_defaults,
+		array(
+			'key'       => 'care',
+			'name'      => __( 'Book a doctor', 'doctor-ak-portal' ),
+			'image'     => (string) $hero_banner_url,
+			'icon'      => $dak_home_specialty_icons['stethoscope'],
+			'eyebrow'   => __( 'Trusted specialist healthcare', 'doctor-ak-portal' ),
+			'title'     => __( 'Book your doctor,', 'doctor-ak-portal' ),
+			'accent'    => __( 'in minutes.', 'doctor-ak-portal' ),
+			'text'      => __( 'Find specialist gastroenterology, hepatology and advanced endoscopy care under one roof, and book your appointment online in a few clicks — no calls, no waiting.', 'doctor-ak-portal' ),
+			'benefits'  => array(
+				__( 'PMDC-verified specialists', 'doctor-ak-portal' ),
+				__( 'Clinic visit or video consult', 'doctor-ak-portal' ),
+				__( 'Fees shown before you book', 'doctor-ak-portal' ),
+			),
+			'cta_label' => __( 'Meet Our Doctors', 'doctor-ak-portal' ),
+			'cta_url'   => (string) $directory_url,
+		)
+	),
+);
+
+$dak_offer_items   = ! empty( $hero_offers['services'] ) ? $hero_offers['services'] : array();
+$dak_video_percent = ! empty( $hero_offers['video_percent'] ) ? (int) $hero_offers['video_percent'] : 0;
+
+if ( $dak_video_percent > 0 && ! empty( $video_booking_url ) ) {
+	$dak_offer_items[] = array(
+		'name'             => __( 'Online video consultation', 'doctor-ak-portal' ),
+		'discount_percent' => $dak_video_percent,
+		'price_label'      => '',
+		'url'              => $video_booking_url,
+	);
+}
+
+if ( ! empty( $dak_offer_items ) ) {
+	$dak_hero_slides[] = array_merge(
+		$dak_slide_defaults,
+		array(
+			'key'             => 'offers',
+			'name'            => __( 'Offers', 'doctor-ak-portal' ),
+			// No photo: a patterned brand background, so the offers stand out.
+			'image'           => '',
+			'icon'            => $dak_home_icons['tag'],
+			'eyebrow'         => __( 'Offers running now', 'doctor-ak-portal' ),
+			/* translators: %d: biggest discount percentage on offer. */
+			'title'           => sprintf( __( 'Save up to %d%%', 'doctor-ak-portal' ), max( array_column( $dak_offer_items, 'discount_percent' ) ) ),
+			'accent'          => __( 'on your care.', 'doctor-ak-portal' ),
+			'text'            => __( 'Discounts on selected consultations and procedures. The reduced fee is applied automatically when you book.', 'doctor-ak-portal' ),
+			'offers'          => array_slice( $dak_offer_items, 0, 4 ),
+			'cta_label'       => __( 'See all services', 'doctor-ak-portal' ),
+			'cta_url'         => (string) $services_url,
+			'secondary_label' => __( 'Find a doctor', 'doctor-ak-portal' ),
+			'secondary_url'   => (string) $directory_url,
+		)
+	);
+}
+
+if ( ! empty( $video_booking_url ) ) {
+	$dak_video_benefits = array(
+		__( 'No travel, no waiting room', 'doctor-ak-portal' ),
+		__( 'Prescriptions saved to your record', 'doctor-ak-portal' ),
+		__( 'Secure video call', 'doctor-ak-portal' ),
+	);
+
+	if ( $dak_video_percent > 0 ) {
+		/* translators: %d: discount percentage. */
+		array_unshift( $dak_video_benefits, sprintf( __( 'Up to %d%% off video consults', 'doctor-ak-portal' ), $dak_video_percent ) );
+	}
+
+	$dak_hero_slides[] = array_merge(
+		$dak_slide_defaults,
+		array(
+			'key'       => 'video',
+			'name'      => __( 'Video consult', 'doctor-ak-portal' ),
+			'image'     => $dak_slide_image( 'video' ),
+			'icon'      => $dak_home_icons['video'],
+			'eyebrow'   => __( 'Online consultations', 'doctor-ak-portal' ),
+			'title'     => __( 'See a doctor', 'doctor-ak-portal' ),
+			'accent'    => __( 'from home.', 'doctor-ak-portal' ),
+			'text'      => __( 'Consult the same verified specialists over video, on your phone or computer.', 'doctor-ak-portal' ),
+			'benefits'  => $dak_video_benefits,
+			'cta_label' => __( 'Start a video consult', 'doctor-ak-portal' ),
+			'cta_url'   => $video_booking_url,
+		)
+	);
+}
+
+if ( $dak_help_clinics_url && $stats['clinics_count'] > 0 ) {
+	$dak_hero_slides[] = array_merge(
+		$dak_slide_defaults,
+		array(
+			'key'       => 'clinics',
+			'name'      => __( 'Clinics', 'doctor-ak-portal' ),
+			'image'     => $dak_slide_image( 'clinics' ),
+			'icon'      => $dak_home_icons['pin'],
+			'eyebrow'   => __( 'Clinics near you', 'doctor-ak-portal' ),
+			'title'     => __( 'Modern clinics,', 'doctor-ak-portal' ),
+			'accent'    => __( 'close to home.', 'doctor-ak-portal' ),
+			'text'      => sprintf(
+				/* translators: %s: number of clinic locations. */
+				_n( 'Walk in or book a visit at our %s clinic location in Karachi.', 'Walk in or book a visit at one of our %s clinic locations in Karachi.', $stats['clinics_count'], 'doctor-ak-portal' ),
+				number_format_i18n( $stats['clinics_count'] )
+			),
+			'benefits'  => array(
+				__( 'Consultations and procedures under one roof', 'doctor-ak-portal' ),
+				__( 'Live availability for every clinic', 'doctor-ak-portal' ),
+				__( 'Walk-ins welcome', 'doctor-ak-portal' ),
+			),
+			'cta_label' => __( 'Find nearest clinic', 'doctor-ak-portal' ),
+			'cta_url'   => $dak_help_clinics_url,
+		)
+	);
+}
+
 ?>
 <div class="dak-portal dak-home">
 
-	<section class="dak-home-hero-banner">
-		<div class="dak-home-hero-banner-media" aria-hidden="true">
-			<?php if ( $hero_banner_url ) : ?>
-				<img class="dak-home-hero-banner-img" src="<?php echo esc_url( $hero_banner_url ); ?>" alt="">
-			<?php endif; ?>
-			<div class="dak-home-hero-banner-overlay"></div>
+	<section class="dak-home-hero-banner" data-dak-hero-slider aria-roledescription="<?php esc_attr_e( 'carousel', 'doctor-ak-portal' ); ?>" aria-label="<?php esc_attr_e( 'Highlights', 'doctor-ak-portal' ); ?>">
+		<div class="dak-home-hero-slides" aria-live="off">
+			<?php foreach ( $dak_hero_slides as $dak_slide_index => $dak_slide ) : ?>
+				<?php $dak_slide_active = 0 === $dak_slide_index; ?>
+				<div
+					class="dak-home-hero-slide dak-home-hero-slide--<?php echo esc_attr( $dak_slide['key'] ); ?><?php echo $dak_slide_active ? ' is-active' : ''; ?>"
+					id="dak-home-hero-slide-<?php echo esc_attr( $dak_slide['key'] ); ?>"
+					role="group"
+					aria-roledescription="<?php esc_attr_e( 'slide', 'doctor-ak-portal' ); ?>"
+					aria-label="<?php echo esc_attr( sprintf( /* translators: 1: slide number, 2: number of slides, 3: slide name. */ __( '%1$d of %2$d: %3$s', 'doctor-ak-portal' ), $dak_slide_index + 1, count( $dak_hero_slides ), $dak_slide['name'] ) ); ?>"
+					<?php echo $dak_slide_active ? '' : ' aria-hidden="true" inert'; ?>
+				>
+					<div class="dak-home-hero-banner-media" aria-hidden="true">
+						<?php if ( '' !== $dak_slide['image'] ) : ?>
+							<img class="dak-home-hero-banner-img" src="<?php echo esc_url( $dak_slide['image'] ); ?>" alt=""<?php echo $dak_slide_active ? ' fetchpriority="high"' : ' loading="lazy" decoding="async"'; ?>>
+						<?php endif; ?>
+						<div class="dak-home-hero-banner-overlay"></div>
+					</div>
+
+					<div class="dak-home-hero-banner-content">
+						<span class="dak-home-hero-eyebrow">
+							<?php echo $dak_slide['icon']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?>
+							<?php echo esc_html( $dak_slide['eyebrow'] ); ?>
+						</span>
+						<?php // Only the first slide is the page's main heading. ?>
+						<<?php echo $dak_slide_active ? 'h1' : 'h2'; ?> class="dak-home-hero-title">
+							<?php echo esc_html( $dak_slide['title'] ); ?>
+							<em class="dak-home-hero-accent"><?php echo esc_html( $dak_slide['accent'] ); ?></em>
+						</<?php echo $dak_slide_active ? 'h1' : 'h2'; ?>>
+						<p><?php echo esc_html( $dak_slide['text'] ); ?></p>
+
+						<?php if ( ! empty( $dak_slide['offers'] ) ) : ?>
+							<ul class="dak-home-hero-offers">
+								<?php foreach ( $dak_slide['offers'] as $dak_offer ) : ?>
+									<li>
+										<a class="dak-home-hero-offer" href="<?php echo esc_url( $dak_offer['url'] ); ?>">
+											<span class="dak-home-hero-offer-off">
+												<?php
+												/* translators: %d: discount percentage. */
+												echo esc_html( sprintf( __( '%d%% OFF', 'doctor-ak-portal' ), $dak_offer['discount_percent'] ) );
+												?>
+											</span>
+											<span class="dak-home-hero-offer-text">
+												<strong><?php echo esc_html( $dak_offer['name'] ); ?></strong>
+												<?php if ( '' !== $dak_offer['price_label'] ) : ?>
+													<span><?php echo esc_html( $dak_offer['price_label'] ); ?></span>
+												<?php endif; ?>
+											</span>
+										</a>
+									</li>
+								<?php endforeach; ?>
+							</ul>
+						<?php elseif ( ! empty( $dak_slide['benefits'] ) ) : ?>
+							<ul class="dak-home-hero-benefits">
+								<?php foreach ( $dak_slide['benefits'] as $dak_benefit ) : ?>
+									<li>
+										<span class="dak-home-hero-benefit-icon" aria-hidden="true"><?php echo $dak_home_icons['check']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+										<?php echo esc_html( $dak_benefit ); ?>
+									</li>
+								<?php endforeach; ?>
+							</ul>
+						<?php endif; ?>
+
+						<div class="dak-home-hero-actions">
+							<?php if ( '' !== $dak_slide['cta_url'] ) : ?>
+								<a class="dak-button dak-button-primary dak-button-lg" href="<?php echo esc_url( $dak_slide['cta_url'] ); ?>">
+									<?php echo esc_html( $dak_slide['cta_label'] ); ?>
+									<?php echo $dak_home_icons['arrow']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+								</a>
+							<?php endif; ?>
+							<?php if ( 'care' === $dak_slide['key'] && $hero_video_url ) : ?>
+								<button type="button" class="dak-button dak-button-lg dak-home-hero-watch" data-dak-home-video data-video-url="<?php echo esc_url( $hero_video_url ); ?>" data-video-title="<?php esc_attr_e( 'How to Book an Appointment', 'doctor-ak-portal' ); ?>">
+									<svg viewBox="0 0 20 20" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M8.3 7l4.2 3-4.2 3z"/></svg>
+									<?php esc_html_e( 'Watch Video', 'doctor-ak-portal' ); ?>
+								</button>
+							<?php elseif ( '' !== $dak_slide['secondary_url'] ) : ?>
+								<a class="dak-button dak-button-lg dak-home-hero-watch" href="<?php echo esc_url( $dak_slide['secondary_url'] ); ?>"><?php echo esc_html( $dak_slide['secondary_label'] ); ?></a>
+							<?php endif; ?>
+						</div>
+					</div>
+				</div>
+			<?php endforeach; ?>
 		</div>
 
-		<div class="dak-home-hero-banner-content">
-			<span class="dak-home-hero-eyebrow">
-				<?php echo $dak_home_specialty_icons['stomach']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-				<?php esc_html_e( 'Healthcare Appointments, Made Simple.', 'doctor-ak-portal' ); ?>
-			</span>
-			<h1>
-				<?php esc_html_e( 'Book your doctor,', 'doctor-ak-portal' ); ?>
-				<em class="dak-home-hero-accent"><?php esc_html_e( 'in minutes.', 'doctor-ak-portal' ); ?></em>
-			</h1>
-			<p><?php esc_html_e( 'Find specialist gastroenterology, hepatology and advanced endoscopy care under one roof, and book your appointment online in a few clicks — no calls, no waiting.', 'doctor-ak-portal' ); ?></p>
-
-			<div class="dak-home-hero-actions">
-				<?php if ( $directory_url ) : ?>
-					<a class="dak-button dak-button-primary dak-button-lg" href="<?php echo esc_url( $directory_url ); ?>">
-						<?php esc_html_e( 'Meet Our Doctors', 'doctor-ak-portal' ); ?>
-						<?php echo $dak_home_icons['arrow']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-					</a>
-				<?php endif; ?>
-				<?php if ( $hero_video_url ) : ?>
-					<button type="button" class="dak-button dak-button-lg dak-home-hero-watch" data-dak-home-video data-video-url="<?php echo esc_url( $hero_video_url ); ?>" data-video-title="<?php esc_attr_e( 'How to Book an Appointment', 'doctor-ak-portal' ); ?>">
-						<svg viewBox="0 0 20 20" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7.5"/><path d="M8.3 7l4.2 3-4.2 3z"/></svg>
-						<?php esc_html_e( 'Watch Video', 'doctor-ak-portal' ); ?>
-					</button>
-				<?php endif; ?>
+		<?php if ( count( $dak_hero_slides ) > 1 ) : ?>
+			<div class="dak-home-hero-controls">
+				<button type="button" class="dak-home-hero-arrow" data-dak-hero-prev aria-label="<?php esc_attr_e( 'Previous slide', 'doctor-ak-portal' ); ?>"><?php echo $dak_home_icons['chevron_left']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
+				<div class="dak-home-hero-dots">
+					<?php foreach ( $dak_hero_slides as $dak_slide_index => $dak_slide ) : ?>
+						<button
+							type="button"
+							class="dak-home-hero-dot<?php echo 0 === $dak_slide_index ? ' is-active' : ''; ?>"
+							data-dak-hero-dot="<?php echo esc_attr( $dak_slide_index ); ?>"
+							aria-controls="dak-home-hero-slide-<?php echo esc_attr( $dak_slide['key'] ); ?>"
+							aria-current="<?php echo 0 === $dak_slide_index ? 'true' : 'false'; ?>"
+						><span class="dak-visually-hidden"><?php echo esc_html( $dak_slide['name'] ); ?></span><span class="dak-home-hero-dot-fill" aria-hidden="true"></span></button>
+					<?php endforeach; ?>
+				</div>
+				<button type="button" class="dak-home-hero-arrow" data-dak-hero-next aria-label="<?php esc_attr_e( 'Next slide', 'doctor-ak-portal' ); ?>"><?php echo $dak_home_icons['chevron']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></button>
+				<button type="button" class="dak-home-hero-arrow dak-home-hero-pause" data-dak-hero-pause aria-pressed="false" aria-label="<?php esc_attr_e( 'Pause slides', 'doctor-ak-portal' ); ?>" data-label-pause="<?php esc_attr_e( 'Pause slides', 'doctor-ak-portal' ); ?>" data-label-play="<?php esc_attr_e( 'Play slides', 'doctor-ak-portal' ); ?>">
+					<svg class="dak-home-hero-pause-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><rect x="5.5" y="4.5" width="3" height="11" rx="1"/><rect x="11.5" y="4.5" width="3" height="11" rx="1"/></svg>
+					<svg class="dak-home-hero-play-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6.5 4.3v11.4a1 1 0 0 0 1.53.85l9-5.7a1 1 0 0 0 0-1.7l-9-5.7A1 1 0 0 0 6.5 4.3z"/></svg>
+				</button>
 			</div>
-		</div>
+		<?php endif; ?>
 
 		<div class="dak-home-hero-stats">
 			<div class="dak-home-hero-stat">

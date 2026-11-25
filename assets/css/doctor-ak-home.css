@@ -63,6 +63,7 @@
 }
 
 .dak-home h1,
+.dak-home .dak-home-hero-title,
 .dak-home .dak-directory-header h2,
 .dak-home-testimonial-card p {
 	font-family: var( --dak-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif ) !important;
@@ -206,7 +207,7 @@
 	height: 20px !important;
 }
 
-.dak-home-hero-banner-content h1 {
+.dak-home-hero-banner-content .dak-home-hero-title {
 	margin: var( --dak-space-4 ) 0 var( --dak-space-4 ) !important;
 	font-size: clamp( 2.4rem, 5vw, 4.25rem ) !important;
 	font-weight: 600 !important;
@@ -316,6 +317,316 @@
 	font-size: 0.82rem !important;
 	line-height: 1.3 !important;
 	color: rgba( 255, 255, 255, 0.85 ) !important;
+}
+
+/* Hero slides — every slide sits in the same grid cell, so the tallest one
+   sets the banner's height and nothing jumps as they change. Each slide's
+   photo layer is absolutely positioned against the banner itself (the slide
+   isn't positioned), so it fills the whole band. Slides cross-fade; the
+   active photo drifts in slowly. initHeroSlider() in doctor-ak-home.js moves
+   .is-active and sets aria-hidden/inert on the others. */
+.dak-home-hero-banner {
+	--dak-hero-interval: 7s;
+	flex-direction: column !important;
+	align-items: flex-start !important;
+	justify-content: center !important;
+}
+
+/* minmax(0, 1fr): a plain auto column grows to its widest content (offer
+   cards, nowrap buttons) and pushes the page sideways on phones. */
+.dak-home-hero-slides {
+	display: grid !important;
+	grid-template-columns: minmax( 0, 1fr ) !important;
+	width: 100% !important;
+}
+
+.dak-home-hero-actions .dak-button {
+	text-decoration: none !important;
+}
+
+.dak-home-hero-slide {
+	grid-area: 1 / 1 !important;
+	min-width: 0 !important;
+	opacity: 0 !important;
+	visibility: hidden !important;
+	transition: opacity 0.8s ease, visibility 0s linear 0.8s !important;
+}
+
+.dak-home-hero-slide.is-active {
+	opacity: 1 !important;
+	visibility: visible !important;
+	transition: opacity 0.8s ease !important;
+}
+
+.dak-home-hero-slide.is-active .dak-home-hero-banner-img {
+	animation: dak-hero-drift 9s ease-out both !important;
+}
+
+@keyframes dak-hero-drift {
+	from {
+		transform: scale( 1.07 );
+	}
+
+	to {
+		transform: scale( 1 );
+	}
+}
+
+/* Each photo framed on its subject. */
+.dak-home-hero-slide--video .dak-home-hero-banner-img {
+	object-position: right center !important;
+}
+
+.dak-home-hero-slide--clinics .dak-home-hero-banner-img {
+	object-position: center 60% !important;
+}
+
+/* Offers: no photo — a deep brand gradient with a faint medical-cross
+   pattern and a warm glow, so the offer cards are the focus. */
+.dak-home-hero-slide--offers .dak-home-hero-banner-media {
+	background:
+		radial-gradient( circle at 82% 30%, rgba( 255, 181, 71, 0.28 ) 0%, rgba( 255, 181, 71, 0 ) 42% ),
+		url( "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cpath d='M25 18h6v7h7v6h-7v7h-6v-7h-7v-6h7z' fill='%23ffffff' fill-opacity='0.06'/%3E%3C/svg%3E" ),
+		linear-gradient( 125deg, #0b3d2e 0%, #10614a 55%, #0f7a66 100% ) !important;
+}
+
+.dak-home-hero-slide--offers .dak-home-hero-banner-overlay {
+	background: linear-gradient( 100deg, rgba( 7, 33, 26, 0.55 ) 0%, rgba( 7, 33, 26, 0 ) 60% ) !important;
+}
+
+.dak-home-hero-slide--offers .dak-home-hero-accent {
+	color: #ffc46b !important;
+}
+
+/* Benefit chips — one short line each. */
+.dak-home-hero-benefits {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: var( --dak-space-2 ) !important;
+	margin: 0 0 var( --dak-space-5 ) !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+.dak-home-hero-benefits li {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 0.5rem !important;
+	margin: 0 !important;
+	padding: 0.45rem 0.95rem 0.45rem 0.5rem !important;
+	border: 1px solid rgba( 255, 255, 255, 0.28 ) !important;
+	border-radius: 999px !important;
+	background: rgba( 255, 255, 255, 0.12 ) !important;
+	-webkit-backdrop-filter: blur( 8px ) !important;
+	backdrop-filter: blur( 8px ) !important;
+	color: #fff !important;
+	font-size: 0.9rem !important;
+	font-weight: 600 !important;
+	line-height: 1.3 !important;
+}
+
+.dak-home-hero-benefit-icon {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 22px !important;
+	height: 22px !important;
+	flex: 0 0 auto !important;
+	border-radius: 50% !important;
+	background: #7fd3ab !important;
+	color: #0b3d2e !important;
+}
+
+.dak-home-hero-benefit-icon svg {
+	width: 13px !important;
+	height: 13px !important;
+}
+
+/* Offer cards — white tickets with a bold "% OFF" badge. */
+.dak-home-hero-offers {
+	display: grid !important;
+	grid-template-columns: repeat( auto-fit, minmax( 8.5rem, 1fr ) ) !important;
+	gap: var( --dak-space-3 ) !important;
+	max-width: 40rem !important;
+	margin: 0 0 var( --dak-space-5 ) !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+.dak-home-hero-offers li {
+	margin: 0 !important;
+}
+
+.dak-home-hero-offer {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.55rem !important;
+	height: 100% !important;
+	box-sizing: border-box !important;
+	padding: 0.85rem 0.95rem !important;
+	border-radius: 16px !important;
+	background: #fff !important;
+	box-shadow: 0 12px 28px rgba( 0, 0, 0, 0.22 ) !important;
+	color: #12261f !important;
+	text-decoration: none !important;
+	transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.dak-home-hero-offer:hover,
+.dak-home-hero-offer:focus-visible {
+	transform: translateY( -3px ) !important;
+	box-shadow: 0 16px 34px rgba( 0, 0, 0, 0.28 ) !important;
+}
+
+.dak-home-hero-offer-off {
+	align-self: flex-start !important;
+	padding: 0.2rem 0.6rem !important;
+	border-radius: 999px !important;
+	background: #ffb547 !important;
+	color: #3d2400 !important;
+	font-size: 0.78rem !important;
+	font-weight: 800 !important;
+	letter-spacing: 0.03em !important;
+}
+
+.dak-home-hero-offer-text {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 0.15rem !important;
+	min-width: 0 !important;
+}
+
+.dak-home-hero-offer-text strong {
+	font-size: 0.95rem !important;
+	font-weight: 700 !important;
+	line-height: 1.25 !important;
+	color: #12261f !important;
+}
+
+.dak-home-hero-offer-text span {
+	font-size: 0.82rem !important;
+	color: #4b5d56 !important;
+}
+
+/* Prev / dots / next / pause — under the slide copy. */
+.dak-home-hero-controls {
+	position: relative !important;
+	z-index: 2 !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: var( --dak-space-3 ) !important;
+	margin-top: var( --dak-space-5 ) !important;
+}
+
+.dak-home-hero-arrow {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 40px !important;
+	height: 40px !important;
+	padding: 0 !important;
+	border: 1px solid rgba( 255, 255, 255, 0.35 ) !important;
+	border-radius: 50% !important;
+	background: rgba( 255, 255, 255, 0.12 ) !important;
+	color: #fff !important;
+	cursor: pointer !important;
+	transition: background 0.2s ease !important;
+}
+
+.dak-home-hero-arrow:hover {
+	background: rgba( 255, 255, 255, 0.26 ) !important;
+}
+
+.dak-home-hero-arrow svg {
+	width: 18px !important;
+	height: 18px !important;
+}
+
+.dak-home-hero-pause .dak-home-hero-play-icon,
+.dak-home-hero-banner.is-paused .dak-home-hero-pause .dak-home-hero-pause-icon {
+	display: none !important;
+}
+
+.dak-home-hero-banner.is-paused .dak-home-hero-pause .dak-home-hero-play-icon {
+	display: block !important;
+}
+
+.dak-home-hero-dots {
+	display: flex !important;
+	align-items: center !important;
+	gap: 0.45rem !important;
+}
+
+/* Each dot is a short bar; the current one stretches and fills over the
+   slide's time on screen, so visitors can see another slide is coming. */
+.dak-home-hero-dot {
+	position: relative !important;
+	width: 26px !important;
+	height: 8px !important;
+	padding: 0 !important;
+	overflow: hidden !important;
+	border: 0 !important;
+	border-radius: 999px !important;
+	background: rgba( 255, 255, 255, 0.35 ) !important;
+	cursor: pointer !important;
+	transition: width 0.3s ease, background 0.2s ease !important;
+}
+
+.dak-home-hero-dot:hover {
+	background: rgba( 255, 255, 255, 0.6 ) !important;
+}
+
+.dak-home-hero-dot.is-active {
+	width: 56px !important;
+}
+
+.dak-home-hero-dot-fill {
+	position: absolute !important;
+	inset: 0 !important;
+	border-radius: inherit !important;
+	background: #7fd3ab !important;
+	transform: scaleX( 0 ) !important;
+	transform-origin: left center !important;
+}
+
+.dak-home-hero-dot.is-active .dak-home-hero-dot-fill {
+	transform: scaleX( 1 ) !important;
+}
+
+.dak-home-hero-banner.is-playing .dak-home-hero-dot.is-active .dak-home-hero-dot-fill {
+	animation: dak-hero-progress var( --dak-hero-interval ) linear both !important;
+}
+
+.dak-home-hero-banner.is-playing.is-held .dak-home-hero-dot.is-active .dak-home-hero-dot-fill {
+	animation-play-state: paused !important;
+}
+
+@keyframes dak-hero-progress {
+	from {
+		transform: scaleX( 0 );
+	}
+
+	to {
+		transform: scaleX( 1 );
+	}
+}
+
+.dak-home-hero-dot:focus-visible,
+.dak-home-hero-arrow:focus-visible {
+	outline: 2px solid #fff !important;
+	outline-offset: 3px !important;
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.dak-home-hero-slide,
+	.dak-home-hero-slide.is-active {
+		transition: none !important;
+	}
+
+	.dak-home-hero-slide.is-active .dak-home-hero-banner-img,
+	.dak-home-hero-banner.is-playing .dak-home-hero-dot.is-active .dak-home-hero-dot-fill {
+		animation: none !important;
+	}
 }
 
 /* The search bar — a white card centred under the banner, overlapping its
@@ -2900,6 +3211,16 @@ html.dak-hsm-locked body {
 		padding: var( --dak-space-6 ) var( --dak-space-5 ) !important;
 	}
 
+	/* In line with the slide copy's padding above. */
+	.dak-home-hero-controls {
+		margin-top: 0 !important;
+		padding: 0 var( --dak-space-5 ) !important;
+	}
+
+	.dak-home-hero-benefits li {
+		font-size: 0.82rem !important;
+	}
+
 	/* Under the header there is nothing to clear here. The stats panel becomes
 	   a 2x2 block under the copy, and the search bar stacks its parts. */
 	.dak-home-hero-banner {
@@ -3024,7 +3345,7 @@ html.dak-hsm-locked body {
 		height: 2.25rem !important;
 	}
 
-	.dak-home-hero-banner-content h1 {
+	.dak-home-hero-banner-content .dak-home-hero-title {
 		font-size: 2rem !important;
 	}
 
