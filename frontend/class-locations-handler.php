@@ -35,7 +35,7 @@ class Locations_Handler {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! Admin_Dashboard::staff_can( 'locations' ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do that.', 'doctor-ak-portal' ) ), 403 );
 		}
 

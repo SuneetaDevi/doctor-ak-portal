@@ -322,14 +322,14 @@ foreach ( $clinic_locations as $dak_clinic_row ) {
 	<?php if ( $directory_url ) : ?>
 		<div class="dak-home-hero-searchbar">
 			<button type="button" class="dak-home-hero-search" id="dak-home-hero-search-trigger" aria-haspopup="dialog" aria-controls="dak-home-search-modal">
-				<span class="dak-home-hero-search-field">
+				<span class="dak-home-hero-search-field dak-home-hero-search-field--location">
 					<span class="dak-home-hero-search-icon" aria-hidden="true"><?php echo $dak_home_icons['pin']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 					<span class="dak-home-hero-search-control">
 						<strong><?php esc_html_e( 'Location', 'doctor-ak-portal' ); ?></strong>
 						<em id="dak-home-hero-search-trigger-location"><?php esc_html_e( 'Any city', 'doctor-ak-portal' ); ?></em>
 					</span>
 				</span>
-				<span class="dak-home-hero-search-field">
+				<span class="dak-home-hero-search-field dak-home-hero-search-field--query">
 					<span class="dak-home-hero-search-icon" aria-hidden="true"><?php echo $dak_home_specialty_icons['stethoscope']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 					<span class="dak-home-hero-search-control">
 						<strong><?php esc_html_e( 'Doctor, specialty, service or clinic', 'doctor-ak-portal' ); ?></strong>

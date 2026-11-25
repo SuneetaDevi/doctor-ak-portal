@@ -25,7 +25,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * one row per doctor, keyed by user ID); administrators can set/override any
  * doctor's video price from the "Video Consultation" admin section, reusing
  * the exact same save logic instead of duplicating it, gated by a separate
- * nonce + `manage_options`. Mirrors Service_Handler's dual doctor/admin
+ * nonce + Admin_Dashboard::staff_can( 'video-consultation' ) (an admin, or a
+ * receptionist given that section in Roles & Permissions). Mirrors Service_Handler's dual doctor/admin
  * endpoint pattern.
  */
 class Video_Pricing_Handler {
@@ -117,7 +118,7 @@ class Video_Pricing_Handler {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! Admin_Dashboard::staff_can( 'video-consultation' ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 

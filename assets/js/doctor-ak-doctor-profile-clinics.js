@@ -282,8 +282,27 @@
 				group.hidden = true;
 			} );
 
-			if ( clinicStatic ) {
-				clinicStatic.hidden = 'clinic' !== type;
+			var clinicGroup = picker.querySelector( '[data-picker-group="clinic"]' );
+
+			// Clinics stay on screen whatever is chosen, but (when video is
+			// also offered) can only be picked once "Clinic Visit" is: a
+			// disabled fieldset takes its radios out of clicks and the tab
+			// order. An earlier clinic choice is kept for when it unlocks.
+			if ( clinicGroup && clinicGroup.hasAttribute( 'data-lock-until-clinic' ) ) {
+				var locked = 'clinic' !== type;
+				var legend = clinicGroup.querySelector( 'legend' );
+				var lockNote = clinicGroup.querySelector( '[data-clinic-lock-note]' );
+
+				clinicGroup.disabled = locked;
+				clinicGroup.classList.toggle( 'is-locked', locked );
+
+				if ( legend ) {
+					legend.textContent = legend.getAttribute( locked ? 'data-label-locked' : 'data-label-open' ) || legend.textContent;
+				}
+
+				if ( lockNote ) {
+					lockNote.hidden = ! locked;
+				}
 			}
 
 			if ( videoStatic ) {
@@ -300,8 +319,6 @@
 
 				if ( ! clinicId ) {
 					state.summary = window.dakDoctorProfile && window.dakDoctorProfile.chooseClinicLabel ? window.dakDoctorProfile.chooseClinicLabel : 'Choose a clinic to see its services and fees.';
-
-					var clinicGroup = picker.querySelector( '[data-picker-group="clinic"]' );
 
 					nextFocusTarget = clinicGroup ? clinicGroup.querySelector( 'input[type="radio"]' ) : null;
 				} else {

@@ -21,9 +21,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Approve/reject actions for pending doctor registrations (see
  * Registration_Handler::handle_register(), which sets a new doctor's
  * 'doctor_ak_registration_status' user meta to 'pending' instead of
- * activating them immediately). Gated by the same 'manage_options'
- * capability and Admin_Dashboard::NONCE_ACTION nonce every other admin
- * dashboard AJAX handler uses.
+ * activating them immediately). Gated by Admin_Dashboard::staff_can( 'doctor-requests' ) (an admin, or a
+ * receptionist given that section in Roles & Permissions) and the
+ * Admin_Dashboard::NONCE_ACTION nonce.
  */
 class Doctor_Requests_Handler {
 
@@ -104,7 +104,7 @@ class Doctor_Requests_Handler {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! Admin_Dashboard::staff_can( 'doctor-requests' ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 

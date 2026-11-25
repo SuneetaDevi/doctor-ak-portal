@@ -115,14 +115,14 @@ class Admin_Dashboard {
 	);
 
 	/**
-	 * Section slugs a logged-in Receptionist could ever structurally reach —
-	 * the hard ceiling; everything else (Doctor Requests, the Receptionist
-	 * staff-account tab itself, Billing/Revenue, the Encounters list, Video
-	 * Consultation pricing, Roles & Permissions, Locations) stays
-	 * administrator-only no matter what. Within this ceiling, Settings →
-	 * Roles & Permissions lets an admin further switch individual sections
-	 * off per-install (see receptionist_can_access(), which ANDs this list
-	 * with Role_Permissions::is_tab_allowed()). Enforced server-side in
+	 * Section slugs a logged-in Receptionist gets by default (each can be
+	 * switched off in Roles & Permissions). Role_Permissions::
+	 * RECEPTIONIST_OPT_IN lists the further sections an admin can switch ON
+	 * for receptionists (Video Consultation, Billing, Doctor Requests,
+	 * Reviews, Blogs, Locations); everything else (the Receptionist
+	 * staff-account tab, All Users, Symptom mappings, Roles & Permissions)
+	 * stays administrator-only no matter what. See receptionist_can_access().
+	 * Enforced server-side in
 	 * requested_section() so a receptionist can't reach a disallowed section
 	 * just by typing the URL — the sidebar only ever links to allowed ones,
 	 * but that alone isn't a security boundary.
@@ -144,16 +144,33 @@ class Admin_Dashboard {
 	const HIDDEN_SECTIONS = array( 'encounter' );
 
 	/**
-	 * Whether a logged-in Receptionist may access a given section — must be
-	 * within the hard RECEPTIONIST_ALLOWED_SECTIONS ceiling AND not switched
-	 * off for the Receptionist role via Settings → Roles & Permissions.
+	 * Whether a logged-in Receptionist may access a given section — one of
+	 * their default sections not switched off, or an opt-in section an admin
+	 * has switched on, via Roles & Permissions.
 	 *
 	 * @param string $slug Section slug.
 	 * @return bool
 	 */
 	private static function receptionist_can_access( $slug ) {
-		return in_array( $slug, self::RECEPTIONIST_ALLOWED_SECTIONS, true )
+		return ( in_array( $slug, self::RECEPTIONIST_ALLOWED_SECTIONS, true ) || Role_Permissions::is_receptionist_opt_in( $slug ) )
 			&& Role_Permissions::is_tab_allowed( Roles::RECEPTIONIST_ROLE, $slug );
+	}
+
+	/**
+	 * For a section's server-side actions (AJAX/admin-post): an
+	 * Administrator, or a Receptionist who has been given that section in
+	 * Roles & Permissions. The same rule the dashboard uses to show it, so
+	 * a page that's visible also works, and one that isn't can't be used.
+	 *
+	 * @param string $slug Section slug.
+	 * @return bool
+	 */
+	public static function staff_can( $slug ) {
+		if ( current_user_can( 'manage_options' ) ) {
+			return true;
+		}
+
+		return self::is_receptionist() && self::receptionist_can_access( $slug );
 	}
 
 	/**
@@ -813,7 +830,7 @@ class Admin_Dashboard {
 			Symptom_Mappings_Handler::enqueue_screen_assets();
 		}
 
-		// Reviews (administrators only): copy/share a doctor's review link.
+		// Reviews (admins, or receptionists given it): copy/share a doctor's review link.
 		if ( Admin_Reviews::SECTION === self::requested_section() && Admin_Reviews::can_manage() ) {
 			wp_enqueue_script(
 				'doctor-ak-portal-admin-reviews',

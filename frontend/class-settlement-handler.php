@@ -66,7 +66,7 @@ class Settlement_Handler {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! Admin_Dashboard::staff_can( 'billing' ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
@@ -104,7 +104,7 @@ class Settlement_Handler {
 	 * @return void
 	 */
 	public function handle_download_statement() {
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! Admin_Dashboard::staff_can( 'billing' ) ) {
 			wp_die( esc_html__( 'You do not have permission to do this.', 'doctor-ak-portal' ) );
 		}
 
@@ -197,7 +197,7 @@ class Settlement_Handler {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! Admin_Dashboard::staff_can( 'billing' ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
@@ -228,7 +228,7 @@ class Settlement_Handler {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! Admin_Dashboard::staff_can( 'billing' ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 
@@ -286,7 +286,7 @@ class Settlement_Handler {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! Admin_Dashboard::staff_can( 'billing' ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to do this.', 'doctor-ak-portal' ) ), 403 );
 		}
 

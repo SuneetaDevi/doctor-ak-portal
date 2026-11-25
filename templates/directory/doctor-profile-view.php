@@ -401,8 +401,17 @@ if ( ! function_exists( 'dak_profile_view_truncate' ) ) {
 										</span>
 									</div>
 								<?php else : ?>
-									<fieldset class="dak-profile-picker-group" data-picker-group="clinic">
-										<legend><?php esc_html_e( 'Choose a clinic', 'doctor-ak-portal' ); ?></legend>
+									<?php
+									// With both visit types on offer, the clinics are shown for
+									// information but can't be picked until "Clinic Visit" is
+									// chosen (doctor-ak-doctor-profile-clinics.js unlocks them).
+									// Rendered locked so nothing flashes clickable on load.
+									?>
+									<fieldset class="dak-profile-picker-group<?php echo $dak_both_types_available ? ' is-locked' : ''; ?>" data-picker-group="clinic"<?php echo $dak_both_types_available ? ' data-lock-until-clinic disabled' : ''; ?>>
+										<legend data-label-open="<?php esc_attr_e( 'Choose a clinic', 'doctor-ak-portal' ); ?>" data-label-locked="<?php esc_attr_e( 'Clinic locations', 'doctor-ak-portal' ); ?>"><?php echo $dak_both_types_available ? esc_html__( 'Clinic locations', 'doctor-ak-portal' ) : esc_html__( 'Choose a clinic', 'doctor-ak-portal' ); ?></legend>
+										<?php if ( $dak_both_types_available ) : ?>
+											<p class="dak-profile-clinic-lock-note" data-clinic-lock-note><?php esc_html_e( 'Choose “Clinic Visit” above to pick one of these clinics.', 'doctor-ak-portal' ); ?></p>
+										<?php endif; ?>
 
 										<?php foreach ( $doctor['clinics_with_services'] as $dak_clinic ) : ?>
 											<label class="dak-profile-clinic-row dak-profile-radio-row">

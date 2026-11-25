@@ -1102,3 +1102,31 @@
 		justify-content: flex-start !important;
 	}
 }
+/* Roles & Permissions: a cell for a page that portal doesn't have — no
+   checkbox (it would change nothing), just a quiet marker. */
+.dak-permission-matrix td.dak-permission-na {
+	color: var( --dak-muted ) !important;
+}
+
+.dak-permission-matrix .dak-permission-na-tag {
+	display: inline-block !important;
+	padding: 1px 8px !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-subtle ) !important;
+	color: var( --dak-muted ) !important;
+	font-size: 11.5px !important;
+	font-weight: 600 !important;
+	white-space: nowrap !important;
+}
+
+.dak-permission-matrix .dak-visually-hidden {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	margin: -1px !important;
+	padding: 0 !important;
+	overflow: hidden !important;
+	clip: rect( 0, 0, 0, 0 ) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
+}

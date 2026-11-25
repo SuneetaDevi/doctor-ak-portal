@@ -326,6 +326,7 @@ class Home_Page {
 					'noResults'       => __( 'No results found', 'doctor-ak-portal' ),
 					'noCityMatch'     => __( 'No city matches that name.', 'doctor-ak-portal' ),
 					'locating'        => __( 'Finding your location…', 'doctor-ak-portal' ),
+					'findingCity'     => __( 'Finding your city…', 'doctor-ak-portal' ),
 					'locateDenied'    => __( 'Location access is blocked in your browser. Choose your city from the list instead.', 'doctor-ak-portal' ),
 					'locateFailed'    => __( 'We couldn’t determine your location. Choose your city from the list instead.', 'doctor-ak-portal' ),
 					'locateNone'      => __( 'We don’t have clinics near your location yet. Choose a city from the list.', 'doctor-ak-portal' ),

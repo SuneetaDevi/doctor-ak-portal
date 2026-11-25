@@ -563,6 +563,7 @@
 
 		anyCityButton.addEventListener( 'click', function () {
 			selectCity( '', '' );
+			rememberCity( '' );
 			queryInput.focus();
 		} );
 
@@ -579,6 +580,7 @@
 
 		locationClear.addEventListener( 'click', function () {
 			selectCity( '', '' );
+			rememberCity( '' );
 			locationInput.focus();
 		} );
 
@@ -610,6 +612,134 @@
 		updateLocationUi();
 
 		/* ------------------------------------------------------------------ */
+		/* Default city — the visitor's own, where it can be told politely    */
+		/* ------------------------------------------------------------------ */
+
+		// 1. A city the visitor chose themselves before (kept in their own
+		//    browser only — never sent anywhere until they search).
+		// 2. Otherwise, if they've already allowed this site their location,
+		//    the nearest city with our doctors — silently, no prompt.
+		// 3. Otherwise the browser asks once, the first time they open the
+		//    search; saying no leaves "Any city" and is never asked again.
+		// A detected city only counts within AUTO_RADIUS_KM — someone in
+		// Lahore isn't defaulted to Karachi because that's the nearest
+		// city with doctors (the explicit "Use my location" still offers it).
+		var CITY_KEY = 'dakHomeCity';
+		var ASKED_KEY = 'dakHomeCityAsked';
+		var AUTO_RADIUS_KM = 75;
+		var autoState = 'idle';
+
+		initDefaultCity();
+
+		function storeGet( key ) {
+			try {
+				return window.localStorage.getItem( key );
+			} catch ( e ) {
+				return null;
+			}
+		}
+
+		function storeSet( key, value ) {
+			try {
+				window.localStorage.setItem( key, value );
+			} catch ( e ) {
+				// Private mode / blocked storage: just don't remember.
+			}
+		}
+
+		function rememberCity( slug ) {
+			storeSet( CITY_KEY, slug || '' );
+		}
+
+		function optionForSlug( slug ) {
+			return cityOptions.filter( function ( option ) {
+				return '' !== slug && option.getAttribute( 'data-city-slug' ) === slug;
+			} )[0] || null;
+		}
+
+		function geoPermission( done ) {
+			if ( ! navigator.permissions || ! navigator.permissions.query ) {
+				done( 'unknown' );
+				return;
+			}
+
+			navigator.permissions.query( { name: 'geolocation' } ).then( function ( status ) {
+				done( status.state );
+			}, function () {
+				done( 'unknown' );
+			} );
+		}
+
+		function initDefaultCity() {
+			var saved = storeGet( CITY_KEY );
+
+			if ( null !== saved ) {
+				var option = optionForSlug( saved );
+
+				// A saved city no longer offered falls back to "Any city".
+				if ( option ) {
+					selectCity( option.getAttribute( 'data-city-slug' ), option.getAttribute( 'data-city-label' ) );
+				}
+
+				return;
+			}
+
+			geoPermission( function ( state ) {
+				if ( 'granted' === state ) {
+					detectCity();
+				}
+			} );
+		}
+
+		/** First opening of the search: ask once, unless they've said no. */
+		function maybeAskForCity() {
+			if ( null !== storeGet( CITY_KEY ) || storeGet( ASKED_KEY ) || selectedCity.slug || 'idle' !== autoState ) {
+				return;
+			}
+
+			geoPermission( function ( state ) {
+				if ( 'denied' === state ) {
+					return;
+				}
+
+				storeSet( ASKED_KEY, '1' );
+				detectCity();
+			} );
+		}
+
+		function detectCity() {
+			if ( ! navigator.geolocation || 'idle' !== autoState ) {
+				return;
+			}
+
+			autoState = 'busy';
+
+			if ( triggerLocation && ! selectedCity.slug ) {
+				triggerLocation.textContent = labels.findingCity || anyCityLabel;
+			}
+
+			navigator.geolocation.getCurrentPosition(
+				function ( position ) {
+					autoState = 'done';
+
+					var option = nearestOfferedCity( position.coords.latitude, position.coords.longitude, AUTO_RADIUS_KM );
+
+					// Never overrides a city the visitor picked meanwhile.
+					if ( option && ! selectedCity.slug && null === storeGet( CITY_KEY ) ) {
+						selectCity( option.getAttribute( 'data-city-slug' ), option.getAttribute( 'data-city-label' ) );
+					} else {
+						updateLocationUi();
+					}
+				},
+				function () {
+					autoState = 'done';
+					updateLocationUi();
+				},
+				{ enableHighAccuracy: false, timeout: 10000, maximumAge: 1800000 }
+			);
+		}
+
+		/* ------------------------------------------------------------------ */
 		/* Dialog                                                              */
 		/* ------------------------------------------------------------------ */
 
@@ -620,6 +750,7 @@
 			lockScroll( true );
 			trackViewport( true );
 			render();
+			maybeAskForCity();
 
 			// Deferred a tick so the now-visible field can take focus.
 			setTimeout( function () {
@@ -820,6 +951,7 @@
 
 		function chooseCityOption( option ) {
 			selectCity( option.getAttribute( 'data-city-slug' ), option.getAttribute( 'data-city-label' ) );
+			rememberCity( option.getAttribute( 'data-city-slug' ) );
 			closeCityPopover();
 			queryInput.focus();
 		}
@@ -871,6 +1003,7 @@
 
 					selectCity( option.getAttribute( 'data-city-slug' ), option.getAttribute( 'data-city-label' ) );
 					setLocateStatus( '', '' );
+					rememberCity( option.getAttribute( 'data-city-slug' ) );
 					announce( ( labels.locateFound || '%s' ).replace( '%s', option.getAttribute( 'data-city-label' ) ) );
 					closeCityPopover();
 					queryInput.focus();
@@ -898,7 +1031,7 @@
 		 * approximate city-centre coordinates (PK_CITIES); null when none of
 		 * the offered cities is in that list.
 		 */
-		function nearestOfferedCity( lat, lng ) {
+		function nearestOfferedCity( lat, lng, maxKm ) {
 			var best = null;
 			var bestDistance = Infinity;
 
@@ -922,6 +1055,11 @@
 					}
 				} );
 			} );
+
+			// For the automatic default only: too far away isn't "your city".
+			if ( maxKm && bestDistance > maxKm ) {
+				return null;
+			}
 
 			return best;
 		}

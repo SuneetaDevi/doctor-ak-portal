@@ -3825,3 +3825,74 @@ html[data-theme='dark'] .dak-home .dak-home-help-input::placeholder {
 		transition: none !important;
 	}
 }
+
+/* ---- Hero search bar: compact Location, prominent search field ---------
+   The search field is what most people need, so it gets the room and a
+   green highlight; Location stays a narrow, quieter field beside it (filled
+   with the visitor's own city where known — initDefaultCity() in
+   doctor-ak-home.js). */
+.dak-home-hero-search-field--location {
+	flex: 0 1 230px !important;
+}
+
+.dak-home-hero-search-field--location .dak-home-hero-search-icon {
+	width: 38px !important;
+	height: 38px !important;
+}
+
+.dak-home-hero-search-field--location .dak-home-hero-search-control em {
+	font-weight: 600 !important;
+}
+
+.dak-home-hero-search-field--query {
+	flex: 1 1 auto !important;
+	padding: 10px 18px 10px 10px !important;
+	border: 1.5px solid var( --dak-primary ) !important;
+	border-radius: 14px !important;
+	background: var( --dak-primary-tint ) !important;
+	transition: box-shadow 0.15s ease !important;
+}
+
+.dak-home-hero-search:hover .dak-home-hero-search-field--query,
+.dak-home-hero-search:focus-visible .dak-home-hero-search-field--query {
+	box-shadow: 0 0 0 4px rgba( 22, 99, 75, 0.14 ) !important;
+}
+
+.dak-home-hero-search-field--query .dak-home-hero-search-icon {
+	background: var( --dak-primary ) !important;
+	color: var( --dak-bg-card ) !important;
+}
+
+.dak-home-hero-search-field--query .dak-home-hero-search-control strong {
+	font-size: 0.85rem !important;
+	font-weight: 700 !important;
+	color: var( --dak-primary-dark ) !important;
+}
+
+.dak-home-hero-search-field--query .dak-home-hero-search-control em {
+	font-size: 1rem !important;
+	font-weight: 500 !important;
+	color: var( --dak-text ) !important;
+}
+
+/* Stacked (tablet and phone): both rows full width, sized by content. */
+@media ( max-width: 1024px ) {
+	.dak-home-hero-search-field--location,
+	.dak-home-hero-search-field--query {
+		flex: 0 0 auto !important;
+	}
+
+	.dak-home-hero-search-field--location {
+		padding-bottom: var( --dak-space-3 ) !important;
+	}
+
+	.dak-home-hero-search-field--query {
+		padding: 10px 14px 10px 10px !important;
+	}
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.dak-home-hero-search-field--query {
+		transition: none !important;
+	}
+}

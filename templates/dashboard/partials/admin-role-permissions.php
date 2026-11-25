@@ -23,11 +23,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 // per module, with a real checkbox in every one of the four role columns.
 $dak_all_tab_slugs = $admin_tabs + $doctor_tabs + $patient_tabs + $receptionist_tabs;
 
-// Each portal's own native tab list — a cell whose module belongs to that
-// portal's own dashboard defaults to checked (unchanged behaviour); a cell
-// for a module that portal has no page for at all (e.g. Patient/"Clinics")
-// defaults to UNCHECKED instead, since it was never really "on" to begin
-// with — it's just not a meaningful choice for that portal.
+// Only a page that exists for a portal gets a checkbox (Role_Permissions::
+// is_supported()), ticked per Role_Permissions::is_tab_allowed() — so what
+// the matrix shows is exactly what each portal gets. Receptionists' extra
+// pages (Video Consultation, Billing, …) start unticked.
 $dak_portals = array(
 	'admin'        => array( __( 'Admin', 'doctor-ak-portal' ), $admin_tabs ),
 	'doctor'       => array( __( 'Doctor', 'doctor-ak-portal' ), $doctor_tabs ),
@@ -39,14 +38,14 @@ $dak_portals = array(
 <div class="dak-page-head">
 	<div>
 		<h1><?php esc_html_e( 'Roles & Permissions', 'doctor-ak-portal' ); ?></h1>
-		<p><?php esc_html_e( 'Choose which dashboard pages each portal can see. Turning a page off hides its menu link and blocks direct access — the Dashboard overview and this page are always available, so a mistake here can always be undone.', 'doctor-ak-portal' ); ?></p>
+		<p><?php esc_html_e( 'Choose which dashboard pages each portal can see. Turning a page off hides its menu link and blocks direct access — the Dashboard overview and this page are always available, so a mistake here can always be undone. Receptionists can also be given Video Consultation, Billing, Doctor Requests, Reviews, Blogs and Locations; pages marked “Admin only” can’t be given to them.', 'doctor-ak-portal' ); ?></p>
 	</div>
 </div>
 
 <section class="dak-results" id="dak-role-permissions-form" aria-labelledby="dak-role-permissions-title">
 	<div class="dak-results-tools">
 		<h2 class="dak-results-title" id="dak-role-permissions-title"><?php esc_html_e( 'Permission matrix', 'doctor-ak-portal' ); ?></h2>
-		<span class="dak-cell-sub"><?php esc_html_e( 'Changes apply on next login.', 'doctor-ak-portal' ); ?></span>
+		<span class="dak-cell-sub"><?php esc_html_e( 'Changes apply the next time each person opens or refreshes a page.', 'doctor-ak-portal' ); ?></span>
 	</div>
 
 	<div class="dak-results-body dak-results-messages">
@@ -69,21 +68,35 @@ $dak_portals = array(
 					<tr data-row>
 						<th scope="row" class="dak-col-primary"><?php echo esc_html( $dak_tab_label ); ?></th>
 						<?php foreach ( $dak_portals as $dak_portal_key => $dak_portal ) : ?>
-							<?php
-							list( $dak_portal_label, $dak_portal_own_tabs ) = $dak_portal;
-							$dak_saved_portal                               = isset( $saved[ $dak_portal_key ] ) ? $saved[ $dak_portal_key ] : array();
-							$dak_default_checked                             = isset( $dak_portal_own_tabs[ $dak_tab_slug ] );
-							$dak_is_checked                                  = isset( $dak_saved_portal[ $dak_tab_slug ] ) ? $dak_saved_portal[ $dak_tab_slug ] : $dak_default_checked;
-							?>
-							<td data-label="<?php echo esc_attr( $dak_portal_label ); ?>">
-								<input
-									type="checkbox"
-									name="permissions[<?php echo esc_attr( $dak_portal_key ); ?>][<?php echo esc_attr( $dak_tab_slug ); ?>]"
-									value="1"
-									aria-label="<?php echo esc_attr( sprintf( /* translators: 1: page/module name, 2: portal name. */ __( '%1$s — %2$s portal', 'doctor-ak-portal' ), $dak_tab_label, $dak_portal_label ) ); ?>"
-									<?php checked( $dak_is_checked ); ?>
-								>
-							</td>
+							<?php $dak_portal_label = $dak_portal[0]; ?>
+							<?php if ( ! \DoctorAKPortal\Includes\Role_Permissions::is_supported( $dak_portal_key, $dak_tab_slug ) ) : ?>
+								<?php
+								// No such page for this portal, so a checkbox here
+								// would change nothing — say so instead.
+								$dak_admin_only = 'receptionist' === $dak_portal_key && isset( $admin_tabs[ $dak_tab_slug ] );
+								$dak_na_text    = $dak_admin_only
+									? __( 'Admin only', 'doctor-ak-portal' )
+									/* translators: %s: portal name, e.g. Doctor. */
+									: sprintf( __( 'Not in the %s dashboard', 'doctor-ak-portal' ), $dak_portal_label );
+								?>
+								<td class="dak-permission-na" data-label="<?php echo esc_attr( $dak_portal_label ); ?>" title="<?php echo esc_attr( $dak_na_text ); ?>">
+									<?php if ( $dak_admin_only ) : ?>
+										<span class="dak-permission-na-tag"><?php esc_html_e( 'Admin only', 'doctor-ak-portal' ); ?></span>
+									<?php else : ?>
+										<span aria-hidden="true">—</span><span class="dak-visually-hidden"><?php echo esc_html( $dak_na_text ); ?></span>
+									<?php endif; ?>
+								</td>
+							<?php else : ?>
+								<td data-label="<?php echo esc_attr( $dak_portal_label ); ?>">
+									<input
+										type="checkbox"
+										name="permissions[<?php echo esc_attr( $dak_portal_key ); ?>][<?php echo esc_attr( $dak_tab_slug ); ?>]"
+										value="1"
+										aria-label="<?php echo esc_attr( sprintf( /* translators: 1: page/module name, 2: portal name. */ __( '%1$s — %2$s portal', 'doctor-ak-portal' ), $dak_tab_label, $dak_portal_label ) ); ?>"
+										<?php checked( \DoctorAKPortal\Includes\Role_Permissions::is_tab_allowed( $dak_portal_key, $dak_tab_slug ) ); ?>
+									>
+								</td>
+							<?php endif; ?>
 						<?php endforeach; ?>
 					</tr>
 				<?php endforeach; ?>

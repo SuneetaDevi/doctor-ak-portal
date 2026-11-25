@@ -24,7 +24,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Class Admin_Reviews
  *
- * Administrator-only (not receptionists). Moderation never edits what a
+ * Administrators, and receptionists given "Reviews" in Roles & Permissions.
+ * Moderation never edits what a
  * reviewer wrote — it only publishes, hides or re-shows a review.
  */
 class Admin_Reviews {
@@ -41,7 +42,12 @@ class Admin_Reviews {
 	 * @return bool
 	 */
 	public static function can_manage() {
-		return current_user_can( 'manage_options' ) && Role_Permissions::is_tab_allowed( Role_Permissions::ADMIN_KEY, self::SECTION );
+		if ( current_user_can( 'manage_options' ) ) {
+			return Role_Permissions::is_tab_allowed( Role_Permissions::ADMIN_KEY, self::SECTION );
+		}
+
+		// A receptionist an admin has given "Reviews" in Roles & Permissions.
+		return Admin_Dashboard::staff_can( self::SECTION );
 	}
 
 	/**

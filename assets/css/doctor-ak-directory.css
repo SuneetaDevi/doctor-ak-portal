@@ -4350,3 +4350,50 @@ html[data-theme='dark'] .dak-profile-view {
 		padding: 18px 20px !important;
 	}
 }
+
+/* ---- Clinics & fees: clinic list before "Clinic Visit" is chosen --------
+   When a doctor offers clinic and video visits, the clinic list is shown
+   for information only until "Clinic Visit" is picked (the fieldset is
+   disabled by doctor-ak-doctor-profile-clinics.js): no radio dot, no hover
+   or pointer, a soft info background, and any earlier choice not shown as
+   selected while locked. */
+.dak-profile-picker-group.is-locked .dak-profile-radio-row,
+.dak-profile-view .dak-profile-picker-group.is-locked .dak-profile-radio-row {
+	cursor: default !important;
+	border-color: var( --dak-border ) !important;
+	box-shadow: none !important;
+	background: var( --dak-bg-subtle ) !important;
+}
+
+.dak-profile-view .dak-profile-picker-group.is-locked .dak-profile-radio-row,
+.dak-profile-view .dak-profile-picker-group.is-locked .dak-profile-radio-row:hover {
+	border-color: var( --dak-dp-line ) !important;
+	background: var( --dak-dp-soft ) !important;
+}
+
+.dak-profile-picker-group.is-locked .dak-profile-radio-row:hover {
+	border-color: var( --dak-border ) !important;
+}
+
+.dak-profile-picker-group.is-locked .dak-profile-radio-row .dak-profile-clinic-radio {
+	display: none !important;
+}
+
+.dak-profile-picker-group.is-locked .dak-profile-radio-row.is-selected .dak-profile-clinic-info strong {
+	font-weight: 600 !important;
+}
+
+.dak-profile-picker-group.is-locked .dak-profile-radio-row.is-selected .dak-profile-clinic-info strong::before {
+	content: none !important;
+}
+
+.dak-profile-clinic-lock-note {
+	margin: -0.2rem 0 0.1rem !important;
+	color: var( --dak-muted ) !important;
+	font-size: 13px !important;
+	line-height: 1.45 !important;
+}
+
+.dak-profile-clinic-lock-note[hidden] {
+	display: none !important;
+}

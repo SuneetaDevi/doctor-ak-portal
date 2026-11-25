@@ -86,30 +86,106 @@ class Role_Permissions {
 	}
 
 	/**
-	 * Receptionist's toggle-able admin dashboard sections, slug => label.
-	 * Matches Admin_Dashboard::RECEPTIONIST_ALLOWED_SECTIONS (minus
-	 * 'dashboard', which — like every role's Dashboard tab — is never
-	 * toggle-able) — that constant is the hard ceiling of sections a
-	 * receptionist could ever structurally reach; this lets an admin further
-	 * restrict which of those a given install actually wants receptionists
-	 * using.
+	 * Admin dashboard sections a receptionist does NOT get by default, but
+	 * an admin can grant by ticking them in the Receptionist column. Off
+	 * until ticked (see default_allowed()). Their server-side actions accept
+	 * a receptionist only while the section is granted
+	 * (Admin_Dashboard::staff_can()).
+	 *
+	 * Never grantable, whatever is ticked: Roles & Permissions itself (a
+	 * receptionist could grant themselves everything), the Receptionist
+	 * staff-accounts page, All Users (lists administrator accounts) and
+	 * Symptom mappings (clinical content with its own reviewer approval).
+	 *
+	 * @var string[]
+	 */
+	const RECEPTIONIST_OPT_IN = array( 'video-consultation', 'billing', 'doctor-requests', 'reviews', 'blogs', 'locations' );
+
+	/**
+	 * Receptionist's toggle-able admin dashboard sections, slug => label:
+	 * the default set (Admin_Dashboard::RECEPTIONIST_ALLOWED_SECTIONS, on
+	 * unless switched off) plus RECEPTIONIST_OPT_IN (off unless switched
+	 * on). Anything else in the matrix's Receptionist column can't apply to
+	 * a receptionist and is shown as "Admin only".
 	 *
 	 * @return array
 	 */
 	public static function receptionist_tabs() {
 		return array(
-			'appointments'    => __( 'Appointments', 'doctor-ak-portal' ),
-			'patients'        => __( 'Patients', 'doctor-ak-portal' ),
-			'crm'             => __( 'CRM', 'doctor-ak-portal' ),
-			'doctors'         => __( 'Doctors', 'doctor-ak-portal' ),
-			'clinic'          => __( 'Clinic', 'doctor-ak-portal' ),
-			'services'        => __( 'Services', 'doctor-ak-portal' ),
-			'service-requests' => __( 'Service Requests', 'doctor-ak-portal' ),
-			'doctor-sessions' => __( 'Doctor Sessions', 'doctor-ak-portal' ),
-			'encounters'      => __( 'Encounters', 'doctor-ak-portal' ),
-			'notifications'   => __( 'Notifications', 'doctor-ak-portal' ),
-			'settings'        => __( 'Settings', 'doctor-ak-portal' ),
+			'appointments'       => __( 'Appointments', 'doctor-ak-portal' ),
+			'patients'           => __( 'Patients', 'doctor-ak-portal' ),
+			'crm'                => __( 'CRM', 'doctor-ak-portal' ),
+			'doctors'            => __( 'Doctors', 'doctor-ak-portal' ),
+			'clinic'             => __( 'Clinic', 'doctor-ak-portal' ),
+			'services'           => __( 'Services', 'doctor-ak-portal' ),
+			'service-requests'   => __( 'Service Requests', 'doctor-ak-portal' ),
+			'doctor-sessions'    => __( 'Doctor Sessions', 'doctor-ak-portal' ),
+			'encounters'         => __( 'Encounters', 'doctor-ak-portal' ),
+			'notifications'      => __( 'Notifications', 'doctor-ak-portal' ),
+			'videos'             => __( 'Videos', 'doctor-ak-portal' ),
+			'settings'           => __( 'Settings', 'doctor-ak-portal' ),
+			'video-consultation' => __( 'Video Consultation', 'doctor-ak-portal' ),
+			'billing'            => __( 'Billing', 'doctor-ak-portal' ),
+			'doctor-requests'    => __( 'Doctor Requests', 'doctor-ak-portal' ),
+			'reviews'            => __( 'Reviews', 'doctor-ak-portal' ),
+			'blogs'              => __( 'Blogs', 'doctor-ak-portal' ),
+			'locations'          => __( 'Locations', 'doctor-ak-portal' ),
 		);
+	}
+
+	/**
+	 * The pages a role's own dashboard actually has, slug => label — a
+	 * matrix cell outside this list can't do anything for that role.
+	 *
+	 * @param string $role Roles::*_ROLE or self::ADMIN_KEY.
+	 * @return array
+	 */
+	public static function role_tabs( $role ) {
+		switch ( $role ) {
+			case self::ADMIN_KEY:
+				return self::admin_tabs();
+			case Roles::DOCTOR_ROLE:
+				return self::doctor_tabs();
+			case Roles::PATIENT_ROLE:
+				return self::patient_tabs();
+			case Roles::RECEPTIONIST_ROLE:
+				return self::receptionist_tabs();
+		}
+
+		return array();
+	}
+
+	/**
+	 * Whether a page exists for a role, so its matrix cell means something.
+	 *
+	 * @param string $role Role key.
+	 * @param string $tab  Tab slug.
+	 * @return bool
+	 */
+	public static function is_supported( $role, $tab ) {
+		return array_key_exists( $tab, self::role_tabs( $role ) );
+	}
+
+	/**
+	 * Whether a receptionist section is one that's off until granted.
+	 *
+	 * @param string $tab Section slug.
+	 * @return bool
+	 */
+	public static function is_receptionist_opt_in( $tab ) {
+		return in_array( $tab, self::RECEPTIONIST_OPT_IN, true );
+	}
+
+	/**
+	 * A tab's state before anything has been saved for it: on, except the
+	 * receptionist's opt-in sections.
+	 *
+	 * @param string $role Role key.
+	 * @param string $tab  Tab slug.
+	 * @return bool
+	 */
+	public static function default_allowed( $role, $tab ) {
+		return ! ( Roles::RECEPTIONIST_ROLE === $role && self::is_receptionist_opt_in( $tab ) );
 	}
 
 	/**
@@ -173,8 +249,9 @@ class Role_Permissions {
 	}
 
 	/**
-	 * Whether a role is allowed to see/use a given tab. Defaults to
-	 * true (allowed) for any tab without an explicit stored value.
+	 * Whether a role is allowed to see/use a given tab. A tab without an
+	 * explicit stored value is allowed, except a receptionist's opt-in
+	 * sections (see default_allowed()).
 	 *
 	 * 'dashboard' and 'role-permissions' are a hard safety ceiling, always
 	 * allowed regardless of what's saved — every account needs a landing
@@ -201,7 +278,7 @@ class Role_Permissions {
 		$saved = self::get_all();
 
 		if ( ! isset( $saved[ $role ][ $tab ] ) ) {
-			return true;
+			return self::default_allowed( $role, $tab );
 		}
 
 		return (bool) $saved[ $role ][ $tab ];
