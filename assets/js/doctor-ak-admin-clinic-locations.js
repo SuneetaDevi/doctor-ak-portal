@@ -115,8 +115,7 @@
 			document.getElementById( 'dak-admin-clinic-location-id' ).value = '0';
 			document.getElementById( 'dak-admin-clinic-location-name' ).value = '';
 			document.getElementById( 'dak-admin-clinic-location-address' ).value = '';
-			document.getElementById( 'dak-admin-clinic-location-phone' ).value = '';
-			document.getElementById( 'dak-admin-clinic-location-email' ).value = '';
+			// Phone and email stay as rendered: the website's, for every clinic.
 			document.getElementById( 'dak-admin-clinic-location-keywords' ).value = '';
 			document.getElementById( 'dak-admin-clinic-location-coordinates' ).value = '';
 			wireLocationSelects();
@@ -185,8 +184,6 @@
 				document.getElementById( 'dak-admin-clinic-location-id' ).value = trigger.getAttribute( 'data-id' ) || '0';
 				document.getElementById( 'dak-admin-clinic-location-name' ).value = trigger.getAttribute( 'data-name' ) || '';
 				document.getElementById( 'dak-admin-clinic-location-address' ).value = trigger.getAttribute( 'data-address' ) || '';
-				document.getElementById( 'dak-admin-clinic-location-phone' ).value = trigger.getAttribute( 'data-phone' ) || '';
-				document.getElementById( 'dak-admin-clinic-location-email' ).value = trigger.getAttribute( 'data-contact-email' ) || '';
 				document.getElementById( 'dak-admin-clinic-location-keywords' ).value = trigger.getAttribute( 'data-keywords' ) || '';
 				document.getElementById( 'dak-admin-clinic-location-coordinates' ).value = trigger.getAttribute( 'data-coordinates' ) || '';
 
@@ -220,8 +217,7 @@
 				formData.append( 'city', citySelect ? citySelect.value : '' );
 				formData.append( 'area', areaSelect ? areaSelect.value : '' );
 				formData.append( 'address', document.getElementById( 'dak-admin-clinic-location-address' ).value );
-				formData.append( 'phone', document.getElementById( 'dak-admin-clinic-location-phone' ).value );
-				formData.append( 'contact_email', document.getElementById( 'dak-admin-clinic-location-email' ).value );
+				// No phone/email: the server always uses the website's.
 				formData.append( 'keywords', document.getElementById( 'dak-admin-clinic-location-keywords' ).value );
 				formData.append( 'coordinates', document.getElementById( 'dak-admin-clinic-location-coordinates' ).value );
 

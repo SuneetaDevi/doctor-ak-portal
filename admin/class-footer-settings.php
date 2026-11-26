@@ -50,6 +50,7 @@ class Footer_Settings {
 	public function register_settings() {
 		register_setting( 'doctor_ak_footer_settings', Site_Footer::OPTION_DESCRIPTION, array( 'sanitize_callback' => 'sanitize_textarea_field' ) );
 		register_setting( 'doctor_ak_footer_settings', Site_Footer::OPTION_PHONE, array( 'sanitize_callback' => 'sanitize_text_field' ) );
+		register_setting( 'doctor_ak_footer_settings', Site_Footer::OPTION_EMAIL, array( 'sanitize_callback' => 'sanitize_email' ) );
 		register_setting( 'doctor_ak_footer_settings', Site_Footer::OPTION_FACEBOOK_URL, array( 'sanitize_callback' => 'esc_url_raw' ) );
 		register_setting( 'doctor_ak_footer_settings', Site_Footer::OPTION_TWITTER_URL, array( 'sanitize_callback' => 'esc_url_raw' ) );
 		register_setting( 'doctor_ak_footer_settings', Site_Footer::OPTION_INSTAGRAM_URL, array( 'sanitize_callback' => 'esc_url_raw' ) );
@@ -93,7 +94,14 @@ class Footer_Settings {
 						<th scope="row"><label for="dak-footer-phone"><?php esc_html_e( 'Booking Phone Number', 'doctor-ak-portal' ); ?></label></th>
 						<td>
 							<input type="text" class="regular-text" id="dak-footer-phone" name="<?php echo esc_attr( Site_Footer::OPTION_PHONE ); ?>" value="<?php echo esc_attr( get_option( Site_Footer::OPTION_PHONE, '' ) ); ?>">
-							<p class="description"><?php esc_html_e( 'Shown under "For Booking" in the footer.', 'doctor-ak-portal' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Shown under "For Booking" in the footer, and used as the phone number of every clinic.', 'doctor-ak-portal' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="dak-footer-email"><?php esc_html_e( 'Contact Email', 'doctor-ak-portal' ); ?></label></th>
+						<td>
+							<input type="email" class="regular-text" id="dak-footer-email" name="<?php echo esc_attr( Site_Footer::OPTION_EMAIL ); ?>" value="<?php echo esc_attr( get_option( Site_Footer::OPTION_EMAIL, '' ) ); ?>" placeholder="<?php echo esc_attr( \DoctorAKPortal\Includes\Clinic_Locations::website_contact()['email'] ); ?>">
+							<p class="description"><?php esc_html_e( 'The website’s contact email, shown in the header and footer and used as the email of every clinic. While blank, the email already on your clinics is used.', 'doctor-ak-portal' ); ?></p>
 						</td>
 					</tr>
 					<tr>

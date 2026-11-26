@@ -11,6 +11,7 @@ use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Clinics;
 use DoctorAKPortal\Includes\Page_Finder;
 use DoctorAKPortal\Includes\Services;
+use DoctorAKPortal\Includes\Specializations;
 use DoctorAKPortal\Includes\Template_Loader;
 
 // Prevent direct file access.
@@ -39,6 +40,13 @@ class Service_Profile_View {
 	 * @var string
 	 */
 	const SHORTCODE_TAG = 'service_profile_view';
+
+	/**
+	 * Most services shown under "Related services".
+	 *
+	 * @var int
+	 */
+	const RELATED_LIMIT = 4;
 
 	/**
 	 * Template loader.
@@ -95,6 +103,11 @@ class Service_Profile_View {
 				/* translators: %s: doctor's display name, e.g. "Dr. Jane Smith". Keep the literal %s — it's swapped for the name in JS. */
 				'bookingWithLabel'     => __( 'Booking with %s.', 'doctor-ak-portal' ),
 				'bookAppointmentLabel' => __( 'Book Appointment', 'doctor-ak-portal' ),
+				/* translators: 1: doctor's display name, 2: clinic name. Keep the literal %1$s / %2$s — they're swapped in JS. */
+				'bookingAtLabel'       => __( '%1$s at %2$s', 'doctor-ak-portal' ),
+				/* translators: %s: doctor's display name. Keep the literal %s — it's swapped in JS. */
+				'bookWithLabel'        => __( 'Book with %s', 'doctor-ak-portal' ),
+				'bookNowLabel'         => __( 'Book now', 'doctor-ak-portal' ),
 				'ajaxUrl'              => admin_url( 'admin-ajax.php' ),
 				'nonce'                => wp_create_nonce( Service_Request_Handler::NONCE_ACTION ),
 			)
@@ -128,6 +141,9 @@ class Service_Profile_View {
 			$group['requires_doctor'] = $service['requires_doctor'];
 			$group['service_id']      = $service['id'];
 			$group['clinic_groups']   = $this->build_clinic_groups( $rows );
+			$group['category']        = $service['category'];
+			$group['category_label']  = $service['category_label'];
+			$group['related']         = $this->related_services( $service );
 		}
 
 		return $this->template_loader->get_template(
@@ -137,6 +153,47 @@ class Service_Profile_View {
 				'directory_url' => Page_Finder::url_for_shortcode( 'services_directory' ),
 			)
 		);
+	}
+
+	/**
+	 * Other bookable services in the same category, for the "Related
+	 * services" section — biggest discounts first, then alphabetical.
+	 *
+	 * @param array $service The service this page is about (Services::find_for_public_profile()).
+	 * @return array List of { name, image_url, price_label, discount_percent, provider_count, url }, at most RELATED_LIMIT.
+	 */
+	private function related_services( array $service ) {
+		if ( '' === (string) $service['category'] ) {
+			return array();
+		}
+
+		$profile_url = Page_Finder::url_for_shortcode( self::SHORTCODE_TAG );
+		$name_key    = mb_strtolower( trim( $service['name'] ) );
+		$related     = array();
+
+		foreach ( Services::grouped_active_for_public_directory() as $other ) {
+			if ( $other['category'] !== $service['category'] || mb_strtolower( trim( $other['name'] ) ) === $name_key ) {
+				continue;
+			}
+
+			$related[] = array(
+				'name'             => $other['name'],
+				'image_url'        => $other['image_url'],
+				'price_label'      => isset( $other['public_price']['label'] ) ? $other['public_price']['label'] : $other['price_label'],
+				'discount_percent' => (int) $other['discount_percent'],
+				'provider_count'   => isset( $other['provider_count'] ) ? (int) $other['provider_count'] : 0,
+				'url'              => $profile_url ? add_query_arg( 'service_id', $other['id'], $profile_url ) : '',
+			);
+		}
+
+		usort(
+			$related,
+			function ( $a, $b ) {
+				return $b['discount_percent'] - $a['discount_percent'] ?: strcasecmp( $a['name'], $b['name'] );
+			}
+		);
+
+		return array_slice( $related, 0, self::RELATED_LIMIT );
 	}
 
 	/**
@@ -154,6 +211,8 @@ class Service_Profile_View {
 		$description   = '';
 		$image_url     = '';
 		$prices        = array();
+		$duration      = 0;
+		$max_discount  = 0;
 
 		$base_booking_url = Page_Finder::url_for_shortcode( 'book_appointment' );
 
@@ -173,6 +232,14 @@ class Service_Profile_View {
 			}
 
 			$prices = array_merge( $prices, Services::offering_prices( $row ) );
+
+			// The longest set duration (doctors may allow different times),
+			// and the biggest discount running on any doctor's row.
+			$duration = max( $duration, (int) $row['duration_minutes'] );
+
+			if ( $row['discount_active'] ) {
+				$max_discount = max( $max_discount, (int) $row['discount_percent'] );
+			}
 
 			// A clinic id only gets added to the booking link below when this
 			// doctor offers the service at exactly one clinic — with more
@@ -262,6 +329,8 @@ class Service_Profile_View {
 			'description'   => $description,
 			'image_url'     => $image_url,
 			'price_label'   => Services::public_price( $prices, __( 'Price not listed', 'doctor-ak-portal' ) )['label'],
+			'duration'      => $duration,
+			'max_discount'  => $max_discount,
 			'doctor_offers' => $doctor_offers,
 			// Distinct doctors — a doctor with two rows of this service is
 			// still one doctor (the directory card shows the same figure).
@@ -292,6 +361,8 @@ class Service_Profile_View {
 	private function build_clinic_groups( array $rows ) {
 		$groups             = array();
 		$clinics_by_doctor  = array();
+		$doctor_details     = array();
+		$all_specialties    = Specializations::get_all();
 		$base_booking_url   = Page_Finder::url_for_shortcode( 'book_appointment' );
 		$doctor_profile_url = Page_Finder::url_for_shortcode( 'doctor_profile_view' );
 
@@ -304,6 +375,22 @@ class Service_Profile_View {
 
 			if ( ! isset( $clinics_by_doctor[ $doctor->ID ] ) ) {
 				$clinics_by_doctor[ $doctor->ID ] = Clinics::get_for_doctor( $doctor->ID );
+
+				// The doctor's own first specialization, and their next open
+				// slot (same wording as the doctor list and profile).
+				$dak_specialty = '';
+
+				foreach ( (array) get_user_meta( $doctor->ID, 'doctor_ak_specializations', true ) as $dak_slug ) {
+					if ( isset( $all_specialties[ $dak_slug ] ) ) {
+						$dak_specialty = $all_specialties[ $dak_slug ];
+						break;
+					}
+				}
+
+				$doctor_details[ $doctor->ID ] = array(
+					'specialty'      => $dak_specialty,
+					'next_available' => Doctors_Directory::next_available_label( $doctor->ID ),
+				);
 			}
 
 			$doctor_name = trim( $doctor->first_name . ' ' . $doctor->last_name );
@@ -414,6 +501,8 @@ class Service_Profile_View {
 					'was_price_label'    => $row['discount_active'] && $dak_entry['base_price'] > $dak_entry['price'] ? Services::single_price_label( $dak_entry['base_price'] ) : '',
 					'category'           => $row['category'],
 					'category_label'     => $row['category_label'],
+					'specialty'          => $doctor_details[ $doctor->ID ]['specialty'],
+					'next_available'     => $doctor_details[ $doctor->ID ]['next_available'],
 					'booking_url'        => $base_booking_url ? add_query_arg( $dak_booking_query_args, $base_booking_url ) : '',
 				);
 			}

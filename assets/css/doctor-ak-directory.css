@@ -3580,7 +3580,6 @@ html[data-theme='dark'] .dak-portal .dak-review-request .dak-alert-error { backg
 	--dak-dp-soft: #f6f9f8;
 	--dak-dp-green: var( --dak-primary );
 	--dak-dp-shadow: 0 1px 2px rgba( 16, 60, 46, 0.05 ), 0 8px 24px rgba( 16, 60, 46, 0.06 );
-	max-width: 1180px !important;
 	margin: 0 auto !important;
 	padding: 20px 24px 64px !important;
 }
@@ -4544,5 +4543,615 @@ html[data-theme='dark'] .dak-profile-view {
 
 	.dak-profile-view .dak-dp-service-actions .dak-button {
 		min-height: 44px !important;
+	}
+}
+
+/* =========================================================================
+   Service detail page (templates/directory/service-profile-view.php) — the
+   doctor profile's design (.dak-profile-view header, fact tiles, tabs,
+   sections, booking card, bottom bar) plus the pieces only this page has,
+   scoped to .dak-service-view.
+   ========================================================================= */
+
+#dak-service-overview,
+#dak-service-doctors,
+#dak-service-request,
+#dak-service-about,
+#dak-service-related {
+	scroll-margin-top: calc( var( --dak-profile-offset, 96px ) + 76px ) !important;
+}
+
+.dak-service-view .dak-sv-photo {
+	background: linear-gradient( 135deg, var( --dak-primary-tint ) 0%, var( --dak-dp-soft ) 100% ) !important;
+}
+
+/* "Up to 20% off now" beside the category tag. */
+.dak-service-view .dak-sv-offer-tag {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	padding: 4px 10px !important;
+	border-radius: 999px !important;
+	background: var( --dak-tint-amber ) !important;
+	color: var( --dak-tint-amber-text ) !important;
+	font-size: 13px !important;
+	font-weight: 700 !important;
+	line-height: 1.4 !important;
+}
+
+.dak-service-view .dak-sv-offer-tag svg {
+	width: 14px !important;
+	height: 14px !important;
+}
+
+.dak-service-view .dak-sv-sort {
+	display: flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	font-size: 14px !important;
+	color: var( --dak-dp-body ) !important;
+}
+
+.dak-service-view .dak-sv-sort label {
+	margin: 0 !important;
+	font-weight: 600 !important;
+}
+
+.dak-service-view .dak-sv-sort select {
+	width: auto !important;
+	min-height: 40px !important;
+	padding: 6px 32px 6px 12px !important;
+	border-radius: 10px !important;
+	font-size: 14px !important;
+}
+
+/* Clinic chips. */
+.dak-service-view .dak-sv-clinic-chips {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 8px !important;
+	margin: 0 0 18px !important;
+}
+
+.dak-service-view .dak-sv-chip {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	min-height: 38px !important;
+	padding: 0 14px !important;
+	border: 1px solid var( --dak-dp-line ) !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-card ) !important;
+	color: var( --dak-dp-body ) !important;
+	font-size: 14px !important;
+	font-weight: 600 !important;
+	line-height: 1 !important;
+	cursor: pointer !important;
+	transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease !important;
+}
+
+.dak-service-view .dak-sv-chip:hover {
+	border-color: var( --dak-dp-green ) !important;
+	color: var( --dak-dp-ink ) !important;
+}
+
+.dak-service-view .dak-sv-chip.is-active {
+	border-color: var( --dak-dp-green ) !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-dp-green ) !important;
+}
+
+.dak-service-view .dak-sv-chip:focus-visible {
+	outline: 2px solid var( --dak-dp-green ) !important;
+	outline-offset: 2px !important;
+}
+
+.dak-service-view .dak-sv-chip-count {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	min-width: 20px !important;
+	height: 20px !important;
+	padding: 0 6px !important;
+	border-radius: 999px !important;
+	background: var( --dak-dp-soft ) !important;
+	font-size: 12px !important;
+	font-weight: 700 !important;
+}
+
+/* Clinics, each with its doctors. */
+.dak-service-view .dak-sv-clinics {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 22px !important;
+}
+
+.dak-service-view .dak-sv-clinic-head {
+	display: flex !important;
+	align-items: center !important;
+	gap: 12px !important;
+	margin: 0 0 10px !important;
+}
+
+.dak-service-view .dak-sv-clinic-icon {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	flex: 0 0 32px !important;
+	width: 32px !important;
+	height: 32px !important;
+	border-radius: 50% !important;
+	background: var( --dak-dp-soft ) !important;
+	border: 1px solid var( --dak-dp-line ) !important;
+	color: var( --dak-dp-green ) !important;
+}
+
+.dak-service-view .dak-sv-clinic-icon svg {
+	width: 16px !important;
+	height: 16px !important;
+}
+
+.dak-service-view .dak-sv-clinic-info {
+	display: flex !important;
+	flex-direction: column !important;
+	min-width: 0 !important;
+}
+
+.dak-service-view .dak-sv-clinic-info strong {
+	font-size: 15px !important;
+	font-weight: 700 !important;
+	color: var( --dak-dp-ink ) !important;
+}
+
+.dak-service-view .dak-sv-clinic-info span {
+	font-size: 13px !important;
+	color: var( --dak-dp-body ) !important;
+}
+
+.dak-service-view .dak-sv-doctors {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 10px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+/* A doctor row: the whole row picks it (a radio card), with a small
+   "Profile" link beside it. */
+.dak-service-view .dak-sv-doctor {
+	display: flex !important;
+	align-items: stretch !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+	border: 1px solid var( --dak-dp-line ) !important;
+	border-radius: 16px !important;
+	background: var( --dak-bg-card ) !important;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease !important;
+}
+
+.dak-service-view .dak-sv-doctor::before,
+.dak-service-view .dak-sv-doctor::marker {
+	content: none !important;
+}
+
+.dak-service-view .dak-sv-doctor:hover {
+	border-color: var( --dak-dp-green ) !important;
+}
+
+.dak-service-view .dak-sv-doctor.is-selected {
+	border-color: var( --dak-dp-green ) !important;
+	background: var( --dak-primary-tint ) !important;
+	box-shadow: 0 0 0 1px var( --dak-dp-green ) inset !important;
+}
+
+.dak-service-view .dak-sv-doctor-pick {
+	display: flex !important;
+	align-items: center !important;
+	gap: 14px !important;
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+	margin: 0 !important;
+	padding: 14px 16px !important;
+	cursor: pointer !important;
+	font-weight: normal !important;
+}
+
+.dak-service-view .dak-sv-doctor-radio {
+	flex: 0 0 auto !important;
+	width: 20px !important;
+	height: 20px !important;
+	margin: 0 !important;
+	accent-color: var( --dak-dp-green ) !important;
+	cursor: pointer !important;
+}
+
+.dak-service-view .dak-sv-doctor-radio:focus-visible {
+	outline: 2px solid var( --dak-dp-green ) !important;
+	outline-offset: 2px !important;
+}
+
+.dak-service-view .dak-sv-doctor-photo {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	flex: 0 0 52px !important;
+	width: 52px !important;
+	height: 52px !important;
+	overflow: hidden !important;
+	border-radius: 14px !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-dp-green ) !important;
+}
+
+.dak-service-view .dak-sv-doctor-photo img {
+	display: block !important;
+	width: 100% !important;
+	height: 100% !important;
+	max-width: none !important;
+	margin: 0 !important;
+	object-fit: cover !important;
+	border-radius: 0 !important;
+}
+
+.dak-service-view .dak-sv-doctor-photo svg {
+	width: 26px !important;
+	height: 26px !important;
+}
+
+.dak-service-view .dak-sv-doctor-info {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 3px !important;
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+}
+
+.dak-service-view .dak-sv-doctor-name {
+	font-size: 16px !important;
+	font-weight: 700 !important;
+	line-height: 1.3 !important;
+	color: var( --dak-dp-ink ) !important;
+}
+
+.dak-service-view .dak-sv-doctor-specialty {
+	font-size: 13px !important;
+	line-height: 1.35 !important;
+	color: var( --dak-dp-body ) !important;
+}
+
+.dak-service-view .dak-sv-doctor-next {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+	line-height: 1.35 !important;
+	color: var( --dak-dp-green ) !important;
+}
+
+.dak-service-view .dak-sv-doctor-next svg {
+	flex: 0 0 auto !important;
+	width: 14px !important;
+	height: 14px !important;
+}
+
+.dak-service-view .dak-sv-doctor-price {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: flex-end !important;
+	gap: 4px !important;
+	flex: 0 0 auto !important;
+	text-align: right !important;
+}
+
+.dak-service-view .dak-sv-doctor-price strong {
+	font-size: 17px !important;
+	font-weight: 800 !important;
+	line-height: 1.2 !important;
+	white-space: nowrap !important;
+	color: var( --dak-dp-ink ) !important;
+}
+
+.dak-service-view .dak-sv-doctor-deal {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+}
+
+.dak-service-view .dak-sv-doctor-profile {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	flex: 0 0 auto !important;
+	padding: 0 16px !important;
+	border-left: 1px solid var( --dak-dp-line ) !important;
+	font-size: 13px !important;
+	font-weight: 700 !important;
+	text-decoration: none !important;
+	color: var( --dak-dp-green ) !important;
+}
+
+.dak-service-view .dak-sv-doctor-profile:hover {
+	text-decoration: underline !important;
+}
+
+.dak-service-view .dak-sv-doctor-profile svg {
+	width: 14px !important;
+	height: 14px !important;
+}
+
+/* Request form. */
+.dak-service-view .dak-sv-request-grid {
+	display: grid !important;
+	grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+	gap: 0 16px !important;
+}
+
+.dak-service-view .dak-sv-request-form .dak-button {
+	min-height: 48px !important;
+	padding: 0 28px !important;
+	border-radius: 12px !important;
+	font-weight: 700 !important;
+}
+
+/* About: "Good to know". */
+.dak-service-view .dak-sv-about-text {
+	max-width: 72ch !important;
+}
+
+.dak-service-view .dak-sv-know {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 10px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+.dak-service-view .dak-sv-know li {
+	display: flex !important;
+	align-items: flex-start !important;
+	gap: 10px !important;
+	margin: 0 !important;
+	font-size: 15px !important;
+	line-height: 1.5 !important;
+	color: var( --dak-dp-ink ) !important;
+}
+
+.dak-service-view .dak-sv-know li::before,
+.dak-service-view .dak-sv-know li::marker {
+	content: none !important;
+}
+
+.dak-service-view .dak-sv-know svg {
+	flex: 0 0 auto !important;
+	width: 20px !important;
+	height: 20px !important;
+	margin-top: 1px !important;
+	padding: 3px !important;
+	box-sizing: border-box !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary-tint ) !important;
+	color: var( --dak-dp-green ) !important;
+}
+
+/* Related services. */
+.dak-service-view .dak-sv-see-all {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	font-size: 14px !important;
+	font-weight: 700 !important;
+	text-decoration: none !important;
+	color: var( --dak-dp-green ) !important;
+}
+
+.dak-service-view .dak-sv-see-all svg {
+	width: 16px !important;
+	height: 16px !important;
+}
+
+.dak-service-view .dak-sv-related {
+	display: grid !important;
+	grid-template-columns: repeat( auto-fill, minmax( 190px, 1fr ) ) !important;
+	gap: 14px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	list-style: none !important;
+}
+
+.dak-service-view .dak-sv-related li {
+	margin: 0 !important;
+	list-style: none !important;
+}
+
+.dak-service-view .dak-sv-related li::before,
+.dak-service-view .dak-sv-related li::marker {
+	content: none !important;
+}
+
+.dak-service-view .dak-sv-related-card {
+	display: flex !important;
+	flex-direction: column !important;
+	height: 100% !important;
+	overflow: hidden !important;
+	border: 1px solid var( --dak-dp-line ) !important;
+	border-radius: 16px !important;
+	background: var( --dak-bg-card ) !important;
+	text-decoration: none !important;
+	color: inherit !important;
+	transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.dak-service-view .dak-sv-related-card:hover {
+	border-color: var( --dak-dp-green ) !important;
+	transform: translateY( -2px ) !important;
+	box-shadow: var( --dak-dp-shadow ) !important;
+}
+
+.dak-service-view .dak-sv-related-card:focus-visible {
+	outline: 2px solid var( --dak-dp-green ) !important;
+	outline-offset: 2px !important;
+}
+
+.dak-service-view .dak-sv-related-media {
+	position: relative !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	height: 110px !important;
+	background: linear-gradient( 135deg, var( --dak-primary-tint ) 0%, var( --dak-dp-soft ) 100% ) !important;
+	color: var( --dak-dp-green ) !important;
+}
+
+.dak-service-view .dak-sv-related-media img {
+	display: block !important;
+	width: 100% !important;
+	height: 100% !important;
+	max-width: none !important;
+	margin: 0 !important;
+	object-fit: cover !important;
+	border-radius: 0 !important;
+}
+
+.dak-service-view .dak-sv-related-media svg {
+	width: 36px !important;
+	height: 36px !important;
+}
+
+.dak-service-view .dak-sv-related-off {
+	position: absolute !important;
+	top: 10px !important;
+	left: 10px !important;
+	padding: 3px 9px !important;
+	border-radius: 999px !important;
+	background: #ffb547 !important;
+	color: #3d2400 !important;
+	font-size: 12px !important;
+	font-weight: 800 !important;
+}
+
+.dak-service-view .dak-sv-related-body {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 4px !important;
+	padding: 12px 14px 14px !important;
+}
+
+.dak-service-view .dak-sv-related-body strong {
+	font-size: 15px !important;
+	font-weight: 700 !important;
+	line-height: 1.3 !important;
+	color: var( --dak-dp-ink ) !important;
+}
+
+.dak-service-view .dak-sv-related-price {
+	font-size: 14px !important;
+	font-weight: 700 !important;
+	color: var( --dak-dp-green ) !important;
+}
+
+.dak-service-view .dak-sv-related-meta {
+	font-size: 13px !important;
+	color: var( --dak-dp-body ) !important;
+}
+
+/* Booking card extras. */
+.dak-service-view .dak-sv-book-name {
+	margin: -6px 0 14px !important;
+	font-size: 18px !important;
+	font-weight: 800 !important;
+	line-height: 1.3 !important;
+	color: var( --dak-dp-ink ) !important;
+}
+
+.dak-service-view .dak-sv-book-offer {
+	display: flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	margin: 0 0 12px !important;
+	padding: 8px 12px !important;
+	border-radius: 10px !important;
+	background: var( --dak-tint-amber ) !important;
+	color: var( --dak-tint-amber-text ) !important;
+	font-size: 14px !important;
+	font-weight: 700 !important;
+}
+
+.dak-service-view .dak-sv-book-offer svg {
+	flex: 0 0 auto !important;
+	width: 16px !important;
+	height: 16px !important;
+}
+
+.dak-service-view .dak-profile-booking-card .dak-profile-cta {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	text-align: center !important;
+	text-decoration: none !important;
+}
+
+.dak-service-view .dak-profile-mobile-bar .dak-button {
+	text-decoration: none !important;
+}
+
+@media ( max-width: 600px ) {
+	/* Booking lives in the fixed bottom bar here. */
+	.dak-service-view .dak-dp-hero-actions {
+		display: none !important;
+	}
+
+	.dak-service-view .dak-sv-doctor {
+		flex-direction: column !important;
+	}
+
+	.dak-service-view .dak-sv-doctor-pick {
+		flex-wrap: wrap !important;
+		gap: 12px !important;
+		padding: 14px !important;
+	}
+
+	/* Shrink beside the photo rather than wrapping under it. */
+	.dak-service-view .dak-sv-doctor-info {
+		flex: 1 1 0 !important;
+	}
+
+	/* Price moves under the name, lined up past the radio and photo. */
+	.dak-service-view .dak-sv-doctor-price {
+		flex-direction: row !important;
+		flex-wrap: wrap !important;
+		align-items: center !important;
+		gap: 8px !important;
+		width: 100% !important;
+		padding-left: 98px !important;
+		box-sizing: border-box !important;
+		text-align: left !important;
+	}
+
+	.dak-service-view .dak-sv-doctor-profile {
+		justify-content: center !important;
+		min-height: 42px !important;
+		border-left: 0 !important;
+		border-top: 1px solid var( --dak-dp-line ) !important;
+	}
+
+	.dak-service-view .dak-sv-request-grid {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+	}
+
+	.dak-service-view .dak-sv-request-form .dak-button {
+		width: 100% !important;
+	}
+
+	.dak-service-view .dak-sv-related {
+		grid-template-columns: repeat( 2, minmax( 0, 1fr ) ) !important;
+		gap: 10px !important;
+	}
+
+	.dak-service-view .dak-sv-related-media {
+		height: 84px !important;
 	}
 }

@@ -786,3 +786,17 @@ html[data-theme='dark'] .dak-pmdc.is-verified {
 html[data-theme='dark'] .dak-pmdc-tick-svg path {
 	stroke: #06140e !important;
 }
+
+/* A form field that shows a value which can't be changed here (e.g. a
+   clinic's phone/email, which always come from the website's settings). */
+.dak-portal input.dak-input-locked,
+.dak-portal input.dak-input-locked:focus,
+body.dak-app-page .dak-portal .dak-field input.dak-input-locked[readonly],
+body.dak-app-page .dak-portal .dak-field input.dak-input-locked[readonly]:focus,
+html[data-theme='dark'] body.dak-app-page .dak-portal .dak-field input.dak-input-locked[readonly] {
+	background: var( --dak-bg-subtle, #f3f5f4 ) !important;
+	color: var( --dak-muted, #5b6670 ) !important;
+	border-color: var( --dak-border, #dfe4e2 ) !important;
+	box-shadow: none !important;
+	cursor: not-allowed !important;
+}

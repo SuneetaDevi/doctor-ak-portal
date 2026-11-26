@@ -98,14 +98,15 @@ $dak_sessions   = $dak_is_editing ? $editing_clinic['sessions'] : \DoctorAKPorta
 			<p class="dak-field-hint"><?php esc_html_e( 'No clinic for this area yet? Add it first from the admin "Clinic" section, then come back here to align this doctor to it.', 'doctor-ak-portal' ); ?></p>
 		</div>
 
+		<?php $dak_website_contact = \DoctorAKPortal\Includes\Clinic_Locations::website_contact(); ?>
 		<div class="dak-field-row">
 			<div class="dak-field">
-				<label for="dak-admin-session-phone"><?php esc_html_e( 'Phone (optional)', 'doctor-ak-portal' ); ?></label>
-				<input type="tel" id="dak-admin-session-phone" name="phone" value="<?php echo esc_attr( $dak_is_editing ? $editing_clinic['phone'] : '' ); ?>">
+				<label for="dak-admin-session-phone"><?php esc_html_e( 'Phone', 'doctor-ak-portal' ); ?></label>
+				<input type="tel" id="dak-admin-session-phone" class="dak-input-locked" value="<?php echo esc_attr( $dak_website_contact['phone'] ); ?>" readonly>
 			</div>
 			<div class="dak-field">
-				<label for="dak-admin-session-email"><?php esc_html_e( 'Contact Email (optional)', 'doctor-ak-portal' ); ?></label>
-				<input type="email" id="dak-admin-session-email" name="contact_email" value="<?php echo esc_attr( $dak_is_editing ? $editing_clinic['contact_email'] : '' ); ?>">
+				<label for="dak-admin-session-email"><?php esc_html_e( 'Contact Email', 'doctor-ak-portal' ); ?></label>
+				<input type="email" id="dak-admin-session-email" class="dak-input-locked" value="<?php echo esc_attr( $dak_website_contact['email'] ); ?>" readonly>
 			</div>
 		</div>
 

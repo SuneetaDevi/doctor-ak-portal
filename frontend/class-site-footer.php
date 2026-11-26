@@ -35,6 +35,8 @@ class Site_Footer {
 
 	const OPTION_DESCRIPTION     = 'doctor_ak_footer_description';
 	const OPTION_PHONE           = 'doctor_ak_footer_phone';
+	// The website's contact email — also every clinic's (Clinic_Locations::website_contact()).
+	const OPTION_EMAIL           = 'doctor_ak_footer_email';
 	const OPTION_FACEBOOK_URL    = 'doctor_ak_footer_facebook_url';
 	const OPTION_TWITTER_URL     = 'doctor_ak_footer_twitter_url';
 	const OPTION_INSTAGRAM_URL   = 'doctor_ak_footer_instagram_url';
@@ -184,20 +186,13 @@ class Site_Footer {
 	}
 
 	/**
-	 * Resolves a contact email for the footer — the first clinic location
-	 * with one on file, mirroring Site_Header::primary_email() (the plugin
-	 * has no separate site-wide "contact email" setting).
+	 * The website's contact email (Footer Settings → Contact Email), the
+	 * same one every clinic shows — see Clinic_Locations::website_contact().
 	 *
-	 * @return string Email address, or '' if no clinic has one set.
+	 * @return string Email address, or '' if none is set.
 	 */
 	private static function primary_email() {
-		foreach ( Clinic_Locations::get_all() as $clinic_location ) {
-			if ( '' !== $clinic_location['contact_email'] ) {
-				return $clinic_location['contact_email'];
-			}
-		}
-
-		return '';
+		return Clinic_Locations::website_contact()['email'];
 	}
 
 	/**

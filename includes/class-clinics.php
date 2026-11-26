@@ -248,17 +248,12 @@ class Clinics {
 			$area    = '';
 		}
 
-		$phone = isset( $posted['phone'] ) ? sanitize_text_field( wp_unslash( $posted['phone'] ) ) : '';
-
-		if ( '' !== $phone && ! preg_match( '/^[0-9+\-\s()]{7,20}$/', $phone ) ) {
-			return new \WP_Error( 'doctor_ak_clinic_phone_invalid', __( 'Please provide a valid phone number.', 'doctor-ak-portal' ) );
-		}
-
-		$contact_email = isset( $posted['contact_email'] ) ? sanitize_email( wp_unslash( $posted['contact_email'] ) ) : '';
-
-		if ( '' !== $contact_email && ! is_email( $contact_email ) ) {
-			return new \WP_Error( 'doctor_ak_clinic_email_invalid', __( 'Please provide a valid contact email address.', 'doctor-ak-portal' ) );
-		}
+		// A clinic's phone and email aren't editable: every clinic — a
+		// doctor's own entry included — uses the website's
+		// (Clinic_Locations::website_contact()), whatever the form sent.
+		$website       = Clinic_Locations::website_contact();
+		$phone         = $website['phone'];
+		$contact_email = $website['email'];
 
 		// Set by Clinic_Handler::process_save() when this physical clinic was
 		// aligned to a Clinic_Locations master record — from either the admin
@@ -808,6 +803,7 @@ class Clinics {
 		$country = isset( $row['country'] ) ? $row['country'] : '';
 		$city    = isset( $row['city'] ) ? $row['city'] : '';
 		$area    = isset( $row['area'] ) ? $row['area'] : '';
+		$website = Clinic_Locations::website_contact();
 
 		return array(
 			'id'                 => (int) $row['id'],
@@ -821,8 +817,10 @@ class Clinics {
 			'city_label'         => '' !== $city ? Locations::city_label( $country, $city ) : '',
 			'area'               => $area,
 			'area_label'         => '' !== $area ? Locations::area_label( $country, $city, $area ) : '',
-			'phone'              => $row['phone'],
-			'contact_email'      => $row['contact_email'],
+			// The website's phone and email for every clinic, including
+			// entries saved before that rule (their old values stay stored).
+			'phone'              => $website['phone'],
+			'contact_email'      => $website['email'],
 			'clinic_location_id' => isset( $row['clinic_location_id'] ) ? (int) $row['clinic_location_id'] : 0,
 			'doctor_share_percent' => isset( $row['doctor_share_percent'] ) && null !== $row['doctor_share_percent'] ? (float) $row['doctor_share_percent'] : null,
 			'sessions'           => $sessions,

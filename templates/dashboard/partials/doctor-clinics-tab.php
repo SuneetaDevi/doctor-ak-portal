@@ -128,19 +128,17 @@ function dak_render_clinic_card( $clinic, array $session_days, array $icons ) {
 				<p class="dak-field-hint"><?php esc_html_e( 'No clinic for this area yet? Ask an admin to add it first from the "Clinic" section, then come back here to align yourself to it.', 'doctor-ak-portal' ); ?></p>
 			</div>
 
+			<?php $dak_website_contact = \DoctorAKPortal\Includes\Clinic_Locations::website_contact(); ?>
 			<div class="dak-field-row">
 				<div class="dak-field">
-					<label><?php esc_html_e( 'Phone (optional)', 'doctor-ak-portal' ); ?></label>
-					<input type="tel" class="dak-clinic-phone-input" value="<?php echo esc_attr( $is_blank ? '' : $clinic['phone'] ); ?>">
-					<span class="dak-field-error" data-field="phone"></span>
+					<label><?php esc_html_e( 'Phone', 'doctor-ak-portal' ); ?></label>
+					<input type="tel" class="dak-clinic-phone-input dak-input-locked" value="<?php echo esc_attr( $dak_website_contact['phone'] ); ?>" readonly>
 				</div>
 				<div class="dak-field">
-					<label><?php esc_html_e( 'Contact Email (optional)', 'doctor-ak-portal' ); ?></label>
-					<input type="email" class="dak-clinic-email-input" value="<?php echo esc_attr( $is_blank ? '' : $clinic['contact_email'] ); ?>">
-					<span class="dak-field-error" data-field="contact_email"></span>
+					<label><?php esc_html_e( 'Contact Email', 'doctor-ak-portal' ); ?></label>
+					<input type="email" class="dak-clinic-email-input dak-input-locked" value="<?php echo esc_attr( $dak_website_contact['email'] ); ?>" readonly>
 				</div>
 			</div>
-
 			<div class="dak-field">
 				<span class="dak-field-label"><?php esc_html_e( 'Weekly Sessions', 'doctor-ak-portal' ); ?></span>
 				<p class="dak-field-hint"><?php esc_html_e( 'Split a day into Morning/Afternoon/Evening sessions to give yourself a break in between — leave a period unchecked to keep it closed.', 'doctor-ak-portal' ); ?></p>

@@ -57,16 +57,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<input type="text" id="dak-admin-clinic-location-address">
 		</div>
 
+		<?php
+		// Not editable per clinic: every clinic uses the website's own phone
+		// and email (Clinic_Locations::website_contact()).
+		$dak_website_contact = \DoctorAKPortal\Includes\Clinic_Locations::website_contact();
+		?>
 		<div class="dak-field-row">
 			<div class="dak-field">
-				<label for="dak-admin-clinic-location-phone"><?php esc_html_e( 'Phone (optional)', 'doctor-ak-portal' ); ?></label>
-				<input type="tel" id="dak-admin-clinic-location-phone">
-				<span class="dak-field-error" data-field="phone"></span>
+				<label for="dak-admin-clinic-location-phone"><?php esc_html_e( 'Phone', 'doctor-ak-portal' ); ?></label>
+				<input type="tel" id="dak-admin-clinic-location-phone" class="dak-input-locked" value="<?php echo esc_attr( $dak_website_contact['phone'] ); ?>" readonly>
 			</div>
 			<div class="dak-field">
-				<label for="dak-admin-clinic-location-email"><?php esc_html_e( 'Contact Email (optional)', 'doctor-ak-portal' ); ?></label>
-				<input type="email" id="dak-admin-clinic-location-email">
-				<span class="dak-field-error" data-field="contact_email"></span>
+				<label for="dak-admin-clinic-location-email"><?php esc_html_e( 'Contact Email', 'doctor-ak-portal' ); ?></label>
+				<input type="email" id="dak-admin-clinic-location-email" class="dak-input-locked" value="<?php echo esc_attr( $dak_website_contact['email'] ); ?>" readonly>
 			</div>
 		</div>
 

@@ -76,6 +76,42 @@ class Clinic_Locations {
 	}
 
 	/**
+	 * The website's own contact phone and email, used for every clinic —
+	 * clinics don't have their own. The phone is the footer's "Booking Phone
+	 * Number" and the email its "Contact Email" (WP Admin → Settings →
+	 * Footer Settings). Until that email is filled in, the first email ever
+	 * saved on a clinic is used, so nothing changes for visitors meanwhile.
+	 *
+	 * @return array { phone: string, email: string } — either may be ''.
+	 */
+	public static function website_contact() {
+		$email = sanitize_email( (string) get_option( \DoctorAKPortal\Frontend\Site_Footer::OPTION_EMAIL, '' ) );
+
+		return array(
+			'phone' => trim( (string) get_option( \DoctorAKPortal\Frontend\Site_Footer::OPTION_PHONE, '0303-3638304' ) ),
+			'email' => '' !== $email ? $email : self::first_saved_email(),
+		);
+	}
+
+	/**
+	 * The first contact email saved on any clinic (read straight from the
+	 * table — decode_row() itself reports the website email).
+	 *
+	 * @return string
+	 */
+	private static function first_saved_email() {
+		static $email = null;
+
+		if ( null === $email ) {
+			global $wpdb;
+
+			$email = (string) $wpdb->get_var( 'SELECT contact_email FROM ' . self::table_name() . " WHERE contact_email <> '' ORDER BY id ASC LIMIT 1" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery -- table name, not user input.
+		}
+
+		return $email;
+	}
+
+	/**
 	 * Validates and sanitizes a posted clinic-location form.
 	 *
 	 * @param array $posted Raw request array (e.g. $_POST, already a plain array).
@@ -105,17 +141,12 @@ class Clinic_Locations {
 		}
 
 		$address = isset( $posted['address'] ) ? sanitize_text_field( wp_unslash( $posted['address'] ) ) : '';
-		$phone   = isset( $posted['phone'] ) ? sanitize_text_field( wp_unslash( $posted['phone'] ) ) : '';
 
-		if ( '' !== $phone && ! preg_match( '/^[0-9+\-\s()]{7,20}$/', $phone ) ) {
-			return new \WP_Error( 'doctor_ak_clinic_location_phone_invalid', __( 'Please provide a valid phone number.', 'doctor-ak-portal' ) );
-		}
-
-		$contact_email = isset( $posted['contact_email'] ) ? sanitize_email( wp_unslash( $posted['contact_email'] ) ) : '';
-
-		if ( '' !== $contact_email && ! is_email( $contact_email ) ) {
-			return new \WP_Error( 'doctor_ak_clinic_location_email_invalid', __( 'Please provide a valid contact email address.', 'doctor-ak-portal' ) );
-		}
+		// Phone and email aren't per clinic: every clinic uses the website's
+		// own (see website_contact()), whatever the form sent.
+		$website       = self::website_contact();
+		$phone         = $website['phone'];
+		$contact_email = $website['email'];
 
 		$coordinates = self::parse_coordinates( isset( $posted['coordinates'] ) ? wp_unslash( $posted['coordinates'] ) : '' );
 
@@ -352,6 +383,10 @@ class Clinic_Locations {
 		$city_label    = '' !== $city ? Locations::city_label( $country, $city ) : '';
 		$area_label    = '' !== $area ? Locations::area_label( $country, $city, $area ) : '';
 
+		// Every clinic shows the website's phone and email, including ones
+		// saved before that rule (their old values stay in the table).
+		$website = self::website_contact();
+
 		return array(
 			'id'            => (int) $row['id'],
 			'name'          => $row['name'],
@@ -362,8 +397,8 @@ class Clinic_Locations {
 			'city_label'    => $city_label,
 			'area'          => $area,
 			'area_label'    => $area_label,
-			'phone'         => $row['phone'],
-			'contact_email' => $row['contact_email'],
+			'phone'         => $website['phone'],
+			'contact_email' => $website['email'],
 			'keywords'      => isset( $row['keywords'] ) ? $row['keywords'] : '',
 			'map_url'       => self::map_url( $row['name'], $row['address'], $area_label, $city_label, $country_label ),
 			// Optional — null when the admin hasn't entered map coordinates.
