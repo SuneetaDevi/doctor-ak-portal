@@ -640,7 +640,7 @@ class Patient_Dashboard {
 			$doctor_results[] = array(
 				'label'    => sprintf( /* translators: %s: doctor name. */ __( 'Dr. %s', 'doctor-ak-portal' ), $row['doctor_name'] ),
 				'sublabel' => $row['clinic_label'],
-				'url'      => $doctor_profile_url ? esc_url_raw( add_query_arg( 'doctor_id', $row['doctor_id'], $doctor_profile_url ) ) : '',
+				'url'      => $doctor_profile_url ? esc_url_raw( \DoctorAKPortal\Includes\Doctor_Pages::url( $row['doctor_id'] ) ) : '',
 			);
 
 			if ( count( $doctor_results ) >= 5 ) {

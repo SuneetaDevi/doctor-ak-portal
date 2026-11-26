@@ -270,7 +270,7 @@ class Doctor_Profile_View {
 				// One review form per page: the emailed link's form replaces the usual one.
 				'review_request_active'  => ( null !== $review_request && 'valid' === $review_request['status'] ) || ( null !== $review_link && 'open' === $review_link['status'] ),
 				'directory_url'          => Page_Finder::url_for_shortcode( 'doctors_directory' ),
-				'starting_fee_summary'   => $this->starting_fee_summary( $doctor->ID ),
+				'starting_fee_summary'   => self::starting_fee_summary( $doctor->ID ),
 				'cancellation_note'      => $this->cancellation_note( $doctor->ID ),
 			)
 		);
@@ -595,7 +595,7 @@ class Doctor_Profile_View {
 	 * @param int $doctor_id Doctor's user ID.
 	 * @return array { @type string state, @type string label }
 	 */
-	private function starting_fee_summary( $doctor_id ) {
+	public static function starting_fee_summary( $doctor_id ) {
 		$clinic_services = Services::active_for_doctor( $doctor_id, 'clinic' );
 		$video_pricing   = Clinics::doctor_has_active_video_clinic( $doctor_id ) ? Video_Pricing::effective_price_for_doctor( $doctor_id ) : null;
 
@@ -663,6 +663,11 @@ class Doctor_Profile_View {
 	 */
 	private function is_profile_view_page() {
 		global $post;
+
+		// A doctor's own /doctor/{slug}/ page renders this profile too.
+		if ( \DoctorAKPortal\Includes\Doctor_Pages::is_doctor_page() ) {
+			return true;
+		}
 
 		return ( $post instanceof \WP_Post ) && has_shortcode( $post->post_content, self::SHORTCODE_TAG );
 	}

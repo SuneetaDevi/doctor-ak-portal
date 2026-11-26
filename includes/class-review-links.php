@@ -77,19 +77,10 @@ class Review_Links {
 	 * @return string '' if the doctor profile page can't be found.
 	 */
 	public static function url( $doctor_id ) {
-		$profile_url = Page_Finder::url_for_shortcode( 'doctor_profile_view' );
+		// The doctor's own page when published, else the old ?doctor_id= URL.
+		$profile_url = Doctor_Pages::url( $doctor_id, array( self::QUERY_TOKEN => self::token( $doctor_id ) ) );
 
-		if ( '' === $profile_url ) {
-			return '';
-		}
-
-		return add_query_arg(
-			array(
-				'doctor_id'       => (int) $doctor_id,
-				self::QUERY_TOKEN => self::token( $doctor_id ),
-			),
-			$profile_url
-		) . '#' . Review_Requests::PANEL_ANCHOR;
+		return '' !== $profile_url ? $profile_url . '#' . Review_Requests::PANEL_ANCHOR : '';
 	}
 
 	/**
@@ -232,15 +223,16 @@ class Review_Links {
 		$stamp     = isset( $_POST['stamp'] ) ? sanitize_text_field( wp_unslash( $_POST['stamp'] ) ) : '';
 		// phpcs:enable
 
-		$profile_url = Page_Finder::url_for_shortcode( 'doctor_profile_view' );
-		$back        = function ( $flag ) use ( $profile_url, $doctor_id, $token ) {
-			$args = array(
-				'doctor_id'        => $doctor_id,
-				self::QUERY_TOKEN  => $token,
-				self::QUERY_STATUS => $flag,
+		$back = function ( $flag ) use ( $doctor_id, $token ) {
+			$profile_url = Doctor_Pages::url(
+				$doctor_id,
+				array(
+					self::QUERY_TOKEN  => $token,
+					self::QUERY_STATUS => $flag,
+				)
 			);
 
-			wp_safe_redirect( add_query_arg( $args, $profile_url ? $profile_url : home_url( '/' ) ) . '#' . Review_Requests::PANEL_ANCHOR, 303 );
+			wp_safe_redirect( ( '' !== $profile_url ? $profile_url : home_url( '/' ) ) . '#' . Review_Requests::PANEL_ANCHOR, 303 );
 			exit;
 		};
 

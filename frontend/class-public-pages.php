@@ -78,6 +78,10 @@ class Public_Pages {
 	 * @return string
 	 */
 	public static function current() {
+		if ( \DoctorAKPortal\Includes\Doctor_Pages::is_doctor_page() ) {
+			return 'doctor';
+		}
+
 		$post = is_singular() ? get_queried_object() : null;
 
 		if ( ! ( $post instanceof \WP_Post ) && isset( $GLOBALS['post'] ) ) {
@@ -163,6 +167,12 @@ class Public_Pages {
 		$kind = self::current();
 
 		if ( 'clinics' !== $kind && 'clinic' !== $kind && 'doctor' !== $kind ) {
+			return $title;
+		}
+
+		// A doctor's own /doctor/{slug}/ page: with Yoast active its SEO
+		// title (per page, or the Doctor Pages template) is the one to keep.
+		if ( defined( 'WPSEO_VERSION' ) && \DoctorAKPortal\Includes\Doctor_Pages::is_doctor_page() ) {
 			return $title;
 		}
 

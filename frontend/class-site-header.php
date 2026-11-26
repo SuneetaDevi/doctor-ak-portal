@@ -239,7 +239,7 @@ class Site_Header {
 			// Detail pages that belong under a nav item, for the active-page
 			// indicator (a doctor profile highlights "Doctors", etc.).
 			'section_paths'      => array(
-				'doctors'  => array( $directory_url, Page_Finder::url_for_shortcode( 'doctor_profile_view' ) ),
+				'doctors'  => array( $directory_url, Page_Finder::url_for_shortcode( 'doctor_profile_view' ), \DoctorAKPortal\Includes\Doctor_Pages::is_doctor_page() ? (string) get_permalink() : '' ),
 				'services' => array( Page_Finder::url_for_shortcode( 'services_directory' ), Page_Finder::url_for_shortcode( 'service_profile_view' ) ),
 				'clinics'  => array( Page_Finder::url_for_shortcode( 'clinics_directory' ), Page_Finder::url_for_shortcode( 'clinic_profile_view' ) ),
 				'blogs'    => array( Page_Finder::url_for_shortcode( 'blogs_directory' ), Page_Finder::url_for_shortcode( 'blog_single' ) ),
@@ -373,7 +373,7 @@ class Site_Header {
 				'name'      => $name,
 				'specialty' => $specialties ? $specialties[0] : '',
 				'search'    => mb_strtolower( $name . ',' . implode( ',', $specialties ) ),
-				'url'       => $profile_url ? add_query_arg( 'doctor_id', $doctor_id, $profile_url ) : '',
+				'url'       => $profile_url ? \DoctorAKPortal\Includes\Doctor_Pages::url( $doctor_id ) : '',
 			);
 		}
 

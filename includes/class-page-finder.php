@@ -95,7 +95,13 @@ class Page_Finder {
 	 *
 	 * @return void
 	 */
-	public static function flush_cache() {
+	public static function flush_cache( $post_id = 0 ) {
+		// Doctor SEO pages never hold a shortcode, and the sync saves many
+		// of them at once — no need to clear the lookups for each.
+		if ( $post_id && Doctor_Pages::POST_TYPE === get_post_type( $post_id ) ) {
+			return;
+		}
+
 		foreach ( self::KNOWN_SHORTCODES as $shortcode_tag ) {
 			delete_transient( self::CACHE_PREFIX . $shortcode_tag );
 		}

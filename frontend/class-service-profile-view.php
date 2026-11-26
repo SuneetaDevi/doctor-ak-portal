@@ -297,7 +297,7 @@ class Service_Profile_View {
 				'doctor_id'          => $doctor->ID,
 				'doctor_name'        => $doctor_name,
 				'doctor_avatar_url'  => self::doctor_avatar_url( $doctor->ID ),
-				'doctor_profile_url' => add_query_arg( 'doctor_id', $doctor->ID, Page_Finder::url_for_shortcode( 'doctor_profile_view' ) ),
+				'doctor_profile_url' => \DoctorAKPortal\Includes\Doctor_Pages::url( $doctor->ID ),
 				'price'              => $row['effective_price'],
 				// Never "Free" for an unpriced 0 (see Services::public_price()).
 				'price_label'        => Services::public_price( Services::offering_prices( $row ), __( 'Fee not set', 'doctor-ak-portal' ) )['label'],
@@ -493,7 +493,7 @@ class Service_Profile_View {
 					'doctor_id'          => $doctor->ID,
 					'doctor_name'        => $doctor_name,
 					'doctor_avatar_url'  => self::doctor_avatar_url( $doctor->ID ),
-					'doctor_profile_url' => $doctor_profile_url ? add_query_arg( 'doctor_id', $doctor->ID, $doctor_profile_url ) : '',
+					'doctor_profile_url' => $doctor_profile_url ? \DoctorAKPortal\Includes\Doctor_Pages::url( $doctor->ID ) : '',
 					'price'              => $dak_entry['price'],
 					'price_label'        => $dak_entry['price_label'],
 					// Active discount: the full price it's reduced from, shown struck through.

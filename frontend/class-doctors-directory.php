@@ -923,7 +923,7 @@ class Doctors_Directory {
 			'clinic_areas'          => $clinic_areas,
 			'is_available'          => $is_available,
 			'video_consultation'    => Clinics::doctor_has_active_video_clinic( $doctor->ID ),
-			'profile_url'           => add_query_arg( 'doctor_id', $doctor->ID, Page_Finder::url_for_shortcode( 'doctor_profile_view' ) ),
+			'profile_url'           => \DoctorAKPortal\Includes\Doctor_Pages::url( $doctor->ID ),
 		);
 	}
 

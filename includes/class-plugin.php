@@ -617,6 +617,49 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_nopriv_doctor_ak_reset_password', $forgot_password_handler, 'handle_reset_password' );
 
 		$this->loader->add_action( 'save_post', 'DoctorAKPortal\\Includes\\Page_Finder', 'flush_cache' );
+
+		$this->define_doctor_page_hooks();
+	}
+
+	/**
+	 * One SEO page per public doctor at /doctor/{slug}/, kept in sync
+	 * automatically — see Doctor_Pages.
+	 *
+	 * @return void
+	 */
+	private function define_doctor_page_hooks() {
+		$pages = 'DoctorAKPortal\\Includes\\Doctor_Pages';
+
+		$this->loader->add_action( 'init', $pages, 'register_post_type' );
+		$this->loader->add_action( 'init', $pages, 'maybe_upgrade', 99 );
+		$this->loader->add_action( Doctor_Pages::CRON_HOOK, $pages, 'sync_all' );
+
+		// Keep each page in step with the doctor's data (synced once, at the end of the request).
+		$this->loader->add_action( 'added_user_meta', $pages, 'on_user_meta_change', 10, 3 );
+		$this->loader->add_action( 'updated_user_meta', $pages, 'on_user_meta_change', 10, 3 );
+		$this->loader->add_action( 'deleted_user_meta', $pages, 'on_user_meta_change', 10, 3 );
+		$this->loader->add_action( 'profile_update', $pages, 'queue' );
+		$this->loader->add_action( 'set_user_role', $pages, 'queue' );
+		$this->loader->add_action( 'delete_user', $pages, 'on_delete_user' );
+		$this->loader->add_action( 'shutdown', $pages, 'process_queue', 0 );
+		$this->loader->add_filter( 'wp_insert_post_data', $pages, 'no_author' );
+
+		// Front end: show the doctor profile on these URLs; redirect old links.
+		$this->loader->add_action( 'wp', $pages, 'setup_request', 1 );
+		$this->loader->add_filter( 'the_content', $pages, 'render_content', 9999 );
+		$this->loader->add_action( 'template_redirect', $pages, 'redirects', 5 );
+
+		// Yoast SEO.
+		$this->loader->add_action( 'wpseo_register_extra_replacements', $pages, 'register_yoast_variables' );
+		$this->loader->add_filter( 'wpseo_exclude_from_sitemap_by_post_ids', $pages, 'exclude_base_page_from_sitemap' );
+		$this->loader->add_filter( 'wpseo_robots', $pages, 'noindex_base_page' );
+
+		// wp-admin: explanation on the edit screen, "Sync now", no manual delete.
+		$this->loader->add_action( 'edit_form_after_title', $pages, 'edit_screen_notice' );
+		$this->loader->add_filter( 'views_edit-' . Doctor_Pages::POST_TYPE, $pages, 'list_sync_button' );
+		$this->loader->add_action( 'admin_post_' . Doctor_Pages::SYNC_ACTION, $pages, 'handle_sync_now' );
+		$this->loader->add_action( 'admin_notices', $pages, 'sync_notice' );
+		$this->loader->add_filter( 'map_meta_cap', $pages, 'prevent_delete', 10, 4 );
 	}
 
 	/**

@@ -402,14 +402,7 @@ class Review_Requests {
 	 * @return string '' if the doctor profile page can't be found.
 	 */
 	public static function review_url( $doctor_id, $token, $rating = 0 ) {
-		$profile_url = Page_Finder::url_for_shortcode( 'doctor_profile_view' );
-
-		if ( '' === $profile_url ) {
-			return '';
-		}
-
 		$args = array(
-			'doctor_id'       => (int) $doctor_id,
 			self::QUERY_TOKEN => $token,
 		);
 
@@ -417,7 +410,8 @@ class Review_Requests {
 			$args[ self::QUERY_RATING ] = (int) $rating;
 		}
 
-		return add_query_arg( $args, $profile_url );
+		// The doctor's own page when published, else the old ?doctor_id= URL.
+		return Doctor_Pages::url( $doctor_id, $args );
 	}
 
 	/**
@@ -573,17 +567,18 @@ class Review_Requests {
 	 * @return void
 	 */
 	public static function handle_submit() {
-		$profile_url = Page_Finder::url_for_shortcode( 'doctor_profile_view' );
 		$doctor_id   = isset( $_POST['doctor_id'] ) ? absint( $_POST['doctor_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified below.
 		$rating      = isset( $_POST['rating'] ) ? absint( $_POST['rating'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified below.
-		$back        = function ( $flag ) use ( $profile_url, $doctor_id, $rating ) {
-			$args = array( 'doctor_id' => $doctor_id, self::QUERY_STATUS => $flag );
+		$back        = function ( $flag ) use ( $doctor_id, $rating ) {
+			$args = array( self::QUERY_STATUS => $flag );
 
 			if ( $rating >= 1 && $rating <= 5 ) {
 				$args[ self::QUERY_RATING ] = $rating;
 			}
 
-			wp_safe_redirect( add_query_arg( $args, $profile_url ? $profile_url : home_url( '/' ) ) . '#' . self::PANEL_ANCHOR, 303 );
+			$profile_url = Doctor_Pages::url( $doctor_id, $args );
+
+			wp_safe_redirect( ( '' !== $profile_url ? $profile_url : home_url( '/' ) ) . '#' . self::PANEL_ANCHOR, 303 );
 			exit;
 		};
 
