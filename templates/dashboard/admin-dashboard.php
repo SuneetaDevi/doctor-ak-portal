@@ -78,7 +78,10 @@ $dak_admin_section_icons = array(
 	'videos'           => 'play',
 	'symptom-checker'  => 'stethoscope',
 	'reviews'          => 'star',
+	'lab-tests'        => 'flask',
 );
+
+$dak_admin_icons['flask'] = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5h4M8.5 2.5v5L4.2 15a1.5 1.5 0 0 0 1.3 2.3h9a1.5 1.5 0 0 0 1.3-2.3L11.5 7.5v-5"/><path d="M6 12.5h8"/></svg>';
 
 $dak_admin_icons['star'] = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.8l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L2.8 8.1l5-.7z"/></svg>';
 ?>

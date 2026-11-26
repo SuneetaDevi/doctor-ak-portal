@@ -55,6 +55,7 @@ class Page_Finder {
 		'symptom_checker',
 		'clinics_directory',
 		'clinic_profile_view',
+		'lab_tests',
 	);
 
 	/**

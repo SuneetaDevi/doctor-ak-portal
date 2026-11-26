@@ -278,6 +278,16 @@ class Db_Installer {
 	const CRM_DB_VERSION = '1.2.0';
 
 	/**
+	 * Lab tests: partner labs, the test catalog, per-lab prices, and the
+	 * orders/items doctors suggest and patients book (see Labs, Lab_Tests,
+	 * Lab_Orders).
+	 *
+	 * @var string
+	 */
+	const LABS_DB_VERSION_OPTION = 'dak_labs_db_version';
+	const LABS_DB_VERSION        = '1.0.0';
+
+	/**
 	 * Option name guarding the one-time legacy-data migration so it never
 	 * runs more than once.
 	 *
@@ -366,6 +376,9 @@ class Db_Installer {
 		self::create_crm_tables();
 		update_option( self::CRM_DB_VERSION_OPTION, self::CRM_DB_VERSION );
 
+		self::create_labs_tables();
+		update_option( self::LABS_DB_VERSION_OPTION, self::LABS_DB_VERSION );
+
 		if ( ! get_option( self::MIGRATION_OPTION ) ) {
 			self::migrate_legacy_data();
 			update_option( self::MIGRATION_OPTION, 'yes' );
@@ -411,6 +424,7 @@ class Db_Installer {
 			&& self::APPOINTMENT_REPORTS_DB_VERSION === get_option( self::APPOINTMENT_REPORTS_DB_VERSION_OPTION )
 			&& self::SYMPTOM_AUDIT_DB_VERSION === get_option( self::SYMPTOM_AUDIT_DB_VERSION_OPTION )
 			&& self::CRM_DB_VERSION === get_option( self::CRM_DB_VERSION_OPTION )
+			&& self::LABS_DB_VERSION === get_option( self::LABS_DB_VERSION_OPTION )
 		) {
 			return;
 		}
@@ -867,6 +881,106 @@ class Db_Installer {
 		) {$charset_collate};";
 
 		dbDelta( $sql );
+	}
+
+	/**
+	 * Runs dbDelta() against the lab tables: partner labs, the test catalog,
+	 * each lab's per-test prices, and lab orders with their items.
+	 *
+	 * @return void
+	 */
+	private static function create_labs_tables() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$charset_collate = $wpdb->get_charset_collate();
+
+		dbDelta(
+			'CREATE TABLE ' . Labs::table_name() . " (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			name VARCHAR(191) NOT NULL DEFAULT '',
+			address VARCHAR(255) NOT NULL DEFAULT '',
+			city VARCHAR(100) NOT NULL DEFAULT '',
+			home_collection TINYINT(1) NOT NULL DEFAULT 0,
+			home_collection_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+			active TINYINT(1) NOT NULL DEFAULT 1,
+			created_at DATETIME NOT NULL,
+			updated_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY active (active)
+		) {$charset_collate};"
+		);
+
+		dbDelta(
+			'CREATE TABLE ' . Lab_Tests::table_name() . " (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			name VARCHAR(191) NOT NULL DEFAULT '',
+			sample_type VARCHAR(20) NOT NULL DEFAULT 'blood',
+			preparation VARCHAR(255) NOT NULL DEFAULT '',
+			report_time VARCHAR(100) NOT NULL DEFAULT '',
+			keywords VARCHAR(255) NOT NULL DEFAULT '',
+			active TINYINT(1) NOT NULL DEFAULT 1,
+			created_at DATETIME NOT NULL,
+			updated_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY name (name),
+			KEY active (active)
+		) {$charset_collate};"
+		);
+
+		dbDelta(
+			'CREATE TABLE ' . Labs::prices_table_name() . " (
+			lab_id BIGINT UNSIGNED NOT NULL,
+			test_id BIGINT UNSIGNED NOT NULL,
+			price DECIMAL(10,2) NOT NULL DEFAULT 0,
+			PRIMARY KEY  (lab_id,test_id),
+			KEY test_id (test_id)
+		) {$charset_collate};"
+		);
+
+		dbDelta(
+			'CREATE TABLE ' . Lab_Orders::table_name() . " (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			patient_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			doctor_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			encounter_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			appointment_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			lab_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			status VARCHAR(20) NOT NULL DEFAULT 'suggested',
+			collection VARCHAR(10) NOT NULL DEFAULT '',
+			preferred_date DATE NULL,
+			time_window VARCHAR(20) NOT NULL DEFAULT '',
+			address VARCHAR(255) NOT NULL DEFAULT '',
+			patient_notes TEXT NULL,
+			home_fee DECIMAL(10,2) NOT NULL DEFAULT 0,
+			total DECIMAL(10,2) NOT NULL DEFAULT 0,
+			is_paid TINYINT(1) NOT NULL DEFAULT 0,
+			report_attachment_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			booked_at DATETIME NULL,
+			collected_at DATETIME NULL,
+			ready_at DATETIME NULL,
+			created_at DATETIME NOT NULL,
+			updated_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			KEY patient_id (patient_id),
+			KEY encounter_id (encounter_id),
+			KEY status (status)
+		) {$charset_collate};"
+		);
+
+		dbDelta(
+			'CREATE TABLE ' . Lab_Orders::items_table_name() . " (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			order_id BIGINT UNSIGNED NOT NULL,
+			test_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			test_name VARCHAR(191) NOT NULL DEFAULT '',
+			price DECIMAL(10,2) NOT NULL DEFAULT 0,
+			note VARCHAR(255) NOT NULL DEFAULT '',
+			PRIMARY KEY  (id),
+			KEY order_id (order_id)
+		) {$charset_collate};"
+		);
 	}
 
 	/**

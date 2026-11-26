@@ -12,6 +12,7 @@ use DoctorAKPortal\Includes\Assets;
 use DoctorAKPortal\Includes\Encounter_Prescriptions;
 use DoctorAKPortal\Includes\Encounter_Problems;
 use DoctorAKPortal\Includes\Encounters;
+use DoctorAKPortal\Includes\Lab_Orders;
 use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Notifications;
 use DoctorAKPortal\Includes\Page_Finder;
@@ -242,6 +243,29 @@ class Patient_Dashboard {
 			true
 		);
 
+		// Lab tests tab: booking suggested tests, cancelling a booking.
+		if ( 'lab-tests' === self::requested_tab() ) {
+			wp_enqueue_script(
+				'doctor-ak-portal-patient-labs',
+				DOCTOR_AK_PORTAL_URL . 'assets/js/doctor-ak-patient-labs.js',
+				array(),
+				Assets::version( 'assets/js/doctor-ak-patient-labs.js' ),
+				true
+			);
+
+			wp_localize_script(
+				'doctor-ak-portal-patient-labs',
+				'dakPatientLabs',
+				array(
+					'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
+					'nonce'         => wp_create_nonce( Patient_Lab_Handler::NONCE_ACTION ),
+					'genericError'  => __( 'Something went wrong. Please try again.', 'doctor-ak-portal' ),
+					'confirmCancel' => __( 'Cancel this booking? You can book again any time.', 'doctor-ak-portal' ),
+					'booking'       => __( 'Booking…', 'doctor-ak-portal' ),
+				)
+			);
+		}
+
 		// The Profile tab renders the same form as the standalone
 		// [doctor_profile] page (see Profile_Handler), so it needs its
 		// assets too — but only when that tab is actually showing.
@@ -300,7 +324,7 @@ class Patient_Dashboard {
 
 		$tab = sanitize_key( wp_unslash( $_GET['tab'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation state, not a form submission.
 
-		if ( ! in_array( $tab, array( 'profile', 'appointments', 'notifications', 'settings', 'medical-history', 'payments' ), true ) ) {
+		if ( ! in_array( $tab, array( 'profile', 'appointments', 'notifications', 'settings', 'medical-history', 'payments', 'lab-tests' ), true ) ) {
 			return 'dashboard';
 		}
 
@@ -748,6 +772,10 @@ class Patient_Dashboard {
 			'dashboard_url'         => $dashboard_url,
 			'settings_url'          => self::tab_url( $dashboard_url, 'settings' ),
 			'medical_history_url'   => self::tab_url( $dashboard_url, 'medical-history' ),
+			'lab_tests_url'         => self::tab_url( $dashboard_url, 'lab-tests' ),
+			// Suggested tests not booked yet — the menu badge and home nudge.
+			'lab_to_book_count'     => Lab_Orders::to_book_count( $user->ID ),
+			'lab_tests_tab_html'    => 'lab-tests' === $active_tab ? $this->template_loader->get_template( 'dashboard/partials/patient-lab-tests.php', Patient_Lab_Handler::view_model( $user->ID ) ) : '',
 			'payments_url'          => self::tab_url( $dashboard_url, 'payments' ),
 			'appointments_url'      => self::tab_url( $dashboard_url, 'appointments' ),
 			'notifications_url'     => self::tab_url( $dashboard_url, 'notifications' ),

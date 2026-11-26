@@ -80,6 +80,7 @@ class Role_Permissions {
 			'appointments'    => __( 'Appointments', 'doctor-ak-portal' ),
 			'notifications'   => __( 'Notifications', 'doctor-ak-portal' ),
 			'medical-history' => __( 'Medical History', 'doctor-ak-portal' ),
+			'lab-tests'       => __( 'Lab Tests', 'doctor-ak-portal' ),
 			'payments'        => __( 'Payments', 'doctor-ak-portal' ),
 			'settings'        => __( 'Settings', 'doctor-ak-portal' ),
 		);
@@ -119,6 +120,7 @@ class Role_Permissions {
 			'clinic'             => __( 'Clinic', 'doctor-ak-portal' ),
 			'services'           => __( 'Services', 'doctor-ak-portal' ),
 			'service-requests'   => __( 'Service Requests', 'doctor-ak-portal' ),
+			'lab-tests'          => __( 'Lab Tests', 'doctor-ak-portal' ),
 			'doctor-sessions'    => __( 'Doctor Sessions', 'doctor-ak-portal' ),
 			'encounters'         => __( 'Encounters', 'doctor-ak-portal' ),
 			'notifications'      => __( 'Notifications', 'doctor-ak-portal' ),
@@ -213,6 +215,7 @@ class Role_Permissions {
 			'clinic'             => __( 'Clinic', 'doctor-ak-portal' ),
 			'services'           => __( 'Services', 'doctor-ak-portal' ),
 			'service-requests'   => __( 'Service Requests', 'doctor-ak-portal' ),
+			'lab-tests'          => __( 'Lab Tests', 'doctor-ak-portal' ),
 			'video-consultation' => __( 'Video Consultation', 'doctor-ak-portal' ),
 			'doctor-sessions'    => __( 'Doctor Sessions', 'doctor-ak-portal' ),
 			'blogs'              => __( 'Blogs', 'doctor-ak-portal' ),

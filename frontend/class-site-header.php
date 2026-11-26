@@ -226,6 +226,8 @@ class Site_Header {
 			'services_url'       => Page_Finder::url_for_shortcode( 'services_directory' ),
 			'videos_url'         => '' !== Page_Finder::url_for_shortcode( 'videos_gallery' ) ? Page_Finder::url_for_shortcode( 'videos_gallery' ) : $home_url . '#dak-home-videos',
 			'clinics_url'        => Page_Finder::url_for_shortcode( 'clinics_directory' ),
+			// "Book a lab test" — always linked, like Services.
+			'lab_tests_url'      => Lab_Tests_Page::public_url(),
 			'blogs_url'          => Page_Finder::url_for_shortcode( 'blogs_directory' ),
 			'doctor_specialties' => Home_Page::specialties_in_use( $directory_url ),
 			'doctor_index'       => self::doctors_for_menu(),

@@ -70,6 +70,7 @@ $dak_home_icons = array(
 	'arrow'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10h12"/><path d="M11 5.5l4.5 4.5-4.5 4.5"/></svg>',
 	'pulse'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 16.2S3.8 12.4 3.8 8.1A3.1 3.1 0 0 1 10 6.3a3.1 3.1 0 0 1 6.2 1.8c0 4.3-6.2 8.1-6.2 8.1z"/><path d="M6.5 10h2l1-2 1.5 4 1-2h1.5"/></svg>',
 	'check'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 10.5l3.5 3.5 7.5-8"/></svg>',
+	'flask'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5h4M8.5 2.5v5L4.2 15a1.5 1.5 0 0 0 1.3 2.3h9a1.5 1.5 0 0 0 1.3-2.3L11.5 7.5v-5"/><path d="M6 12.5h8"/></svg>',
 );
 
 // Body-part glyphs for the "Consult online" specialty tiles, kept separate
@@ -323,6 +324,47 @@ if ( ! empty( $dak_offer_items ) ) {
 			'offers'    => array_slice( $dak_offer_items, 0, 3 ),
 			'cta_label' => __( 'See all offers', 'doctor-ak-portal' ),
 			'cta_url'   => (string) $services_url,
+		)
+	);
+}
+
+// Lab tests — once partner labs have priced tests.
+$lab_promo     = isset( $lab_promo ) ? $lab_promo : null;
+$lab_tests_url = isset( $lab_tests_url ) ? (string) $lab_tests_url : '';
+
+// Always shown, like Services; prices and lab counts once labs are set up.
+if ( '' !== $lab_tests_url ) {
+	$dak_lab_benefits = array();
+
+	if ( $lab_promo ) {
+		/* translators: %s: lowest test price. */
+		$dak_lab_benefits[] = sprintf( __( 'Tests from PKR %s', 'doctor-ak-portal' ), number_format_i18n( $lab_promo['from'] ) );
+	}
+
+	if ( ! $lab_promo || $lab_promo['home'] ) {
+		$dak_lab_benefits[] = __( 'Home sample collection', 'doctor-ak-portal' );
+	}
+
+	$dak_lab_benefits[] = __( 'Results in your portal', 'doctor-ak-portal' );
+
+	$dak_hero_slides[] = array_merge(
+		$dak_slide_defaults,
+		array(
+			'key'       => 'labs',
+			'name'      => __( 'Lab tests', 'doctor-ak-portal' ),
+			// No photo: a patterned brand background, like the offers slide.
+			'image'     => '',
+			'icon'      => $dak_home_icons['flask'],
+			'eyebrow'   => __( 'Lab tests', 'doctor-ak-portal' ),
+			'title'     => __( 'Lab tests,', 'doctor-ak-portal' ),
+			'accent'    => ! $lab_promo || $lab_promo['home'] ? __( 'without leaving home.', 'doctor-ak-portal' ) : __( 'booked in minutes.', 'doctor-ak-portal' ),
+			'text'      => $lab_promo && $lab_promo['labs'] > 1
+				/* translators: %d: number of partner labs. */
+				? sprintf( __( 'Compare %d partner labs, book a lab visit or home sample collection, and get your results right in your portal.', 'doctor-ak-portal' ), $lab_promo['labs'] )
+				: __( 'Book a lab visit or home sample collection with our partner labs, and get your results right in your portal.', 'doctor-ak-portal' ),
+			'benefits'  => $dak_lab_benefits,
+			'cta_label' => __( 'Book a lab test', 'doctor-ak-portal' ),
+			'cta_url'   => $lab_tests_url,
 		)
 	);
 }
@@ -760,6 +802,82 @@ if ( $dak_help_clinics_url && $stats['clinics_count'] > 0 ) {
 					</a>
 				<?php endforeach; ?>
 			</div>
+		</section>
+	<?php endif; ?>
+
+	<?php if ( '' !== $lab_tests_url ) : ?>
+		<?php
+		// Lab tests advert: what it is in a line, the perks, and popular tests
+		// one tap from booking. Always shown, like Services; prices and the
+		// popular tests appear once labs are set up.
+		$dak_lab_home = ! $lab_promo || $lab_promo['home'];
+		?>
+		<section class="dak-home-section dak-home-labs<?php echo $lab_promo && ! empty( $lab_promo['popular'] ) ? '' : ' is-compact'; ?>" aria-labelledby="dak-home-labs-title">
+			<div class="dak-home-labs-copy">
+				<span class="dak-home-labs-badge"><?php echo $dak_home_icons['flask']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?><?php esc_html_e( 'Lab tests', 'doctor-ak-portal' ); ?></span>
+				<h2 id="dak-home-labs-title">
+					<?php
+					echo esc_html(
+						$dak_lab_home
+							? __( 'Lab tests at home, results online.', 'doctor-ak-portal' )
+							: __( 'Book lab tests online, get results online.', 'doctor-ak-portal' )
+					);
+					?>
+				</h2>
+				<p>
+					<?php
+					echo esc_html(
+						$lab_promo && $lab_promo['labs'] > 1
+							/* translators: %d: number of partner labs. */
+							? sprintf( __( 'Compare prices from %d partner labs, book a lab visit or home sample collection, and pay at collection.', 'doctor-ak-portal' ), $lab_promo['labs'] )
+							: __( 'Book a lab visit or home sample collection with our partner labs and pay at collection.', 'doctor-ak-portal' )
+					);
+					?>
+				</p>
+				<ul class="dak-home-labs-perks">
+					<?php if ( $dak_lab_home ) : ?>
+						<li><?php echo $dak_home_icons['check']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?><?php esc_html_e( 'Home sample collection', 'doctor-ak-portal' ); ?></li>
+					<?php endif; ?>
+					<li><?php echo $dak_home_icons['check']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?><?php esc_html_e( 'Prices shown before you book', 'doctor-ak-portal' ); ?></li>
+					<li><?php echo $dak_home_icons['check']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?><?php esc_html_e( 'Results in your patient portal', 'doctor-ak-portal' ); ?></li>
+				</ul>
+				<div class="dak-home-labs-actions">
+					<a class="dak-button dak-button-primary dak-button-lg" href="<?php echo esc_url( $lab_tests_url ); ?>">
+						<?php esc_html_e( 'Book a lab test', 'doctor-ak-portal' ); ?>
+						<?php echo $dak_home_icons['arrow']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?>
+					</a>
+					<?php if ( $lab_promo ) : ?>
+						<span class="dak-home-labs-from">
+							<?php
+							/* translators: 1: number of tests, 2: lowest price. */
+							echo esc_html( sprintf( __( '%1$d tests · from PKR %2$s', 'doctor-ak-portal' ), $lab_promo['tests'], number_format_i18n( $lab_promo['from'] ) ) );
+							?>
+						</span>
+					<?php endif; ?>
+				</div>
+			</div>
+
+			<?php if ( $lab_promo && ! empty( $lab_promo['popular'] ) ) : ?>
+				<ul class="dak-home-labs-tests" aria-label="<?php esc_attr_e( 'Popular tests', 'doctor-ak-portal' ); ?>">
+					<?php foreach ( $lab_promo['popular'] as $dak_test ) : ?>
+						<li>
+							<a class="dak-home-labs-test" href="<?php echo esc_url( add_query_arg( 'tests', $dak_test['id'], $lab_tests_url ) . '#dak-labs-book' ); ?>">
+								<span class="dak-home-labs-test-name"><?php echo esc_html( $dak_test['name'] ); ?></span>
+								<span class="dak-home-labs-test-meta"><?php echo esc_html( implode( ' · ', array_filter( array( $dak_test['sample'], $dak_test['report'] ? sprintf( /* translators: %s: e.g. "Same day". */ __( 'Report: %s', 'doctor-ak-portal' ), $dak_test['report'] ) : '' ) ) ) ); ?></span>
+								<span class="dak-home-labs-test-foot">
+									<strong>
+										<?php
+										/* translators: %s: lowest price. */
+										echo esc_html( sprintf( __( 'from PKR %s', 'doctor-ak-portal' ), number_format_i18n( $dak_test['from'] ) ) );
+										?>
+									</strong>
+									<span><?php esc_html_e( 'Book', 'doctor-ak-portal' ); ?> <span aria-hidden="true">→</span></span>
+								</span>
+							</a>
+						</li>
+					<?php endforeach; ?>
+				</ul>
+			<?php endif; ?>
 		</section>
 	<?php endif; ?>
 

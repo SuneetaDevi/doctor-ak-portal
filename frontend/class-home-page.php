@@ -371,6 +371,10 @@ class Home_Page {
 				'hero_slide_images' => array_map( array( __CLASS__, 'bundled_asset_url' ), self::HERO_SLIDE_IMAGE_PATHS ),
 				// Real, currently-running discounts for the "Offers" slide.
 				'hero_offers'      => self::hero_offers( $all_service_groups, $all_doctor_cards, $service_profile_url ),
+				// Lab tests: the hero slide and the advert band (only once
+				// partner labs have priced tests).
+				'lab_promo'        => Lab_Tests_Page::promo(),
+				'lab_tests_url'    => Lab_Tests_Page::public_url(),
 				// The bundled clips are now part of the managed list (Home_Videos::maybe_seed()).
 				'marketing_videos' => array(),
 				'directory_url'    => $directory_url,

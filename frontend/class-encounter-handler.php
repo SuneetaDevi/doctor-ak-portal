@@ -20,7 +20,11 @@ use DoctorAKPortal\Includes\Encounter_Reports;
 use DoctorAKPortal\Includes\Encounter_Prescriptions;
 use DoctorAKPortal\Includes\Encounter_Problems;
 use DoctorAKPortal\Includes\Encounters;
+use DoctorAKPortal\Includes\Lab_Orders;
+use DoctorAKPortal\Includes\Lab_Tests;
+use DoctorAKPortal\Includes\Labs;
 use DoctorAKPortal\Includes\Medical_History_Pdf;
+use DoctorAKPortal\Includes\Notification_Center;
 use DoctorAKPortal\Includes\Medicines;
 use DoctorAKPortal\Includes\Prescription_Pdf;
 use DoctorAKPortal\Includes\Revenue_Ledger;
@@ -375,6 +379,107 @@ class Encounter_Handler {
 		Encounter_Prescriptions::delete( $prescription_id, $encounter['id'] );
 
 		wp_send_json_success( self::encounter_view_model( $encounter ) );
+	}
+
+	/**
+	 * AJAX handler: suggests a lab test for the patient (from the Lab Tests
+	 * catalog — picked by ID, or by its exact name as typed). The first test
+	 * on a visit tells the patient there are tests to book.
+	 *
+	 * @return void
+	 */
+	public function handle_add_lab_test() {
+		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$encounter = self::authorized_encounter_from_request();
+		$test_id   = isset( $_POST['test_id'] ) ? absint( wp_unslash( $_POST['test_id'] ) ) : 0;
+		$test_name = isset( $_POST['test_name'] ) ? sanitize_text_field( wp_unslash( $_POST['test_name'] ) ) : '';
+		$test      = null;
+
+		if ( $test_id > 0 ) {
+			$test = Lab_Tests::find( $test_id );
+		} elseif ( '' !== $test_name ) {
+			foreach ( Lab_Tests::all( true ) as $candidate ) {
+				if ( 0 === strcasecmp( $candidate['name'], $test_name ) ) {
+					$test = $candidate;
+					break;
+				}
+			}
+		}
+
+		if ( ! $test || ! $test['active'] ) {
+			wp_send_json_error( array( 'message' => __( 'Please pick a test from the list. Missing one? An admin can add it under Lab Tests.', 'doctor-ak-portal' ) ) );
+		}
+
+		$note   = isset( $_POST['note'] ) ? sanitize_text_field( wp_unslash( $_POST['note'] ) ) : '';
+		$result = Lab_Orders::suggest_test( $encounter, $test, $note );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		if ( $result['created'] ) {
+			Notification_Center::notify_lab_event( Lab_Orders::find( $result['order_id'] ), 'suggested' );
+		}
+
+		wp_send_json_success( self::encounter_view_model( $encounter ) );
+	}
+
+	/**
+	 * AJAX handler: removes a suggested lab test (only before it's booked).
+	 *
+	 * @return void
+	 */
+	public function handle_delete_lab_test() {
+		if ( ! check_ajax_referer( self::NONCE_ACTION, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please refresh the page and try again.', 'doctor-ak-portal' ) ), 403 );
+		}
+
+		$encounter = self::authorized_encounter_from_request();
+		$item_id   = isset( $_POST['lab_item_id'] ) ? absint( wp_unslash( $_POST['lab_item_id'] ) ) : 0;
+		$result    = Lab_Orders::remove_test( $item_id, $encounter['id'] );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		wp_send_json_success( self::encounter_view_model( $encounter ) );
+	}
+
+	/**
+	 * The encounter's lab tests for the detail screen: the order (status,
+	 * lab, results link) and its items, plus the catalog to pick from and
+	 * the most-suggested tests as one-tap chips.
+	 *
+	 * @param int $encounter_id Encounter ID.
+	 * @return array { order: array|null, catalog: [ { id, name, sample, preparation } ], popular: int[] }
+	 */
+	private static function lab_view_model( $encounter_id ) {
+		$order = Lab_Orders::for_encounter( $encounter_id );
+
+		if ( $order ) {
+			$lab                 = $order['lab_id'] > 0 ? Labs::find( $order['lab_id'] ) : null;
+			$order['lab_name']   = $lab ? $lab['name'] : '';
+			$order['date_label'] = $order['preferred_date'] ? date_i18n( 'D, j M', strtotime( $order['preferred_date'] ) ) : '';
+		}
+
+		return array(
+			'order'   => $order,
+			'catalog' => array_map(
+				function ( $test ) {
+					return array(
+						'id'          => $test['id'],
+						'name'        => $test['name'],
+						'sample'      => $test['sample_type_label'],
+						'preparation' => $test['preparation'],
+					);
+				},
+				Lab_Tests::all( true )
+			),
+			'popular' => Lab_Orders::popular_test_ids( 8 ),
+		);
 	}
 
 	/**
@@ -802,6 +907,7 @@ class Encounter_Handler {
 			'bill_total'    => $bill_total,
 			'services'      => $services,
 			'reports'       => Encounter_Reports::for_encounter( $encounter['id'] ),
+			'labs'          => self::lab_view_model( $encounter['id'] ),
 			'medicines'     => Medicines::active_for_doctor( $encounter['doctor_id'] ),
 			'prescription_pdf_url' => self::prescription_pdf_download_url( $encounter['id'] ),
 			'bill_pdf_url'          => self::bill_pdf_download_url( $encounter['id'] ),

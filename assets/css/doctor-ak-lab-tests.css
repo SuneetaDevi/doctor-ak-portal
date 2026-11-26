@@ -1,0 +1,764 @@
+/**
+ * Doctor AK Portal — the public "Book a lab test" page
+ * (templates/directory/lab-tests-page.php). Shared --dak-* tokens, so the
+ * site's light/dark toggle works.
+ */
+
+.dak-labs-page {
+	--dak-labs-line: var( --dak-border, #dce5e1 );
+	--dak-labs-soft: var( --dak-bg-subtle, #f6f9f8 );
+	max-width: 1180px !important;
+	margin: 0 auto !important;
+	padding: 20px 24px 120px !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-labs-page *,
+.dak-labs-page *::before,
+.dak-labs-page *::after {
+	box-sizing: border-box;
+}
+
+/* Zero-specificity resets, so the component rules below can set spacing. */
+:where( .dak-labs-page ) :where( ul, ol ) {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+:where( .dak-labs-page ) :where( li ) {
+	margin: 0;
+	list-style: none;
+}
+
+.dak-labs-page li::before,
+.dak-labs-page li::marker {
+	content: none !important;
+}
+
+.dak-labs-page [hidden] {
+	display: none !important;
+}
+
+.dak-labs-page svg {
+	flex: 0 0 auto !important;
+	width: 18px !important;
+	height: 18px !important;
+}
+
+/* ---- Promotional header -------------------------------------------------- */
+.dak-labs-hero {
+	position: relative !important;
+	display: grid !important;
+	grid-template-columns: minmax( 0, 1.4fr ) minmax( 260px, 1fr ) !important;
+	gap: 28px !important;
+	align-items: center !important;
+	padding: 40px !important;
+	overflow: hidden !important;
+	border-radius: 24px !important;
+	background:
+		radial-gradient( circle at 88% 20%, rgba( 127, 211, 171, 0.35 ) 0%, rgba( 127, 211, 171, 0 ) 45% ),
+		url( "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Cpath d='M25 18h6v7h7v6h-7v7h-6v-7h-7v-6h7z' fill='%23ffffff' fill-opacity='0.06'/%3E%3C/svg%3E" ),
+		linear-gradient( 125deg, #0b3d2e 0%, #10614a 60%, #0f7a66 100% ) !important;
+	color: #fff !important;
+}
+
+.dak-labs-eyebrow {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	padding: 6px 14px 6px 10px !important;
+	border-radius: 999px !important;
+	background: #eaf4ef !important;
+	color: #104d3a !important;
+	font-size: 13px !important;
+	font-weight: 800 !important;
+	letter-spacing: 0.06em !important;
+	text-transform: uppercase !important;
+}
+
+.dak-labs-hero h1 {
+	margin: 16px 0 12px !important;
+	font-size: clamp( 2rem, 4vw, 3.1rem ) !important;
+	font-weight: 700 !important;
+	line-height: 1.08 !important;
+	color: #fff !important;
+}
+
+.dak-labs-hero h1 em {
+	display: block !important;
+	font-style: normal !important;
+	color: #7fd3ab !important;
+}
+
+.dak-labs-hero p {
+	max-width: 38rem !important;
+	margin: 0 0 18px !important;
+	font-size: 17px !important;
+	line-height: 1.55 !important;
+	color: rgba( 255, 255, 255, 0.9 ) !important;
+}
+
+.dak-labs-perks {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 8px !important;
+	margin: 0 0 22px !important;
+}
+
+.dak-labs-perks li {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 7px !important;
+	padding: 7px 12px !important;
+	border: 1px solid rgba( 255, 255, 255, 0.28 ) !important;
+	border-radius: 999px !important;
+	background: rgba( 255, 255, 255, 0.12 ) !important;
+	font-size: 14px !important;
+	font-weight: 600 !important;
+}
+
+.dak-labs-perks svg {
+	color: #7fd3ab !important;
+}
+
+.dak-labs-hero-actions {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 14px 18px !important;
+}
+
+.dak-labs-page .dak-labs-hero-cta {
+	min-height: 50px !important;
+	padding: 0 28px !important;
+	border-radius: 999px !important;
+	background: #fff !important;
+	color: #0b3d2e !important;
+	font-size: 16px !important;
+	font-weight: 800 !important;
+	text-decoration: none !important;
+}
+
+.dak-labs-from {
+	font-size: 15px !important;
+	font-weight: 700 !important;
+	color: #ffc46b !important;
+}
+
+.dak-labs-steps {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 12px !important;
+	padding: 20px !important;
+	border: 1px solid rgba( 255, 255, 255, 0.25 ) !important;
+	border-radius: 18px !important;
+	background: rgba( 255, 255, 255, 0.1 ) !important;
+	-webkit-backdrop-filter: blur( 10px ) !important;
+	backdrop-filter: blur( 10px ) !important;
+}
+
+.dak-labs-steps li {
+	display: grid !important;
+	grid-template-columns: 34px 1fr !important;
+	column-gap: 12px !important;
+	align-items: center !important;
+}
+
+.dak-labs-steps span {
+	grid-row: span 2 !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 34px !important;
+	height: 34px !important;
+	border-radius: 50% !important;
+	background: #7fd3ab !important;
+	color: #0b3d2e !important;
+	font-weight: 800 !important;
+}
+
+.dak-labs-steps strong {
+	font-size: 15px !important;
+	color: #fff !important;
+}
+
+.dak-labs-steps em {
+	font-size: 13px !important;
+	font-style: normal !important;
+	color: rgba( 255, 255, 255, 0.8 ) !important;
+}
+
+.dak-labs-empty {
+	margin-top: 24px !important;
+	padding: 32px !important;
+	border: 1px dashed var( --dak-labs-line ) !important;
+	border-radius: 18px !important;
+	text-align: center !important;
+}
+
+/* ---- Two steps: pick, then book ------------------------------------------ */
+.dak-labs-layout {
+	display: grid !important;
+	grid-template-columns: minmax( 0, 1.25fr ) minmax( 320px, 1fr ) !important;
+	gap: 22px !important;
+	align-items: start !important;
+	margin-top: 24px !important;
+}
+
+.dak-labs-card {
+	padding: 24px !important;
+	border: 1px solid var( --dak-labs-line ) !important;
+	border-radius: 20px !important;
+	background: var( --dak-bg-card, #fff ) !important;
+	box-shadow: 0 1px 2px rgba( 16, 60, 46, 0.05 ), 0 8px 24px rgba( 16, 60, 46, 0.06 ) !important;
+}
+
+.dak-labs-book {
+	position: sticky !important;
+	top: 96px !important;
+}
+
+.dak-labs-card h2 {
+	display: flex !important;
+	align-items: center !important;
+	gap: 10px !important;
+	margin: 0 0 16px !important;
+	font-size: 20px !important;
+	font-weight: 800 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-labs-num {
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	width: 28px !important;
+	height: 28px !important;
+	border-radius: 50% !important;
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+	font-size: 14px !important;
+}
+
+.dak-labs-search {
+	display: flex !important;
+	align-items: center !important;
+	gap: 10px !important;
+	margin: 0 0 12px !important;
+	padding: 0 14px !important;
+	border: 1.5px solid var( --dak-labs-line ) !important;
+	border-radius: 12px !important;
+	background: var( --dak-bg-card, #fff ) !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-labs-search:focus-within {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-labs-page .dak-labs-search input {
+	flex: 1 1 auto !important;
+	min-height: 46px !important;
+	padding: 0 !important;
+	border: 0 !important;
+	outline: 0 !important;
+	box-shadow: none !important;
+	background: transparent !important;
+	color: var( --dak-text ) !important;
+	font-size: 15px !important;
+}
+
+.dak-labs-popular {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	gap: 8px !important;
+	margin: 0 0 14px !important;
+	font-size: 13px !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-labs-chip {
+	min-height: 32px !important;
+	padding: 0 12px !important;
+	border: 1px solid var( --dak-labs-line ) !important;
+	border-radius: 999px !important;
+	background: var( --dak-labs-soft ) !important;
+	color: var( --dak-text ) !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+	cursor: pointer !important;
+}
+
+.dak-labs-chip.is-on {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+}
+
+.dak-labs-tests {
+	display: flex !important;
+	flex-direction: column !important;
+	border: 1px solid var( --dak-labs-line ) !important;
+	border-radius: 14px !important;
+	overflow: hidden !important;
+}
+
+.dak-labs-test {
+	display: flex !important;
+	align-items: center !important;
+	gap: 12px !important;
+	padding: 14px 16px !important;
+	transition: background-color 0.15s ease !important;
+}
+
+.dak-labs-test + .dak-labs-test {
+	border-top: 1px solid var( --dak-labs-line ) !important;
+}
+
+.dak-labs-test.is-picked {
+	background: var( --dak-primary-tint ) !important;
+}
+
+.dak-labs-test-main {
+	display: flex !important;
+	flex-direction: column !important;
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+	gap: 3px !important;
+}
+
+.dak-labs-test-main strong {
+	font-size: 15px !important;
+}
+
+.dak-labs-test-meta {
+	font-size: 13px !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-labs-prep {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 5px !important;
+	align-self: flex-start !important;
+	margin-top: 2px !important;
+	padding: 2px 9px !important;
+	border-radius: 999px !important;
+	background: var( --dak-tint-amber, #fef3c7 ) !important;
+	color: var( --dak-tint-amber-text, #b45309 ) !important;
+	font-size: 12px !important;
+	font-weight: 600 !important;
+}
+
+.dak-labs-prep svg {
+	width: 13px !important;
+	height: 13px !important;
+}
+
+.dak-labs-test-side {
+	display: grid !important;
+	grid-template-columns: auto auto !important;
+	align-items: center !important;
+	column-gap: 12px !important;
+	text-align: right !important;
+}
+
+.dak-labs-test-price {
+	font-size: 15px !important;
+	font-weight: 800 !important;
+	white-space: nowrap !important;
+}
+
+.dak-labs-test-labs {
+	grid-row: 2 !important;
+	font-size: 12px !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-labs-add {
+	grid-row: 1 / span 2 !important;
+	grid-column: 2 !important;
+	min-width: 84px !important;
+	min-height: 38px !important;
+	padding: 0 14px !important;
+	border: 1.5px solid var( --dak-primary ) !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-card, #fff ) !important;
+	color: var( --dak-primary ) !important;
+	font-size: 14px !important;
+	font-weight: 700 !important;
+	cursor: pointer !important;
+}
+
+.dak-labs-add.is-on {
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+}
+
+.dak-labs-add:focus-visible,
+.dak-labs-chip:focus-visible {
+	outline: 2px solid var( --dak-primary ) !important;
+	outline-offset: 2px !important;
+}
+
+.dak-labs-nomatch {
+	margin: 12px 0 0 !important;
+	color: var( --dak-muted ) !important;
+}
+
+/* ---- Booking -------------------------------------------------------------- */
+.dak-labs-picked {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 6px !important;
+	margin: 0 0 16px !important;
+}
+
+.dak-labs-picked li {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 4px !important;
+	padding: 4px 4px 4px 12px !important;
+	border-radius: 999px !important;
+	background: var( --dak-primary-tint ) !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+}
+
+.dak-labs-remove {
+	width: 24px !important;
+	height: 24px !important;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 50% !important;
+	background: transparent !important;
+	color: var( --dak-text ) !important;
+	font-size: 16px !important;
+	line-height: 1 !important;
+	cursor: pointer !important;
+}
+
+.dak-labs-step {
+	min-width: 0 !important;
+	margin: 0 0 16px !important;
+	padding: 0 !important;
+	border: 0 !important;
+}
+
+.dak-labs-step legend {
+	margin: 0 0 8px !important;
+	padding: 0 !important;
+	font-size: 14px !important;
+	font-weight: 800 !important;
+	color: var( --dak-text ) !important;
+}
+
+.dak-labs-choices {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 8px !important;
+}
+
+.dak-labs-choice {
+	position: relative !important;
+	display: flex !important;
+	margin: 0 !important;
+	cursor: pointer !important;
+}
+
+.dak-labs-choice input {
+	position: absolute !important;
+	opacity: 0 !important;
+	pointer-events: none !important;
+}
+
+.dak-labs-choice-body {
+	display: flex !important;
+	flex-direction: column !important;
+	gap: 4px !important;
+	width: 100% !important;
+	padding: 11px 13px !important;
+	border: 1.5px solid var( --dak-labs-line ) !important;
+	border-radius: 12px !important;
+	background: var( --dak-bg-card, #fff ) !important;
+}
+
+.dak-labs-choice:hover .dak-labs-choice-body {
+	border-color: var( --dak-primary ) !important;
+}
+
+.dak-labs-choice input:checked + .dak-labs-choice-body {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary-tint ) !important;
+	box-shadow: 0 0 0 1px var( --dak-primary ) inset !important;
+}
+
+.dak-labs-choice input:focus-visible + .dak-labs-choice-body {
+	outline: 2px solid var( --dak-primary ) !important;
+	outline-offset: 2px !important;
+}
+
+.dak-labs-choice.is-unavailable {
+	cursor: default !important;
+	opacity: 0.6 !important;
+}
+
+.dak-labs-choice-top {
+	display: flex !important;
+	justify-content: space-between !important;
+	gap: 10px !important;
+	font-size: 15px !important;
+}
+
+.dak-labs-choice-price {
+	font-weight: 800 !important;
+	white-space: nowrap !important;
+}
+
+.dak-labs-choice-place {
+	font-size: 13px !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-labs-choice-tags {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 6px !important;
+}
+
+.dak-labs-tag {
+	padding: 2px 8px !important;
+	border-radius: 999px !important;
+	background: var( --dak-labs-soft ) !important;
+	font-size: 12px !important;
+	font-weight: 600 !important;
+}
+
+.dak-labs-tag.is-best {
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+}
+
+.dak-labs-tag.is-muted {
+	color: var( --dak-muted ) !important;
+}
+
+.dak-labs-nolab {
+	margin: 0 !important;
+	padding: 10px 12px !important;
+	border-radius: 10px !important;
+	background: var( --dak-tint-amber, #fef3c7 ) !important;
+	color: var( --dak-tint-amber-text, #b45309 ) !important;
+	font-size: 14px !important;
+}
+
+.dak-labs-pills {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	gap: 6px !important;
+}
+
+.dak-labs-days {
+	margin-bottom: 8px !important;
+}
+
+.dak-labs-pill {
+	position: relative !important;
+	margin: 0 !important;
+	cursor: pointer !important;
+}
+
+.dak-labs-pill input {
+	position: absolute !important;
+	opacity: 0 !important;
+	pointer-events: none !important;
+}
+
+.dak-labs-pill span {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+	min-height: 38px !important;
+	padding: 0 13px !important;
+	border: 1.5px solid var( --dak-labs-line ) !important;
+	border-radius: 999px !important;
+	background: var( --dak-bg-card, #fff ) !important;
+	font-size: 13px !important;
+	font-weight: 600 !important;
+	white-space: nowrap !important;
+}
+
+.dak-labs-pill span svg {
+	width: 15px !important;
+	height: 15px !important;
+}
+
+.dak-labs-pill input:checked + span {
+	border-color: var( --dak-primary ) !important;
+	background: var( --dak-primary ) !important;
+	color: #fff !important;
+}
+
+.dak-labs-pill input:focus-visible + span {
+	outline: 2px solid var( --dak-primary ) !important;
+	outline-offset: 2px !important;
+}
+
+.dak-labs-pill input:disabled + span {
+	cursor: not-allowed !important;
+	opacity: 0.45 !important;
+	text-decoration: line-through !important;
+}
+
+.dak-labs-address {
+	margin: 10px 0 0 !important;
+}
+
+.dak-labs-page .dak-labs-address textarea {
+	width: 100% !important;
+}
+
+.dak-labs-footer {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 12px !important;
+	padding-top: 14px !important;
+	border-top: 1px solid var( --dak-labs-line ) !important;
+}
+
+.dak-labs-total {
+	display: flex !important;
+	flex-wrap: wrap !important;
+	align-items: baseline !important;
+	gap: 2px 8px !important;
+}
+
+.dak-labs-total strong {
+	font-size: 22px !important;
+	font-weight: 800 !important;
+}
+
+.dak-labs-total span {
+	font-size: 13px !important;
+	color: var( --dak-muted ) !important;
+}
+
+.dak-labs-page .dak-labs-footer .dak-button {
+	min-height: 46px !important;
+	padding: 0 24px !important;
+	font-weight: 700 !important;
+	text-decoration: none !important;
+}
+
+.dak-labs-login {
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: flex-end !important;
+	gap: 6px !important;
+	max-width: 260px !important;
+	text-align: right !important;
+}
+
+.dak-labs-login span,
+.dak-labs-note {
+	margin: 0 !important;
+	font-size: 12px !important;
+	color: var( --dak-muted ) !important;
+}
+
+/* Sticky bar while picking (until the booking panel is in view on phones). */
+.dak-labs-cart {
+	position: fixed !important;
+	left: 50% !important;
+	bottom: 18px !important;
+	z-index: 120 !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: 16px !important;
+	padding: 10px 10px 10px 18px !important;
+	border-radius: 999px !important;
+	background: #0b3d2e !important;
+	color: #fff !important;
+	box-shadow: 0 12px 32px rgba( 0, 0, 0, 0.25 ) !important;
+	transform: translateX( -50% ) !important;
+}
+
+.dak-labs-cart-text {
+	font-size: 14px !important;
+	font-weight: 700 !important;
+	white-space: nowrap !important;
+}
+
+.dak-labs-page .dak-labs-cart .dak-button {
+	min-height: 38px !important;
+	border-radius: 999px !important;
+	background: #7fd3ab !important;
+	color: #0b3d2e !important;
+	font-weight: 800 !important;
+	text-decoration: none !important;
+}
+
+/* Side by side, the panel is already visible: no bar needed. */
+@media ( min-width: 961px ) {
+	.dak-labs-cart {
+		display: none !important;
+	}
+}
+
+@media ( max-width: 960px ) {
+	.dak-labs-hero,
+	.dak-labs-layout {
+		grid-template-columns: minmax( 0, 1fr ) !important;
+	}
+
+	.dak-labs-book {
+		position: static !important;
+	}
+}
+
+@media ( max-width: 600px ) {
+	.dak-labs-page {
+		padding: 12px 12px 110px !important;
+	}
+
+	.dak-labs-hero {
+		padding: 24px 20px !important;
+		border-radius: 18px !important;
+	}
+
+	.dak-labs-card {
+		padding: 16px !important;
+	}
+
+	.dak-labs-test {
+		flex-wrap: wrap !important;
+	}
+
+	.dak-labs-test-side {
+		width: 100% !important;
+		grid-template-columns: 1fr auto !important;
+		text-align: left !important;
+	}
+
+	.dak-labs-page .dak-labs-footer .dak-button {
+		width: 100% !important;
+	}
+
+	.dak-labs-login {
+		align-items: stretch !important;
+		max-width: none !important;
+		width: 100% !important;
+		text-align: left !important;
+	}
+
+	.dak-labs-cart {
+		left: 12px !important;
+		right: 12px !important;
+		justify-content: space-between !important;
+		transform: none !important;
+	}
+}

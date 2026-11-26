@@ -349,6 +349,12 @@ class Plugin {
 		$this->loader->add_action( 'admin_post_' . Admin_Reviews::MODERATE_ACTION, 'DoctorAKPortal\Frontend\Admin_Reviews', 'handle_moderate' );
 		$this->loader->add_action( 'admin_post_' . Admin_Reviews::RESET_ACTION, 'DoctorAKPortal\Frontend\Admin_Reviews', 'handle_reset_link' );
 
+		// Dashboard → Lab Tests: orders, results, partner labs, test catalog.
+		$this->loader->add_action( 'admin_post_' . \DoctorAKPortal\Frontend\Admin_Labs::ORDER_ACTION, 'DoctorAKPortal\Frontend\Admin_Labs', 'handle_order_action' );
+		$this->loader->add_action( 'admin_post_' . \DoctorAKPortal\Frontend\Admin_Labs::UPLOAD_ACTION, 'DoctorAKPortal\Frontend\Admin_Labs', 'handle_upload_results' );
+		$this->loader->add_action( 'admin_post_' . \DoctorAKPortal\Frontend\Admin_Labs::LAB_ACTION, 'DoctorAKPortal\Frontend\Admin_Labs', 'handle_save_lab' );
+		$this->loader->add_action( 'admin_post_' . \DoctorAKPortal\Frontend\Admin_Labs::TEST_ACTION, 'DoctorAKPortal\Frontend\Admin_Labs', 'handle_save_test' );
+
 		// Self-healing: installs that were activated before this cron event
 		// existed only get it scheduled on Activator::activate(), which
 		// doesn't re-run on a plugin code update — so make sure it's there
@@ -476,6 +482,13 @@ class Plugin {
 		$this->loader->add_action( 'wp_ajax_doctor_ak_delete_encounter_problem', $encounter_handler, 'handle_delete_problem' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_add_encounter_prescription', $encounter_handler, 'handle_add_prescription' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_delete_encounter_prescription', $encounter_handler, 'handle_delete_prescription' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_add_encounter_lab_test', $encounter_handler, 'handle_add_lab_test' );
+
+		// Lab tests: the patient books what the doctor suggested (logged in only).
+		$patient_lab_handler = new \DoctorAKPortal\Frontend\Patient_Lab_Handler();
+		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_lab_book', $patient_lab_handler, 'handle_book' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_patient_lab_cancel', $patient_lab_handler, 'handle_cancel' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_delete_encounter_lab_test', $encounter_handler, 'handle_delete_lab_test' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_add_encounter_bill_item', $encounter_handler, 'handle_add_bill_item' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_delete_encounter_bill_item', $encounter_handler, 'handle_delete_bill_item' );
 		$this->loader->add_action( 'wp_ajax_doctor_ak_upload_encounter_report', $encounter_handler, 'handle_upload_report' );
@@ -524,6 +537,12 @@ class Plugin {
 		// reviewed mappings and the approved notice are in place and it's
 		// switched on — see Symptom_Mappings) and the "Symptom mappings"
 		// screen's endpoint (logged-in staff only; no nopriv action).
+		// Public "Book a lab test" page ([lab_tests]); booking needs a patient login.
+		$lab_tests_page = new \DoctorAKPortal\Frontend\Lab_Tests_Page( new Template_Loader() );
+		$this->loader->add_action( 'init', $lab_tests_page, 'register' );
+		$this->loader->add_action( 'wp_enqueue_scripts', $lab_tests_page, 'enqueue_assets' );
+		$this->loader->add_action( 'wp_ajax_doctor_ak_public_lab_book', $lab_tests_page, 'handle_book' );
+
 		$symptom_checker = new Symptom_Checker( new Template_Loader() );
 		$this->loader->add_action( 'init', $symptom_checker, 'register' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $symptom_checker, 'enqueue_assets' );

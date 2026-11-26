@@ -38,6 +38,7 @@ class Notification_Center {
 	const TYPE_REFUND_PROCESSED   = 'refund_processed';
 	const TYPE_RESCHEDULED        = 'rescheduled';
 	const TYPE_REMINDER           = 'reminder';
+	const TYPE_LAB                = 'lab';
 
 	/**
 	 * Returns the fully prefixed table name.
@@ -348,6 +349,67 @@ class Notification_Center {
 
 		self::notify_admins( $admin_message, self::TYPE_COMPLETED, $appointment_id );
 		self::notify_receptionists_for_appointment( $admin_message, self::TYPE_COMPLETED, $appointment_id, $appt );
+	}
+
+	/**
+	 * Lab tests (see Lab_Orders): the patient when a doctor suggests tests
+	 * and when results are ready (the doctor too), and staff — every admin
+	 * and receptionist — when a patient books.
+	 *
+	 * @param array  $order Lab_Orders::find() row.
+	 * @param string $event 'suggested', 'booked' or 'ready'.
+	 * @return void
+	 */
+	public static function notify_lab_event( array $order, $event ) {
+		$doctor      = get_userdata( $order['doctor_id'] );
+		$doctor_name = $doctor ? self::doctor_display_name( $doctor ) : '';
+		$patient     = get_userdata( $order['patient_id'] );
+		$count       = count( $order['items'] );
+
+		if ( 'suggested' === $event && $order['patient_id'] > 0 ) {
+			self::record(
+				$order['patient_id'],
+				self::TYPE_LAB,
+				sprintf(
+					/* translators: %s: doctor's display name. */
+					__( 'Dr. %s suggested lab tests for you. Open “Lab tests” to book them in one tap.', 'doctor-ak-portal' ),
+					$doctor_name
+				),
+				$order['appointment_id']
+			);
+		} elseif ( 'booked' === $event ) {
+			$lab     = Labs::find( $order['lab_id'] );
+			$message = sprintf(
+				/* translators: 1: patient's name, 2: number of tests, 3: lab name, 4: "home collection" or "lab visit", 5: date. */
+				_n( '%1$s booked %2$d lab test at %3$s (%4$s, %5$s).', '%1$s booked %2$d lab tests at %3$s (%4$s, %5$s).', $count, 'doctor-ak-portal' ),
+				$patient ? ( trim( $patient->first_name . ' ' . $patient->last_name ) ?: $patient->display_name ) : __( 'A patient', 'doctor-ak-portal' ),
+				$count,
+				$lab ? $lab['name'] : '',
+				'home' === $order['collection'] ? __( 'home collection', 'doctor-ak-portal' ) : __( 'lab visit', 'doctor-ak-portal' ),
+				$order['preferred_date'] ? date_i18n( 'j M', strtotime( $order['preferred_date'] ) ) : ''
+			);
+
+			foreach ( array_unique( array_merge( self::admin_user_ids(), self::receptionist_ids_for_clinic_location( 0 ) ) ) as $staff_id ) {
+				self::record( $staff_id, self::TYPE_LAB, $message, $order['appointment_id'] );
+			}
+		} elseif ( 'ready' === $event ) {
+			if ( $order['patient_id'] > 0 ) {
+				self::record( $order['patient_id'], self::TYPE_LAB, __( 'Your lab results are ready. Open “Lab tests” to view them.', 'doctor-ak-portal' ), $order['appointment_id'] );
+			}
+
+			if ( $order['doctor_id'] > 0 ) {
+				self::record(
+					$order['doctor_id'],
+					self::TYPE_LAB,
+					sprintf(
+						/* translators: %s: patient's name. */
+						__( 'Lab results for %s are ready — they’re in the visit’s Reports.', 'doctor-ak-portal' ),
+						$patient ? ( trim( $patient->first_name . ' ' . $patient->last_name ) ?: $patient->display_name ) : __( 'your patient', 'doctor-ak-portal' )
+					),
+					$order['appointment_id']
+				);
+			}
+		}
 	}
 
 	/**

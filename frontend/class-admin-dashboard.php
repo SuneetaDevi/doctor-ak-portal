@@ -99,6 +99,7 @@ class Admin_Dashboard {
 			'clinic'             => 'Clinic',
 			'services'           => 'Services',
 			'service-requests'   => 'Service Requests',
+			'lab-tests'          => 'Lab Tests',
 			'video-consultation' => 'Video Consultation',
 			'doctor-sessions'    => 'Doctor Sessions',
 		),
@@ -129,7 +130,7 @@ class Admin_Dashboard {
 	 *
 	 * @var array
 	 */
-	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'patients', 'crm', 'doctors', 'clinic', 'services', 'service-requests', 'doctor-sessions', 'settings', 'encounter', 'encounters', 'notifications', 'videos' );
+	const RECEPTIONIST_ALLOWED_SECTIONS = array( 'dashboard', 'appointments', 'patients', 'crm', 'doctors', 'clinic', 'services', 'service-requests', 'lab-tests', 'doctor-sessions', 'settings', 'encounter', 'encounters', 'notifications', 'videos' );
 
 	/**
 	 * Section slugs that exist and are reachable, but deliberately have no
@@ -1940,6 +1941,9 @@ class Admin_Dashboard {
 					// Reviews from a review link waiting for approval.
 					$counts = Doctor_Reviews::status_counts();
 					$badge  = $counts[ Doctor_Reviews::STATUS_PENDING ];
+				} elseif ( Admin_Labs::SECTION === $slug ) {
+					// Booked lab tests waiting for their sample.
+					$badge = Admin_Labs::badge_count();
 				}
 
 				$group_items[] = array(
@@ -2729,6 +2733,10 @@ class Admin_Dashboard {
 
 		if ( 'symptom-checker' === $section && current_user_can( 'manage_options' ) ) {
 			return $this->symptom_checker_section_html();
+		}
+
+		if ( Admin_Labs::SECTION === $section && Admin_Labs::can_manage() ) {
+			return Admin_Labs::section_html( $this->template_loader );
 		}
 
 		if ( Admin_Reviews::SECTION === $section && Admin_Reviews::can_manage() ) {

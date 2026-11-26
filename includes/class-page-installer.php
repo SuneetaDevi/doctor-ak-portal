@@ -49,7 +49,7 @@ class Page_Installer {
 	 *
 	 * @var string
 	 */
-	const VERSION = '1.4.0';
+	const VERSION = '1.5.0'; // 1.5.0: Lab Tests page.
 
 	/**
 	 * Self-healing install, safe to run on every request: does nothing once
@@ -90,6 +90,7 @@ class Page_Installer {
 		'symptom_checker'         => 'Symptom Checker',
 		'clinics_directory'       => 'Our Clinics',
 		'clinic_profile_view'     => 'Clinic Details',
+		'lab_tests'               => 'Lab Tests',
 		'book_appointment'        => 'Book Appointment',
 		'doctor_register'         => 'Register',
 		'doctor_login'            => 'Login',

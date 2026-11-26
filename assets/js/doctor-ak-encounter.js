@@ -41,6 +41,38 @@
 
 		wireEditCancelButtons();
 
+		// Lab tests: typed (picked from the suggestions) or one tap on a
+		// common-test chip.
+		wireAddForm( 'dak-encounter-add-lab-form', 'doctor_ak_add_encounter_lab_test', function ( formData ) {
+			formData.append( 'test_name', document.getElementById( 'dak-encounter-lab-test' ).value );
+			formData.append( 'note', document.getElementById( 'dak-encounter-lab-note' ).value );
+		}, function () {
+			document.getElementById( 'dak-encounter-lab-test' ).value = '';
+			document.getElementById( 'dak-encounter-lab-note' ).value = '';
+		} );
+
+		var labChips = document.getElementById( 'dak-encounter-lab-chips' );
+
+		if ( labChips ) {
+			labChips.addEventListener( 'click', function ( event ) {
+				var chip = event.target.closest( '[data-lab-test-id]' );
+
+				if ( ! chip ) {
+					return;
+				}
+
+				var formData = new FormData();
+				formData.append( 'action', 'doctor_ak_add_encounter_lab_test' );
+				formData.append( 'nonce', window.dakEncounter.nonce );
+				formData.append( 'encounter_id', encounterId );
+				formData.append( 'test_id', chip.getAttribute( 'data-lab-test-id' ) );
+				formData.append( 'note', document.getElementById( 'dak-encounter-lab-note' ).value );
+				post( formData, function () {
+					document.getElementById( 'dak-encounter-lab-note' ).value = '';
+				} );
+			} );
+		}
+
 		wireAddForm( 'dak-encounter-add-bill-item-form', 'doctor_ak_add_encounter_bill_item', function ( formData ) {
 			var serviceSelect = document.getElementById( 'dak-encounter-bill-service' );
 			formData.append( 'service_id', serviceSelect ? serviceSelect.value : '0' );
@@ -448,6 +480,10 @@
 		renderBillItems( data.bill_items, data.bill_total, true );
 		renderReports( data.reports, true );
 
+		if ( data.labs ) {
+			renderLabs( data.labs );
+		}
+
 		setText( 'dak-encounter-problems-count', String( data.problems.length ) );
 		setText( 'dak-encounter-prescriptions-count', String( data.prescriptions.length ) );
 		setText( 'dak-encounter-bill-count', String( data.bill_items.length ) );
@@ -677,6 +713,165 @@
 			row.appendChild( main );
 			container.appendChild( row );
 		} );
+	}
+
+	/**
+	 * Lab tests: the suggested tests (removable until the patient books),
+	 * where the booking stands, and the picker — suggestions from the Lab
+	 * Tests catalog plus one-tap chips for the most suggested ones.
+	 *
+	 * @param {Object} labs { order: Object|null, catalog: Array, popular: Array }.
+	 */
+	function renderLabs( labs ) {
+		var order = labs.order;
+		var items = order ? order.items : [];
+		var editable = ! order || 'suggested' === order.status;
+		var container = document.getElementById( 'dak-encounter-labs-list' );
+		var status = document.getElementById( 'dak-encounter-lab-status' );
+		var form = document.getElementById( 'dak-encounter-add-lab-form' );
+		var chips = document.getElementById( 'dak-encounter-lab-chips' );
+		var datalist = document.getElementById( 'dak-encounter-lab-suggestions' );
+		var emptyCatalog = document.getElementById( 'dak-encounter-lab-empty-catalog' );
+		var onOrder = {};
+
+		items.forEach( function ( item ) {
+			onOrder[ item.test_id ] = true;
+		} );
+
+		setText( 'dak-encounter-labs-count', String( items.length ) );
+
+		if ( container ) {
+			if ( ! items.length ) {
+				container.innerHTML = '<p class="dak-empty-state">No lab tests suggested yet.</p>';
+			} else {
+				container.innerHTML = '';
+
+				items.forEach( function ( item ) {
+					var row = document.createElement( 'div' );
+					row.className = 'dak-admin-record-row';
+
+					var main = document.createElement( 'div' );
+					main.className = 'dak-admin-record-row-main';
+
+					var info = document.createElement( 'span' );
+					info.className = 'dak-admin-record-row-info';
+					info.innerHTML = '<strong></strong><span class="dak-admin-record-row-id"></span>';
+					info.querySelector( 'strong' ).textContent = item.test_name;
+					info.querySelector( '.dak-admin-record-row-id' ).textContent = item.note;
+					main.appendChild( info );
+
+					if ( item.price > 0 ) {
+						var amount = document.createElement( 'span' );
+						amount.className = 'dak-admin-record-row-amount';
+						amount.textContent = 'PKR ' + Math.round( item.price ).toLocaleString( 'en-US' );
+						main.appendChild( amount );
+					}
+
+					if ( editable ) {
+						main.appendChild( deleteButton( 'doctor_ak_delete_encounter_lab_test', 'lab_item_id', item.id ) );
+					}
+
+					row.appendChild( main );
+					container.appendChild( row );
+				} );
+			}
+		}
+
+		// Where the patient's booking stands, once they've booked.
+		if ( status ) {
+			if ( order && 'suggested' !== order.status ) {
+				var parts = [ order.status_label ];
+
+				if ( order.lab_name ) {
+					parts.push( order.lab_name );
+				}
+
+				if ( order.date_label ) {
+					parts.push( order.date_label + ( 'home' === order.collection ? ' · home collection' : ' · lab visit' ) );
+				}
+
+				status.innerHTML = '<strong></strong> <span></span>';
+				status.querySelector( 'strong' ).textContent = parts.shift();
+				status.querySelector( 'span' ).textContent = parts.length ? '— ' + parts.join( ' · ' ) : '';
+
+				if ( order.report_url ) {
+					var link = document.createElement( 'a' );
+					link.href = order.report_url;
+					link.target = '_blank';
+					link.rel = 'noopener';
+					link.className = 'dak-encounter-lab-result-link';
+					link.textContent = 'View results';
+					status.appendChild( link );
+				}
+
+				status.className = 'dak-encounter-lab-status is-' + order.status;
+			} else if ( order && items.length ) {
+				status.textContent = 'Waiting for the patient to book.';
+				status.className = 'dak-encounter-lab-status is-suggested';
+			} else {
+				status.className = 'dak-encounter-lab-status dak-hidden';
+			}
+		}
+
+		if ( form ) {
+			form.classList.toggle( 'dak-hidden', ! editable );
+		}
+
+		if ( datalist ) {
+			datalist.innerHTML = '';
+
+			labs.catalog.forEach( function ( test ) {
+				var option = document.createElement( 'option' );
+				option.value = test.name;
+
+				if ( test.preparation ) {
+					option.label = test.sample + ' · ' + test.preparation;
+				}
+
+				datalist.appendChild( option );
+			} );
+		}
+
+		if ( emptyCatalog ) {
+			emptyCatalog.classList.toggle( 'dak-hidden', labs.catalog.length > 0 );
+		}
+
+		// One-tap chips: the most suggested tests (or the first few in the
+		// catalog before anything's been suggested), minus ones already added.
+		if ( chips ) {
+			var byId = {};
+
+			labs.catalog.forEach( function ( test ) {
+				byId[ test.id ] = test;
+			} );
+
+			var ids = labs.popular.filter( function ( id ) {
+				return byId[ id ];
+			} );
+
+			if ( ids.length < 6 ) {
+				labs.catalog.forEach( function ( test ) {
+					if ( ids.length < 6 && -1 === ids.indexOf( test.id ) ) {
+						ids.push( test.id );
+					}
+				} );
+			}
+
+			chips.innerHTML = '';
+
+			ids.filter( function ( id ) {
+				return ! onOrder[ id ];
+			} ).forEach( function ( id ) {
+				var chip = document.createElement( 'button' );
+				chip.type = 'button';
+				chip.className = 'dak-encounter-suggestion-chip';
+				chip.setAttribute( 'data-lab-test-id', id );
+				chip.textContent = '+ ' + byId[ id ].name;
+				chips.appendChild( chip );
+			} );
+
+			chips.classList.toggle( 'dak-hidden', ! chips.children.length );
+		}
 	}
 
 	function renderServiceOptions( services ) {

@@ -63,7 +63,12 @@ $dak_patient_icons = array(
 	'check'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l3.5 3.5L16 6"/></svg>',
 	'x'         => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5l10 10M15 5L5 15"/></svg>',
 	'search'    => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M16.5 16.5l-3.6-3.6"/></svg>',
+	'flask'     => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5h4M8.5 2.5v5L4.2 15a1.5 1.5 0 0 0 1.3 2.3h9a1.5 1.5 0 0 0 1.3-2.3L11.5 7.5v-5"/><path d="M6 12.5h8"/></svg>',
 );
+
+$lab_tests_url      = isset( $lab_tests_url ) ? $lab_tests_url : '';
+$lab_to_book_count  = isset( $lab_to_book_count ) ? (int) $lab_to_book_count : 0;
+$lab_tests_tab_html = isset( $lab_tests_tab_html ) ? $lab_tests_tab_html : '';
 
 $dak_activity_icons = array(
 	'paid'      => 'check',
@@ -145,6 +150,11 @@ $appointment_group_labels = array(
 				<?php if ( $medical_history_url ) : ?>
 					<li class="<?php echo 'medical-history' === $active_tab ? 'is-active' : ''; ?>">
 						<a href="<?php echo esc_url( $medical_history_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_patient_icons['heart']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Medical History', 'doctor-ak-portal' ); ?></a>
+					</li>
+				<?php endif; ?>
+				<?php if ( $lab_tests_url ) : ?>
+					<li class="<?php echo 'lab-tests' === $active_tab ? 'is-active' : ''; ?>">
+						<a href="<?php echo esc_url( $lab_tests_url ); ?>"><span class="dak-nav-icon"><?php echo $dak_patient_icons['flask']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span><?php esc_html_e( 'Lab Tests', 'doctor-ak-portal' ); ?><?php if ( $lab_to_book_count > 0 ) : ?><span class="dak-nav-badge" title="<?php esc_attr_e( 'To book', 'doctor-ak-portal' ); ?>"><?php echo esc_html( $lab_to_book_count ); ?></span><?php endif; ?></a>
 					</li>
 				<?php endif; ?>
 				<?php if ( $payments_url ) : ?>
@@ -267,6 +277,21 @@ $appointment_group_labels = array(
 
 			<?php echo $medical_history_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own patient-medical-history.php template, which escapes its own output. ?>
 
+		<?php elseif ( 'lab-tests' === $active_tab ) : ?>
+
+			<div class="dak-page-head">
+				<div>
+					<h1><?php esc_html_e( 'Lab Tests', 'doctor-ak-portal' ); ?></h1>
+					<p><?php esc_html_e( 'Tests your doctor suggested — book them here and get your results in the portal.', 'doctor-ak-portal' ); ?></p>
+				</div>
+				<?php $dak_lab_page_url = \DoctorAKPortal\Frontend\Lab_Tests_Page::public_url(); ?>
+				<?php if ( '' !== $dak_lab_page_url ) : ?>
+					<a class="dak-button dak-button-primary" href="<?php echo esc_url( $dak_lab_page_url ); ?>"><?php esc_html_e( '+ Book a lab test', 'doctor-ak-portal' ); ?></a>
+				<?php endif; ?>
+			</div>
+
+			<?php echo $lab_tests_tab_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- rendered by our own patient-lab-tests.php template, which escapes its own output. ?>
+
 		<?php else : ?>
 
 		<div class="dak-page-head">
@@ -278,6 +303,18 @@ $appointment_group_labels = array(
 				<?php esc_html_e( 'Book appointment', 'doctor-ak-portal' ); ?>
 			</button>
 		</div>
+
+		<?php if ( $lab_to_book_count > 0 && $lab_tests_url ) : ?>
+			<?php // Tests a doctor suggested and not booked yet — one tap to the booking. ?>
+			<a class="dak-lab-nudge" href="<?php echo esc_url( $lab_tests_url ); ?>">
+				<span class="dak-lab-nudge-icon" aria-hidden="true"><?php echo $dak_patient_icons['flask']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+				<span class="dak-lab-nudge-text">
+					<strong><?php echo esc_html( _n( 'Your doctor suggested lab tests', 'Your doctors suggested lab tests', $lab_to_book_count, 'doctor-ak-portal' ) ); ?></strong>
+					<span><?php esc_html_e( 'Compare labs and book a visit or home sample collection — pay at collection.', 'doctor-ak-portal' ); ?></span>
+				</span>
+				<span class="dak-button dak-button-primary dak-button-sm"><?php esc_html_e( 'Book tests', 'doctor-ak-portal' ); ?></span>
+			</a>
+		<?php endif; ?>
 
 		<?php if ( $next_appointment ) : ?>
 			<section class="dak-next-appointment" aria-labelledby="dak-next-appointment-title">

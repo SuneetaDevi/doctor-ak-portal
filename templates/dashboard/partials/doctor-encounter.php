@@ -135,6 +135,36 @@ $dak_back_label = ! empty( $back_url ) && ! empty( $back_label ) ? $back_label :
 					</form>
 				</section>
 
+				<!-- Lab tests: suggested here, booked by the patient from their portal. -->
+				<section class="dak-dashboard-card dak-encounter-section" id="dak-encounter-labs">
+					<div class="dak-encounter-section-header">
+						<span class="dak-encounter-section-icon" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5h4M8.5 2.5v5L4.2 15a1.5 1.5 0 0 0 1.3 2.3h9a1.5 1.5 0 0 0 1.3-2.3L11.5 7.5v-5"/><path d="M6 12.5h8"/></svg></span>
+						<div class="dak-encounter-section-title">
+							<h2><?php esc_html_e( 'Lab tests', 'doctor-ak-portal' ); ?></h2>
+							<p><?php esc_html_e( 'The patient books them from their portal', 'doctor-ak-portal' ); ?></p>
+						</div>
+						<span class="dak-encounter-section-count" id="dak-encounter-labs-count">0</span>
+					</div>
+					<div class="dak-encounter-lab-status dak-hidden" id="dak-encounter-lab-status" role="status"></div>
+					<div id="dak-encounter-labs-list"></div>
+					<form id="dak-encounter-add-lab-form" class="dak-encounter-inline-form dak-encounter-lab-form">
+						<div class="dak-encounter-lab-chips dak-hidden" id="dak-encounter-lab-chips" aria-label="<?php esc_attr_e( 'Common tests', 'doctor-ak-portal' ); ?>"></div>
+						<div class="dak-field">
+							<label for="dak-encounter-lab-test"><?php esc_html_e( 'Test', 'doctor-ak-portal' ); ?></label>
+							<input type="text" id="dak-encounter-lab-test" list="dak-encounter-lab-suggestions" autocomplete="off" placeholder="<?php esc_attr_e( 'Start typing — e.g. CBC', 'doctor-ak-portal' ); ?>">
+							<datalist id="dak-encounter-lab-suggestions"></datalist>
+						</div>
+						<div class="dak-field">
+							<label for="dak-encounter-lab-note"><?php esc_html_e( 'Note for the patient (optional)', 'doctor-ak-portal' ); ?></label>
+							<input type="text" id="dak-encounter-lab-note" placeholder="<?php esc_attr_e( 'e.g. Repeat after 3 months', 'doctor-ak-portal' ); ?>">
+						</div>
+						<div class="dak-encounter-form-actions">
+							<button type="submit" class="dak-button dak-button-primary dak-button-sm"><?php esc_html_e( '+ Add test', 'doctor-ak-portal' ); ?></button>
+						</div>
+						<p class="dak-field-hint dak-hidden" id="dak-encounter-lab-empty-catalog"><?php esc_html_e( 'No lab tests are set up yet. An admin can add them under Lab Tests.', 'doctor-ak-portal' ); ?></p>
+					</form>
+				</section>
+
 				<!-- Reports -->
 				<section class="dak-dashboard-card dak-encounter-section">
 					<div class="dak-encounter-section-header">

@@ -27,6 +27,7 @@
  * @var string   $services_url       [services_directory] page URL, or ''.
  * @var string   $videos_url         The Videos page ([videos_gallery]), or the home page's videos section if that page is missing.
  * @var string   $clinics_url        [clinics_directory] page URL, or ''. Reads ?q= (name/address search) and ?city=.
+ * @var string   $lab_tests_url      [lab_tests] "Book a lab test" page URL (always linked, like Services), or '' if the page is missing.
  * @var string   $blogs_url          [blogs_directory] page URL, or ''.
  * @var string   $booking_url        [book_appointment] page URL, or ''.
  * @var string   $doctor_join_url    [doctor_register] page URL opened on its Doctor option, for logged-out visitors only; '' otherwise (then "Join as Doctor" is left out).
@@ -629,6 +630,13 @@ $dak_nav_strings = array(
 						</li>
 					<?php endif; ?>
 
+					<?php if ( ! empty( $lab_tests_url ) ) : ?>
+						<?php $dak_labs_current = $dak_path_of( $lab_tests_url ) === $current_path; ?>
+						<li class="dak-nav-item">
+							<a class="dak-nav-link<?php echo $dak_labs_current ? ' is-current' : ''; ?>" href="<?php echo esc_url( $lab_tests_url ); ?>"<?php echo $dak_labs_current ? ' aria-current="page"' : ''; ?>><?php esc_html_e( 'Lab Tests', 'doctor-ak-portal' ); ?></a>
+						</li>
+					<?php endif; ?>
+
 					<?php if ( ! empty( $symptom_checker_nav_url ) ) : ?>
 						<?php $dak_symptom_current = $dak_path_of( $symptom_checker_nav_url ) === $current_path; ?>
 						<li class="dak-nav-item">
@@ -715,24 +723,23 @@ $dak_nav_strings = array(
 								</a>
 							</li>
 						<?php endif; ?>
+						<?php if ( ! empty( $lab_tests_url ) ) : ?>
+							<li>
+								<a class="dak-book-option" href="<?php echo esc_url( $lab_tests_url ); ?>">
+									<span class="dak-book-option-icon"><?php echo $dak_header_icons['flask']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?></span>
+									<span class="dak-book-option-text">
+										<span class="dak-book-option-title"><?php esc_html_e( 'Book a lab test', 'doctor-ak-portal' ); ?></span>
+										<span class="dak-book-option-meta"><?php esc_html_e( 'Lab visit or home sample collection', 'doctor-ak-portal' ); ?></span>
+									</span>
+								</a>
+							</li>
+						<?php endif; ?>
 						<?php
-						// Lab tests and Pharmacy aren't offered yet — hidden until they are.
-						// Set to true to show them again with their "Coming soon" label.
+						// Pharmacy isn't offered yet — hidden until it is. Set to true
+						// to show it again with its "Coming soon" label.
 						$dak_show_upcoming_options = false;
 						?>
 						<?php if ( $dak_show_upcoming_options ) : ?>
-						<li>
-							<button type="button" class="dak-book-option is-unavailable" data-dak-coming-soon="<?php echo esc_attr( $dak_header_coming_soon_note( __( 'Lab Test Booking', 'doctor-ak-portal' ) ) ); ?>">
-								<span class="dak-book-option-icon"><?php echo $dak_header_icons['flask']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?></span>
-								<span class="dak-book-option-text">
-									<span class="dak-book-option-title">
-										<?php esc_html_e( 'Lab tests', 'doctor-ak-portal' ); ?>
-										<span class="dak-book-option-badge"><?php esc_html_e( 'Coming soon', 'doctor-ak-portal' ); ?></span>
-									</span>
-									<span class="dak-book-option-meta"><?php echo '' !== $phone ? esc_html__( 'Online booking not available yet — call to book', 'doctor-ak-portal' ) : esc_html__( 'Online booking not available yet', 'doctor-ak-portal' ); ?></span>
-								</span>
-							</button>
-						</li>
 						<li>
 							<button type="button" class="dak-book-option is-unavailable" data-dak-coming-soon="<?php echo esc_attr( $dak_header_coming_soon_note( __( 'Pharmacy Ordering', 'doctor-ak-portal' ) ) ); ?>">
 								<span class="dak-book-option-icon"><?php echo $dak_header_icons['pill']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?></span>
