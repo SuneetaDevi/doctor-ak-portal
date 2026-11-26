@@ -326,7 +326,7 @@
    active photo drifts in slowly. initHeroSlider() in doctor-ak-home.js moves
    .is-active and sets aria-hidden/inert on the others. */
 .dak-home-hero-banner {
-	--dak-hero-interval: 4s;
+	--dak-hero-interval: 2s;
 	flex-direction: column !important;
 	align-items: flex-start !important;
 	justify-content: center !important;
