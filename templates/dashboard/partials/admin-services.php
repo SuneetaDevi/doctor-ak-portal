@@ -100,7 +100,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<td class="dak-col-nowrap" data-label="<?php esc_attr_e( 'Duration', 'doctor-ak-portal' ); ?>"><?php echo esc_html( \DoctorAKPortal\Includes\Dashboard_Format::duration( $service['duration_minutes'] ) ); ?></td>
 							<td class="dak-col-num" data-label="<?php esc_attr_e( 'Price', 'doctor-ak-portal' ); ?>">
 								<span class="dak-cell-stack">
-									<span class="dak-cell-strong"><?php echo esc_html( \DoctorAKPortal\Includes\Dashboard_Format::money( $service['charge'], __( 'Free', 'doctor-ak-portal' ) ) ); ?></span>
+									<?php // 0 means "no price set" (there's no free option) — such services are hidden from patients. ?>
+								<span class="dak-cell-strong"><?php echo esc_html( \DoctorAKPortal\Includes\Dashboard_Format::money( $service['charge'], __( 'Not set', 'doctor-ak-portal' ) ) ); ?></span>
 									<?php require __DIR__ . '/service-discount-note.php'; ?>
 									<?php // Revenue split and per-clinic prices: labelled, expandable, unchanged values. ?>
 									<details class="dak-cell-details">
@@ -122,7 +123,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 								</span>
 							</td>
 							<td class="dak-col-status" data-label="<?php esc_attr_e( 'Status', 'doctor-ak-portal' ); ?>">
-								<span class="dak-status-pill <?php echo $service['active'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-neutral'; ?>"><?php echo $service['active'] ? esc_html__( 'Active', 'doctor-ak-portal' ) : esc_html__( 'Inactive', 'doctor-ak-portal' ); ?></span>
+								<?php if ( $service['active'] && ! \DoctorAKPortal\Includes\Services::is_priced( $service ) ) : ?>
+									<?php // Active but unpriced: not shown to patients until a price is set (Services::is_priced()). ?>
+									<span class="dak-status-pill dak-status-pill-is-pending" title="<?php esc_attr_e( 'No price set, so patients can\'t see or book it. Set a price and it goes live automatically.', 'doctor-ak-portal' ); ?>"><?php esc_html_e( 'Hidden — no price', 'doctor-ak-portal' ); ?></span>
+								<?php else : ?>
+									<span class="dak-status-pill <?php echo $service['active'] ? 'dak-status-pill-is-active' : 'dak-status-pill-is-neutral'; ?>"><?php echo $service['active'] ? esc_html__( 'Active', 'doctor-ak-portal' ) : esc_html__( 'Inactive', 'doctor-ak-portal' ); ?></span>
+								<?php endif; ?>
 							</td>
 							<td class="dak-col-actions" data-label="<?php esc_attr_e( 'Actions', 'doctor-ak-portal' ); ?>">
 								<div class="dak-row-actions">

@@ -278,6 +278,14 @@ abstract class Seo_Pages {
 			wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', static::cron_hook() );
 		}
 
+		// Self-repair: if WordPress's saved URL rules don't know this page
+		// type (something rebuilt them while it wasn't registered — a plugin
+		// update/activation, another plugin, a cache), every page of this
+		// type would 404. Rebuild them now, in a request where it is.
+		if ( ! static::rewrite_rules_present() ) {
+			flush_rewrite_rules( false );
+		}
+
 		if ( static::VERSION === get_option( static::version_option() ) ) {
 			return;
 		}
@@ -287,6 +295,31 @@ abstract class Seo_Pages {
 		update_option( static::version_option(), static::VERSION );
 
 		wp_schedule_single_event( time(), static::cron_hook() );
+	}
+
+	/**
+	 * Whether WordPress's saved URL rules include this page type's
+	 * /REWRITE_SLUG/… pattern. Cheap: the rules are an autoloaded option.
+	 * Treated as present when pretty permalinks are off (no rules at all).
+	 *
+	 * @return bool
+	 */
+	protected static function rewrite_rules_present() {
+		$rules = get_option( 'rewrite_rules' );
+
+		if ( ! is_array( $rules ) || empty( $rules ) || '' === (string) get_option( 'permalink_structure' ) ) {
+			return true;
+		}
+
+		foreach ( $rules as $pattern => $query ) {
+			unset( $pattern );
+
+			if ( false !== strpos( (string) $query, static::POST_TYPE . '=' ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	/**
@@ -737,7 +770,11 @@ abstract class Seo_Pages {
 		$directory = Page_Finder::url_for_shortcode( static::DIRECTORY_SHORTCODE );
 
 		if ( '' !== $directory ) {
-			wp_safe_redirect( $directory, 301 );
+			// 302, not 301: the page may come back (a price gets set, a doctor
+			// is re-activated, or the URLs simply weren't registered yet), and
+			// browsers remember a 301 forever — they'd keep sending visitors
+			// to the list even after the page exists.
+			wp_safe_redirect( $directory, 302 );
 			exit;
 		}
 	}

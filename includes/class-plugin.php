@@ -338,6 +338,11 @@ class Plugin {
 		$this->loader->add_action( 'doctor_ak_appointment_completed', 'DoctorAKPortal\Includes\Review_Requests', 'on_completed', 20 );
 		$this->loader->add_action( Review_Requests::CRON_HOOK, 'DoctorAKPortal\Includes\Review_Requests', 'send_scheduled' );
 		$this->loader->add_action( Notifications::CRON_HOOK, 'DoctorAKPortal\Includes\Review_Requests', 'sweep', 20 );
+
+		// Services with no price: hidden from patients (Services::is_priced())
+		// and reported to admins — hourly, and right after a service is saved.
+		$this->loader->add_action( Notifications::CRON_HOOK, 'DoctorAKPortal\\Includes\\Unpriced_Services', 'check', 30 );
+		$this->loader->add_action( 'shutdown', 'DoctorAKPortal\\Includes\\Unpriced_Services', 'process_queue', 10 );
 		$this->loader->add_action( 'template_redirect', 'DoctorAKPortal\Includes\Review_Requests', 'handle_landing', 1 );
 		$this->loader->add_action( 'admin_post_' . Review_Requests::SUBMIT_ACTION, 'DoctorAKPortal\Includes\Review_Requests', 'handle_submit' );
 		$this->loader->add_action( 'admin_post_nopriv_' . Review_Requests::SUBMIT_ACTION, 'DoctorAKPortal\Includes\Review_Requests', 'handle_submit' );

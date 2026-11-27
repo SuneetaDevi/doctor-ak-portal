@@ -315,6 +315,8 @@ class Services {
 
 		// Its public SEO page (one per service name) — refreshed at the end of the request.
 		Service_Pages::queue_all();
+		// Saved without a price? Admins are told (it's hidden until priced).
+		Unpriced_Services::queue();
 
 		return $service_id;
 	}
@@ -400,6 +402,8 @@ class Services {
 
 		// Name, price, status or discount may have changed — refresh the SEO pages.
 		Service_Pages::queue_all();
+		// Price removed (or still missing)? Admins are told (it's hidden until priced).
+		Unpriced_Services::queue();
 
 		return false !== $updated;
 	}
@@ -483,10 +487,70 @@ class Services {
 			array_filter(
 				self::get_for_doctor( $doctor_id, $type ),
 				function ( $service ) {
-					return ! empty( $service['active'] );
+					// Unpriced services stay hidden until a price is set (is_priced()).
+					return ! empty( $service['active'] ) && self::is_priced( $service );
 				}
 			)
 		);
+	}
+
+	/**
+	 * Whether a service has a real price everywhere it's offered: its flat
+	 * fee, or — when it has per-clinic prices — every one of those. A 0 is
+	 * how "no price set" is stored, and the public pages used to show it as
+	 * "Free", so an unpriced service is kept off every patient-facing list
+	 * and can't be booked until a price is set (it goes live again by
+	 * itself then). Admins are emailed about them, see Unpriced_Services.
+	 *
+	 * @param array $service Decoded service row.
+	 * @return bool
+	 */
+	public static function is_priced( array $service ) {
+		$base_clinic_charges = isset( $service['base_clinic_charges'] ) ? (array) $service['base_clinic_charges'] : array();
+
+		if ( ! empty( $base_clinic_charges ) ) {
+			return min( array_map( 'floatval', $base_clinic_charges ) ) > 0;
+		}
+
+		$charge = isset( $service['base_charge'] ) ? $service['base_charge'] : ( isset( $service['charge'] ) ? $service['charge'] : 0 );
+
+		return (float) $charge > 0;
+	}
+
+	/**
+	 * Where an unpriced service is missing its price, for the admin email:
+	 * the clinics with no price, or '' when it's the flat fee that's missing.
+	 *
+	 * @param array $service Decoded service row.
+	 * @return string[] Clinic names.
+	 */
+	public static function unpriced_clinic_names( array $service ) {
+		$names = array();
+
+		foreach ( (array) ( isset( $service['base_clinic_charges'] ) ? $service['base_clinic_charges'] : array() ) as $clinic_location_id => $price ) {
+			if ( (float) $price > 0 ) {
+				continue;
+			}
+
+			$location = Clinic_Locations::find( (int) $clinic_location_id );
+			$names[]  = $location ? $location['name'] : sprintf( /* translators: %d: clinic ID. */ __( 'Clinic #%d', 'doctor-ak-portal' ), (int) $clinic_location_id );
+		}
+
+		return $names;
+	}
+
+	/**
+	 * Every active clinic-type service row of every doctor (priced or not),
+	 * for the unpriced-services check.
+	 *
+	 * @return array Decoded rows.
+	 */
+	public static function all_active_clinic_services() {
+		global $wpdb;
+
+		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT * FROM ' . self::table_name() . ' WHERE active = 1 AND type = %s ORDER BY doctor_id ASC, name ASC', self::TYPE_CLINIC ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
+
+		return array_map( array( __CLASS__, 'decode_row' ), (array) $rows );
 	}
 
 	/**
@@ -598,7 +662,8 @@ class Services {
 			ARRAY_A
 		);
 
-		return array_map( array( __CLASS__, 'decode_row' ), $rows );
+		// Unpriced services stay hidden until a price is set (is_priced()).
+		return array_values( array_filter( array_map( array( __CLASS__, 'decode_row' ), $rows ), array( __CLASS__, 'is_priced' ) ) );
 	}
 
 	/**
@@ -630,7 +695,8 @@ class Services {
 			ARRAY_A
 		);
 
-		return array_map( array( __CLASS__, 'decode_row' ), $rows );
+		// Unpriced services stay hidden until a price is set (is_priced()).
+		return array_values( array_filter( array_map( array( __CLASS__, 'decode_row' ), $rows ), array( __CLASS__, 'is_priced' ) ) );
 	}
 
 	/**
@@ -1032,7 +1098,16 @@ class Services {
 	 * @return array List of { name, rows: [ { id, name, charge, category_label } ] }, one entry per colliding name.
 	 */
 	public static function duplicate_groups_for_doctor( $doctor_id ) {
-		$services = self::active_for_doctor( $doctor_id, 'clinic' );
+		// Every active row, priced or not (active_for_doctor() hides the
+		// unpriced ones) — a duplicate is a duplicate either way.
+		$services = array_values(
+			array_filter(
+				self::get_for_doctor( $doctor_id, 'clinic' ),
+				function ( $service ) {
+					return ! empty( $service['active'] );
+				}
+			)
+		);
 		$groups   = array();
 
 		foreach ( $services as $service ) {
@@ -1079,7 +1154,8 @@ class Services {
 	public static function find_for_public_profile( $service_id ) {
 		$service = self::find( $service_id );
 
-		if ( ! $service || ! $service['active'] ) {
+		// Unpriced services stay hidden until a price is set (is_priced()).
+		if ( ! $service || ! $service['active'] || ! self::is_priced( $service ) ) {
 			return null;
 		}
 

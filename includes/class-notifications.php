@@ -243,6 +243,83 @@ class Notifications {
 	}
 
 	/**
+	 * Emails every administrator about services that have no price set —
+	 * they're hidden from patients and can't be booked until someone sets
+	 * the price (see Services::is_priced()). One email per check, listing
+	 * each newly found service with its doctor and how to reach them; a
+	 * service is only ever reported once until it's priced (and reported
+	 * again only if it later loses its price). Called by Unpriced_Services.
+	 *
+	 * @param array[] $services Decoded service rows, all unpriced.
+	 * @return void
+	 */
+	public static function notify_unpriced_services( array $services ) {
+		if ( empty( $services ) ) {
+			return;
+		}
+
+		$details = array();
+		$doctors = array();
+
+		foreach ( $services as $service ) {
+			$doctor_id = (int) $service['doctor_id'];
+			$name      = self::user_display_name( $doctor_id );
+			$label     = '' !== $name ? Pmdc::with_name( sprintf( 'Dr. %s', $name ), $doctor_id ) : sprintf( /* translators: %d: user ID. */ __( 'Doctor #%d', 'doctor-ak-portal' ), $doctor_id );
+			$clinics   = Services::unpriced_clinic_names( $service );
+
+			$details[] = array(
+				$label,
+				$clinics
+					/* translators: 1: service name, 2: clinic names. */
+					? sprintf( __( '%1$s — no price at %2$s', 'doctor-ak-portal' ), $service['name'], implode( ', ', $clinics ) )
+					/* translators: %s: service name. */
+					: sprintf( __( '%s — no price set', 'doctor-ak-portal' ), $service['name'] ),
+			);
+
+			$doctors[ $doctor_id ] = $label;
+		}
+
+		// How to reach each doctor, after the list.
+		foreach ( $doctors as $doctor_id => $label ) {
+			$user    = get_userdata( $doctor_id );
+			$contact = array_filter(
+				array(
+					(string) get_user_meta( $doctor_id, 'doctor_ak_phone_number', true ),
+					$user ? (string) $user->user_email : '',
+				)
+			);
+
+			if ( $contact ) {
+				/* translators: %s: doctor's name. */
+				$details[] = array( sprintf( __( 'Contact %s', 'doctor-ak-portal' ), $label ), implode( ' · ', $contact ) );
+			}
+		}
+
+		$count = count( $services );
+		$url   = self::admin_url_for( 'services' );
+
+		foreach ( self::admin_emails() as $admin_email ) {
+			self::deliver(
+				$admin_email,
+				_n( 'A service has no price — hidden from patients', 'Services have no price — hidden from patients', $count, 'doctor-ak-portal' ),
+				array(
+					/* translators: %d: number of services. */
+					'preheader'   => sprintf( _n( '%d service is hidden from patients until its price is set.', '%d services are hidden from patients until their price is set.', $count, 'doctor-ak-portal' ), $count ),
+					'eyebrow'     => __( 'Services', 'doctor-ak-portal' ),
+					'heading'     => _n( 'Price not set for a service', 'Price not set for some services', $count, 'doctor-ak-portal' ),
+					'paragraphs'  => array(
+						__( 'These services have no price set, so they would have shown as "Free". They are now hidden from patients and can\'t be booked.', 'doctor-ak-portal' ),
+						__( 'Please contact the doctor, or set the price in the Admin Dashboard → Services. Each service goes live again automatically as soon as its price is set.', 'doctor-ak-portal' ),
+					),
+					'details'     => $details,
+					'button'      => '' !== $url ? array( 'label' => __( 'Open services', 'doctor-ak-portal' ), 'url' => $url ) : array(),
+					'footer_note' => self::footer_note( 'admin' ),
+				)
+			);
+		}
+	}
+
+	/**
 	 * Emails every opted-in account in the directory about a newly
 	 * published blog post. Hooked to 'transition_post_status' rather than
 	 * 'publish_post' so it fires exactly once — on the transition INTO

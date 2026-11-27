@@ -43,6 +43,14 @@ class Activator {
 			wp_schedule_event( time(), 'doctor_ak_five_minutes', Notifications::VIDEO_LINK_CRON_HOOK );
 		}
 
+		// Activation runs after 'init', so the SEO page types (/doctor/,
+		// /service/, /clinic/) aren't registered yet in this request. Flushing
+		// without them saved URL rules that left them out — every such page
+		// then 404'd and bounced to its directory. Register them first.
+		foreach ( Seo_Pages::classes() as $seo_pages ) {
+			$seo_pages::register_post_type();
+		}
+
 		flush_rewrite_rules();
 	}
 }

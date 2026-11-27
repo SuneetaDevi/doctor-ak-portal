@@ -169,6 +169,12 @@ class Appointments {
 				return new \WP_Error( 'doctor_ak_invalid_service', __( 'Please choose valid, active services.', 'doctor-ak-portal' ) );
 			}
 
+			// A service with no price set isn't bookable — re-checked here
+			// because a hidden service can still be posted directly.
+			if ( ! Services::is_priced( $service ) ) {
+				return new \WP_Error( 'doctor_ak_service_unpriced', __( 'This service isn’t available for booking yet. Please choose another service or call the clinic.', 'doctor-ak-portal' ) );
+			}
+
 			$clinic_charges = isset( $service['clinic_charges'] ) ? $service['clinic_charges'] : array();
 
 			// An empty clinic_charges map means this service is offered
