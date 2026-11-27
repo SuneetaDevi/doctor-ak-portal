@@ -182,7 +182,7 @@ class Service_Profile_View {
 				'price_label'      => isset( $other['public_price']['label'] ) ? $other['public_price']['label'] : $other['price_label'],
 				'discount_percent' => (int) $other['discount_percent'],
 				'provider_count'   => isset( $other['provider_count'] ) ? (int) $other['provider_count'] : 0,
-				'url'              => $profile_url ? add_query_arg( 'service_id', $other['id'], $profile_url ) : '',
+				'url'              => $profile_url ? \DoctorAKPortal\Includes\Service_Pages::url( $other['id'], array(), $other['name'] ) : '',
 			);
 		}
 
@@ -571,6 +571,11 @@ class Service_Profile_View {
 	 */
 	private function is_profile_view_page() {
 		global $post;
+
+		// A service's own /service/{slug}/ page renders this view too.
+		if ( \DoctorAKPortal\Includes\Service_Pages::is_entity_page() ) {
+			return true;
+		}
 
 		return ( $post instanceof \WP_Post ) && has_shortcode( $post->post_content, self::SHORTCODE_TAG );
 	}

@@ -1051,7 +1051,7 @@ if ( $dak_help_clinics_url && $stats['clinics_count'] > 0 ) {
 					<?php foreach ( array( false, true ) as $dak_is_duplicate ) : ?>
 						<?php foreach ( $dak_clinic_cycle as $dak_clinic ) : ?>
 							<?php
-							$dak_clinic_card_url = $clinic_profile_url ? add_query_arg( 'clinic_id', $dak_clinic['id'], $clinic_profile_url ) : '';
+							$dak_clinic_card_url = $clinic_profile_url ? \DoctorAKPortal\Includes\Clinic_Pages::url( $dak_clinic['id'] ) : '';
 							$dak_clinic_subtitle = implode( ', ', array_filter( array( $dak_clinic['area_label'], $dak_clinic['city_label'] ) ) );
 							if ( '' === $dak_clinic_subtitle ) {
 								$dak_clinic_subtitle = $dak_clinic['address'];

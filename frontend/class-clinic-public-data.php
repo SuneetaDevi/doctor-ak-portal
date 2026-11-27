@@ -97,7 +97,7 @@ class Clinic_Public_Data {
 			$location['place']         = implode( ', ', array_filter( array( $location['area_label'], $location['city_label'] ) ) );
 			$location['phone_kind']    = '' === $digits ? '' : ( isset( $central[ $digits ] ) ? 'central' : 'clinic' );
 			$location['phone_href']    = '' === $digits ? '' : 'tel:' . preg_replace( '/[^0-9+]/', '', $location['phone'] );
-			$location['profile_url']   = $profile_url ? add_query_arg( 'clinic_id', $location['id'], $profile_url ) : '';
+			$location['profile_url']   = $profile_url ? \DoctorAKPortal\Includes\Clinic_Pages::url( $location['id'] ) : '';
 
 			$locations[] = $location;
 		}

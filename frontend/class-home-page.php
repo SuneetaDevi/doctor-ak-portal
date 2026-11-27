@@ -256,7 +256,7 @@ class Home_Page {
 
 		$services_html = array_map(
 			function ( $group ) use ( $service_profile_url ) {
-				$group['profile_url'] = add_query_arg( 'service_id', $group['id'], $service_profile_url );
+				$group['profile_url'] = \DoctorAKPortal\Includes\Service_Pages::url( $group['id'], array(), $group['name'] );
 
 				return $this->template_loader->get_template( 'directory/home-service-card.php', $group );
 			},
@@ -294,7 +294,7 @@ class Home_Page {
 							'name'     => $group['name'],
 							'category' => isset( $group['category_label'] ) ? $group['category_label'] : '',
 							'keywords' => isset( $group['keywords'] ) ? $group['keywords'] : '',
-							'url'      => $service_profile_url ? add_query_arg( 'service_id', $group['id'], $service_profile_url ) : '',
+							'url'      => $service_profile_url ? \DoctorAKPortal\Includes\Service_Pages::url( $group['id'], array(), $group['name'] ) : '',
 						);
 					},
 					$all_service_groups
@@ -319,7 +319,7 @@ class Home_Page {
 							// City slug, so the popup's results follow the chosen city.
 							'citySlug' => isset( $clinic_location['city'] ) ? (string) $clinic_location['city'] : '',
 							'keywords' => isset( $clinic_location['keywords'] ) ? $clinic_location['keywords'] : '',
-							'url'      => $clinic_profile_url ? add_query_arg( 'clinic_id', $clinic_location['id'], $clinic_profile_url ) : '',
+							'url'      => $clinic_profile_url ? \DoctorAKPortal\Includes\Clinic_Pages::url( $clinic_location['id'] ) : '',
 						);
 					},
 					$all_clinic_locations
@@ -533,7 +533,7 @@ class Home_Page {
 					'name'             => $group['name'],
 					'discount_percent' => (int) $group['discount_percent'],
 					'price_label'      => 'unset' !== $price['state'] ? $price['label'] : '',
-					'url'              => $service_profile_url ? add_query_arg( 'service_id', $group['id'], $service_profile_url ) : '',
+					'url'              => $service_profile_url ? \DoctorAKPortal\Includes\Service_Pages::url( $group['id'], array(), $group['name'] ) : '',
 				);
 			},
 			array_slice( $services, 0, self::HERO_OFFERS_LIMIT )

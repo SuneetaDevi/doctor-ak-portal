@@ -96,9 +96,9 @@ class Page_Finder {
 	 * @return void
 	 */
 	public static function flush_cache( $post_id = 0 ) {
-		// Doctor SEO pages never hold a shortcode, and the sync saves many
-		// of them at once — no need to clear the lookups for each.
-		if ( $post_id && Doctor_Pages::POST_TYPE === get_post_type( $post_id ) ) {
+		// SEO pages (doctors, services, clinics) never hold a shortcode, and
+		// the sync saves many at once — no need to clear the lookups for each.
+		if ( $post_id && Seo_Pages::is_managed_post_type( get_post_type( $post_id ) ) ) {
 			return;
 		}
 

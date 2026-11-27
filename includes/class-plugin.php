@@ -618,48 +618,59 @@ class Plugin {
 
 		$this->loader->add_action( 'save_post', 'DoctorAKPortal\\Includes\\Page_Finder', 'flush_cache' );
 
-		$this->define_doctor_page_hooks();
+		$this->define_seo_page_hooks();
 	}
 
 	/**
-	 * One SEO page per public doctor at /doctor/{slug}/, kept in sync
-	 * automatically — see Doctor_Pages.
+	 * Automatic SEO pages — one WordPress post per doctor (/doctor/…),
+	 * service (/service/…) and clinic (/clinic/…), kept in sync with the
+	 * plugin's data. See Seo_Pages and its subclasses.
 	 *
 	 * @return void
 	 */
-	private function define_doctor_page_hooks() {
-		$pages = 'DoctorAKPortal\\Includes\\Doctor_Pages';
+	private function define_seo_page_hooks() {
+		foreach ( Seo_Pages::classes() as $pages ) {
+			$this->loader->add_action( 'init', $pages, 'register_post_type' );
+			$this->loader->add_action( 'init', $pages, 'maybe_upgrade', 99 );
+			$this->loader->add_action( $pages::cron_hook(), $pages, 'sync_all' );
 
-		$this->loader->add_action( 'init', $pages, 'register_post_type' );
-		$this->loader->add_action( 'init', $pages, 'maybe_upgrade', 99 );
-		$this->loader->add_action( Doctor_Pages::CRON_HOOK, $pages, 'sync_all' );
+			// Doctors first: when a doctor's page appears or goes, they queue the
+			// service and clinic re-syncs that run just after.
+			$this->loader->add_action( 'shutdown', $pages, 'process_queue', Doctor_Pages::class === $pages ? 0 : 5 );
 
-		// Keep each page in step with the doctor's data (synced once, at the end of the request).
-		$this->loader->add_action( 'added_user_meta', $pages, 'on_user_meta_change', 10, 3 );
-		$this->loader->add_action( 'updated_user_meta', $pages, 'on_user_meta_change', 10, 3 );
-		$this->loader->add_action( 'deleted_user_meta', $pages, 'on_user_meta_change', 10, 3 );
-		$this->loader->add_action( 'profile_update', $pages, 'queue' );
-		$this->loader->add_action( 'set_user_role', $pages, 'queue' );
-		$this->loader->add_action( 'delete_user', $pages, 'on_delete_user' );
-		$this->loader->add_action( 'shutdown', $pages, 'process_queue', 0 );
-		$this->loader->add_filter( 'wp_insert_post_data', $pages, 'no_author' );
+			// Front end: show the normal profile on these URLs; redirect old links.
+			$this->loader->add_action( 'wp', $pages, 'setup_request', 1 );
+			$this->loader->add_filter( 'the_content', $pages, 'render_content', 9999 );
+			$this->loader->add_action( 'template_redirect', $pages, 'redirect_old_links', 5 );
+			$this->loader->add_action( 'template_redirect', $pages, 'redirect_missing', 11 );
 
-		// Front end: show the doctor profile on these URLs; redirect old links.
-		$this->loader->add_action( 'wp', $pages, 'setup_request', 1 );
-		$this->loader->add_filter( 'the_content', $pages, 'render_content', 9999 );
-		$this->loader->add_action( 'template_redirect', $pages, 'redirects', 5 );
+			// Yoast SEO.
+			$this->loader->add_action( 'wpseo_register_extra_replacements', $pages, 'register_yoast_variables' );
+			$this->loader->add_filter( 'wpseo_exclude_from_sitemap_by_post_ids', $pages, 'exclude_base_page_from_sitemap' );
+			$this->loader->add_filter( 'wpseo_robots', $pages, 'noindex_base_page' );
 
-		// Yoast SEO.
-		$this->loader->add_action( 'wpseo_register_extra_replacements', $pages, 'register_yoast_variables' );
-		$this->loader->add_filter( 'wpseo_exclude_from_sitemap_by_post_ids', $pages, 'exclude_base_page_from_sitemap' );
-		$this->loader->add_filter( 'wpseo_robots', $pages, 'noindex_base_page' );
+			// wp-admin: explanation on the edit screen and the "Sync now" button.
+			$this->loader->add_action( 'edit_form_after_title', $pages, 'edit_screen_notice' );
+			$this->loader->add_filter( 'views_edit-' . $pages::POST_TYPE, $pages, 'list_sync_button' );
+			$this->loader->add_action( 'admin_post_' . $pages::sync_action(), $pages, 'handle_sync_now' );
+			$this->loader->add_action( 'admin_notices', $pages, 'sync_notice' );
+		}
 
-		// wp-admin: explanation on the edit screen, "Sync now", no manual delete.
-		$this->loader->add_action( 'edit_form_after_title', $pages, 'edit_screen_notice' );
-		$this->loader->add_filter( 'views_edit-' . Doctor_Pages::POST_TYPE, $pages, 'list_sync_button' );
-		$this->loader->add_action( 'admin_post_' . Doctor_Pages::SYNC_ACTION, $pages, 'handle_sync_now' );
-		$this->loader->add_action( 'admin_notices', $pages, 'sync_notice' );
-		$this->loader->add_filter( 'map_meta_cap', $pages, 'prevent_delete', 10, 4 );
+		// Shared by all three types: no author, no manual delete.
+		$this->loader->add_filter( 'wp_insert_post_data', 'DoctorAKPortal\\Includes\\Seo_Pages', 'no_author' );
+		$this->loader->add_filter( 'map_meta_cap', 'DoctorAKPortal\\Includes\\Seo_Pages', 'prevent_delete', 10, 4 );
+
+		// Doctor pages follow the doctor's own data.
+		$doctors = 'DoctorAKPortal\\Includes\\Doctor_Pages';
+		$this->loader->add_action( 'added_user_meta', $doctors, 'on_user_meta_change', 10, 3 );
+		$this->loader->add_action( 'updated_user_meta', $doctors, 'on_user_meta_change', 10, 3 );
+		$this->loader->add_action( 'deleted_user_meta', $doctors, 'on_user_meta_change', 10, 3 );
+		$this->loader->add_action( 'profile_update', $doctors, 'queue' );
+		$this->loader->add_action( 'set_user_role', $doctors, 'queue' );
+		$this->loader->add_action( 'delete_user', $doctors, 'on_delete_user' );
+
+		// Merged duplicate clinics: old clinic URLs lead to the kept clinic.
+		$this->loader->add_action( 'doctor_ak_clinic_locations_merged', 'DoctorAKPortal\\Includes\\Clinic_Pages', 'on_merge', 10, 2 );
 	}
 
 	/**

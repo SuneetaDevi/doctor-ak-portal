@@ -240,8 +240,8 @@ class Site_Header {
 			// indicator (a doctor profile highlights "Doctors", etc.).
 			'section_paths'      => array(
 				'doctors'  => array( $directory_url, Page_Finder::url_for_shortcode( 'doctor_profile_view' ), \DoctorAKPortal\Includes\Doctor_Pages::is_doctor_page() ? (string) get_permalink() : '' ),
-				'services' => array( Page_Finder::url_for_shortcode( 'services_directory' ), Page_Finder::url_for_shortcode( 'service_profile_view' ) ),
-				'clinics'  => array( Page_Finder::url_for_shortcode( 'clinics_directory' ), Page_Finder::url_for_shortcode( 'clinic_profile_view' ) ),
+				'services' => array( Page_Finder::url_for_shortcode( 'services_directory' ), Page_Finder::url_for_shortcode( 'service_profile_view' ), \DoctorAKPortal\Includes\Service_Pages::is_entity_page() ? (string) get_permalink() : '' ),
+				'clinics'  => array( Page_Finder::url_for_shortcode( 'clinics_directory' ), Page_Finder::url_for_shortcode( 'clinic_profile_view' ), \DoctorAKPortal\Includes\Clinic_Pages::is_entity_page() ? (string) get_permalink() : '' ),
 				'blogs'    => array( Page_Finder::url_for_shortcode( 'blogs_directory' ), Page_Finder::url_for_shortcode( 'blog_single' ) ),
 			),
 			'current_path'       => self::current_path(),
@@ -279,7 +279,7 @@ class Site_Header {
 						function ( $service ) use ( $profile_url ) {
 							return array(
 								'name' => $service['name'],
-								'url'  => $profile_url ? add_query_arg( 'service_id', $service['id'], $profile_url ) : '',
+								'url'  => $profile_url ? \DoctorAKPortal\Includes\Service_Pages::url( $service['id'], array(), $service['name'] ) : '',
 							);
 						},
 						$bucket['services']

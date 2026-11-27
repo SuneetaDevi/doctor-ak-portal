@@ -315,6 +315,7 @@ class Clinics {
 
 		// The doctor's SEO page lists their clinics — refresh it.
 		Doctor_Pages::queue( $doctor_id );
+		Clinic_Pages::queue_all(); // Clinic pages list the doctors practising there.
 
 		return $inserted ? (int) $wpdb->insert_id : false;
 	}
@@ -367,6 +368,7 @@ class Clinics {
 		// The doctor's SEO page lists their clinics — refresh it.
 		$owner = null !== $doctor_id ? (int) $doctor_id : (int) $wpdb->get_var( $wpdb->prepare( 'SELECT doctor_id FROM ' . self::table_name() . ' WHERE id = %d', (int) $clinic_id ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
 		Doctor_Pages::queue( $owner );
+		Clinic_Pages::queue_all(); // Clinic pages list the doctors practising there.
 
 		return false !== $updated;
 	}
@@ -392,6 +394,7 @@ class Clinics {
 		// The doctor's SEO page lists their clinics — refresh it.
 		$owner = null !== $doctor_id ? (int) $doctor_id : (int) $wpdb->get_var( $wpdb->prepare( 'SELECT doctor_id FROM ' . self::table_name() . ' WHERE id = %d', (int) $clinic_id ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name, not user input.
 		Doctor_Pages::queue( $owner );
+		Clinic_Pages::queue_all(); // Clinic pages list the doctors practising there.
 
 		return false !== $wpdb->delete( self::table_name(), $where, $where_types );
 	}

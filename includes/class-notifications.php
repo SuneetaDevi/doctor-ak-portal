@@ -219,7 +219,7 @@ class Notifications {
 		// dashboard's services list instead.
 		$detail_page = Page_Finder::url_for_shortcode( 'service_profile_view' );
 		$is_public   = ! empty( $fields['active'] ) && '' !== $detail_page;
-		$button_url  = $is_public ? add_query_arg( 'service_id', (int) $service_id, $detail_page ) : self::admin_url_for( 'services' );
+		$button_url  = $is_public ? Service_Pages::url( (int) $service_id, array(), isset( $fields['name'] ) ? (string) $fields['name'] : '' ) : self::admin_url_for( 'services' );
 
 		foreach ( self::admin_emails() as $admin_email ) {
 			self::deliver(

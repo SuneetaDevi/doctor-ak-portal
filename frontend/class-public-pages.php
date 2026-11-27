@@ -78,8 +78,12 @@ class Public_Pages {
 	 * @return string
 	 */
 	public static function current() {
-		if ( \DoctorAKPortal\Includes\Doctor_Pages::is_doctor_page() ) {
+		if ( \DoctorAKPortal\Includes\Doctor_Pages::is_entity_page() ) {
 			return 'doctor';
+		}
+
+		if ( \DoctorAKPortal\Includes\Clinic_Pages::is_entity_page() ) {
+			return 'clinic';
 		}
 
 		$post = is_singular() ? get_queried_object() : null;
@@ -170,9 +174,9 @@ class Public_Pages {
 			return $title;
 		}
 
-		// A doctor's own /doctor/{slug}/ page: with Yoast active its SEO
-		// title (per page, or the Doctor Pages template) is the one to keep.
-		if ( defined( 'WPSEO_VERSION' ) && \DoctorAKPortal\Includes\Doctor_Pages::is_doctor_page() ) {
+		// A doctor's or clinic's own SEO page: with Yoast active its SEO
+		// title (per page, or the page type's template) is the one to keep.
+		if ( defined( 'WPSEO_VERSION' ) && null !== \DoctorAKPortal\Includes\Seo_Pages::current_class() ) {
 			return $title;
 		}
 

@@ -270,6 +270,11 @@ class Clinic_Profile_View {
 	private function is_profile_view_page() {
 		global $post;
 
+		// A clinic's own /clinic/{slug}/ page renders this view too.
+		if ( \DoctorAKPortal\Includes\Clinic_Pages::is_entity_page() ) {
+			return true;
+		}
+
 		return ( $post instanceof \WP_Post ) && has_shortcode( $post->post_content, self::SHORTCODE_TAG );
 	}
 }

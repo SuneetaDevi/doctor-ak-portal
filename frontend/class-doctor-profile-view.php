@@ -401,7 +401,7 @@ class Doctor_Profile_View {
 				'price_label'      => $min < $max ? sprintf( __( 'From %s', 'doctor-ak-portal' ), Services::single_price_label( $min ) ) : Services::single_price_label( $min ),
 				'discount_percent' => $offered[ $id ]['discount'],
 				'clinics'          => array_values( array_unique( $offered[ $id ]['clinics'] ) ),
-				'url'              => '' !== $profile_url ? add_query_arg( 'service_id', $id, $profile_url ) : '',
+				'url'              => '' !== $profile_url ? \DoctorAKPortal\Includes\Service_Pages::url( $id ) : '',
 			);
 		}
 

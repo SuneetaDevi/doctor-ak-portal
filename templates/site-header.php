@@ -630,12 +630,7 @@ $dak_nav_strings = array(
 						</li>
 					<?php endif; ?>
 
-					<?php if ( ! empty( $lab_tests_url ) ) : ?>
-						<?php $dak_labs_current = $dak_path_of( $lab_tests_url ) === $current_path; ?>
-						<li class="dak-nav-item">
-							<a class="dak-nav-link<?php echo $dak_labs_current ? ' is-current' : ''; ?>" href="<?php echo esc_url( $lab_tests_url ); ?>"<?php echo $dak_labs_current ? ' aria-current="page"' : ''; ?>><?php esc_html_e( 'Lab Tests', 'doctor-ak-portal' ); ?></a>
-						</li>
-					<?php endif; ?>
+					<?php // Lab tests are reached from "Book Now" → "Book a lab test", not the main menu. ?>
 
 					<?php if ( ! empty( $symptom_checker_nav_url ) ) : ?>
 						<?php $dak_symptom_current = $dak_path_of( $symptom_checker_nav_url ) === $current_path; ?>

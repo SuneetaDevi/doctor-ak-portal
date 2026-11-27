@@ -253,8 +253,8 @@ class Dashboard_Layout {
 	private function public_shortcode_on_page() {
 		global $post;
 
-		// A doctor's own /doctor/{slug}/ page shows the doctor profile.
-		if ( \DoctorAKPortal\Includes\Doctor_Pages::is_doctor_page() ) {
+		// A doctor/service/clinic SEO page shows that item's normal profile.
+		if ( null !== \DoctorAKPortal\Includes\Seo_Pages::current_class() ) {
 			return true;
 		}
 

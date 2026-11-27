@@ -29,9 +29,11 @@ class Deactivator {
 	public static function deactivate() {
 		wp_clear_scheduled_hook( Notifications::CRON_HOOK );
 		wp_clear_scheduled_hook( Notifications::VIDEO_LINK_CRON_HOOK );
-		wp_clear_scheduled_hook( Doctor_Pages::CRON_HOOK );
-		// Re-run the one-time setup (URLs, first sync) on the next activation.
-		delete_option( Doctor_Pages::VERSION_OPTION );
+		foreach ( Seo_Pages::classes() as $seo_pages ) {
+			wp_clear_scheduled_hook( $seo_pages::cron_hook() );
+			// Re-run the one-time setup (URLs, first sync) on the next activation.
+			delete_option( $seo_pages::version_option() );
+		}
 		// Pending review requests keep their due time on the appointment, so
 		// the hourly sweep picks them up again after reactivation.
 		wp_unschedule_hook( Review_Requests::CRON_HOOK );

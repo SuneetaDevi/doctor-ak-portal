@@ -248,6 +248,7 @@ class Clinic_Locations {
 
 		if ( $inserted ) {
 			self::save_coordinates( (int) $wpdb->insert_id, $fields );
+			Clinic_Pages::queue_all();
 		}
 
 		return $inserted ? (int) $wpdb->insert_id : false;
@@ -283,6 +284,7 @@ class Clinic_Locations {
 
 		if ( false !== $updated ) {
 			self::save_coordinates( (int) $id, $fields );
+			Clinic_Pages::queue_all();
 		}
 
 		return false !== $updated;
@@ -322,6 +324,8 @@ class Clinic_Locations {
 	 */
 	public static function delete( $id ) {
 		global $wpdb;
+
+		Clinic_Pages::queue_all();
 
 		return false !== $wpdb->delete( self::table_name(), array( 'id' => (int) $id ), array( '%d' ) );
 	}
@@ -722,6 +726,9 @@ class Clinic_Locations {
 		}
 
 		$wpdb->query( 'COMMIT' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+
+		// Clinic_Pages::on_merge(): the removed clinics' URLs now lead to the kept one.
+		do_action( 'doctor_ak_clinic_locations_merged', $keep_id, $merge_ids );
 
 		return $summary;
 	}

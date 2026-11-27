@@ -313,6 +313,9 @@ class Services {
 		 */
 		do_action( 'doctor_ak_service_created', $service_id, $doctor_id, $fields );
 
+		// Its public SEO page (one per service name) — refreshed at the end of the request.
+		Service_Pages::queue_all();
+
 		return $service_id;
 	}
 
@@ -395,6 +398,9 @@ class Services {
 			}
 		}
 
+		// Name, price, status or discount may have changed — refresh the SEO pages.
+		Service_Pages::queue_all();
+
 		return false !== $updated;
 	}
 
@@ -415,6 +421,9 @@ class Services {
 			$where['doctor_id'] = (int) $doctor_id;
 			$where_types[]      = '%d';
 		}
+
+		// A service with no rows left loses its SEO page — refresh them.
+		Service_Pages::queue_all();
 
 		return false !== $wpdb->delete( self::table_name(), $where, $where_types );
 	}
